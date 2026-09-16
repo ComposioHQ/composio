@@ -3,10 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Modules that must never be evaluated by merely building the command tree.
- * The TypeScript compiler, the generation pipeline and the tokenizer ship as
- * companion modules that `composio run`, `composio generate` and large
- * `composio execute` responses load on demand, the same list the binary build
- * guard in `scripts/_shared.ts` checks. A static import anywhere on the
+ * The TypeScript compiler and the generation pipeline ship as a companion
+ * module that `composio run` and `composio generate` load on demand, the same
+ * list the binary build guard in `scripts/_shared.ts` checks. A static import anywhere on the
  * startup path silently puts that cost back on every invocation, so this test
  * loads the command tree in a fresh Bun process and inspects what it pulled in.
  */
@@ -16,9 +15,7 @@ const FORBIDDEN_AT_STARTUP: ReadonlyArray<string> = [
   '/packages/ts-builders/',
   '/src/generation/',
   '/src/commands/run-source-transforms',
-  '/node_modules/js-tiktoken/',
   '/src/services/generation-runtime',
-  '/src/services/execute-output-encoder-runtime',
 ];
 
 /**

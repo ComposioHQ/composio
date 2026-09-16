@@ -1230,9 +1230,6 @@ importers:
       indent-string:
         specifier: ^5.0.0
         version: 5.0.0
-      js-tiktoken:
-        specifier: ^1.0.21
-        version: 1.0.21
       json5:
         specifier: ^2.2.3
         version: 2.2.3
