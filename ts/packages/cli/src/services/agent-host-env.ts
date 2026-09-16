@@ -54,8 +54,10 @@ export const hostConfigDirectory = (host: AgentHost) =>
     const path = yield* Path.Path;
     const os = yield* NodeOs;
     const env = yield* rawHostEnvironment;
-    if (host === 'claude') return env.claudeConfigDir ?? path.join(os.homedir, '.claude');
-    return env.codexHome ?? path.join(os.homedir, '.codex');
+    // Anchor relative overrides to the home directory so probe results
+    // cannot depend on the process cwd; absolute overrides pass through.
+    if (host === 'claude') return path.resolve(os.homedir, env.claudeConfigDir ?? '.claude');
+    return path.resolve(os.homedir, env.codexHome ?? '.codex');
   });
 
 const KNOWN_BINARY_PATHS: Readonly<Record<AgentHost, ReadonlyArray<string>>> = {
@@ -80,7 +82,10 @@ export const probeHostInstallation = (host: AgentHost) =>
     const path = yield* Path.Path;
     const os = yield* NodeOs;
     const exists = (target: string) => fs.exists(target).pipe(Effect.orElseSucceed(() => false));
-    const configDirPresent = yield* exists(yield* hostConfigDirectory(host));
+    // Presence means an actual directory: a file at the config path (or an
+    // unreadable one) must not report the host as installed.
+    const dirInfo = yield* Effect.option(fs.stat(yield* hostConfigDirectory(host)));
+    const configDirPresent = Option.isSome(dirInfo) && dirInfo.value.type === 'Directory';
     const found = yield* Effect.forEach(KNOWN_BINARY_PATHS[host], entry =>
       exists(path.resolve(os.homedir, entry))
     );
