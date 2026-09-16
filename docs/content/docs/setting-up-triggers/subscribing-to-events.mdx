@@ -55,6 +55,11 @@ Filter the stream by `triggerId`, `triggerSlug`, `connectedAccountId`, `toolkits
 Subscription failures (for example a rejected auth request) do not reject the `subscribe()` promise — Pusher reports them asynchronously after it resolves. Pass an optional third callback to react to them programmatically:
 
 ```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+// ---cut---
 await composio.triggers.subscribe(
   data => {
     console.log('Event received:', data);
