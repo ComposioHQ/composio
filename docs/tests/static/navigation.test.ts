@@ -17,6 +17,11 @@ function isSeparator(entry: string): boolean {
   return entry.startsWith("---");
 }
 
+/** Link entries are rendered directly by fumadocs and do not resolve locally. */
+function isLink(entry: string): boolean {
+  return /^(?:external:)?(?:\[[^\]]+\])?\[[^\]]+\]\([^)]+\)$/.test(entry);
+}
+
 /** Recursively find all meta.json files under a directory */
 async function findMetaFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -63,8 +68,10 @@ describe("Navigation - meta.json validity", () => {
       "quickstart",
       "providers",
       "agent-plugins",
+      "using-composio-skill",
       "cli",
       "composio-connect",
+      "agent-setup",
     ]);
 
     expect(
@@ -104,7 +111,7 @@ describe("Navigation - meta.json validity", () => {
     const missing: string[] = [];
 
     for (const entry of meta.pages as string[]) {
-      if (isSeparator(entry)) continue;
+      if (isSeparator(entry) || isLink(entry)) continue;
       if (entry === "...") continue;
 
       const asFile = join(CONTENT_DIR, `${entry}.mdx`);
@@ -131,7 +138,7 @@ describe("Navigation - meta.json validity", () => {
       const relDir = relative(CONTENT_DIR, dir);
 
       for (const entry of (meta.pages || []) as string[]) {
-        if (isSeparator(entry)) continue;
+        if (isSeparator(entry) || isLink(entry)) continue;
 
         // Handle "..." (rest) entries which are valid fumadocs syntax
         if (entry === "...") continue;

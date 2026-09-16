@@ -5,6 +5,7 @@ import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
   TOOL_NOT_FOUND: 'TOOL_NOT_FOUND',
+  TOOL_FETCH_ERROR: 'TOOL_FETCH_ERROR',
   INVALID_MODIFIER: 'INVALID_MODIFIER',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
   INVALID_TOOL_ARGUMENTS: 'INVALID_TOOL_ARGUMENTS',
@@ -42,6 +43,29 @@ export class ComposioToolNotFoundError extends ComposioError {
       ],
     });
     this.name = 'ComposioToolNotFoundError';
+  }
+}
+
+/**
+ * Error thrown when a tool schema could not be fetched for a reason other than
+ * the tool not existing (for example an invalid API key, a server error, or a
+ * network failure). The underlying client error is preserved as `cause`.
+ */
+export class ComposioToolFetchError extends ComposioError {
+  constructor(
+    message: string = 'Failed to fetch tool',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ToolErrorCodes.TOOL_FETCH_ERROR,
+      possibleFixes: options.possibleFixes || [
+        'Ensure the tool slug is valid',
+        'Ensure you are using the correct API key',
+        'Ensure you are using the correct API endpoint / Base URL and it is working',
+      ],
+    });
+    this.name = 'ComposioToolFetchError';
   }
 }
 

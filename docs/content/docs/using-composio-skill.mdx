@@ -1,0 +1,69 @@
+---
+title: Build with the Composio skill
+description: Let your coding agent add, configure, or troubleshoot Composio in an existing project
+keywords: [composio skill, coding agent, codex, claude code, setup]
+---
+
+The public `composio` skill gives coding agents current instructions for building with Composio. Use it when you want an agent to inspect your existing project, choose the right Composio path, and implement or troubleshoot the integration in place.
+
+## Install the skill
+
+Run this command from your project root:
+
+```bash
+npx skills add ComposioHQ/composio --skill composio -y
+```
+
+Then ask your coding agent for a concrete outcome. Include the apps, agent framework, and user model when you know them.
+
+```text
+Use Composio to add Gmail and Google Calendar tools to this existing agent.
+Preserve the current framework and user model. Verify the integration with a safe,
+read-only tool call before you finish.
+```
+
+A skill-aware coding agent can load it when your request involves Composio. You can also tell the agent explicitly to use the `composio` skill.
+
+## What the skill helps with
+
+The skill routes the agent based on what you are building:
+
+| Your goal | Recommended path |
+|---|---|
+| Add app integrations to a product | Composio SDK and sessions |
+| Use apps from your own coding agent | Agent plugin, CLI, or MCP |
+| Add Composio to an existing MCP client | Composio Connect |
+| Diagnose a connection or tool-call error | Current docs and public support knowledge |
+
+For product integrations, the agent should preserve your framework and application identity model rather than replacing them with a standalone demo. It should use your stable application user ID when creating Composio sessions and keep your Composio API key on the server.
+
+<Callout type="info" title="The skill is guidance, not a credential">
+Installing the skill does not connect accounts or expose credentials. Your product still uses the Composio SDK, API key, sessions, and Connect Links. For personal agent use, the agent may guide you through a CLI, plugin, or MCP connection instead.
+</Callout>
+
+## Give the agent enough context
+
+Good prompts state the outcome and important constraints. For example:
+
+```text
+Use the Composio skill to add Slack tools to this TypeScript agent.
+Each signed-in customer must use their own Slack connection. Keep the API key
+server-side, limit the session to Slack, and ask for confirmation before writes.
+```
+
+If you already know the failure, include the exact error and where it occurs:
+
+```text
+Use the Composio skill to diagnose this Google Tasks 401. Check the current
+connection state and public support knowledge before changing application code.
+```
+
+The agent can inspect source code and run local checks, but it should ask before actions that need user authorization, such as completing an OAuth flow.
+
+## Next
+
+<Cards>
+  <Card title="Build your first agent" href="/docs/quickstart" description="Create a session and give an agent access to Composio tools." />
+  <Card title="Use Composio from your coding agent" href="/docs/agent-plugins" description="Choose a plugin, CLI, or MCP setup for personal use." />
+  <Card title="Add Composio Connect" href="/docs/composio-connect" description="Connect Composio to an MCP-compatible client." />
+</Cards>

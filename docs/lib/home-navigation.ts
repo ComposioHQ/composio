@@ -37,6 +37,7 @@ interface DocsProductConfig {
 }
 
 const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
+  { type: 'page', url: '/docs/using-composio-skill' },
   { type: 'folder', path: 'security', label: 'Security and data' },
 ];
 
@@ -83,7 +84,7 @@ export const DOCS_PRODUCTS = {
     home: {
       id: 'use',
       title: 'Use Composio',
-      description: 'Use Composio from the agents you already have — Claude Code, Codex, Cursor, or your terminal.',
+      description: 'Use Composio yourself with agents you already have.',
       links: [
         {
           title: 'Agent plugins',
@@ -111,7 +112,11 @@ export const DOCS_PRODUCTS = {
     theme: 'dark',
     themeColor: '#131211',
     routePrefixes: [
+      '/docs/agent-setup',
       '/docs/quickstart',
+      '/docs/consumer-agents',
+      '/docs/b2b-agents',
+      '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
@@ -134,6 +139,7 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Get started',
         items: [
+          { type: 'folder', path: 'agent-setup' },
           { type: 'page', url: '/docs/quickstart' },
           { type: 'folder', path: 'providers', label: 'SDKs and frameworks' },
         ],
@@ -151,6 +157,9 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Guides',
         items: [
+          { type: 'page', url: '/docs/consumer-agents' },
+          { type: 'page', url: '/docs/b2b-agents' },
+          { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/sessions-via-mcp' },
           { type: 'folder', path: 'sandbox' },
           { type: 'folder', path: 'extending-sessions' },
@@ -172,7 +181,7 @@ export const DOCS_PRODUCTS = {
     home: {
       id: 'build',
       title: 'Build with Composio',
-      description: 'Build Composio into your own agent or application — tools, auth, and triggers for every one of your users.',
+      description: 'Add Composio into your agent or app.',
       links: [
         {
           title: 'Quickstart',

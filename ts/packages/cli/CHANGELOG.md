@@ -50,6 +50,19 @@ orgs` shows the same page as `composio orgs --help`, with the same longest-prefi
   fallback for deeper paths); an unknown target fails through the framework parser like
   any other unknown command. The `orgs` description in contextual error help now matches
   the command's actual description.
+- `composio listen <slug> --stream` without a path is accepted again and streams
+  the whole event payload. It previously failed with
+  `Received unknown argument: '--stream='`.
+- `composio listen` reports an unknown trigger slug as such. A mistyped slug
+  used to fail with a missing-connection error for the toolkit inferred from its
+  prefix, or with a generic trigger-creation error when that toolkit already had
+  an active account.
+- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
+  and `status` commands that share its API error handling, now exit non-zero on
+  an API error and print the error when stderr is not a terminal. `composio tools
+info <unknown-slug>` used to print nothing and exit 0 when piped.
+- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
+  instead of a removed Slack tool slug and a trigger without configuration.
 
 ## 0.3.3
 

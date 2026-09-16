@@ -113,6 +113,30 @@ describe('knowledge hub', () => {
     expect(discoverySections.every((section) => section.includes('href='))).toBe(true);
   });
 
+  test('presents the primary getting-started paths before support browsing', async () => {
+    const html = renderToStaticMarkup(await KnowledgeHub());
+    const startHere = html.match(
+      /<section[^>]*aria-labelledby="start-here-title"[^>]*>[\s\S]*?<\/section>/,
+    )?.[0];
+
+    expect(startHere).toBeDefined();
+    expect(startHere?.match(/href="[^"]+"/g)).toEqual([
+      'href="/docs/quickstart"',
+      'href="/docs/using-composio-skill"',
+      'href="/docs/consumer-agents"',
+      'href="/docs/b2b-agents"',
+      'href="/docs/production-readiness"',
+    ]);
+
+    const startHereIndex = html.indexOf('aria-labelledby="start-here-title"');
+    const supportTopicsIndex = html.indexOf('aria-labelledby="support-topics-title"');
+    const toolkitsIndex = html.indexOf('aria-labelledby="toolkits-title"');
+
+    expect(startHereIndex).toBeGreaterThan(-1);
+    expect(startHereIndex).toBeLessThan(supportTopicsIndex);
+    expect(supportTopicsIndex).toBeLessThan(toolkitsIndex);
+  });
+
   test('builds a shareable search URL and exposes a screen-reader-only label', () => {
     expect(getKnowledgeSearchHref('oauth github'))
       .toBe('/kb/search?q=oauth+github');

@@ -9,6 +9,7 @@ import {
   RUN_COMPANION_MODULE_BASENAMES,
   type RunCodexAcpBinaryTarget,
 } from '../src/services/run-companion-modules';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
 
 export { teardown } from './_teardown';
@@ -124,19 +125,21 @@ const stripStringsAndComments = (source: string): string => {
 
     if (char === "'" || char === '"' || char === '`') {
       const quote = char;
-      appendSpace(char);
+      // The literal's body is dropped rather than blanked out. Blanking kept a
+      // same-length run of spaces, and once a bundle carries a multi-megabyte
+      // string with newlines in it (the TypeScript compiler's embedded lib
+      // files, in `generation-runtime`), the `^\s*` prefix of the import
+      // patterns below backtracks across that run from every line start —
+      // quadratic, and it stalled the build for over ten minutes.
+      result += ' ';
       index += 1;
 
       while (index < source.length) {
         const current = source[index];
-        appendSpace(current);
         index += 1;
 
         if (current === '\\') {
-          if (index < source.length) {
-            appendSpace(source[index]!);
-            index += 1;
-          }
+          index += 1;
           continue;
         }
 
@@ -145,6 +148,7 @@ const stripStringsAndComments = (source: string): string => {
         }
       }
 
+      result += ' ';
       continue;
     }
 
@@ -320,6 +324,103 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
   }
 };
 
+// Module paths that must only ever be reached through a companion module. The
+// executable's bundle is checked after every build because the guard against
+// regressions is otherwise invisible: a stray static import of any of these
+// would silently put the TypeScript compiler or the tokenizer rank table back
+// into the executable, and `--version` would quietly get ~70ms slower.
+const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
+  readonly pattern: RegExp;
+  readonly reason: string;
+}> = [
+  { pattern: /\/node_modules\/typescript\//, reason: 'the TypeScript compiler' },
+  { pattern: /\/node_modules\/js-tiktoken\//, reason: 'the tokenizer and its rank table' },
+  { pattern: /(?:^|\/)src\/generation\/(?!errors\.ts$)/, reason: 'the generation pipeline' },
+  {
+    pattern: /(?:^|\/)src\/commands\/run-source-transforms\.ts$/,
+    reason: 'the run source rewrites',
+  },
+  { pattern: /(?:^|\/)src\/services\/generation-runtime\.ts$/, reason: 'the generation companion' },
+  {
+    pattern: /(?:^|\/)src\/services\/execute-output-encoder-runtime\.ts$/,
+    reason: 'the encoder companion',
+  },
+];
+
+// `--define` pairs as `Bun.build` takes them.
+const defineRecordFromArgs = (args: ReadonlyArray<string>): Record<string, string> =>
+  Object.fromEntries(
+    args.flatMap((arg, index) => {
+      const pair = args[index - 1] === '--define' ? arg : undefined;
+      const separator = pair?.indexOf('=') ?? -1;
+      return pair && separator > 0 ? [[pair.slice(0, separator), pair.slice(separator + 1)]] : [];
+    })
+  );
+
+// Bun's unminified output starts each module with a `// <path>` line, which is
+// the only bundle-level record of what made it into the graph. A dynamic
+// `import()` of a *literal* specifier is still bundled (lazily evaluated, but
+// parsed on every start), so this catches those too — only the runtime-computed
+// specifier in `loadInstalledCompanionModule` keeps a module out.
+const assertExecutableExcludesCompanionModules = async (): Promise<void> => {
+  const result = await Bun.build({
+    entrypoints: [path.resolve('./src/bin.ts')],
+    target: 'bun',
+    format: 'esm',
+    packages: 'bundle',
+    sourcemap: 'none',
+    // The same environment inlining and defines as `build-binary.ts` and
+    // `build-binary-cross.ts`, plus the NODE_ENV that `--production` sets, so a
+    // branch the release build folds away is folded away here too.
+    env: 'DEBUG_OVERRIDE_*',
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      ...defineRecordFromArgs([
+        ...posthogBakeArgs(),
+        ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
+      ]),
+    },
+    // `--production` also minifies. Syntax minification is the part that drops
+    // unreachable code; whitespace minification would strip the module
+    // comments this check reads, so it stays off.
+    minify: { syntax: true, whitespace: false, identifiers: false },
+  });
+  if (!result.success) {
+    throw new Error(
+      `Failed to bundle src/bin.ts for the executable graph check:\n${result.logs
+        .map(log => log.message)
+        .join('\n')}`
+    );
+  }
+
+  const violations: string[] = [];
+  for (const artifact of result.outputs) {
+    const source = await artifact.text();
+    for (const line of source.split('\n')) {
+      if (!line.startsWith('// ') || line.startsWith('// @bun')) {
+        continue;
+      }
+      const modulePath = line.slice(3);
+      const hit = EXECUTABLE_EXCLUDED_MODULE_PATTERNS.find(({ pattern }) =>
+        pattern.test(modulePath)
+      );
+      if (hit) {
+        violations.push(`${modulePath}  (${hit.reason})`);
+      }
+    }
+  }
+
+  if (violations.length > 0) {
+    throw new Error(
+      [
+        'The executable bundle reaches modules that must only be loaded through a companion module',
+        '(see RUN_COMPANION_MODULE_BASENAMES). Import them via `loadInstalledCompanionModule` instead:',
+        ...violations.map(violation => `  - ${violation}`),
+      ].join('\n')
+    );
+  }
+};
+
 export const buildCompanionModules = (
   outputDir: string,
   options: {
@@ -341,4 +442,5 @@ export const buildCompanionModules = (
       copyBundledAcpAdapters(outputDir, options.codexBinaryTargets ?? RUN_CODEX_ACP_BINARY_TARGETS)
     );
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
+    yield* Effect.tryPromise(() => assertExecutableExcludesCompanionModules());
   });
