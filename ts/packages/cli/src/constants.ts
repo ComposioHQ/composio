@@ -1,11 +1,19 @@
-import { constants } from '@composio/core';
 import pkg from '../package.json' with { type: 'json' };
 
 declare const __COMPOSIO_CLI_RELEASE_VERSION__: string | undefined;
 
-const { DEFAULT_BASE_URL, DEFAULT_WEB_URL } = constants;
+// These four values mirror `@composio/core`'s `constants` module. They are
+// spelled out here rather than imported because importing anything from the
+// core package's root entry at module scope evaluates the whole SDK at startup
+// (its zod schemas alone cost ~25ms), for two strings and two URLs. The root
+// entry is still bundled, behind the file-upload path's dynamic import.
+// `test/src/constants.test.ts` pins these to core's values.
 
-export { DEFAULT_BASE_URL, DEFAULT_WEB_URL };
+/** Default base URL for the Composio API server (backend). */
+export const DEFAULT_BASE_URL = 'https://backend.composio.dev';
+
+/** Default base URL for the Composio web app (frontend). */
+export const DEFAULT_WEB_URL = 'https://dashboard.composio.dev/';
 
 /**
  * Staging base URL for the Composio API server (backend).
@@ -32,7 +40,7 @@ export const DEBUG_OVERRIDE_ENV_CONFIG_KEY_PREFIX = 'DEBUG_OVERRIDE_';
 /**
  * Name of the user config file used by the Composio CLI.
  */
-export const USER_CONFIG_FILE_NAME = constants.USER_DATA_FILE_NAME;
+export const USER_CONFIG_FILE_NAME = 'user_data.json';
 
 /**
  * Name of the general CLI config file used by the Composio CLI.
@@ -42,7 +50,7 @@ export const CLI_CONFIG_FILE_NAME = 'config.json';
 /**
  * Name of the directory used to store the Composio CLI config.
  */
-export const USER_COMPOSIO_DIR = constants.COMPOSIO_DIR;
+export const USER_COMPOSIO_DIR = '.composio';
 
 /**
  * A map of cache filenames used by the Composio CLI.

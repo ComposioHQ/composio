@@ -1,0 +1,108 @@
+---
+title: Design a B2B agent with Composio
+description: Structure tenants, members, projects, sessions, and connections for a B2B agent
+keywords: [b2b agent, multi tenant, workspace, organization, users, projects]
+---
+
+A B2B agent serves organizations with multiple members. Before writing integration code, decide who owns each app connection: an individual member or the customer workspace. That decision determines the Composio user ID and access model.
+
+## Choose the connection owner
+
+| Model | Use it when | Composio user ID example |
+|---|---|---|
+| Member-owned | Each member connects and acts through their own account | `org_42:user_7` |
+| Workspace-owned | The organization connects one shared service account or integration | `org_42:integration` |
+
+Use globally unique, immutable IDs. Prefixing your member ID with the workspace ID makes the tenant boundary explicit even when member IDs are only unique inside one workspace.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+workspace_id = "org_42"
+member_id = "user_7"
+composio_user_id = f"{workspace_id}:{member_id}"
+
+session = composio.sessions.create(
+    user_id=composio_user_id,
+    toolkits=["slack", "salesforce"],
+)
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+
+const workspaceId = "org_42";
+const memberId = "user_7";
+const composioUserId = `${workspaceId}:${memberId}`;
+
+const session = await composio.create(composioUserId, {
+  toolkits: ["slack", "salesforce"],
+});
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn" title="Do not collapse every member into one tenant ID">
+If members should use separate accounts, do not create all sessions with only the workspace ID. That would place their connections in the same user scope. Use a member-scoped ID and enforce your product's workspace authorization before creating or restoring a session.
+</Callout>
+
+## Start with one project per environment
+
+Use one Composio project for each application environment, such as development, staging, and production. Keep the tenant boundary in your application and `user_id` model.
+
+Create a separate project for a customer only when you need a hard operational boundary, such as:
+
+- Independent API keys, auth configs, branding, or webhooks
+- Contractual or regulatory isolation
+- Customer-specific provider credentials or infrastructure
+- Separate usage and administration controlled by that customer
+
+Project-per-customer isolation adds provisioning, credential management, and operational overhead. It is usually unnecessary for the first version of a multi-tenant product.
+
+## Model workspace-owned connections explicitly
+
+For an organization-wide service account, create a dedicated integration identity such as `org_42:integration`. Do not reuse a real member's identity, because the connection should survive membership changes.
+
+Your application remains responsible for deciding which members may ask the workspace-owned agent to act. Resolve the workspace, verify the member's role, then create or restore the session for the integration identity.
+
+[Shared connections](/docs/extending-sessions/shared-connections) are available for cases where one connected account must be exposed to a controlled list of Composio users. They are an experimental, explicit access-control feature, not the default tenant model. Pin and test the SDK version before making shared connections part of a production tenant model.
+
+## Choose the customer's authentication model
+
+Start with managed auth when Composio's provider app and scopes fit the product. Use [custom auth configs](/docs/authentication/custom-app-vs-managed-app) when your product needs its own OAuth branding, scopes, provider quotas, or self-hosted instances.
+
+If each customer supplies different OAuth credentials, create and manage auth configs programmatically, then assign the right config when creating that customer's sessions. See [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
+
+For a fully branded connection flow, combine custom OAuth credentials with [white-labeling](/docs/authentication/white-labeling-authentication).
+
+## Route events back to the right tenant
+
+Store your workspace and member mapping next to the Composio user and connected-account IDs. When a trigger event arrives, resolve that mapping before running customer-specific work. Your webhook handler must also enforce any tenant or role checks required by your product.
+
+See [Subscribing to trigger events](/docs/setting-up-triggers/subscribing-to-events) for webhook setup and verification.
+
+## Before you launch
+
+- Test two members in the same workspace and two members in different workspaces.
+- Confirm a removed member can no longer invoke workspace-owned connections.
+- Keep development, staging, and production credentials separate.
+- Define who can create, replace, or delete a workspace-owned connection.
+- Test a real trigger event and verify it maps to the expected workspace.
+- Inspect representative tool calls in [Logs](/reference/api-reference/logs).
+
+## Next
+
+<Cards>
+  <Card title="Build a consumer agent" href="/docs/consumer-agents" description="Use a simpler per-person identity and connection model." />
+  <Card title="White-label authentication" href="/docs/authentication/white-labeling-authentication" description="Brand Connect Links, consent screens, domains, and callbacks." />
+  <Card title="Move to production" href="/docs/production-readiness" description="Review identity, auth, security, logging, and trigger decisions." />
+</Cards>
