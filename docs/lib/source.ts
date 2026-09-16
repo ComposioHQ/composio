@@ -24,6 +24,7 @@ import { PACKAGE_MANAGERS } from './package-install';
 import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
+import { HOME_OG_DESCRIPTION } from './toolkit-count';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -180,8 +181,10 @@ export function getOgImageUrl(
 ): string {
   const params = new URLSearchParams();
   if (section === 'docs' && slugs.length === 0) {
+    // The home card has fixed copy; the page's own description is ignored so
+    // the root layout and the /docs index page produce the same image URL.
     params.set('section', 'home');
-    if (description) params.set('description', description);
+    params.set('description', HOME_OG_DESCRIPTION);
     return `${OG_ROUTE}?${params.toString()}`;
   }
   const isChangelog = section === 'docs' && slugs[0] === 'changelog';

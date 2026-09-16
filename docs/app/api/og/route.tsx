@@ -295,8 +295,20 @@ function DocsCard({ p, ctx: { c } }: CardProps) {
   );
 }
 
+const TOOLKIT_SUFFIX = /\s*-\s*Composio Toolkit\s*$/i;
+
+/**
+ * Catalog toolkit pages title themselves "<Name> - Composio Toolkit"; the card
+ * shows "<Name> Toolkit". Any other page in the section (the index, MDX
+ * guides like "Premium Tools") keeps its title as written.
+ */
+export function toolkitCardTitle(title: string): string {
+  return TOOLKIT_SUFFIX.test(title) ? `${title.replace(TOOLKIT_SUFFIX, '')} Toolkit` : title;
+}
+
 function ToolkitCard({ p, ctx: { c, brand } }: CardProps) {
-  const name = p.title.replace(/\s*-\s*Composio Toolkit\s*$/i, '');
+  const name = p.title.replace(TOOLKIT_SUFFIX, '');
+  const title = toolkitCardTitle(p.title);
   return (
     <Stack>
       {p.logo ? (
@@ -310,7 +322,7 @@ function ToolkitCard({ p, ctx: { c, brand } }: CardProps) {
           </Node>
         </div>
       ) : null}
-      <Title size={titleSize(`${name} Toolkit`, 64)} c={c}>{`${name} Toolkit`}</Title>
+      <Title size={titleSize(title, 64)} c={c}>{title}</Title>
       <Description c={c}>{p.description || `Connect your AI agent to ${name} with Composio.`}</Description>
     </Stack>
   );

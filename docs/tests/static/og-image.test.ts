@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
-import { GET, parseOgParams } from '../../app/api/og/route';
+import { GET, parseOgParams, toolkitCardTitle } from '../../app/api/og/route';
 import { getOgImageUrl } from '../../lib/source';
+import { HOME_OG_DESCRIPTION } from '../../lib/toolkit-count';
 
 async function expectPng(url: string) {
   const response = await GET(new Request(url));
@@ -32,9 +33,12 @@ test('every section renders its own card', async () => {
 });
 
 test('the URL builder names the section and forwards extras', () => {
-  const home = new URL(getOgImageUrl('docs', [], 'Welcome', 'desc'));
+  // Both the root layout and the /docs index page build this URL; the home
+  // card ignores the page description so they agree and carry the live count.
+  const home = new URL(getOgImageUrl('docs', [], 'Welcome', 'page description'));
   expect(home.searchParams.get('section')).toBe('home');
-  expect(home.searchParams.get('description')).toBe('desc');
+  expect(home.searchParams.get('description')).toBe(HOME_OG_DESCRIPTION);
+  expect(HOME_OG_DESCRIPTION).toMatch(/^Build AI agents with [\d,]+\+ apps\./);
 
   const changelog = new URL(getOgImageUrl('docs', ['changelog', '2026', '09', '04'], 'Title', 'Updates', { date: 'Sep 4, 2026' }));
   expect(changelog.searchParams.get('section')).toBe('changelog');
@@ -75,4 +79,11 @@ test('cards default to the dark surface and accept theme=light', async () => {
   expect(light.logo).toBe('https://logos.composio.dev/api/github');
   await expectPng('https://docs.composio.dev/api/og?section=toolkits&title=GitHub&theme=light');
   await expectPng('https://docs.composio.dev/api/og?section=home&theme=light');
+});
+
+test('only catalog toolkit titles get the Toolkit suffix', () => {
+  expect(toolkitCardTitle('GitHub - Composio Toolkit')).toBe('GitHub Toolkit');
+  expect(toolkitCardTitle('Google Sheets - Composio Toolkit')).toBe('Google Sheets Toolkit');
+  expect(toolkitCardTitle('Toolkits')).toBe('Toolkits');
+  expect(toolkitCardTitle('Premium Tools')).toBe('Premium Tools');
 });
