@@ -1298,3 +1298,51 @@ describe('CLI: composio setup failure reason codes', () => {
     });
   }
 });
+
+describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  const messageOf = (exit: Exit.Exit<unknown, unknown>): string | undefined => {
+    if (!Exit.isFailure(exit)) return undefined;
+    const failure = Cause.squash(exit.cause);
+    return failure instanceof Error ? failure.message : String(failure);
+  };
+
+  layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['only Claude Code installed']().runner }))(
+    'targeted host missing',
+    it => {
+      it.effect('target_not_installed rerun carries --yes', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
+          expect(messageOf(exit)).toContain('rerun `composio setup --yes --target codex`');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['no host installed']().runner }))(
+    'no host detected',
+    it => {
+      it.effect('no_host_detected rerun carries --yes', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--yes']));
+          expect(messageOf(exit)).toContain('rerun `composio setup --yes`');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['marketplace conflict']().runner }))(
+    'marketplace conflict',
+    it => {
+      it.effect('marketplace_conflict rerun carries --yes', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
+          expect(messageOf(exit)).toContain('rerun `composio setup --yes --target claude`');
+        })
+      );
+    }
+  );
+});

@@ -5,8 +5,9 @@
 ### Patch Changes
 
 - The plugin hint shown under Claude Code or Codex now reads
-  `'composio setup --yes' installs it`, so an agent following it no longer
-  fails on the non-interactive `--yes` requirement. CLI telemetry gains
+  `'composio setup --yes' installs it`, and setup error messages that suggest
+  a rerun now include `--yes` too, so an agent following the printed text no
+  longer fails on the non-interactive `--yes` requirement. CLI telemetry gains
   `agent_host_env` on every event, a `CLI_PLUGIN_HINT_SHOWN` event, host
   presence signals on `CLI_SETUP_HOST_DETECTED` when a host is not detected,
   and a `failure_reason_code` on `CLI_SETUP_FAILED`.

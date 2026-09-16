@@ -147,14 +147,14 @@ const setupBaseCmd = Command.make(
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {
           return yield* setupCommandError(
-            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`,
+            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --yes --target ${target}\`.`,
             operation,
             'target_not_installed'
           );
         }
         if (!ifPresent || target !== 'auto') {
           return yield* setupCommandError(
-            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`,
+            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''} --yes\`.`,
             operation,
             'no_host_detected'
           );

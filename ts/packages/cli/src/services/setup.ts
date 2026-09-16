@@ -471,8 +471,11 @@ const errorMessage = (error: unknown): string => {
 
 type SetupOperation = 'setup' | 'uninstall';
 
+// Remediation commands must stay usable from the non-interactive shells
+// agents run in (the plugin hint's primary audience), so they always carry
+// --yes; interactive users can drop it.
 const setupCommand = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
-  `composio setup${operation === 'uninstall' ? ' --uninstall' : ''} --target ${adapter.target}`;
+  `composio setup${operation === 'uninstall' ? ' --uninstall' : ''} --yes --target ${adapter.target}`;
 
 const recoveryHint = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
   `Run \`${setupCommand(adapter, operation)}\` again. If the problem persists, run \`${hostUpdateCommand(adapter)}\` and retry.`;
@@ -661,14 +664,14 @@ const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSet
     return new SetupCommandError({
       operation: 'setup',
       reasonCode: 'target_not_installed',
-      message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`,
+      message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
   }
   if (initial.marketplace_conflict) {
     return new SetupCommandError({
       operation: 'setup',
       reasonCode: 'marketplace_conflict',
-      message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`,
+      message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
   }
   return Effect.void;
@@ -727,7 +730,7 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
       return yield* setupProcessError({
         adapter,
         stage: 'verify',
-        message: `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`composio setup --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+        message: `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`${setupCommand(adapter, 'setup')}\` or inspect the native ${adapter.target} plugin configuration.`,
       });
     }
 
@@ -767,7 +770,7 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
       return yield* setupProcessError({
         adapter,
         stage: 'verify',
-        message: `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+        message: `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`${setupCommand(adapter, 'uninstall')}\` or inspect the native ${adapter.target} plugin configuration.`,
       });
     }
 
