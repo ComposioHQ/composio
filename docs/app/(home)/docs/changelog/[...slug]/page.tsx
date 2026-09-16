@@ -105,7 +105,13 @@ export async function generateMetadata({ params }: PageProps) {
     : `Changelog - ${formatDate(dateStr)}`;
 
   const description = `Updates from ${formatDate(dateStr)}`;
-  const ogImage = getOgImageUrl('docs', ['changelog', ...slug], title, description);
+  // The card shows the date as an eyebrow, so its title must not repeat it.
+  const ogTitle = matchingEntries.length === 1
+    ? matchingEntries[0].title
+    : `${matchingEntries.length} updates`;
+  const ogImage = getOgImageUrl('docs', ['changelog', ...slug], ogTitle, description, {
+    date: formatDate(dateStr),
+  });
 
   return {
     title: `${title} | Composio Changelog`,
