@@ -765,6 +765,15 @@ describe('Triggers', () => {
       expect(logger.debug).toHaveBeenCalledWith('🔄 Subscribing to triggers with filters: ', '{}');
     });
 
+    it('should pass the subscription error callback through to the pusher service', async () => {
+      const onSubscriptionError = vi.fn();
+
+      await triggers.subscribe(mockCallback, {}, onSubscriptionError);
+
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      expect(subscribeCall[1]).toBe(onSubscriptionError);
+    });
+
     it('should subscribe to triggers with filters', async () => {
       const filters: TriggerSubscribeParams = {
         toolkits: ['github'],

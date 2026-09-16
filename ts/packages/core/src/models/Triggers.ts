@@ -612,6 +612,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @param fn - The function to call when a trigger is received
    * @param filters - The filters to apply to the triggers
+   * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
+   * the underlying subscription fails (for example on auth or permission rejection). The
+   * subscribe promise still resolves; this is the only programmatic signal of the failure.
+   * Errors thrown from — or promises rejected by — the callback are contained and logged.
    *
    * @example
    * ```ts
@@ -623,7 +627,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async subscribe(
     fn: (_data: IncomingTriggerPayload) => void,
-    filters: TriggerSubscribeParams = {}
+    filters: TriggerSubscribeParams = {},
+    onSubscriptionError?: (data: Record<string, unknown>) => void
   ) {
     if (!fn) throw new Error('Function is required for trigger subscription');
 
@@ -651,7 +656,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
-    });
+    }, onSubscriptionError);
   }
 
   /**
