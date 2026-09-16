@@ -491,10 +491,11 @@ console.log(result);
   </Tab>
 </Tabs>
 
-Automatic downloads are limited to 100 MiB, including when the server omits or reports an
-incorrect `Content-Length`. A failed Python download removes the partial file and raises
-`ErrorDownloadingFile`. TypeScript reports connection and streamed-body failures as
-`RemoteFileDownloadError`.
+Automatic S3 downloads stop at 100 MiB, even when the server omits or reports an incorrect
+`Content-Length`. Python removes partial files for transport and filesystem failures and raises
+`ErrorDownloadingFile`; oversized responses raise `ResponseTooLargeError`. In TypeScript, failed
+automatic S3 downloads return `file_downloaded: false`. `RemoteFile` connection failures and
+streamed-body failures raise `RemoteFileDownloadError`.
 
 ## Security for local file paths
 
