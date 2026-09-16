@@ -96,7 +96,8 @@ export async function generateMetadata({
       'reference',
       [],
       'API Reference (v3)',
-      'REST API reference for Composio v3'
+      'REST API reference for Composio v3',
+      { version: 'v3' }
     );
     return {
       title: 'API Reference (v3)',
@@ -112,7 +113,9 @@ export async function generateMetadata({
   if (!page) notFound();
 
   const description = page.data.description || page.data.title;
-  const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, description);
+  const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, description, {
+    version: 'v3',
+  });
 
   return {
     title: page.data.title,

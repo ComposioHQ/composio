@@ -8,7 +8,7 @@ import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
-import { source, referenceSource } from '@/lib/source';
+import { source, referenceSource, getOgImageUrl } from '@/lib/source';
 import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 import { ProductTransitionLoader } from '@/components/product-transition-loader';
 import { DocsProductProvider } from '@/components/docs-product-context';
@@ -35,6 +35,10 @@ const defaultLinks = defaultLinkSlugs.flatMap(({ slug, source: pageSource }) => 
 });
 
 const SITE_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+// Social card copy for the docs homepage. Counts apps rather than tools so it
+// matches the wording on the landing page.
+const HOME_OG_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} apps. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+const HOME_OG_IMAGE = getOgImageUrl('docs', [], 'Composio Docs', HOME_OG_DESCRIPTION);
 
 export const metadata: Metadata = {
   title: {
@@ -48,13 +52,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     siteName: 'Composio Docs',
     type: 'website',
-    images: ['https://docs.composio.dev/api/og?variant=home'],
+    images: [HOME_OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
     description: SITE_DESCRIPTION,
-    images: ['https://docs.composio.dev/api/og?variant=home'],
+    images: [HOME_OG_IMAGE],
   },
 };
 
