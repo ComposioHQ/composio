@@ -609,6 +609,7 @@ class TriggerSubscription(Resource):
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, TriggerEventFilters]] = []
         self._on_subscription_error: t.Optional[SubscriptionErrorCallback] = None
+        self._connection_error: t.Optional[Exception] = None
 
     def handle(
         self, **filters: te.Unpack[TriggerEventFilters]
@@ -812,6 +813,34 @@ class TriggerSubscription(Resource):
                 )
         _ = [future.result() for future in awaitables]
 
+    def _fail_subscription(self, error: Exception) -> None:
+        """Record an establish-time subscription failure and notify the callback.
+
+        Used for failures that happen before any channel event can fire:
+        pysher performs the channel-auth request synchronously inside
+        ``pusher.subscribe()``, so auth failures raise on the websocket thread
+        instead of arriving as ``pusher:subscription_error`` frames. The
+        pending ``connect()`` wait loop re-raises the recorded error instead
+        of spinning to its timeout.
+        """
+        self.logger.error(f"Trigger subscription error: {error}")
+        self._connection_error = error
+        callback = self._on_subscription_error
+        if callback is None:
+            return
+        try:
+            callback({"error": str(error)})
+        except Exception:
+            self.logger.error(
+                f"Error in subscription error callback:\n {traceback.format_exc()}"
+            )
+
+    def _raise_on_connection_error(self) -> None:
+        """Raise the recorded establish-time failure, if any."""
+        error = self._connection_error
+        if error is not None:
+            raise error
+
     def _handle_subscription_error(self, event: str) -> None:
         """Handle a ``pusher:subscription_error`` frame.
 
@@ -1003,12 +1032,22 @@ class _SubcriptionBuilder(WithLogger):
         subscription: TriggerSubscription,
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
-            channel = t.cast(
-                PusherChannel,
-                pusher.subscribe(
-                    channel_name=f"private-{project_id}_triggers",
-                ),
-            )
+            try:
+                channel = t.cast(
+                    PusherChannel,
+                    pusher.subscribe(
+                        channel_name=f"private-{project_id}_triggers",
+                    ),
+                )
+            except Exception as e:
+                # pysher performs the channel-auth request synchronously inside
+                # ``subscribe()``: an auth failure raises here on the websocket
+                # thread before ``pusher:subscription_error`` can fire or
+                # ``set_alive()`` can run. Surface it through the error path
+                # and let the pending ``connect()`` fail fast; the wait loop's
+                # teardown disconnects the pusher.
+                subscription._fail_subscription(e)  # pylint: disable=protected-access
+                return
             channel.bind(
                 event_name="trigger_to_client",
                 callback=subscription._handle_event,
@@ -1081,6 +1120,7 @@ class _SubcriptionBuilder(WithLogger):
         deadline = time.time() + timeout
         try:
             while time.time() < deadline:
+                self.subscription._raise_on_connection_error()  # pylint: disable=protected-access
                 if not self.subscription.is_alive():
                     time.sleep(0.5)
                     continue
@@ -1399,12 +1439,15 @@ class Triggers(Resource):
         Subscribe to a trigger and receive trigger events.
 
         :param timeout: The timeout to wait for the subscription to be established.
-        :param on_subscription_error: Optional callback invoked with the raw Pusher
-            subscription error payload when the channel subscription fails (for
-            example on auth or permission rejection). The subscription is still
-            returned; this callback is the only programmatic signal of the
-            failure. Exceptions raised inside the callback are contained and
-            logged, never rethrown.
+        :param on_subscription_error: Optional callback invoked when the channel
+            subscription fails: with the raw Pusher payload for asynchronous
+            ``pusher:subscription_error`` events (for example a later permission
+            rejection), or with ``{"error": ...}`` for failures raised while
+            establishing the subscription (for example an auth rejection —
+            pysher performs channel auth synchronously). Establish-time failures
+            also make ``subscribe()`` raise the underlying error promptly
+            instead of waiting out the timeout. Exceptions raised inside the
+            callback are contained and logged, never rethrown.
         :return: The trigger subscription handler.
         """
         return _SubcriptionBuilder(client=self._client).connect(

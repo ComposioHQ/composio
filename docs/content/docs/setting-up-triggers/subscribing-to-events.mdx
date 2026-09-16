@@ -66,7 +66,7 @@ await composio.triggers.subscribe(
 );
 ```
 
-In Python, pass the equivalent `on_subscription_error` keyword:
+In Python, pass the equivalent `on_subscription_error` keyword. Failures raised while establishing the subscription (such as an auth rejection) invoke the callback and then re-raise from `subscribe()` instead of timing out:
 
 ```python
 subscription = composio.triggers.subscribe(

@@ -131,7 +131,7 @@ def subscribe(timeout: float = ..., on_subscription_error: Optional[Callable[[Di
 | Name | Type |
 |------|------|
 | `timeout?` | `float` |
-| `on_subscription_error?` | `Optional[Callable[[Dict[str, Any]], None]]` — Optional callback invoked with the raw Pusher subscription error payload when the channel subscription fails (for example on auth or permission rejection). The subscription is still returned; this callback is the only programmatic signal of the failure. Exceptions raised inside the callback are contained and logged, never rethrown. |
+| `on_subscription_error?` | `Optional[Callable[[Dict[str, Any]], None]]` — Optional callback invoked when the channel subscription fails: with the raw Pusher payload for asynchronous `pusher:subscription_error` events, or with `{"error": ...}` for failures raised while establishing the subscription (for example an auth rejection — pysher performs channel auth synchronously). Establish-time failures also make `subscribe()` raise the underlying error promptly instead of waiting out the timeout. Exceptions raised inside the callback are contained and logged, never rethrown. |
 
 **Returns**
 
