@@ -159,11 +159,13 @@ export function parseOgParams(request: Request): OgParams {
   const section = (SECTIONS as readonly string[]).includes(rawSection) ? (rawSection as OgSection) : 'docs';
   const theme: OgTheme = params.get('theme') === 'light' ? 'light' : 'dark';
   const title = clip(params.get('title'), TITLE_MAX) || (section === 'home' ? '' : 'Composio Docs');
+  const description = clip(params.get('description'), DESCRIPTION_MAX);
   return {
     section,
     theme,
     title,
-    description: clip(params.get('description'), DESCRIPTION_MAX),
+    // Some pages fall back to their title as the meta description; never print it twice.
+    description: description.toLowerCase() === title.toLowerCase() ? '' : description,
     logo: safeLogo(params.get('logo'), theme),
     date: clip(params.get('date'), 40) || null,
     version: clip(params.get('version'), 12) || null,

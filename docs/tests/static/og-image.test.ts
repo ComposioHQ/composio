@@ -87,3 +87,10 @@ test('only catalog toolkit titles get the Toolkit suffix', () => {
   expect(toolkitCardTitle('Toolkits')).toBe('Toolkits');
   expect(toolkitCardTitle('Premium Tools')).toBe('Premium Tools');
 });
+
+test('a description that only repeats the title is dropped', () => {
+  const dup = parseOgParams(new Request('https://docs.composio.dev/api/og?section=reference&title=Connected%20Accounts&description=connected%20accounts'));
+  expect(dup.description).toBe('');
+  const real = parseOgParams(new Request('https://docs.composio.dev/api/og?section=reference&title=Connected%20Accounts&description=Manage%20accounts'));
+  expect(real.description).toBe('Manage accounts');
+});
