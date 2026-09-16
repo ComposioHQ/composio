@@ -129,13 +129,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use ChildProcess from effect/unstable/process instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use ChildProcess from effect/unstable/process instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from effect/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from effect/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -144,22 +153,17 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from effect/Path instead." },
+              { "name": "node:path", "message": "Use Path from effect/Path instead." },
               {
-                "name": "@effect/cli",
-                "importNames": ["CommandDescriptor", "Usage"],
-                "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
               }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
-              },
-              {
-                "group": ["@effect/cli/CommandDescriptor", "@effect/cli/Usage"],
-                "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
+                "message": "Use FileSystem from effect/FileSystem instead."
               }
             ]
           }
@@ -209,14 +213,6 @@
           {
             "selector": "MemberExpression[object.name='process'][property.name='stderr']",
             "message": "Write errors and read terminal capabilities through TerminalUI."
-          },
-          {
-            "selector": "ImportExpression[source.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
-            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
-          },
-          {
-            "selector": "CallExpression[callee.name='require'][arguments.0.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
-            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
           }
         ]
       }
@@ -229,50 +225,11 @@
           "error",
           {
             "selector": "MemberExpression[object.name='Effect'][property.name=/^run/]",
-            "message": "Run Effects through @effect/vitest (it.effect, it.scoped, it.live) instead of Effect.run* in tests."
+            "message": "Run Effects through @effect/vitest (it.effect, it.live) instead of Effect.run* in tests."
           },
           {
             "selector": "CallExpression[callee.object.name='Date'][callee.property.name='now']",
             "message": "Tests must be deterministic: pin time with vi.setSystemTime / TestClock-relative fixtures, use crypto.randomUUID() for unique names."
-          }
-        ]
-      }
-    },
-    {
-      "files": ["ts/packages/cli/src/commands/command-introspection.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              { "name": "crypto", "message": "Use Web Crypto API instead." },
-              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
-              { "name": "buffer", "message": "Use Uint8Array instead." },
-              { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
-              {
-                "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
-              },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
-              {
-                "name": "os",
-                "message": "Use an Effect service instead of importing node:os directly."
-              },
-              {
-                "name": "node:os",
-                "message": "Use an Effect service instead of importing node:os directly."
-              },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." }
-            ],
-            "patterns": [
-              {
-                "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
-              }
-            ]
           }
         ]
       }
@@ -288,13 +245,22 @@
               { "name": "node:crypto", "message": "Use Web Crypto API instead." },
               { "name": "buffer", "message": "Use Uint8Array instead." },
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
-              { "name": "child_process", "message": "Use Command from @effect/platform instead." },
+              {
+                "name": "child_process",
+                "message": "Use ChildProcess from effect/unstable/process instead."
+              },
               {
                 "name": "node:child_process",
-                "message": "Use Command from @effect/platform instead."
+                "message": "Use ChildProcess from effect/unstable/process instead."
               },
-              { "name": "fs", "message": "Use FileSystem from @effect/platform instead." },
-              { "name": "node:fs", "message": "Use FileSystem from @effect/platform instead." },
+              {
+                "name": "fs",
+                "message": "Use FileSystem from effect/FileSystem instead."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use FileSystem from effect/FileSystem instead."
+              },
               {
                 "name": "os",
                 "message": "Use an Effect service instead of importing node:os directly."
@@ -303,14 +269,18 @@
                 "name": "node:os",
                 "message": "Use an Effect service instead of importing node:os directly."
               },
-              { "name": "path", "message": "Use Path from @effect/platform instead." },
-              { "name": "node:path", "message": "Use Path from @effect/platform instead." },
+              { "name": "path", "message": "Use Path from effect/Path instead." },
+              { "name": "node:path", "message": "Use Path from effect/Path instead." },
+              {
+                "name": "@effect/platform-bun",
+                "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
               { "name": "zod", "message": "Use Schema from effect for tool input validation." }
             ],
             "patterns": [
               {
                 "group": ["fs/*", "node:fs/*"],
-                "message": "Use FileSystem from @effect/platform instead."
+                "message": "Use FileSystem from effect/FileSystem instead."
               },
               { "group": ["zod/*"], "message": "Use Schema from effect for tool input validation." }
             ]
@@ -361,14 +331,6 @@
           {
             "selector": "MemberExpression[object.name='process'][property.name='stderr']",
             "message": "Write errors and read terminal capabilities through TerminalUI."
-          },
-          {
-            "selector": "ImportExpression[source.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
-            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
-          },
-          {
-            "selector": "CallExpression[callee.name='require'][arguments.0.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
-            "message": "CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead."
           },
           {
             "selector": "ImportExpression[source.value=/^zod(?:\\/|$)/]",

@@ -21,7 +21,7 @@ export const HIDE_DIFF_STATS_CSS = '[data-additions-count],[data-deletions-count
 export function DiffView({
   code,
   ...props
-}: Pick<FileDiffProps<undefined>, 'fileDiff' | 'prerenderedHTML'> & { code?: string }) {
+}: Pick<FileDiffProps<undefined, undefined>, 'fileDiff' | 'prerenderedHTML'> & { code?: string }) {
   return (
     <div className="relative w-full">
       {code ? <CopyButton text={code} className="absolute right-2 top-2 z-10" /> : null}

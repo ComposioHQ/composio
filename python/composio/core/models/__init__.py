@@ -3,9 +3,11 @@ from .connected_accounts import ConnectedAccounts
 from .custom_tool import ExperimentalToolkit
 from .custom_tool_types import (
     CustomTool,
+    ProxyExecuteBinaryData,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
     SessionContext,
+    ToolRouterSessionProxyExecuteResponse,
 )
 from .experimental import ExperimentalAPI
 from .mcp import MCP
@@ -38,6 +40,7 @@ __all__ = [
     "ExperimentalAPI",
     "ExperimentalToolkit",
     "MCP",
+    "ProxyExecuteBinaryData",
     "RegisteredCustomTool",
     "RegisteredCustomToolkit",
     "RemoteFile",
@@ -48,6 +51,7 @@ __all__ = [
     "ToolRouterSession",
     "ToolRouterSessionDeleteResponse",
     "ToolRouterSessionFilesMount",
+    "ToolRouterSessionProxyExecuteResponse",
     "Toolkits",
     "Tools",
     "Triggers",

@@ -1,42 +1,17 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import Image from 'next/image';
 import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
-
-// Composio Logo Component with light/dark mode switching
-function ComposioLogo() {
-  return (
-    <>
-      {/* Light mode logo (black) */}
-      <Image
-        src="/Composio Logo.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="dark:hidden"
-        priority
-      />
-      {/* Dark mode logo (white) */}
-      <Image
-        src="/Composio Logo Dark.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="hidden dark:block"
-        priority
-      />
-    </>
-  );
-}
+import { ProductNavTitle } from '@/components/product-switcher';
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: <ComposioLogo />,
+      title: null,
       transparentMode: 'top',
     },
-    themeSwitch: { enabled: true, mode: 'light-dark-system' },
+    slots: { navTitle: ProductNavTitle },
+    themeSwitch: { enabled: false },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,
@@ -47,6 +22,11 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Docs',
         url: '/docs',
+        active: 'nested-url',
+      },
+      {
+        text: 'Knowledge Base',
+        url: '/kb',
         active: 'nested-url',
       },
       {

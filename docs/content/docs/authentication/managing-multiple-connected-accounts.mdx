@@ -125,7 +125,7 @@ const connectionRequest = await session.authorize("gmail", { alias: "work-gmail"
 </Tab>
 </Tabs>
 
-The direct-execution methods `connectedAccounts.initiate()` and `connectedAccounts.link()` accept the same `alias` parameter.
+The direct-execution methods `connectedAccounts.initiate()` and `connectedAccounts.link()` accept the same `alias` parameter. To create another active connection for the same user and auth config, also pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript.
 
 ### Updating or clearing an alias
 

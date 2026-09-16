@@ -107,9 +107,22 @@ def tst(session: Session):
     session.install("./providers/crewai")
     session.install("./providers/langchain")
     session.install("./providers/langgraph")
-    session.install("./providers/autogen")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")
+
+
+@nox.session
+def tst_autogen(session: Session):
+    """Run Autogen tests in its protobuf-compatible environment."""
+    session.install(".", "--group", "dev")
+    session.install("./providers/autogen")
+    session.run(
+        "pytest",
+        "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults",
+        "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default",
+        "-v",
+        "--tb=short",
+    )
 
 
 @nox.session

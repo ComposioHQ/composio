@@ -25,17 +25,24 @@ _DEFAULT_PRIVATE_KEY_BASENAME = re.compile(
 )
 
 
-def _normalize_path_segments(file_path: t.Union[str, Path]) -> t.List[str]:
-    p = Path(file_path).expanduser()
-    try:
-        resolved = p.resolve()
-    except OSError:
-        resolved = p
-    parts = [part for part in resolved.as_posix().split("/") if part]
+def _path_segments(path: Path) -> list[str]:
+    parts = [part for part in path.as_posix().split("/") if part]
     if parts and parts[0].endswith(":"):
         # Windows path: "C:/Users/..." -> drop drive letter segment
-        parts = parts[1:]
+        return parts[1:]
     return parts
+
+
+def _normalize_path_segments(
+    file_path: str | Path,
+) -> tuple[list[str], list[str]]:
+    """Return resolved and written segments so neither can hide a denied name."""
+    written = Path(file_path).expanduser().absolute()
+    try:
+        resolved = written.resolve()
+    except OSError:
+        resolved = written
+    return _path_segments(resolved), _path_segments(written)
 
 
 def _get_block_reason(
@@ -46,23 +53,25 @@ def _get_block_reason(
     deny: t.Set[str] = {s.lower() for s in BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS}
     deny.update(s.lower() for s in extra)
 
-    segments = _normalize_path_segments(file_path)
-    # Case-insensitive segment match: lower each path component once per check.
-    for seg, key in zip(segments, (s.lower() for s in segments), strict=True):
-        if key in deny:
-            return f'path segment "{seg}" is in the sensitive file upload denylist'
+    resolved_segments, written_segments = _normalize_path_segments(file_path)
+    for segments in (resolved_segments, written_segments):
+        # Case-insensitive segment match: lower each path component once per check.
+        for seg, key in zip(segments, (s.lower() for s in segments), strict=True):
+            if key in deny:
+                return f'path segment "{seg}" is in the sensitive file upload denylist'
 
-    if not segments:
-        return None
-    basename = segments[-1]
-    if _SECRET_LIKE_BASENAME.search(basename) or _DEFAULT_PRIVATE_KEY_BASENAME.match(
-        basename
-    ):
-        return (
-            f'file name "{basename}" looks like a credential, env, or private key file'
-        )
-    if basename.lower() == "credentials":
-        return 'file name "credentials" is often used for cloud/API credential stores'
+    for segments in (resolved_segments, written_segments):
+        if not segments:
+            continue
+        basename = segments[-1]
+        if _SECRET_LIKE_BASENAME.search(
+            basename
+        ) or _DEFAULT_PRIVATE_KEY_BASENAME.match(basename):
+            return f'file name "{basename}" looks like a credential, env, or private key file'
+        if basename.lower() == "credentials":
+            return (
+                'file name "credentials" is often used for cloud/API credential stores'
+            )
     return None
 
 

@@ -27,12 +27,12 @@ describe('CLI: composio orgs switch', () => {
     analyticsMocks.linkCalls.length = 0;
   });
 
-  const testConfigProvider = ConfigProvider.fromMap(
-    new Map([['COMPOSIO_USER_API_KEY', 'uak_switch_test']])
-  ).pipe(extendConfigProvider);
+  const testConfigProvider = ConfigProvider.fromEnvRecord({
+    COMPOSIO_USER_API_KEY: 'uak_switch_test',
+  }).pipe(extendConfigProvider);
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
-    it.scoped('[Then] links analytics to the selected org membership', () =>
+    it.effect('[Then] links analytics to the selected org membership', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(
           async (_requestInput: RequestInfo | URL, init?: RequestInit) => {

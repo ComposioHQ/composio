@@ -1,5 +1,20 @@
 # @composio/openai-agents
 
+## 0.11.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
+## 0.10.2
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+- 9692db5: `OpenAIAgentsProvider({ strict: true })` now takes effect: tools are registered with `strict: true` and a schema normalized for OpenAI structured outputs (every property required, optional ones accept `null`), a `null` argument the tool's own schema does not accept is dropped before execution, and tools whose schema strict mode cannot express are registered without strict mode with a warning. The option was previously ignored.
+
 ## 0.10.1
 
 ### Patch Changes

@@ -39,6 +39,8 @@ Client configuration changes over time. Before giving client-specific steps, fet
 https://docs.composio.dev/docs/composio-connect.md
 ```
 
+Keep current documentation and CLI or tool schemas as the primary sources. If they do not answer a For You support question, query `https://docs.composio.dev/api/knowledge-search?q=<question>`. Results may be canonical docs, KB, toolkit, example, or reference pages. Use the returned evidence; do not infer the live state of a user's account, connection, or tool call from public records.
+
 For any other MCP-capable client, configure HTTP transport with the endpoint and, when required, the `x-consumer-api-key` header. Keep credentials out of committed configuration.
 
 ### Terminal agents

@@ -28,6 +28,10 @@ const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
   'utf8'
 );
+const tsTestWorkflow = readFileSync(
+  new URL('../.github/workflows/ts.test.yml', import.meta.url),
+  'utf8'
+);
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
@@ -131,6 +135,34 @@ function readDocumentedSdkVersions(sdkLabel) {
   }
 
   return readSdkVersions(rows);
+}
+
+function readTypeScriptWorkspacePackages() {
+  const workspacePackages = [];
+
+  for (const workspacePattern of packageJson.workspaces ?? []) {
+    if (!workspacePattern.startsWith('ts/packages/')) continue;
+
+    const workspacePaths = workspacePattern.endsWith('/*')
+      ? readdirSync(new URL(`../${workspacePattern.slice(0, -2)}/`, import.meta.url), {
+          withFileTypes: true,
+        })
+          .filter(entry => entry.isDirectory())
+          .map(entry => `${workspacePattern.slice(0, -1)}${entry.name}`)
+      : [workspacePattern];
+
+    for (const workspacePath of workspacePaths) {
+      const manifestUrl = new URL(`../${workspacePath}/package.json`, import.meta.url);
+      if (!existsSync(manifestUrl)) continue;
+
+      workspacePackages.push({
+        manifest: JSON.parse(readFileSync(manifestUrl, 'utf8')),
+        path: `${workspacePath}/package.json`,
+      });
+    }
+  }
+
+  return workspacePackages;
 }
 
 function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
@@ -258,7 +290,7 @@ touch "$target/dist/provider.whl"
   }
 }
 
-if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
+if (!tsReleaseWorkflow.includes('publish-script: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
 }
 
@@ -268,6 +300,25 @@ if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-re
 
 if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
   throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+if (
+  packageJson.scripts?.['check:provider-compatibility'] !==
+  'tsx ts/scripts/check-provider-compatibility.ts'
+) {
+  throw new Error('check:provider-compatibility must use the packed consumer harness');
+}
+
+const tsTestBuildIdx = tsTestWorkflow.indexOf('run: pnpm run build:packages');
+const tsTestProviderCompatibilityIdx = tsTestWorkflow.indexOf(
+  'run: pnpm run check:provider-compatibility'
+);
+if (
+  tsTestBuildIdx === -1 ||
+  tsTestProviderCompatibilityIdx === -1 ||
+  tsTestBuildIdx > tsTestProviderCompatibilityIdx
+) {
+  throw new Error('ts.test.yml must build packages before checking packed provider compatibility');
 }
 
 {
@@ -336,6 +387,27 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
+if (
+  !tsReleaseWorkflow.includes('changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2')
+) {
+  throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
+}
+
+for (const input of [
+  'github-token: ${{ steps.app-token.outputs.token }}',
+  'publish-script: pnpm changeset:release',
+  "commit-message: 'Release: update version'",
+  "pr-title: 'Release: update version'",
+]) {
+  if (!tsReleaseWorkflow.includes(input)) {
+    throw new Error(`ts.release.yml must use the changesets/action v2 ${input} input`);
+  }
+}
+
+if (!tsReleaseWorkflow.includes('steps.changesets.outputs.published-packages')) {
+  throw new Error('ts.release.yml must read the changesets/action v2 published-packages output');
+}
+
 if (changesetConfig.baseBranch !== 'next') {
   throw new Error('changesets must compare against next, the active release branch');
 }
@@ -347,6 +419,28 @@ if (
   throw new Error(
     'changesets must only major-bump peer dependents when the new dependency version leaves their declared peer range'
   );
+}
+
+{
+  const MIN_NODE_VERSION = '>=22.22.3';
+  const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
+    ({ manifest }) => manifest.private !== true
+  );
+  const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
+    ({ manifest }) => manifest.engines?.node !== MIN_NODE_VERSION
+  );
+
+  if (publicTsReleaseWorkspaces.length === 0) {
+    throw new Error('Node.js engine validation must discover public TypeScript workspaces');
+  }
+  if (invalidNodeEngines.length > 0) {
+    const details = invalidNodeEngines
+      .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
+      .join('\n');
+    throw new Error(
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
+    );
+  }
 }
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
@@ -425,9 +519,9 @@ if (!releaseScript.includes('pnpm changeset publish')) {
   throw new Error('release script must still publish non-CLI changeset packages');
 }
 
-if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
+if (!releaseScript.includes('CHANGESETS_OUTPUT')) {
   throw new Error(
-    'release script must filter @composio/cli tag output before changesets/action creates GitHub releases'
+    'release script must filter @composio/cli Changesets v3 output before changesets/action creates GitHub releases'
   );
 }
 
@@ -594,6 +688,15 @@ if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.rel
 // below) rather than inline YAML bash, so the branching logic is reviewable and testable.
 if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release-target.sh')) {
   throw new Error('build-cli-binaries.yml prepare job must delegate to resolve-release-target.sh');
+}
+if (buildCliWorkflow.includes('needs.prepare.outputs.checkout_ref')) {
+  throw new Error('CLI release jobs must not execute a ref derived from workflow inputs');
+}
+if ((buildCliWorkflow.match(/ref: \$\{\{ github\.sha \}\}/g) ?? []).length < 2) {
+  throw new Error('CLI build and release jobs must check out the selected workflow commit');
+}
+if (buildCliWorkflow.includes('beta_tag:')) {
+  throw new Error('stable promotion must select the beta through the immutable workflow ref');
 }
 
 // Release archives contain a composio-<target>/ bundle with runtime support files next to the
@@ -781,17 +884,27 @@ for (const guide of mirroredUninstallGuides) {
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
 try {
   const fakePnpmPath = join(fakeBin, 'pnpm');
+  const changesetsOutputPath = join(fakeBin, 'changesets-output.ndjson');
+  const commandLogPath = join(fakeBin, 'commands.log');
+  writeFileSync(commandLogPath, '');
   writeFileSync(
     fakePnpmPath,
     `#!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$*" >> "$COMMAND_LOG"
 case "$*" in
   "run build:packages")
     exit 0
     ;;
+  "run check:provider-compatibility")
+    if [[ "\${FAIL_PROVIDER_COMPATIBILITY:-}" == "1" ]]; then
+      exit 42
+    fi
+    exit 0
+    ;;
   "changeset publish")
-    echo 'New tag: @composio/core@1.2.3'
-    echo 'New tag: @composio/cli@9.9.9'
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/core@1.2.3","packageName":"@composio/core"}' > "$CHANGESETS_OUTPUT"
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/cli@9.9.9","packageName":"@composio/cli"}' >> "$CHANGESETS_OUTPUT"
     echo 'release warning preserved' >&2
     exit 0
     ;;
@@ -806,7 +919,12 @@ esac
 
   const result = spawnSync('bash', [releaseScriptPath], {
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH}` },
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
   });
 
   if (result.status !== 0) {
@@ -815,16 +933,49 @@ esac
     );
   }
 
-  if (!result.stdout.includes('New tag: @composio/core@1.2.3')) {
-    throw new Error('release script must preserve non-CLI changeset tags');
-  }
-
-  if (result.stdout.includes('@composio/cli@9.9.9')) {
-    throw new Error('release script must hide @composio/cli tags from changesets/action');
+  const outputEvents = readFileSync(changesetsOutputPath, 'utf8')
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line));
+  if (
+    outputEvents.length !== 1 ||
+    outputEvents[0].packageName !== '@composio/core' ||
+    outputEvents[0].tag !== '@composio/core@1.2.3'
+  ) {
+    throw new Error('release script must retain only non-CLI Changesets v3 git-tag events');
   }
 
   if (!result.stderr.includes('release warning preserved')) {
     throw new Error('release script must preserve changeset publish stderr');
+  }
+
+  const commands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (
+    JSON.stringify(commands) !==
+    JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
+  ) {
+    throw new Error(
+      `release script must run build → provider compatibility → publish: ${commands}`
+    );
+  }
+
+  writeFileSync(commandLogPath, '');
+  const failedCompatibility = spawnSync('bash', [releaseScriptPath], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      FAIL_PROVIDER_COMPATIBILITY: '1',
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
+  });
+  const failedCommands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (failedCompatibility.status !== 42) {
+    throw new Error('release script must preserve a provider compatibility gate failure');
+  }
+  if (failedCommands.includes('changeset publish')) {
+    throw new Error('release script must not publish after provider compatibility fails');
   }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
@@ -853,6 +1004,7 @@ esac
         2
       )
     );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
     writeFileSync(
       join(fixtureDir, '.changeset/config.json'),
       JSON.stringify(
@@ -1168,17 +1320,37 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
 }
 
+// promote-stable must run at a beta tag, never accept a release candidate through an input.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      REF_TYPE: 'branch',
+      REF_NAME: 'next',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'abc123',
+    },
+  });
+  if (r.status === 0 || !r.stderr.includes('must be dispatched at the beta tag')) {
+    throw new Error('promote-stable must reject branch-scoped dispatches');
+  }
+}
+
 // promote-stable must REFUSE a tag that is already published (isDraft=false) and emit nothing.
 {
   const r = runResolver({
     env: {
       EVENT_NAME: 'workflow_dispatch',
       ACTION_INPUT: 'promote-stable',
-      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
       GITHUB_TOKEN: 'fake-token',
       REPOSITORY: 'ComposioHQ/composio',
       RUN_NUMBER: '1',
-      COMMIT_SHA: 'unused',
+      COMMIT_SHA: 'abc123',
     },
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     ghViewIsDraft: 'false',
@@ -1194,17 +1366,18 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
 }
 
-// promote-stable happy path: no existing release ⇒ emit a stable target off the beta's commitish.
+// promote-stable happy path: the selected beta tag and release target the same commit.
 {
   const r = runResolver({
     env: {
       EVENT_NAME: 'workflow_dispatch',
       ACTION_INPUT: 'promote-stable',
-      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
       GITHUB_TOKEN: 'fake-token',
       REPOSITORY: 'ComposioHQ/composio',
       RUN_NUMBER: '1',
-      COMMIT_SHA: 'unused',
+      COMMIT_SHA: 'abc123',
     },
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     // ghViewIsDraft unset ⇒ `gh release view` exits non-zero ⇒ no existing release to refuse.
@@ -1218,10 +1391,28 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   if (r.outputs.prerelease !== 'false' || r.outputs.make_latest !== 'true') {
     throw new Error('promote-stable must emit prerelease=false and make_latest=true');
   }
-  if (r.outputs.checkout_ref !== 'abc123') {
-    throw new Error(
-      `promote-stable must check out the beta's target_commitish, got ${r.outputs.checkout_ref}`
-    );
+  if ('checkout_ref' in r.outputs) {
+    throw new Error('promote-stable must not emit an input-derived checkout ref');
+  }
+}
+
+// A tag/release mismatch must fail before any build can run from the selected commit.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'selected123',
+    },
+    curlFixture: { prerelease: true, target_commitish: 'release456' },
+  });
+  if (r.status === 0 || !r.stderr.includes('but its release targets')) {
+    throw new Error('promote-stable must reject a beta tag/release commit mismatch');
   }
 }
 

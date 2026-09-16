@@ -1,12 +1,13 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { getVersion } from 'src/effects/version';
 import { getUpdateStatus } from 'src/services/update-check';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, cyanBright } from 'src/ui/colors';
 
-const check = Options.boolean('check').pipe(
-  Options.withDescription(
+const check = Flag.boolean('check').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Check for a newer stable release and print a machine-readable JSON status ' +
       '({current, latestStable, updateAvailable, checkStatus, lastChecked}). ' +
       'Refreshes the release cache when it is older than 24 hours.'

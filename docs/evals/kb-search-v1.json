@@ -1,0 +1,190 @@
+{
+  "sourceCommit": "d57f3d69079ee3819f4136df54512cdf0416cec0",
+  "cases": [
+  {
+    "id": "structural-connect-claude",
+    "kind": "paraphrase",
+    "query": "how to connect to claude",
+    "expectedUrls": [],
+    "expectedSourceTypes": ["docs"]
+  },
+  {
+    "id": "structural-calendly-action-source",
+    "kind": "exact",
+    "query": "CALENDLY_POST_INVITEE",
+    "expectedUrls": [],
+    "expectedSourceTypes": ["toolkit", "reference"]
+  },
+  {
+    "id": "structural-google-tasks-401",
+    "kind": "paraphrase",
+    "query": "Google Tasks tool calls return 401",
+    "expectedUrls": [],
+    "expectedSourceTypes": ["kb"]
+  },
+  {
+    "id": "structural-connect-mcp-google-drive",
+    "kind": "paraphrase",
+    "query": "Connect MCP meta-tools Google Drive",
+    "expectedUrls": [],
+    "expectedSourceTypes": ["kb", "docs"]
+  },
+  {
+    "id": "structural-session-authorize-callback",
+    "kind": "paraphrase",
+    "query": "session.authorize callback URL",
+    "expectedUrls": [],
+    "expectedSourceTypes": ["docs", "reference"]
+  },
+  {
+    "id": "exact-calendly-action",
+    "kind": "exact",
+    "query": "CALENDLY_POST_INVITEE",
+    "expectedUrls": ["/kb/guide/toolkits-calendly"]
+  },
+  {
+    "id": "exact-linkedin-version-error",
+    "kind": "exact",
+    "query": "NONEXISTENT_VERSION",
+    "expectedUrls": ["/kb/guide/toolkits-linkedin"]
+  },
+  {
+    "id": "exact-stripe-subscription-action",
+    "kind": "exact",
+    "query": "STRIPE_LIST_SUBSCRIPTIONS",
+    "expectedUrls": ["/kb/guide/toolkits-stripe"]
+  },
+  {
+    "id": "exact-linkedin-company-action",
+    "kind": "exact",
+    "query": "LINKEDIN_GET_COMPANY_INFO",
+    "expectedUrls": ["/kb/guide/toolkits-linkedin"]
+  },
+  {
+    "id": "exact-snowflake-refresh-setting",
+    "kind": "exact",
+    "query": "OAUTH_ISSUE_REFRESH_TOKENS",
+    "expectedUrls": ["/kb/guide/toolkits-snowflake"]
+  },
+  {
+    "id": "exact-tool-router-file-helper",
+    "kind": "exact",
+    "query": "get_mount_file_s3_key",
+    "expectedUrls": ["/kb/guide/mcp-tool-router-files"]
+  },
+  {
+    "id": "exact-google-calendar-alias",
+    "kind": "exact",
+    "query": "primary",
+    "expectedUrls": ["/kb/guide/toolkits-google-calendar"]
+  },
+  {
+    "id": "exact-odoo-json-rpc",
+    "kind": "exact",
+    "query": "JSON-RPC",
+    "expectedUrls": ["/kb/guide/toolkits-odoo"]
+  },
+  {
+    "id": "paraphrase-google-calendar-me",
+    "kind": "paraphrase",
+    "query": "Why does the signed-in user alias fail when I pass it as a calendar id?",
+    "expectedUrls": ["/kb/guide/toolkits-google-calendar"]
+  },
+  {
+    "id": "paraphrase-snowflake-account-format",
+    "kind": "paraphrase",
+    "query": "What value from my Snowflake hostname belongs in the account field?",
+    "expectedUrls": ["/kb/guide/toolkits-snowflake"]
+  },
+  {
+    "id": "paraphrase-session-file-input",
+    "kind": "paraphrase",
+    "query": "How do I give a file created in the agent sandbox to a toolkit action?",
+    "expectedUrls": ["/kb/guide/mcp-tool-router-files"]
+  },
+  {
+    "id": "paraphrase-expired-oauth",
+    "kind": "paraphrase",
+    "query": "A customer's integration keeps losing access even after they reconnect",
+    "expectedUrls": ["/kb/guide/platform-connected-accounts"]
+  },
+  {
+    "id": "paraphrase-odoo-hidden-error",
+    "kind": "paraphrase",
+    "query": "The request says success with status 200 but the ERP operation actually failed",
+    "expectedUrls": ["/kb/guide/toolkits-odoo"]
+  },
+  {
+    "id": "paraphrase-mfa-countdown",
+    "kind": "paraphrase",
+    "query": "The authenticator QR disappears before I can scan it",
+    "expectedUrls": ["/kb/guide/dashboard-login-restrictions"]
+  },
+  {
+    "id": "paraphrase-no-payload-retention",
+    "kind": "paraphrase",
+    "query": "Why can I still see an execution entry after disabling data storage?",
+    "expectedUrls": ["/kb/guide/dashboard-log-storage"]
+  },
+  {
+    "id": "paraphrase-expired-download",
+    "kind": "paraphrase",
+    "query": "A file returned by a tool worked earlier but its download link is expired now",
+    "expectedUrls": ["/kb/guide/platform-file-storage"]
+  },
+  {
+    "id": "paraphrase-pagination-cap",
+    "kind": "paraphrase",
+    "query": "Can every list action return the same maximum number of records per page?",
+    "expectedUrls": ["/kb/guide/platform-pagination"]
+  },
+  {
+    "id": "paraphrase-linkedin-company-forbidden",
+    "kind": "paraphrase",
+    "query": "Personal LinkedIn calls work but posting for the company page is forbidden",
+    "expectedUrls": ["/kb/guide/toolkits-linkedin"]
+  },
+  {
+    "id": "paraphrase-stripe-key-type",
+    "kind": "paraphrase",
+    "query": "Stripe rejects the browser-safe key I copied into an API key connection",
+    "expectedUrls": ["/kb/guide/toolkits-stripe"]
+  },
+  {
+    "id": "paraphrase-slack-permission",
+    "kind": "paraphrase",
+    "query": "A Slack app can read messages but cannot reply inside a conversation",
+    "expectedUrls": ["/kb/guide/toolkits-slack"]
+  },
+  {
+    "id": "no-answer-pizza",
+    "kind": "no-answer",
+    "query": "Where can I get the best deep dish pizza tonight?",
+    "expectedUrls": []
+  },
+  {
+    "id": "no-answer-sports",
+    "kind": "no-answer",
+    "query": "Who won the basketball championship this season?",
+    "expectedUrls": []
+  },
+  {
+    "id": "no-answer-poem",
+    "kind": "no-answer",
+    "query": "Write a sonnet about a lighthouse in winter",
+    "expectedUrls": []
+  },
+  {
+    "id": "no-answer-algorithm",
+    "kind": "no-answer",
+    "query": "Explain how to implement merge sort in JavaScript",
+    "expectedUrls": []
+  },
+  {
+    "id": "no-answer-weather",
+    "kind": "no-answer",
+    "query": "Will it rain in San Francisco tomorrow afternoon?",
+    "expectedUrls": []
+  }
+  ]
+}

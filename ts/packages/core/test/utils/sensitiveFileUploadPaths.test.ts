@@ -93,4 +93,62 @@ describe('sensitiveFileUploadPaths', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // The inverse of the case above: realpath moves the denied segment *out* of
+  // the path instead of into it. Dotfile managers (chezmoi, stow, yadm) and
+  // containerised home directories lay `~/.claude -> /state/claude` out exactly
+  // this way, so matching only the resolved path turned the denylist off for
+  // them.
+  it('blocks a sensitive directory that is itself a symlink to a plain path', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-dir-'));
+    try {
+      const store = path.join(root, 'state', 'claude');
+      mkdirSync(store, { recursive: true });
+      writeFileSync(path.join(store, 'settings.json'), '{}');
+      const home = path.join(root, 'home');
+      mkdirSync(home, { recursive: true });
+      const link = path.join(home, '.claude');
+      symlinkSync(store, link);
+
+      expect(isBlockedSensitiveFileUploadPath(path.join(link, 'settings.json'))).toBe(true);
+      expect(() => assertSafeFileUploadPath(path.join(link, 'settings.json'))).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // Same hiding trick applied to the basename rather than a directory segment:
+  // the written name is `.env`, the resolved one is not.
+  it('blocks a denied basename whose symlink target is named innocuously', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-base-'));
+    try {
+      const store = path.join(root, 'store');
+      mkdirSync(store, { recursive: true });
+      const target = path.join(store, 'plain-config');
+      writeFileSync(target, 'SECRET=1');
+      const project = path.join(root, 'project');
+      mkdirSync(project, { recursive: true });
+      const link = path.join(project, '.env');
+      symlinkSync(target, link);
+
+      expect(isBlockedSensitiveFileUploadPath(link)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('still allows an ordinary file reached through a symlinked directory', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-symlink-ok-'));
+    try {
+      const store = path.join(root, 'store');
+      mkdirSync(store, { recursive: true });
+      writeFileSync(path.join(store, 'document.pdf'), 'x');
+      const link = path.join(root, 'docs');
+      symlinkSync(store, link);
+
+      expect(isBlockedSensitiveFileUploadPath(path.join(link, 'document.pdf'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

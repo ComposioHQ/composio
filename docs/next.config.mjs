@@ -31,13 +31,19 @@ const config = {
   // them present on disk, fumadocs-openapi throws
   // `[OpenAPI] Failed to resolve input` and the route 500s in production
   // (it works at build time only because `public/` exists at the project root).
-  // Explicitly trace the specs into every route that may resolve them at runtime.
+  // Explicitly trace runtime-loaded corpora into every route that may resolve
+  // them. The KB repository and search service also read paths assembled from
+  // manifest data, so relying on automatic tracing would make those bundles
+  // fragile if their path construction changes.
   outputFileTracingIncludes: {
     '/reference/**': [...OPENAPI_SPEC_FILES],
     '/reference/v3/**': [...OPENAPI_SPEC_FILES],
     '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
+    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
+    '/kb/**': ['./kb/**'],
+    '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
   },
   images: {
     // Enable modern image formats for better compression
@@ -217,6 +223,17 @@ const config = {
       {
         source: '/docs/sandbox',
         destination: '/docs/sandbox/remote',
+        permanent: true,
+      },
+      // Preserve machine-readable release notes before the legacy HTML redirects.
+      {
+        source: '/docs/changelog/:path*.md',
+        destination: '/llms.mdx/docs/changelog/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*.mdx',
+        destination: '/llms.mdx/docs/changelog/:path*',
         permanent: true,
       },
       {

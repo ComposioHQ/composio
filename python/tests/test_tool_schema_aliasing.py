@@ -351,6 +351,24 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
         user_id="user",
     )
 
+    session = Mock()
+    session.execute.return_value = SimpleNamespace(
+        data={"ok": True}, error=None, log_id="log-session"
+    )
+    provider.execute_tool.reset_mock()
+    result = provider.execute_tool_call(session=session, tool_call=tool_call)
+
+    session.execute.assert_called_once_with(
+        tool_slug="TOOL_WITH_ODATA",
+        arguments={
+            "$top": 10,
+            "@microsoft.graph.conflictBehavior": "rename",
+            long_name: "value",
+        },
+    )
+    provider.execute_tool.assert_not_called()
+    assert result == {"data": {"ok": True}, "error": None, "successful": True}
+
 
 def test_claude_agent_sdk_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
     claude_agent_sdk_module = types.ModuleType("claude_agent_sdk")

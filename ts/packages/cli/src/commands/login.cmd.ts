@@ -1,5 +1,6 @@
-import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import { Command, Flag } from 'effect/unstable/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {
@@ -16,6 +17,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
@@ -30,52 +32,52 @@ import {
   type AgentIdentity,
 } from 'src/services/agents';
 
-export const noBrowser = Options.boolean('no-browser').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Login without browser interaction')
+export const noBrowser = Flag.boolean('no-browser').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Login without browser interaction')
 );
 
-const pollOpt = Options.boolean('poll').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Poll the most recent pending browser login and complete it')
+const pollOpt = Flag.boolean('poll').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Poll the most recent pending browser login and complete it')
 );
 
-const noWait = Options.boolean('no-wait').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const noWait = Flag.boolean('no-wait').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Print login URL and session info, then exit without opening browser or waiting'
   )
 );
 
-const keyOpt = Options.text('key').pipe(
-  Options.withDescription('Poll and complete login using the session key from composio login'),
-  Options.optional
+const keyOpt = Flag.string('key').pipe(
+  Flag.withDescription('Poll and complete login using the session key from composio login'),
+  Flag.optional
 );
 
-const userApiKeyOpt = Options.text('user-api-key').pipe(
-  Options.withDescription('Log in directly with a Composio user API key'),
-  Options.optional
+const userApiKeyOpt = Flag.string('user-api-key').pipe(
+  Flag.withDescription('Log in directly with a Composio user API key'),
+  Flag.optional
 );
 
-const orgOpt = Options.text('org').pipe(
-  Options.withDescription('Current organization ID or name to store for CLI commands'),
-  Options.optional
+const orgOpt = Flag.string('org').pipe(
+  Flag.withDescription('Current organization ID or name to store for CLI commands'),
+  Flag.optional
 );
 
-const yesOpt = Options.boolean('yes').pipe(
-  Options.withAlias('y'),
-  Options.withDefault(false),
-  Options.withDescription('Skip org picker; use current org')
+const yesOpt = Flag.boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Skip org picker; use current org')
 );
 
-const noSkillInstall = Options.boolean('no-skill-install').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Skip installing the composio-cli skill for Claude Code')
+const noSkillInstall = Flag.boolean('no-skill-install').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
-const agentOpt = Options.boolean('agent').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Sign up or log in using a Composio agent identity')
+const agentOpt = Flag.boolean('agent').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Sign up or log in using a Composio agent identity')
 );
 
 const PENDING_LOGIN_FILE_NAME = 'pending-login-session.json';
@@ -115,7 +117,22 @@ class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganiz
   readonly requestedOrg: string;
 }> {}
 
-const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+class LoginOptionError extends Data.TaggedError('commands/LoginOptionError')<{
+  readonly message: string;
+}> {}
+
+/**
+ * v4 migration note: v3's `ValidationError.invalidValue(HelpDoc.p(message))` produced a value
+ * that `@effect/cli`'s `Command.run` printed to stderr and mapped to exit code 1 itself.
+ * `effect/unstable/cli`'s `CliError.InvalidValue` is now a fixed flag/argument-name-and-value
+ * struct (see `CliError.ts`) built by the parser, not a freeform validation message constructor,
+ * and `Command.runWith` only renders errors it produces during parsing — it does not intercept or
+ * render failures raised from inside a command handler. A plain typed domain error (matching the
+ * `LoginSessionError`/`PendingLoginError` pattern already used in this file) instead flows through
+ * the CLI's normal `effect-errors` renderer at the top level (see `cli-main.ts`), so this must not
+ * print the message itself — that would double-print alongside that renderer.
+ */
+const invalidOptionValue = (message: string) => new LoginOptionError({ message });
 
 const pendingLoginPath = Effect.gen(function* () {
   const path = yield* Path.Path;
@@ -131,7 +148,11 @@ const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>
       ...session,
       cachedAt: new Date().toISOString(),
     };
-    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+    yield* atomicWritePrivateFileString({
+      fs,
+      target: filePath,
+      contents: `${JSON.stringify(payload, null, 2)}\n`,
+    });
   });
 
 const clearPendingLoginSession = Effect.gen(function* () {
@@ -151,7 +172,8 @@ const readPendingLoginSession = Effect.gen(function* () {
     });
   }
 
-  const rawSession = yield* fs.readFileString(filePath, 'utf8').pipe(
+  const rawSession = yield* ensurePrivateFileMode({ fs, target: filePath }).pipe(
+    Effect.andThen(fs.readFileString(filePath, 'utf8')),
     Effect.mapError(
       cause =>
         new PendingLoginError({
@@ -161,7 +183,7 @@ const readPendingLoginSession = Effect.gen(function* () {
         })
     )
   );
-  const session = yield* Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))(
+  const session = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(PendingLoginSession))(
     rawSession
   ).pipe(
     Effect.mapError(
@@ -541,10 +563,17 @@ const loginWithKey = (params: {
               status: currentSession.status,
             });
           }),
-          Schedule.exponential('0.3 seconds').pipe(
-            Schedule.intersect(Schedule.recurs(params.pollRetries ?? 15)),
-            Schedule.intersect(Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`))
-          )
+          {
+            // v4 dropped `Schedule.intersect`/`Schedule.recurs`; `Schedule.max` recurs while every
+            // schedule in the list still wants to and waits for the slowest one between attempts
+            // (the v4 equivalent of intersecting delay-producing schedules), and the retry count
+            // cap moves onto `Effect.retry`'s own `times` option.
+            schedule: Schedule.max([
+              Schedule.exponential('0.3 seconds'),
+              Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`),
+            ]),
+            times: params.pollRetries ?? 15,
+          }
         ).pipe(
           Effect.tap(() => spinner.stop('Login successful')),
           Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
@@ -564,7 +593,7 @@ const loginWithKey = (params: {
           apiKey: uakApiKey,
         }).pipe(
           Effect.map(response => response.data),
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to list organizations after login:', error);
               return [];
@@ -594,7 +623,7 @@ const loginWithKey = (params: {
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
       }).pipe(
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Org picker failed:', error);
             yield* ui.log.warn('Could not load org list. Using current org.');
@@ -754,10 +783,13 @@ export const browserLogin = (params: {
             status: currentSession.status,
           });
         }),
-        Schedule.exponential('0.3 seconds').pipe(
-          Schedule.intersect(Schedule.recurs(15)),
-          Schedule.intersect(Schedule.spaced('5 seconds'))
-        )
+        {
+          schedule: Schedule.max([
+            Schedule.exponential('0.3 seconds'),
+            Schedule.spaced('5 seconds'),
+          ]),
+          times: 15,
+        }
       ).pipe(
         Effect.tap(() => spinner.stop('Login successful')),
         Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
@@ -798,7 +830,7 @@ export const browserLogin = (params: {
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
       }).pipe(
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Org picker failed:', error);
             yield* ui.log.warn('Could not load org list. Using current org.');
@@ -889,39 +921,31 @@ export const loginCmd = Command.make(
       }
 
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
-        return yield* Effect.fail(
-          invalidOptionValue('Use either `--key` or `--user-api-key`, not both.')
-        );
+        return yield* invalidOptionValue('Use either `--key` or `--user-api-key`, not both.');
       }
 
       if (
         poll &&
         (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
       ) {
-        return yield* Effect.fail(
-          invalidOptionValue(
-            '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
-          )
+        return yield* invalidOptionValue(
+          '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
         );
       }
 
       if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
-        return yield* Effect.fail(
-          invalidOptionValue(
-            '`--agent` cannot be combined with browser, session, or direct-login flags.'
-          )
+        return yield* invalidOptionValue(
+          '`--agent` cannot be combined with browser, session, or direct-login flags.'
         );
       }
 
       if (Option.isSome(org) && Option.isNone(userApiKey)) {
-        return yield* Effect.fail(invalidOptionValue('`--org` requires `--user-api-key`.'));
+        return yield* invalidOptionValue('`--org` requires `--user-api-key`.');
       }
 
       if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
-        return yield* Effect.fail(
-          invalidOptionValue(
-            '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
-          )
+        return yield* invalidOptionValue(
+          '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
         );
       }
 

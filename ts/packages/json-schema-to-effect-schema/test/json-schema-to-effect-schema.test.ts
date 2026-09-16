@@ -56,6 +56,17 @@ describe('jsonSchemaToEffectSchema', () => {
     expectParity({ type: 'string', format: 'ip' }, 'not-an-ip', false);
   });
 
+  it('honors the boolean exclusive bound under an explicit Draft 4', () => {
+    const schema = { type: 'number', minimum: 1, exclusiveMinimum: true } satisfies JsonSchema;
+    const accepts = (input: unknown, draft?: '4'): boolean =>
+      Option.isSome(Schema.decodeUnknownOption(jsonSchemaToEffectSchema(schema, { draft }))(input));
+
+    expect(accepts(1, '4')).toBe(false);
+    expect(accepts(2, '4')).toBe(true);
+    expect(accepts(1)).toBe(false);
+    expect(accepts(2)).toBe(true);
+  });
+
   it('supports JSON Schema composition without generated code', () => {
     const schema = {
       type: 'object',

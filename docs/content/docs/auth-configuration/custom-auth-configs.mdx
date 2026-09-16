@@ -79,8 +79,12 @@ Examples for Google and GitHub:
 When creating your OAuth app, make sure to configure the Authorized Redirect URI to point to the Composio callback URL below:
 
 ```
-https://backend.composio.dev/api/v3.1/toolkits/auth/callback
+https://backend.composio.dev/api/v3/toolkits/auth/callback
 ```
+
+<Callout type="info" title="Match the redirect URI">
+The redirect URI in your OAuth app must exactly match `oauth_redirect_uri` in your Composio auth config. Some toolkit defaults still use `https://backend.composio.dev/api/v1/auth-apps/add`, which remains supported. To use the URL above, set it explicitly in both places to avoid `redirect_uri_mismatch` errors.
+</Callout>
 </Step>
 
 <Step>
@@ -91,7 +95,8 @@ Once you have the OAuth credentials, you can add them to the auth config in the 
 1. Select the OAuth2 scheme.
 2. Toggle on **Use your own developer credentials**.
 3. Enter the OAuth client ID and client secret for your developer app.
-4. Click Create!
+4. Set **Redirect URI** to the URL registered in your OAuth app.
+5. Click Create!
 
 <Figure src="/images/integration-step-3-0.png" alt="Auth Config Settings" caption="Auth Config Settings" size="sm" />
 </Step>

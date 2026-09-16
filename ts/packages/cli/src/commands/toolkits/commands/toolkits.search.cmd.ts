@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -8,13 +8,13 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
 
-const query = Args.text({ name: 'query' }).pipe(
-  Args.withDescription('Search query (e.g. "send emails")')
+const query = Argument.string('query').pipe(
+  Argument.withDescription('Search query (e.g. "send emails")')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(10),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(10),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
@@ -64,7 +64,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     yield* ui.output(formatToolkitsJson(unified));
   }).pipe(
-    Effect.catchAll(error =>
+    Effect.catch(error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.error(extractMessage(error) ?? 'An error occurred while searching toolkits.');

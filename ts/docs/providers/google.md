@@ -41,7 +41,7 @@ const task = "Fetch the details of the user 'haxzie'";
 
 // Generate content with function calling
 const response = await ai.models.generateContent({
-  model: 'gemini-2.0-flash-001',
+  model: 'gemini-3.7-flash',
   contents: task,
   config: {
     tools: [{ functionDeclarations: tools }],
@@ -88,10 +88,11 @@ const ai = new GoogleGenAI({
 
 ## Supported Models
 
-- `gemini-2.0-flash-001` - Fast, efficient model for most use cases
-- `gemini-2.0-pro-001` - Advanced model with enhanced capabilities
-- `gemini-1.5-flash-001` - Legacy model for backward compatibility
-- `gemini-1.5-pro-001` - Legacy model with advanced capabilities
+- `gemini-3.7-flash` - Fast, efficient default model for most use cases
+- `gemini-3.1-pro-preview` - Advanced model with enhanced reasoning and coding capabilities
+- `gemini-3.5-flash-lite` - Fastest and lowest-cost option for lightweight tasks
+- `gemini-2.5-flash` - Fast model with thinking capabilities
+- `gemini-2.5-pro` - Advanced reasoning model
 
 ## Function Calling
 

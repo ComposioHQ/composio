@@ -14,6 +14,6 @@
     },
     "types": ["@types/bun"]
   },
-  "include": ["src/**/*", "package.json"],
+  "include": ["src/**/*", "scripts/**/*.ts", "package.json"],
   "exclude": ["node_modules", "../../../node_modules", "**/dist", "test/__fixtures__/**"]
 }

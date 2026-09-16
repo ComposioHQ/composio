@@ -1,4 +1,5 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';

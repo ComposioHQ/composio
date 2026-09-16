@@ -164,6 +164,36 @@ export class MyAgentProvider extends BaseAgenticProvider<AgentToolkit, AgentTool
 }
 ```
 
+## Support strict tool schemas
+
+If your platform supports OpenAI-compatible strict tool schemas, use `toStrictJsonSchema()` to normalize each tool's input schema. The result keeps optional parameters available by making them required and nullable. Before execution, use `omitNullToolArguments()` to remove a `null` that represents an omitted optional parameter while preserving fields whose original schema accepts `null`.
+
+```typescript
+// @noErrors
+import { omitNullToolArguments, toStrictJsonSchema } from '@composio/core';
+
+const originalSchema = {
+  type: 'object',
+  properties: {
+    query: { type: 'string' },
+    limit: { type: 'integer' },
+  },
+  required: ['query'],
+};
+
+const strict = toStrictJsonSchema(originalSchema);
+
+if (strict.unsupported.length === 0) {
+  // Send strict.schema to the model with strict mode enabled.
+  const modelArguments = { query: 'open pull requests', limit: null };
+  const toolArguments = omitNullToolArguments(modelArguments, strict.source);
+
+  console.log(toolArguments); // { query: 'open pull requests' }
+}
+```
+
+When `strict.unsupported` isn't empty, send the original schema without strict mode and log the reported paths. Strict mode can't represent arbitrary-key objects, unsupported intersections, tuple-style arrays, or unresolved references without narrowing the tool's accepted input.
+
 ## Use your provider
 
 Pass an instance to `Composio` via the `provider` option. Every tool you fetch comes back in your custom format.
@@ -242,59 +272,51 @@ export class StatefulProvider extends BaseNonAgenticProvider<ToolCollection, Too
 }
 ```
 
-## Advanced: compose providers
+## Add behavior with composition
 
-You don't have to start from a base class. Extend an existing provider to add behavior like analytics or retries, and call `super` to reuse its logic.
+Don't subclass a concrete provider to add analytics, retries, or other cross-cutting behavior. Hold a provider instance and delegate to it instead. This avoids making your class satisfy every overload that the provider exposes.
 
 ```typescript
-// @noErrors
+import { Composio } from '@composio/core';
+import type { ExecuteToolFnOptions, ExecuteToolModifiers } from '@composio/core';
 import { OpenAIProvider } from '@composio/openai';
+import type OpenAI from 'openai';
 
-// Extend the OpenAI provider with custom functionality
-export class EnhancedOpenAIProvider extends OpenAIProvider {
-  // Add properties
-  private analytics = {
+class InstrumentedOpenAIToolExecutor {
+  private readonly analytics = {
     toolCalls: 0,
     errors: 0,
   };
 
-  // Override methods to add functionality
-  override async executeToolCall(userId, tool, options, modifiers) {
+  constructor(private readonly provider: OpenAIProvider) {}
+
+  async executeToolCall(
+    userId: string,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<string> {
     this.analytics.toolCalls++;
 
     try {
-      // Call the parent implementation
-      const result = await super.executeToolCall(userId, tool, options, modifiers);
-      return result;
+      return await this.provider.executeToolCall(userId, tool, options, modifiers);
     } catch (error) {
       this.analytics.errors++;
       throw error;
     }
   }
 
-  // Add new methods
-  getAnalytics() {
-    return this.analytics;
-  }
-
-  async executeWithRetry(userId, tool, options, modifiers, maxRetries = 3) {
-    let attempts = 0;
-    let lastError;
-
-    while (attempts < maxRetries) {
-      try {
-        return await this.executeToolCall(userId, tool, options, modifiers);
-      } catch (error) {
-        lastError = error;
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-      }
-    }
-
-    throw lastError;
+  getAnalytics(): Readonly<{ toolCalls: number; errors: number }> {
+    return { ...this.analytics };
   }
 }
+
+const provider = new OpenAIProvider();
+const composio = new Composio({ provider });
+const toolExecutor = new InstrumentedOpenAIToolExecutor(provider);
 ```
+
+Pass the underlying provider to `Composio`, then call the wrapper from your manual tool-call loop.
 
 ## Best practices
 

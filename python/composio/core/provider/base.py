@@ -37,6 +37,20 @@ class ExecuteToolFn(t.Protocol):
         ...
 
 
+class ToolCallSession(t.Protocol):
+    """Execution contract implemented by ToolRouterSession."""
+
+    def execute(
+        self,
+        tool_slug: str,
+        *,
+        arguments: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> t.Any: ...
+
+
+ToolCallExecutionTarget: t.TypeAlias = t.Union[str, ToolCallSession]
+
+
 class SchemaConfig(te.TypedDict):
     skip_defaults: te.NotRequired[bool]
 
@@ -71,3 +85,45 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
 
     def set_execute_tool_fn(self, execute_tool_fn: ExecuteToolFn) -> None:
         self.execute_tool = execute_tool_fn
+
+    def resolve_tool_call_execution_target(
+        self,
+        *,
+        user_id: t.Optional[str],
+        session: t.Optional[ToolCallSession],
+    ) -> ToolCallExecutionTarget:
+        """Resolve exactly one direct user or Tool Router session target."""
+        if (user_id is None) == (session is None):
+            raise ValueError("Provide exactly one of user_id or session")
+        if session is not None:
+            return session
+        return t.cast(str, user_id)
+
+    def execute_tool_for_target(
+        self,
+        *,
+        target: ToolCallExecutionTarget,
+        slug: str,
+        arguments: t.Dict[str, t.Any],
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> ToolExecutionResponse:
+        """Execute normalized arguments through the matching SDK boundary."""
+        if isinstance(target, str):
+            return self.execute_tool(
+                slug=slug,
+                arguments=arguments,
+                modifiers=modifiers,
+                user_id=target,
+            )
+
+        if modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
+
+        result = target.execute(tool_slug=slug, arguments=arguments)
+        return {
+            "data": t.cast(t.Dict, result.data),
+            "error": result.error,
+            "successful": result.error is None,
+        }

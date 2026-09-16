@@ -31,10 +31,29 @@ const SECRET_LIKE_BASENAME = /^(\.env(\.|$)|\.netrc$|\.pgpass$)/i;
 /** Default SSH private key basenames (public keys like id_rsa.pub are allowed). */
 const DEFAULT_PRIVATE_KEY_BASENAME = /^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$/i;
 
+const splitSegments = (aPath: string): string[] => aPath.split(/[/\\]+/).filter(Boolean);
+
 /**
  * Returns normalized path segments, resolving symlinks when the path exists.
+ *
+ * Both the written path and the symlink-resolved one are returned, because a
+ * denied segment can be hidden by a symlink in either direction:
+ *
+ *   - `~/innocent-name` -> `~/nested/.aws/creds` hides `.aws` from the written
+ *     path, so the denylist has to see the resolved one.
+ *   - `~/.claude` -> `/state/claude` hides `.claude` from the *resolved* path,
+ *     so the denylist also has to see the written one. Dotfile managers
+ *     (chezmoi, stow, yadm) and containerised home directories produce exactly
+ *     this layout.
+ *
+ * Matching only the resolved path silently turns the denylist off for the
+ * second case.
  */
-function normalizePath(filePath: string): { resolvedPath: string; segments: string[] } {
+function normalizePath(filePath: string): {
+  resolvedPath: string;
+  segments: string[];
+  writtenSegments: string[];
+} {
   const absolute = platform.resolvePath(filePath);
   let resolved = absolute;
   try {
@@ -46,7 +65,8 @@ function normalizePath(filePath: string): { resolvedPath: string; segments: stri
   }
   return {
     resolvedPath: resolved,
-    segments: resolved.split(/[/\\]+/).filter(Boolean),
+    segments: splitSegments(resolved),
+    writtenSegments: splitSegments(absolute),
   };
 }
 
@@ -65,7 +85,7 @@ function getSensitiveFileUploadPathBlockReason(
   filePath: string,
   additionalDenySegments?: string[]
 ): string | null {
-  const { resolvedPath, segments } = normalizePath(filePath);
+  const { resolvedPath, segments, writtenSegments } = normalizePath(filePath);
   const isCaseSensitive = platform.isFileSystemCaseSensitive?.(resolvedPath) ?? true;
   const normalizeSegment = (segment: string) => (isCaseSensitive ? segment : segment.toLowerCase());
   const deny = new Set(
@@ -75,15 +95,22 @@ function getSensitiveFileUploadPathBlockReason(
     ].map(normalizeSegment)
   );
 
-  const segmentsForMatch = isCaseSensitive ? segments : segments.map(normalizeSegment);
-  for (let i = 0; i < segments.length; i++) {
-    if (deny.has(segmentsForMatch[i]!)) {
-      return `path segment "${segments[i]}" is in the sensitive file upload denylist`;
+  for (const candidate of [segments, writtenSegments]) {
+    const segmentsForMatch = isCaseSensitive ? candidate : candidate.map(normalizeSegment);
+    for (let i = 0; i < candidate.length; i++) {
+      if (deny.has(segmentsForMatch[i]!)) {
+        return `path segment "${candidate[i]}" is in the sensitive file upload denylist`;
+      }
     }
   }
 
-  const basename = segments.length > 0 ? segments[segments.length - 1] : '';
-  if (basename) {
+  // Same two directions as the segment scan: `~/.env -> /state/config` hides a
+  // denied basename from the resolved path, and a symlink pointing *at* a
+  // credential file hides it from the written one.
+  const basenames = [segments.at(-1), writtenSegments.at(-1)].filter(
+    (name): name is string => !!name
+  );
+  for (const basename of basenames) {
     if (SECRET_LIKE_BASENAME.test(basename) || DEFAULT_PRIVATE_KEY_BASENAME.test(basename)) {
       return `file name "${basename}" looks like a credential, env, or private key file`;
     }

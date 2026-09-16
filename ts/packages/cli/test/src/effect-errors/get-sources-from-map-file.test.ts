@@ -1,7 +1,7 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
-import { Cause, Effect, Layer, Scope } from 'effect';
+import { Cause, Effect, FileSystem, Layer, Path, Scope } from 'effect';
 import { type RawSourceMap, SourceMapConsumer } from 'source-map-js';
 
 import { captureErrors } from 'src/effect-errors/capture-errors';
@@ -35,7 +35,7 @@ const run = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path
   effect.pipe(Effect.provide(TestPlatform));
 
 describe('getSourcesFromMapFile', () => {
-  it.scoped('falls back to the full raw location when source-map JSON is malformed', () =>
+  it.effect('falls back to the full raw location when source-map JSON is malformed', () =>
     run(
       Effect.gen(function* () {
         const { generatedFile } = yield* makeSourceMapFixture('{ this is not valid JSON');
@@ -50,7 +50,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('falls back when valid JSON is not a usable source map', () =>
+  it.effect('falls back when valid JSON is not a usable source map', () =>
     run(
       Effect.gen(function* () {
         const invalidSourceMap = JSON.stringify({
@@ -71,7 +71,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('falls back when source-map resolution rejects schema-valid data', () =>
+  it.effect('falls back when source-map resolution rejects schema-valid data', () =>
     run(
       Effect.gen(function* () {
         const invalidSourceMap = {
@@ -99,7 +99,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('falls back when the map points at a source file that was never shipped', () =>
+  it.effect('falls back when the map points at a source file that was never shipped', () =>
     run(
       Effect.gen(function* () {
         const validSourceMap = JSON.stringify({
@@ -122,7 +122,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('falls back when the .map path is a directory rather than a file', () =>
+  it.effect('falls back when the .map path is a directory rather than a file', () =>
     run(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
@@ -141,7 +141,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('enriches maps that use null for the optional file and sourceRoot keys', () =>
+  it.effect('enriches maps that use null for the optional file and sourceRoot keys', () =>
     run(
       Effect.gen(function* () {
         const sourceContents = "throw new Error('primary diagnostic');\n";
@@ -168,7 +168,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('still enriches locations from valid source maps', () =>
+  it.effect('still enriches locations from valid source maps', () =>
     run(
       Effect.gen(function* () {
         const sourceContents = "throw new Error('primary diagnostic');\n";
@@ -198,7 +198,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('preserves the primary diagnostic through captureErrors', () =>
+  it.effect('preserves the primary diagnostic through captureErrors', () =>
     run(
       Effect.gen(function* () {
         const path = yield* Path.Path;
@@ -228,7 +228,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('preserves the primary diagnostic when the original source is missing', () =>
+  it.effect('preserves the primary diagnostic when the original source is missing', () =>
     run(
       Effect.gen(function* () {
         const path = yield* Path.Path;
@@ -267,7 +267,7 @@ describe('getSourcesFromMapFile', () => {
     )
   );
 
-  it.scoped('preserves the primary diagnostic when a .ts frame is unreadable', () =>
+  it.effect('preserves the primary diagnostic when a .ts frame is unreadable', () =>
     run(
       Effect.gen(function* () {
         const path = yield* Path.Path;

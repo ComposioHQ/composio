@@ -50,10 +50,15 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+<Callout type="info">
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+</Callout>
+
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
 import json
+
 import anthropic
 from composio import Composio
 from composio_anthropic import AnthropicProvider
@@ -79,14 +84,14 @@ response = client.messages.create(
 # Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
-    results = composio.provider.handle_tool_calls(user_id="user_123", response=response)
+    results = composio.provider.handle_tool_calls(response=response, session=session)
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
         "role": "user",
         "content": [
             {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
             for i, result in enumerate(results)
-        ]
+        ],
     })
     response = client.messages.create(
         model="claude-opus-4-6",
@@ -132,7 +137,7 @@ let response = await client.messages.create({
 
 // Agentic loop: keep executing tool calls until the model responds with text
 while (response.stop_reason === "tool_use") {
-    const toolResults = await composio.provider.handleToolCalls("user_123", response);
+    const toolResults = await composio.provider.handleToolCalls(session, response);
     messages.push({ role: "assistant", content: response.content });
     messages.push(...toolResults);
     response = await client.messages.create({
@@ -156,7 +161,7 @@ for (const block of response.content) {
 </Steps>
 
 <Callout type="info">
-`handleToolCalls` does the loop body for you. It extracts every `tool_use` block from the response, executes the matching Composio tools, and returns a ready-to-append array of Messages API content (a `user` message holding `tool_result` blocks). That is why the TypeScript example spreads the result straight into `messages` with `messages.push(...toolResults)`. In Python it returns the raw result list, which the example wraps into `tool_result` blocks by hand.
+Pass the session to `handleToolCalls` / `handle_tool_calls` when the model received tools from `session.tools()`. The helper preserves Anthropic input normalization and restored schema aliases before executing every call through that session. For tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), pass the user ID instead.
 </Callout>
 
 </IntegrationContent>
@@ -272,8 +277,8 @@ The provider registers each tool's complete object schema. Object arguments that
 A few things are specific to the Anthropic provider:
 
 - **Tool caching.** Pass `cacheTools: true` to the constructor (`new AnthropicProvider({ cacheTools: true })`) to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn.
-- **`handleToolCalls` returns Messages API content, not raw strings.** On the TypeScript side it returns `Anthropic.Messages.MessageParam[]` (a `user` message of `tool_result` blocks) that you append directly to your message list. This is why the loop above does not build `tool_result` blocks by hand.
-- **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes this before execution, so you do not have to parse it yourself.
+- **`handleToolCalls` returns Messages API content, not raw strings.** TypeScript returns a ready-to-append `user` message of `tool_result` blocks. Python returns raw results in model-call order, which the sample wraps into `tool_result` blocks.
+- **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes it before both direct and session execution.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
 
 ## Next

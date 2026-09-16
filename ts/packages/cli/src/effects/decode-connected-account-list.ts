@@ -1,4 +1,4 @@
-import { Effect, ParseResult, Schema } from 'effect';
+import { Effect, Match, Schema, type SchemaIssue } from 'effect';
 import {
   ConnectedAccountItems,
   isKnownConnectedAccountStatus,
@@ -10,15 +10,27 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 
 /**
- * Renders a `ParseError` as `path: kind` pairs only — never the failing
- * values. A container-level failure would otherwise echo the raw payload,
- * which can include credential-bearing fields (`state`, `data`, ...) the
+ * Flattens a schema issue tree into `path: kind` pairs only — never the
+ * failing values. The built-in formatters may echo reported input, and a
+ * container-level failure would otherwise print the raw payload, which can
+ * include credential-bearing fields (`state`, `data`, ...) the
  * connected-account schemas deliberately exclude.
  */
-const formatParseErrorRedacted = (error: ParseResult.ParseError): string =>
-  ParseResult.ArrayFormatter.formatErrorSync(error)
-    .map(issue => `${issue.path.join('.') || '(root)'}: ${issue._tag}`)
-    .join(', ');
+const collectIssueKinds = (
+  issue: SchemaIssue.Issue,
+  path: ReadonlyArray<PropertyKey>
+): ReadonlyArray<string> =>
+  Match.value(issue).pipe(
+    Match.tag('Pointer', pointer => collectIssueKinds(pointer.issue, [...path, ...pointer.path])),
+    Match.tag('Composite', 'AnyOf', composite =>
+      composite.issues.flatMap(inner => collectIssueKinds(inner, path))
+    ),
+    Match.tag('Filter', 'Encoding', wrapper => collectIssueKinds(wrapper.issue, path)),
+    Match.orElse(leaf => [`${path.map(String).join('.') || '(root)'}: ${leaf._tag}`])
+  );
+
+const formatParseErrorRedacted = (error: Schema.SchemaError): string =>
+  collectIssueKinds(error.issue, []).join(', ');
 
 /**
  * Warns when the server returned `status` values newer than this CLI build's
@@ -44,7 +56,7 @@ const warnOnUnknownStatuses = (
 /**
  * Decodes a raw `client.connectedAccounts.list(...)` response against
  * `ConnectedAccountListResponse`, falling back to the raw payload on
- * `ParseError`.
+ * `SchemaError`.
  *
  * `status` is an open enum (`ConnectedAccountStatus`), so a status newer than
  * this CLI build decodes fine and only triggers the "composio upgrade"
@@ -58,9 +70,9 @@ export const decodeConnectedAccountListWithFallback = (
 ): Effect.Effect<ConnectedAccountListResponseType, never, TerminalUI> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    return yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult).pipe(
+    return yield* Schema.decodeUnknownEffect(ConnectedAccountListResponse)(rawResult).pipe(
       Effect.tap(result => warnOnUnknownStatuses(result.items)),
-      Effect.catchTag('ParseError', error =>
+      Effect.catchTag('SchemaError', error =>
         Effect.gen(function* () {
           yield* ui.log.warn(
             `Server response did not match the shape this CLI expects. Run ` +
@@ -86,11 +98,11 @@ export const decodeConnectedAccountListWithFallback = (
  * payload: `link --list` JSON-dumps the decoded items to stdout, so the
  * schema's field allowlist is what keeps credential-bearing fields (`state`,
  * `data`, ...) out of pipeable output. Truly malformed data fails with
- * `ParseError`.
+ * `SchemaError`.
  */
 export const decodeConnectedAccountItems = (
   rawItems: unknown
-): Effect.Effect<ConnectedAccountItems, ParseResult.ParseError, TerminalUI> =>
-  Schema.decodeUnknown(ConnectedAccountItems)(rawItems).pipe(
+): Effect.Effect<ConnectedAccountItems, Schema.SchemaError, TerminalUI> =>
+  Schema.decodeUnknownEffect(ConnectedAccountItems)(rawItems).pipe(
     Effect.tap(items => warnOnUnknownStatuses(items))
   );

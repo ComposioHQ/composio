@@ -1,0 +1,47 @@
+---
+title: 'Python SDK 0.20.0 and TypeScript SDK 0.17.0 route provider tool calls through sessions'
+description: 'Python SDK 0.20.0 and TypeScript SDK 0.17.0 let OpenAI and Anthropic provider helpers execute through a Tool Router session, validate API-response URLs before fetching them, and fix a Python import-time crash on read-only filesystems.'
+date: '2026-08-19'
+---
+
+Python SDK `composio` `0.20.0` and TypeScript SDK `@composio/core` `0.17.0` let the OpenAI and Anthropic provider tool-call helpers execute through a supplied Tool Router session, close an SSRF gap around API-response URLs, and fix several Python file-handling issues.
+
+### SDK versions
+
+| SDK                          | Version  |
+| ----------------------------- | -------- |
+| Python `composio`             | `0.20.0` |
+| TypeScript `@composio/core`   | `0.17.0` |
+| TypeScript `@composio/slim`   | `0.17.0` |
+| TypeScript `@composio/anthropic` | `0.11.0` |
+| TypeScript `@composio/openai` | `0.12.0` |
+
+### Session-aware provider tool-call helpers
+
+<Callout type="warn">
+**Type-level breaking change**
+
+`handleToolCalls`/`executeToolCall` (TypeScript) and `handle_tool_calls`/`execute_tool_call` (Python) now accept an explicit execution target — a user ID or a Tool Router session. Custom provider subclasses that override these methods may need updates to match the new signatures. Existing user-ID calls are unchanged and keep using direct execution.
+</Callout>
+
+Previously, calling these helpers with tools obtained from `session.tools()` still executed through the globally injected direct `Tools.execute` function, discarding the Tool Router session context. Session meta-tools such as `COMPOSIO_SEARCH_TOOLS` failed as a result. Calling `session.execute()` directly preserved the session but skipped provider-specific behavior, such as Anthropic's input normalization and schema-alias restoration.
+
+The helpers now route normalized provider arguments through the supplied session when one is given, while keeping provider-specific normalization intact. Anthropic helper failures now preserve their error text in `{ error }` results without changing successful payloads.
+
+### API-response URL validation
+
+Both SDKs already validated user-supplied URLs against SSRF before fetching them. That guard did not cover URLs that arrive inside an API response. It now does, across every response-driven fetch: tool-execution downloads, S3 presigned uploads, Tool Router session file downloads and uploads, and `RemoteFile.buffer()`/`blob()`/`text()`/`save()`. Redirect hops are re-validated on each hop, so a validated URL cannot redirect into private address space. Edge runtimes that cannot resolve DNS to check keep their current behavior for session file transfers, since a Worker's `fetch` does not originate inside the caller's network.
+
+### Python file handling fixes
+
+- Importing `composio` no longer creates the local cache directory or fails on a read-only filesystem. Directory creation is deferred to the first actual file download, so environments like AWS Lambda, distroless containers, and read-only Kubernetes root filesystems can import the SDK without ever touching disk. `COMPOSIO_CACHE_DIR` is also now honored correctly when it is set, instead of eagerly resolving the home directory first.
+- File uploads to S3 presigned URLs now send the `Content-Type` the presign request was signed with on every upload path, and a rejected upload raises with its HTTP status instead of a path-only error. A malformed or negative `Content-Length` on a fetched URL now degrades to an unknown size instead of raising.
+- Filesystem path construction for API-provided slugs and filenames is now centralized and rejects traversal, Windows-invalid names, invalid Unicode, and overlong encoded filenames before creating directories or writing files.
+
+### Dependency updates
+
+Runtime dependencies across the TypeScript SDK packages and the Python core and provider packages have been refreshed.
+
+### Backward compatibility
+
+Existing user-ID based provider helper calls are unchanged. Custom provider subclasses overriding the tool-call helpers should review the updated signatures.

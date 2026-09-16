@@ -38,7 +38,7 @@ export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set([
 ]);
 
 /** True if a URL points at a hidden tag's pages (v3.1 or v3.0). */
-function isHiddenTagUrl(url: string): boolean {
+export function isHiddenApiTagUrl(url: string): boolean {
   for (const tag of HIDDEN_API_TAGS) {
     if (
       url.startsWith(`/reference/api-reference/${tag}/`) ||
@@ -55,7 +55,7 @@ function isHiddenTagUrl(url: string): boolean {
 /** True if a node (page or folder) belongs entirely to a hidden tag. */
 function isHiddenTagNode(node: PageTreeNode): boolean {
   if (node.type === 'page' && typeof node.url === 'string') {
-    return isHiddenTagUrl(node.url);
+    return isHiddenApiTagUrl(node.url);
   }
   if (node.type === 'folder') {
     if (node.index && isHiddenTagNode(node.index)) return true;

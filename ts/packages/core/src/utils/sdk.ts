@@ -53,7 +53,7 @@ export function getSDKConfig(baseUrl?: string | null, apiKey?: string | null) {
     ComposioError.handleAndThrow(new ComposioNoAPIKeyError());
   }
 
-  logger.debug('Environment', `API Key: ${apiKeyParsed}`);
+  logger.debug('Environment', 'API Key: [REDACTED]');
   logger.debug('Environment', `Base URL: ${baseURLParsed}`);
 
   return { baseURL: baseURLParsed, apiKey: apiKeyParsed };

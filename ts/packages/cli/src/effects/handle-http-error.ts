@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { Effect } from 'effect';
 import type { HttpServerError } from 'src/services/composio-clients';
 import type { TerminalUI } from 'src/services/terminal-ui';
@@ -12,6 +13,10 @@ const noSuggestions: ReadonlyArray<Suggestion> = [];
 /**
  * Create an HttpServerError handler that logs the structured error details
  * (or a fallback message) and a contextual hint, then returns a fallback value.
+ *
+ * The process exit code is set to 1 so callers such as scripts and agents can
+ * detect the failure. Decorated logs only render when stderr is a TTY, so the
+ * error message and hint are also written plainly to stderr when it is not.
  *
  * Used by info/delete/create commands that share the same error-handling shape.
  *
@@ -48,6 +53,14 @@ export const handleHttpServerError =
   ) =>
   (e: HttpServerError) =>
     Effect.gen(function* () {
+      process.exitCode = 1;
+
+      const { canDecorate } = yield* ui.capabilities;
+      if (!canDecorate) {
+        yield* ui.error(e.details ? e.details.message : opts.fallbackMessage);
+        yield* ui.error(opts.hint);
+      }
+
       if (e.details) {
         yield* ui.log.error(e.details.message);
         yield* ui.log.step(e.details.suggestedFix);
@@ -58,7 +71,7 @@ export const handleHttpServerError =
       if (opts.searchForSuggestions) {
         const suggestions = yield* opts
           .searchForSuggestions()
-          .pipe(Effect.catchAll(() => Effect.succeed(noSuggestions)));
+          .pipe(Effect.catch(() => Effect.succeed(noSuggestions)));
 
         const [first] = suggestions;
         if (first) {

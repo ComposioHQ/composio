@@ -1,0 +1,8 @@
+{
+  "title": "Knowledge Base",
+  "root": true,
+  "pages": [
+    "index",
+    "guide"
+  ]
+}

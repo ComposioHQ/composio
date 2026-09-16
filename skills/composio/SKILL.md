@@ -61,10 +61,11 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 8. Get the log or request ID before diagnosing a failed tool call.
 9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them.
 10. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
+11. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
 
 ## Canonical information
 
-Use bundled references for stable decisions. For versions, provider adapters, client-specific setup, toolkit behavior, or APIs that may have changed, fetch the current Markdown source before answering or editing code:
+Use bundled references for stable decisions. A user-facing source list contains only public `https://docs.composio.dev/...` pages actually consulted; bundled reference names, local paths, and `file://` URLs are omitted. For versions, provider adapters, client-specific setup, toolkit behavior, or APIs that may have changed, use the current canonical documentation and current CLI or tool schemas as the primary sources before answering or editing code:
 
 When sources disagree, prefer the current API reference and live endpoint behavior over any page marked Legacy, and name the REST API version explicitly.
 
@@ -73,5 +74,13 @@ https://docs.composio.dev/llms.txt
 https://docs.composio.dev/docs/<page>.md
 https://docs.composio.dev/toolkits/<toolkit>.md
 ```
+
+If those primary sources do not answer a Composio product or troubleshooting question, query the public unified knowledge search at `https://docs.composio.dev/api/knowledge-search?q=<question>`.
+
+Results may be canonical docs, KB, toolkit, example, or reference pages. Use the returned evidence to answer the question; public records do not establish the live state of a user's account, project, connection, or tool call.
+
+When knowledge search supplies evidence, cite the result's returned `canonicalUrl`, not the search API URL. If `canonicalUrl` is relative, prefix it with `https://docs.composio.dev` before citing it.
+
+Only treat a result as evidence when its excerpt or page directly addresses the question. If no public source directly documents an exact error or symptom, say so instead of diagnosing from adjacent results; request the log or request ID, or the necessary live evidence.
 
 Use the documentation to complete the task. Do not merely hand the user a link unless they asked for one.

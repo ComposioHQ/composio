@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ComposioClient from '@composio/client';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
@@ -12,6 +13,7 @@ import {
 } from '../utils/toolExecuteUtils';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+import { ComposioToolFetchError, ComposioToolNotFoundError } from '../../src/errors/ToolErrors';
 
 // Minimal structural shape for a ComposioError-like value (possibly wrapping
 // another error as its `cause`), used to narrow `catch (error: unknown)`
@@ -417,6 +419,26 @@ describe('Tools', () => {
         undefined
       );
     });
+
+    it('should pass unknown toolkit metadata to schema modifiers', async () => {
+      const toolWithoutToolkit = {
+        ...toolMocks.rawTool,
+        toolkit: undefined,
+      };
+      const modifySchema = vi.fn(({ schema }) => schema);
+      mockClient.toolRouter.session.tools.mockResolvedValueOnce({
+        items: [toolWithoutToolkit],
+        next_cursor: null,
+      });
+
+      await context.tools.getRawToolRouterSessionTools('session_123', { modifySchema });
+
+      expect(modifySchema).toHaveBeenCalledWith({
+        toolSlug: toolMocks.rawTool.slug,
+        toolkitSlug: 'unknown',
+        schema: expect.objectContaining({ slug: toolMocks.rawTool.slug }),
+      });
+    });
   });
 
   describe('getRawComposioToolBySlug', () => {
@@ -435,14 +457,67 @@ describe('Tools', () => {
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
-    it('should throw an error if tool is not found', async () => {
+    it('should throw ComposioToolNotFoundError when the API returns 404', async () => {
       const slug = 'NONEXISTENT_TOOL';
+      const notFound = new ComposioClient.NotFoundError(404, undefined, undefined, new Headers());
 
-      mockClient.tools.retrieve.mockRejectedValue(null);
+      mockClient.tools.retrieve.mockRejectedValueOnce(notFound);
 
-      await expect(context.tools.getRawComposioToolBySlug(slug)).rejects.toThrow(
-        `Unable to retrieve tool with slug ${slug}`
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.message).toBe(`Tool with slug ${slug} not found`);
+      expect(error.cause).toBe(notFound);
+    });
+
+    it('should throw ComposioToolNotFoundError when the API returns 400', async () => {
+      const slug = 'malformed slug';
+      const badRequest = new ComposioClient.BadRequestError(
+        400,
+        undefined,
+        undefined,
+        new Headers()
       );
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(badRequest);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.cause).toBe(badRequest);
+    });
+
+    it('should not report an invalid API key (401) as tool not found', async () => {
+      const slug = 'SLACK_FETCH_CONVERSATION_HISTORY';
+      const unauthorized = new ComposioClient.AuthenticationError(
+        401,
+        { error: { message: 'Invalid API key', code: 801, status: 401 } },
+        undefined,
+        new Headers()
+      );
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(unauthorized);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolFetchError);
+      expect(error).not.toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.name).toBe('ComposioToolFetchError');
+      expect(error.message).toBe(`Unable to retrieve tool with slug ${slug}`);
+      expect(error.cause).toBe(unauthorized);
+      expect(error.cause.status).toBe(401);
+    });
+
+    it('should wrap non-API failures in ComposioToolFetchError', async () => {
+      const slug = 'TOOL_SLUG';
+      const networkError = new Error('socket hang up');
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(networkError);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolFetchError);
+      expect(error.cause).toBe(networkError);
     });
 
     it('should apply schema modifiers when provided', async () => {
@@ -1488,11 +1563,12 @@ describe('Tools', () => {
         });
 
         const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+        const afterExecute = vi.fn().mockImplementation(({ result }) => result);
 
         await context.tools.executeSessionTool(
           toolSlug,
           body,
-          { beforeExecute },
+          { beforeExecute, afterExecute },
           toolWithoutToolkit as unknown as Tool
         );
 
@@ -1501,6 +1577,17 @@ describe('Tools', () => {
           toolkitSlug: 'composio',
           sessionId,
           params: { query: 'test' },
+        });
+        expect(afterExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'composio',
+          sessionId,
+          result: {
+            data: { results: true },
+            error: null,
+            successful: true,
+            logId: '123',
+          },
         });
       });
     });
@@ -2035,7 +2122,25 @@ describe('Tools', () => {
           dangerouslySkipVersionCheck: true, // Required when toolkit is undefined and version is 'latest'
         };
 
-        await tools.execute('SOME_CUSTOM_TOOL', executeParams);
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+        const afterExecute = vi.fn().mockImplementation(({ result }) => result);
+
+        await tools.execute('SOME_CUSTOM_TOOL', executeParams, {
+          beforeExecute,
+          afterExecute,
+        });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug: 'SOME_CUSTOM_TOOL',
+          toolkitSlug: 'unknown',
+          params: executeParams,
+        });
+        expect(afterExecute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            toolSlug: 'SOME_CUSTOM_TOOL',
+            toolkitSlug: 'unknown',
+          })
+        );
 
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           'COMPOSIO_TOOL',

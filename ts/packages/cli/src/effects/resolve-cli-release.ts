@@ -1,11 +1,14 @@
 import { Data, Effect, Option, Schema } from 'effect';
-import { HttpClient, HttpClientResponse } from '@effect/platform';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
 import { semverComparator } from 'src/effects/compare-semver';
 import type { CliReleaseChannel } from 'src/constants';
 
 export const GitHubReleaseAsset = Schema.Struct({
   name: Schema.NonEmptyString,
   browser_download_url: Schema.NonEmptyString,
+  // Present on every real GitHub asset; optional so a release payload that omits
+  // it still decodes and the download simply reports progress without a total.
+  size: Schema.optional(Schema.Number),
 });
 export type GitHubReleaseAsset = typeof GitHubReleaseAsset.Type;
 export const GitHubReleaseAssets = Schema.Array(GitHubReleaseAsset);

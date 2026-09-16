@@ -9,10 +9,17 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
+const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
+const GLOBAL_SEARCH = join(import.meta.dir, "../../components/custom-search-dialog.tsx");
 
 /** Separator entries in meta.json start with --- */
 function isSeparator(entry: string): boolean {
   return entry.startsWith("---");
+}
+
+/** Link entries are rendered directly by fumadocs and do not resolve locally. */
+function isLink(entry: string): boolean {
+  return /^(?:external:)?(?:\[[^\]]+\])?\[[^\]]+\]\([^)]+\)$/.test(entry);
 }
 
 /** Recursively find all meta.json files under a directory */
@@ -61,8 +68,10 @@ describe("Navigation - meta.json validity", () => {
       "quickstart",
       "providers",
       "agent-plugins",
+      "using-composio-skill",
       "cli",
       "composio-connect",
+      "agent-setup",
     ]);
 
     expect(
@@ -77,13 +86,32 @@ describe("Navigation - meta.json validity", () => {
     ]);
   });
 
+  test("Knowledge Base appears between Docs and Examples", async () => {
+    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
+    const docsIndex = source.indexOf("text: 'Docs'");
+    const kbIndex = source.indexOf("text: 'Knowledge Base'");
+    const examplesIndex = source.indexOf("text: 'Examples'");
+
+    expect(docsIndex).toBeGreaterThan(-1);
+    expect(kbIndex).toBeGreaterThan(docsIndex);
+    expect(examplesIndex).toBeGreaterThan(kbIndex);
+  });
+
+  test("global search uses canonical knowledge URLs and shared source labels", async () => {
+    const source = await readFile(GLOBAL_SEARCH, "utf-8");
+    expect(source).toContain("KNOWLEDGE_SOURCE_LABELS");
+    expect(source).toContain("canonical_url");
+    expect(source).toContain("source_type");
+    expect(source).toContain("algoliaHitMetaRef.current.get(href)");
+  });
+
   test("root meta.json entries all resolve to files or directories", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
     const missing: string[] = [];
 
     for (const entry of meta.pages as string[]) {
-      if (isSeparator(entry)) continue;
+      if (isSeparator(entry) || isLink(entry)) continue;
       if (entry === "...") continue;
 
       const asFile = join(CONTENT_DIR, `${entry}.mdx`);
@@ -110,10 +138,19 @@ describe("Navigation - meta.json validity", () => {
       const relDir = relative(CONTENT_DIR, dir);
 
       for (const entry of (meta.pages || []) as string[]) {
-        if (isSeparator(entry)) continue;
+        if (isSeparator(entry) || isLink(entry)) continue;
 
         // Handle "..." (rest) entries which are valid fumadocs syntax
         if (entry === "...") continue;
+
+        const link = entry.match(/^\[[^\]]+\]\((\/[^)]+)\)$/);
+        if (link) {
+          const target = join(CONTENT_DIR, '..', link[1].slice(1));
+          if (!await exists(`${target}.mdx`) && !await exists(join(target, 'index.mdx'))) {
+            errors.push(`${relDir}/meta.json → "${entry}" (link target not found)`);
+          }
+          continue;
+        }
 
         const asFile = join(dir, `${entry}.mdx`);
         const asDir = join(dir, entry);

@@ -1,22 +1,25 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { BunContext } from '@effect/platform-bun';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { vi } from 'vitest';
 import {
   hostRunCompanionStaticAssetRelativePaths,
   listMissingInstalledRunCompanionModules,
+  loadInstalledCompanionModule,
   repairMissingInstalledRunCompanionModules,
+  resolveRunCompanionAssetPath,
   RUN_CODEX_ACP_BINARY_TARGETS,
   RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
+  RUN_COMPANION_MODULE_BASENAMES,
   RUN_COMPANION_MODULE_FILENAMES,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
   RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
   runCompanionStaticAssetRelativePathsFor,
 } from 'src/services/run-companion-modules';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
 vi.mock('extract-zip', () => ({ default: extractZipMock }));
@@ -96,7 +99,7 @@ describe('run-companion-modules', () => {
     });
   });
 
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       "[Given] an install lacking another platform's codex-acp binary [Then] nothing needs repair",
       () =>
@@ -197,6 +200,72 @@ describe('run-companion-modules', () => {
       }
     );
 
+    it.effect(
+      '[Given] only an unrelated companion is missing [Then] a scoped repair does nothing',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.mkdirSync(path.join(installDirectory, 'services'));
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        fs.writeFileSync(path.join(installDirectory, 'services', 'generation-runtime.mjs'), '');
+        const fetchMock = stubRepairFetch();
+
+        return Effect.gen(function* () {
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).not.toEqual([]);
+          expect(
+            yield* repairMissingInstalledRunCompanionModules({
+              callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+              execPath,
+              appVersion: '0.0.0-test',
+              companionBaseName: 'generation-runtime',
+            })
+          ).toEqual({ repaired: false });
+          expect(fetchMock).not.toHaveBeenCalled();
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
+    it.effect(
+      '[Given] a companion wrapper whose bundle is missing [Then] a scoped repair restores it',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        stubRepairFetch();
+        mockArchiveContents();
+
+        return Effect.gen(function* () {
+          const result = yield* repairMissingInstalledRunCompanionModules({
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            execPath,
+            appVersion: '0.0.0-test',
+            companionBaseName: 'generation-runtime',
+          });
+
+          expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
+          expect(fs.existsSync(path.join(installDirectory, 'generation-runtime.mjs'))).toBe(true);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
     it.effect('[Given] a complete archive [Then] repair atomically replaces companions', () => {
       const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-test-'));
       const execPath = path.join(installDirectory, 'composio');
@@ -249,7 +318,7 @@ describe('run-companion-modules', () => {
         }).pipe(Effect.flip);
 
         expect(error.message).toContain(
-          `missing ${missingRelativePath}; cannot restore the files required by 'composio run'`
+          `missing ${missingRelativePath}; cannot restore the CLI's bundled support files`
         );
         expect(fs.readFileSync(releaseTagPath, 'utf8')).toBe(previousReleaseTag);
       }).pipe(
@@ -280,7 +349,7 @@ describe('run-companion-modules', () => {
             appVersion: '0.0.0-test',
           }).pipe(Effect.flip);
 
-          expect(error.message).toContain("Unable to restore the files required by 'composio run'");
+          expect(error.message).toContain("Unable to restore the CLI's bundled support files");
           expect(fetchMock).toHaveBeenCalledOnce();
         }).pipe(
           Effect.ensuring(
@@ -323,7 +392,10 @@ describe('run-companion-modules', () => {
         }).pipe(
           // Simulate the cli-main runtime, whose provider rewrites config keys
           // to their COMPOSIO_-prefixed spelling.
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -364,12 +436,157 @@ describe('run-companion-modules', () => {
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
         );
       }
+    );
+  });
+});
+
+/**
+ * Release archives fill only the codex-acp binary their own platform can execute
+ * and leave the other three as empty placeholders, so that a CLI installed
+ * before 2026-08-18 still passes its upgrade verification. A placeholder must
+ * never be handed back as a runnable adapter.
+ */
+describe('resolveRunCompanionAssetPath', () => {
+  layer(BunServices.layer)(it => {
+    const withInstallDirectory = <A, E, R>(
+      contents: number,
+      use: (execPath: string) => Effect.Effect<A, E, R>
+    ) =>
+      Effect.gen(function* () {
+        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'companion-asset-'));
+        const execPath = path.join(installDirectory, 'composio');
+        const assetPath = path.join(installDirectory, 'acp-adapters', 'codex', 'darwin-arm64');
+        fs.mkdirSync(assetPath, { recursive: true });
+        fs.writeFileSync(path.join(assetPath, 'codex-acp'), Buffer.alloc(contents));
+        return yield* use(execPath).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      });
+
+    const relativePathFromRoot = 'acp-adapters/codex/darwin-arm64/codex-acp';
+
+    it.effect('resolves a populated binary', () =>
+      withInstallDirectory(64, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+            requireNonEmpty: true,
+          });
+
+          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
+        })
+      )
+    );
+
+    it.effect('reports an empty placeholder as absent under requireNonEmpty', () =>
+      withInstallDirectory(0, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+            requireNonEmpty: true,
+          });
+
+          expect(resolved).toBeNull();
+        })
+      )
+    );
+
+    it.effect('still resolves an empty file when only existence is required', () =>
+      withInstallDirectory(0, execPath =>
+        Effect.gen(function* () {
+          const resolved = yield* resolveRunCompanionAssetPath({
+            callerImportMetaUrl: import.meta.url,
+            execPath,
+            relativePathFromRoot,
+          });
+
+          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
+        })
+      )
+    );
+  });
+});
+
+describe('loadInstalledCompanionModule', () => {
+  layer(BunServices.layer)(it => {
+    it('registers the in-process companions alongside the run preload set', () => {
+      expect(RUN_COMPANION_MODULE_BASENAMES).toEqual(
+        expect.arrayContaining(['generation-runtime', 'execute-output-encoder-runtime'])
+      );
+    });
+
+    // From a checkout there is no `.mjs` next to an executable, so the loader
+    // has to fall through to the `.ts` source next to `run-companion-modules.ts`.
+    // The compiled-binary path (`dist/<name>.mjs` next to `process.execPath`)
+    // is covered by the Docker E2E suite, which runs the real binary.
+    it.effect('[Given] a source checkout [Then] it loads the module from its .ts source', () =>
+      Effect.gen(function* () {
+        const encoder = yield* loadInstalledCompanionModule<
+          typeof import('src/services/execute-output-encoder-runtime')
+        >('execute-output-encoder-runtime', ['countOutputTokens']);
+
+        expect(encoder.countOutputTokens('hello world')).toBe(2);
+        // A special-token literal counts as its one special token rather than
+        // being rejected.
+        expect(encoder.countOutputTokens('<|endoftext|>')).toBe(1);
+      })
+    );
+
+    it.effect('[Given] a module that cannot be loaded [Then] it fails with a typed error', () =>
+      Effect.gen(function* () {
+        const error = yield* loadInstalledCompanionModule('missing-companion-module', []).pipe(
+          Effect.flip
+        );
+
+        expect(error._tag).toBe('services/RunCompanionRepairError');
+        expect(error.message).toContain('missing-companion-module.mjs');
+      })
+    );
+
+    it.effect(
+      '[Given] a module from another release [Then] it fails with a typed error naming the missing export',
+      () =>
+        Effect.gen(function* () {
+          const error = yield* loadInstalledCompanionModule<{
+            readonly countOutputTokens: unknown;
+            readonly retiredExport: unknown;
+          }>('execute-output-encoder-runtime', ['countOutputTokens', 'retiredExport']).pipe(
+            Effect.flip
+          );
+
+          expect(error._tag).toBe('services/RunCompanionRepairError');
+          expect(error.message).toContain('execute-output-encoder-runtime');
+          expect(error.message).toContain('missing retiredExport');
+        })
+    );
+
+    it.effect('[Given] the generation companion [Then] its API is promise-shaped', () =>
+      Effect.gen(function* () {
+        const generation = yield* loadInstalledCompanionModule<
+          typeof import('src/services/generation-runtime')
+        >('generation-runtime', ['wrapInlineCodeForRun', 'generatePythonSourceFiles']);
+
+        expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
+        const outcome = yield* Effect.promise(() =>
+          generation.generatePythonSourceFiles({ banner: 'b', outputDir: '/tmp/out' }, {})
+        );
+        expect(outcome).toEqual({ _tag: 'Success', value: [] });
+      })
     );
   });
 });

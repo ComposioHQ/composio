@@ -55,7 +55,7 @@ print_usage() {
         '' \
         'Options:' \
         '  --agent       Sign up or log in as a Composio agent after installation.' \
-        '  --no-plugins  Skip agent plugin installation (the default).' \
+        '  --no-plugins  Skip agent plugin installation.' \
         '  -h, --help    Show this help.' \
         '' \
         'Set COMPOSIO_INSTALL_SHELL=auto|zsh|bash|fish|none to control automatic shell setup' \
@@ -784,7 +784,7 @@ main() {
     inherited_path=${PATH:-}
 
     install_agent=0
-    install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
+    install_plugins=${COMPOSIO_INSTALL_PLUGINS:-1}
     version_arg=
     requested_shell=${COMPOSIO_INSTALL_SHELL:-}
 

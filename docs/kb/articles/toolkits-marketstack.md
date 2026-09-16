@@ -1,0 +1,27 @@
+## API Coverage
+
+Marketstack's official APILayer v2 OpenAPI spec includes live and intraday market data endpoints that are not yet exposed by the current Composio Marketstack toolkit actions:
+
+- `/stockprice`
+
+- `/intraday`
+
+- `/intraday/latest`
+
+- `/intraday/{date}`
+
+- `/tickers/{symbol}/intraday`
+
+- `/tickers/{symbol}/intraday/latest`
+
+- `/exchanges/{mic}/intraday`
+
+- `/exchanges/{mic}/intraday/latest`
+
+- `/exchanges/{mic}/intraday/{date}`
+
+Supported intraday intervals in the OpenAPI spec are `1min`, `5min`, `10min`, `15min`, `30min`, and `1hour`. Intraday docs note that some TOPS feed fields can be null without IEX entitlement, while derived intraday data is available without an additional IEX market data agreement.
+
+Current Composio toolkit coverage includes EOD, ticker EOD, ticker EOD latest, ticker info/listing, exchange info/listing, splits, dividends, and currencies. Live quotes and 1D charts are not currently exposed as Marketstack toolkit actions; submit those capabilities through the Composio request portal rather than treating them as provider limitations.
+
+Do not promise Marketstack support for gainers, losers, most-active, movers, or sector-performance endpoints based on current v2 docs. Those paths are not present in the official OpenAPI spec as of 2026-06-21.

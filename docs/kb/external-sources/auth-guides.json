@@ -1,0 +1,303 @@
+[
+  {
+    "slug": "trello",
+    "toolkitSlug": "trello",
+    "canonicalUrl": "https://composio.dev/auth/trello",
+    "title": "How to find your Trello API key in 3 easy steps",
+    "description": "Find the Trello API key and token required to connect Trello through Composio."
+  },
+  {
+    "slug": "gong",
+    "toolkitSlug": "gong",
+    "canonicalUrl": "https://composio.dev/auth/gong",
+    "title": "How to configure OAuth credentials for Gong in Composio",
+    "description": "Create Gong OAuth credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "ramp",
+    "toolkitSlug": "ramp",
+    "canonicalUrl": "https://composio.dev/auth/ramp",
+    "title": "How to configure OAuth credentials for Ramp in Composio",
+    "description": "Create Ramp OAuth credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "pagerduty",
+    "toolkitSlug": "pagerduty",
+    "canonicalUrl": "https://composio.dev/auth/pagerduty",
+    "title": "How to create PagerDuty OAuth credentials in Composio",
+    "description": "Create PagerDuty OAuth credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "github",
+    "toolkitSlug": "github",
+    "canonicalUrl": "https://composio.dev/auth/github",
+    "title": "How to create GitHub OAuth credentials in Composio",
+    "description": "Create a GitHub OAuth app and configure its credentials in Composio."
+  },
+  {
+    "slug": "docusign",
+    "toolkitSlug": "docusign",
+    "canonicalUrl": "https://composio.dev/auth/docusign",
+    "title": "How to create DocuSign OAuth credentials in Composio",
+    "description": "Create DocuSign OAuth credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "apollo",
+    "toolkitSlug": "apollo",
+    "canonicalUrl": "https://composio.dev/auth/apollo",
+    "title": "How to create Apollo authentication credentials in Composio",
+    "description": "Create Apollo authentication credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "rocketlane",
+    "toolkitSlug": "rocketlane",
+    "canonicalUrl": "https://composio.dev/auth/rocketlane",
+    "title": "How to create Rocketlane authentication credentials in Composio",
+    "description": "Create Rocketlane authentication credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "telegram",
+    "toolkitSlug": "telegram",
+    "canonicalUrl": "https://composio.dev/auth/telegram",
+    "title": "How to create Telegram authentication credentials in Composio",
+    "description": "Create Telegram bot credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "linear",
+    "toolkitSlug": "linear",
+    "canonicalUrl": "https://composio.dev/auth/linear",
+    "title": "How to create Linear OAuth2 credentials in Composio",
+    "description": "Create a Linear OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "calendly",
+    "toolkitSlug": "calendly",
+    "canonicalUrl": "https://composio.dev/auth/calendly",
+    "title": "How to create Calendly OAuth2 credentials in Composio",
+    "description": "Create Calendly OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "supabase",
+    "toolkitSlug": "supabase",
+    "canonicalUrl": "https://composio.dev/auth/supabase",
+    "title": "How to create Supabase OAuth2 credentials in Composio",
+    "description": "Create Supabase OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "notion",
+    "toolkitSlug": "notion",
+    "canonicalUrl": "https://composio.dev/auth/notion",
+    "title": "How to create Notion OAuth2 credentials in Composio",
+    "description": "Create a public Notion integration and configure its OAuth2 credentials in Composio."
+  },
+  {
+    "slug": "ticktick",
+    "toolkitSlug": "ticktick",
+    "canonicalUrl": "https://composio.dev/auth/ticktick",
+    "title": "How to create TickTick OAuth2 credentials in Composio",
+    "description": "Create TickTick OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "workday",
+    "toolkitSlug": "workday",
+    "canonicalUrl": "https://composio.dev/auth/workday",
+    "title": "How to create Workday OAuth2 credentials in Composio",
+    "description": "Create Workday OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "twitter",
+    "toolkitSlug": "twitter",
+    "canonicalUrl": "https://composio.dev/auth/twitter",
+    "title": "How to create Twitter/X OAuth2 credentials in Composio",
+    "description": "Create Twitter/X OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "dropbox",
+    "toolkitSlug": "dropbox",
+    "canonicalUrl": "https://composio.dev/auth/dropbox",
+    "title": "How to create Dropbox OAuth2 credentials in Composio",
+    "description": "Create a Dropbox OAuth2 app and configure it in Composio."
+  },
+  {
+    "slug": "zendesk",
+    "toolkitSlug": "zendesk",
+    "canonicalUrl": "https://composio.dev/auth/zendesk",
+    "title": "How to create Zendesk OAuth2 credentials in Composio",
+    "description": "Create Zendesk OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "confluence",
+    "toolkitSlug": "confluence",
+    "canonicalUrl": "https://composio.dev/auth/confluence",
+    "title": "How to create Confluence OAuth2 credentials in Composio",
+    "description": "Create Atlassian OAuth2 credentials for Confluence and configure them in Composio."
+  },
+  {
+    "slug": "instantly",
+    "toolkitSlug": "instantly",
+    "canonicalUrl": "https://composio.dev/auth/instantly",
+    "title": "How to create Instantly authentication credentials in Composio",
+    "description": "Create Instantly authentication credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "posthog",
+    "toolkitSlug": "posthog",
+    "canonicalUrl": "https://composio.dev/auth/posthog",
+    "title": "How to create PostHog authentication credentials in Composio",
+    "description": "Create PostHog authentication credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "stripe",
+    "toolkitSlug": "stripe",
+    "canonicalUrl": "https://composio.dev/auth/stripe",
+    "title": "How to create OAuth2 and API key credentials for Stripe",
+    "description": "Create Stripe OAuth2 or API key credentials and configure them in Composio."
+  },
+  {
+    "slug": "strava",
+    "toolkitSlug": "strava",
+    "canonicalUrl": "https://composio.dev/auth/strava",
+    "title": "How to create OAuth2 credentials for Strava",
+    "description": "Create a Strava OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "snowflake",
+    "toolkitSlug": "snowflake",
+    "canonicalUrl": "https://composio.dev/auth/snowflake",
+    "title": "How to create OAuth2 credentials for Snowflake",
+    "description": "Create Snowflake OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "zoho",
+    "toolkitSlug": "zoho",
+    "canonicalUrl": "https://composio.dev/auth/zoho",
+    "title": "How to create OAuth2 credentials for Zoho CRM",
+    "description": "Create Zoho CRM OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "monday",
+    "toolkitSlug": "monday",
+    "canonicalUrl": "https://composio.dev/auth/monday",
+    "title": "How to create OAuth2 credentials for Monday.com",
+    "description": "Create Monday.com OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "pipedrive",
+    "toolkitSlug": "pipedrive",
+    "canonicalUrl": "https://composio.dev/auth/pipedrive",
+    "title": "How to create OAuth2 credentials for Pipedrive",
+    "description": "Create Pipedrive OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "slack",
+    "toolkitSlug": "slack",
+    "canonicalUrl": "https://composio.dev/auth/slack",
+    "title": "How to create OAuth2 credentials for Slack",
+    "description": "Create a Slack OAuth2 app and configure it in Composio."
+  },
+  {
+    "slug": "shopify",
+    "toolkitSlug": "shopify",
+    "canonicalUrl": "https://composio.dev/auth/shopify",
+    "title": "How to create OAuth2 credentials for Shopify",
+    "description": "Create Shopify OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "xero",
+    "toolkitSlug": "xero",
+    "canonicalUrl": "https://composio.dev/auth/xero",
+    "title": "How to create OAuth2 credentials for Xero",
+    "description": "Create a Xero OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "jira",
+    "toolkitSlug": "jira",
+    "canonicalUrl": "https://composio.dev/auth/jira",
+    "title": "How to create OAuth2 credentials for Jira",
+    "description": "Create Atlassian OAuth2 credentials for Jira and configure them in Composio."
+  },
+  {
+    "slug": "linkedin",
+    "toolkitSlug": "linkedin",
+    "canonicalUrl": "https://composio.dev/auth/linkedin",
+    "title": "How to create an OAuth2 configuration for LinkedIn",
+    "description": "Create LinkedIn OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "outlook",
+    "toolkitSlug": "outlook",
+    "canonicalUrl": "https://composio.dev/auth/outlook",
+    "title": "How to create OAuth2 credentials for Microsoft Outlook",
+    "description": "Create Microsoft OAuth2 credentials for Outlook and configure them in Composio."
+  },
+  {
+    "slug": "gitlab",
+    "toolkitSlug": "gitlab",
+    "canonicalUrl": "https://composio.dev/auth/gitlab",
+    "title": "How to create OAuth2 credentials for GitLab",
+    "description": "Create a GitLab OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "canva",
+    "toolkitSlug": "canva",
+    "canonicalUrl": "https://composio.dev/auth/canva",
+    "title": "How to create OAuth2 credentials for Canva",
+    "description": "Create Canva OAuth2 credentials and configure them for use with Composio."
+  },
+  {
+    "slug": "facebook",
+    "toolkitSlug": "facebook",
+    "canonicalUrl": "https://composio.dev/auth/facebook",
+    "title": "How to create OAuth credentials for Meta apps",
+    "description": "Create Meta OAuth credentials for Facebook apps and configure them in Composio."
+  },
+  {
+    "slug": "salesforce",
+    "toolkitSlug": "salesforce",
+    "canonicalUrl": "https://composio.dev/auth/salesforce",
+    "title": "How to create OAuth2 credentials for Salesforce",
+    "description": "Create a Salesforce connected app and configure its OAuth2 credentials in Composio."
+  },
+  {
+    "slug": "asana",
+    "toolkitSlug": "asana",
+    "canonicalUrl": "https://composio.dev/auth/asana",
+    "title": "How to create OAuth2 credentials for Asana",
+    "description": "Create an Asana OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "googleapps",
+    "toolkitSlug": "googleapps",
+    "canonicalUrl": "https://composio.dev/auth/googleapps",
+    "title": "How to create OAuth2 credentials for Google Apps",
+    "description": "Create Google OAuth2 credentials for Google Apps and configure them in Composio."
+  },
+  {
+    "slug": "zoom",
+    "toolkitSlug": "zoom",
+    "canonicalUrl": "https://composio.dev/auth/zoom",
+    "title": "How to create OAuth2 credentials for Zoom in Composio",
+    "description": "Create a Zoom OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "hubspot",
+    "toolkitSlug": "hubspot",
+    "canonicalUrl": "https://composio.dev/auth/hubspot",
+    "title": "How to create OAuth2 credentials for HubSpot",
+    "description": "Create a HubSpot OAuth2 application and configure it in Composio."
+  },
+  {
+    "slug": "airtable",
+    "toolkitSlug": "airtable",
+    "canonicalUrl": "https://composio.dev/auth/airtable",
+    "title": "How to create OAuth2 credentials for Airtable",
+    "description": "Create an Airtable OAuth2 integration and configure it in Composio."
+  },
+  {
+    "slug": "daytona",
+    "toolkitSlug": "daytona",
+    "canonicalUrl": "https://composio.dev/auth/daytona",
+    "title": "How to create an API key credential for Daytona",
+    "description": "Create a Daytona API key and configure it for use with Composio."
+  }
+]

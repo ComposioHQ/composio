@@ -34,9 +34,6 @@ vi.mock('../../src/utils/fileUtils.node', async importOriginal => {
   return {
     ...actual,
     downloadFileFromS3: vi.fn(),
-    // Keep the real `getFileDataAfterUploadingToS3` so path checks run, but
-    // stub the S3 upload happening inside it.
-    uploadFileToS3: vi.fn(),
   };
 });
 
@@ -184,16 +181,11 @@ describe('File handling matrix — manual Files API bypasses the allowlist', () 
 });
 
 describe('File handling matrix — auto upload honors the resolved allowlist', () => {
-  let getFileDataSpy: ReturnType<typeof vi.spyOn>;
+  const createPresignedURLSpy = vi.spyOn(mockClient.files, 'createPresignedURL');
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Keep the real implementation so allowlist enforcement runs, but stub the
-    // S3 upload that happens inside it.
-    getFileDataSpy = vi.spyOn(fileUtilsModule, 'uploadFileToS3' as never);
-    (getFileDataSpy as unknown as { mockResolvedValue: (v: string) => void }).mockResolvedValue(
-      's3-key'
-    );
+    createPresignedURLSpy.mockRejectedValue(new Error('stubbed-presigned-url-request'));
   });
 
   const callUpload = async (file: string, fileUploadAllowlist: string[] | undefined) => {
@@ -260,20 +252,14 @@ describe('File handling matrix — auto upload honors the resolved allowlist', (
   });
 
   it('does NOT throw an allowlist error when the file is inside an allowed dir', async () => {
-    // We can't easily stub the S3 upload from outside the module, so we just
-    // assert the error (if any) is not the allowlist rejection. The happy
-    // path for `assertPathInsideUploadDirs` itself is covered directly in
-    // `test/utils/uploadDirAllowlist.test.ts`.
     const allowed = mkTemp();
     try {
       const file = path.join(allowed, 'ok.txt');
       writeFileSync(file, 'x');
-      try {
-        await callUpload(file, [allowed]);
-      } catch (err) {
-        expect(err).not.toBeInstanceOf(ComposioFileUploadPathNotAllowedError);
-        expect(err).not.toBeInstanceOf(ComposioFileNotFoundError);
-      }
+      await expect(callUpload(file, [allowed])).rejects.toThrowError(
+        'stubbed-presigned-url-request'
+      );
+      expect(createPresignedURLSpy).toHaveBeenCalledTimes(1);
     } finally {
       rmSync(allowed, { recursive: true, force: true });
     }

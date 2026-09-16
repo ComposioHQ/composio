@@ -340,6 +340,7 @@ export const downloadFileFromS3 = async ({
   mimeType,
   fileDownloadDir,
   signal,
+  maxDownloadBytes,
 }: {
   toolSlug: string;
   s3Url: string;
@@ -350,6 +351,11 @@ export const downloadFileFromS3 = async ({
    */
   fileDownloadDir?: string;
   signal?: AbortSignal;
+  /**
+   * Maximum number of bytes to read from the response before rejecting.
+   * Defaults to {@link MAX_URL_UPLOAD_SIZE_BYTES} (100 MiB).
+   */
+  maxDownloadBytes?: number;
 }): Promise<FileDownloadData> => {
   // SSRF guard: `s3Url` is a field of the tool-execution response, so it is no
   // more trusted than a user-supplied URL — and the bytes it returns are
@@ -358,11 +364,13 @@ export const downloadFileFromS3 = async ({
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
-  const data = await response.arrayBuffer();
+  // The response is attacker-influencable and streamed to disk, so the body is
+  // read through the shared size guard rather than buffered wholesale.
+  const data = await readResponseBodyWithLimit(response, maxDownloadBytes);
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, new Uint8Array(data), {
+  const filePath = saveFile(fileName, data, {
     isTempFile: fileDownloadDir === undefined,
     outputDir: fileDownloadDir,
   });

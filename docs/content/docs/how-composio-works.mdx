@@ -70,6 +70,29 @@ The agent searches for relevant tools, authenticates if needed, and executes the
 
 Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns them directly from `session.tools()` with no search step, while keeping session auth, connected accounts, and the workbench.
 
+## Executing session tools
+
+When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session's tool router, which is the only place session meta-tools run:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_case: "send an email" }] });
+```
+</Tab>
+</Tabs>
+
+Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
+
 ## Authentication
 
 When a tool needs a connection, the session generates a Connect Link with `session.authorize()`, or the agent handles the flow through `COMPOSIO_MANAGE_CONNECTIONS`.

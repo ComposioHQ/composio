@@ -1,10 +1,18 @@
-import { docs, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
+import {
+  docs,
+  reference,
+  examples,
+  toolkits,
+  knowledgeBase,
+  changelog,
+} from 'fumadocs-mdx:collections/server';
+import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
-import { HIDDEN_API_TAGS } from './filter-api-version';
+import { isHiddenApiTagUrl } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
 import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
 import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
@@ -12,6 +20,10 @@ import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version'
 import { apiVersionPointer } from './api-version-guidance';
 import { apiEndpointsSchema } from './api-endpoints-table-schema';
 import { replaceHomeNavigationMarkdown } from './home-navigation';
+import { PACKAGE_MANAGERS } from './package-install';
+import { z } from 'zod';
+import { promptFor, SETUP_PROMPT } from './agent-prompts';
+import { AGENTS } from './agent-setup-clients';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -20,20 +32,6 @@ import { replaceHomeNavigationMarkdown } from './home-navigation';
  * via `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
  * `getPages()` list (consumed by validate-links, llms.mdx, sitemap) in sync.
  */
-function isHiddenReferenceUrl(url: string): boolean {
-  for (const tag of HIDDEN_API_TAGS) {
-    if (
-      url.startsWith(`/reference/api-reference/${tag}/`) ||
-      url === `/reference/api-reference/${tag}` ||
-      url.startsWith(`/reference/v3/api-reference/${tag}/`) ||
-      url === `/reference/v3/api-reference/${tag}`
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
@@ -104,7 +102,7 @@ function createReferenceSource(openapiLatest: OpenapiPages[0], openapiV3Pages: O
   // separately via prepareTree (lib/filter-api-version.ts).
   const originalGetPages = loaded.getPages.bind(loaded);
   loaded.getPages = (...args: Parameters<typeof originalGetPages>) =>
-    originalGetPages(...args).filter((page: { url: string }) => !isHiddenReferenceUrl(page.url));
+    originalGetPages(...args).filter((page: { url: string }) => !isHiddenApiTagUrl(page.url));
 
   return loaded;
 }
@@ -141,16 +139,38 @@ export const toolkitsSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-export const changelogEntries = changelog;
+export const knowledgeBaseSource = loader({
+  baseUrl: '/kb',
+  source: knowledgeBase.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+export type ChangelogEntry = DocCollectionEntry<
+  'changelog',
+  {
+    date: string;
+    title: string;
+    description?: string;
+    icon?: string;
+    full?: boolean;
+  }
+>;
+
+// The generated Fumadocs virtual module is untyped in Next's production
+// checker. Preserve the collection's public shape for all route consumers.
+export const changelogEntries = changelog as ChangelogEntry[];
 
 export function getOgImageUrl(
-  _section: string,
-  _slugs: string[],
+  section: string,
+  slugs: string[],
   title?: string,
   _description?: string
 ): string {
+  if (section === 'docs' && slugs.length === 0) {
+    return 'https://docs.composio.dev/api/og?variant=home';
+  }
   const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
-  return `https://og.composio.dev/api/og?title=${encodedTitle}`;
+  return `https://docs.composio.dev/api/og?title=${encodedTitle}`;
 }
 
 /**
@@ -186,6 +206,34 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&');
+}
+
+const packageInstallSchema = z.object({
+  packages: z.string().min(1),
+  ecosystem: z.enum(['node', 'python']).default('node'),
+  comment: z.array(z.string()).default([]),
+});
+
+/** Only literal attributes are supported; MDX expressions are never evaluated. */
+function packageInstallToMarkdown(attributes: string): string {
+  const quoted = (name: string) => {
+    const match = attributes.match(new RegExp(`\\b${name}=(?:"([^"]*)"|'([^']*)')`));
+    return match ? decodeHtmlEntities(match[1] ?? match[2]) : undefined;
+  };
+  const comment = quoted('comment') ?? attributes.match(/\bcomment=\{(\[[\s\S]*?\])\}/)?.[1];
+  const comments = comment?.trim().startsWith('[')
+    ? Array.from(comment.matchAll(/(['"])((?:\\.|(?!\1)[^\\])*)\1/g), match =>
+        match[2].replace(/\\(['"\\])/g, '$1'),
+      )
+    : comment ? [comment] : [];
+  const props = packageInstallSchema.parse({
+    packages: quoted('packages'),
+    ecosystem: quoted('ecosystem'),
+    comment: comments,
+  });
+  return PACKAGE_MANAGERS[props.ecosystem].map(manager =>
+    `\n**${manager.id}:**\n\n\`\`\`bash\n${manager.install} ${props.packages}${props.comment.map(line => `\n# ${line}`).join('')}\n\`\`\`\n`,
+  ).join('\n');
 }
 
 /**
@@ -263,6 +311,25 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   );
 
   result = replaceHomeNavigationMarkdown(result);
+
+  // Keep installation commands in both raw search input and processed page Markdown.
+  result = result.replace(/<PackageInstall\b([\s\S]*?)\/>/g, (_, attributes: string) =>
+    packageInstallToMarkdown(attributes),
+  );
+  result = result.replace(/<AgentSetupActions\b[^>]*\/>/g,
+    `\n[Agent setup](/docs/agent-setup)\n\n${SETUP_PROMPT}\n`,
+  );
+  result = result.replace(/<AgentSetupGrid\s*\/>/g,
+    AGENTS.map(agent => `- [${agent.name}](${agent.href}): ${agent.description}`).join('\n'),
+  );
+  result = result.replace(/<AgentFirstPrompt\s+agent="([^"]+)"\s*\/>/g, (_, agent: string) => {
+    const parsed = z.enum(['claude-code', 'cline', 'codex', 'cursor', 'gemini-cli',
+      'github-copilot', 'grok', 'openclaw', 'opencode']).parse(agent);
+    return `\n\`\`\`text\n${promptFor(parsed)}\n\`\`\`\n`;
+  });
+  result = result.replace(/<Video\b[^>]*src="([^"]+)"[^>]*caption="([^"]+)"[^>]*\/>/g,
+    '[Video: $2]($1)',
+  );
 
   // Convert YouTube to link
   result = result.replace(
@@ -388,8 +455,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
     /<AIToolsBanner\s*\/>/g,
     '### For AI tools\n\n' +
       '**Skills:**\n' +
-      '```bash\nnpx skills add composiohq/skills\n```\n' +
-      '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+      '```bash\nnpx skills add ComposioHQ/composio --skill composio -y\n```\n' +
+      '[GitHub](https://github.com/ComposioHQ/composio/tree/next/skills/composio)\n\n' +
       '**CLI:**\n' +
       '```bash\ncurl -fsSL https://composio.dev/install | sh\n```\n' +
       '[CLI Reference](/docs/cli)\n\n' +
@@ -575,7 +642,7 @@ ${page.data.description || ''}`;
   }
 
   const footer = includeFooter
-    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
+    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Changelog](https://docs.composio.dev/docs/changelog.md) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
   // Legacy pages (frontmatter `legacy: true`) document point-in-time migrations

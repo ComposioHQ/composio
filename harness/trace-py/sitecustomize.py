@@ -13,11 +13,15 @@ _TRACE = os.environ.get("COMPOSIO_TRACE_FILE")
 _STAGING_BASE_URL = "https://staging-backend.composio.dev"
 
 if _TRACE:
+    # Mirrors harness/backend-url.mjs: COMPOSIO_BASE_URL selects the backend and
+    # defaults to staging. The structural checks stay — a base URL carrying a
+    # path, query, fragment, or embedded credentials means the caller meant
+    # something else, and the host pin below needs a bare root to be meaningful.
     _base_url = os.environ.get("COMPOSIO_BASE_URL", _STAGING_BASE_URL)
     _parsed_base_url = urlsplit(_base_url)
     if not (
         _parsed_base_url.scheme == "https"
-        and _parsed_base_url.hostname == "staging-backend.composio.dev"
+        and _parsed_base_url.hostname
         and _parsed_base_url.path in {"", "/"}
         and not _parsed_base_url.query
         and not _parsed_base_url.fragment
@@ -25,7 +29,7 @@ if _TRACE:
         and not _parsed_base_url.password
     ):
         print(
-            f"sitecustomize: refusing non-staging COMPOSIO_BASE_URL: {_base_url}",
+            f"sitecustomize: refusing malformed COMPOSIO_BASE_URL: {_base_url}",
             file=sys.stderr,
         )
         os._exit(78)

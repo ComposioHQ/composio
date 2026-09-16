@@ -1,5 +1,17 @@
 # @composio/anthropic
 
+## 0.11.1
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
+## 0.11.0
+
+### Minor Changes
+
+- 760f8d0: Allow OpenAI and Anthropic provider tool-call helpers to execute through a supplied Tool Router session. Session meta-tools now retain their session context while provider argument normalization remains intact; existing user-ID calls continue to use direct execution. Anthropic helper failures now preserve their error text in `{ error }` results without changing successful payloads. Custom provider subclasses overriding `executeToolCall` or `handleToolCalls` may require updates because these methods now accept session targets.
+
 ## 0.10.1
 
 ### Patch Changes

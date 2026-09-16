@@ -1,0 +1,84 @@
+---
+type: "reference"
+title: "Self-hosted Helm"
+description: "Public support knowledge for Self-hosted Helm."
+category: "getting-started"
+visibility: "public"
+timestamp: "2026-06-24T00:00:00Z"
+tags:
+  - "self-hosted-helm"
+---
+# Self-hosted Helm
+
+Use this for Composio self-hosted or on-prem Helm deployment issues.
+
+## Apollo S3 with IRSA / ServiceAccount credentials needs no static S3 secret keys
+
+For IRSA / ServiceAccount-based S3 access, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` should not be populated in the Apollo container. These secret keys are optional. If the keys are removed from `composio-composio-secrets`, Apollo can fall back to the configured pod ServiceAccount / AWS SDK credential chain.
+
+Do not set placeholder S3 credential values for IRSA deployments. Values such as `dummy-value` or a literal string `null` are treated as credentials and can make S3 pre-signed URLs fail with provider errors such as:
+
+```text
+InvalidAccessKeyId: The AWS Access Key Id you provided does not exist in our records.
+InvalidToken: The provided token is malformed or otherwise invalid.
+```
+
+For AWS IRSA, configure the Apollo ServiceAccount annotation and object storage backend, then leave static S3 credential secret keys absent:
+
+```yaml
+apollo:
+  serviceAccount:
+    enabled: true
+    name: "composio-apollo"
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::<AWS_ACCOUNT_ID>:role/<IAM_ROLE_NAME>"
+  objectStorage:
+    backend: "s3"
+```
+
+Debug checks:
+
+```bash
+kubectl exec -n composio deploy/composio-apollo -- env | grep -E "^S3_|^AWS_"
+kubectl logs -n composio deploy/composio-apollo --tail=200
+```
+
+If using pod/container credentials, the Helm storage doc says the Kubernetes secret credential section can be skipped. The important support check is that `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` are not present with dummy/static values in Apollo's runtime environment.
+
+Example response:
+
+```text
+This looks like Apollo is still receiving static S3 credential env vars, so the AWS SDK is using those instead of falling back to the ServiceAccount/IRSA credentials.
+
+For IRSA, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` should be absent from the Apollo container. Those secrets are optional; if you remove those keys from `composio-composio-secrets`, Apollo should use the configured ServiceAccount. Placeholder values like `dummy-value` or literal `null` are treated as real credentials and can cause S3 signing errors such as `InvalidAccessKeyId` or `InvalidToken`.
+
+The immediate fix is to remove `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` from `composio-composio-secrets`, then confirm the Apollo pod environment no longer includes those values.
+```
+
+## Disable social login explicitly for self-hosted deployments
+
+`NEXT_PUBLIC_DISABLE_SOCIAL_LOGIN` controls whether social login buttons such as Google/GitHub appear on the frontend login page. For self-hosted customers that should hide social login, set the Helm values override as a string:
+
+```yaml
+apollo:
+  nextPublicDisableSocialLogin: "true"
+```
+
+This makes the generated Apollo ConfigMap render an explicit value instead of an empty/null value and should remove repeated ArgoCD diffs immediately.
+
+Customers can apply the override directly to unblock the deployment.
+
+Example response:
+
+~~~text
+`NEXT_PUBLIC_DISABLE_SOCIAL_LOGIN` controls whether the Google/GitHub social login buttons show up on the frontend login page. For your setup, I'd set it explicitly to `"true"` in the Helm values override:
+
+```yaml
+apollo:
+  nextPublicDisableSocialLogin: "true"
+```
+
+This should make the generated Apollo ConfigMap render the explicit value and stop ArgoCD from diffing null vs empty string immediately.
+
+The override above can be applied directly; no release-specific promise is required.
+~~~

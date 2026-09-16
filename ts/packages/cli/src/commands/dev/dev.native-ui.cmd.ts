@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option, Predicate } from 'effect';
 import { ensureBundledBinaryExecutable } from '@composio/cli-local-tools';
 import { spawnDetached } from 'src/services/detached-process';
@@ -10,23 +10,23 @@ class NativeUiSetupError extends Data.TaggedError('commands/NativeUiSetupError')
   readonly cause: unknown;
 }> {}
 
-const title = Options.text('title').pipe(
-  Options.withDefault('Composio'),
-  Options.withDescription('Title for the native sidecar window.')
+const title = Flag.string('title').pipe(
+  Flag.withDefault('Composio'),
+  Flag.withDescription('Title for the native sidecar window.')
 );
 
-const message = Options.text('message').pipe(
-  Options.withDefault('Native UI sidecar scaffold'),
-  Options.withDescription('Primary text displayed in the native sidecar window.')
+const message = Flag.string('message').pipe(
+  Flag.withDefault('Native UI sidecar scaffold'),
+  Flag.withDescription('Primary text displayed in the native sidecar window.')
 );
 
-const detail = Options.text('detail').pipe(
-  Options.withDefault('This window is rendered by a Swift sidecar bundled with the CLI.'),
-  Options.withDescription('Secondary text displayed in the native sidecar window.')
+const detail = Flag.string('detail').pipe(
+  Flag.withDefault('This window is rendered by a Swift sidecar bundled with the CLI.'),
+  Flag.withDescription('Secondary text displayed in the native sidecar window.')
 );
 
-const timeout = Options.optional(Options.text('timeout')).pipe(
-  Options.withDescription('Optional auto-close timeout in seconds.')
+const timeout = Flag.optional(Flag.string('timeout')).pipe(
+  Flag.withDescription('Optional auto-close timeout in seconds.')
 );
 
 export const devNativeUiCmd = Command.make('native-ui', { title, message, detail, timeout }).pipe(

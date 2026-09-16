@@ -43,7 +43,7 @@ while True:
     tool_calls = [o for o in response.output if o.type == "function_call"]
     if not tool_calls:
         break
-    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    results = composio.provider.handle_tool_calls(response=response, session=session)
     response = client.responses.create(
         model="gpt-5.2",
         tools=tools,
@@ -62,7 +62,7 @@ for item in response.output:
 
 ## Chat Completions
 
-`OpenAIProvider` targets `client.chat.completions.create` and is the Composio SDK default, so `Composio()` with no provider uses it. The loop is the same shape: call `handle_tool_calls` on each response, append the results as `tool` messages, and call the API again. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the full example.
+`OpenAIProvider` targets `client.chat.completions.create` and is the Composio SDK default, so `Composio()` with no provider uses it. The loop is the same shape: call `handle_tool_calls(response=response, session=session)`, append the results as `tool` messages, and call the API again. Pass `user_id` instead for tools fetched with `tools.get()`. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the full example.
 
 ## Links
 

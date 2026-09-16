@@ -119,18 +119,6 @@
       "timeoutSec": 90
     },
     {
-      "id": "ts/connected-accounts/magic-flow-demo",
-      "lang": "ts",
-      "pkg": "connected-accounts-example",
-      "file": "ts/examples/connected-accounts/src/magic-flow-demo.ts",
-      "tier": "3",
-      "env": [
-        "OPENAI_API_KEY"
-      ],
-      "readiness": "Redirect the user to https?://",
-      "timeoutSec": 120
-    },
-    {
       "id": "ts/connected-accounts/multiple-connected-accounts",
       "lang": "ts",
       "pkg": "connected-accounts-example",
@@ -1073,7 +1061,9 @@
       ],
       "timeoutSec": 240,
       "pyWith": [
-        "openai-agents>=0.19"
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
       ]
     },
     {
@@ -1131,7 +1121,7 @@
       ],
       "pyWith": [
         "claude-agent-sdk",
-        "composio-claude-agent-sdk",
+        "./python/providers/claude_agent_sdk",
         "./python"
       ],
       "timeoutSec": 300,
@@ -1171,7 +1161,9 @@
       ],
       "timeoutSec": 180,
       "pyWith": [
-        "openai-agents>=0.19"
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
       ]
     },
     {
@@ -1187,7 +1179,9 @@
       ],
       "timeoutSec": 180,
       "pyWith": [
-        "openai-agents>=0.19"
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
       ]
     },
     {
@@ -1199,7 +1193,11 @@
         "OPENAI_API_KEY"
       ],
       "toolkits": [],
-      "timeoutSec": 180
+      "timeoutSec": 180,
+      "pyWith": [
+        "./python/providers/openai",
+        "./python"
+      ]
     },
     {
       "id": "py/tool_router/langchain_agent",
@@ -1252,7 +1250,9 @@
       ],
       "timeoutSec": 240,
       "pyWith": [
-        "openai-agents>=0.19"
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
       ]
     },
     {
@@ -1287,7 +1287,9 @@
       ],
       "timeoutSec": 180,
       "pyWith": [
-        "openai-agents>=0.19"
+        "openai-agents>=0.19",
+        "./python/providers/openai_agents",
+        "./python"
       ]
     }
   ]
