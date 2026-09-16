@@ -1,7 +1,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Effect, Layer, Option, Schema } from 'effect';
+import { Effect, Exit, Layer, Option, Schema } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -72,6 +72,13 @@ export function createPluginHint(config: PluginHintConfig) {
       );
     }).pipe(Effect.orElseSucceed(() => false));
 
+  const releaseHint = (host: AgentHost) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.remove(path.join(config.stateDirectory, `${host}.stamp`), { force: true });
+    }).pipe(Effect.ignore);
+
   // "Confidently absent" only: a missing state file means the plugin was never
   // installed, while an unreadable or unrecognized one suppresses the hint.
   const claudePluginAbsent = Effect.gen(function* () {
@@ -110,9 +117,20 @@ export function createPluginHint(config: PluginHintConfig) {
       }
       if (!(yield* pluginAbsentByHost[host])) return;
       if (!(yield* claimHint(host))) return;
-      yield* terminal.error(
-        `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup --yes' installs it.`
+      // The stamp must not outlive a failed delivery: if printing the hint
+      // does not succeed, release the claim so the next invocation can
+      // retry instead of staying muted for the full interval. Tracking
+      // below is best-effort by contract (trackCliEventEffect never
+      // fails), so a delivered hint with a lost event is accepted.
+      const printed = yield* Effect.exit(
+        terminal.error(
+          `Tip: running under ${AGENT_HOST_LABELS[host]} without the Composio plugin — 'composio setup --yes' installs it.`
+        )
       );
+      if (Exit.isFailure(printed)) {
+        yield* releaseHint(host);
+        return;
+      }
       yield* trackCliEventEffect(
         getPluginHintShownEvent({
           invocationOrigin: config.invocationOrigin ?? DEFAULT_CLI_INVOCATION_ORIGIN,

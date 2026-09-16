@@ -226,6 +226,20 @@ describe('showPluginHint', () => {
     }).pipe(Effect.provide(hintLayers()))
   );
 
+  it.effect('releases the claim when printing fails so the next run can retry', () =>
+    Effect.gen(function* () {
+      const config = makeConfig();
+
+      yield* createPluginHint(config).showPluginHint({
+        error: () => Effect.die(new Error('EPIPE')),
+      });
+      expect(existsSync(join(config.stateDirectory, 'claude.stamp'))).toBe(false);
+
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      expect(output).toHaveLength(1);
+    }).pipe(Effect.provide(hintLayers()))
+  );
+
   it.effect('tracks CLI_PLUGIN_HINT_SHOWN once per printed hint', () =>
     Effect.gen(function* () {
       const config = makeConfig({ invocationOrigin: 'installer', commandName: 'whoami' });
