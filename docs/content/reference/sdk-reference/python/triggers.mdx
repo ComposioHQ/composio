@@ -160,7 +160,12 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 **Returns**
 
-`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload :raises WebhookSignatureVerificationError: If the signature verification fails :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
+`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload
+
+**Raises**
+
+- `WebhookSignatureVerificationError` — If the signature verification fails
+- `WebhookPayloadError` — If the payload cannot be parsed or is invalid
 
 **Example**
 
@@ -189,7 +194,7 @@ def webhook():
 
 ### parse()
 
-Parse an incoming webhook request into a typed, normalized trigger payload.  Pass a framework request object, or pass ``body=`` and ``headers=`` explicitly. When ``verify_secret`` is provided, the SDK verifies the webhook signature before returning the normalized trigger payload. When it is omitted, the SDK parses the body without verifying the signature.  ``request`` may be any object exposing the request body and headers, such as a Flask, Django, or FastAPI request. The body is read from ``.body`` (or ``.data`` / ``.get_data()``), and the headers are read from ``.headers``. Because this SDK is synchronous, async frameworks must pass an already-read raw body, for example via ``body=await request.body()``.
+Parse an incoming webhook request into a typed, normalized trigger payload.  Pass a framework request object, or pass `body=` and `headers=` explicitly. When `verify_secret` is provided, the SDK verifies the webhook signature before returning the normalized trigger payload. When it is omitted, the SDK parses the body without verifying the signature.  `request` may be any object exposing the request body and headers, such as a Flask, Django, or FastAPI request. The body is read from `.body` (or `.data` / `.get_data()`), and the headers are read from `.headers`. Because this SDK is synchronous, async frameworks must pass an already-read raw body, for example via `body=await request.body()`.
 
 ```python
 def parse(request: Any = ..., body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
@@ -207,7 +212,13 @@ def parse(request: Any = ..., body: Union[str, bytes, Mapping[str, Any], None] =
 
 **Returns**
 
-`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload :raises ValidationError: If ``verify_secret`` is empty, or is set but signature headers are missing :raises WebhookSignatureVerificationError: If signature verification fails :raises WebhookPayloadError: If the payload cannot be parsed
+`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload
+
+**Raises**
+
+- `ValidationError` — If `verify_secret` is empty, or is set but signature headers are missing
+- `WebhookSignatureVerificationError` — If signature verification fails
+- `WebhookPayloadError` — If the payload cannot be parsed
 
 **Example**
 
