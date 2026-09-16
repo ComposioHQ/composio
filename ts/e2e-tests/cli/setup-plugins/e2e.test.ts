@@ -272,7 +272,7 @@ e2e(import.meta.url, {
         expect(failedClaudeInspection.stderr).toContain(
           'Failed to inspect Claude Code plugins: native inspection failed.'
         );
-        expect(failedClaudeInspection.stderr).toContain('composio setup --target claude');
+        expect(failedClaudeInspection.stderr).toContain('composio setup --yes --target claude');
         expect(failedClaudeInspection.stderr).not.toContain('USAGE');
         expect(failedClaudeInspection.stderr).not.toContain('effect-errors');
       });
