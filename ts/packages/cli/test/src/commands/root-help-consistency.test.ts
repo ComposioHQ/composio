@@ -215,6 +215,44 @@ describe('subcommand help registry consistency', () => {
           expect(stdout).not.toContain('Unknown command');
           expect(output).not.toContain('Unknown command');
           expect(output).toContain('generate');
+          expect(output).toContain('Unknown subcommand "frobnicate"');
+          expect(output).not.toContain('Unknown subcommand "help"');
+        })
+      );
+    });
+
+    layer(TestLive())(it => {
+      it.effect('`composio help <typo>` suggests the closest command', () =>
+        Effect.gen(function* () {
+          yield* cli(['help', 'orgz']).pipe(Effect.catch(() => Effect.void));
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).toContain('Unknown subcommand "orgz"');
+          expect(output).toContain('Did you mean this?');
+        })
+      );
+    });
+
+    layer(TestLive())(it => {
+      it.effect('`composio help --help` renders the curated root help', () =>
+        Effect.gen(function* () {
+          yield* cli(['help', '--help']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).not.toContain('--log-level');
+          expect(output).not.toContain('Unknown subcommand');
+        })
+      );
+    });
+
+    layer(TestLive())(it => {
+      it.effect('`composio help orgs full --help` keeps the requested level', () =>
+        Effect.gen(function* () {
+          yield* cli(['help', 'orgs', 'full', '--help']);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).toContain('composio orgs <subcommand>');
+          expect(output).toContain('SEE ALSO');
         })
       );
     });

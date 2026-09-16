@@ -1085,9 +1085,20 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description: 'Print the cwd-scoped session artifact directory.',
   },
   install: {
-    usage: 'composio install [--completions] [--no-completions] [--shell text]',
+    usage: 'composio install [--completions] [--shell zsh|bash|fish]',
     description:
       'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.',
+    options: [
+      { name: '--completions', description: 'Also install shell completions (skipped by default)' },
+      {
+        name: '--shell <shell>',
+        description: 'Override automatic shell detection: zsh, bash, or fish',
+      },
+      {
+        name: '--no-completions',
+        description: 'Deprecated: shell completions are skipped by default',
+      },
+    ],
   },
 
   // ── Tools commands ──────────────────────────────────────────────────────
