@@ -135,6 +135,12 @@ describe('confidenceGate', () => {
     expect(sent(systemOne).state).toMatchObject({ context: { thread: 't1' } });
   });
 
+  it('sends no context key when getContext returns null', async () => {
+    const { gate, systemOne } = gateWith(0.9, { getContext: () => null });
+    await gate(context);
+    expect(sent(systemOne).state).not.toHaveProperty('context');
+  });
+
   it('hands redactArguments a copy, so redacting in place leaves the executed call alone', async () => {
     const before = structuredClone(params.arguments);
     const { gate, systemOne } = gateWith(0.9, {
@@ -171,6 +177,20 @@ describe('confidenceGate', () => {
     });
   });
 
+  it('lets a redactor mask a null leaf to null and keeps the executed call original', async () => {
+    const callArguments = { ...params.arguments, flag: null };
+    const executedParams = { ...params, arguments: callArguments };
+    const { gate, systemOne } = gateWith(0.9, {
+      redactArguments: (_slug, args) => ({ ...args, flag: null }),
+    });
+    const executed = await gate({ ...context, params: executedParams });
+    expect(executed).toBe(executedParams);
+    const call = sent(systemOne).state as {
+      proposed_call: { arguments: Record<string, unknown> };
+    };
+    expect(call.proposed_call.arguments).toEqual(callArguments);
+  });
+
   it.each<[string, Partial<TypesafeGateOptions>, Record<string, unknown>]>([
     ['a redactor that returns no object', { redactArguments: () => 'secret' as never }, {}],
     [
@@ -185,6 +205,11 @@ describe('confidenceGate', () => {
       'a redactor that changes a leaf type',
       { redactArguments: (_slug, args) => ({ ...args, password: 42 }) },
       {},
+    ],
+    [
+      'a redactor that replaces a null leaf with an object',
+      { redactArguments: (_slug, args) => ({ ...args, flag: { controlled: 'data' } }) },
+      { flag: null },
     ],
     [
       'a redactor that shortens an array',
@@ -229,6 +254,21 @@ describe('confidenceGate', () => {
       ).toThrow(TypesafeInvalidOptionsError);
     }
   );
+
+  it.each<[string, unknown]>([
+    ['an empty string', ''],
+    ['a numeric string', '0.9'],
+    ['a boolean', true],
+    ['NaN', Number.NaN],
+  ])('rejects a threshold of %s when the gate is built, not at check time', (_label, value) => {
+    expect(() =>
+      new TypesafeProvider({ client: mockClient(() => undefined).client }).confidenceGate({
+        tools,
+        getRequest: () => 'email ada',
+        threshold: value as never,
+      })
+    ).toThrow(TypesafeInvalidOptionsError);
+  });
 
   const unavailable = Object.assign(new Error('down'), {
     name: 'InternalServerError',

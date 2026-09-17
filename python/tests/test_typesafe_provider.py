@@ -1488,6 +1488,8 @@ class TestConfidenceGate:
                 },
             },
         )
+        # A context-less gate sends no context key at all, not an empty one.
+        assert "context" not in client.sent()["state"]
         # The proposed call travels in state, never inside the question text.
         assert "ada@example.com" not in json.dumps(client.sent()["questions"])
 
@@ -1529,6 +1531,15 @@ class TestConfidenceGate:
                 {
                     "redact_arguments": lambda _slug, arguments: {
                         **arguments,
+                        "flag": {"controlled": "data"},
+                    }
+                },
+                {"flag": None},
+            ),
+            (
+                {
+                    "redact_arguments": lambda _slug, arguments: {
+                        **arguments,
                         "to": arguments["to"][:-1],
                     }
                 },
@@ -1550,6 +1561,7 @@ class TestConfidenceGate:
             "redactor returns no dict",
             "redactor deletes a key",
             "redactor retypes a value",
+            "redactor replaces a null leaf with an object",
             "redactor shortens an array",
             "redactor deletes a nested key",
             "arguments not JSON",
@@ -1585,6 +1597,18 @@ class TestConfidenceGate:
             "to": "ada@example.com",
             "password": "•" * len("hunter2-SENTINEL-4"),
         }
+
+    def test_a_null_leaf_may_be_masked_to_null(self) -> None:
+        arguments = {**PARAMS["arguments"], "flag": None}
+
+        def redact(_slug: str, to_mask: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+            return {**to_mask, "flag": None}
+
+        gate, client = gate_with(0.9, redact_arguments=redact)
+        call_params = {**PARAMS, "arguments": arguments}
+        assert run_gate(gate, call_params) is call_params
+        sent_state = client.sent()["state"]
+        assert sent_state["proposed_call"]["arguments"] == arguments
 
     @pytest.mark.parametrize("value", ["alow", "ALLOW", 1, None])
     def test_an_invalid_on_unavailable_raises_at_construction(

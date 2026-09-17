@@ -135,6 +135,11 @@ def _leaf_kind(value: t.Any) -> str:
         return "number"
     if isinstance(value, str):
         return "string"
+    if isinstance(value, (dict, list)):
+        # Containers are compared structurally by the recursion, never by kind, so a
+        # container at a scalar position (e.g. a redactor replacing a JSON null with
+        # an object) cannot pass as a null-to-null mask.
+        return "container"
     return "null"
 
 

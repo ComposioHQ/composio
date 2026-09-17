@@ -143,7 +143,12 @@ const isUnavailable = (
 export function confidenceGate(options: TypesafeGateOptions, ask: Ask): beforeExecuteModifier {
   const threshold = options.threshold ?? 0.7;
   const maxVetoes = options.maxVetoes ?? 3;
-  if (!(threshold >= 0 && threshold <= 1)) {
+  if (
+    typeof threshold !== 'number' ||
+    !Number.isFinite(threshold) ||
+    threshold < 0 ||
+    threshold > 1
+  ) {
     throw new TypesafeInvalidOptionsError('The gate threshold must be a number from 0 to 1.');
   }
   if (!Number.isInteger(maxVetoes) || maxVetoes < 1) {
@@ -189,10 +194,11 @@ export function confidenceGate(options: TypesafeGateOptions, ask: Ask): beforeEx
     }
     // Only the slug and the arguments are copied out of the execution parameters.
     // `userId`, `connectedAccountId`, and the custom auth fields never leave. The `context`
-    // key exists only when there is one, so a context-less state stays context-less.
+    // key exists only when there is one (`null` counts as none), so a context-less
+    // state stays context-less.
     const state = jsonOrBlock({
       request,
-      ...(gateContext === undefined ? {} : { context: gateContext }),
+      ...(gateContext === undefined || gateContext === null ? {} : { context: gateContext }),
       proposed_call: {
         tool: tool.slug,
         description: tool.description ?? tool.name,
