@@ -82,6 +82,11 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
+  # temporary: 0.6.0 (2026-09-15) is the first release with the API that
+  # @composio/typesafe targets. Publisher, provenance, and the absence of install
+  # scripts were checked by hand for this exact version only, so later releases
+  # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
+  - '@typesafe-ai/sdk@0.6.0'
 
 peerDependencyRules:
   allowedVersions:
