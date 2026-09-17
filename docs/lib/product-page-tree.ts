@@ -28,6 +28,19 @@ function findFolder(nodes: Node[], path: string): Folder | null {
 }
 
 function resolveSidebarItem(tree: Root, item: ProductSidebarItem): Node {
+  if (item.type === 'link') {
+    return { type: 'page', name: item.label, url: item.url };
+  }
+
+  if (item.type === 'group') {
+    return {
+      type: 'folder',
+      name: item.label,
+      defaultOpen: item.defaultOpen,
+      children: item.items.map(child => resolveSidebarItem(tree, child)),
+    };
+  }
+
   const sourceNode =
     item.type === 'page'
       ? findPage(tree.children, item.url)

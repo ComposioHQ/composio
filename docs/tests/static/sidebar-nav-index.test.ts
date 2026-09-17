@@ -18,14 +18,14 @@ const index = buildSidebarNavIndex(source.pageTree);
 describe('buildSidebarNavIndex', () => {
   test('folder children carry their group, folder and depth', () => {
     expect(index['/docs/authentication/white-labeling-authentication']).toEqual({
-      group: 'Core concepts',
+      group: 'Build',
       folder: 'Authentication',
       depth: 2,
       position: index['/docs/authentication/controlling-scopes'].position + 1,
     });
 
     expect(index['/docs/extending-sessions/shared-connections']).toEqual({
-      group: 'Guides',
+      group: 'Customize',
       folder: 'Extend sessions',
       depth: 2,
       position: index['/docs/extending-sessions/custom-tools-and-toolkits'].position + 1,
@@ -34,27 +34,27 @@ describe('buildSidebarNavIndex', () => {
 
   test('top-level pages have no folder', () => {
     expect(index['/docs/quickstart']).toEqual({
-      group: 'Get Started',
+      group: 'Start',
       folder: null,
       depth: 1,
-      position: index['/docs'].position + 1,
+      position: index['/docs'].position + 2,
     });
   });
 
   test('folder index pages resolve to the folder row', () => {
     expect(index['/docs/authentication']).toEqual({
-      group: 'Core concepts',
+      group: 'Build',
       folder: 'Authentication',
       depth: 1,
-      position: index['/docs/configuring-sessions'].position + 1,
+      position: index['/docs/configuring-sessions'].position + 2,
     });
   });
 
   test('position resets at the next separator', () => {
-    // Core concepts opens a new group, so its first entry restarts at 1 rather
-    // than continuing Get Started's numbering.
+    // Build opens a new group, so its first entry restarts at 1 rather than
+    // continuing Start's numbering.
     expect(index['/docs'].position).toBe(1);
-    expect(index['/docs/how-composio-works'].position).toBe(1);
+    expect(index['/docs/configuring-sessions'].position).toBe(1);
   });
 
   test("a folder's children start their own sequence", () => {
@@ -63,16 +63,14 @@ describe('buildSidebarNavIndex', () => {
   });
 
   test('a folder counts as one entry for its siblings', () => {
-    // Authentication holds 7 children, so a counter that threaded through them
-    // would put Triggers 7 sibling slots later than Authentication instead of
-    // directly after it.
-    expect(index['/docs/triggers'].position).toBe(index['/docs/authentication'].position + 1);
-    expect(index['/docs/skills'].position).toBe(index['/docs/triggers'].position + 1);
+    // Authentication holds 7 children, but still occupies one sibling slot.
+    expect(index['/docs/skills'].position).toBe(index['/docs/authentication'].position + 1);
+    expect(index['/docs/sessions-via-mcp'].position).toBe(index['/docs/skills'].position + 1);
   });
 
   test('nested folders restart the sequence at each level', () => {
     expect(index['/docs/providers/custom-providers']).toEqual({
-      group: 'Get Started',
+      group: 'Start',
       folder: 'Custom providers',
       depth: 2,
       position: index['/docs/providers/mastra'].position + 1,

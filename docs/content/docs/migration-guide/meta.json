@@ -1,5 +1,6 @@
 {
   "title": "Migration guides",
+  "defaultOpen": false,
   "pages": [
     "direct-to-sessions",
     "mcp-servers-to-sessions",

@@ -2,7 +2,14 @@ export type DocsProduct = 'for-you' | 'platform';
 
 export type ProductSidebarItem =
   | { type: 'page'; url: string; label?: string }
-  | { type: 'folder'; path: string; label?: string };
+  | { type: 'folder'; path: string; label?: string }
+  | { type: 'link'; url: string; label: string }
+  | {
+      type: 'group';
+      label: string;
+      defaultOpen?: boolean;
+      items: readonly ProductSidebarItem[];
+    };
 
 export interface ProductSidebarGroup {
   label: string;
@@ -41,9 +48,11 @@ const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
   { type: 'folder', path: 'security', label: 'Security and data' },
 ];
 
-const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
-  item.type === 'page' ? item.url : `/docs/${item.path}`,
-);
+const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.flatMap(item => {
+  if (item.type === 'page') return [item.url];
+  if (item.type === 'folder') return [`/docs/${item.path}`];
+  return [];
+});
 
 /**
  * Canonical product model for the docs shell and homepage.
@@ -120,6 +129,7 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/tools-and-skills',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -128,6 +138,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
+      '/docs/operating-in-production',
       '/docs/security/data-retention',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
@@ -137,46 +148,218 @@ export const DOCS_PRODUCTS = {
     ],
     sidebar: [
       {
-        label: 'Get started',
+        label: 'Start',
         items: [
-          { type: 'folder', path: 'agent-setup' },
+          { type: 'page', url: '/docs/how-composio-works', label: 'How Composio works' },
           { type: 'page', url: '/docs/quickstart' },
           { type: 'folder', path: 'providers', label: 'SDKs and frameworks' },
+          { type: 'folder', path: 'agent-setup' },
         ],
       },
       {
-        label: 'Build with Composio',
+        label: 'Build',
         items: [
-          { type: 'page', url: '/docs/how-composio-works', label: 'Sessions' },
-          { type: 'page', url: '/docs/configuring-sessions' },
-          { type: 'folder', path: 'authentication' },
-          { type: 'page', url: '/docs/skills', label: 'Tools and skills' },
-          { type: 'page', url: '/docs/triggers' },
+          {
+            type: 'group',
+            label: 'Sessions',
+            defaultOpen: true,
+            items: [
+              {
+                type: 'page',
+                url: '/docs/configuring-sessions',
+                label: 'Create and reuse sessions',
+              },
+              {
+                type: 'link',
+                url: '/docs/configuring-sessions#enabling-toolkits',
+                label: 'Configure toolkits and tools',
+              },
+              {
+                type: 'link',
+                url: '/docs/configuring-sessions#account-selection',
+                label: 'Select connections and authentication',
+              },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Tools and skills',
+            items: [
+              { type: 'page', url: '/docs/tools-and-skills', label: 'Tool discovery' },
+              {
+                type: 'link',
+                url: '/docs/configuring-sessions#filtering-and-preloading-tools',
+                label: 'Tool filtering and preloading',
+              },
+              { type: 'page', url: '/docs/skills' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Authentication',
+            items: [
+              {
+                type: 'page',
+                url: '/docs/authentication',
+                label: 'In-chat authentication',
+              },
+              {
+                type: 'page',
+                url: '/docs/authentication/manually-authenticating',
+                label: 'Manual authentication',
+              },
+              {
+                type: 'page',
+                url: '/docs/authentication/managing-multiple-connected-accounts',
+                label: 'Multiple connected accounts',
+              },
+            ],
+          },
+          { type: 'page', url: '/docs/sessions-via-mcp' },
+          {
+            type: 'group',
+            label: 'Triggers',
+            items: [
+              { type: 'page', url: '/docs/triggers', label: 'Understand triggers' },
+              {
+                type: 'page',
+                url: '/docs/setting-up-triggers/creating-triggers',
+                label: 'Create triggers',
+              },
+              {
+                type: 'page',
+                url: '/docs/setting-up-triggers/subscribing-to-events',
+                label: 'Receive events',
+              },
+            ],
+          },
         ],
       },
       {
-        label: 'Guides',
+        label: 'Customize',
         items: [
+          { type: 'folder', path: 'sandbox' },
+          {
+            type: 'page',
+            url: '/docs/extending-sessions/custom-tools-and-toolkits',
+            label: 'Custom tools and toolkits',
+          },
+          {
+            type: 'page',
+            url: '/docs/extending-sessions/custom-mcp',
+            label: 'Custom MCP servers',
+          },
+          { type: 'page', url: '/docs/extending-sessions/proxy-execute' },
+          { type: 'page', url: '/docs/extending-sessions/shared-connections' },
+          {
+            type: 'group',
+            label: 'Advanced authentication configuration',
+            items: [
+              {
+                type: 'page',
+                url: '/docs/authentication/programmatic-auth-configs',
+                label: 'Create auth configs programmatically',
+              },
+              {
+                type: 'page',
+                url: '/docs/authentication/importing-existing-connections',
+                label: 'Import existing connections',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Ship',
+        items: [
+          { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/consumer-agents' },
           { type: 'page', url: '/docs/b2b-agents' },
-          { type: 'page', url: '/docs/production-readiness' },
-          { type: 'page', url: '/docs/sessions-via-mcp' },
-          { type: 'folder', path: 'sandbox' },
-          { type: 'folder', path: 'extending-sessions' },
-          { type: 'folder', path: 'setting-up-triggers' },
-          { type: 'folder', path: 'poc-to-prod' },
+          {
+            type: 'page',
+            url: '/docs/authentication/custom-app-vs-managed-app',
+            label: 'Managed versus custom authentication',
+          },
+          {
+            type: 'page',
+            url: '/docs/authentication/white-labeling-authentication',
+            label: 'White-label authentication',
+          },
+          {
+            type: 'page',
+            url: '/docs/authentication/controlling-scopes',
+            label: 'OAuth scopes and permissions',
+          },
         ],
       },
       {
-        label: 'Migration and legacy',
+        label: 'Operate',
         items: [
-          { type: 'folder', path: 'migration-guide' },
-          { type: 'page', url: '/docs/sessions-vs-direct-execution' },
-          { type: 'folder', path: 'tools-direct' },
-          { type: 'folder', path: 'auth-configuration' },
+          { type: 'page', url: '/docs/operating-in-production' },
+          {
+            type: 'link',
+            url: '/reference/api-reference/logs',
+            label: 'Logs and observability',
+          },
+          {
+            type: 'link',
+            url: '/reference/rate-limits',
+            label: 'Errors, retries, and rate limits',
+          },
+          {
+            type: 'link',
+            url: '/docs/authentication#connection-lifecycle',
+            label: 'Connection health and recovery',
+          },
+          {
+            type: 'group',
+            label: 'Trigger operations',
+            items: [
+              {
+                type: 'page',
+                url: '/docs/setting-up-triggers/managing-triggers',
+                label: 'Manage triggers',
+              },
+              {
+                type: 'page',
+                url: '/docs/setting-up-triggers/custom-oauth-webhooks',
+              },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Security',
+            items: [
+              { type: 'page', url: '/docs/security/overview', label: 'Security overview' },
+              { type: 'page', url: '/docs/security/token-custody' },
+              { type: 'page', url: '/docs/security/data-retention' },
+            ],
+          },
+          {
+            type: 'page',
+            url: '/docs/poc-to-prod/stream-logs-to-a-siem',
+            label: 'Stream logs to a SIEM',
+          },
         ],
       },
-      { label: 'Shared resources', items: SHARED_SIDEBAR_ITEMS },
+      {
+        label: 'Reference and migration',
+        items: [
+          { type: 'link', url: '/reference', label: 'API reference' },
+          { type: 'page', url: '/docs/single-toolkit-mcp', label: 'Single-toolkit MCP' },
+          {
+            type: 'group',
+            label: 'Migration and legacy',
+            defaultOpen: false,
+            items: [
+              { type: 'folder', path: 'migration-guide' },
+              { type: 'page', url: '/docs/sessions-vs-direct-execution' },
+              { type: 'folder', path: 'tools-direct' },
+              { type: 'folder', path: 'auth-configuration' },
+            ],
+          },
+        ],
+      },
     ],
     home: {
       id: 'build',

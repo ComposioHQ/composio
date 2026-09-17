@@ -49,37 +49,41 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
-  test("root navigation separates current and legacy paths", async () => {
+  test("root navigation follows the Platform lifecycle", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
     const pages = meta.pages as string[];
     const separators = pages.filter(isSeparator);
 
     expect(separators).toEqual([
-      "---Get Started---",
-      "---Core concepts---",
-      "---Guides---",
-      "---Direct execution (legacy)---",
-      "---Migration and security---",
+      "---Start---",
+      "---Build---",
+      "---Customize---",
+      "---Ship---",
+      "---Operate---",
+      "---Reference and migration---",
     ]);
 
-    expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([
+    const start = pages.slice(1, pages.indexOf("---Build---"));
+    expect(start).toEqual([
       "index",
+      "how-composio-works",
       "quickstart",
       "providers",
+      "agent-setup",
       "agent-plugins",
       "using-composio-skill",
       "cli",
       "composio-connect",
-      "agent-setup",
     ]);
+    expect(start.indexOf("quickstart")).toBeLessThan(start.indexOf("agent-setup"));
 
     expect(
       pages.slice(
-        pages.indexOf("---Direct execution (legacy)---") + 1,
-        pages.indexOf("---Migration and security---")
+        pages.indexOf("---Reference and migration---") + 1,
       )
     ).toEqual([
+      "migration-guide",
       "sessions-vs-direct-execution",
       "tools-direct",
       "auth-configuration",

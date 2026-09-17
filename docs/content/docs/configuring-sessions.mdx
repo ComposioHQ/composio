@@ -22,6 +22,8 @@ const session = await composio.create("user_123");
 </Tab>
 </Tabs>
 
+Every `create()` call returns a new session. Store its ID with the conversation or task, then restore it with `composio.use()` when the same work continues. See [How sessions behave](/docs/how-composio-works#how-sessions-behave) for reuse and update examples.
+
 By default, a session has access to every toolkit in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
@@ -235,6 +237,10 @@ console.log(tools.map((tool) => tool.name));
 ```
 </Tab>
 </Tabs>
+
+## Filtering and preloading tools
+
+Start with toolkit-level access above. Add the controls below when your agent needs a narrower tool set or known tools loaded into context immediately.
 
 ## Enabling or disabling specific tools
 
