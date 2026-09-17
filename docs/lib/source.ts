@@ -55,10 +55,10 @@ function loadOpenapiPages() {
 type OpenapiPages = Awaited<ReturnType<typeof loadOpenapiPages>>;
 
 const API_METHOD_ORDER: Partial<Record<string, number>> = {
-  post: 0, // create
-  patch: 1, // update
-  put: 1, // update
-  get: 2, // read
+  get: 0, // read
+  post: 1, // create
+  patch: 2, // update
+  put: 2, // update
   delete: 3,
 };
 

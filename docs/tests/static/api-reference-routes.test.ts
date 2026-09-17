@@ -135,7 +135,7 @@ async function generatedReferenceUrls(): Promise<Set<string>> {
 const generatedUrlsPromise = generatedReferenceUrls();
 
 describe('API reference route completeness', () => {
-  test('sidebar operations follow create, update, read, delete order', async () => {
+  test('sidebar operations follow read, create, update, delete order', async () => {
     const source = await getReferenceSource();
     const operationIds = source.pageTree.children
       .flatMap(function pages(node): string[] {
@@ -147,11 +147,11 @@ describe('API reference route completeness', () => {
       .map(url => url.slice(url.lastIndexOf('/') + 1));
 
     expect(operationIds).toEqual([
+      'getAuthConfigs',
+      'getAuthConfigsByNanoid',
       'postAuthConfigs',
       'patchAuthConfigsByNanoid',
       'patchAuthConfigsByNanoidByStatus',
-      'getAuthConfigs',
-      'getAuthConfigsByNanoid',
       'deleteAuthConfigsByNanoid',
     ]);
   });
