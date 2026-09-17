@@ -130,7 +130,7 @@ Execute predefined Composio tools.
 
 Execute raw proxy requests against connected accounts.
 
-Proxy execute is separate from tool execution. Grant it only when your application needs to call a connected account API through the raw proxy path.
+Proxy execute is separate from tool execution and from Sessions. Grant it only when your application needs to call a connected account API through the raw proxy path. Sessions write access does not include the session endpoint below, and a session created with a key that lacks Proxy execute cannot use the proxy from its sandbox either.
 
 | Access | Method | Endpoint                                                 |
 | ------ | ------ | -------------------------------------------------------- |
