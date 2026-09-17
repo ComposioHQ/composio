@@ -199,7 +199,7 @@ await composio.tools.execute('GITHUB_CREATE_AN_ISSUE', params, { beforeExecute: 
 
 - A veto throws `TypesafeGateVetoError`. After `maxVetoes` vetoes (default 3) the gate blocks every later call in the run, so a hijacked LLM cannot vary arguments until one passes. Create a fresh gate for each new run. Never share a gate across users or runs, and never recreate it for each retry.
 - When TypeSafe cannot be reached the gate blocks with `TypesafeGateUnavailableError`. `onUnavailable: 'allow'` lets those calls through and reports each one to `onBypass`. A tool the gate was not given, an oversized call, arguments or context that are not JSON, and a malformed response always block.
-- `redactArguments` gets a copy of the arguments, so it can redact in place without changing the call that runs. It must return an object. Anything else blocks the call, because falling back to the original arguments would send the secrets.
+- `redactArguments` gets a copy of the arguments, so it can redact in place without changing the call that runs. It must mask the arguments it got: the return must have the same JSON structure (same keys, same array lengths) with every leaf replaced by a value of the same JSON type. A redactor that deletes or adds a key, changes an array's length, or retypes a value blocks the call, because Jev must approve exactly the call that runs.
 - One gate checks one call at a time, so concurrent calls cannot slip past `maxVetoes`. Separate gates run in parallel.
 - The gate checks that a call is consistent with the request. It is not an authorization check. File uploads run before `beforeExecute`, so a veto happens after the upload.
 - The gate covers direct execution only. A session applies no modifiers on `session.execute`.

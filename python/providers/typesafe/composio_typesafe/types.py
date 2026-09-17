@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
-from pydantic import ConfigDict, Field, TypeAdapter, with_config
+from pydantic import BeforeValidator, ConfigDict, Field, TypeAdapter, with_config
 from pydantic import ValidationError as PydanticValidationError
 
 from composio.client.types import Tool
@@ -112,6 +112,8 @@ class TypesafeArrayArgument(te.TypedDict):
     mentioned: TypesafeNoulQuestion
     members: t.List[TypesafeArrayMember]
     maxItems: te.NotRequired[int]
+    minItems: te.NotRequired[int]
+    """A selection with fewer members than this is not stated, so the argument stays missing."""
 
 
 TypesafeArgumentQuestion: te.TypeAlias = t.Union[
@@ -172,7 +174,21 @@ TypesafeState: te.TypeAlias = t.Union[str, TypesafeRequestState]
 # ---------------------------------------------------------------------------
 
 
-Probability = te.Annotated[float, Field(ge=0, le=1, strict=True, allow_inf_nan=False)]
+def _json_number(value: t.Any) -> t.Any:
+    """
+    Accepts a JSON number and returns it as a float, so a whole number on the wire (``0``
+    or ``1``) is valid. ``bool`` is an ``int`` subclass, so it is rejected here.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("expected a JSON number")
+    return float(value)
+
+
+Probability = te.Annotated[
+    float,
+    BeforeValidator(_json_number),
+    Field(ge=0, le=1, allow_inf_nan=False),
+]
 _Path = te.Annotated[t.List[str], Field(min_length=1)]
 # Pydantic validates a stored decision against these same TypedDicts, strictly.
 _STRICT = ConfigDict(strict=True)

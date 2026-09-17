@@ -36,17 +36,27 @@ describe('classifyProperty', () => {
   });
 
   it('classifies booleans, including a boolean enum', () => {
-    expect(classifyProperty({ type: 'boolean' })).toEqual({ kind: 'boolean' });
-    expect(classifyProperty({ enum: [true, false] })).toEqual({ kind: 'boolean' });
+    expect(classifyProperty({ type: 'boolean' })).toEqual({ kind: 'boolean', nullable: false });
+    expect(classifyProperty({ enum: [true, false] })).toEqual({
+      kind: 'boolean',
+      nullable: false,
+    });
   });
 
   it.each([
     [{ type: 'boolean', enum: [false, true] }],
     [{ anyOf: [{ const: true }, { const: false }] }],
+  ])('classifies %j as a non-nullable boolean, since it allows both values', schema => {
+    expect(classifyProperty(schema)).toEqual({ kind: 'boolean', nullable: false });
+  });
+
+  it.each([
+    [{ type: ['boolean', 'null'] }],
+    [{ type: 'boolean', nullable: true }],
     [{ oneOf: [{ enum: [true] }, { enum: [false] }, { type: 'null' }] }],
     [{ enum: [true, false, null] }],
-  ])('classifies %j as boolean, since it allows both values', schema => {
-    expect(classifyProperty(schema)).toEqual({ kind: 'boolean' });
+  ])('classifies %j as a nullable boolean, so Jev can bind null', schema => {
+    expect(classifyProperty(schema)).toEqual({ kind: 'boolean', nullable: true });
   });
 
   // A yes/no Choice could bind the value the schema forbids.
@@ -63,10 +73,18 @@ describe('classifyProperty', () => {
     expect(classifyProperty(schema)).toEqual({ kind: 'open' });
   });
 
-  it('classifies an array of enum values and keeps maxItems', () => {
+  it('classifies an array of enum values and keeps maxItems and minItems', () => {
     expect(
       classifyProperty({ type: 'array', items: { type: 'string', enum: ['a', 'b'] }, maxItems: 1 })
     ).toEqual({ kind: 'enum_array', values: ['a', 'b'], maxItems: 1 });
+    expect(
+      classifyProperty({
+        type: 'array',
+        items: { type: 'string', enum: ['a', 'b'] },
+        maxItems: 2,
+        minItems: 1,
+      })
+    ).toEqual({ kind: 'enum_array', values: ['a', 'b'], maxItems: 2, minItems: 1 });
   });
 
   it('keeps a single-member enum and a scalar const closed', () => {

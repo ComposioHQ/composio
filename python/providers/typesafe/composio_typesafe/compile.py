@@ -106,6 +106,18 @@ def _compile_argument(
             {"key": "yes", "value": True},
             {"key": "no", "value": False},
         ]
+        if argument_class["nullable"]:
+            flags.append({"key": NULL_KEY, "value": None})
+
+        def boolean_text(argument: str, option: TypesafeOption) -> str:
+            if option["value"] is None:
+                return (
+                    f'The request explicitly asks for no value (null) for "{argument}".'
+                )
+            if option["value"] is True:
+                return f'The request states that "{argument}" is true.'
+            return f'The request states that "{argument}" is false.'
+
         return {
             "kind": "choice",
             "name": argument,
@@ -116,11 +128,7 @@ def _compile_argument(
                 argument,
                 description,
                 flags,
-                lambda option: (
-                    f'The request states that "{argument}" is true.'
-                    if option["value"] is True
-                    else f'The request states that "{argument}" is false.'
-                ),
+                lambda option: boolean_text(argument, option),
             ),
             "options": flags,
             "notStatedKey": NOT_STATED_KEY,
@@ -176,6 +184,8 @@ def _compile_argument(
     }
     if "maxItems" in argument_class:
         compiled["maxItems"] = t.cast(int, argument_class["maxItems"])
+    if "minItems" in argument_class:
+        compiled["minItems"] = t.cast(int, argument_class["minItems"])
     return compiled
 
 

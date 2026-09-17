@@ -3,8 +3,8 @@ import { MAX_CHOICE_OPTIONS } from './keys';
 
 export type ArgumentClass =
   | { kind: 'enum'; values: Array<string | number>; nullable: boolean }
-  | { kind: 'boolean' }
-  | { kind: 'enum_array'; values: Array<string | number>; maxItems?: number }
+  | { kind: 'boolean'; nullable: boolean }
+  | { kind: 'enum_array'; values: Array<string | number>; maxItems?: number; minItems?: number }
   | { kind: 'open' };
 
 const OPEN: ArgumentClass = { kind: 'open' };
@@ -42,7 +42,7 @@ function classifyMembers(members: unknown[], nullableHint: boolean): ArgumentCla
   if (values.length === 0) return OPEN;
   if (values.every(value => typeof value === 'boolean')) {
     // The boolean Choice offers both yes and no, so a set that allows one of them stays open.
-    return values.length === 2 ? { kind: 'boolean' } : OPEN;
+    return values.length === 2 ? { kind: 'boolean', nullable } : OPEN;
   }
   const strings = values.filter((value): value is string => typeof value === 'string');
   const integers = values.filter(
@@ -74,11 +74,14 @@ export function classifyProperty(property: JSONSchemaProperty): ArgumentClass {
       kind: 'enum_array',
       values: items.values,
       ...(property.maxItems === undefined ? {} : { maxItems: property.maxItems }),
+      ...(property.minItems === undefined ? {} : { minItems: property.minItems }),
     };
   }
 
   const members = literalMembers(property);
   if (members !== undefined) return classifyMembers(members, nullableHint);
-  if (valueTypes.length === 1 && valueTypes[0] === 'boolean') return { kind: 'boolean' };
+  if (valueTypes.length === 1 && valueTypes[0] === 'boolean') {
+    return { kind: 'boolean', nullable: nullableHint };
+  }
   return OPEN;
 }

@@ -108,13 +108,15 @@ const notJson = (): TypesafeInvalidOptionsError =>
 
 /**
  * Rebuilds a JSON value with sorted object keys, so equal states serialize identically.
- * Throws on a value JSON cannot hold, which `JSON.stringify` would drop or rewrite silently.
+ * Throws on a value JSON cannot hold, which `JSON.stringify` would drop or rewrite silently:
+ * `undefined` is rejected wherever it appears, and `null` stays JSON null.
  */
 export function stable(
   value: unknown,
   ancestors: ReadonlySet<object> = new Set()
 ): TypesafeJsonValue {
-  if (value === null || value === undefined) return null;
+  if (value === null) return null;
+  if (value === undefined) throw notJson();
   if (typeof value === 'string' || typeof value === 'boolean') return value;
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) throw notJson();
@@ -130,7 +132,6 @@ export function stable(
   // `fromEntries` defines own properties, so a `__proto__` key stays data.
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([, entry]) => entry !== undefined)
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([key, entry]) => [key, stable(entry, path)])
   );
@@ -269,6 +270,8 @@ function readArgument(
     .sort((left, right) => right.probability - left.probability || left.index - right.index)
     .slice(0, argument.maxItems ?? members.length)
     .sort((left, right) => left.index - right.index);
+  // An undersized selection is not what the request stated, so nothing is bound.
+  if (selected.length < (argument.minItems ?? 0)) return { kind: 'not_stated' };
   const score = Math.min(
     mentioned,
     ...members.map(member => Math.max(member.probability, 1 - member.probability))

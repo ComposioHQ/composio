@@ -7,8 +7,8 @@ import typing as t
 import typing_extensions as te
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
-    Field,
     StrictBool,
     StrictStr,
     model_validator,
@@ -16,13 +16,16 @@ from pydantic import (
 from pydantic import ValidationError as PydanticValidationError
 
 from .keys import MAX_CHOICE_OPTIONS
+from .types import _json_number
 
 _MAX_SAFE_INTEGER = 2**53 - 1
 
 _JsonSchemaType = t.Literal[
     "string", "number", "integer", "boolean", "object", "array", "null"
 ]
-_Number = te.Annotated[float, Field(strict=True)]
+# A JSON number: an integer on the wire is as valid as a float. `bool` is an `int`
+# subclass, so `_json_number` rejects it, and strings never reach the float.
+_Number = te.Annotated[float, BeforeValidator(_json_number)]
 
 
 class JsonSchemaProperty(BaseModel):
@@ -45,6 +48,7 @@ class JsonSchemaProperty(BaseModel):
     enum: t.Optional[t.List[t.Any]] = None
     const: t.Any = None
     maxItems: t.Optional[_Number] = None
+    minItems: t.Optional[_Number] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -83,12 +87,14 @@ class EnumClass(te.TypedDict):
 
 class BooleanClass(te.TypedDict):
     kind: t.Literal["boolean"]
+    nullable: bool
 
 
 class EnumArrayClass(te.TypedDict):
     kind: t.Literal["enum_array"]
     values: t.List[t.Union[str, int]]
     maxItems: te.NotRequired[t.Union[int, float]]
+    minItems: te.NotRequired[t.Union[int, float]]
 
 
 class OpenClass(te.TypedDict):
@@ -163,7 +169,9 @@ def _classify_members(members: t.List[t.Any], nullable_hint: bool) -> ArgumentCl
         return _OPEN
     if all(isinstance(value, bool) for value in values):
         # The boolean Choice offers both values, so a set that allows only one is open-ended.
-        return {"kind": "boolean"} if len(values) == 2 else _OPEN
+        if len(values) != 2:
+            return _OPEN
+        return {"kind": "boolean", "nullable": nullable}
     strings = [value for value in values if isinstance(value, str)]
     integers = [
         value
@@ -209,11 +217,13 @@ def classify_property(parsed: t.Mapping[str, t.Any]) -> ArgumentClass:
         }
         if "maxItems" in parsed:
             array_class["maxItems"] = _normalize_number(parsed["maxItems"])
+        if "minItems" in parsed:
+            array_class["minItems"] = _normalize_number(parsed["minItems"])
         return array_class
 
     members = _literal_members(parsed)
     if members is not None:
         return _classify_members(members, nullable_hint)
     if value_types == ["boolean"]:
-        return {"kind": "boolean"}
+        return {"kind": "boolean", "nullable": nullable_hint}
     return _OPEN

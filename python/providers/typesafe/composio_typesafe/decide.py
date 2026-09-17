@@ -430,6 +430,9 @@ def _read_argument(
     )
     if "maxItems" in argument:
         selected = selected[: int(argument["maxItems"])]
+    # An undersized selection is not what the request stated, so nothing is bound.
+    if len(selected) < argument.get("minItems", 0):
+        return None
     score = min([mentioned, *(max(p, 1 - p) for _, _, p in members)])
     # The output keeps the declared order of the members.
     return _Stated([value for _, value, _ in sorted(selected)], score)

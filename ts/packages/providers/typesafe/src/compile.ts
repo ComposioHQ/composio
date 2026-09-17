@@ -80,15 +80,18 @@ function compileArgument(
       { key: 'yes', value: true },
       { key: 'no', value: false },
     ];
+    if (argumentClass.nullable) options.push({ key: NULL_KEY, value: null });
     return {
       kind: 'choice',
       name: argument,
       required,
       questionId,
       question: choiceQuestion(toolName, argument, description, options, option =>
-        option.value === true
-          ? `The request states that "${argument}" is true.`
-          : `The request states that "${argument}" is false.`
+        option.value === null
+          ? `The request explicitly asks for no value (null) for "${argument}".`
+          : option.value === true
+            ? `The request states that "${argument}" is true.`
+            : `The request states that "${argument}" is false.`
       ),
       options,
       notStatedKey: NOT_STATED_KEY,
@@ -133,6 +136,7 @@ function compileArgument(
       },
     })),
     ...(argumentClass.maxItems === undefined ? {} : { maxItems: argumentClass.maxItems }),
+    ...(argumentClass.minItems === undefined ? {} : { minItems: argumentClass.minItems }),
   };
 }
 

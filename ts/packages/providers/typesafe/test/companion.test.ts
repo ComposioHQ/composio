@@ -6,6 +6,7 @@ import {
   TypesafeGateBlockedError,
   TypesafeGateUnavailableError,
   TypesafeGateVetoError,
+  TypesafeInvalidOptionsError,
   TypesafeProvider,
   type TypesafeGateOptions,
   type TypesafeSystemOneRequest,
@@ -123,7 +124,15 @@ describe('confidenceGate', () => {
       request: 'email ada the report',
       proposed_call: { tool: 'GMAIL_SEND_EMAIL', arguments: { to: 'ada@example.com' } },
     });
+    // A context-less gate sends no context key at all, not an empty one.
+    expect(request.state).not.toHaveProperty('context');
     expect(JSON.stringify(request.questions)).not.toContain('ada@example.com');
+  });
+
+  it('sends context exactly as getContext returned it when there is one', async () => {
+    const { gate, systemOne } = gateWith(0.9, { getContext: () => ({ thread: 't1' }) });
+    await gate(context);
+    expect(sent(systemOne).state).toMatchObject({ context: { thread: 't1' } });
   });
 
   it('hands redactArguments a copy, so redacting in place leaves the executed call alone', async () => {
@@ -141,8 +150,57 @@ describe('confidenceGate', () => {
     expect(JSON.stringify(sent(systemOne))).toContain('[redacted]');
   });
 
+  it('lets a masking redactor rewrite nested values and keeps the executed call original', async () => {
+    const before = structuredClone(params.arguments);
+    const { gate, systemOne } = gateWith(0.9, {
+      getContext: () => ({ thread: 't1' }),
+      redactArguments: (_slug, args) => ({
+        ...args,
+        password: String(args.password).replaceAll(/./g, '•'),
+      }),
+    });
+    const executed = await gate(context);
+    expect(executed).toBe(params);
+    expect(executed.arguments).toEqual(before);
+    const call = sent(systemOne).state as {
+      proposed_call: { arguments: Record<string, unknown> };
+    };
+    expect(call.proposed_call.arguments).toEqual({
+      to: 'ada@example.com',
+      password: '•'.repeat(String(params.arguments?.password).length),
+    });
+  });
+
   it.each<[string, Partial<TypesafeGateOptions>, Record<string, unknown>]>([
     ['a redactor that returns no object', { redactArguments: () => 'secret' as never }, {}],
+    [
+      'a redactor that deletes a key',
+      {
+        redactArguments: (_slug, { password: _deleted, ...rest }) =>
+          rest as Record<string, unknown>,
+      },
+      { password: 'hunter2' },
+    ],
+    [
+      'a redactor that changes a leaf type',
+      { redactArguments: (_slug, args) => ({ ...args, password: 42 }) },
+      {},
+    ],
+    [
+      'a redactor that shortens an array',
+      { redactArguments: (_slug, args) => ({ ...args, to: (args.to as string[]).slice(1) }) },
+      { to: ['a@example.com', 'b@example.com'] },
+    ],
+    [
+      'a redactor that deletes a nested key',
+      {
+        redactArguments: (_slug, args) => ({
+          ...args,
+          meta: { visible: (args.meta as { visible: string }).visible },
+        }),
+      },
+      { meta: { visible: 'v', secret: 's' } },
+    ],
     ['arguments that are not JSON', {}, { when: new Date(0) }],
     ['a context that is not JSON', { getContext: () => ({ size: 1n }) as never }, {}],
   ])('blocks and sends nothing for %s', async (_label, options, callArguments) => {
@@ -154,6 +212,23 @@ describe('confidenceGate', () => {
     expect(systemOne).not.toHaveBeenCalled();
     expect(onBypass).not.toHaveBeenCalled();
   });
+
+  it.each<[string, unknown]>([
+    ['a typo', 'alow'],
+    ['uppercase', 'ALLOW'],
+    ['a non-string', 1],
+  ])(
+    'rejects an onUnavailable of %s when the gate is built, not at check time',
+    (_label, value) => {
+      expect(() =>
+        new TypesafeProvider({ client: mockClient(() => undefined).client }).confidenceGate({
+          tools,
+          getRequest: () => 'email ada',
+          onUnavailable: value as never,
+        })
+      ).toThrow(TypesafeInvalidOptionsError);
+    }
+  );
 
   const unavailable = Object.assign(new Error('down'), {
     name: 'InternalServerError',

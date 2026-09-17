@@ -39,17 +39,23 @@ from composio_typesafe import (  # noqa: E402
     TypesafeMissingApiKeyError,
     TypesafeProvider,
     TypesafeProviderError,
+    companion,
+    parse_decision,
 )
-from composio_typesafe.classify import classify_property  # noqa: E402
+from composio_typesafe.classify import classify_property, parse_property  # noqa: E402
 from composio_typesafe.compile import routing_question  # noqa: E402
+from composio_typesafe.decide import normalize_state, stable  # noqa: E402
 from composio_typesafe.keys import (  # noqa: E402
     build_options,
     index_prefixed_key,
     is_safe_label,
     option_values,
 )
+from composio_typesafe.types import Probability  # noqa: E402
 from hypothesis import given  # noqa: E402
 from hypothesis import strategies as st  # noqa: E402
+from pydantic import TypeAdapter  # noqa: E402
+from pydantic import ValidationError as PydanticValidationError  # noqa: E402
 
 from composio.client.types import Tool  # noqa: E402
 from composio.core.models.base import allow_tracking  # noqa: E402
@@ -318,7 +324,10 @@ class TestQuestionCorpus:
 class TestClassifyAndKeys:
     def test_python_number_traps(self) -> None:
         # bool is an int subclass, JSON 1.0 is the integer 1, and 1 and "1" are mixed types.
-        assert classify_property({"enum": [True, False]}) == {"kind": "boolean"}
+        assert classify_property({"enum": [True, False]}) == {
+            "kind": "boolean",
+            "nullable": False,
+        }
         assert classify_property({"enum": [1, True]}) == {"kind": "open"}
         assert classify_property({"enum": [1, "1"]}) == {"kind": "open"}
         assert classify_property({"enum": [1.0, 2, 2.0]}) == {
@@ -331,19 +340,45 @@ class TestClassifyAndKeys:
         assert classify_property({"enum": [2**53 - 1]})["kind"] == "enum"
 
     @pytest.mark.parametrize(
-        ("schema", "kind"),
+        ("schema", "expected"),
         [
             # A yes/no Choice would offer a value the schema forbids.
-            ({"const": True}, "open"),
-            ({"enum": [False, None]}, "open"),
-            ({"oneOf": [{"enum": [False]}, {"type": "null"}]}, "open"),
-            ({"type": ["boolean", "null"]}, "boolean"),
-            ({"enum": [False, True, None]}, "boolean"),
-            ({"anyOf": [{"const": True}, {"const": False}]}, "boolean"),
+            ({"const": True}, {"kind": "open"}),
+            ({"enum": [False, None]}, {"kind": "open"}),
+            ({"oneOf": [{"enum": [False]}, {"type": "null"}]}, {"kind": "open"}),
+            ({"type": ["boolean", "null"]}, {"kind": "boolean", "nullable": True}),
+            ({"type": "boolean"}, {"kind": "boolean", "nullable": False}),
+            ({"enum": [False, True, None]}, {"kind": "boolean", "nullable": True}),
+            (
+                {"anyOf": [{"const": True}, {"const": False}]},
+                {"kind": "boolean", "nullable": False},
+            ),
         ],
     )
-    def test_a_boolean_needs_both_values(self, schema: t.Any, kind: str) -> None:
-        assert classify_property(schema) == {"kind": kind}
+    def test_a_boolean_needs_both_values(
+        self, schema: t.Any, expected: t.Dict[str, t.Any]
+    ) -> None:
+        assert classify_property(schema) == expected
+
+    def test_an_enum_array_keeps_integer_max_items_and_min_items(self) -> None:
+        # JSON whole numbers arrive as ints; a strict float used to make the property
+        # open-ended instead.
+        prop = parse_property(
+            {
+                "type": "array",
+                "items": {"type": "string", "enum": ["a", "b"]},
+                "maxItems": 2,
+                "minItems": 1,
+            }
+        )
+        assert prop is not None
+        assert classify_property(prop) == {
+            "kind": "enum_array",
+            "values": ["a", "b"],
+            "maxItems": 2,
+            "minItems": 1,
+        }
+        assert parse_property({"type": "array", "items": {}, "maxItems": "2"}) is None
 
     def test_option_count_limit(self) -> None:
         members = [f"m{index}" for index in range(254)]
@@ -532,6 +567,101 @@ class TestDecideOutcomes:
         )
         assert capped["arguments"] == {"pick": ["b"]}
 
+    def test_a_selection_below_min_items_is_not_stated(self) -> None:
+        tool = make_tool(
+            "PICK_SOME",
+            {
+                "pick": {
+                    "type": "array",
+                    "items": {"enum": ["a", "b"]},
+                    "minItems": 1,
+                },
+                "pick_many": {
+                    "type": "array",
+                    "items": {"enum": ["x", "y"]},
+                    "minItems": 2,
+                },
+            },
+            ["pick"],
+        )
+        compiled = json.loads(
+            json.dumps(TypesafeProvider().wrap_tool(tool)["arguments"])
+        )
+        assert [a["name"] for a in compiled] == ["pick", "pick_many"]
+        assert compiled[0]["minItems"] == 1
+        assert compiled[1]["minItems"] == 2
+
+        # "mentioned" with zero members selected leaves the required argument missing.
+        none = decide_both(
+            respond(("PICK_SOME", 0.9), answers={"t0_a0_mentioned": 0.9}),
+            [tool],
+            "pick some",
+        )
+        assert matches(
+            none, {"kind": "partial", "missing": [["pick"]], "arguments": {}}
+        )
+
+        # Enough members selected binds the argument.
+        enough = decide_both(
+            respond(
+                ("PICK_SOME", 0.9),
+                answers={"t0_a0_mentioned": 0.9, "t0_a0_m0": 0.9},
+            ),
+            [tool],
+            "pick a",
+        )
+        assert matches(enough, {"kind": "call", "arguments": {"pick": ["a"]}})
+
+        # An optional argument that stays below minItems is not bound and not dropped.
+        optional = decide_both(
+            respond(
+                ("PICK_SOME", 0.9),
+                answers={
+                    "t0_a0_mentioned": 0.9,
+                    "t0_a0_m0": 0.9,
+                    "t0_a1_mentioned": 0.9,
+                    "t0_a1_m0": 0.9,
+                },
+            ),
+            [tool],
+            "pick some",
+        )
+        assert matches(
+            optional,
+            {"kind": "call", "arguments": {"pick": ["a"]}, "dropped": []},
+        )
+
+    def test_a_nullable_boolean_offers_and_binds_null(self) -> None:
+        nullable = make_tool("CLEAR_FLAG", {"flag": {"type": ["boolean", "null"]}})
+        compiled = json.loads(
+            json.dumps(TypesafeProvider().wrap_tool(nullable)["arguments"][0])
+        )
+        assert compiled["options"] == [
+            {"key": "yes", "value": True},
+            {"key": "no", "value": False},
+            {"key": "__null__", "value": None},
+        ]
+        assert (
+            compiled["question"]["criteria"]["__null__"]
+            == 'The request explicitly asks for no value (null) for "flag".'
+        )
+        bound = decide_both(
+            respond(("CLEAR_FLAG", 0.9), answers={"t0_a0": ("__null__", 0.9)}),
+            [nullable],
+            "clear the flag",
+        )
+        assert matches(bound, {"kind": "call", "arguments": {"flag": None}})
+        assert bound["arguments"]["flag"] is None
+
+        plain = make_tool("SET_FLAG", {"flag": {"type": "boolean"}})
+        plain_compiled = json.loads(
+            json.dumps(TypesafeProvider().wrap_tool(plain)["arguments"][0])
+        )
+        assert plain_compiled["options"] == [
+            {"key": "yes", "value": True},
+            {"key": "no", "value": False},
+        ]
+
     def test_restores_typed_values(self) -> None:
         tool = make_tool(
             "TYPED",
@@ -619,6 +749,27 @@ class TestDecideWithoutARequest:
                 provider.wrap_tools([TICKETS]),
                 {"request": "open a ticket", "context": cyclic},
             )
+
+    def test_stable_keeps_json_null_and_rejects_the_rest(self) -> None:
+        # JSON null is a value; nothing else is dropped or rewritten.
+        assert stable(None) is None
+        assert stable({"b": 1, "a": None}) == {"a": None, "b": 1}
+        assert stable([1, None]) == [1, None]
+        for not_json in (
+            float("nan"),
+            float("inf"),
+            datetime.date(2026, 1, 2),
+            object(),
+        ):
+            with pytest.raises(TypesafeInvalidOptionsError):
+                stable(not_json)
+
+        contextless = normalize_state({"request": "open a ticket"})
+        assert contextless.has_context is False
+        assert contextless.full == {"request": "open a ticket"}
+        with_context = normalize_state({"request": "open", "context": {"a": None}})
+        assert with_context.has_context is True
+        assert with_context.full == {"context": {"a": None}, "request": "open"}
 
 
 def many_tools(count: int) -> t.List[Tool]:
@@ -821,6 +972,60 @@ class TestThresholdsAndRisk:
             provider.decide(
                 provider.wrap_tools([TICKETS]), "open it", thresholds={"gate": value}
             )
+
+
+class TestProbabilityAcceptsJsonNumbers:
+    def test_probability_accepts_whole_numbers_and_rejects_the_rest(self) -> None:
+        adapter = TypeAdapter(Probability)
+        assert adapter.validate_python(0) == 0.0
+        assert adapter.validate_python(1) == 1.0
+        assert adapter.validate_python(0.5) == 0.5
+        assert isinstance(adapter.validate_python(1), float)
+        for bad in (True, "0.5", 1.5, float("nan"), float("inf"), -0.1, None):
+            with pytest.raises(PydanticValidationError):
+                adapter.validate_python(bad)
+
+    def test_a_stored_decision_with_whole_number_confidence_parses(self) -> None:
+        parsed = parse_decision({**CALL, "confidence": 1})
+        assert parsed["confidence"] == 1.0
+        for bad in (True, "0.9", 1.5, float("nan")):
+            with pytest.raises(TypesafeMalformedDecisionError):
+                parse_decision({**CALL, "confidence": bad})
+
+    def test_an_api_answer_with_whole_number_probabilities_parses(self) -> None:
+        # JSON 0 and 1 are valid probabilities, not malformed responses.
+        response = {
+            "model": "jev-1.13",
+            "answers": {
+                "route": {
+                    "type": "choice",
+                    "choice": "TICKETS_CREATE",
+                    "confidence": 1,
+                    "probabilities": {"TICKETS_CREATE": 1, NONE: 0},
+                },
+                "gate_0": {"type": "noul", "noul": 1},
+                "gate_1": {"type": "noul", "noul": 0},
+                "gate_2": {"type": "noul", "noul": 1},
+                "t0_a0": {
+                    "type": "choice",
+                    "choice": "high",
+                    "confidence": 1,
+                    "probabilities": {
+                        "low": 0,
+                        "medium": 0,
+                        "high": 1,
+                        NOT_STATED: 0,
+                    },
+                },
+            },
+        }
+        client = Mock()
+        client.system_one = MagicMock(return_value=response)
+        provider = TypesafeProvider(client=client)
+        decision = provider.decide(provider.wrap_tools([TICKETS]), "open a ticket")
+        # `title` is required and open-ended, so the decision stays partial.
+        assert matches(decision, {"kind": "partial", "arguments": {"priority": "high"}})
+        assert decision["confidence"] == (1 + 0 + 1) / 3
 
 
 VALID_ROUTE = {
@@ -1303,10 +1508,53 @@ class TestConfidenceGate:
         ("options", "arguments"),
         [
             ({"redact_arguments": lambda _slug, _arguments: "secret"}, {}),
+            (
+                {
+                    "redact_arguments": lambda _slug, arguments: {
+                        k: v for k, v in arguments.items() if k != "password"
+                    }
+                },
+                {"password": "hunter2"},
+            ),
+            (
+                {
+                    "redact_arguments": lambda _slug, arguments: {
+                        **arguments,
+                        "password": 42,
+                    }
+                },
+                {},
+            ),
+            (
+                {
+                    "redact_arguments": lambda _slug, arguments: {
+                        **arguments,
+                        "to": arguments["to"][:-1],
+                    }
+                },
+                {"to": ["a@example.com", "b@example.com"]},
+            ),
+            (
+                {
+                    "redact_arguments": lambda _slug, arguments: {
+                        **arguments,
+                        "meta": {"visible": arguments["meta"]["visible"]},
+                    }
+                },
+                {"meta": {"visible": "v", "secret": "s"}},
+            ),
             ({}, {"when": datetime.datetime(2026, 1, 2)}),
             ({"get_context": lambda _context: {"size": float("inf")}}, {}),
         ],
-        ids=["redactor returns no dict", "arguments not JSON", "context not JSON"],
+        ids=[
+            "redactor returns no dict",
+            "redactor deletes a key",
+            "redactor retypes a value",
+            "redactor shortens an array",
+            "redactor deletes a nested key",
+            "arguments not JSON",
+            "context not JSON",
+        ],
     )
     def test_blocks_and_sends_nothing(self, options: t.Any, arguments: t.Any) -> None:
         on_bypass = Mock()
@@ -1316,8 +1564,46 @@ class TestConfidenceGate:
         with pytest.raises(TypesafeGateBlockedError) as caught:
             run_gate(gate, {**PARAMS, "arguments": arguments})
         assert caught.value.reason == "check_failed"
+        assert caught.value.__cause__ is None and caught.value.__context__ is None
         client.system_one.assert_not_called()
         on_bypass.assert_not_called()
+
+    def test_a_masking_redactor_keeps_the_executed_call_original(self) -> None:
+        before = json.loads(json.dumps(PARAMS["arguments"]))
+
+        def redact(_slug: str, arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+            return {
+                **arguments,
+                "password": "•" * len(t.cast(str, arguments["password"])),
+            }
+
+        gate, client = gate_with(0.9, redact_arguments=redact)
+        assert run_gate(gate) is PARAMS
+        assert PARAMS["arguments"] == before
+        sent_state = client.sent()["state"]
+        assert sent_state["proposed_call"]["arguments"] == {
+            "to": "ada@example.com",
+            "password": "•" * len("hunter2-SENTINEL-4"),
+        }
+
+    @pytest.mark.parametrize("value", ["alow", "ALLOW", 1, None])
+    def test_an_invalid_on_unavailable_raises_at_construction(
+        self, value: t.Any
+    ) -> None:
+        # Both entry points validate: the provider method and the module function.
+        with pytest.raises(TypesafeInvalidOptionsError):
+            TypesafeProvider(client=MockClient(respond())).confidence_gate(
+                tools=RAW_TOOLS,
+                get_request=lambda _context: "email ada",
+                on_unavailable=value,
+            )
+        with pytest.raises(TypesafeInvalidOptionsError):
+            companion.confidence_gate(
+                ask=t.cast(t.Any, lambda *_: None),
+                tools=RAW_TOOLS,
+                get_request=lambda _context: "email ada",
+                on_unavailable=value,
+            )
 
     def test_blocks_on_unavailability_and_allow_lets_it_through(self) -> None:
         with pytest.raises(TypesafeGateUnavailableError) as caught:

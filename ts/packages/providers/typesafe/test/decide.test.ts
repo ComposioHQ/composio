@@ -167,6 +167,70 @@ describe('decide outcomes', () => {
     ).toMatchObject({ arguments: { pick: ['b'] } });
   });
 
+  it('treats a selection below minItems as not stated, so a required array stays missing', async () => {
+    const tool = makeTool(
+      'PICK_SOME',
+      {
+        pick: { type: 'array', items: { enum: ['a', 'b'] }, minItems: 1 },
+        pick_many: { type: 'array', items: { enum: ['x', 'y'] }, minItems: 2 },
+      },
+      ['pick']
+    );
+    const compileFor = new TypesafeProvider();
+    expect(compileFor.wrapTool(tool).arguments).toEqual([
+      expect.objectContaining({ name: 'pick', minItems: 1 }),
+      expect.objectContaining({ name: 'pick_many', minItems: 2 }),
+    ]);
+
+    // "mentioned" with zero members selected leaves the required argument missing.
+    const none = setup({ route: ['PICK_SOME', 0.9], answers: { t0_a0_mentioned: 0.9 } });
+    expect(await none.provider.decide(none.provider.wrapTools([tool]), 'pick some')).toMatchObject({
+      kind: 'partial',
+      missing: [['pick']],
+      arguments: {},
+    });
+
+    // Enough members selected binds the argument.
+    const enough = setup({
+      route: ['PICK_SOME', 0.9],
+      answers: { t0_a0_mentioned: 0.9, t0_a0_m0: 0.9 },
+    });
+    expect(await enough.provider.decide(enough.provider.wrapTools([tool]), 'pick a')).toMatchObject(
+      { kind: 'call', arguments: { pick: ['a'] } }
+    );
+
+    // An optional argument that stays below minItems is not bound and not dropped.
+    const optional = setup({
+      route: ['PICK_SOME', 0.9],
+      answers: { t0_a0_mentioned: 0.9, t0_a0_m0: 0.9, t0_a1_mentioned: 0.9, t0_a1_m0: 0.9 },
+    });
+    expect(
+      await optional.provider.decide(optional.provider.wrapTools([tool]), 'pick some')
+    ).toMatchObject({ kind: 'call', arguments: { pick: ['a'] }, dropped: [] });
+  });
+
+  it('offers null for a nullable boolean, binds it, and keeps a plain boolean at yes/no', async () => {
+    const wrapFor = new TypesafeProvider();
+    const nullable = makeTool('CLEAR_FLAG', { flag: { type: ['boolean', 'null'] } });
+    const compiled = wrapFor.wrapTool(nullable).arguments[0];
+    expect(compiled.kind === 'choice' && compiled.options).toEqual([
+      { key: 'yes', value: true },
+      { key: 'no', value: false },
+      { key: '__null__', value: null },
+    ]);
+    const bound = setup({ route: ['CLEAR_FLAG', 0.9], answers: { t0_a0: ['__null__', 0.9] } });
+    expect(
+      await bound.provider.decide(bound.provider.wrapTools([nullable]), 'clear the flag')
+    ).toMatchObject({ kind: 'call', arguments: { flag: null } });
+
+    const plain = makeTool('SET_FLAG', { flag: { type: 'boolean' } });
+    const plainCompiled = wrapFor.wrapTool(plain).arguments[0];
+    expect(plainCompiled.kind === 'choice' && plainCompiled.options).toEqual([
+      { key: 'yes', value: true },
+      { key: 'no', value: false },
+    ]);
+  });
+
   it('restores typed values: integers, booleans, and null', async () => {
     const tool = makeTool('TYPED', {
       weight: { type: 'integer', enum: [1, 2, 3] },
@@ -339,12 +403,27 @@ describe('state', () => {
     ['NaN in context', { request: 'open a ticket', context: { nested: [Number.NaN] } }],
     ['a Date in context', { request: 'open a ticket', context: new Date(0) }],
     ['a bigint in context', { request: 'open a ticket', context: 1n }],
+    ['an undefined context property', { request: 'open a ticket', context: { a: undefined } }],
+    ['an undefined array entry', { request: 'open a ticket', context: [1, undefined] }],
   ])('rejects %s and sends nothing', async (_label, state) => {
     const { provider, systemOne } = setup({ route: ['TICKETS_CREATE', 0.9] });
     await expect(
       provider.decide(provider.wrapTools([tickets]), state as TypesafeState)
     ).rejects.toBeInstanceOf(TypesafeInvalidOptionsError);
     expect(systemOne).not.toHaveBeenCalled();
+  });
+
+  it('keeps JSON null in context while rejecting undefined', async () => {
+    const { provider, systemOne } = setup({ route: ['TICKETS_CREATE', 0.9] });
+    await provider.decide(provider.wrapTools([tickets]), {
+      request: 'open a ticket',
+      context: { a: null, nested: [null] },
+    });
+    // Context splits routing from argument questions, so the argument request carries it.
+    expect(sentRequest(systemOne, 1).state).toEqual({
+      request: 'open a ticket',
+      context: { a: null, nested: [null] },
+    });
   });
 });
 

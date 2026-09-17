@@ -85,6 +85,8 @@ export interface TypesafeArrayArgument {
   mentioned: TypesafeNoulQuestion;
   members: Array<{ questionId: string; value: string | number; question: TypesafeNoulQuestion }>;
   maxItems?: number;
+  /** A selection with fewer members than this is not stated, so the argument stays missing. */
+  minItems?: number;
 }
 
 export type TypesafeArgumentQuestion = TypesafeChoiceArgument | TypesafeArrayArgument;
@@ -261,7 +263,10 @@ export interface TypesafeGateOptions {
   maxVetoes?: number;
   /**
    * Replace secret-bearing arguments before they are sent to TypeSafe. It gets a copy, so the
-   * executed call never changes. A return that is not an object blocks the call.
+   * executed call never changes. The return must be a masking of the input: the same JSON
+   * structure (same keys, same array lengths) with every leaf replaced by a value of the same
+   * scalar type. Anything that deletes, adds, retypes, or is not an object blocks the call,
+   * because Jev must approve the call that actually runs.
    */
   redactArguments?: (toolSlug: string, args: Record<string, unknown>) => Record<string, unknown>;
   model?: string;

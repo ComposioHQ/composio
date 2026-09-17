@@ -295,9 +295,11 @@ class TypesafeProvider(
         :param on_unavailable: What to do when Jev cannot be reached.
         :param on_bypass: Called for every call allowed through without an answer from Jev.
         :param max_vetoes: After this many vetoes the gate blocks every later call.
-        :param redact_arguments: Replaces secret-bearing arguments before they are sent
-            to TypeSafe. It gets a deep copy and must return a `dict`; the call that runs
-            keeps its original arguments.
+        :param redact_arguments: Masks secret-bearing arguments before they are sent to
+            TypeSafe. It gets a deep copy and must return a `dict` with the same
+            structure as the arguments, with every leaf replaced by a value of the same
+            JSON type; anything that deletes, adds, or retypes a value blocks the call.
+            The call that runs keeps its original arguments.
         """
         return before_execute(
             companion.confidence_gate(

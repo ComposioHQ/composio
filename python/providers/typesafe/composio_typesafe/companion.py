@@ -117,6 +117,50 @@ class GateModifier(t.Protocol):
     ) -> ToolExecuteParams: ...
 
 
+def _stable_or_block(value: t.Any) -> TypesafeJsonValue:
+    """A value that is not JSON blocks the call. Nothing is dropped or rewritten."""
+    try:
+        return stable(value)
+    except TypesafeInvalidOptionsError:
+        pass
+    # Raised outside the `except` block, so the invalid-options error is not the context.
+    raise TypesafeGateBlockedError("check_failed")
+
+
+def _leaf_kind(value: t.Any) -> str:
+    # JSON scalar kinds. `bool` is checked first, because it is an `int` subclass.
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    return "null"
+
+
+def _assert_masking_only(original: t.Any, redacted: t.Any) -> None:
+    """
+    The redactor is a masker: the redacted arguments must have exactly the original's
+    JSON structure, meaning the same key sets and the same array lengths, and every leaf
+    replacement must keep the same scalar kind. Anything else blocks, because Jev would
+    approve a call that differs from the one that runs.
+    """
+    if isinstance(original, list):
+        if not isinstance(redacted, list) or len(redacted) != len(original):
+            raise TypesafeGateBlockedError("check_failed")
+        for entry, replacement in zip(original, redacted):
+            _assert_masking_only(entry, replacement)
+        return
+    if isinstance(original, dict):
+        if not isinstance(redacted, dict) or set(redacted) != set(original):
+            raise TypesafeGateBlockedError("check_failed")
+        for key, entry in original.items():
+            _assert_masking_only(entry, redacted[key])
+        return
+    if _leaf_kind(original) != _leaf_kind(redacted):
+        raise TypesafeGateBlockedError("check_failed")
+
+
 def confidence_gate(
     *,
     ask: Ask,
@@ -148,6 +192,11 @@ def confidence_gate(
         )
     if not _is_integer(max_vetoes) or max_vetoes < 1:
         raise TypesafeInvalidOptionsError("`max_vetoes` must be a positive integer.")
+    if on_unavailable not in ("block", "allow"):
+        # A typo'd mode must never fail open at check time.
+        raise TypesafeInvalidOptionsError(
+            "`on_unavailable` must be 'block' or 'allow'."
+        )
     by_slug = {tool.slug: tool for tool in tools}
     lock = threading.Lock()
     vetoes = 0
@@ -179,11 +228,16 @@ def confidence_gate(
                 pass
             if copied is None:
                 raise TypesafeGateBlockedError("check_failed")
+            # The originals are checked first: what the gate reads must be JSON in full.
+            original_arguments = _stable_or_block(call_arguments)
             call_arguments = redact_arguments(raw_tool.slug, copied)
             if not isinstance(call_arguments, dict) or not all(
                 isinstance(key, str) for key in call_arguments
             ):
                 raise TypesafeGateBlockedError("check_failed")
+            # Jev evaluates what is sent, and the original arguments run. The redactor
+            # may only mask, so an approved call is exactly the call that executes.
+            _assert_masking_only(original_arguments, _stable_or_block(call_arguments))
         description = getattr(raw_tool, "description", None)
         # Only the slug and the arguments are copied out of the execution parameters.
         # `user_id`, `connected_account_id`, and the custom auth fields never leave.

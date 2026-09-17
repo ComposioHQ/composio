@@ -88,6 +88,42 @@ function jsonOrBlock(value: unknown): TypesafeJsonValue {
   }
 }
 
+const scalarTypeOf = (value: TypesafeJsonValue): string => (value === null ? 'null' : typeof value);
+
+/**
+ * The redactor is a masker: the redacted arguments must have exactly the original's JSON
+ * structure — the same key sets, the same array lengths — and every leaf replacement must
+ * keep the same scalar type. Anything else blocks, because Jev would approve a call that
+ * differs from the one that runs.
+ */
+function assertMaskingOnly(original: TypesafeJsonValue, redacted: TypesafeJsonValue): void {
+  if (Array.isArray(original)) {
+    if (!Array.isArray(redacted) || redacted.length !== original.length) {
+      throw new TypesafeGateBlockedError('check_failed');
+    }
+    original.forEach((entry, index) => assertMaskingOnly(entry, redacted[index]));
+    return;
+  }
+  if (original !== null && typeof original === 'object') {
+    if (redacted === null || typeof redacted !== 'object' || Array.isArray(redacted)) {
+      throw new TypesafeGateBlockedError('check_failed');
+    }
+    const originalKeys = Object.keys(original).sort();
+    const redactedKeys = Object.keys(redacted).sort();
+    if (
+      originalKeys.length !== redactedKeys.length ||
+      originalKeys.some((key, index) => key !== redactedKeys[index])
+    ) {
+      throw new TypesafeGateBlockedError('check_failed');
+    }
+    for (const key of originalKeys) assertMaskingOnly(original[key], redacted[key]);
+    return;
+  }
+  if (scalarTypeOf(original) !== scalarTypeOf(redacted)) {
+    throw new TypesafeGateBlockedError('check_failed');
+  }
+}
+
 const AVAILABILITY_REASONS: ReadonlyArray<string> = [
   'timeout',
   'connection',
@@ -113,6 +149,14 @@ export function confidenceGate(options: TypesafeGateOptions, ask: Ask): beforeEx
   if (!Number.isInteger(maxVetoes) || maxVetoes < 1) {
     throw new TypesafeInvalidOptionsError('`maxVetoes` must be a positive integer.');
   }
+  if (
+    options.onUnavailable !== undefined &&
+    options.onUnavailable !== 'block' &&
+    options.onUnavailable !== 'allow'
+  ) {
+    // A typo'd mode must never fail open at check time.
+    throw new TypesafeInvalidOptionsError("`onUnavailable` must be 'block' or 'allow'.");
+  }
   const tools = new Map(options.tools.map(tool => [tool.slug, tool]));
   let vetoes = 0;
   // Checks run one at a time. Concurrent calls would otherwise all read the veto count
@@ -133,17 +177,22 @@ export function confidenceGate(options: TypesafeGateOptions, ask: Ask): beforeEx
       // The redactor works on a copy, so redacting in place cannot alter the executed call.
       // A return that is not an object blocks: falling back would send the secrets.
       // The originals are checked first, since cloning flattens a class instance into JSON.
-      jsonOrBlock(callArguments);
-      sentArguments = options.redactArguments(tool.slug, structuredClone(callArguments));
-      if (!RedactedArgumentsSchema.safeParse(sentArguments).success) {
+      const original = jsonOrBlock(callArguments);
+      const redacted = options.redactArguments(tool.slug, structuredClone(callArguments));
+      if (!RedactedArgumentsSchema.safeParse(redacted).success) {
         throw new TypesafeGateBlockedError('check_failed');
       }
+      // Jev evaluates what is sent, and the original arguments run. The redactor may only
+      // mask, so an approved call is exactly the call that executes.
+      assertMaskingOnly(original, jsonOrBlock(redacted));
+      sentArguments = redacted;
     }
     // Only the slug and the arguments are copied out of the execution parameters.
-    // `userId`, `connectedAccountId`, and the custom auth fields never leave.
+    // `userId`, `connectedAccountId`, and the custom auth fields never leave. The `context`
+    // key exists only when there is one, so a context-less state stays context-less.
     const state = jsonOrBlock({
       request,
-      context: gateContext,
+      ...(gateContext === undefined ? {} : { context: gateContext }),
       proposed_call: {
         tool: tool.slug,
         description: tool.description ?? tool.name,
