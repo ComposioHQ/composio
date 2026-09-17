@@ -364,7 +364,7 @@
     "name": "Discord Bot",
     "logo": "https://logos.composio.dev/api/discordbot",
     "category": "team chat",
-    "toolCount": 165,
+    "toolCount": 167,
     "triggerCount": 0
   },
   {
@@ -396,7 +396,7 @@
     "name": "Apollo",
     "logo": "https://logos.composio.dev/api/apollo",
     "category": "crm",
-    "toolCount": 48,
+    "toolCount": 54,
     "triggerCount": 0
   },
   {
@@ -924,7 +924,7 @@
     "name": "Miro",
     "logo": "https://logos.composio.dev/api/miro",
     "category": "team collaboration",
-    "toolCount": 81,
+    "toolCount": 82,
     "triggerCount": 0
   },
   {
@@ -1396,7 +1396,7 @@
     "name": "Zoho Desk",
     "logo": "https://logos.composio.dev/api/zoho_desk",
     "category": "crm",
-    "toolCount": 32,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -3829,6 +3829,14 @@
     "logo": "https://logos.composio.dev/api/cody",
     "category": "ai assistants",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "coinbase_wallet_mcp",
+    "name": "Coinbase Wallet MCP",
+    "logo": "https://logos.composio.dev/api/coinbase_wallet_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -6392,6 +6400,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "highlevel_mcp",
+    "name": "HighLevel MCP",
+    "logo": "https://logos.composio.dev/api/highlevel_mcp",
+    "category": "model context protocol",
+    "toolCount": 36,
+    "triggerCount": 0
+  },
+  {
     "slug": "hireflix",
     "name": "Hireflix",
     "logo": "https://logos.composio.dev/api/hireflix",
@@ -6933,6 +6949,14 @@
     "logo": "https://logos.composio.dev/api/jigsawstack",
     "category": "artificial intelligence",
     "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
+    "slug": "jinko",
+    "name": "Jinko",
+    "logo": "https://logos.composio.dev/api/jinko",
+    "category": "scheduling & booking",
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
