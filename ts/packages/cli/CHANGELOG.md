@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- `composio run` now validates binary download URLs returned by the proxy API
+  before fetching them. Private, loopback, link-local, and redirect-based SSRF
+  targets are blocked, and DNS resolutions are pinned to prevent rebinding.
 - The plugin hint shown under Claude Code or Codex now reads
   `'composio setup --yes' installs it`, and setup error messages that suggest
   a rerun now include `--yes` too, so an agent following the printed text no

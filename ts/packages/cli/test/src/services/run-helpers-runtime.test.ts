@@ -62,6 +62,59 @@ describe('run-helpers-runtime', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it('[Given] a proxy binary URL targets cloud metadata [Then] it blocks the download', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ session_id: 'session-1' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            binary_data: {
+              url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+            },
+            status: 200,
+          }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(new Response('stolen cloud credentials', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await installRunHelpers({
+      cliPrefix: ['composio'],
+      helperContext: {
+        apiKey: 'test-key',
+        orgId: 'test-org',
+        consumerProjectId: 'test-project',
+        consumerUserId: 'test-user',
+      },
+    });
+
+    const installedGlobals: unknown = globalThis;
+    expect(Predicate.hasProperty(installedGlobals, 'proxy')).toBe(true);
+    if (
+      !Predicate.hasProperty(installedGlobals, 'proxy') ||
+      typeof installedGlobals.proxy !== 'function'
+    ) {
+      throw new Error('installRunHelpers() did not install proxy().');
+    }
+
+    const proxyFetch = await installedGlobals.proxy('github');
+    await expect(proxyFetch('https://api.github.com/user')).rejects.toMatchObject({
+      code: 'TS-SDK::BLOCKED_INTERNAL_URL',
+      name: 'ComposioBlockedInternalUrlError',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('[Given] normalized false flags [Then] nested CLI children receive false explicitly', async () => {
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');

@@ -2,6 +2,7 @@
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
+import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/unstable/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
@@ -444,7 +445,7 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
 const toProxyResponse = async (result: ProxyExecuteResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
-    const binaryResponse = await fetch(result.binary_data.url);
+    const binaryResponse = await ssrfSafeFetch(result.binary_data.url);
     binaryResponse.headers.forEach((value, key) => {
       if (!headers.has(key)) headers.set(key, value);
     });
