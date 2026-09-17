@@ -101,6 +101,8 @@ Aliases are human-readable labels for connected accounts (e.g., `"work-gmail"`, 
 - Must be unique per user and toolkit within a project
 - Can be set during connection or updated after
 
+To identify an account by its provider-side identity (e.g. the Gmail address or GitHub username) rather than a label you set, read the read-only `displayName` that Composio auto-populates on the connected account at `state.val.displayName` once the connection is active.
+
 ### Setting an alias during connection
 
 Pass `alias` to `session.authorize()`:
