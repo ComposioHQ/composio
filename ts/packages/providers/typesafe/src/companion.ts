@@ -10,23 +10,17 @@ import {
   type Ask,
 } from './decide';
 import {
-  TypesafeAbortError,
-  TypesafeConnectionError,
+  TypesafeApiError,
   TypesafeGateBlockedError,
   TypesafeGateUnavailableError,
   TypesafeGateVetoError,
   TypesafeInvalidOptionsError,
   TypesafeLimitError,
   TypesafeMalformedResponseError,
-  TypesafeRateLimitError,
-  TypesafeServerError,
-  TypesafeTimeoutError,
   type TypesafeAvailabilityReason,
-  type TypesafeDescribeOverrides,
   type TypesafeGateOptions,
   type TypesafeJsonValue,
   type TypesafeNoulQuestion,
-  type TypesafeRequestOptions,
   type TypesafeShortlist,
   type TypesafeState,
 } from './types';
@@ -36,8 +30,7 @@ export async function shortlistTools(
   tools: Tool[],
   state: TypesafeState,
   k: number,
-  ask: Ask,
-  describe?: TypesafeDescribeOverrides
+  ask: Ask
 ): Promise<TypesafeShortlist> {
   if (!Number.isInteger(k) || k < 0) {
     throw new TypesafeInvalidOptionsError('`k` must be a non-negative integer.');
@@ -49,12 +42,8 @@ export async function shortlistTools(
   }
 
   // Routing needs the slug and the routing text only, so the argument schemas stay unread.
-  // The text is the one `decide` routes on, `describe.tool` override included.
   const routing = routingQuestion(
-    tools.map(tool => ({
-      slug: tool.slug,
-      routingDescription: routingDescriptionOf(tool, describe),
-    }))
+    tools.map(tool => ({ slug: tool.slug, routingDescription: routingDescriptionOf(tool) }))
   );
   const questions = { [ROUTING_QUESTION_ID]: routing.question };
   if (estimateTokens(normalized.requestOnly, questions) > REQUEST_BUDGET_TOKENS) {
@@ -99,22 +88,23 @@ function jsonOrBlock(value: unknown): TypesafeJsonValue {
   }
 }
 
-function availabilityReason(error: unknown): TypesafeAvailabilityReason | undefined {
-  if (error instanceof TypesafeTimeoutError) return 'timeout';
-  if (error instanceof TypesafeConnectionError) return 'connection';
-  if (error instanceof TypesafeServerError) return 'server_error';
-  if (error instanceof TypesafeRateLimitError) return 'rate_limit';
-  return undefined;
-}
+const AVAILABILITY_REASONS: ReadonlyArray<string> = [
+  'timeout',
+  'connection',
+  'server_error',
+  'rate_limit',
+] satisfies TypesafeAvailabilityReason[];
+
+const isUnavailable = (
+  error: unknown
+): error is TypesafeApiError & { reason: TypesafeAvailabilityReason } =>
+  error instanceof TypesafeApiError && AVAILABILITY_REASONS.includes(error.reason);
 
 /**
  * Builds a `beforeExecute` modifier that asks Jev whether a proposed tool call matches the
  * user's request. Create one gate per agent run and reuse it across that run's retries.
  */
-export function confidenceGate(
-  options: TypesafeGateOptions,
-  createAsk: (requestOptions: TypesafeRequestOptions) => Ask
-): beforeExecuteModifier {
+export function confidenceGate(options: TypesafeGateOptions, ask: Ask): beforeExecuteModifier {
   const threshold = options.threshold ?? 0.7;
   const maxVetoes = options.maxVetoes ?? 3;
   if (!(threshold >= 0 && threshold <= 1)) {
@@ -124,7 +114,6 @@ export function confidenceGate(
     throw new TypesafeInvalidOptionsError('`maxVetoes` must be a positive integer.');
   }
   const tools = new Map(options.tools.map(tool => [tool.slug, tool]));
-  const ask = createAsk(options.timeout === undefined ? {} : { timeout: options.timeout });
   let vetoes = 0;
   // Checks run one at a time. Concurrent calls would otherwise all read the veto count
   // before any of them raised it.
@@ -174,13 +163,12 @@ export function confidenceGate(
       if (answer === undefined) throw new TypesafeMalformedResponseError('missing_answer');
       probability = answer.noul;
     } catch (error) {
-      if (error instanceof TypesafeAbortError) throw error;
-      const reason = availabilityReason(error);
-      if (reason === undefined) throw new TypesafeGateBlockedError('check_failed');
+      if (error instanceof TypesafeApiError && error.reason === 'aborted') throw error;
+      if (!isUnavailable(error)) throw new TypesafeGateBlockedError('check_failed');
       if ((options.onUnavailable ?? 'block') === 'block') {
-        throw new TypesafeGateUnavailableError(reason);
+        throw new TypesafeGateUnavailableError(error.reason);
       }
-      options.onBypass?.({ toolSlug: tool.slug, reason });
+      options.onBypass?.({ toolSlug: tool.slug, reason: error.reason });
       return context.params;
     }
 

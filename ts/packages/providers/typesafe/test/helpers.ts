@@ -24,8 +24,9 @@ export interface Corpus {
   }>;
 }
 
-export const CORPUS_URL = new URL('./fixtures/question-corpus.json', import.meta.url);
-export const corpus: Corpus = JSON.parse(readFileSync(CORPUS_URL, 'utf8'));
+export const corpus: Corpus = JSON.parse(
+  readFileSync(new URL('./fixtures/question-corpus.json', import.meta.url), 'utf8')
+);
 
 export const corpusTool = (name: string): Tool => {
   const entry = corpus.tools.find(candidate => candidate.name === name);

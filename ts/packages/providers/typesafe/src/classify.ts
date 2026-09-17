@@ -1,4 +1,4 @@
-import { JSONSchemaPropertySchema, type JSONSchemaProperty } from '@composio/core';
+import type { JSONSchemaProperty } from '@composio/core';
 import { MAX_CHOICE_OPTIONS } from './keys';
 
 export type ArgumentClass =
@@ -57,10 +57,7 @@ function classifyMembers(members: unknown[], nullableHint: boolean): ArgumentCla
 }
 
 /** Classifies one dereferenced property. Anything that is not a closed set is open-ended. */
-export function classifyProperty(schema: unknown): ArgumentClass {
-  const parsed = JSONSchemaPropertySchema.safeParse(schema);
-  if (!parsed.success) return OPEN;
-  const property = parsed.data;
+export function classifyProperty(property: JSONSchemaProperty): ArgumentClass {
   const types = typesOf(property);
   const nullableHint = property.nullable === true || types.includes('null');
   const valueTypes = types.filter(type => type !== 'null');

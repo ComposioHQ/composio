@@ -58,7 +58,6 @@
     "@typesafe-ai/sdk": "0.6.0",
     "fast-check": "^4.9.0",
     "tsdown": "catalog:",
-    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"

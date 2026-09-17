@@ -8,11 +8,11 @@ import {
   type ValidatedAnswers,
 } from './response';
 import {
-  TypesafeAbortError,
+  ProbabilitySchema,
+  TypesafeApiError,
   TypesafeInvalidOptionsError,
   TypesafeLimitError,
   TypesafeMalformedResponseError,
-  TypesafeProviderError,
   type TypesafeAbstainDecision,
   type TypesafeArgumentQuestion,
   type TypesafeClientLike,
@@ -29,7 +29,6 @@ import {
   type TypesafeThresholds,
   type TypesafeToolQuestions,
   type TypesafeToolSet,
-  type TypesafeToolThresholds,
 } from './types';
 
 /** A routing Choice holds every tool plus the none option, and a Choice takes 255 options. */
@@ -72,30 +71,25 @@ const gateId = (index: number): string => `gate_${index}`;
 // Options and state
 // ---------------------------------------------------------------------------
 
-const ThresholdSchema = z.number().min(0).max(1);
 const ThresholdsSchema = z
-  .object({ routing: ThresholdSchema, gate: ThresholdSchema, argument: ThresholdSchema })
+  .object({ routing: ProbabilitySchema, gate: ProbabilitySchema, argument: ProbabilitySchema })
   .partial()
   .strict();
-const ToolThresholdsSchema = z.record(z.string(), ThresholdsSchema);
-
-/** Throws on a threshold that is NaN or outside 0-1. */
-export function assertThresholds(
-  thresholds: Partial<TypesafeThresholds> | undefined,
-  toolThresholds: TypesafeToolThresholds | undefined
-): void {
-  const valid =
-    ThresholdsSchema.safeParse(thresholds ?? {}).success &&
-    ToolThresholdsSchema.safeParse(toolThresholds ?? {}).success;
-  if (!valid) {
-    throw new TypesafeInvalidOptionsError('Every threshold must be a number from 0 to 1.');
-  }
-}
-
 const ContextScopeSchema = z.enum(['arguments', 'all']).optional();
 
-/** Throws on an unknown scope, which would otherwise send `context` to routing and the gate. */
-export function assertContextScope(contextScope: unknown): void {
+export interface DecideSettings {
+  thresholds?: Partial<TypesafeThresholds>;
+  contextScope?: TypesafeContextScope;
+}
+
+/**
+ * Throws on a threshold that is NaN or outside 0-1, and on an unknown scope, which would
+ * otherwise send `context` to routing and the gate.
+ */
+export function assertSettings({ thresholds, contextScope }: DecideSettings): void {
+  if (!ThresholdsSchema.safeParse(thresholds ?? {}).success) {
+    throw new TypesafeInvalidOptionsError('Every threshold must be a number from 0 to 1.');
+  }
   if (!ContextScopeSchema.safeParse(contextScope).success) {
     throw new TypesafeInvalidOptionsError("`contextScope` must be 'arguments' or 'all'.");
   }
@@ -198,7 +192,7 @@ export function createAsk(
   onRequest?: (requestId: string | undefined) => void
 ): Ask {
   return async (state, questions) => {
-    if (requestOptions.signal?.aborted) throw new TypesafeAbortError();
+    if (requestOptions.signal?.aborted) throw new TypesafeApiError('aborted');
     const client = await getClient();
     let data: unknown;
     let requestId: string | undefined;
@@ -225,12 +219,6 @@ export function createAsk(
 // ---------------------------------------------------------------------------
 // Deciding
 // ---------------------------------------------------------------------------
-
-export interface DecideSettings {
-  thresholds?: Partial<TypesafeThresholds>;
-  toolThresholds?: TypesafeToolThresholds;
-  contextScope?: TypesafeContextScope;
-}
 
 const toolPrefix = (toolIndex: number): string => `t${toolIndex}_`;
 
@@ -288,39 +276,21 @@ function readArgument(
   return { kind: 'stated', value: selected.map(member => member.value), score };
 }
 
-// An explicit `undefined` must read as an omitted key, or a spread would erase the layer below.
-function defined(thresholds: Partial<TypesafeThresholds> | undefined): Partial<TypesafeThresholds> {
-  const kept: Partial<TypesafeThresholds> = {};
-  if (thresholds?.routing !== undefined) kept.routing = thresholds.routing;
-  if (thresholds?.gate !== undefined) kept.gate = thresholds.gate;
-  if (thresholds?.argument !== undefined) kept.argument = thresholds.argument;
-  return kept;
-}
-
 function resolveThresholds(
   tool: TypesafeToolQuestions | undefined,
   provider: DecideSettings,
-  call: TypesafeDecideOptions
+  call: DecideSettings
 ): TypesafeThresholds {
-  const base = {
-    ...DEFAULT_THRESHOLDS,
-    ...defined(provider.thresholds),
-    ...defined(call.thresholds),
-  };
-  if (tool === undefined) return base;
-  const perTool = {
-    ...defined(provider.toolThresholds?.[tool.slug]),
-    ...defined(call.toolThresholds?.[tool.slug]),
-  };
+  // An explicit `undefined` reads as an omitted key, so it never erases the layer below.
+  const pick = (name: keyof TypesafeThresholds): number =>
+    call.thresholds?.[name] ?? provider.thresholds?.[name] ?? DEFAULT_THRESHOLDS[name];
+  const routing = pick('routing');
   return {
-    // Only an explicit per-tool override lowers a destructive tool's routing threshold.
+    // No threshold lowers a destructive tool's routing floor.
     routing:
-      perTool.routing ??
-      (tool.risk === 'destructive'
-        ? Math.max(base.routing, DESTRUCTIVE_ROUTING_THRESHOLD)
-        : base.routing),
-    gate: perTool.gate ?? base.gate,
-    argument: perTool.argument ?? base.argument,
+      tool?.risk === 'destructive' ? Math.max(routing, DESTRUCTIVE_ROUTING_THRESHOLD) : routing,
+    gate: pick('gate'),
+    argument: pick('argument'),
   };
 }
 
@@ -329,11 +299,9 @@ export async function decide(
   state: TypesafeState,
   settings: DecideSettings,
   options: TypesafeDecideOptions,
-  getClient: () => Promise<TypesafeClientLike>,
-  defaultModel: string
+  askWith: (onRequest: (requestId: string | undefined) => void) => Ask
 ): Promise<TypesafeDecision> {
-  assertThresholds(options.thresholds, options.toolThresholds);
-  assertContextScope(options.contextScope);
+  assertSettings(options);
   const normalized = normalizeState(state);
   const meta: TypesafeDecisionMeta = {
     model: null,
@@ -352,7 +320,7 @@ export async function decide(
   if (normalized.request.trim().length === 0) return abstain('empty_state');
   if (tools.length > MAX_TOOLS) throw new TypesafeLimitError('tools');
 
-  const ask = createAsk(getClient, options.model ?? defaultModel, options, requestId => {
+  const ask = askWith(requestId => {
     meta.requestCount += 1;
     if (requestId !== undefined) meta.requestIds.push(requestId);
   });
@@ -396,7 +364,7 @@ export async function decide(
         meta.strategy = 'fan_out';
       } catch (error) {
         // The estimate undercounted. Fall back to route-first once; a second rejection throws.
-        if (!(error instanceof TypesafeProviderError) || !isSizeRejection(error)) throw error;
+        if (!isSizeRejection(error)) throw error;
       }
     }
   }

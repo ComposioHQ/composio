@@ -1,20 +1,12 @@
 import { z } from 'zod/v3';
 import {
-  TypesafeAbortError,
+  ProbabilitySchema,
   TypesafeApiError,
-  TypesafeAuthenticationError,
-  TypesafeConnectionError,
   TypesafeMalformedResponseError,
   TypesafeProviderError,
-  TypesafeRateLimitError,
-  TypesafeRequestRejectedError,
-  TypesafeServerError,
-  TypesafeTimeoutError,
-  type TypesafeErrorDiagnostics,
+  type TypesafeApiErrorReason,
   type TypesafeQuestion,
 } from './types';
-
-const ProbabilitySchema = z.number().min(0).max(1);
 
 const EnvelopeSchema = z.object({
   model: z.string(),
@@ -85,48 +77,27 @@ const SdkErrorSchema = z.object({
   retryAfterMs: z.number().optional().catch(undefined),
 });
 
-const KNOWN_SDK_ERRORS = new Set([
-  'APIError',
-  'BadRequestError',
-  'AuthenticationError',
-  'PermissionDeniedError',
-  'NotFoundError',
-  'UnprocessableEntityError',
-  'RateLimitError',
-  'InternalServerError',
-  'APIConnectionError',
-  'APITimeoutError',
-  'APIUserAbortError',
-  'TypeSafeError',
-]);
+function reasonOf(name: string | undefined, status: number | undefined): TypesafeApiErrorReason {
+  if (name === 'APIUserAbortError' || name === 'AbortError') return 'aborted';
+  if (name === 'APITimeoutError' || name === 'TimeoutError') return 'timeout';
+  if (name === 'APIConnectionError') return 'connection';
+  if (name === 'RateLimitError' || status === 429) return 'rate_limit';
+  if (status === 401 || status === 403) return 'authentication';
+  if (status !== undefined && status >= 500) return 'server_error';
+  if (status !== undefined && status >= 400) return 'request_rejected';
+  return 'unknown';
+}
 
 /** Maps anything thrown by the client to a provider error that holds safe diagnostics only. */
 export function toProviderError(error: unknown): TypesafeProviderError {
   if (error instanceof TypesafeProviderError) return error;
   const parsed = SdkErrorSchema.safeParse(error);
-  const fields = parsed.success ? parsed.data : {};
-  const name = fields.name;
-  const diagnostics: TypesafeErrorDiagnostics = {
-    ...(name !== undefined && KNOWN_SDK_ERRORS.has(name) ? { sdkError: name } : {}),
-    ...(fields.status === undefined ? {} : { status: fields.status }),
-    ...(fields.requestId === undefined ? {} : { requestId: fields.requestId }),
-    ...(fields.retryAfterMs === undefined ? {} : { retryAfterMs: fields.retryAfterMs }),
-  };
-  const status = fields.status;
-
-  if (name === 'APIUserAbortError' || name === 'AbortError')
-    return new TypesafeAbortError(diagnostics);
-  if (name === 'APITimeoutError' || name === 'TimeoutError')
-    return new TypesafeTimeoutError(diagnostics);
-  if (name === 'APIConnectionError') return new TypesafeConnectionError(diagnostics);
-  if (name === 'RateLimitError' || status === 429) return new TypesafeRateLimitError(diagnostics);
-  if (status === 401 || status === 403) return new TypesafeAuthenticationError(diagnostics);
-  if (status !== undefined && status >= 500) return new TypesafeServerError(diagnostics);
-  if (status !== undefined && status >= 400) return new TypesafeRequestRejectedError(diagnostics);
-  return new TypesafeApiError(diagnostics);
+  const { name, ...diagnostics } = parsed.success ? parsed.data : {};
+  return new TypesafeApiError(reasonOf(name, diagnostics.status), diagnostics);
 }
 
 /** A rejection that a smaller request might avoid. */
-export const isSizeRejection = (error: TypesafeProviderError): boolean =>
-  error instanceof TypesafeRequestRejectedError &&
+export const isSizeRejection = (error: unknown): boolean =>
+  error instanceof TypesafeApiError &&
+  error.reason === 'request_rejected' &&
   (error.status === 400 || error.status === 413 || error.status === 422);

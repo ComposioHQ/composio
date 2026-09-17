@@ -1,5 +1,9 @@
+import { JSONSchemaPropertySchema } from '@composio/core';
 import { describe, expect, it } from 'vitest';
-import { classifyProperty } from '../src/classify';
+import { classifyProperty as classifyParsed } from '../src/classify';
+
+const classifyProperty = (schema: unknown) =>
+  classifyParsed(JSONSchemaPropertySchema.parse(schema));
 
 describe('classifyProperty', () => {
   it('classifies a string enum as a closed set', () => {
@@ -96,9 +100,7 @@ describe('classifyProperty', () => {
     ['tuple items', { type: 'array', items: [{ enum: ['a'] }] }],
     ['an array of free strings', { type: 'array', items: { type: 'string' } }],
     ['an array of nullable enums', { type: 'array', items: { enum: ['a', null] } }],
-    ['a type outside the schema', { type: 'date' }],
     ['a null-only enum', { enum: [null] }],
-    ['a non-object schema', 'string'],
   ])('treats %s as open-ended', (_label, schema) => {
     expect(classifyProperty(schema)).toEqual({ kind: 'open' });
   });

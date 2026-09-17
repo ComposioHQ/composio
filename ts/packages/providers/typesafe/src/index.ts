@@ -21,7 +21,7 @@ import {
 import { z } from 'zod/v3';
 import { confidenceGate, shortlistTools } from './companion';
 import { compileTool, compileToolSet } from './compile';
-import { DEFAULT_MODEL, assertContextScope, assertThresholds, createAsk, decide } from './decide';
+import { DEFAULT_MODEL, assertSettings, createAsk, decide, type Ask } from './decide';
 import {
   TypesafeAbstainedDecisionError,
   TypesafeConfirmationRequiredError,
@@ -35,6 +35,7 @@ import {
   type TypesafeExecuteInput,
   type TypesafeGateOptions,
   type TypesafeProviderOptions,
+  type TypesafeRequestOptions,
   type TypesafeShortlist,
   type TypesafeShortlistOptions,
   type TypesafeState,
@@ -89,14 +90,13 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
    */
   constructor(options: TypesafeProviderOptions = {}) {
     super();
-    assertThresholds(options.thresholds, options.toolThresholds);
-    assertContextScope(options.contextScope);
+    assertSettings(options);
     this.options = options;
   }
 
   /** Compiles a Composio tool into Jev questions. Synchronous and offline. */
   wrapTool(tool: Tool): TypesafeToolQuestions {
-    return compileTool(tool, this.options.describe);
+    return compileTool(tool);
   }
 
   /** Compiles a list of tools into a tool set. Throws on duplicate slugs. */
@@ -116,14 +116,7 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
     state: TypesafeState,
     options: TypesafeDecideOptions = {}
   ): Promise<TypesafeDecision> {
-    return decide(
-      toolSet,
-      state,
-      this.options,
-      options,
-      () => this.getClient(),
-      this.options.model ?? DEFAULT_MODEL
-    );
+    return decide(toolSet, state, this.options, options, onRequest => this.ask(options, onRequest));
   }
 
   /**
@@ -187,12 +180,7 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
     state: TypesafeState,
     options: TypesafeShortlistOptions
   ): Promise<TypesafeShortlist> {
-    const ask = createAsk(
-      () => this.getClient(),
-      options.model ?? this.options.model ?? DEFAULT_MODEL,
-      options
-    );
-    return shortlistTools(tools, state, options.k, ask, this.options.describe);
+    return shortlistTools(tools, state, options.k, this.ask(options));
   }
 
   /**
@@ -201,12 +189,22 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
    * check. Create one gate per agent run and reuse it across that run's retries.
    */
   confidenceGate(options: TypesafeGateOptions): beforeExecuteModifier {
-    return confidenceGate(options, requestOptions =>
-      createAsk(
-        () => this.getClient(),
-        options.model ?? this.options.model ?? DEFAULT_MODEL,
-        requestOptions
-      )
+    const { model, timeout } = options;
+    return confidenceGate(
+      options,
+      this.ask(timeout === undefined ? { model } : { model, timeout })
+    );
+  }
+
+  private ask(
+    options: TypesafeRequestOptions & { model?: string },
+    onRequest?: (requestId: string | undefined) => void
+  ): Ask {
+    return createAsk(
+      () => this.getClient(),
+      options.model ?? this.options.model ?? DEFAULT_MODEL,
+      options,
+      onRequest
     );
   }
 
@@ -226,8 +224,8 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
       (environment.success ? environment.data.process.env.TYPESAFE_API_KEY : undefined);
     if (apiKey === undefined || apiKey.length === 0) throw new TypesafeMissingApiKeyError();
     const { TypeSafeClient } = await import('@typesafe-ai/sdk');
-    // The SDK's `debug` level prints request bodies, so `TYPESAFE_LOG_LEVEL` alone must
-    // not enable it. The `logLevel` provider option is the opt-in.
-    return new TypeSafeClient({ apiKey, logLevel: this.options.logLevel ?? 'warn' });
+    // The SDK's `debug` level prints request bodies, so `TYPESAFE_LOG_LEVEL` must not
+    // enable it. Inject a `client` to log at another level.
+    return new TypeSafeClient({ apiKey, logLevel: 'warn' });
   }
 }

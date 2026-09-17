@@ -109,7 +109,7 @@ An optional argument with a weak answer is dropped, listed in `decision.dropped`
 | `none_fit`            | No tool carries out the request.                                  |
 | `low_confidence`      | The best tool is below the routing threshold.                     |
 
-`abstain` means only that the model judged so. API failures, timeouts, rate limits, and malformed responses throw typed errors such as `TypesafeRateLimitError` (with `retryAfterMs`), `TypesafeTimeoutError`, and `TypesafeMalformedResponseError`. They never come back as `abstain`. Error messages hold a status code and a request ID, and never your state, argument values, or response content.
+`abstain` means only that the model judged so. API failures, timeouts, rate limits, and malformed responses throw typed errors: `TypesafeApiError`, whose `reason` is one of `rate_limit` (with `retryAfterMs`), `timeout`, `connection`, `authentication`, `server_error`, `request_rejected`, `aborted`, or `unknown`, and `TypesafeMalformedResponseError`. They never come back as `abstain`. Error messages hold a status code and a request ID, and never your state, argument values, or response content.
 
 ## Thresholds
 
@@ -119,12 +119,11 @@ An optional argument with a weak answer is dropped, listed in `decision.dropped`
 | `gate`     | 0.3     | The mean of three "is the user asking for an action now" answers. |
 | `argument` | 0.6     | Each argument Jev binds.                                          |
 
-These follow TypeSafe's guidance, which calls them examples to tune. Set them per provider, per `decide` call, or per tool:
+These follow TypeSafe's guidance, which calls them examples to tune. Set them per provider or per `decide` call:
 
 ```typescript
 const provider = new TypesafeProvider({
-  thresholds: { routing: 0.7 },
-  toolThresholds: { GITHUB_CREATE_AN_ISSUE: { argument: 0.8 } },
+  thresholds: { routing: 0.7, argument: 0.8 },
 });
 
 await provider.decide(toolSet, request, { thresholds: { gate: 0.5 } });
@@ -140,7 +139,7 @@ A tool tagged `destructiveHint` routes at a threshold of 0.9, and its decision h
 await provider.execute('user_123', decision, { confirm: true });
 ```
 
-`execute` decides from the stored `risk` class, not from `requiresConfirmation` alone, so clearing that flag does not skip the confirmation. A stored decision is only as trustworthy as its storage: `risk` and `tool` can be edited just as easily. Sign a decision, or derive it again with `decide`, when it crosses a trust boundary such as an approval UI or a shared queue. Only an explicit per-tool `routing` threshold lowers the 0.9 default. When the state comes from an untrusted source, leave destructive tools out of the tool set.
+`execute` decides from the stored `risk` class, not from `requiresConfirmation` alone, so clearing that flag does not skip the confirmation. A stored decision is only as trustworthy as its storage: `risk` and `tool` can be edited just as easily. Sign a decision, or derive it again with `decide`, when it crosses a trust boundary such as an approval UI or a shared queue. No threshold lowers the 0.9 floor. When the state comes from an untrusted source, leave destructive tools out of the tool set.
 
 ## Request and context
 
@@ -211,7 +210,7 @@ Sent to `api.typesafe.ai`: the state, tool names and descriptions (custom tools 
 
 Never sent: your Composio API key, user IDs, connected account IDs, and custom auth parameters.
 
-Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you send personal data. The provider builds its client at log level `warn`. `logLevel: 'debug'` prints request bodies, state included, so keep it out of production. An injected `client` logs however you configured it. `@typesafe-ai/sdk` honors `TYPESAFE_BASE_URL`, so your API key and state go to whatever host that variable names.
+Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you send personal data. The provider builds its client at log level `warn`, even when `TYPESAFE_LOG_LEVEL=debug` is set, because `debug` prints request bodies, state included. An injected `client` logs however you configured it. `@typesafe-ai/sdk` honors `TYPESAFE_BASE_URL`, so your API key and state go to whatever host that variable names.
 
 ## Limits
 

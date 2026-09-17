@@ -1,9 +1,4 @@
-import {
-  ComposioError,
-  type JSONSchemaProperty,
-  type Tool,
-  type ToolExecuteParams,
-} from '@composio/core';
+import { ComposioError, type Tool, type ToolExecuteParams } from '@composio/core';
 import { z } from 'zod/v3';
 
 // ---------------------------------------------------------------------------
@@ -53,8 +48,6 @@ export interface TypesafeClientLike {
     withResponse?: () => Promise<{ data: unknown; requestId?: string | undefined }>;
   };
 }
-
-export type TypesafeLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
 
 // ---------------------------------------------------------------------------
 // Compiled tools
@@ -130,19 +123,6 @@ export interface TypesafeThresholds {
   argument: number;
 }
 
-export type TypesafeToolThresholds = Record<string, Partial<TypesafeThresholds>>;
-
-export interface TypesafeDescribeOverrides {
-  /** Replace the routing text of a tool. Return `undefined` to keep the generated text. */
-  tool?: (tool: Tool) => string | undefined;
-  /** Replace the description used in an argument's questions. */
-  argument?: (context: {
-    tool: Tool;
-    argument: string;
-    property: JSONSchemaProperty;
-  }) => string | undefined;
-}
-
 export type TypesafeContextScope = 'arguments' | 'all';
 
 export interface TypesafeProviderOptions {
@@ -153,12 +133,8 @@ export interface TypesafeProviderOptions {
   /** Defaults to `jev-latest`. */
   model?: string;
   thresholds?: Partial<TypesafeThresholds>;
-  toolThresholds?: TypesafeToolThresholds;
-  describe?: TypesafeDescribeOverrides;
   /** `arguments` (default) keeps `context` away from routing and the action gate. */
   contextScope?: TypesafeContextScope;
-  /** Log level of the client the provider builds. Default `warn`; `debug` prints request bodies. */
-  logLevel?: TypesafeLogLevel;
 }
 
 /** A plain request, or a request with supporting context. */
@@ -168,7 +144,6 @@ export interface TypesafeDecideOptions extends TypesafeRequestOptions {
   /** Values the caller already knows. They get no question and do not affect confidence. */
   arguments?: Record<string, unknown>;
   thresholds?: Partial<TypesafeThresholds>;
-  toolThresholds?: TypesafeToolThresholds;
   contextScope?: TypesafeContextScope;
   model?: string;
 }
@@ -184,7 +159,7 @@ export interface TypesafeExecuteInput {
 // Decisions
 // ---------------------------------------------------------------------------
 
-const ProbabilitySchema = z.number().min(0).max(1);
+export const ProbabilitySchema = z.number().min(0).max(1);
 const PathSchema = z.array(z.string()).min(1);
 
 const JudgementSchema = z.object({
@@ -293,7 +268,10 @@ export interface TypesafeGateOptions {
   timeout?: number;
 }
 
-export type TypesafeAvailabilityReason = 'connection' | 'timeout' | 'server_error' | 'rate_limit';
+export type TypesafeAvailabilityReason = Extract<
+  TypesafeApiErrorReason,
+  'connection' | 'timeout' | 'server_error' | 'rate_limit'
+>;
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -303,8 +281,6 @@ export type TypesafeAvailabilityReason = 'connection' | 'timeout' | 'server_erro
 // ---------------------------------------------------------------------------
 
 export interface TypesafeErrorDiagnostics {
-  /** Class name of the `@typesafe-ai/sdk` error, when it is a known one. */
-  sdkError?: string;
   status?: number;
   requestId?: string;
   retryAfterMs?: number;
@@ -316,32 +292,27 @@ const describeDiagnostics = ({ status, requestId }: TypesafeErrorDiagnostics): s
     .trimEnd();
 
 export class TypesafeProviderError extends ComposioError {
-  constructor(name: string, code: string, message: string) {
+  constructor(code: string, message: string) {
     super(message, { code });
-    this.name = name;
+    this.name = new.target.name;
   }
 }
 
 export class TypesafeInvalidOptionsError extends TypesafeProviderError {
   constructor(message: string) {
-    super('TypesafeInvalidOptionsError', 'TYPESAFE_INVALID_OPTIONS', message);
+    super('TYPESAFE_INVALID_OPTIONS', message);
   }
 }
 
 export class TypesafeDuplicateToolError extends TypesafeProviderError {
   constructor() {
-    super(
-      'TypesafeDuplicateToolError',
-      'TYPESAFE_DUPLICATE_TOOL',
-      'Two tools in the same tool set share a slug.'
-    );
+    super('TYPESAFE_DUPLICATE_TOOL', 'Two tools in the same tool set share a slug.');
   }
 }
 
 export class TypesafeMissingApiKeyError extends TypesafeProviderError {
   constructor() {
     super(
-      'TypesafeMissingApiKeyError',
       'TYPESAFE_MISSING_API_KEY',
       'No TypeSafe API key was found. Set TYPESAFE_API_KEY, or pass `apiKey` or `client` to TypesafeProvider.'
     );
@@ -349,112 +320,46 @@ export class TypesafeMissingApiKeyError extends TypesafeProviderError {
 }
 
 export class TypesafeLimitError extends TypesafeProviderError {
-  readonly limit: 'tools' | 'request_budget';
-  constructor(limit: 'tools' | 'request_budget') {
+  constructor(readonly limit: 'tools' | 'request_budget') {
     super(
-      'TypesafeLimitError',
       'TYPESAFE_LIMIT',
       limit === 'tools'
         ? 'A tool set holds at most 254 tools.'
         : 'The state and questions exceed the TypeSafe request budget. State is never truncated.'
     );
-    this.limit = limit;
   }
 }
 
+const API_ERROR_SUMMARIES = {
+  rate_limit: 'The TypeSafe API rate limit was exceeded.',
+  authentication: 'The TypeSafe API rejected the API key.',
+  server_error: 'The TypeSafe API failed to handle the request.',
+  request_rejected: 'The TypeSafe API rejected the request.',
+  timeout: 'The TypeSafe API request timed out.',
+  connection: 'The TypeSafe API could not be reached.',
+  aborted: 'The TypeSafe API request was aborted.',
+  unknown: 'The TypeSafe API request failed.',
+};
+
+export type TypesafeApiErrorReason = keyof typeof API_ERROR_SUMMARIES;
+
+/** Any failed TypeSafe request. `reason` tells the failures apart. */
 export class TypesafeApiError extends TypesafeProviderError {
-  readonly sdkError?: string;
   readonly status?: number;
   readonly requestId?: string;
+  /** Set for `rate_limit` when the API sent a retry delay. */
+  readonly retryAfterMs?: number;
   constructor(
-    diagnostics: TypesafeErrorDiagnostics,
-    name = 'TypesafeApiError',
-    code = 'TYPESAFE_API_ERROR',
-    summary = 'The TypeSafe API request failed.'
+    readonly reason: TypesafeApiErrorReason,
+    diagnostics: TypesafeErrorDiagnostics = {}
   ) {
-    super(name, code, `${summary}${describeDiagnostics(diagnostics)}`);
-    this.sdkError = diagnostics.sdkError;
+    super(
+      'TYPESAFE_API_ERROR',
+      `${API_ERROR_SUMMARIES[reason]}${describeDiagnostics(diagnostics)}`
+    );
     this.status = diagnostics.status;
     this.requestId = diagnostics.requestId;
-  }
-}
-
-export class TypesafeRateLimitError extends TypesafeApiError {
-  readonly retryAfterMs?: number;
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeRateLimitError',
-      'TYPESAFE_RATE_LIMIT',
-      'The TypeSafe API rate limit was exceeded.'
-    );
     this.retryAfterMs = diagnostics.retryAfterMs;
-  }
-}
-
-export class TypesafeAuthenticationError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeAuthenticationError',
-      'TYPESAFE_AUTHENTICATION',
-      'The TypeSafe API rejected the API key.'
-    );
-  }
-}
-
-export class TypesafeServerError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeServerError',
-      'TYPESAFE_SERVER_ERROR',
-      'The TypeSafe API failed to handle the request.'
-    );
-  }
-}
-
-export class TypesafeRequestRejectedError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeRequestRejectedError',
-      'TYPESAFE_REQUEST_REJECTED',
-      'The TypeSafe API rejected the request.'
-    );
-  }
-}
-
-export class TypesafeTimeoutError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeTimeoutError',
-      'TYPESAFE_TIMEOUT',
-      'The TypeSafe API request timed out.'
-    );
-  }
-}
-
-export class TypesafeConnectionError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics) {
-    super(
-      diagnostics,
-      'TypesafeConnectionError',
-      'TYPESAFE_CONNECTION',
-      'The TypeSafe API could not be reached.'
-    );
-  }
-}
-
-export class TypesafeAbortError extends TypesafeApiError {
-  constructor(diagnostics: TypesafeErrorDiagnostics = {}) {
-    super(
-      diagnostics,
-      'TypesafeAbortError',
-      'TYPESAFE_ABORTED',
-      'The TypeSafe API request was aborted.'
-    );
   }
 }
 
@@ -462,56 +367,42 @@ export type TypesafeMalformedResponseIssue =
   'invalid_envelope' | 'missing_answer' | 'invalid_answer' | 'choice_outside_options';
 
 export class TypesafeMalformedResponseError extends TypesafeProviderError {
-  readonly issue: TypesafeMalformedResponseIssue;
-  readonly requestId?: string;
-  constructor(issue: TypesafeMalformedResponseIssue, requestId?: string) {
+  constructor(
+    readonly issue: TypesafeMalformedResponseIssue,
+    readonly requestId?: string
+  ) {
     super(
-      'TypesafeMalformedResponseError',
       'TYPESAFE_MALFORMED_RESPONSE',
       `The TypeSafe API returned a malformed response: ${issue}${describeDiagnostics({ requestId })}`
     );
-    this.issue = issue;
-    this.requestId = requestId;
   }
 }
 
 export class TypesafeMalformedDecisionError extends TypesafeProviderError {
   constructor() {
-    super(
-      'TypesafeMalformedDecisionError',
-      'TYPESAFE_MALFORMED_DECISION',
-      'The decision does not match TypesafeDecisionSchema.'
-    );
+    super('TYPESAFE_MALFORMED_DECISION', 'The decision does not match TypesafeDecisionSchema.');
   }
 }
 
 export class TypesafeAbstainedDecisionError extends TypesafeProviderError {
   constructor() {
-    super(
-      'TypesafeAbstainedDecisionError',
-      'TYPESAFE_ABSTAINED_DECISION',
-      'An abstain decision cannot be executed.'
-    );
+    super('TYPESAFE_ABSTAINED_DECISION', 'An abstain decision cannot be executed.');
   }
 }
 
 export class TypesafeIncompleteDecisionError extends TypesafeProviderError {
-  /** Argument paths that still need a caller value. These are names, never values. */
-  readonly missing: string[][];
-  constructor(missing: string[][]) {
+  /** `missing` holds the argument paths that still need a caller value: names, never values. */
+  constructor(readonly missing: string[][]) {
     super(
-      'TypesafeIncompleteDecisionError',
       'TYPESAFE_INCOMPLETE_DECISION',
       'The decision still has required arguments missing. Pass them as caller arguments.'
     );
-    this.missing = missing;
   }
 }
 
 export class TypesafeConfirmationRequiredError extends TypesafeProviderError {
   constructor() {
     super(
-      'TypesafeConfirmationRequiredError',
       'TYPESAFE_CONFIRMATION_REQUIRED',
       'This decision targets a destructive tool. Pass `confirm: true` to execute it.'
     );
@@ -519,28 +410,23 @@ export class TypesafeConfirmationRequiredError extends TypesafeProviderError {
 }
 
 export class TypesafeGateVetoError extends TypesafeProviderError {
-  readonly probability: number;
-  readonly threshold: number;
-  constructor(probability: number, threshold: number) {
+  constructor(
+    readonly probability: number,
+    readonly threshold: number
+  ) {
     super(
-      'TypesafeGateVetoError',
       'TYPESAFE_GATE_VETO',
       'The confidence gate vetoed this tool call: it does not match the user request.'
     );
-    this.probability = probability;
-    this.threshold = threshold;
   }
 }
 
 export class TypesafeGateUnavailableError extends TypesafeProviderError {
-  readonly reason: TypesafeAvailabilityReason;
-  constructor(reason: TypesafeAvailabilityReason) {
+  constructor(readonly reason: TypesafeAvailabilityReason) {
     super(
-      'TypesafeGateUnavailableError',
       'TYPESAFE_GATE_UNAVAILABLE',
       `The confidence gate could not reach TypeSafe (${reason}) and blocked this tool call.`
     );
-    this.reason = reason;
   }
 }
 
@@ -548,13 +434,7 @@ export type TypesafeGateBlockReason =
   'unknown_tool' | 'oversized_call' | 'max_vetoes' | 'check_failed';
 
 export class TypesafeGateBlockedError extends TypesafeProviderError {
-  readonly reason: TypesafeGateBlockReason;
-  constructor(reason: TypesafeGateBlockReason) {
-    super(
-      'TypesafeGateBlockedError',
-      'TYPESAFE_GATE_BLOCKED',
-      `The confidence gate blocked this tool call: ${reason}.`
-    );
-    this.reason = reason;
+  constructor(readonly reason: TypesafeGateBlockReason) {
+    super('TYPESAFE_GATE_BLOCKED', `The confidence gate blocked this tool call: ${reason}.`);
   }
 }

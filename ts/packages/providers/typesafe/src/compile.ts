@@ -1,4 +1,9 @@
-import { dereferenceJsonSchema, JSONSchemaPropertySchema, type Tool } from '@composio/core';
+import {
+  dereferenceJsonSchema,
+  JSONSchemaPropertySchema,
+  type JSONSchemaProperty,
+  type Tool,
+} from '@composio/core';
 import { z } from 'zod/v3';
 import { classifyProperty } from './classify';
 import { buildOptions, NONE_KEY, NOT_STATED_KEY, NULL_KEY, optionKey, optionLabel } from './keys';
@@ -6,7 +11,6 @@ import {
   TypesafeDuplicateToolError,
   type TypesafeArgumentQuestion,
   type TypesafeChoiceQuestion,
-  type TypesafeDescribeOverrides,
   type TypesafeNoulQuestion,
   type TypesafeOption,
   type TypesafeRisk,
@@ -63,10 +67,10 @@ function compileArgument(
   argument: string,
   index: number,
   required: boolean,
-  schema: unknown,
-  description: string
+  property: JSONSchemaProperty
 ): TypesafeArgumentQuestion | undefined {
-  const argumentClass = classifyProperty(schema);
+  const argumentClass = classifyProperty(property);
+  const description = property.description ?? '';
   const questionId = `a${index}`;
 
   if (argumentClass.kind === 'open') return undefined;
@@ -133,18 +137,11 @@ function compileArgument(
 }
 
 /** The text of a tool's option in the routing Choice. */
-export function routingDescriptionOf(tool: Tool, describe?: TypesafeDescribeOverrides): string {
-  const description = tool.description ?? '';
-  return (
-    describe?.tool?.(tool) ?? (description.length > 0 ? `${tool.name}: ${description}` : tool.name)
-  );
-}
+export const routingDescriptionOf = (tool: Tool): string =>
+  tool.description ? `${tool.name}: ${tool.description}` : tool.name;
 
 /** Compiles one tool. Never throws on a schema: what it cannot read is open-ended. */
-export function compileTool(
-  tool: Tool,
-  describe?: TypesafeDescribeOverrides
-): TypesafeToolQuestions {
+export function compileTool(tool: Tool): TypesafeToolQuestions {
   const dereferenced: unknown = dereferenceJsonSchema(
     tool.inputParameters ?? { type: 'object', properties: {} },
     { onUnresolved: 'sentinel' }
@@ -158,21 +155,10 @@ export function compileTool(
   const compiled: TypesafeArgumentQuestion[] = [];
   const openEnded: string[] = [];
   names.forEach((argument, index) => {
-    const schema = properties[argument];
-    const property = JSONSchemaPropertySchema.safeParse(schema);
-    const description = property.success
-      ? (describe?.argument?.({ tool, argument, property: property.data }) ??
-        property.data.description ??
-        '')
-      : '';
-    const question = compileArgument(
-      tool.name,
-      argument,
-      index,
-      requiredSet.has(argument),
-      schema,
-      description
-    );
+    const property = JSONSchemaPropertySchema.safeParse(properties[argument]);
+    const question = property.success
+      ? compileArgument(tool.name, argument, index, requiredSet.has(argument), property.data)
+      : undefined;
     if (question === undefined) openEnded.push(argument);
     else compiled.push(question);
   });
@@ -180,7 +166,7 @@ export function compileTool(
   return {
     slug: tool.slug,
     name: tool.name,
-    routingDescription: routingDescriptionOf(tool, describe),
+    routingDescription: routingDescriptionOf(tool),
     ...(tool.version === undefined ? {} : { version: tool.version }),
     risk: riskOf(tool),
     arguments: compiled,

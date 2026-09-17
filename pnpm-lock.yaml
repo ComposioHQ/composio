@@ -1725,9 +1725,6 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.13
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

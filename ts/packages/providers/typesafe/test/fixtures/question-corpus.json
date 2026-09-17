@@ -71,335 +71,6 @@
       }
     },
     {
-      "name": "anyof_consts",
-      "tool": {
-        "slug": "ISSUES_SET_STATE",
-        "name": "Set issue state",
-        "description": "Change the state of an issue.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "state": {
-              "anyOf": [
-                {
-                  "const": "open"
-                },
-                {
-                  "const": "closed"
-                }
-              ],
-              "description": "Target state."
-            }
-          },
-          "required": ["state"]
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_STATE",
-        "name": "Set issue state",
-        "routingDescription": "Set issue state: Change the state of an issue.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "state",
-            "required": true,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set issue state\", which value of \"state\" does the request state? Target state.",
-              "criteria": {
-                "open": "The value \"open\" for \"state\".",
-                "closed": "The value \"closed\" for \"state\".",
-                "__not_stated__": "The request does not state a value for \"state\"."
-              }
-            },
-            "options": [
-              {
-                "key": "open",
-                "value": "open"
-              },
-              {
-                "key": "closed",
-                "value": "closed"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": ["state"]
-      }
-    },
-    {
-      "name": "oneof_enum_branches",
-      "tool": {
-        "slug": "ISSUES_SET_KIND",
-        "name": "Set issue kind",
-        "description": "Change the kind of an issue.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "kind": {
-              "oneOf": [
-                {
-                  "enum": ["bug", "feature"]
-                },
-                {
-                  "const": "chore"
-                }
-              ]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_KIND",
-        "name": "Set issue kind",
-        "routingDescription": "Set issue kind: Change the kind of an issue.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "kind",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set issue kind\", which value of \"kind\" does the request state?",
-              "criteria": {
-                "bug": "The value \"bug\" for \"kind\".",
-                "feature": "The value \"feature\" for \"kind\".",
-                "chore": "The value \"chore\" for \"kind\".",
-                "__not_stated__": "The request does not state a value for \"kind\"."
-              }
-            },
-            "options": [
-              {
-                "key": "bug",
-                "value": "bug"
-              },
-              {
-                "key": "feature",
-                "value": "feature"
-              },
-              {
-                "key": "chore",
-                "value": "chore"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "nullable_enum_member",
-      "tool": {
-        "slug": "ISSUES_SET_MILESTONE",
-        "name": "Set milestone",
-        "description": "Set or clear the milestone.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "milestone": {
-              "enum": ["v1", "v2", null],
-              "description": "Milestone name, or null to clear."
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_MILESTONE",
-        "name": "Set milestone",
-        "routingDescription": "Set milestone: Set or clear the milestone.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "milestone",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set milestone\", which value of \"milestone\" does the request state? Milestone name, or null to clear.",
-              "criteria": {
-                "v1": "The value \"v1\" for \"milestone\".",
-                "v2": "The value \"v2\" for \"milestone\".",
-                "__null__": "The request explicitly asks for no value (null) for \"milestone\".",
-                "__not_stated__": "The request does not state a value for \"milestone\"."
-              }
-            },
-            "options": [
-              {
-                "key": "v1",
-                "value": "v1"
-              },
-              {
-                "key": "v2",
-                "value": "v2"
-              },
-              {
-                "key": "__null__",
-                "value": null
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "nullable_enum_flag",
-      "tool": {
-        "slug": "ISSUES_SET_LABEL",
-        "name": "Set label",
-        "description": "Set or clear the label.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "label": {
-              "type": "string",
-              "enum": ["bug", "docs"],
-              "nullable": true
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_LABEL",
-        "name": "Set label",
-        "routingDescription": "Set label: Set or clear the label.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "label",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set label\", which value of \"label\" does the request state?",
-              "criteria": {
-                "bug": "The value \"bug\" for \"label\".",
-                "docs": "The value \"docs\" for \"label\".",
-                "__null__": "The request explicitly asks for no value (null) for \"label\".",
-                "__not_stated__": "The request does not state a value for \"label\"."
-              }
-            },
-            "options": [
-              {
-                "key": "bug",
-                "value": "bug"
-              },
-              {
-                "key": "docs",
-                "value": "docs"
-              },
-              {
-                "key": "__null__",
-                "value": null
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "nullable_enum_type_array",
-      "tool": {
-        "slug": "ISSUES_SET_SIZE",
-        "name": "Set size",
-        "description": "Set or clear the size.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "size": {
-              "type": ["string", "null"],
-              "enum": ["small", "large"]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_SIZE",
-        "name": "Set size",
-        "routingDescription": "Set size: Set or clear the size.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "size",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set size\", which value of \"size\" does the request state?",
-              "criteria": {
-                "small": "The value \"small\" for \"size\".",
-                "large": "The value \"large\" for \"size\".",
-                "__null__": "The request explicitly asks for no value (null) for \"size\".",
-                "__not_stated__": "The request does not state a value for \"size\"."
-              }
-            },
-            "options": [
-              {
-                "key": "small",
-                "value": "small"
-              },
-              {
-                "key": "large",
-                "value": "large"
-              },
-              {
-                "key": "__null__",
-                "value": null
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
       "name": "boolean_with_default",
       "tool": {
         "slug": "REPOS_WATCH",
@@ -535,20 +206,70 @@
       }
     },
     {
-      "name": "single_member_enum",
+      "name": "destructive_tag",
       "tool": {
-        "slug": "EXPORT_DATA",
-        "name": "Export data",
-        "description": "Export the data set.",
+        "slug": "REPOS_DELETE",
+        "name": "Delete repository",
+        "description": "Delete a repository for good.",
         "inputParameters": {
           "type": "object",
           "properties": {
-            "format": {
-              "type": "string",
-              "enum": ["csv"]
+            "confirm_name": {
+              "type": "string"
             }
           },
-          "required": ["format"]
+          "required": ["confirm_name"]
+        },
+        "tags": ["destructiveHint"],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        },
+        "version": "20250909_00"
+      },
+      "expected": {
+        "slug": "REPOS_DELETE",
+        "name": "Delete repository",
+        "routingDescription": "Delete repository: Delete a repository for good.",
+        "version": "20250909_00",
+        "risk": "destructive",
+        "arguments": [],
+        "openEnded": ["confirm_name"],
+        "required": ["confirm_name"]
+      }
+    },
+    {
+      "name": "no_input_parameters",
+      "tool": {
+        "slug": "SYMBOLS_LIST",
+        "name": "List symbols",
+        "description": "List every symbol.",
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "SYMBOLS_LIST",
+        "name": "List symbols",
+        "routingDescription": "List symbols: List every symbol.",
+        "risk": "mutating",
+        "arguments": [],
+        "openEnded": [],
+        "required": []
+      }
+    },
+    {
+      "name": "empty_description",
+      "tool": {
+        "slug": "NO_DESCRIPTION",
+        "name": "No description",
+        "description": "",
+        "inputParameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
         },
         "tags": [],
         "toolkit": {
@@ -557,19 +278,102 @@
         }
       },
       "expected": {
-        "slug": "EXPORT_DATA",
-        "name": "Export data",
-        "routingDescription": "Export data: Export the data set.",
+        "slug": "NO_DESCRIPTION",
+        "name": "No description",
+        "routingDescription": "No description",
         "risk": "mutating",
+        "arguments": [],
+        "openEnded": [],
+        "required": []
+      }
+    },
+    {
+      "name": "closed_set_forms",
+      "tool": {
+        "slug": "CLOSED_SETS",
+        "name": "Closed sets",
+        "description": "Every closed-set form.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "anyOf": [
+                {
+                  "const": "open"
+                },
+                {
+                  "const": "closed"
+                }
+              ],
+              "description": "Target state."
+            },
+            "kind": {
+              "oneOf": [
+                {
+                  "enum": ["bug", "feature"]
+                },
+                {
+                  "const": "chore"
+                }
+              ]
+            },
+            "milestone": {
+              "enum": ["v1", "v2", null],
+              "description": "Milestone name, or null to clear."
+            },
+            "label": {
+              "type": "string",
+              "enum": ["bug", "docs"],
+              "nullable": true
+            },
+            "size": {
+              "type": ["string", "null"],
+              "enum": ["small", "large"]
+            },
+            "format": {
+              "type": "string",
+              "enum": ["csv"]
+            },
+            "version": {
+              "const": 2
+            },
+            "weight": {
+              "type": "integer",
+              "enum": [1, 2, 3]
+            },
+            "level": {
+              "$ref": "#/$defs/Level"
+            }
+          },
+          "required": ["level", "ghost", "level"],
+          "$defs": {
+            "Level": {
+              "type": "string",
+              "enum": ["info", "warn"],
+              "description": "Log level."
+            }
+          }
+        },
+        "tags": ["readOnlyHint", "idempotentHint"],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "CLOSED_SETS",
+        "name": "Closed sets",
+        "routingDescription": "Closed sets: Every closed-set form.",
+        "risk": "read_only",
         "arguments": [
           {
             "kind": "choice",
             "name": "format",
-            "required": true,
+            "required": false,
             "questionId": "a0",
             "question": {
               "type": "choice",
-              "instructions": "For the tool \"Export data\", which value of \"format\" does the request state?",
+              "instructions": "For the tool \"Closed sets\", which value of \"format\" does the request state?",
               "criteria": {
                 "csv": "The value \"csv\" for \"format\".",
                 "__not_stated__": "The request does not state a value for \"format\"."
@@ -582,47 +386,191 @@
               }
             ],
             "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": ["format"]
-      }
-    },
-    {
-      "name": "scalar_const",
-      "tool": {
-        "slug": "EXPORT_REPORT",
-        "name": "Export report",
-        "description": "Export the report.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "version": {
-              "const": 2
-            }
           },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "EXPORT_REPORT",
-        "name": "Export report",
-        "routingDescription": "Export report: Export the report.",
-        "risk": "mutating",
-        "arguments": [
+          {
+            "kind": "choice",
+            "name": "kind",
+            "required": false,
+            "questionId": "a1",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"kind\" does the request state?",
+              "criteria": {
+                "bug": "The value \"bug\" for \"kind\".",
+                "feature": "The value \"feature\" for \"kind\".",
+                "chore": "The value \"chore\" for \"kind\".",
+                "__not_stated__": "The request does not state a value for \"kind\"."
+              }
+            },
+            "options": [
+              {
+                "key": "bug",
+                "value": "bug"
+              },
+              {
+                "key": "feature",
+                "value": "feature"
+              },
+              {
+                "key": "chore",
+                "value": "chore"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "label",
+            "required": false,
+            "questionId": "a2",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"label\" does the request state?",
+              "criteria": {
+                "bug": "The value \"bug\" for \"label\".",
+                "docs": "The value \"docs\" for \"label\".",
+                "__null__": "The request explicitly asks for no value (null) for \"label\".",
+                "__not_stated__": "The request does not state a value for \"label\"."
+              }
+            },
+            "options": [
+              {
+                "key": "bug",
+                "value": "bug"
+              },
+              {
+                "key": "docs",
+                "value": "docs"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "level",
+            "required": true,
+            "questionId": "a3",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"level\" does the request state? Log level.",
+              "criteria": {
+                "info": "The value \"info\" for \"level\".",
+                "warn": "The value \"warn\" for \"level\".",
+                "__not_stated__": "The request does not state a value for \"level\"."
+              }
+            },
+            "options": [
+              {
+                "key": "info",
+                "value": "info"
+              },
+              {
+                "key": "warn",
+                "value": "warn"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "milestone",
+            "required": false,
+            "questionId": "a4",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"milestone\" does the request state? Milestone name, or null to clear.",
+              "criteria": {
+                "v1": "The value \"v1\" for \"milestone\".",
+                "v2": "The value \"v2\" for \"milestone\".",
+                "__null__": "The request explicitly asks for no value (null) for \"milestone\".",
+                "__not_stated__": "The request does not state a value for \"milestone\"."
+              }
+            },
+            "options": [
+              {
+                "key": "v1",
+                "value": "v1"
+              },
+              {
+                "key": "v2",
+                "value": "v2"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "size",
+            "required": false,
+            "questionId": "a5",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"size\" does the request state?",
+              "criteria": {
+                "small": "The value \"small\" for \"size\".",
+                "large": "The value \"large\" for \"size\".",
+                "__null__": "The request explicitly asks for no value (null) for \"size\".",
+                "__not_stated__": "The request does not state a value for \"size\"."
+              }
+            },
+            "options": [
+              {
+                "key": "small",
+                "value": "small"
+              },
+              {
+                "key": "large",
+                "value": "large"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "state",
+            "required": false,
+            "questionId": "a6",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"state\" does the request state? Target state.",
+              "criteria": {
+                "open": "The value \"open\" for \"state\".",
+                "closed": "The value \"closed\" for \"state\".",
+                "__not_stated__": "The request does not state a value for \"state\"."
+              }
+            },
+            "options": [
+              {
+                "key": "open",
+                "value": "open"
+              },
+              {
+                "key": "closed",
+                "value": "closed"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
           {
             "kind": "choice",
             "name": "version",
             "required": false,
-            "questionId": "a0",
+            "questionId": "a7",
             "question": {
               "type": "choice",
-              "instructions": "For the tool \"Export report\", which value of \"version\" does the request state?",
+              "instructions": "For the tool \"Closed sets\", which value of \"version\" does the request state?",
               "criteria": {
                 "o0_2": "The value \"2\" for \"version\".",
                 "__not_stated__": "The request does not state a value for \"version\"."
@@ -635,48 +583,15 @@
               }
             ],
             "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "integer_enum",
-      "tool": {
-        "slug": "ISSUES_SET_WEIGHT",
-        "name": "Set weight",
-        "description": "Set the issue weight.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "weight": {
-              "type": "integer",
-              "enum": [1, 2, 3]
-            }
           },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ISSUES_SET_WEIGHT",
-        "name": "Set weight",
-        "routingDescription": "Set weight: Set the issue weight.",
-        "risk": "mutating",
-        "arguments": [
           {
             "kind": "choice",
             "name": "weight",
             "required": false,
-            "questionId": "a0",
+            "questionId": "a8",
             "question": {
               "type": "choice",
-              "instructions": "For the tool \"Set weight\", which value of \"weight\" does the request state?",
+              "instructions": "For the tool \"Closed sets\", which value of \"weight\" does the request state?",
               "criteria": {
                 "o0_1": "The value \"1\" for \"weight\".",
                 "o1_2": "The value \"2\" for \"weight\".",
@@ -702,325 +617,45 @@
           }
         ],
         "openEnded": [],
-        "required": []
+        "required": ["level"]
       }
     },
     {
-      "name": "large_enum_open_ended",
+      "name": "hostile_labels_and_names",
       "tool": {
-        "slug": "LOCALE_SET",
-        "name": "Set locale",
-        "description": "Set the locale.",
+        "slug": "HOSTILE_SET",
+        "name": "Set hostile",
+        "description": "Set a hostile value.",
         "inputParameters": {
           "type": "object",
           "properties": {
-            "locale": {
+            "1": {
+              "type": "boolean"
+            },
+            "value": {
               "type": "string",
               "enum": [
-                "locale_0",
-                "locale_1",
-                "locale_2",
-                "locale_3",
-                "locale_4",
-                "locale_5",
-                "locale_6",
-                "locale_7",
-                "locale_8",
-                "locale_9",
-                "locale_10",
-                "locale_11",
-                "locale_12",
-                "locale_13",
-                "locale_14",
-                "locale_15",
-                "locale_16",
-                "locale_17",
-                "locale_18",
-                "locale_19",
-                "locale_20",
-                "locale_21",
-                "locale_22",
-                "locale_23",
-                "locale_24",
-                "locale_25",
-                "locale_26",
-                "locale_27",
-                "locale_28",
-                "locale_29",
-                "locale_30",
-                "locale_31",
-                "locale_32",
-                "locale_33",
-                "locale_34",
-                "locale_35",
-                "locale_36",
-                "locale_37",
-                "locale_38",
-                "locale_39",
-                "locale_40",
-                "locale_41",
-                "locale_42",
-                "locale_43",
-                "locale_44",
-                "locale_45",
-                "locale_46",
-                "locale_47",
-                "locale_48",
-                "locale_49",
-                "locale_50",
-                "locale_51",
-                "locale_52",
-                "locale_53",
-                "locale_54",
-                "locale_55",
-                "locale_56",
-                "locale_57",
-                "locale_58",
-                "locale_59",
-                "locale_60",
-                "locale_61",
-                "locale_62",
-                "locale_63",
-                "locale_64",
-                "locale_65",
-                "locale_66",
-                "locale_67",
-                "locale_68",
-                "locale_69",
-                "locale_70",
-                "locale_71",
-                "locale_72",
-                "locale_73",
-                "locale_74",
-                "locale_75",
-                "locale_76",
-                "locale_77",
-                "locale_78",
-                "locale_79",
-                "locale_80",
-                "locale_81",
-                "locale_82",
-                "locale_83",
-                "locale_84",
-                "locale_85",
-                "locale_86",
-                "locale_87",
-                "locale_88",
-                "locale_89",
-                "locale_90",
-                "locale_91",
-                "locale_92",
-                "locale_93",
-                "locale_94",
-                "locale_95",
-                "locale_96",
-                "locale_97",
-                "locale_98",
-                "locale_99",
-                "locale_100",
-                "locale_101",
-                "locale_102",
-                "locale_103",
-                "locale_104",
-                "locale_105",
-                "locale_106",
-                "locale_107",
-                "locale_108",
-                "locale_109",
-                "locale_110",
-                "locale_111",
-                "locale_112",
-                "locale_113",
-                "locale_114",
-                "locale_115",
-                "locale_116",
-                "locale_117",
-                "locale_118",
-                "locale_119",
-                "locale_120",
-                "locale_121",
-                "locale_122",
-                "locale_123",
-                "locale_124",
-                "locale_125",
-                "locale_126",
-                "locale_127",
-                "locale_128",
-                "locale_129",
-                "locale_130",
-                "locale_131",
-                "locale_132",
-                "locale_133",
-                "locale_134",
-                "locale_135",
-                "locale_136",
-                "locale_137",
-                "locale_138",
-                "locale_139",
-                "locale_140",
-                "locale_141",
-                "locale_142",
-                "locale_143",
-                "locale_144",
-                "locale_145",
-                "locale_146",
-                "locale_147",
-                "locale_148",
-                "locale_149",
-                "locale_150",
-                "locale_151",
-                "locale_152",
-                "locale_153",
-                "locale_154",
-                "locale_155",
-                "locale_156",
-                "locale_157",
-                "locale_158",
-                "locale_159",
-                "locale_160",
-                "locale_161",
-                "locale_162",
-                "locale_163",
-                "locale_164",
-                "locale_165",
-                "locale_166",
-                "locale_167",
-                "locale_168",
-                "locale_169",
-                "locale_170",
-                "locale_171",
-                "locale_172",
-                "locale_173",
-                "locale_174",
-                "locale_175",
-                "locale_176",
-                "locale_177",
-                "locale_178",
-                "locale_179",
-                "locale_180",
-                "locale_181",
-                "locale_182",
-                "locale_183",
-                "locale_184",
-                "locale_185",
-                "locale_186",
-                "locale_187",
-                "locale_188",
-                "locale_189",
-                "locale_190",
-                "locale_191",
-                "locale_192",
-                "locale_193",
-                "locale_194",
-                "locale_195",
-                "locale_196",
-                "locale_197",
-                "locale_198",
-                "locale_199",
-                "locale_200",
-                "locale_201",
-                "locale_202",
-                "locale_203",
-                "locale_204",
-                "locale_205",
-                "locale_206",
-                "locale_207",
-                "locale_208",
-                "locale_209",
-                "locale_210",
-                "locale_211",
-                "locale_212",
-                "locale_213",
-                "locale_214",
-                "locale_215",
-                "locale_216",
-                "locale_217",
-                "locale_218",
-                "locale_219",
-                "locale_220",
-                "locale_221",
-                "locale_222",
-                "locale_223",
-                "locale_224",
-                "locale_225",
-                "locale_226",
-                "locale_227",
-                "locale_228",
-                "locale_229",
-                "locale_230",
-                "locale_231",
-                "locale_232",
-                "locale_233",
-                "locale_234",
-                "locale_235",
-                "locale_236",
-                "locale_237",
-                "locale_238",
-                "locale_239",
-                "locale_240",
-                "locale_241",
-                "locale_242",
-                "locale_243",
-                "locale_244",
-                "locale_245",
-                "locale_246",
-                "locale_247",
-                "locale_248",
-                "locale_249",
-                "locale_250",
-                "locale_251",
-                "locale_252",
-                "locale_253",
-                "locale_254",
-                "locale_255",
-                "locale_256",
-                "locale_257",
-                "locale_258",
-                "locale_259",
-                "locale_260",
-                "locale_261",
-                "locale_262",
-                "locale_263",
-                "locale_264",
-                "locale_265",
-                "locale_266",
-                "locale_267",
-                "locale_268",
-                "locale_269",
-                "locale_270",
-                "locale_271",
-                "locale_272",
-                "locale_273",
-                "locale_274",
-                "locale_275",
-                "locale_276",
-                "locale_277",
-                "locale_278",
-                "locale_279",
-                "locale_280",
-                "locale_281",
-                "locale_282",
-                "locale_283",
-                "locale_284",
-                "locale_285",
-                "locale_286",
-                "locale_287",
-                "locale_288",
-                "locale_289",
-                "locale_290",
-                "locale_291",
-                "locale_292",
-                "locale_293",
-                "locale_294",
-                "locale_295",
-                "locale_296",
-                "locale_297",
-                "locale_298",
-                "locale_299"
+                "__proto__",
+                "constructor",
+                "",
+                "__not_stated__",
+                "o0_x",
+                " padded",
+                "café 😀",
+                "10",
+                "2"
               ]
+            },
+            "a.b": {
+              "type": "string",
+              "enum": ["one", "two"]
+            },
+            "$top": {
+              "type": "string",
+              "enum": ["one", "two"]
             }
           },
-          "required": []
+          "required": ["$top"]
         },
         "tags": [],
         "toolkit": {
@@ -1029,185 +664,157 @@
         }
       },
       "expected": {
-        "slug": "LOCALE_SET",
-        "name": "Set locale",
-        "routingDescription": "Set locale: Set the locale.",
+        "slug": "HOSTILE_SET",
+        "name": "Set hostile",
+        "routingDescription": "Set hostile: Set a hostile value.",
         "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["locale"],
-        "required": []
-      }
-    },
-    {
-      "name": "mixed_type_enum_open_ended",
-      "tool": {
-        "slug": "MIXED_SET",
-        "name": "Set mixed",
-        "description": "Set a mixed value.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "value": {
-              "enum": [1, "1"]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "MIXED_SET",
-        "name": "Set mixed",
-        "routingDescription": "Set mixed: Set a mixed value.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["value"],
-        "required": []
-      }
-    },
-    {
-      "name": "anyof_enum_and_free_string_open_ended",
-      "tool": {
-        "slug": "COLOR_SET",
-        "name": "Set color",
-        "description": "Set the color.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "color": {
-              "anyOf": [
-                {
-                  "enum": ["red", "blue"]
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "COLOR_SET",
-        "name": "Set color",
-        "routingDescription": "Set color: Set the color.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["color"],
-        "required": []
-      }
-    },
-    {
-      "name": "nested_closed_set_open_ended",
-      "tool": {
-        "slug": "FILTER_SET",
-        "name": "Set filter",
-        "description": "Set the filter.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "object",
-              "properties": {
-                "state": {
-                  "type": "string",
-                  "enum": ["open", "closed"]
-                }
+        "arguments": [
+          {
+            "kind": "choice",
+            "name": "$top",
+            "required": true,
+            "questionId": "a0",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"$top\" does the request state?",
+              "criteria": {
+                "one": "The value \"one\" for \"$top\".",
+                "two": "The value \"two\" for \"$top\".",
+                "__not_stated__": "The request does not state a value for \"$top\"."
               }
-            }
+            },
+            "options": [
+              {
+                "key": "one",
+                "value": "one"
+              },
+              {
+                "key": "two",
+                "value": "two"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
           },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "FILTER_SET",
-        "name": "Set filter",
-        "routingDescription": "Set filter: Set the filter.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["filter"],
-        "required": []
+          {
+            "kind": "choice",
+            "name": "1",
+            "required": false,
+            "questionId": "a1",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"1\" does the request state?",
+              "criteria": {
+                "yes": "The request states that \"1\" is true.",
+                "no": "The request states that \"1\" is false.",
+                "__not_stated__": "The request does not state a value for \"1\"."
+              }
+            },
+            "options": [
+              {
+                "key": "yes",
+                "value": true
+              },
+              {
+                "key": "no",
+                "value": false
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "a.b",
+            "required": false,
+            "questionId": "a2",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"a.b\" does the request state?",
+              "criteria": {
+                "one": "The value \"one\" for \"a.b\".",
+                "two": "The value \"two\" for \"a.b\".",
+                "__not_stated__": "The request does not state a value for \"a.b\"."
+              }
+            },
+            "options": [
+              {
+                "key": "one",
+                "value": "one"
+              },
+              {
+                "key": "two",
+                "value": "two"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "value",
+            "required": false,
+            "questionId": "a3",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"value\" does the request state?",
+              "criteria": {
+                "o0___proto__": "The value \"__proto__\" for \"value\".",
+                "o1_constructor": "The value \"constructor\" for \"value\".",
+                "o2_": "The value \"\" for \"value\".",
+                "o3___not_stated__": "The value \"__not_stated__\" for \"value\".",
+                "o4_o0_x": "The value \"o0_x\" for \"value\".",
+                "o5__padded": "The value \" padded\" for \"value\".",
+                "café 😀": "The value \"café 😀\" for \"value\".",
+                "o7_10": "The value \"10\" for \"value\".",
+                "o8_2": "The value \"2\" for \"value\".",
+                "__not_stated__": "The request does not state a value for \"value\"."
+              }
+            },
+            "options": [
+              {
+                "key": "o0___proto__",
+                "value": "__proto__"
+              },
+              {
+                "key": "o1_constructor",
+                "value": "constructor"
+              },
+              {
+                "key": "o2_",
+                "value": ""
+              },
+              {
+                "key": "o3___not_stated__",
+                "value": "__not_stated__"
+              },
+              {
+                "key": "o4_o0_x",
+                "value": "o0_x"
+              },
+              {
+                "key": "o5__padded",
+                "value": " padded"
+              },
+              {
+                "key": "café 😀",
+                "value": "café 😀"
+              },
+              {
+                "key": "o7_10",
+                "value": "10"
+              },
+              {
+                "key": "o8_2",
+                "value": "2"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          }
+        ],
+        "openEnded": [],
+        "required": ["$top"]
       }
     },
     {
-      "name": "unresolved_ref_open_ended",
-      "tool": {
-        "slug": "DANGLING_REF",
-        "name": "Dangling ref",
-        "description": "Has a dangling ref.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "data": {
-              "$ref": "#/$defs/Missing"
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "DANGLING_REF",
-        "name": "Dangling ref",
-        "routingDescription": "Dangling ref: Has a dangling ref.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["data"],
-        "required": []
-      }
-    },
-    {
-      "name": "unknown_type_open_ended",
-      "tool": {
-        "slug": "UNKNOWN_TYPE",
-        "name": "Unknown type",
-        "description": "Has a type outside JSON Schema.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "when": {
-              "type": "date"
-            }
-          },
-          "required": ["when"]
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "UNKNOWN_TYPE",
-        "name": "Unknown type",
-        "routingDescription": "Unknown type: Has a type outside JSON Schema.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": ["when"],
-        "required": ["when"]
-      }
-    },
-    {
-      "name": "open_ended_scalars",
+      "name": "open_ended_forms",
       "tool": {
         "slug": "MESSAGES_SEND",
         "name": "Send message",
@@ -1245,6 +852,34 @@
                   "type": "number"
                 }
               ]
+            },
+            "mixed": {
+              "enum": [1, "1"]
+            },
+            "color": {
+              "anyOf": [
+                {
+                  "enum": ["red", "blue"]
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "filter": {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": ["open", "closed"]
+                }
+              }
+            },
+            "data": {
+              "$ref": "#/$defs/Missing"
+            },
+            "when": {
+              "type": "date"
             }
           },
           "required": ["body"]
@@ -1261,575 +896,21 @@
         "routingDescription": "Send message: Send a message.",
         "risk": "mutating",
         "arguments": [],
-        "openEnded": ["body", "count", "due", "id", "limit", "pair", "payload"],
+        "openEnded": [
+          "body",
+          "color",
+          "count",
+          "data",
+          "due",
+          "filter",
+          "id",
+          "limit",
+          "mixed",
+          "pair",
+          "payload",
+          "when"
+        ],
         "required": ["body"]
-      }
-    },
-    {
-      "name": "no_input_parameters",
-      "tool": {
-        "slug": "SYMBOLS_LIST",
-        "name": "List symbols",
-        "description": "List every symbol.",
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "SYMBOLS_LIST",
-        "name": "List symbols",
-        "routingDescription": "List symbols: List every symbol.",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "numeric_looking_labels",
-      "tool": {
-        "slug": "PAGE_SIZE_SET",
-        "name": "Set page size",
-        "description": "Set the page size.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "size": {
-              "type": "string",
-              "enum": ["10", "2", "high"]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "PAGE_SIZE_SET",
-        "name": "Set page size",
-        "routingDescription": "Set page size: Set the page size.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "size",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set page size\", which value of \"size\" does the request state?",
-              "criteria": {
-                "o0_10": "The value \"10\" for \"size\".",
-                "o1_2": "The value \"2\" for \"size\".",
-                "high": "The value \"high\" for \"size\".",
-                "__not_stated__": "The request does not state a value for \"size\"."
-              }
-            },
-            "options": [
-              {
-                "key": "o0_10",
-                "value": "10"
-              },
-              {
-                "key": "o1_2",
-                "value": "2"
-              },
-              {
-                "key": "high",
-                "value": "high"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "hostile_labels",
-      "tool": {
-        "slug": "HOSTILE_SET",
-        "name": "Set hostile",
-        "description": "Set a hostile value.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "value": {
-              "type": "string",
-              "enum": [
-                "__proto__",
-                "constructor",
-                "",
-                "__not_stated__",
-                "o0_x",
-                " padded",
-                "café 😀"
-              ]
-            }
-          },
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "HOSTILE_SET",
-        "name": "Set hostile",
-        "routingDescription": "Set hostile: Set a hostile value.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "value",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set hostile\", which value of \"value\" does the request state?",
-              "criteria": {
-                "o0___proto__": "The value \"__proto__\" for \"value\".",
-                "o1_constructor": "The value \"constructor\" for \"value\".",
-                "o2_": "The value \"\" for \"value\".",
-                "o3___not_stated__": "The value \"__not_stated__\" for \"value\".",
-                "o4_o0_x": "The value \"o0_x\" for \"value\".",
-                "o5__padded": "The value \" padded\" for \"value\".",
-                "café 😀": "The value \"café 😀\" for \"value\".",
-                "__not_stated__": "The request does not state a value for \"value\"."
-              }
-            },
-            "options": [
-              {
-                "key": "o0___proto__",
-                "value": "__proto__"
-              },
-              {
-                "key": "o1_constructor",
-                "value": "constructor"
-              },
-              {
-                "key": "o2_",
-                "value": ""
-              },
-              {
-                "key": "o3___not_stated__",
-                "value": "__not_stated__"
-              },
-              {
-                "key": "o4_o0_x",
-                "value": "o0_x"
-              },
-              {
-                "key": "o5__padded",
-                "value": " padded"
-              },
-              {
-                "key": "café 😀",
-                "value": "café 😀"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "ref_enum",
-      "tool": {
-        "slug": "REF_ENUM_SET",
-        "name": "Set ref enum",
-        "description": "Set a referenced enum.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "level": {
-              "$ref": "#/$defs/Level"
-            }
-          },
-          "required": ["level"],
-          "$defs": {
-            "Level": {
-              "type": "string",
-              "enum": ["info", "warn"],
-              "description": "Log level."
-            }
-          }
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "REF_ENUM_SET",
-        "name": "Set ref enum",
-        "routingDescription": "Set ref enum: Set a referenced enum.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "level",
-            "required": true,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Set ref enum\", which value of \"level\" does the request state? Log level.",
-              "criteria": {
-                "info": "The value \"info\" for \"level\".",
-                "warn": "The value \"warn\" for \"level\".",
-                "__not_stated__": "The request does not state a value for \"level\"."
-              }
-            },
-            "options": [
-              {
-                "key": "info",
-                "value": "info"
-              },
-              {
-                "key": "warn",
-                "value": "warn"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": ["level"]
-      }
-    },
-    {
-      "name": "delimiter_argument_names",
-      "tool": {
-        "slug": "ODD_NAMES",
-        "name": "Odd names",
-        "description": "Has odd argument names.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "1": {
-              "type": "boolean"
-            },
-            "a.b": {
-              "type": "boolean"
-            },
-            "a:b": {
-              "type": "boolean"
-            },
-            "$top": {
-              "type": "string",
-              "enum": ["one", "two"]
-            }
-          },
-          "required": ["$top"]
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "ODD_NAMES",
-        "name": "Odd names",
-        "routingDescription": "Odd names: Has odd argument names.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "$top",
-            "required": true,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Odd names\", which value of \"$top\" does the request state?",
-              "criteria": {
-                "one": "The value \"one\" for \"$top\".",
-                "two": "The value \"two\" for \"$top\".",
-                "__not_stated__": "The request does not state a value for \"$top\"."
-              }
-            },
-            "options": [
-              {
-                "key": "one",
-                "value": "one"
-              },
-              {
-                "key": "two",
-                "value": "two"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          },
-          {
-            "kind": "choice",
-            "name": "1",
-            "required": false,
-            "questionId": "a1",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Odd names\", which value of \"1\" does the request state?",
-              "criteria": {
-                "yes": "The request states that \"1\" is true.",
-                "no": "The request states that \"1\" is false.",
-                "__not_stated__": "The request does not state a value for \"1\"."
-              }
-            },
-            "options": [
-              {
-                "key": "yes",
-                "value": true
-              },
-              {
-                "key": "no",
-                "value": false
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          },
-          {
-            "kind": "choice",
-            "name": "a.b",
-            "required": false,
-            "questionId": "a2",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Odd names\", which value of \"a.b\" does the request state?",
-              "criteria": {
-                "yes": "The request states that \"a.b\" is true.",
-                "no": "The request states that \"a.b\" is false.",
-                "__not_stated__": "The request does not state a value for \"a.b\"."
-              }
-            },
-            "options": [
-              {
-                "key": "yes",
-                "value": true
-              },
-              {
-                "key": "no",
-                "value": false
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          },
-          {
-            "kind": "choice",
-            "name": "a:b",
-            "required": false,
-            "questionId": "a3",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Odd names\", which value of \"a:b\" does the request state?",
-              "criteria": {
-                "yes": "The request states that \"a:b\" is true.",
-                "no": "The request states that \"a:b\" is false.",
-                "__not_stated__": "The request does not state a value for \"a:b\"."
-              }
-            },
-            "options": [
-              {
-                "key": "yes",
-                "value": true
-              },
-              {
-                "key": "no",
-                "value": false
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": ["$top"]
-      }
-    },
-    {
-      "name": "required_without_property",
-      "tool": {
-        "slug": "GHOST_REQUIRED",
-        "name": "Ghost required",
-        "description": "Requires a name with no property.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": ["fast", "slow"]
-            }
-          },
-          "required": ["mode", "ghost", "mode"]
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "GHOST_REQUIRED",
-        "name": "Ghost required",
-        "routingDescription": "Ghost required: Requires a name with no property.",
-        "risk": "mutating",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "mode",
-            "required": true,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"Ghost required\", which value of \"mode\" does the request state?",
-              "criteria": {
-                "fast": "The value \"fast\" for \"mode\".",
-                "slow": "The value \"slow\" for \"mode\".",
-                "__not_stated__": "The request does not state a value for \"mode\"."
-              }
-            },
-            "options": [
-              {
-                "key": "fast",
-                "value": "fast"
-              },
-              {
-                "key": "slow",
-                "value": "slow"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": ["mode"]
-      }
-    },
-    {
-      "name": "destructive_tag",
-      "tool": {
-        "slug": "REPOS_DELETE",
-        "name": "Delete repository",
-        "description": "Delete a repository for good.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "confirm_name": {
-              "type": "string"
-            }
-          },
-          "required": ["confirm_name"]
-        },
-        "tags": ["destructiveHint"],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        },
-        "version": "20250909_00"
-      },
-      "expected": {
-        "slug": "REPOS_DELETE",
-        "name": "Delete repository",
-        "routingDescription": "Delete repository: Delete a repository for good.",
-        "version": "20250909_00",
-        "risk": "destructive",
-        "arguments": [],
-        "openEnded": ["confirm_name"],
-        "required": ["confirm_name"]
-      }
-    },
-    {
-      "name": "read_only_tag",
-      "tool": {
-        "slug": "REPOS_LIST",
-        "name": "List repositories",
-        "description": "List repositories.",
-        "inputParameters": {
-          "type": "object",
-          "properties": {
-            "visibility": {
-              "type": "string",
-              "enum": ["public", "private"]
-            }
-          },
-          "required": []
-        },
-        "tags": ["readOnlyHint", "idempotentHint"],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "REPOS_LIST",
-        "name": "List repositories",
-        "routingDescription": "List repositories: List repositories.",
-        "risk": "read_only",
-        "arguments": [
-          {
-            "kind": "choice",
-            "name": "visibility",
-            "required": false,
-            "questionId": "a0",
-            "question": {
-              "type": "choice",
-              "instructions": "For the tool \"List repositories\", which value of \"visibility\" does the request state?",
-              "criteria": {
-                "public": "The value \"public\" for \"visibility\".",
-                "private": "The value \"private\" for \"visibility\".",
-                "__not_stated__": "The request does not state a value for \"visibility\"."
-              }
-            },
-            "options": [
-              {
-                "key": "public",
-                "value": "public"
-              },
-              {
-                "key": "private",
-                "value": "private"
-              }
-            ],
-            "notStatedKey": "__not_stated__"
-          }
-        ],
-        "openEnded": [],
-        "required": []
-      }
-    },
-    {
-      "name": "empty_description",
-      "tool": {
-        "slug": "NO_DESCRIPTION",
-        "name": "No description",
-        "description": "",
-        "inputParameters": {
-          "type": "object",
-          "properties": {},
-          "required": []
-        },
-        "tags": [],
-        "toolkit": {
-          "slug": "corpus",
-          "name": "Corpus"
-        }
-      },
-      "expected": {
-        "slug": "NO_DESCRIPTION",
-        "name": "No description",
-        "routingDescription": "No description",
-        "risk": "mutating",
-        "arguments": [],
-        "openEnded": [],
-        "required": []
       }
     }
   ],
