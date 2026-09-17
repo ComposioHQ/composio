@@ -311,11 +311,7 @@ await composio.triggers.setWebhookSubscription({
 Subscribe to all the triggers
 
 ```typescript
-async subscribe(
-  fn: (_data: IncomingTriggerPayload) => void,
-  filters?: TriggerSubscribeParams,
-  onSubscriptionError?: (data: Record<string, unknown>) => void
-): Promise<void>
+async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters: TriggerSubscribeParams, onSubscriptionError?: (data: Record<string, unknown>) => void): Promise<void>
 ```
 
 **Parameters**
@@ -324,7 +320,10 @@ async subscribe(
 |------|------|-------------|
 | `fn` | `(_data: IncomingTriggerPayload) => void` | The function to call when a trigger is received |
 | `filters` | `TriggerSubscribeParams` | The filters to apply to the triggers |
-| `onSubscriptionError` | `(data: Record<string, unknown>) => void` | Optional callback invoked with the raw Pusher payload when the subscription fails (for example on auth or permission rejection). The promise still resolves; this is the only programmatic signal of the failure |
+| `onSubscriptionError?` | `(data: Record<string, unknown>) => void` | Optional callback invoked with the raw Pusher payload when
+the underlying subscription fails (for example on auth or permission rejection). The
+subscribe promise still resolves; this is the only programmatic signal of the failure.
+Errors thrown from — or promises rejected by — the callback are contained and logged. |
 
 **Returns**
 
