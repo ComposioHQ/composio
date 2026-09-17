@@ -24,6 +24,7 @@ import { PACKAGE_MANAGERS } from './package-install';
 import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
+import { HOME_OG_DESCRIPTION } from './toolkit-count';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -160,17 +161,41 @@ export type ChangelogEntry = DocCollectionEntry<
 // checker. Preserve the collection's public shape for all route consumers.
 export const changelogEntries = changelog as ChangelogEntry[];
 
+export interface OgImageExtras {
+  /** Toolkit logo URL. Only https://logos.composio.dev and https://assets.composio.dev are rendered. */
+  logo?: string | null;
+  /** Changelog date, already formatted for display. */
+  date?: string | null;
+  /** API reference version label, e.g. "v3.1". */
+  version?: string | null;
+}
+
+const OG_ROUTE = 'https://docs.composio.dev/api/og';
+
 export function getOgImageUrl(
   section: string,
   slugs: string[],
   title?: string,
-  _description?: string
+  description?: string,
+  extras: OgImageExtras = {}
 ): string {
+  const params = new URLSearchParams();
   if (section === 'docs' && slugs.length === 0) {
-    return 'https://docs.composio.dev/api/og?variant=home';
+    // The home card has fixed copy; the page's own description is ignored so
+    // the root layout and the /docs index page produce the same image URL.
+    params.set('section', 'home');
+    params.set('description', HOME_OG_DESCRIPTION);
+    return `${OG_ROUTE}?${params.toString()}`;
   }
-  const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
-  return `https://docs.composio.dev/api/og?title=${encodedTitle}`;
+  const isChangelog = section === 'docs' && slugs[0] === 'changelog';
+  params.set('section', isChangelog ? 'changelog' : section);
+  params.set('title', title ?? 'Composio Docs');
+  if (description) params.set('description', description);
+  for (const key of ['logo', 'date', 'version'] as const) {
+    const value = extras[key];
+    if (value) params.set(key, value);
+  }
+  return `${OG_ROUTE}?${params.toString()}`;
 }
 
 /**

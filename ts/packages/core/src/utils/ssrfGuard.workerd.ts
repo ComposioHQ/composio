@@ -1,5 +1,15 @@
 import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
 
+export interface SsrfSafeFetchOptions {
+  /** Maximum number of redirects to follow. Defaults to 5. */
+  maxRedirects?: number;
+  /**
+   * Refuse a request when a configured dispatcher or environment proxy means
+   * the connection cannot be pinned to the address validated by the guard.
+   */
+  requirePinnedConnection?: boolean;
+}
+
 /**
  * Edge runtimes do not expose the DNS resolution APIs needed to prove that a
  * hostname is publicly routable before connecting. Fail closed instead of
@@ -8,7 +18,7 @@ import { ComposioBlockedInternalUrlError } from '../errors/SsrfErrors';
 export const ssrfSafeFetch = async (
   rawUrl: string,
   _init: RequestInit = {},
-  _maxRedirects?: number
+  _optionsOrMaxRedirects: SsrfSafeFetchOptions | number = {}
 ): Promise<Response> => {
   throw new ComposioBlockedInternalUrlError(
     'URL file uploads are not supported in edge runtimes because the destination cannot be safely validated',

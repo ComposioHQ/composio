@@ -119,7 +119,7 @@ import { getVersion } from 'src/effects/version';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { SetupCommandError } from 'src/services/setup';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { MissingRunSourceError } from 'src/commands/run.cmd';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';

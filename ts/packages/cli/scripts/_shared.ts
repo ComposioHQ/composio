@@ -327,24 +327,19 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
 // Module paths that must only ever be reached through a companion module. The
 // executable's bundle is checked after every build because the guard against
 // regressions is otherwise invisible: a stray static import of any of these
-// would silently put the TypeScript compiler or the tokenizer rank table back
-// into the executable, and `--version` would quietly get ~70ms slower.
+// would silently put the TypeScript compiler back into the executable, and
+// `--version` would quietly get ~70ms slower.
 const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
   readonly pattern: RegExp;
   readonly reason: string;
 }> = [
   { pattern: /\/node_modules\/typescript\//, reason: 'the TypeScript compiler' },
-  { pattern: /\/node_modules\/js-tiktoken\//, reason: 'the tokenizer and its rank table' },
   { pattern: /(?:^|\/)src\/generation\/(?!errors\.ts$)/, reason: 'the generation pipeline' },
   {
     pattern: /(?:^|\/)src\/commands\/run-source-transforms\.ts$/,
     reason: 'the run source rewrites',
   },
   { pattern: /(?:^|\/)src\/services\/generation-runtime\.ts$/, reason: 'the generation companion' },
-  {
-    pattern: /(?:^|\/)src\/services\/execute-output-encoder-runtime\.ts$/,
-    reason: 'the encoder companion',
-  },
 ];
 
 // `--define` pairs as `Bun.build` takes them.

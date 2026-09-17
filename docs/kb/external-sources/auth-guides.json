@@ -154,13 +154,6 @@
     "description": "Create Stripe OAuth2 or API key credentials and configure them in Composio."
   },
   {
-    "slug": "strava",
-    "toolkitSlug": "strava",
-    "canonicalUrl": "https://composio.dev/auth/strava",
-    "title": "How to create OAuth2 credentials for Strava",
-    "description": "Create a Strava OAuth2 application and configure it in Composio."
-  },
-  {
     "slug": "snowflake",
     "toolkitSlug": "snowflake",
     "canonicalUrl": "https://composio.dev/auth/snowflake",

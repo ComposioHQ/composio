@@ -292,6 +292,80 @@ describe('ssrfSafeFetch', () => {
     );
   });
 
+  it('fails closed in strict mode when a caller dispatcher prevents pinning', async () => {
+    resolvesTo('93.184.216.34');
+
+    await expect(
+      ssrfSafeFetch('https://example.com/file.pdf', { dispatcher: {} } as RequestInit, {
+        requirePinnedConnection: true,
+      })
+    ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+    expect(mockCreatePinnedDispatcher).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('fails closed in strict mode when a custom global dispatcher prevents pinning', async () => {
+    resolvesTo('93.184.216.34');
+    mockHasCustomGlobalDispatcher.mockReturnValue(true);
+
+    await expect(
+      ssrfSafeFetch('https://example.com/file.pdf', {}, { requirePinnedConnection: true })
+    ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+    expect(mockCreatePinnedDispatcher).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('fails closed in strict mode when Bun would use an environment proxy', async () => {
+    resolvesTo('93.184.216.34');
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '');
+    const bunDescriptor = Object.getOwnPropertyDescriptor(process.versions, 'bun');
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.4.0',
+    });
+
+    try {
+      await expect(
+        ssrfSafeFetch('https://example.com/file.pdf', {}, { requirePinnedConnection: true })
+      ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+    } finally {
+      if (bunDescriptor) {
+        Object.defineProperty(process.versions, 'bun', bunDescriptor);
+      } else {
+        delete (process.versions as NodeJS.ProcessVersions & { bun?: string }).bun;
+      }
+    }
+
+    expect(mockPinnedHttpFetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('applies strict pinning requirements to every redirect hop', async () => {
+    mockLookup
+      .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
+      .mockResolvedValueOnce([{ address: '151.101.1.140', family: 4 }] as never);
+    mockFetch.mockResolvedValueOnce(
+      new Response(null, {
+        status: 302,
+        headers: { location: 'https://cdn.example.com/file.pdf' },
+      })
+    );
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1');
+    vi.stubEnv('HTTP_PROXY', '');
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '');
+
+    await expect(
+      ssrfSafeFetch('http://example.com/file.pdf', {}, { requirePinnedConnection: true })
+    ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockCreatePinnedDispatcher).toHaveBeenCalledTimes(1);
+  });
+
   it('validates and fetches a public URL', async () => {
     resolvesTo('93.184.216.34');
     const ok = new Response('data', { status: 200 });

@@ -13,6 +13,7 @@ import {
   CLI_JOURNEY_STAGES,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getPluginHintShownEvent,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
   getPrimaryLifecycleFailedEvent,
@@ -34,6 +35,7 @@ import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
 } from 'src/services/runtime-cli-context';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
@@ -303,6 +305,90 @@ describe('CLI analytics setup runtime-context events', () => {
         unsupported_reason_code: undefined,
       },
     });
+  });
+
+  it('records host presence signals only for an undetected host', () => {
+    const missing = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'codex',
+      available: false,
+      supported: false,
+      hostConfigDirPresent: true,
+      hostBinaryInKnownPaths: false,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(missing?.properties).toMatchObject({
+      agent_host: 'codex',
+      available: false,
+      host_config_dir_present: true,
+      host_binary_in_known_paths: false,
+    });
+
+    const detected = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'claude',
+      available: true,
+      supported: true,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(detected?.properties?.host_config_dir_present).toBeUndefined();
+    expect(detected?.properties?.host_binary_in_known_paths).toBeUndefined();
+  });
+
+  it('tracks a printed plugin hint as a setup-stage event', () => {
+    expect(
+      getPluginHintShownEvent({
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cliVersion: APP_VERSION,
+        commandPath: 'whoami',
+        agentHost: 'claude',
+      })
+    ).toEqual({
+      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_HINT_SHOWN,
+      properties: {
+        source: 'cli',
+        invocation_origin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cli_version: APP_VERSION,
+        command_path: 'whoami',
+        agent_host: 'claude',
+        journey_stage: 'setup',
+        cli_channel: inferSkillReleaseChannel(APP_VERSION),
+      },
+    });
+  });
+
+  it('records the setup failure reason code carried by SetupCommandError', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'setup'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    const error = new SetupCommandError({
+      message: 'Non-interactive setup requires `--yes` to approve local changes.',
+      operation: 'setup',
+      reasonCode: 'non_interactive_requires_yes',
+    });
+
+    expect(getPrimaryLifecycleFailedEvent(context, error)?.properties).toMatchObject({
+      error_name: 'services/SetupCommandError',
+      failure_reason_code: 'non_interactive_requires_yes',
+    });
+    const unknown = new SetupCommandError({
+      message: 'native failure',
+      operation: 'setup',
+      reasonCode: 'unknown',
+    });
+    expect(getPrimaryLifecycleFailedEvent(context, unknown)?.properties?.failure_reason_code).toBe(
+      'unknown'
+    );
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
+    ).not.toHaveProperty('failure_reason_code');
   });
 
   it('tracks an unsupported host with a normalized reason code', () => {
