@@ -6,6 +6,7 @@ import { Command, Path } from '@effect/platform';
 import { BunContext } from '@effect/platform-bun';
 import { Effect, Either, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
+import { ssrfSafeFetch } from '@composio/core';
 import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
 import {
@@ -443,7 +444,13 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
 const toProxyResponse = async (result: ProxyExecuteResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
-    const binaryResponse = await fetch(result.binary_data.url);
+    // `binary_data.url` arrives over the wire, so it is a server-supplied URL at a
+    // trust boundary: fetching it unguarded turns this process (a dev laptop, or a
+    // CI runner with an instance-metadata endpoint) into an SSRF probe. Reuse the
+    // core guard rather than a bare `fetch` — it rejects non-http(s) schemes,
+    // blocks private/loopback/link-local targets, re-validates every redirect hop,
+    // and pins the connection to the address it validated.
+    const binaryResponse = await ssrfSafeFetch(result.binary_data.url);
     binaryResponse.headers.forEach((value, key) => {
       if (!headers.has(key)) headers.set(key, value);
     });

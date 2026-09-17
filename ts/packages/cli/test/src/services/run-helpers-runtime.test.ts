@@ -107,4 +107,53 @@ describe('run-helpers-runtime', () => {
       },
     });
   });
+
+  it('[Given] a proxy response whose binary_data.url points at link-local space [Then] it refuses to fetch it', async () => {
+    // A fresh Response per call — one body cannot be read twice.
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            session_id: 'session-1',
+            binary_data: {
+              url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+            },
+            status: 200,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await installRunHelpers({
+      cliPrefix: ['composio'],
+      helperContext: {
+        apiKey: 'test-key',
+        orgId: 'test-org',
+        consumerProjectId: 'test-project',
+        consumerUserId: 'test-user',
+      },
+    });
+
+    const installedGlobals: unknown = globalThis;
+    if (
+      !Predicate.hasProperty(installedGlobals, 'proxy') ||
+      typeof installedGlobals.proxy !== 'function'
+    ) {
+      throw new Error('installRunHelpers() did not install proxy().');
+    }
+
+    const proxyFetch = await installedGlobals.proxy('github');
+    if (typeof proxyFetch !== 'function') {
+      throw new Error('proxy() did not return a fetch function.');
+    }
+
+    await expect(proxyFetch('/user')).rejects.toThrow(/private, loopback, or link-local/);
+
+    // Session create + proxy_execute only — the metadata endpoint was never dialled.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [target] of fetchMock.mock.calls) {
+      expect(String(target)).not.toContain('169.254.169.254');
+    }
+  });
 });

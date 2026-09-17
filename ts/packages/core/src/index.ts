@@ -27,6 +27,10 @@ export {
   isBlockedSensitiveFileUploadPath,
   BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
 } from './utils/sensitiveFileUploadPaths';
+// SSRF guard for server-supplied URLs. Exported for the same reason as the
+// denylist above: downstream packages (e.g. `@composio/cli`) must not hand-roll
+// a second, unguarded download path. Resolves per-runtime via `#ssrf_guard`.
+export { ssrfSafeFetch } from '#ssrf_guard';
 export {
   sanitizeSchemaPropertyKeys,
   restoreOriginalKeys,
