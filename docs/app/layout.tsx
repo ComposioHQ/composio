@@ -117,7 +117,7 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
                   },
                   sameAs: [
                     'https://github.com/composiohq',
-                    'https://twitter.com/composiohq',
+                    'https://x.com/composiodevs',
                     'https://discord.gg/composio',
                   ],
                 },

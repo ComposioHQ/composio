@@ -601,8 +601,9 @@ textarea:focus-visible {
   gap: 0.5rem;
 }
 
-/* GitHub icon link */
-#nd-nav a[href*="github.com"] {
+/* Social icon links */
+#nd-nav a[href*="github.com"],
+#nd-nav a[href*="x.com"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -613,12 +614,14 @@ textarea:focus-visible {
   transition: color var(--header-transition), background var(--header-transition);
 }
 
-#nd-nav a[href*="github.com"]:hover {
+#nd-nav a[href*="github.com"]:hover,
+#nd-nav a[href*="x.com"]:hover {
   color: var(--color-fd-foreground);
   background: var(--color-fd-accent);
 }
 
-#nd-nav a[href*="github.com"]:focus-visible {
+#nd-nav a[href*="github.com"]:focus-visible,
+#nd-nav a[href*="x.com"]:focus-visible {
   outline: 2px solid var(--composio-orange);
   outline-offset: 2px;
 }
