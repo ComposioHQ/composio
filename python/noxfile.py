@@ -40,6 +40,8 @@ type_stubs = [
     "llama-index==0.14.23",
     "openai-agents==0.18.3",
     "google-cloud-aiplatform==1.162.0",
+    # Keep this inside the TypeSafe provider's `>=0.6.0,<0.7.0` range.
+    "typesafe-sdk==0.6.0",
 ]
 
 mypy = "mypy==2.3.0"
@@ -126,6 +128,20 @@ def tst_autogen(session: Session):
 
 
 @nox.session
+def tst_typesafe(session: Session):
+    """Run the TypeSafe provider tests, which `tst` skips without the provider."""
+    session.install(".", "--group", "dev")
+    session.install("./providers/typesafe", "typesafe-sdk==0.6.0")
+    session.run(
+        "python",
+        "-c",
+        "import composio, composio_typesafe; "
+        "print(composio.__file__); print(composio_typesafe.__file__)",
+    )
+    session.run("pytest", "tests/test_typesafe_provider.py", "-v", "--tb=short")
+
+
+@nox.session
 def snt(session: Session):
     """Run fast sanity tests for imports and SDK initialization."""
     session.install(".", "--group", "dev")
@@ -160,6 +176,7 @@ def type_inference(session: Session):
         "./providers/llamaindex",
         "./providers/openai",
         "./providers/openai_agents",
+        "./providers/typesafe",
     )
 
     # Run mypy on type inference test files
@@ -180,6 +197,7 @@ def type_inference(session: Session):
         "tests/test_type_inference_langgraph.py",
         "tests/test_type_inference_llamaindex.py",
         "tests/test_type_inference_openai_agents.py",
+        "tests/test_type_inference_typesafe.py",
     )
 
 
