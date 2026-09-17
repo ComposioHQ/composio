@@ -16,8 +16,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
       - 'test/provider-compatibility.test.ts'
-      # The TypeSafe question corpus is shared byte-for-byte with the Python provider.
-      - 'python/tests/fixtures/typesafe_question_corpus.json'
       - 'turbo.jsonc'
   pull_request:
     branches: [master, next]
@@ -34,8 +32,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'test/release-workflow.test.ts'
       - 'test/provider-compatibility.test.ts'
-      # The TypeSafe question corpus is shared byte-for-byte with the Python provider.
-      - 'python/tests/fixtures/typesafe_question_corpus.json'
       - 'turbo.jsonc'
 
 concurrency:

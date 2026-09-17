@@ -27,8 +27,9 @@ _Number = te.Annotated[float, Field(strict=True)]
 
 class JsonSchemaProperty(BaseModel):
     """
-    The JSON Schema property shape the TypeScript SDK accepts (`JSONSchemaPropertySchema`
-    in `@composio/core`). A property that fails this parse is open-ended in both SDKs.
+    The keywords of a JSON Schema property that classification reads, typed as the
+    TypeScript SDK types them (`JSONSchemaPropertySchema` in `@composio/core`). A property
+    that fails this parse is open-ended.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -37,52 +38,18 @@ class JsonSchemaProperty(BaseModel):
     description: t.Optional[StrictStr] = None
     anyOf: t.Optional[t.List["JsonSchemaProperty"]] = None
     oneOf: t.Optional[t.List["JsonSchemaProperty"]] = None
-    allOf: t.Optional[t.List["JsonSchemaProperty"]] = None
-    not_: t.Optional["JsonSchemaProperty"] = Field(default=None, alias="not")
-    title: t.Optional[StrictStr] = None
-    default: t.Any = None
     nullable: t.Optional[StrictBool] = None
-    properties: t.Optional[t.Dict[StrictStr, "JsonSchemaProperty"]] = None
-    required: t.Optional[t.List[StrictStr]] = None
-    file_uploadable: t.Optional[StrictBool] = None
-    file_downloadable: t.Optional[StrictBool] = None
     items: t.Optional[t.Union["JsonSchemaProperty", t.List["JsonSchemaProperty"]]] = (
         None
     )
     enum: t.Optional[t.List[t.Any]] = None
     const: t.Any = None
-    minimum: t.Optional[_Number] = None
-    maximum: t.Optional[_Number] = None
-    exclusiveMinimum: t.Optional[_Number] = None
-    exclusiveMaximum: t.Optional[_Number] = None
-    multipleOf: t.Optional[_Number] = None
-    minLength: t.Optional[_Number] = None
-    maxLength: t.Optional[_Number] = None
-    pattern: t.Optional[StrictStr] = None
-    format: t.Optional[StrictStr] = None
-    minItems: t.Optional[_Number] = None
     maxItems: t.Optional[_Number] = None
-    uniqueItems: t.Optional[StrictBool] = None
-    minProperties: t.Optional[_Number] = None
-    maxProperties: t.Optional[_Number] = None
-    patternProperties: t.Optional[t.Dict[StrictStr, "JsonSchemaProperty"]] = None
-    additionalProperties: t.Optional[t.Union[StrictBool, "JsonSchemaProperty"]] = None
-    examples: t.Optional[t.List[t.Any]] = None
-    readOnly: t.Optional[StrictBool] = None
-    writeOnly: t.Optional[StrictBool] = None
-    if_: t.Optional["JsonSchemaProperty"] = Field(default=None, alias="if")
-    then: t.Optional["JsonSchemaProperty"] = None
-    else_: t.Optional["JsonSchemaProperty"] = Field(default=None, alias="else")
-    ref: t.Optional[StrictStr] = Field(default=None, alias="$ref")
-    definitions: t.Optional[t.Dict[StrictStr, "JsonSchemaProperty"]] = None
-    defs: t.Optional[t.Dict[StrictStr, "JsonSchemaProperty"]] = Field(
-        default=None, alias="$defs"
-    )
 
     @model_validator(mode="before")
     @classmethod
     def _reject_null(cls, data: t.Any) -> t.Any:
-        # A keyword may be absent, but only `const` and `default` may be JSON `null`.
+        # A keyword may be absent, but only `const` may be JSON `null`.
         if isinstance(data, dict):
             for keyword, value in data.items():
                 if value is None and keyword in _NON_NULLABLE_KEYWORDS:
@@ -93,7 +60,7 @@ class JsonSchemaProperty(BaseModel):
 _NON_NULLABLE_KEYWORDS = frozenset(
     field.alias or name
     for name, field in JsonSchemaProperty.model_fields.items()
-    if name not in ("const", "default")
+    if name != "const"
 )
 
 
@@ -217,11 +184,11 @@ def _classify_members(members: t.List[t.Any], nullable_hint: bool) -> ArgumentCl
     return {"kind": "enum", "values": homogeneous, "nullable": nullable}
 
 
-def classify_property(schema: t.Any) -> ArgumentClass:
-    """Classifies one dereferenced property. Anything that is not a closed set is open-ended."""
-    parsed = parse_property(schema)
-    if parsed is None:
-        return _OPEN
+def classify_property(parsed: t.Mapping[str, t.Any]) -> ArgumentClass:
+    """
+    Classifies one dereferenced property that `parse_property` accepted. Anything that is
+    not a closed set is open-ended.
+    """
     types = _types_of(parsed)
     nullable_hint = parsed.get("nullable") is True or "null" in types
     value_types = [declared for declared in types if declared != "null"]

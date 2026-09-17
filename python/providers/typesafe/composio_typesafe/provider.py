@@ -25,8 +25,6 @@ from .decide import (
     AsyncAsk,
     DecideOptions,
     DecideSettings,
-    assert_context_scope,
-    assert_thresholds,
     create_ask,
     create_async_ask,
     plan_decision,
@@ -40,30 +38,20 @@ from .types import (
     TypesafeConfirmationRequiredError,
     TypesafeContextScope,
     TypesafeDecision,
-    TypesafeDescribeOverrides,
     TypesafeGateContext,
     TypesafeIncompleteDecisionError,
     TypesafeJsonValue,
-    TypesafeLogLevel,
     TypesafeMissingApiKeyError,
     TypesafeShortlist,
     TypesafeState,
     TypesafeThresholds,
     TypesafeToolQuestions,
     TypesafeToolSet,
-    TypesafeToolThresholds,
     parse_decision,
 )
 
 _API_KEY_ENV = "TYPESAFE_API_KEY"
 _SDK_LOGGER = "typesafe_sdk"
-_LOG_LEVELS: t.Dict[str, int] = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warn": logging.WARNING,
-    "error": logging.ERROR,
-    "off": logging.CRITICAL + 1,
-}
 
 
 class TypesafeProvider(
@@ -96,10 +84,7 @@ class TypesafeProvider(
         api_key: t.Optional[str] = None,
         model: t.Optional[str] = None,
         thresholds: t.Optional[TypesafeThresholds] = None,
-        tool_thresholds: t.Optional[TypesafeToolThresholds] = None,
-        describe: t.Optional[TypesafeDescribeOverrides] = None,
         context_scope: t.Optional[TypesafeContextScope] = None,
-        log_level: t.Optional[TypesafeLogLevel] = None,
         **kwargs: t.Unpack[BaseProviderConfig],
     ) -> None:
         """
@@ -108,37 +93,24 @@ class TypesafeProvider(
         `TYPESAFE_API_KEY`.
 
         :param client: A `TypeSafeClient` or `AsyncTypeSafeClient` to use instead of
-            building one. Its logging is the caller's responsibility.
+            building one. Its logging is the caller's responsibility; a client the
+            provider builds never logs request bodies.
         :param api_key: Defaults to `TYPESAFE_API_KEY`. Ignored when `client` is set.
         :param model: Defaults to `jev-latest`.
         :param thresholds: Defaults are routing 0.6, gate 0.3, argument 0.6.
-        :param tool_thresholds: Thresholds keyed by tool slug.
-        :param describe: Replaces the generated question text per tool and per argument.
         :param context_scope: `arguments` (default) keeps `context` away from routing
             and the action gate.
-        :param log_level: Level the provider sets on the process-wide `typesafe_sdk`
-            logger before each request of a client it built. Default `warn`; `debug`
-            prints request bodies.
         """
         super().__init__(**kwargs)
-        assert_thresholds(thresholds, tool_thresholds)
-        assert_context_scope(context_scope)
         self._client = client
         self._api_key = api_key
         self._model = model or DEFAULT_MODEL
-        self._settings = DecideSettings(
-            thresholds=thresholds,
-            tool_thresholds=tool_thresholds,
-            context_scope=context_scope,
-        )
-        self._describe = describe
-        self._log_level: TypesafeLogLevel = log_level or "warn"
-        self._sync_client: t.Optional[TypesafeClientLike] = None
-        self._async_client: t.Optional[TypesafeClientLike] = None
+        self._settings = DecideSettings(thresholds, context_scope)
+        self._built: t.Dict[str, TypesafeClientLike] = {}
 
     def wrap_tool(self, tool: Tool) -> TypesafeToolQuestions:
         """Compiles a Composio tool into Jev questions. Offline."""
-        return compile_tool(tool, self._describe)
+        return compile_tool(tool)
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> TypesafeToolSet:
         """Compiles a list of tools into a tool set. Raises on duplicate slugs."""
@@ -151,7 +123,6 @@ class TypesafeProvider(
         *,
         arguments: t.Optional[t.Mapping[str, t.Any]] = None,
         thresholds: t.Optional[TypesafeThresholds] = None,
-        tool_thresholds: t.Optional[TypesafeToolThresholds] = None,
         context_scope: t.Optional[TypesafeContextScope] = None,
         model: t.Optional[str] = None,
         timeout: t.Optional[float] = None,
@@ -168,7 +139,7 @@ class TypesafeProvider(
             not affect confidence.
         :param timeout: Seconds, passed to the TypeSafe client for each request.
         """
-        options = DecideOptions(thresholds, tool_thresholds, context_scope, arguments)
+        options = DecideOptions(thresholds, context_scope, arguments)
         plan = plan_decision(tool_set, state, self._settings, options)
         return run_plan(plan, self._ask(model, timeout))
 
@@ -179,13 +150,12 @@ class TypesafeProvider(
         *,
         arguments: t.Optional[t.Mapping[str, t.Any]] = None,
         thresholds: t.Optional[TypesafeThresholds] = None,
-        tool_thresholds: t.Optional[TypesafeToolThresholds] = None,
         context_scope: t.Optional[TypesafeContextScope] = None,
         model: t.Optional[str] = None,
         timeout: t.Optional[float] = None,
     ) -> TypesafeDecision:
         """`decide` with the asynchronous TypeSafe client. Same decisions, same errors."""
-        options = DecideOptions(thresholds, tool_thresholds, context_scope, arguments)
+        options = DecideOptions(thresholds, context_scope, arguments)
         plan = plan_decision(tool_set, state, self._settings, options)
         return await run_plan_async(plan, self._async_ask(model, timeout))
 
@@ -278,7 +248,7 @@ class TypesafeProvider(
         timeout: t.Optional[float] = None,
     ) -> TypesafeShortlist:
         """Ranks raw tools against a state and returns the top `k`, for handoff to another provider."""
-        plan = companion.plan_shortlist(tools, state, k, self._describe)
+        plan = companion.plan_shortlist(tools, state, k)
         return run_plan(plan, self._ask(model, timeout))
 
     async def ashortlist_tools(
@@ -291,7 +261,7 @@ class TypesafeProvider(
         timeout: t.Optional[float] = None,
     ) -> TypesafeShortlist:
         """`shortlist_tools` with the asynchronous TypeSafe client."""
-        plan = companion.plan_shortlist(tools, state, k, self._describe)
+        plan = companion.plan_shortlist(tools, state, k)
         return await run_plan_async(plan, self._async_ask(model, timeout))
 
     def confidence_gate(
@@ -344,44 +314,31 @@ class TypesafeProvider(
         )
 
     def _ask(self, model: t.Optional[str], timeout: t.Optional[float]) -> Ask:
-        return create_ask(self._get_client, model or self._model, timeout)
+        return create_ask(
+            lambda: self._get_client("TypeSafeClient"), model or self._model, timeout
+        )
 
     def _async_ask(
         self, model: t.Optional[str], timeout: t.Optional[float]
     ) -> AsyncAsk:
-        return create_async_ask(self._get_async_client, model or self._model, timeout)
+        return create_async_ask(
+            lambda: self._get_client("AsyncTypeSafeClient"),
+            model or self._model,
+            timeout,
+        )
 
-    def _resolve_api_key(self) -> str:
-        api_key = self._api_key or os.environ.get(_API_KEY_ENV, "").strip()
-        if not api_key:
-            raise TypesafeMissingApiKeyError()
-        return api_key
-
-    def _apply_log_level(self) -> None:
-        # The SDK's `debug` level prints request bodies, so `TYPESAFE_LOG_LEVEL` alone
-        # must not enable it. The `log_level` provider option is the opt-in. The SDK
-        # applies the variable when it is first imported, so this runs after that import.
-        # The logger is process-wide, so every client access reasserts this provider's level.
-        logging.getLogger(_SDK_LOGGER).setLevel(_LOG_LEVELS[self._log_level])
-
-    def _get_client(self) -> TypesafeClientLike:
+    def _get_client(self, class_name: str) -> TypesafeClientLike:
         if self._client is not None:
             return self._client
-        if self._sync_client is None:
-            api_key = self._resolve_api_key()
-            from typesafe_sdk import TypeSafeClient
+        if class_name not in self._built:
+            api_key = self._api_key or os.environ.get(_API_KEY_ENV, "").strip()
+            if not api_key:
+                raise TypesafeMissingApiKeyError()
+            import typesafe_sdk
 
-            self._sync_client = TypeSafeClient(api_key=api_key)
-        self._apply_log_level()
-        return self._sync_client
-
-    def _get_async_client(self) -> TypesafeClientLike:
-        if self._client is not None:
-            return self._client
-        if self._async_client is None:
-            api_key = self._resolve_api_key()
-            from typesafe_sdk import AsyncTypeSafeClient
-
-            self._async_client = AsyncTypeSafeClient(api_key=api_key)
-        self._apply_log_level()
-        return self._async_client
+            self._built[class_name] = getattr(typesafe_sdk, class_name)(api_key=api_key)
+        # The SDK's `debug` level prints request bodies, and the SDK applies
+        # `TYPESAFE_LOG_LEVEL` to its process-wide logger when first imported. Inject a
+        # `client` to log at another level.
+        logging.getLogger(_SDK_LOGGER).setLevel(logging.WARNING)
+        return self._built[class_name]

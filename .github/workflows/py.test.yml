@@ -14,7 +14,7 @@ on:
       - 'python/pyproject.toml'
       - 'uv.lock'
       - 'python/requirements*.txt'
-      # The TypeSafe question corpus is shared byte-for-byte with the TypeScript provider.
+      # The TypeSafe provider tests read the question corpus of the TypeScript provider.
       - 'ts/packages/providers/typesafe/test/fixtures/question-corpus.json'
   pull_request:
     branches: [master, next]
@@ -29,7 +29,7 @@ on:
       - 'python/pyproject.toml'
       - 'uv.lock'
       - 'python/requirements*.txt'
-      # The TypeSafe question corpus is shared byte-for-byte with the TypeScript provider.
+      # The TypeSafe provider tests read the question corpus of the TypeScript provider.
       - 'ts/packages/providers/typesafe/test/fixtures/question-corpus.json'
 
 concurrency:

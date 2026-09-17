@@ -44,7 +44,6 @@ from .types import (
     TypesafeThresholds,
     TypesafeToolQuestions,
     TypesafeToolSet,
-    TypesafeToolThresholds,
 )
 
 # A routing Choice holds every tool plus the none option, and a Choice takes 255 options.
@@ -104,39 +103,27 @@ class _Thresholds(BaseModel):
     argument: t.Optional[Probability] = None
 
 
-class _ThresholdOptions(BaseModel):
-    thresholds: _Thresholds
-    tool_thresholds: t.Dict[StrictStr, _Thresholds]
+@dataclasses.dataclass(frozen=True)
+class DecideSettings:
+    thresholds: t.Optional[TypesafeThresholds] = None
+    context_scope: t.Optional[TypesafeContextScope] = None
 
-
-def assert_thresholds(
-    thresholds: t.Optional[TypesafeThresholds],
-    tool_thresholds: t.Optional[TypesafeToolThresholds],
-) -> None:
-    """Raises on a threshold that is NaN or outside 0-1."""
-    valid = True
-    try:
-        _ThresholdOptions.model_validate(
-            {
-                "thresholds": thresholds or {},
-                "tool_thresholds": tool_thresholds or {},
-            }
-        )
-    except PydanticValidationError:
-        valid = False
-    if not valid:
-        raise TypesafeInvalidOptionsError(
-            "Every threshold must be a number from 0 to 1."
-        )
-
-
-def assert_context_scope(context_scope: t.Optional[TypesafeContextScope]) -> None:
-    """Raises on a scope that is not `arguments` or `all`. `None` is the default."""
-    # An exact match: any other value would send `context` to routing and the gate.
-    if context_scope is not None and context_scope not in ("arguments", "all"):
-        raise TypesafeInvalidOptionsError(
-            "`context_scope` must be `arguments` or `all`."
-        )
+    def __post_init__(self) -> None:
+        """Raises on a threshold that is NaN or outside 0-1, and on an unknown scope."""
+        valid = True
+        try:
+            _Thresholds.model_validate(self.thresholds or {})
+        except PydanticValidationError:
+            valid = False
+        if not valid:
+            raise TypesafeInvalidOptionsError(
+                "Every threshold must be a number from 0 to 1."
+            )
+        # An exact match: any other value would send `context` to routing and the gate.
+        if self.context_scope not in (None, "arguments", "all"):
+            raise TypesafeInvalidOptionsError(
+                "`context_scope` must be `arguments` or `all`."
+            )
 
 
 class _RequestState(BaseModel):
@@ -249,6 +236,18 @@ def _request_kwargs(model: str, timeout: t.Optional[float]) -> t.Dict[str, t.Any
     return {"model": model} if timeout is None else {"model": model, "timeout": timeout}
 
 
+def _settle(
+    response: t.Any,
+    failure: t.Optional[TypesafeProviderError],
+    questions: Questions,
+) -> ValidatedAnswers:
+    # Raised outside the `except` block, so the SDK exception is neither the cause nor
+    # the context of the provider error.
+    if failure is not None:
+        raise failure
+    return validate_answers(response, questions, read_request_id(response))
+
+
 def create_ask(
     get_client: t.Callable[[], TypesafeClientLike],
     model: str,
@@ -266,15 +265,11 @@ def create_ask(
             )
         except Exception as error:
             failure = to_provider_error(error)
-        # Raised outside the `except` block, so the SDK exception is neither the cause
-        # nor the context of the provider error.
-        if failure is not None:
-            raise failure
         if inspect.isawaitable(response):
             if inspect.iscoroutine(response):
                 response.close()
             raise TypesafeInvalidOptionsError(_SYNC_CLIENT_NEEDED)
-        return validate_answers(response, questions, read_request_id(response))
+        return _settle(response, failure, questions)
 
     return ask
 
@@ -306,9 +301,7 @@ def create_async_ask(
                     response = await response
         except Exception as error:
             failure = to_provider_error(error)
-        if failure is not None:
-            raise failure
-        return validate_answers(response, questions, read_request_id(response))
+        return _settle(response, failure, questions)
 
     return ask
 
@@ -372,13 +365,6 @@ async def run_plan_async(plan: Plan[_Result], ask: AsyncAsk) -> _Result:
 # ---------------------------------------------------------------------------
 # Deciding
 # ---------------------------------------------------------------------------
-
-
-@dataclasses.dataclass(frozen=True)
-class DecideSettings:
-    thresholds: t.Optional[TypesafeThresholds] = None
-    tool_thresholds: t.Optional[TypesafeToolThresholds] = None
-    context_scope: t.Optional[TypesafeContextScope] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -454,35 +440,20 @@ def _resolve_thresholds(
     provider: DecideSettings,
     call: DecideSettings,
 ) -> t.Dict[str, float]:
-    def given(thresholds: t.Optional[t.Mapping[str, t.Any]]) -> t.Dict[str, float]:
-        return {
-            name: value
-            for name, value in (thresholds or {}).items()
-            if value is not None
-        }
-
-    base: t.Dict[str, float] = {
-        **given(DEFAULT_THRESHOLDS),
-        **given(provider.thresholds),
-        **given(call.thresholds),
+    # A threshold of `None` reads as an omitted key, so it never erases the layer below.
+    layers = (DEFAULT_THRESHOLDS, provider.thresholds, call.thresholds)
+    thresholds: t.Dict[str, float] = {
+        name: t.cast(float, value)
+        for layer in layers
+        for name, value in (layer or {}).items()
+        if value is not None
     }
-    if tool is None:
-        return base
-    per_tool = {
-        **given((provider.tool_thresholds or {}).get(tool["slug"])),
-        **given((call.tool_thresholds or {}).get(tool["slug"])),
-    }
-    # Only an explicit per-tool override lowers a destructive tool's routing threshold.
-    routing = (
-        max(base["routing"], DESTRUCTIVE_ROUTING_THRESHOLD)
-        if tool["risk"] == "destructive"
-        else base["routing"]
-    )
-    return {
-        "routing": per_tool.get("routing", routing),
-        "gate": per_tool.get("gate", base["gate"]),
-        "argument": per_tool.get("argument", base["argument"]),
-    }
+    # No threshold lowers a destructive tool's routing floor.
+    if tool is not None and tool["risk"] == "destructive":
+        thresholds["routing"] = max(
+            thresholds["routing"], DESTRUCTIVE_ROUTING_THRESHOLD
+        )
+    return thresholds
 
 
 def plan_decision(
@@ -491,8 +462,6 @@ def plan_decision(
     settings: DecideSettings,
     options: DecideOptions,
 ) -> Plan[TypesafeDecision]:
-    assert_thresholds(options.thresholds, options.tool_thresholds)
-    assert_context_scope(options.context_scope)
     normalized = normalize_state(state)
     meta: TypesafeDecisionMeta = {
         "model": None,

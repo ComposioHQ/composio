@@ -22,10 +22,9 @@ from .decide import (
     stable,
 )
 from .types import (
+    TypesafeApiError,
     TypesafeAvailabilityReason,
     TypesafeBypassInfo,
-    TypesafeConnectionError,
-    TypesafeDescribeOverrides,
     TypesafeGateBlockedError,
     TypesafeGateContext,
     TypesafeGateUnavailableError,
@@ -36,11 +35,8 @@ from .types import (
     TypesafeMalformedResponseError,
     TypesafeNoulQuestion,
     TypesafeProviderError,
-    TypesafeRateLimitError,
-    TypesafeServerError,
     TypesafeShortlist,
     TypesafeState,
-    TypesafeTimeoutError,
 )
 
 
@@ -52,7 +48,6 @@ def plan_shortlist(
     tools: t.Sequence[Tool],
     state: TypesafeState,
     k: int,
-    describe: t.Optional[TypesafeDescribeOverrides] = None,
 ) -> Plan[TypesafeShortlist]:
     """Ranks raw tools against a state. Routing sees `request` only, never `context`."""
     if not _is_integer(k) or k < 0:
@@ -66,10 +61,7 @@ def plan_shortlist(
     # Routing needs the slug and the routing text only, so the argument schemas stay unread.
     routing = routing_question(
         [
-            {
-                "slug": tool.slug,
-                "routingDescription": routing_description_of(tool, describe),
-            }
+            {"slug": tool.slug, "routingDescription": routing_description_of(tool)}
             for tool in tools
         ]
     )
@@ -111,18 +103,12 @@ GATE_QUESTION: TypesafeNoulQuestion = {
 }
 
 
-def _availability_reason(
-    error: TypesafeProviderError,
-) -> t.Optional[TypesafeAvailabilityReason]:
-    if isinstance(error, TypesafeTimeoutError):
-        return "timeout"
-    if isinstance(error, TypesafeConnectionError):
-        return "connection"
-    if isinstance(error, TypesafeServerError):
-        return "server_error"
-    if isinstance(error, TypesafeRateLimitError):
-        return "rate_limit"
-    return None
+_AVAILABILITY_REASONS: t.Tuple[TypesafeAvailabilityReason, ...] = (
+    "timeout",
+    "connection",
+    "server_error",
+    "rate_limit",
+)
 
 
 class GateModifier(t.Protocol):
@@ -232,7 +218,14 @@ def confidence_gate(
         except TypesafeProviderError as error:
             failure = error
         if failure is not None or probability is None:
-            reason = None if failure is None else _availability_reason(failure)
+            reason = next(
+                (
+                    known
+                    for known in _AVAILABILITY_REASONS
+                    if isinstance(failure, TypesafeApiError) and failure.reason == known
+                ),
+                None,
+            )
             if reason is None:
                 raise TypesafeGateBlockedError("check_failed")
             if on_unavailable == "block":

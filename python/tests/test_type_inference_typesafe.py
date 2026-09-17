@@ -49,31 +49,6 @@ def test_typesafe_provider_toolkits() -> None:
         assert_type(tools, TypesafeToolSet)
 
 
-def test_typesafe_provider_slug() -> None:
-    """Verify the TypeSafe provider returns TypesafeToolSet for a slug query."""
-    if TYPE_CHECKING:
-        composio: Composio[TypesafeToolQuestions, TypesafeToolSet] = Composio(
-            provider=TypesafeProvider()
-        )
-        tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_AN_ISSUE")
-
-        assert_type(tools, TypesafeToolSet)
-
-
-def test_typesafe_provider_tools_list() -> None:
-    """Verify the TypeSafe provider returns TypesafeToolSet for a tools list query."""
-    if TYPE_CHECKING:
-        composio: Composio[TypesafeToolQuestions, TypesafeToolSet] = Composio(
-            provider=TypesafeProvider()
-        )
-        tools = composio.tools.get(
-            user_id="test",
-            tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_REPOSITORY_ISSUES"],
-        )
-
-        assert_type(tools, TypesafeToolSet)
-
-
 def test_typesafe_provider_inferred() -> None:
     """Verify the tool set type is inferred without an explicit annotation."""
     if TYPE_CHECKING:

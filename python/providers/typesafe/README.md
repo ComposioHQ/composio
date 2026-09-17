@@ -123,7 +123,7 @@ An optional argument with a weak answer is dropped, listed in `decision["dropped
 | `none_fit`            | No tool carries out the request.                                  |
 | `low_confidence`      | The best tool is below the routing threshold.                     |
 
-`abstain` means only that the model judged so. API failures, timeouts, rate limits, and malformed responses raise typed errors such as `TypesafeRateLimitError` (with `retry_after_ms`), `TypesafeTimeoutError`, and `TypesafeMalformedResponseError`. They never come back as `abstain`. Error messages hold a status code and a request ID, and never your state, argument values, or response content. No provider error chains the `typesafe-sdk` exception, so `__cause__` and `__context__` stay empty.
+`abstain` means only that the model judged so. API failures, timeouts, rate limits, and malformed responses raise typed errors: `TypesafeApiError`, whose `reason` is one of `rate_limit` (with `retry_after_ms`), `timeout`, `connection`, `authentication`, `server_error`, `request_rejected`, or `unknown`, and `TypesafeMalformedResponseError`. They never come back as `abstain`. Error messages hold a status code and a request ID, and never your state, argument values, or response content. No provider error chains the `typesafe-sdk` exception, so `__cause__` and `__context__` stay empty.
 
 ## Thresholds
 
@@ -133,12 +133,11 @@ An optional argument with a weak answer is dropped, listed in `decision["dropped
 | `gate`     | 0.3     | The mean of three "is the user asking for an action now" answers. |
 | `argument` | 0.6     | Each argument Jev binds.                                          |
 
-These follow TypeSafe's guidance, which calls them examples to tune. Set them per provider, per `decide` call, or per tool:
+These follow TypeSafe's guidance, which calls them examples to tune. Set them per provider or per `decide` call:
 
 ```python
 provider = TypesafeProvider(
-    thresholds={"routing": 0.7},
-    tool_thresholds={"GITHUB_CREATE_AN_ISSUE": {"argument": 0.8}},
+    thresholds={"routing": 0.7, "argument": 0.8},
 )
 
 provider.decide(tool_set, request, thresholds={"gate": 0.5})
@@ -154,7 +153,7 @@ A tool tagged `destructiveHint` routes at a threshold of 0.9, and its decision h
 provider.execute("user_123", decision, confirm=True)
 ```
 
-`execute` decides from the decision's stored `risk` class, so clearing `requires_confirmation` alone does not skip confirmation. A stored decision is only as trustworthy as its storage: whoever can edit it can edit `risk` too. Sign a decision that crosses a trust boundary, or derive it again on the other side. Only an explicit per-tool `routing` threshold lowers the 0.9 default. When the state comes from an untrusted source, leave destructive tools out of the tool set.
+`execute` decides from the decision's stored `risk` class, so clearing `requires_confirmation` alone does not skip confirmation. A stored decision is only as trustworthy as its storage: whoever can edit it can edit `risk` too. Sign a decision that crosses a trust boundary, or derive it again on the other side. No threshold lowers the 0.9 floor. When the state comes from an untrusted source, leave destructive tools out of the tool set.
 
 ## Request and context
 
@@ -190,7 +189,7 @@ Both helpers work with any other Composio provider.
 
 ### `shortlist_tools`
 
-Rank raw tools against a request and keep the top `k`, then hand those to an LLM provider. It accepts up to 254 tools and uses the provider's `describe["tool"]` text when you set one. `ashortlist_tools` is the async form.
+Rank raw tools against a request and keep the top `k`, then hand those to an LLM provider. It accepts up to 254 tools. `ashortlist_tools` is the async form.
 
 ```python
 raw = composio.tools.get_raw_composio_tools(toolkits=["github"], limit=100)
@@ -237,7 +236,7 @@ Sent to `api.typesafe.ai`: the state, tool names and descriptions (custom tools 
 
 Never sent: your Composio API key, user IDs, connected account IDs, and custom auth parameters.
 
-Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you send personal data. When the provider builds the client, it sets the `typesafe_sdk` logger to `warn` before every request, even if `TYPESAFE_LOG_LEVEL=debug` is set. `log_level="debug"` prints request bodies, state included, so keep it out of production. That logger is process-wide: each provider sets its own level right before its request, so the level you read between requests is the one of the provider that ran last, and two providers with different levels that run in parallel threads can log at each other's level. Use one `log_level` per process. An injected `client` logs however you configured it, and the provider leaves the logger alone. `typesafe-sdk` also honors `TYPESAFE_BASE_URL`, so your API key and your state go to whatever host that variable names.
+Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you send personal data. When the provider builds the client, it sets the process-wide `typesafe_sdk` logger to `warn` before every request, even if `TYPESAFE_LOG_LEVEL=debug` is set, because `debug` prints request bodies, state included. An injected `client` logs however you configured it, and the provider leaves the logger alone. `typesafe-sdk` also honors `TYPESAFE_BASE_URL`, so your API key and your state go to whatever host that variable names.
 
 ## Limits
 

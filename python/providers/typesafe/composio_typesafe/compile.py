@@ -24,7 +24,6 @@ from .types import (
     TypesafeArgumentQuestion,
     TypesafeArrayArgument,
     TypesafeChoiceQuestion,
-    TypesafeDescribeOverrides,
     TypesafeDuplicateToolError,
     TypesafeNoulQuestion,
     TypesafeOption,
@@ -93,10 +92,10 @@ def _compile_argument(
     argument: str,
     index: int,
     required: bool,
-    schema: t.Any,
-    description: str,
+    prop: t.Mapping[str, t.Any],
 ) -> t.Optional[TypesafeArgumentQuestion]:
-    argument_class = classify_property(schema)
+    argument_class = classify_property(prop)
+    description = prop.get("description", "")
     question_id = f"a{index}"
 
     if argument_class["kind"] == "open":
@@ -180,25 +179,14 @@ def _compile_argument(
     return compiled
 
 
-def routing_description_of(
-    tool: Tool,
-    describe: t.Optional[TypesafeDescribeOverrides] = None,
-) -> str:
+def routing_description_of(tool: Tool) -> str:
     """The text of a tool's option in the routing Choice."""
-    describe_tool = (describe or {}).get("tool")
-    routing_description = describe_tool(tool) if describe_tool is not None else None
-    if routing_description is not None:
-        return routing_description
     tool_description = getattr(tool, "description", None) or ""
     return f"{tool.name}: {tool_description}" if tool_description else tool.name
 
 
-def compile_tool(
-    tool: Tool,
-    describe: t.Optional[TypesafeDescribeOverrides] = None,
-) -> TypesafeToolQuestions:
+def compile_tool(tool: Tool) -> TypesafeToolQuestions:
     """Compiles one tool. What it cannot read in a schema is open-ended."""
-    describe = describe or {}
     dereferenced = dereference_json_schema(
         getattr(tool, "input_parameters", None) or {"type": "object", "properties": {}},
         on_unresolved="sentinel",
@@ -210,24 +198,14 @@ def compile_tool(
 
     compiled: t.List[TypesafeArgumentQuestion] = []
     open_ended: t.List[str] = []
-    describe_argument = describe.get("argument")
     for index, argument in enumerate(names):
-        schema = parsed.properties[argument]
-        prop = parse_property(schema)
-        description: t.Optional[str] = None
-        if prop is not None and describe_argument is not None:
-            description = describe_argument(
-                {"tool": tool, "argument": argument, "property": prop}
+        prop = parse_property(parsed.properties[argument])
+        question = (
+            None
+            if prop is None
+            else _compile_argument(
+                tool.name, argument, index, argument in required_set, prop
             )
-        if description is None:
-            description = (prop or {}).get("description", "")
-        question = _compile_argument(
-            tool.name,
-            argument,
-            index,
-            argument in required_set,
-            schema,
-            description,
         )
         if question is None:
             open_ended.append(argument)
@@ -238,7 +216,7 @@ def compile_tool(
     result: t.Dict[str, t.Any] = {
         "slug": tool.slug,
         "name": tool.name,
-        "routingDescription": routing_description_of(tool, describe),
+        "routingDescription": routing_description_of(tool),
     }
     version = getattr(tool, "version", None)
     if version:

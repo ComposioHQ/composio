@@ -12,15 +12,10 @@ from pydantic import ValidationError as PydanticValidationError
 from .types import (
     Probability,
     TypesafeApiError,
-    TypesafeAuthenticationError,
-    TypesafeConnectionError,
+    TypesafeApiErrorReason,
     TypesafeMalformedResponseError,
     TypesafeProviderError,
     TypesafeQuestion,
-    TypesafeRateLimitError,
-    TypesafeRequestRejectedError,
-    TypesafeServerError,
-    TypesafeTimeoutError,
 )
 
 
@@ -121,24 +116,6 @@ def validate_answers(
     )
 
 
-_KNOWN_SDK_ERRORS = frozenset(
-    {
-        "TypeSafeError",
-        "TypeSafeAPIError",
-        "TypeSafeBadRequestError",
-        "TypeSafeAuthenticationError",
-        "TypeSafePermissionDeniedError",
-        "TypeSafeNotFoundError",
-        "TypeSafeUnprocessableEntityError",
-        "TypeSafeRateLimitError",
-        "TypeSafeInternalServerError",
-        "TypeSafeAPIConnectionError",
-        "TypeSafeAPITimeoutError",
-        "TypeSafeAPIResponseValidationError",
-    }
-)
-
-
 def _read(error: BaseException, name: str) -> t.Any:
     # `request_id` is a property on the SDK's exceptions, so reading it can raise.
     try:
@@ -172,41 +149,31 @@ def to_provider_error(error: BaseException) -> TypesafeProviderError:
         and math.isfinite(retry_after)
         else None
     )
-    sdk_error = next(
-        (
-            cls.__name__
-            for cls in type(error).__mro__
-            if cls.__name__ in _KNOWN_SDK_ERRORS
-        ),
-        None,
-    )
 
     if "TypeSafeAPIResponseValidationError" in names:
         return TypesafeMalformedResponseError("invalid_envelope", request_id)
-    diagnostics: t.Dict[str, t.Any] = {
-        "sdk_error": sdk_error,
-        "status": status,
-        "request_id": request_id,
-    }
+    reason: TypesafeApiErrorReason = "unknown"
     if "TypeSafeAPITimeoutError" in names or isinstance(error, TimeoutError):
-        return TypesafeTimeoutError(**diagnostics)
-    if "TypeSafeAPIConnectionError" in names or isinstance(error, ConnectionError):
-        return TypesafeConnectionError(**diagnostics)
-    if "TypeSafeRateLimitError" in names or status == 429:
-        return TypesafeRateLimitError(**diagnostics, retry_after_ms=retry_after_ms)
-    if status in (401, 403):
-        return TypesafeAuthenticationError(**diagnostics)
-    if status is not None and status >= 500:
-        return TypesafeServerError(**diagnostics)
-    if status is not None and status >= 400:
-        return TypesafeRequestRejectedError(**diagnostics)
-    return TypesafeApiError(**diagnostics)
+        reason = "timeout"
+    elif "TypeSafeAPIConnectionError" in names or isinstance(error, ConnectionError):
+        reason = "connection"
+    elif "TypeSafeRateLimitError" in names or status == 429:
+        reason = "rate_limit"
+    elif status in (401, 403):
+        reason = "authentication"
+    elif status is not None and status >= 500:
+        reason = "server_error"
+    elif status is not None and status >= 400:
+        reason = "request_rejected"
+    return TypesafeApiError(
+        reason, status=status, request_id=request_id, retry_after_ms=retry_after_ms
+    )
 
 
 def is_size_rejection(error: TypesafeProviderError) -> bool:
     """A rejection that a smaller request might avoid."""
-    return isinstance(error, TypesafeRequestRejectedError) and error.status in (
-        400,
-        413,
-        422,
+    return (
+        isinstance(error, TypesafeApiError)
+        and error.reason == "request_rejected"
+        and error.status in (400, 413, 422)
     )

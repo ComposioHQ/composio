@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
+from pydantic import ConfigDict, Field, TypeAdapter, with_config
 from pydantic import ValidationError as PydanticValidationError
 
 from composio.client.types import Tool
@@ -62,8 +62,6 @@ class TypesafeClientLike(t.Protocol):
     @property
     def system_one(self) -> t.Callable[..., t.Any]: ...
 
-
-TypesafeLogLevel: te.TypeAlias = t.Literal["debug", "info", "warn", "error", "off"]
 
 # ---------------------------------------------------------------------------
 # Compiled tools
@@ -158,22 +156,6 @@ class TypesafeThresholds(te.TypedDict, total=False):
     """Minimum confidence to bind an argument. Default 0.6."""
 
 
-TypesafeToolThresholds: te.TypeAlias = t.Mapping[str, TypesafeThresholds]
-
-
-class TypesafeDescribeArgumentContext(te.TypedDict):
-    tool: Tool
-    argument: str
-    property: t.Dict[str, t.Any]
-
-
-class TypesafeDescribeOverrides(te.TypedDict, total=False):
-    tool: t.Callable[[Tool], t.Optional[str]]
-    """Replace the routing text of a tool. Return ``None`` to keep the generated text."""
-    argument: t.Callable[[TypesafeDescribeArgumentContext], t.Optional[str]]
-    """Replace the description used in an argument's questions."""
-
-
 TypesafeContextScope: te.TypeAlias = t.Literal["arguments", "all"]
 
 
@@ -190,49 +172,60 @@ TypesafeState: te.TypeAlias = t.Union[str, TypesafeRequestState]
 # ---------------------------------------------------------------------------
 
 
+Probability = te.Annotated[float, Field(ge=0, le=1, strict=True, allow_inf_nan=False)]
+_Path = te.Annotated[t.List[str], Field(min_length=1)]
+# Pydantic validates a stored decision against these same TypedDicts, strictly.
+_STRICT = ConfigDict(strict=True)
+
+
+@with_config(_STRICT)
 class TypesafeJudgement(te.TypedDict):
     kind: t.Literal["routing", "gate", "argument"]
-    path: te.NotRequired[t.List[str]]
-    score: float
+    path: te.NotRequired[_Path]
+    score: Probability
     required: bool
 
 
+@with_config(_STRICT)
 class TypesafeDecisionMeta(te.TypedDict):
     model: t.Optional[str]
     request_ids: t.List[str]
     strategy: t.Literal["none", "fan_out", "route_then_arguments"]
-    request_count: int
+    request_count: te.Annotated[int, Field(ge=0)]
     tool_version: te.NotRequired[str]
 
 
 class _BoundDecision(te.TypedDict):
     """What a `call` and a `partial` share: the tool and the arguments Jev bound."""
 
-    tool: str
+    tool: te.Annotated[str, Field(min_length=1)]
     arguments: t.Dict[str, t.Any]
-    dropped: t.List[t.List[str]]
+    dropped: t.List[_Path]
     """Optional arguments dropped because their answer was below the argument threshold."""
-    confidence: float
+    confidence: Probability
     judgements: t.List[TypesafeJudgement]
     risk: TypesafeRisk
     requires_confirmation: bool
     meta: TypesafeDecisionMeta
 
 
+@with_config(_STRICT)
 class TypesafeCallDecision(_BoundDecision):
     kind: t.Literal["call"]
 
 
+@with_config(_STRICT)
 class TypesafePartialDecision(_BoundDecision):
     kind: t.Literal["partial"]
-    missing: t.List[t.List[str]]
+    missing: t.List[_Path]
     suggestions: t.Dict[str, t.Any]
     """Low-confidence guesses for required arguments, keyed by argument name."""
 
 
+@with_config(_STRICT)
 class TypesafeCandidate(te.TypedDict):
     tool: str
-    probability: float
+    probability: Probability
 
 
 TypesafeAbstainReason: te.TypeAlias = t.Literal[
@@ -240,11 +233,12 @@ TypesafeAbstainReason: te.TypeAlias = t.Literal[
 ]
 
 
+@with_config(_STRICT)
 class TypesafeAbstainDecision(te.TypedDict):
     kind: t.Literal["abstain"]
     reason: TypesafeAbstainReason
     candidates: t.List[TypesafeCandidate]
-    confidence: float
+    confidence: Probability
     meta: TypesafeDecisionMeta
 
 
@@ -252,67 +246,9 @@ TypesafeDecision: te.TypeAlias = t.Union[
     TypesafeCallDecision, TypesafePartialDecision, TypesafeAbstainDecision
 ]
 
-Probability = te.Annotated[float, Field(ge=0, le=1, strict=True, allow_inf_nan=False)]
-_Path = te.Annotated[t.List[StrictStr], Field(min_length=1)]
-
-
-class _JudgementModel(BaseModel):
-    kind: t.Literal["routing", "gate", "argument"]
-    path: t.Optional[_Path] = None
-    score: Probability
-    required: StrictBool
-
-
-class _MetaModel(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())
-
-    model: t.Optional[StrictStr]
-    request_ids: t.List[StrictStr]
-    strategy: t.Literal["none", "fan_out", "route_then_arguments"]
-    request_count: te.Annotated[StrictInt, Field(ge=0)]
-    tool_version: t.Optional[StrictStr] = None
-
-
-class _BoundModel(BaseModel):
-    tool: te.Annotated[StrictStr, Field(min_length=1)]
-    arguments: t.Dict[StrictStr, t.Any]
-    dropped: t.List[_Path]
-    confidence: Probability
-    judgements: t.List[_JudgementModel]
-    risk: t.Literal["read_only", "mutating", "destructive"]
-    requires_confirmation: StrictBool
-    meta: _MetaModel
-
-
-class _CallModel(_BoundModel):
-    kind: t.Literal["call"]
-
-
-class _PartialModel(_BoundModel):
-    kind: t.Literal["partial"]
-    missing: t.List[_Path]
-    suggestions: t.Dict[StrictStr, t.Any]
-
-
-class _CandidateModel(BaseModel):
-    tool: StrictStr
-    probability: Probability
-
-
-class _AbstainModel(BaseModel):
-    kind: t.Literal["abstain"]
-    reason: t.Literal[
-        "no_tools", "empty_state", "none_fit", "no_action_requested", "low_confidence"
-    ]
-    candidates: t.List[_CandidateModel]
-    confidence: Probability
-    meta: _MetaModel
-
-
-class _DecisionEnvelope(BaseModel):
-    decision: t.Union[_CallModel, _PartialModel, _AbstainModel] = Field(
-        discriminator="kind"
-    )
+_DECISION: TypeAdapter[TypesafeDecision] = TypeAdapter(
+    te.Annotated[TypesafeDecision, Field(discriminator="kind")]
+)
 
 
 def parse_decision(value: t.Any) -> TypesafeDecision:
@@ -321,28 +257,15 @@ def parse_decision(value: t.Any) -> TypesafeDecision:
 
     :raises TypesafeMalformedDecisionError: when the value is not a decision.
     """
-    parsed: t.Optional[_DecisionEnvelope] = None
+    parsed: t.Optional[TypesafeDecision] = None
     try:
-        parsed = _DecisionEnvelope.model_validate({"decision": value})
+        parsed = _DECISION.validate_python(value)
     except PydanticValidationError:
         # The validation error quotes its input, so it is never chained or kept.
         pass
     if parsed is None:
         raise TypesafeMalformedDecisionError()
-    return t.cast(TypesafeDecision, _dump_decision(parsed.decision))
-
-
-def _dump_decision(
-    decision: t.Union[_CallModel, _PartialModel, _AbstainModel],
-) -> t.Dict[str, t.Any]:
-    dumped = decision.model_dump()
-    # `tool_version` and a judgement's `path` are absent rather than null.
-    if dumped["meta"]["tool_version"] is None:
-        del dumped["meta"]["tool_version"]
-    for judgement in dumped.get("judgements", []):
-        if judgement["path"] is None:
-            del judgement["path"]
-    return dumped
+    return parsed
 
 
 # ---------------------------------------------------------------------------
@@ -430,63 +353,48 @@ class TypesafeLimitError(TypesafeProviderError):
         self.limit = limit
 
 
+TypesafeApiErrorReason: te.TypeAlias = t.Literal[
+    "rate_limit",
+    "authentication",
+    "server_error",
+    "request_rejected",
+    "timeout",
+    "connection",
+    "unknown",
+]
+
+_API_ERROR_SUMMARIES: t.Dict[TypesafeApiErrorReason, str] = {
+    "rate_limit": "The TypeSafe API rate limit was exceeded.",
+    "authentication": "The TypeSafe API rejected the API key.",
+    "server_error": "The TypeSafe API failed to handle the request.",
+    "request_rejected": "The TypeSafe API rejected the request.",
+    "timeout": "The TypeSafe API request timed out.",
+    "connection": "The TypeSafe API could not be reached.",
+    "unknown": "The TypeSafe API request failed.",
+}
+
+
 class TypesafeApiError(TypesafeProviderError):
+    """Any failed TypeSafe request. ``reason`` tells the failures apart."""
+
     code = "TYPESAFE_API_ERROR"
-    summary: t.ClassVar[str] = "The TypeSafe API request failed."
 
     def __init__(
         self,
+        reason: TypesafeApiErrorReason,
         *,
-        sdk_error: t.Optional[str] = None,
-        status: t.Optional[int] = None,
-        request_id: t.Optional[str] = None,
-    ) -> None:
-        super().__init__(f"{self.summary}{_describe_diagnostics(status, request_id)}")
-        self.sdk_error = sdk_error
-        """Class name of the ``typesafe-sdk`` exception, when it is a known one."""
-        self.status = status
-        self.request_id = request_id
-
-
-class TypesafeRateLimitError(TypesafeApiError):
-    code = "TYPESAFE_RATE_LIMIT"
-    summary = "The TypeSafe API rate limit was exceeded."
-
-    def __init__(
-        self,
-        *,
-        sdk_error: t.Optional[str] = None,
         status: t.Optional[int] = None,
         request_id: t.Optional[str] = None,
         retry_after_ms: t.Optional[float] = None,
     ) -> None:
-        super().__init__(sdk_error=sdk_error, status=status, request_id=request_id)
+        super().__init__(
+            f"{_API_ERROR_SUMMARIES[reason]}{_describe_diagnostics(status, request_id)}"
+        )
+        self.reason = reason
+        self.status = status
+        self.request_id = request_id
         self.retry_after_ms = retry_after_ms
-
-
-class TypesafeAuthenticationError(TypesafeApiError):
-    code = "TYPESAFE_AUTHENTICATION"
-    summary = "The TypeSafe API rejected the API key."
-
-
-class TypesafeServerError(TypesafeApiError):
-    code = "TYPESAFE_SERVER_ERROR"
-    summary = "The TypeSafe API failed to handle the request."
-
-
-class TypesafeRequestRejectedError(TypesafeApiError):
-    code = "TYPESAFE_REQUEST_REJECTED"
-    summary = "The TypeSafe API rejected the request."
-
-
-class TypesafeTimeoutError(TypesafeApiError):
-    code = "TYPESAFE_TIMEOUT"
-    summary = "The TypeSafe API request timed out."
-
-
-class TypesafeConnectionError(TypesafeApiError):
-    code = "TYPESAFE_CONNECTION"
-    summary = "The TypeSafe API could not be reached."
+        """Set for ``rate_limit`` when the API sent a retry delay."""
 
 
 TypesafeMalformedResponseIssue: te.TypeAlias = t.Literal[
