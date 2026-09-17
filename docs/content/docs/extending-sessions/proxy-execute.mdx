@@ -69,6 +69,35 @@ The `endpoint` is a path relative to the toolkit's base URL (`/repos/...` resolv
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>
 
+## Session restrictions
+
+Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.
+
+Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from a session entirely, turn proxy execution off in the sandbox config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tags=["readOnlyHint"],
+    sandbox={"enable_proxy_execution": False}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tags: ["readOnlyHint"],
+  sandbox: { enable: true, enableProxyExecution: false },
+});
+```
+</Tab>
+</Tabs>
+
 ## Parameters
 
 | Parameter | Required | Type | Description |
