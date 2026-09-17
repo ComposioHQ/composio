@@ -115,6 +115,60 @@ describe('run-helpers-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('[Given] a configured proxy prevents pinning [Then] it blocks the binary download', async () => {
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1');
+    vi.stubEnv('HTTPS_PROXY', 'http://proxy.example:3128');
+    vi.stubEnv('NO_PROXY', '');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ session_id: 'session-1' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            binary_data: { url: 'https://1.1.1.1/proxy-response.bin' },
+            status: 200,
+          }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(new Response('untrusted proxied response', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await installRunHelpers({
+      cliPrefix: ['composio'],
+      helperContext: {
+        apiKey: 'test-key',
+        orgId: 'test-org',
+        consumerProjectId: 'test-project',
+        consumerUserId: 'test-user',
+      },
+    });
+
+    const installedGlobals: unknown = globalThis;
+    expect(Predicate.hasProperty(installedGlobals, 'proxy')).toBe(true);
+    if (
+      !Predicate.hasProperty(installedGlobals, 'proxy') ||
+      typeof installedGlobals.proxy !== 'function'
+    ) {
+      throw new Error('installRunHelpers() did not install proxy().');
+    }
+
+    const proxyFetch = await installedGlobals.proxy('github');
+    await expect(proxyFetch('https://api.github.com/user')).rejects.toMatchObject({
+      code: 'TS-SDK::BLOCKED_INTERNAL_URL',
+      name: 'ComposioBlockedInternalUrlError',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('[Given] normalized false flags [Then] nested CLI children receive false explicitly', async () => {
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');

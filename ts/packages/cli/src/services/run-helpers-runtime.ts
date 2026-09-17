@@ -445,7 +445,13 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
 const toProxyResponse = async (result: ProxyExecuteResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
-    const binaryResponse = await ssrfSafeFetch(result.binary_data.url);
+    const binaryResponse = await ssrfSafeFetch(
+      result.binary_data.url,
+      {},
+      {
+        requirePinnedConnection: true,
+      }
+    );
     binaryResponse.headers.forEach((value, key) => {
       if (!headers.has(key)) headers.set(key, value);
     });
