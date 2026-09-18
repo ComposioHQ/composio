@@ -2248,6 +2248,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "amplitude_mcp",
+    "name": "Amplitude MCP",
+    "logo": "https://logos.composio.dev/api/amplitude_mcp",
+    "category": "model context protocol",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
     "slug": "anchor_browser",
     "name": "Anchor Browser",
     "logo": "https://logos.composio.dev/api/anchor_browser",
@@ -3613,6 +3621,14 @@
     "logo": "https://logos.composio.dev/api/classmarker",
     "category": "education",
     "toolCount": 28,
+    "triggerCount": 0
+  },
+  {
+    "slug": "clay",
+    "name": "Clay",
+    "logo": "https://logos.composio.dev/api/clay",
+    "category": "sales & crm",
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -6176,6 +6192,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "greptile_mcp",
+    "name": "Greptile MCP",
+    "logo": "https://logos.composio.dev/api/greptile_mcp",
+    "category": "model context protocol",
+    "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
     "slug": "griptape",
     "name": "Griptape",
     "logo": "https://www.griptape.ai/logo.png",
@@ -6749,6 +6773,14 @@
     "logo": "https://logos.composio.dev/api/insighto_ai",
     "category": "ai chatbots",
     "toolCount": 65,
+    "triggerCount": 0
+  },
+  {
+    "slug": "inspo_mcp",
+    "name": "Inspo MCP",
+    "logo": "https://logos.composio.dev/api/inspo_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -8053,6 +8085,14 @@
     "logo": "https://logos.composio.dev/api/modem",
     "category": "analytics",
     "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
+    "slug": "modem_mcp",
+    "name": "Modem MCP",
+    "logo": "https://logos.composio.dev/api/modem_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -11420,7 +11460,7 @@
     "name": "TikTok Ads",
     "logo": "https://logos.composio.dev/api/tiktok_ads",
     "category": "marketing",
-    "toolCount": 142,
+    "toolCount": 418,
     "triggerCount": 0
   },
   {
