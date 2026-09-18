@@ -8,6 +8,7 @@ description: "A Composio session \u2014 the object returned by `composio.create(
 | Name | Type |
 |------|------|
 | `session_id` | `str` |
+| `config` | `ToolRouterSessionConfig` |
 | `experimental` | `'ToolRouterSessionExperimental'` |
 | `preload` | `Any` |
 
@@ -183,10 +184,10 @@ def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'P
 
 ### update()
 
-Partially update the session configuration.  Only the fields provided will be changed; omitted fields are preserved. Mutates this session's `preload` in-place.  Pass `None` for `manage_connections`, `sandbox`/`workbench`, or `multi_account` to clear the stored value.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All parameters use the same types as the Stainless-generated `client.tool_router.session.patch()` method.
+Partially update the session configuration.  Only the fields provided will be changed; omitted fields are preserved. Mutates this session's `config` and `preload` in-place and returns the updated session configuration.  Pass `None` for `manage_connections`, `sandbox`/`workbench`, or `multi_account` to clear the stored value.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All parameters use the same types as the Stainless-generated `client.tool_router.session.patch()` method.
 
 ```python
-def update(toolkits: Union[session_patch_params.Toolkits, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools], 'Omit'] = ..., tags: Union[session_patch_params.Tags, 'Omit'] = ..., auth_configs: Union[Dict[str, str], 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str | None]], 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload, 'Omit'] = ...) -> None
+def update(toolkits: Union[session_patch_params.Toolkits, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools], 'Omit'] = ..., tags: Union[session_patch_params.Tags, 'Omit'] = ..., auth_configs: Union[Dict[str, str], 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str | None]], 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload, 'Omit'] = ...) -> ToolRouterSessionConfig
 ```
 
 **Parameters**
@@ -204,6 +205,10 @@ def update(toolkits: Union[session_patch_params.Toolkits, 'Omit'] = ..., tools: 
 | `multi_account?` | `Union[session_patch_params.MultiAccount \| None, 'Omit']` |
 | `preload?` | `Union[session_patch_params.Preload, 'Omit']` |
 
+**Returns**
+
+`ToolRouterSessionConfig`
+
 ---
 
 ### delete()
@@ -220,4 +225,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L90)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L109)
