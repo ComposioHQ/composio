@@ -147,13 +147,13 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
     if (parsed.data.kind === 'abstain') throw new TypesafeAbstainedDecisionError();
     this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
 
-    // Caller arguments win over Jev-bound values. Only `undefined` counts as missing.
+    // Caller arguments win over Jev-bound values. Absent or undefined values are missing.
     const callArguments = { ...parsed.data.arguments };
     for (const [name, value] of Object.entries(input?.arguments ?? {})) {
       if (value !== undefined) callArguments[name] = value;
     }
     const missing = (parsed.data.kind === 'partial' ? parsed.data.missing : []).filter(
-      path => callArguments[path[0]] === undefined
+      path => !Object.hasOwn(callArguments, path[0]) || callArguments[path[0]] === undefined
     );
     if (missing.length > 0) throw new TypesafeIncompleteDecisionError(missing);
 

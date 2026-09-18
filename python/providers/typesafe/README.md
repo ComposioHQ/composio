@@ -244,6 +244,7 @@ Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you s
 - A tool set holds at most 254 tools. More raises `TypesafeLimitError`.
 - A state that exceeds the request budget raises `TypesafeLimitError`. The provider never truncates state.
 - Closed-set properties nested inside object arguments are open-ended.
+- Root-level `allOf`, `anyOf`, and `oneOf` raise `TypesafeInvalidOptionsError` when wrapping a tool. Use a flat object schema with top-level `properties` and `required`; requirements inside root composition are not supported.
 - `execute` takes a user ID with modifiers, or a session. It has no `connected_account_id` option yet.
 
 ## Links

@@ -25,6 +25,7 @@ from .types import (
     TypesafeArrayArgument,
     TypesafeChoiceQuestion,
     TypesafeDuplicateToolError,
+    TypesafeInvalidOptionsError,
     TypesafeNoulQuestion,
     TypesafeOption,
     TypesafeRisk,
@@ -33,12 +34,29 @@ from .types import (
 )
 
 
+class _RootComposition(BaseModel):
+    allOf: t.Any = None
+    anyOf: t.Any = None
+    oneOf: t.Any = None
+
+
 class _InputParameters(BaseModel):
     properties: t.Dict[StrictStr, t.Any] = {}
     required: t.List[StrictStr] = []
 
 
-def _parse_input_parameters(schema: t.Any) -> _InputParameters:
+def _parse_input_parameters(schema: t.Any, tool_slug: str) -> _InputParameters:
+    try:
+        composition = _RootComposition.model_validate(schema)
+    except PydanticValidationError:
+        return _InputParameters()
+    # Root composition can add required arguments the flat-object compiler cannot see.
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        if keyword in composition.model_fields_set:
+            raise TypesafeInvalidOptionsError(
+                f'Tool "{tool_slug}" uses unsupported root schema keyword "{keyword}". '
+                "Use a flat object schema with top-level properties and required."
+            )
     try:
         return _InputParameters.model_validate(schema)
     except PydanticValidationError:
@@ -196,12 +214,12 @@ def routing_description_of(tool: Tool) -> str:
 
 
 def compile_tool(tool: Tool) -> TypesafeToolQuestions:
-    """Compiles one tool. What it cannot read in a schema is open-ended."""
+    """Compiles one tool. Unsupported properties are open-ended; root composition raises."""
     dereferenced = dereference_json_schema(
         getattr(tool, "input_parameters", None) or {"type": "object", "properties": {}},
         on_unresolved="sentinel",
     )
-    parsed = _parse_input_parameters(dereferenced)
+    parsed = _parse_input_parameters(dereferenced, tool.slug)
     names = sorted(parsed.properties, key=by_code_unit)
     # `required` is a set, and a name with no matching property is ignored.
     required_set = set(parsed.required)

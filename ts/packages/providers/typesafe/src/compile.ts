@@ -9,6 +9,7 @@ import { classifyProperty } from './classify';
 import { buildOptions, NONE_KEY, NOT_STATED_KEY, NULL_KEY, optionKey, optionLabel } from './keys';
 import {
   TypesafeDuplicateToolError,
+  TypesafeInvalidOptionsError,
   type TypesafeArgumentQuestion,
   type TypesafeChoiceQuestion,
   type TypesafeNoulQuestion,
@@ -17,6 +18,12 @@ import {
   type TypesafeToolQuestions,
   type TypesafeToolSet,
 } from './types';
+
+const RootCompositionSchema = z.object({
+  allOf: z.unknown().optional(),
+  anyOf: z.unknown().optional(),
+  oneOf: z.unknown().optional(),
+});
 
 const InputParametersSchema = z.object({
   properties: z.record(z.string(), z.unknown()).optional(),
@@ -144,12 +151,23 @@ function compileArgument(
 export const routingDescriptionOf = (tool: Tool): string =>
   tool.description ? `${tool.name}: ${tool.description}` : tool.name;
 
-/** Compiles one tool. Never throws on a schema: what it cannot read is open-ended. */
+/** Compiles one tool. Unsupported properties are open-ended; root composition is rejected. */
 export function compileTool(tool: Tool): TypesafeToolQuestions {
   const dereferenced: unknown = dereferenceJsonSchema(
     tool.inputParameters ?? { type: 'object', properties: {} },
     { onUnresolved: 'sentinel' }
   );
+  // Root composition can add required arguments that the flat-object compiler cannot see.
+  const composition = RootCompositionSchema.safeParse(dereferenced);
+  if (composition.success) {
+    const keyword = Object.keys(composition.data)[0];
+    if (keyword !== undefined) {
+      throw new TypesafeInvalidOptionsError(
+        `Tool "${tool.slug}" uses unsupported root schema keyword "${keyword}". ` +
+          'Use a flat object schema with top-level properties and required.'
+      );
+    }
+  }
   const parsed = InputParametersSchema.safeParse(dereferenced);
   const properties = parsed.success ? (parsed.data.properties ?? {}) : {};
   const names = Object.keys(properties).sort(byCodeUnit);

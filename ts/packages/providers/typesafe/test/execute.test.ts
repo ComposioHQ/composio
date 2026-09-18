@@ -103,6 +103,25 @@ describe('execute', () => {
     );
   });
 
+  it.each(['toString', 'constructor'])(
+    'requires an explicitly supplied value for the argument %s',
+    async name => {
+      const decision: TypesafePartialDecision = { ...partial, missing: [[name]] };
+      await expect(provider.execute('user_1', decision)).rejects.toMatchObject({
+        name: 'TypesafeIncompleteDecisionError',
+        missing: [[name]],
+      });
+      expect(executeTool).not.toHaveBeenCalled();
+
+      await provider.execute('user_1', decision, { arguments: { [name]: 'supplied' } });
+      expect(executeTool).toHaveBeenCalledExactlyOnceWith(
+        'ISSUES_CREATE',
+        expect.objectContaining({ arguments: { priority: 'low', [name]: 'supplied' } }),
+        undefined
+      );
+    }
+  );
+
   it('executes through a session, which takes no modifiers', async () => {
     const session = {
       execute: vi.fn().mockResolvedValue({ data: { ok: true }, error: null, logId: 'log_1' }),

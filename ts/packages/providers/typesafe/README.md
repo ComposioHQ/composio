@@ -219,6 +219,7 @@ Check how [TypeSafe](https://docs.typesafe.ai) retains request data before you s
 - A state that exceeds the request budget throws `TypesafeLimitError`. The provider never truncates state.
 - A state object with a top-level key other than `request` and `context`, or with a value that is not JSON, throws `TypesafeInvalidOptionsError`.
 - Closed-set properties nested inside object arguments are open-ended.
+- Root-level `allOf`, `anyOf`, and `oneOf` throw `TypesafeInvalidOptionsError` when wrapping a tool. Use a flat object schema with top-level `properties` and `required`; requirements inside root composition are not supported.
 
 ## Links
 

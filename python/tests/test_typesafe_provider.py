@@ -284,6 +284,48 @@ LIST_SYMBOLS = corpus_tool("no_input_parameters")
 
 
 class TestQuestionCorpus:
+    @pytest.mark.parametrize("keyword", ["allOf", "anyOf", "oneOf"])
+    def test_rejects_root_composition_with_required_arguments(
+        self, keyword: str
+    ) -> None:
+        tool = make_tool(
+            "COMPOSED",
+            inputParameters={
+                "type": "object",
+                keyword: [
+                    {"properties": {"title": {"type": "string"}}, "required": ["title"]}
+                ],
+            },
+        )
+        with pytest.raises(TypesafeInvalidOptionsError) as error:
+            TypesafeProvider().wrap_tools([tool])
+        assert str(error.value) == (
+            f'Tool "COMPOSED" uses unsupported root schema keyword "{keyword}". '
+            "Use a flat object schema with top-level properties and required."
+        )
+
+    def test_rejects_root_composition_through_schema_reference(self) -> None:
+        tool = make_tool(
+            "REFERENCED",
+            inputParameters={
+                "type": "object",
+                "$ref": "#/$defs/input",
+                "$defs": {
+                    "input": {
+                        "type": "object",
+                        "allOf": [
+                            {
+                                "properties": {"title": {"type": "string"}},
+                                "required": ["title"],
+                            }
+                        ],
+                    }
+                },
+            },
+        )
+        with pytest.raises(TypesafeInvalidOptionsError):
+            TypesafeProvider().wrap_tool(tool)
+
     @pytest.mark.parametrize(
         "entry", CORPUS["tools"], ids=[entry["name"] for entry in CORPUS["tools"]]
     )

@@ -1,6 +1,7 @@
+import type { JSONSchemaProperty } from '@composio/core';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { TypesafeDuplicateToolError, TypesafeProvider } from '../src';
+import { TypesafeDuplicateToolError, TypesafeInvalidOptionsError, TypesafeProvider } from '../src';
 import { routingQuestion } from '../src/compile';
 import { buildOptions, optionValues } from '../src/keys';
 import { corpus, makeTool } from './helpers';
@@ -30,6 +31,37 @@ describe('question corpus', () => {
 });
 
 describe('wrapTools', () => {
+  it.each(['allOf', 'anyOf', 'oneOf'])(
+    'rejects root %s instead of silently dropping required arguments',
+    keyword => {
+      const tool = makeTool('COMPOSED', {}, [], {
+        inputParameters: {
+          type: 'object',
+          [keyword]: [{ properties: { title: { type: 'string' } }, required: ['title'] }],
+        },
+      });
+      expect(() => provider.wrapTools([tool])).toThrow(TypesafeInvalidOptionsError);
+      expect(() => provider.wrapTools([tool])).toThrow(
+        `Tool "COMPOSED" uses unsupported root schema keyword "${keyword}".`
+      );
+    }
+  );
+
+  it('rejects root composition reached through a schema reference', () => {
+    const inputParameters = {
+      type: 'object',
+      $ref: '#/$defs/input',
+      $defs: {
+        input: {
+          type: 'object',
+          allOf: [{ properties: { title: { type: 'string' } }, required: ['title'] }],
+        },
+      },
+    } satisfies JSONSchemaProperty;
+    const tool = makeTool('REFERENCED', {}, [], { inputParameters });
+    expect(() => provider.wrapTool(tool)).toThrow(TypesafeInvalidOptionsError);
+  });
+
   it('returns an empty tool set for no tools and throws on duplicate slugs', () => {
     expect(provider.wrapTools([])).toEqual({ tools: [] });
     expect(() => provider.wrapTools([makeTool('SAME'), makeTool('SAME')])).toThrow(
