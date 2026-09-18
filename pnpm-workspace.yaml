@@ -101,7 +101,6 @@ peerDependencyRules:
     # 7.x line is what openai actually supports; core is pinned to it on purpose
     # (see pinnedDispatcher.node.ts -- Node's fetch rejects undici 8 dispatchers).
     undici: ^7.29.0
-    vitest: ^4.0.0 || ^5.0.0
     zod: ^4.0.0
 
 overrides:

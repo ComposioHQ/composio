@@ -60,7 +60,7 @@ Each command uses `effect/unstable/cli`'s `Command.make()` pattern. Top-level co
 | `dev` | Developer-only utilities |
 | `artifacts` | Manage generated artifacts |
 
-Named options use `Flag.string()`, `Flag.boolean()`, `Flag.integer()`, `Flag.choice()`, `Flag.directory()` (from `effect/unstable/cli`); positionals use `Argument.string()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
+Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/unstable/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
 ### Services — `src/services/`
 
