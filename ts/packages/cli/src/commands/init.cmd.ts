@@ -31,7 +31,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  * - `--yes` / `-y` — auto-select the first project from the list
  */
 
-const yesOpt = Flag.boolean('yes').pipe(
+const yesOpt = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
   Flag.withDefault(false),
   Flag.withDescription('Auto-select the current org project, else first developer project')

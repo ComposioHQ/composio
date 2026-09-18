@@ -105,7 +105,7 @@ describe('atomic replace', () => {
         const oldTarget = yield* fs.open(targetPath);
         yield* Effect.scoped(atomicReplaceFile({ sourcePath, targetPath }));
         const after = yield* fs.stat(targetPath);
-        const openContents = yield* oldTarget.readAlloc(FileSystem.Size('old contents'.length));
+        const openContents = yield* oldTarget.readAlloc('old contents'.length);
 
         expect(yield* fs.readFileString(targetPath)).toBe('new contents');
         expect(after.dev).toBe(before.dev);

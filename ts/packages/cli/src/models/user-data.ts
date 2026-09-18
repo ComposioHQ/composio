@@ -73,7 +73,6 @@ export type UserDataWithDefaults = Schema.Schema.Type<typeof UserDataWithDefault
 
 export const UserDataJSON = JSONTransformSchema(UserData);
 export const userDataFromJSON = Schema.decodeEffect(UserDataJSON, {
-  propertyOrder: 'original',
-  onExcessProperty: 'preserve',
+  onExcessProperty: 'ignore',
 });
 export const userDataToJSON = Schema.encodeEffect(UserDataJSON);

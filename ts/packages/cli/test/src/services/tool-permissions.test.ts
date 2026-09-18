@@ -201,7 +201,7 @@ describe('tool permissions', () => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       // The shared vitest setup pins COMPOSIO_CACHE_DIR to a fresh temp directory.
-      const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
+      const cacheDir = yield* Config.String('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
       // Key shape: `${orgId}:${projectId}:${consumerUserId}:${toolSlug}:${accountId}`.
       const allowKey = 'org_cached_allow:project_test:user_test:GMAIL_SEND_EMAIL:__none__';
       yield* fs.writeFileString(

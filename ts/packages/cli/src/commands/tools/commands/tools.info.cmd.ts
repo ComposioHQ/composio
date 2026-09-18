@@ -9,7 +9,7 @@ import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { bold } from 'src/ui/colors';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GMAIL_SEND_EMAIL")'),
   Argument.optional
 );

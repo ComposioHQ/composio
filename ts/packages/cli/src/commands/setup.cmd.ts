@@ -23,23 +23,23 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 
-const target = Flag.choice('target', SETUP_TARGETS).pipe(
+const target = Flag.Literals('target', SETUP_TARGETS).pipe(
   Flag.withDefault('auto'),
   Flag.withDescription('Agent host to configure: auto, claude, codex, or all')
 );
 
-const yes = Flag.boolean('yes').pipe(
+const yes = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
   Flag.withDefault(false),
   Flag.withDescription('Accept setup changes without prompting')
 );
 
-const ifPresent = Flag.boolean('if-present').pipe(
+const ifPresent = Flag.Boolean('if-present').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Exit successfully when automatic detection finds no supported host')
 );
 
-const uninstall = Flag.boolean('uninstall').pipe(
+const uninstall = Flag.Boolean('uninstall').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Uninstall Composio plugins instead of installing them')
 );

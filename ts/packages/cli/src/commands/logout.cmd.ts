@@ -17,7 +17,7 @@ import { clearApolloIdentityForAnalytics } from 'src/analytics/dispatch';
  * composio logout <command>
  * ```
  */
-const force = Flag.boolean('force').pipe(
+const force = Flag.Boolean('force').pipe(
   Flag.withAlias('f'),
   Flag.withDefault(false),
   Flag.withDescription('Skip confirmation prompts')

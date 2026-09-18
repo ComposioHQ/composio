@@ -32,50 +32,50 @@ import {
   type AgentIdentity,
 } from 'src/services/agents';
 
-export const noBrowser = Flag.boolean('no-browser').pipe(
+export const noBrowser = Flag.Boolean('no-browser').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Login without browser interaction')
 );
 
-const pollOpt = Flag.boolean('poll').pipe(
+const pollOpt = Flag.Boolean('poll').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Poll the most recent pending browser login and complete it')
 );
 
-const noWait = Flag.boolean('no-wait').pipe(
+const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Print login URL and session info, then exit without opening browser or waiting'
   )
 );
 
-const keyOpt = Flag.string('key').pipe(
+const keyOpt = Flag.String('key').pipe(
   Flag.withDescription('Poll and complete login using the session key from composio login'),
   Flag.optional
 );
 
-const userApiKeyOpt = Flag.string('user-api-key').pipe(
+const userApiKeyOpt = Flag.String('user-api-key').pipe(
   Flag.withDescription('Log in directly with a Composio user API key'),
   Flag.optional
 );
 
-const orgOpt = Flag.string('org').pipe(
+const orgOpt = Flag.String('org').pipe(
   Flag.withDescription('Current organization ID or name to store for CLI commands'),
   Flag.optional
 );
 
-const yesOpt = Flag.boolean('yes').pipe(
+const yesOpt = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
   Flag.withDefault(false),
   Flag.withDescription('Skip org picker; use current org')
 );
 
-const noSkillInstall = Flag.boolean('no-skill-install').pipe(
+const noSkillInstall = Flag.Boolean('no-skill-install').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
-const agentOpt = Flag.boolean('agent').pipe(
+const agentOpt = Flag.Boolean('agent').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Sign up or log in using a Composio agent identity')
 );

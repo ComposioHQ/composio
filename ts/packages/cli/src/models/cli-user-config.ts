@@ -86,7 +86,6 @@ export type CliUserConfig = Schema.Schema.Type<typeof CliUserConfig>;
 
 export const CliUserConfigJSON = JSONTransformSchema(CliUserConfig);
 export const cliUserConfigFromJSON = Schema.decodeEffect(CliUserConfigJSON, {
-  propertyOrder: 'original',
-  onExcessProperty: 'preserve',
+  onExcessProperty: 'ignore',
 });
 export const cliUserConfigToJSON = Schema.encodeEffect(CliUserConfigJSON);
