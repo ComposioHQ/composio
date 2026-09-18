@@ -1,6 +1,6 @@
-# cloudflare-wrangler-example
+# typesafe-example
 
-## 0.0.2
+## 0.0.1
 
 ### Patch Changes
 
@@ -17,17 +17,8 @@
 - Updated dependencies [8bb1d29]
 - Updated dependencies [e9fcbe3]
 - Updated dependencies [9a69683]
+- Updated dependencies [d36048f]
+- Updated dependencies [20aaa95]
   - @composio/core@0.19.0
-
-## 0.0.1
-
-### Patch Changes
-
-- Updated dependencies [449f4e1]
-- Updated dependencies [9545806]
-- Updated dependencies [db7b576]
-- Updated dependencies [fe66cbe]
-- Updated dependencies [c0f1609]
-- Updated dependencies [d544006]
-- Updated dependencies [04817cb]
-  - @composio/core@0.18.0
+  - @composio/typesafe@0.1.0
+  - @composio/openai@0.12.3
