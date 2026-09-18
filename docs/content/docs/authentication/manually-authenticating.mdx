@@ -120,6 +120,34 @@ toolkits.items.forEach((toolkit) => {
 </Tab>
 </Tabs>
 
+## Ensure a toolkit is connected
+
+`authorize()` always starts a new link flow, even when the toolkit is already connected — call it in a retry loop or on every request and you accumulate pending connections. In TypeScript, `session.ensureConnected()` does the check and the authorization in one call: it returns straight away if the session already resolves an active connection (or the toolkit needs no auth), and otherwise authorizes and waits for the new connection to go active.
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.0`. The Python SDK doesn't have this method yet — use the `toolkits()` + `authorize()` pattern in [Putting it together](#putting-it-together).
+</Callout>
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", { toolkits: ["github"] });
+
+const { wasConnected, connectedAccount } = await session.ensureConnected("github", {
+  alias: "work-github",
+  timeout: 120000,
+});
+
+console.log(wasConnected ? "Already connected" : `Newly linked: ${connectedAccount?.id}`);
+```
+
+`alias`, `callbackUrl`, and `experimental` are passed through to `authorize()` and ignored when the toolkit is already connected. `timeout` (default 60 seconds) caps how long the call waits for a new connection.
+
+Because `ensureConnected()` blocks until the connection is active, it never gives you a redirect URL to show the user — it's a preflight check for toolkits you expect to already be connected. When you need to render a Connect Link yourself, stick with `authorize()` and `waitForConnection()` as shown above.
+
+A failed connection throws: `ConnectionRequestTimeoutError` if the new account doesn't go active within `timeout`, and `ConnectionRequestFailedError` if it fails, expires, or is revoked.
+
 ## Disabling in-chat auth
 
 By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To turn it off and handle auth entirely in your own UI, set `manage_connections` to `False`:
