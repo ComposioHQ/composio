@@ -1372,7 +1372,7 @@
     "name": "Gorgias",
     "logo": "https://logos.composio.dev/api/gorgias",
     "category": "crm",
-    "toolCount": 34,
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -6944,6 +6944,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "jev",
+    "name": "Jev",
+    "logo": "https://logos.composio.dev/api/jev",
+    "category": "artificial intelligence",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "jigsawstack",
     "name": "Jigsawstack",
     "logo": "https://logos.composio.dev/api/jigsawstack",
@@ -9704,6 +9712,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "ramp_mcp",
+    "name": "Ramp MCP",
+    "logo": "https://logos.composio.dev/api/ramp_mcp",
+    "category": "model context protocol",
+    "toolCount": 213,
+    "triggerCount": 0
+  },
+  {
     "slug": "rawg_video_games_database",
     "name": "RAWG Video Games Database",
     "logo": "https://logos.composio.dev/api/rawg_video_games_database",
@@ -10764,7 +10780,7 @@
     "name": "Snapchat",
     "logo": "https://logos.composio.dev/api/snapchat",
     "category": "marketing",
-    "toolCount": 139,
+    "toolCount": 140,
     "triggerCount": 0
   },
   {
