@@ -148,10 +148,11 @@ export class TypesafeProvider extends BaseNonAgenticProvider<
     this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
 
     // Caller arguments win over Jev-bound values. Absent or undefined values are missing.
-    const callArguments = { ...parsed.data.arguments };
-    for (const [name, value] of Object.entries(input?.arguments ?? {})) {
-      if (value !== undefined) callArguments[name] = value;
-    }
+    // Define caller keys as data properties so `__proto__` stays an argument.
+    const callerArguments = Object.fromEntries(
+      Object.entries(input?.arguments ?? {}).filter(([, value]) => value !== undefined)
+    );
+    const callArguments = { ...parsed.data.arguments, ...callerArguments };
     const missing = (parsed.data.kind === 'partial' ? parsed.data.missing : []).filter(
       path => !Object.hasOwn(callArguments, path[0]) || callArguments[path[0]] === undefined
     );

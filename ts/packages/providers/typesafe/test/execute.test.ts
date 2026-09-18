@@ -103,7 +103,7 @@ describe('execute', () => {
     );
   });
 
-  it.each(['toString', 'constructor'])(
+  it.each(['toString', 'constructor', '__proto__'])(
     'requires an explicitly supplied value for the argument %s',
     async name => {
       const decision: TypesafePartialDecision = { ...partial, missing: [[name]] };
