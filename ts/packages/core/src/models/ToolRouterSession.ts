@@ -23,6 +23,9 @@ import {
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
+  ToolRouterSessionEnsureConnectedOptions,
+  ToolRouterSessionEnsureConnectedOptionsSchema,
+  ToolRouterSessionEnsureConnectedResult,
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
@@ -485,6 +488,83 @@ export class ToolRouterSession<
   }
 
   /**
+   * Ensure a toolkit has an active connection in this session, reconciling
+   * `authorize()`/`session.link` with the session's active connection state.
+   *
+   * If the session already resolves an ACTIVE connection (or the toolkit is
+   * no-auth), this returns immediately without creating a link — unlike
+   * `authorize()`, which always starts a new link flow, even when one is
+   * already connected. Otherwise it starts the authorization flow and waits
+   * for the new connection to become ACTIVE.
+   *
+   * For interactive flows that should surface the redirect URL instead of
+   * blocking, use `authorize()` and its `waitForConnection()` directly.
+   *
+   * @param toolkit - The toolkit slug to ensure a connection for (e.g. 'github')
+   * @param options - Optional authorization options plus `timeout` (ms to wait
+   *   for a newly-initiated connection, default 60000)
+   * @returns The toolkit's canonical slug, whether it was already connected,
+   *   and the active connected account (omitted for no-auth toolkits)
+   * @throws {ValidationError} If the options fail validation
+   * @throws {ConnectionRequestTimeoutError} If a newly-initiated connection does
+   *   not become active within `timeout`
+   * @throws {ConnectionRequestFailedError} If the new connection enters a failed,
+   *   expired, or revoked state
+   *
+   * @example
+   * ```typescript
+   * const session = await composio.sessions.create({ toolkits: ['github'] });
+   * const { wasConnected, connectedAccount } = await session.ensureConnected('github');
+   * if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
+   * ```
+   */
+  async ensureConnected(
+    toolkit: string,
+    options?: ToolRouterSessionEnsureConnectedOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionEnsureConnectedResult> {
+    const parsedOptions = ToolRouterSessionEnsureConnectedOptionsSchema.safeParse(options ?? {});
+    if (!parsedOptions.success) {
+      throw new ValidationError('Failed to parse tool router ensureConnected options', {
+        cause: parsedOptions.error,
+      });
+    }
+    const { callbackUrl, alias, experimental, timeout } = parsedOptions.data;
+
+    const state = await this.toolkits({ toolkits: [toolkit] }, requestOptions);
+    const existing = state.items.find(item => item.slug.toLowerCase() === toolkit.toLowerCase());
+
+    if (existing?.isNoAuth) {
+      return { toolkit: existing.slug, wasConnected: true };
+    }
+    const activeAccount = existing?.connection?.connectedAccount;
+    if (existing?.connection?.isActive && activeAccount) {
+      return {
+        toolkit: existing.slug,
+        wasConnected: true,
+        connectedAccount: { id: activeAccount.id, status: activeAccount.status },
+      };
+    }
+
+    const request = await this.authorize(
+      toolkit,
+      {
+        ...(callbackUrl !== undefined && { callbackUrl }),
+        ...(alias !== undefined && { alias }),
+        ...(experimental !== undefined && { experimental }),
+      },
+      requestOptions
+    );
+    const account = await request.waitForConnection(timeout);
+
+    return {
+      toolkit: existing?.slug ?? toolkit,
+      wasConnected: false,
+      connectedAccount: { id: account.id, status: account.status },
+    };
+  }
+
+  /**
    * Query the connection state of toolkits in the session.
    * Supports pagination and filtering by toolkit slugs.
    */
@@ -581,7 +661,7 @@ export class ToolRouterSession<
    * @param toolSlug - The tool slug to execute
    * @param arguments_ - Optional tool arguments
    * @param options - Optional execution options
-   * @param options.account - Account identifier for direct app tool execution in multi-account sessions. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
+   * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @returns The tool execution result
    */
   async execute(

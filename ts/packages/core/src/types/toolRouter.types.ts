@@ -5,6 +5,7 @@ import { ConnectionRequest } from './connectionRequest.types';
 import type { ComposioRequestOptions } from './requestOptions.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
 import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
+import { ConnectedAccountExperimentalSchema } from './connectedAccounts.types';
 import type {
   CustomTool,
   CustomToolkit,
@@ -591,7 +592,9 @@ export type ToolRouterSessionExecuteFn = (
 
 export interface ToolRouterSessionExecuteOptions {
   /**
-   * Account identifier for direct app tool execution in multi-account sessions.
+   * Account identifier for direct app tool execution. Accepted on every project:
+   * in multi-account sessions it picks the account; on single-account projects it
+   * must match one of the session's active connections for the toolkit.
    * Meta/helper tools either ignore this top-level field or define
    * their own account-selection fields, for example
    * COMPOSIO_MULTI_EXECUTE_TOOL.tools[].account.
@@ -722,6 +725,35 @@ export type ToolRouterSessionDeleteFn = (
   requestOptions?: ComposioRequestOptions
 ) => Promise<ToolRouterSessionDeleteResponse>;
 
+export const ToolRouterSessionEnsureConnectedOptionsSchema = z.object({
+  callbackUrl: z.string().optional(),
+  alias: z.string().optional(),
+  experimental: ConnectedAccountExperimentalSchema.optional(),
+  /** Max time to wait for a newly-initiated connection to become active, in milliseconds. Defaults to 60000. */
+  timeout: z.number().int().positive().optional(),
+});
+export type ToolRouterSessionEnsureConnectedOptions = z.infer<
+  typeof ToolRouterSessionEnsureConnectedOptionsSchema
+>;
+
+export type ToolRouterSessionEnsureConnectedResult = {
+  /** Canonical slug of the toolkit this call ensured. */
+  toolkit: string;
+  /** True when the session already had an active connection (or a no-auth toolkit) — no link was created. */
+  wasConnected: boolean;
+  /** The active connected account backing the toolkit. Omitted for no-auth toolkits. */
+  connectedAccount?: {
+    id: string;
+    status: string;
+  };
+};
+
+export type ToolRouterSessionEnsureConnectedFn = (
+  toolkit: string,
+  options?: ToolRouterSessionEnsureConnectedOptions,
+  requestOptions?: ComposioRequestOptions
+) => Promise<ToolRouterSessionEnsureConnectedResult>;
+
 /** Session type returned by ToolRouter.create() and ToolRouter.use() */
 export interface Session<
   TToolCollection,
@@ -756,6 +788,8 @@ export interface Session<
   warnings: ToolRouterSessionWarning[];
   tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
   authorize: ToolRouterAuthorizeFn;
+  /** Ensure a toolkit has an active connection, linking and waiting only when needed. */
+  ensureConnected: ToolRouterSessionEnsureConnectedFn;
   toolkits: ToolRouterToolkitsFn;
   /** Search for tools by semantic use case */
   search: ToolRouterSessionSearchFn;
