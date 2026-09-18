@@ -196,6 +196,8 @@ class HttpClient(BaseComposio, WithLogger):
         *,
         provider: str,
         api_key: t.Optional[str] = None,
+        user_api_key: t.Optional[str] = None,
+        org_api_key: t.Optional[str] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
         base_url: t.Optional[t.Union[str, URL, NotGiven]] = NOT_GIVEN,
         timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
@@ -214,6 +216,8 @@ class HttpClient(BaseComposio, WithLogger):
         :param logger: Logger that receives SDK and ``composio_client`` records.
         :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
+        :param user_api_key: User API key, sent only on operations that require it.
+        :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
         :param base_url: The base URL to use for the client.
         :param timeout: The timeout to use for the client.
@@ -226,6 +230,8 @@ class HttpClient(BaseComposio, WithLogger):
         BaseComposio.__init__(
             self,
             api_key=api_key,
+            user_api_key=user_api_key,
+            org_api_key=org_api_key,
             environment=environment,
             base_url=base_url,
             timeout=timeout,

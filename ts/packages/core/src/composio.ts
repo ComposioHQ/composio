@@ -37,6 +37,24 @@ export type ComposioConfig<
    */
   apiKey?: string | null;
   /**
+   * User API key (`uak_*`) for the organization, consumer, and user-scoped
+   * endpoints reached through `getClient()` (for example `client.org.list()`).
+   * Sent as `x-user-api-key` only on operations whose security scheme requires
+   * it, never alongside the project key. Falls back to
+   * `process.env['COMPOSIO_USER_API_KEY']`. A project `apiKey` is still required.
+   * @example 'uak_1234567890'
+   */
+  userApiKey?: string | null;
+  /**
+   * Organization API key (`oak_*`) for the organization-owner endpoints reached
+   * through `getClient()` (for example `client.org.owner.project.list()`).
+   * Sent as `x-org-api-key` only on operations whose security scheme requires
+   * it, never alongside the project key. Falls back to
+   * `process.env['COMPOSIO_ORG_API_KEY']`. A project `apiKey` is still required.
+   * @example 'oak_1234567890'
+   */
+  orgApiKey?: string | null;
+  /**
    * The base URL of the Composio API.
    * @example 'https://backend.composio.dev'
    */
@@ -424,11 +442,19 @@ export class Composio<
      */
     this.client = new ComposioClient({
       apiKey: apiKeyParsed,
+      userApiKey: config?.userApiKey,
+      orgApiKey: config?.orgApiKey,
       baseURL: baseURLParsed,
       defaultHeaders: defaultHeaders,
       logger: clientLoggerAdapter,
       logLevel: toClientLogLevel(logger.getLevel()),
     });
+
+    // Store the resolved values, as with `apiKey`, so `getConfig()` and the
+    // `createSession()` clone carry whatever the client resolved from env
+    // rather than re-reading the environment later.
+    this.config.userApiKey = this.client.userApiKey;
+    this.config.orgApiKey = this.client.orgApiKey;
 
     this.tools = new Tools(this.client, this.config);
     this.mcp = new MCP(this.client);
