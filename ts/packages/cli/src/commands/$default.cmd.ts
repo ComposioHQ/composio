@@ -2,7 +2,7 @@ import { LogLevel, type Option } from 'effect';
 import { Command, Flag } from 'effect/unstable/cli';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
 
-const logLevel = Flag.choice('log-level', LogLevel.values).pipe(
+const logLevel = Flag.Literals('log-level', LogLevel.values).pipe(
   Flag.withDescription('Define log level'),
   Flag.optional
 );

@@ -13,19 +13,19 @@ type GITHUB_CONFIG = Config.Wrap<{
  */
 export const GITHUB_CONFIG = {
   // The base URL for the GitHub API
-  API_BASE_URL: Config.string('GITHUB_API_BASE_URL').pipe(
+  API_BASE_URL: Config.String('GITHUB_API_BASE_URL').pipe(
     Config.withDefault('https://api.github.com')
   ),
 
   // The owner of the Composio repository on GitHub
-  OWNER: Config.string('GITHUB_OWNER').pipe(Config.withDefault('ComposioHQ')),
+  OWNER: Config.String('GITHUB_OWNER').pipe(Config.withDefault('ComposioHQ')),
 
   // The repository name for the Composio CLI
-  REPO: Config.string('GITHUB_REPO').pipe(Config.withDefault('composio')),
+  REPO: Config.String('GITHUB_REPO').pipe(Config.withDefault('composio')),
 
   // The tag to use as the latest release
-  TAG: Config.option(Config.string('GITHUB_TAG')),
+  TAG: Config.option(Config.String('GITHUB_TAG')),
 
   // The access token for the GitHub API. Only useful during development to avoid getting rate-limited by Github
-  ACCESS_TOKEN: Config.option(Config.string('GITHUB_ACCESS_TOKEN')),
+  ACCESS_TOKEN: Config.option(Config.String('GITHUB_ACCESS_TOKEN')),
 } satisfies GITHUB_CONFIG;

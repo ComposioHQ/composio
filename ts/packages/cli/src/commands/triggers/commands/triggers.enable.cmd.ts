@@ -5,7 +5,7 @@ import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const id = Argument.string('id').pipe(
+const id = Argument.String('id').pipe(
   Argument.withDescription('Trigger instance ID'),
   Argument.optional
 );

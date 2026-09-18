@@ -13,17 +13,17 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print local tool declarations as JSON')
 );
 
-const allPlatforms = Flag.boolean('all-platforms').pipe(
+const allPlatforms = Flag.Boolean('all-platforms').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Include local toolkits that are not supported on this CLI platform')
 );
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.optional,
   Flag.withDescription('Filter by local toolkit slugs, comma-separated')
 );

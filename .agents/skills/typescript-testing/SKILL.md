@@ -1,6 +1,6 @@
 ---
 name: typescript-testing
-description: Select and run TypeScript SDK verification for packages, examples, type checks, linting, builds, Vitest suites, Effect v4 CLI tests, and runtime E2E tests. Use when adding tests, diagnosing TypeScript CI, choosing a focused test command, validating TypeScript package changes, or writing/porting CLI tests against effect@4.0.0-rc.112 and @effect/vitest. Do not use for Python-only checks.
+description: Select and run TypeScript SDK verification for packages, examples, type checks, linting, builds, Vitest suites, Effect v4 CLI tests, and runtime E2E tests. Use when adding tests, diagnosing TypeScript CI, choosing a focused test command, validating TypeScript package changes, or writing/porting CLI tests against effect@4.0.0-rc.115 and @effect/vitest. Do not use for Python-only checks.
 ---
 
 # TypeScript Testing

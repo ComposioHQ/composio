@@ -43,77 +43,77 @@ export const buildToolLogShorthandSearchParams = (
   ...toSearchParams(filters.sessionId, 'session_id'),
 ];
 
-const cursor = Flag.integer('cursor').pipe(
+const cursor = Flag.Int('cursor').pipe(
   Flag.optional,
   Flag.withDescription('Cursor for pagination')
 );
 
-const from = Flag.integer('from').pipe(
+const from = Flag.Int('from').pipe(
   Flag.withDescription('Start timestamp (epoch milliseconds)'),
   Flag.optional
 );
 
-const to = Flag.integer('to').pipe(
+const to = Flag.Int('to').pipe(
   Flag.withDescription('End timestamp (epoch milliseconds)'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of logs to fetch (1-1000)')
 );
 
-const caseSensitive = Flag.boolean('case-sensitive').pipe(
+const caseSensitive = Flag.Boolean('case-sensitive').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Whether search params are case-sensitive')
 );
 
-const toolkit = Flag.string('toolkit').pipe(
+const toolkit = Flag.String('toolkit').pipe(
   Flag.withDescription('Filter by toolkit key(s), comma-separated (e.g. "gmail,slack")'),
   Flag.optional
 );
 
-const tool = Flag.string('tool').pipe(
+const tool = Flag.String('tool').pipe(
   Flag.withDescription('Filter by tool key(s), comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
   Flag.optional
 );
 
-const connectedAccountId = Flag.string('connected-account-id').pipe(
+const connectedAccountId = Flag.String('connected-account-id').pipe(
   Flag.withDescription('Filter by connected account id(s), comma-separated'),
   Flag.optional
 );
 
-const authConfigId = Flag.string('auth-config-id').pipe(
+const authConfigId = Flag.String('auth-config-id').pipe(
   Flag.withDescription('Filter by auth config id(s), comma-separated'),
   Flag.optional
 );
 
-const status = Flag.string('status').pipe(
+const status = Flag.String('status').pipe(
   Flag.withDescription('Filter by execution status value(s), comma-separated'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user id(s), comma-separated'),
   Flag.optional
 );
 
-const logIdFilter = Flag.string('log-id').pipe(
+const logIdFilter = Flag.String('log-id').pipe(
   Flag.withDescription('Filter by log id(s), comma-separated'),
   Flag.optional
 );
 
-const toolRouterSessionId = Flag.string('tool-router-session-id').pipe(
+const toolRouterSessionId = Flag.String('tool-router-session-id').pipe(
   Flag.withDescription('Filter by tool router session id(s), comma-separated'),
   Flag.optional
 );
 
-const sessionId = Flag.string('session-id').pipe(
+const sessionId = Flag.String('session-id').pipe(
   Flag.withDescription('Filter by session id(s), comma-separated'),
   Flag.optional
 );
 
-const logId = Argument.string('log_id').pipe(
+const logId = Argument.String('log_id').pipe(
   Argument.withDescription('Tool log ID'),
   Argument.optional
 );

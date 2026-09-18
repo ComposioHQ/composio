@@ -14,12 +14,12 @@ class LocalToolsMetaError extends Data.TaggedError('commands/LocalToolsMetaError
   readonly cause: unknown;
 }> {}
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print the metadata file contents as JSON')
 );
 
-const init = Flag.boolean('init').pipe(
+const init = Flag.Boolean('init').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Create ~/composio/local_tools.json if it does not exist')
 );
