@@ -1,5 +1,15 @@
 # @composio/core
 
+## 1.0.0-beta.2
+
+### Minor Changes
+
+- 17a20be: Add `userApiKey` and `orgApiKey` to `ComposioConfig`. Both are forwarded to the underlying API client, which sends each one only on operations whose security scheme requires it (organization, consumer, and user-scoped endpoints reached through `getClient()`), never alongside the project key. They fall back to `COMPOSIO_USER_API_KEY` and `COMPOSIO_ORG_API_KEY`. A project `apiKey` is still required.
+
+### Patch Changes
+
+- 72b1bfe: Rename `session.configHistory()` to `session.listConfigHistory()` to make the paginated list operation explicit.
+
 ## 1.0.0-beta.1
 
 ### Minor Changes
