@@ -1,6 +1,6 @@
 # Composio TypeScript examples
 
-Each directory here is its own private workspace package (`<name>-example`) showing one integration or feature: `openai/`, `anthropic/`, `langchain/`, `connected-accounts/`, `tools/`, `triggers/`, `mcp/`, `tool-router/`, and more.
+Each directory here is its own private workspace package (`<name>-example`) showing one integration or feature: `openai/`, `anthropic/`, `langchain/`, `typesafe/`, `connected-accounts/`, `tools/`, `triggers/`, `mcp/`, `tool-router/`, and more.
 
 ## Run one example
 
@@ -21,7 +21,7 @@ Examples read configuration from environment variables and fail loudly, naming t
 - `COMPOSIO_EXAMPLES_USER_ID` — the user id examples act as.
 - `COMPOSIO_EXAMPLES_{GMAIL,GITHUB,SLACK}_AUTH_CONFIG_ID` and `COMPOSIO_EXAMPLES_{GMAIL,GITHUB,SLACK}_CONNECTED_ACCOUNT_ID` — per-toolkit auth config and standing connected account.
 - `COMPOSIO_EXAMPLES_APIKEY_AUTH_CONFIG_ID` and `COMPOSIO_EXAMPLES_APIKEY_PLACEHOLDER` — the serpapi API-key auth config and its placeholder key value.
-- `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` — only needed by examples that call that LLM provider.
+- `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `TYPESAFE_API_KEY` — only needed by examples that call that model provider.
 
 `node ../scripts/examples-provision.mjs` (run from `ts/`, or `node scripts/examples-provision.mjs` from the repo root) checks a Composio project for this state, prints a report to stderr, and prints `export COMPOSIO_EXAMPLES_*=...` lines to stdout. Load them with `out=$(node ../scripts/examples-provision.mjs) && eval "$out"`. Capture first, then eval. `eval "$(...)"` reports the status of the text it evaluates, so it would hide a failed provisioning run. It's idempotent — it verifies what already exists and only creates what's missing — and it never prints credential values.
 

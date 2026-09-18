@@ -1,0 +1,65 @@
+{
+  "name": "@composio/typesafe",
+  "version": "0.0.0",
+  "description": "TypeSafe (Jev) Provider for Composio SDK",
+  "main": "src/index.ts",
+  "type": "module",
+  "engines": {
+    "node": ">=24.17.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/providers/typesafe"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/providers/typesafe#readme",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "composio",
+    "provider",
+    "typesafe",
+    "jev",
+    "system-one"
+  ],
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "@composio/core": ">=0.18.1 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
+    "@typesafe-ai/sdk": ">=0.6.0 <0.7.0",
+    "zod": ">=3.25.76 <5"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/google": "workspace:*",
+    "@types/node": "^26.4.1",
+    "@typesafe-ai/sdk": "0.6.0",
+    "fast-check": "^4.9.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  }
+}

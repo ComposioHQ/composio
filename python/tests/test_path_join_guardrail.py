@@ -203,6 +203,7 @@ for _provider_setup in (
     "llamaindex",
     "openai",
     "openai_agents",
+    "typesafe",
 ):
     REVIEWED_JOINS[(f"providers/{_provider_setup}/setup.py", "Path(__file__)")] = (
         _reviewed_path("`__file__` is the trusted location of this provider package.")

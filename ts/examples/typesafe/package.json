@@ -1,0 +1,36 @@
+{
+  "name": "typesafe-example",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Example project for TypeSafe (Jev)",
+  "main": "src/index.ts",
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
+    "start": "bun src/index.ts",
+    "start:shortlist": "bun src/shortlist.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "composio",
+    "example",
+    "typesafe",
+    "jev"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/openai": "workspace:*",
+    "@composio/typesafe": "workspace:*",
+    "@typesafe-ai/sdk": "0.6.0",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  },
+  "type": "module"
+}
