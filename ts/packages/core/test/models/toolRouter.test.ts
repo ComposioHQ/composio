@@ -10,6 +10,7 @@ import {
   ToolRouterCreateSessionConfig,
   Session,
   SessionPreset,
+  type ToolRouterSessionConfig,
 } from '../../src/types/toolRouter.types';
 import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
@@ -88,7 +89,7 @@ const mockSessionRetrieveResponse = {
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
     user_id: 'user_123',
-    toolkits: { enable: ['gmail', 'slack', 'github'] },
+    toolkits: { enabled: ['gmail', 'slack', 'github'] },
     auth_configs: {},
     connected_accounts: {},
     manage_connections: {
@@ -3326,7 +3327,7 @@ describe('ToolRouter', () => {
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
       expect(session.config).toEqual(mockSessionRetrieveResponse.config);
-      expect(session.config.toolkits).toEqual({ enable: ['gmail', 'slack', 'github'] });
+      expect(session.config.toolkits).toEqual({ enabled: ['gmail', 'slack', 'github'] });
     });
 
     it('should attach custom tools when provided', async () => {
@@ -3665,9 +3666,9 @@ describe('ToolRouter', () => {
 
   describe('update method', () => {
     const sessionId = 'session_123';
-    const patchedConfig = {
+    const patchedConfig: ToolRouterSessionConfig = {
       ...mockSessionRetrieveResponse.config,
-      toolkits: { enable: ['gmail'] },
+      toolkits: { enabled: ['gmail'] },
       tags: { enabled: ['readOnlyHint'] },
       preload: { tools: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
       workbench: { enable: false },
@@ -3693,7 +3694,7 @@ describe('ToolRouter', () => {
         undefined
       );
       expect(config).toEqual(patchedConfig);
-      expect(config.toolkits).toEqual({ enable: ['gmail'] });
+      expect(config.toolkits).toEqual({ enabled: ['gmail'] });
     });
 
     it('should refresh config, preload, sandbox, configVersion and warnings in place', async () => {

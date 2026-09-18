@@ -1113,17 +1113,17 @@ class TestToolRouter:
     def test_create_session_exposes_config(self, tool_router, mock_client):
         """create() exposes the server-side session config on the session."""
         create_config = mock_client.tool_router.session.create.return_value.config
-        create_config.toolkits = {"enable": ["gmail"]}
+        create_config.toolkits = {"enabled": ["gmail"]}
 
         session = tool_router.create(user_id="user_123", toolkits=["gmail"])
 
         assert session.config is create_config
-        assert session.config.toolkits == {"enable": ["gmail"]}
+        assert session.config.toolkits == {"enabled": ["gmail"]}
 
     def test_update_session_returns_config(self, tool_router, mock_client):
         """update() returns the patched config and refreshes it on the session."""
         patched = MagicMock()
-        patched.toolkits = {"enable": ["gmail"]}
+        patched.toolkits = {"enabled": ["gmail"]}
         patched.preload = MagicMock()
         patched.preload.tools = ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
         mock_client.tool_router.session.patch.return_value.config = patched
