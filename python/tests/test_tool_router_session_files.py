@@ -319,6 +319,30 @@ class TestRemoteFile:
         # The check raises before mkdir/write, so nothing was written under tmp_path.
         assert not (tmp_path / ".composio").exists()
 
+    @pytest.mark.parametrize(
+        "mount_relative_path", ["", ".", "\u00a0.\u00a0", "\u2007..\u2007"]
+    )
+    def test_save_default_location_rejects_unusable_basename(
+        self, tmp_path, mount_relative_path
+    ):
+        """A mount path that strips down to ``.`` or ``..`` would make the
+        save path equal the download directory or its parent; each must be a
+        ``ValidationError`` raised before anything touches the disk, not an
+        ``IsADirectoryError`` from ``write_bytes``."""
+        rf = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path=mount_relative_path,
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+
+        with patch.object(rf, "buffer", return_value=b"should not be written"):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                with pytest.raises(ValidationError, match="Path traversal detected"):
+                    rf.save()
+
+        assert not (tmp_path / ".composio").exists()
+
 
 class TestResponseDerivedUrlsAreGuarded:
     """`download_url` and `upload_url` are response fields, so they are guarded.

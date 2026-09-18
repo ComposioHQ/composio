@@ -283,5 +283,72 @@ describe('RemoteFile', () => {
       const written = platform.readFileSync(savePath) as Uint8Array;
       expect(new Uint8Array(written)).toEqual(content);
     });
+
+    describe('default location', () => {
+      // `save()` without a path derives the filename from `mountRelativePath`,
+      // a server-controlled response field. These cover the SEC-316 guard the
+      // Python SDK already applies; see `src/utils/safePath.ts`.
+      const content = new Uint8Array([1, 2, 3]);
+      let homeDir: string;
+      let composioDir: string;
+
+      beforeEach(async () => {
+        const { mkdtempSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const { tmpdir } = await import('node:os');
+        const { platform } = await import('../../src/platform/node');
+
+        homeDir = mkdtempSync(join(tmpdir(), 'composio-remote-file-home-'));
+        composioDir = join(homeDir, '.composio');
+        vi.spyOn(platform, 'homedir').mockReturnValue(homeDir);
+
+        globalThis.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(content.buffer),
+        });
+      });
+
+      afterEach(async () => {
+        vi.restoreAllMocks();
+        const { rmSync } = await import('node:fs');
+        rmSync(homeDir, { recursive: true, force: true });
+      });
+
+      it('should save under ~/.composio/files using the mount path filename', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const { join } = await import('node:path');
+        const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath: 'out/report.pdf' });
+
+        const result = await file.save();
+
+        expect(result).toBe(join(composioDir, 'files', 'report.pdf'));
+        expect(new Uint8Array(platform.readFileSync(result) as Uint8Array)).toEqual(content);
+      });
+
+      // Each of these would make the save path equal its own directory (or the
+      // parent), which previously surfaced as an unhandled `EISDIR` from
+      // `writeFileSync` after the directory had already been created.
+      it.each(['', '.', 'sub/.', 'foo/..', '..', '\u00a0.\u00a0', '\u2007..\u2007'])(
+        'should reject mountRelativePath %j with a ValidationError',
+        async mountRelativePath => {
+          const { platform } = await import('../../src/platform/node');
+          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
+
+          await expect(file.save()).rejects.toThrow(ValidationError);
+          await expect(file.save()).rejects.toThrow(/leaves no usable basename/);
+          expect(platform.existsSync(composioDir)).toBe(false);
+        }
+      );
+
+      it('should still honor an explicit path when the mount path is unusable', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const { join } = await import('node:path');
+        const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath: '..' });
+        const savePath = join(homeDir, 'explicit.pdf');
+
+        await expect(file.save(savePath)).resolves.toBe(savePath);
+        expect(platform.existsSync(savePath)).toBe(true);
+      });
+    });
   });
 });
