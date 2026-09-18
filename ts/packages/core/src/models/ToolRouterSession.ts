@@ -16,6 +16,7 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
   ToolRouterSessionWorkbenchConfig,
@@ -118,6 +119,12 @@ export class ToolRouterSession<
   /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
+  /**
+   * Server-side session configuration (toolkit/tool allowlists, tags, preload,
+   * sandbox, manage_connections) as returned by the API. Refreshed in place by
+   * `update()`.
+   */
+  public config: ToolRouterSessionConfig;
   public preload: ToolRouterSessionPreloadConfig;
   /** Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. */
   public sandbox?: ToolRouterSessionWorkbenchConfig;
@@ -131,7 +138,7 @@ export class ToolRouterSession<
 
   constructor(
     private readonly client: ComposioClient,
-    private readonly config: ComposioConfig<TProvider> | undefined,
+    private readonly sdkConfig: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
     experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
@@ -139,6 +146,12 @@ export class ToolRouterSession<
     private readonly userId?: string,
     metadata?: ToolRouterSessionMetadata
   ) {
+    const config: ToolRouterSessionConfig = metadata?.config ?? {
+      user_id: userId ?? '',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+    };
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
     }
@@ -148,8 +161,9 @@ export class ToolRouterSession<
       assistivePrompt: experimentalOverrides?.assistivePrompt,
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
-    this.preload = metadata?.preload ?? { tools: [] };
-    this.sandbox = metadata?.workbench;
+    this.config = config;
+    this.preload = metadata?.preload ?? config.preload;
+    this.sandbox = metadata?.workbench ?? config.workbench;
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
@@ -193,7 +207,7 @@ export class ToolRouterSession<
     modifiers?: SessionMetaToolOptions,
     requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<TProvider['wrapTools']>> {
-    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
+    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.sdkConfig);
     const rawTools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
       undefined,
@@ -226,13 +240,13 @@ export class ToolRouterSession<
         );
       };
 
-      if (!this.config?.provider) {
+      if (!this.sdkConfig?.provider) {
         throw new Error(
           'A provider is required when using custom tools with session.tools(). ' +
             'Pass a provider in the Composio constructor.'
         );
       }
-      return this.config.provider.wrapTools(sessionTools, routingExecuteFn) as ReturnType<
+      return this.sdkConfig.provider.wrapTools(sessionTools, routingExecuteFn) as ReturnType<
         TProvider['wrapTools']
       >;
     }
@@ -664,12 +678,13 @@ export class ToolRouterSession<
   /**
    * Partially update the session configuration.
    * Only the fields provided will be changed; omitted fields are preserved.
-   * Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
+   * Mutates this session's `config`, `configVersion`, `preload`, `sandbox`,
+   * and `warnings` in-place, and resolves to the updated session `config`.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
-  ): Promise<void> {
+  ): Promise<ToolRouterSessionConfig> {
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
     const params = transformToolRouterUpdateParams(parsed);
     const response = await withCancellation(
@@ -677,9 +692,11 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
     this.configVersion = response.config_version;
+    this.config = response.config;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
+    return this.config;
   }
 
   /**

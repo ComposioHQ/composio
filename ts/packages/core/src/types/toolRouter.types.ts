@@ -605,7 +605,15 @@ export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Work
 
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
+/**
+ * Server-side session configuration as returned by the API: toolkit and tool
+ * allowlists, tags, auth configs, connected accounts, manage_connections,
+ * preload, sandbox (`workbench`), search and execute settings.
+ */
+export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+
 export interface ToolRouterSessionMetadata {
+  config: ToolRouterSessionConfig;
   preload?: ToolRouterSessionPreloadConfig;
   workbench?: ToolRouterSessionWorkbenchConfig;
   configVersion?: number;
@@ -699,7 +707,9 @@ export const ToolRouterUpdateSessionConfigSchema = z
 
 export type ToolRouterUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
 
-export type ToolRouterSessionUpdateFn = (config: ToolRouterUpdateSessionConfig) => Promise<void>;
+export type ToolRouterSessionUpdateFn = (
+  config: ToolRouterUpdateSessionConfig
+) => Promise<ToolRouterSessionConfig>;
 
 export const ToolRouterSessionDeleteResponseSchema = z.object({
   sessionId: z.string(),
@@ -719,6 +729,12 @@ export interface Session<
 > {
   sessionId: string;
   mcp: ToolRouterMCPServerConfig;
+  /**
+   * Server-side session configuration (toolkit/tool allowlists, tags, preload,
+   * sandbox, manage_connections) as returned by the API. Refreshed in place by
+   * `update()`.
+   */
+  config: ToolRouterSessionConfig;
   /** Stored preload configuration for this session. */
   preload: ToolRouterSessionPreloadConfig;
   /**
@@ -744,7 +760,7 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
-  /** Update the session configuration. Mutates this session in-place. */
+  /** Update the session configuration. Mutates this session in-place and resolves to the updated `config`. */
   update: ToolRouterSessionUpdateFn;
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */
   delete: ToolRouterSessionDeleteFn;

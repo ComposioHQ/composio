@@ -46,6 +46,7 @@ const createMockClient = () => ({
       create: vi.fn(),
       retrieve: vi.fn(),
       attach: vi.fn(),
+      patch: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
       search: vi.fn(),
@@ -250,6 +251,7 @@ describe('ToolRouter', () => {
         expect(session.sessionId).toBe('session_123');
         expect(session.preload.tools).toEqual([]);
         expect(session.configVersion).toBe(1);
+        expect(session.config).toEqual(mockSessionCreateResponse.config);
       });
 
       it('should create a session with preloaded tools', async () => {
@@ -3323,6 +3325,8 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('delete');
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
+      expect(session.config).toEqual(mockSessionRetrieveResponse.config);
+      expect(session.config.toolkits).toEqual({ enable: ['gmail', 'slack', 'github'] });
     });
 
     it('should attach custom tools when provided', async () => {
@@ -3656,6 +3660,56 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
       expect(mockClient.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update method', () => {
+    const sessionId = 'session_123';
+    const patchedConfig = {
+      ...mockSessionRetrieveResponse.config,
+      toolkits: { enable: ['gmail'] },
+      tags: { enabled: ['readOnlyHint'] },
+      preload: { tools: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+      workbench: { enable: false },
+    };
+
+    beforeEach(() => {
+      mockClient.toolRouter.session.patch.mockResolvedValue({
+        session_id: sessionId,
+        config: patchedConfig,
+        config_version: 8,
+        warnings: [{ code: 'TOOLKIT_NOT_CONNECTED', message: 'gmail is not connected' }],
+      });
+    });
+
+    it('should resolve to the updated session config', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      const config = await session.update({ toolkits: ['gmail'], tags: ['readOnlyHint'] });
+
+      expect(mockClient.toolRouter.session.patch).toHaveBeenCalledWith(
+        sessionId,
+        expect.objectContaining({ toolkits: { enable: ['gmail'] } }),
+        undefined
+      );
+      expect(config).toEqual(patchedConfig);
+      expect(config.toolkits).toEqual({ enable: ['gmail'] });
+    });
+
+    it('should refresh config, preload, sandbox, configVersion and warnings in place', async () => {
+      const session = await toolRouter.use(sessionId);
+      expect(session.config).toEqual(mockSessionRetrieveResponse.config);
+      expect(session.configVersion).toBe(7);
+
+      const config = await session.update({ toolkits: ['gmail'] });
+
+      expect(session.config).toBe(config);
+      expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL']);
+      expect(session.sandbox).toEqual({ enable: false });
+      expect(session.configVersion).toBe(8);
+      expect(session.warnings).toEqual([
+        { code: 'TOOLKIT_NOT_CONNECTED', message: 'gmail is not connected' },
+      ]);
     });
   });
 });

@@ -71,6 +71,7 @@ function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
   const metadata: ToolRouterSessionMetadata = {
+    config: session.config,
     preload: session.config.preload,
     workbench: session.config.workbench,
     configVersion: session.config_version,
