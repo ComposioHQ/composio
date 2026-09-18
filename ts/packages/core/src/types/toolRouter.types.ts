@@ -613,7 +613,8 @@ export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 export type ToolRouterSessionConfig = SessionCreateResponse.Config;
 
 export interface ToolRouterSessionMetadata {
-  config: ToolRouterSessionConfig;
+  /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
+  config?: ToolRouterSessionConfig;
   preload?: ToolRouterSessionPreloadConfig;
   workbench?: ToolRouterSessionWorkbenchConfig;
   configVersion?: number;
