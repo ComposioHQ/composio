@@ -43,6 +43,8 @@ _TOOL_ROUTER_DEPRECATION = (
 class SDKConfig(te.TypedDict):
     environment: te.NotRequired[APIEnvironment]
     api_key: te.NotRequired[str]
+    user_api_key: te.NotRequired[str]
+    org_api_key: te.NotRequired[str]
     base_url: te.NotRequired[str]
     timeout: te.NotRequired[int]
     max_retries: te.NotRequired[int]
@@ -110,6 +112,16 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         :param provider: The provider to use for the SDK. Defaults to OpenAIProvider.
         :param environment: The environment to use for the SDK.
         :param api_key: The API key to use for the SDK.
+        :param user_api_key: User API key (``uak_*``) for the organization, consumer,
+            and user-scoped endpoints reached through ``composio.client``. Sent as
+            ``x-user-api-key`` only on operations whose security scheme requires it,
+            never alongside the project key. Falls back to ``COMPOSIO_USER_API_KEY``.
+            A project ``api_key`` is still required.
+        :param org_api_key: Organization API key (``oak_*``) for the organization-owner
+            endpoints reached through ``composio.client``. Sent as ``x-org-api-key`` only
+            on operations whose security scheme requires it, never alongside the
+            project key. Falls back to ``COMPOSIO_ORG_API_KEY``. A project ``api_key``
+            is still required.
         :param base_url: The base URL to use for the SDK.
         :param timeout: The timeout to use for the SDK.
         :param max_retries: The maximum number of retries to use for the SDK.
@@ -173,6 +185,8 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             environment=kwargs.get("environment", "production"),
             provider=actual_provider.name,
             api_key=api_key,
+            user_api_key=kwargs.get("user_api_key"),
+            org_api_key=kwargs.get("org_api_key"),
             base_url=kwargs.get("base_url") or os.environ.get("COMPOSIO_BASE_URL"),
             timeout=kwargs.get("timeout"),
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),

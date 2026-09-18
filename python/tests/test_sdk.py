@@ -40,6 +40,29 @@ class TestComposioSDK:
                             sdk = Composio(api_key="test-key")
                             assert sdk is not None
 
+    def test_sdk_forwards_user_and_org_api_keys_to_client(self):
+        """User and org keys reach the API client, which selects them per operation."""
+        sdk = Composio(
+            api_key="ak_test", user_api_key="uak_test", org_api_key="oak_test"
+        )
+        assert sdk.client.api_key == "ak_test"
+        assert sdk.client.user_api_key == "uak_test"
+        assert sdk.client.org_api_key == "oak_test"
+
+    def test_sdk_reads_user_and_org_api_keys_from_env(self):
+        """The client resolves COMPOSIO_USER_API_KEY / COMPOSIO_ORG_API_KEY itself."""
+        with patch.dict(
+            os.environ,
+            {
+                "COMPOSIO_API_KEY": "ak_env",
+                "COMPOSIO_USER_API_KEY": "uak_env",
+                "COMPOSIO_ORG_API_KEY": "oak_env",
+            },
+        ):
+            sdk = Composio()
+        assert sdk.client.user_api_key == "uak_env"
+        assert sdk.client.org_api_key == "oak_env"
+
     def test_sdk_config_types(self):
         """Test SDK configuration types."""
         from composio.sdk import SDKConfig
@@ -51,6 +74,8 @@ class TestComposioSDK:
         expected_fields = {
             "environment",
             "api_key",
+            "user_api_key",
+            "org_api_key",
             "base_url",
             "timeout",
             "max_retries",
