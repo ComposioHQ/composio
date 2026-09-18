@@ -739,6 +739,40 @@ const connectedAccount = await connectionRequest.waitForConnection();
 
 For more details, see [Manually authenticating users](/docs/authentication/manually-authenticating).
 
+### ensureConnected()
+
+Make sure a toolkit is connected before you use it, without creating a duplicate link when it already is. `authorize()` always starts a new link flow, so calling it on an already-connected toolkit leaves an extra pending connection behind. `ensureConnected()` checks the session's connection state first and only authorizes when there's nothing active to reuse.
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.0`. Not yet available in the Python SDK — use the [`toolkits()` + `authorize()` pattern](/docs/authentication/manually-authenticating#putting-it-together) there.
+</Callout>
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", { toolkits: ["github"] });
+
+const { wasConnected, connectedAccount } = await session.ensureConnected("github");
+
+if (!wasConnected) {
+  console.log(`Newly linked: ${connectedAccount?.id}`);
+}
+```
+
+It returns the toolkit's canonical `toolkit` slug, a `wasConnected` flag, and the active `connectedAccount` (`id` and `status`). `connectedAccount` is omitted for no-auth toolkits, which always report `wasConnected: true`.
+
+When a connection does have to be created, the call blocks until the new account becomes active, so it never surfaces a redirect URL for the user to visit. Reach for it where you expect the toolkit to already be connected — a preflight check before an agent run, or a retry path that shouldn't pile up pending links. For an interactive flow where you need to show the user a Connect Link, use `authorize()` and `waitForConnection()` directly.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `callbackUrl` | `string` | — | Where to send the user after they authenticate |
+| `alias` | `string` | — | Human-readable label for the new connected account |
+| `experimental` | `object` | — | `accountType` and `aclConfigForShared`, for creating a [shared connection](/docs/extending-sessions/shared-connections) |
+| `timeout` | `number` | `60000` | Milliseconds to wait for a newly-initiated connection to become active |
+
+`callbackUrl`, `alias`, and `experimental` are forwarded to `authorize()` and are ignored when the toolkit is already connected. If the new connection doesn't go active within `timeout`, the call throws `ConnectionRequestTimeoutError`; if it fails, expires, or is revoked, it throws `ConnectionRequestFailedError`.
+
 ### toolkits()
 
 List the toolkits enabled for the session and their connection status, sorted by popularity. Use it to build a UI showing which apps are connected. Each toolkit includes its `slug`, `name`, `logo`, and connection status, and the call returns the first 20 by default.

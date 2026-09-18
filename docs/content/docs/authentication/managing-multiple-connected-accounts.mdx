@@ -188,6 +188,39 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+## Selecting an account per execution
+
+To pick the account for a single tool call instead of the whole session, pass `account` to `session.execute()`. It takes a connected account ID or an alias.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments={"recipient_email": "team@example.com", "subject": "Report", "body": "Attached."},
+    account="work-gmail",
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const result = await session.execute(
+  "GMAIL_SEND_EMAIL",
+  { recipient_email: "team@example.com", subject: "Report", body: "Attached." },
+  { account: "work-gmail" },
+);
+```
+</Tab>
+</Tabs>
+
+`account` is accepted on every project, not just multi-account ones. In a multi-account session it chooses between the toolkit's active accounts. On a single-account project it acts as an assertion: the identifier must match one of the session's active connections for that toolkit, or the call fails.
+
+This field applies to direct app tools. Meta tools either ignore it or define their own account-selection fields — `COMPOSIO_MULTI_EXECUTE_TOOL`, for example, takes an `account` per entry in its `tools` array.
+
 ## Viewing session's active accounts
 
 Use `session.toolkits()` to see which accounts are currently active:
