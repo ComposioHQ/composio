@@ -450,6 +450,12 @@ export class Composio<
       logLevel: toClientLogLevel(logger.getLevel()),
     });
 
+    // Store the resolved values, as with `apiKey`, so `getConfig()` and the
+    // `createSession()` clone carry whatever the client resolved from env
+    // rather than re-reading the environment later.
+    this.config.userApiKey = this.client.userApiKey;
+    this.config.orgApiKey = this.client.orgApiKey;
+
     this.tools = new Tools(this.client, this.config);
     this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);

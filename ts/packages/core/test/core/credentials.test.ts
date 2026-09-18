@@ -59,4 +59,17 @@ describe('Composio user and organization API keys', () => {
     expect(session.getClient().userApiKey).toBe('uak_test');
     expect(session.getClient().orgApiKey).toBe('oak_test');
   });
+
+  it('stores env-resolved keys on the config so createSession() keeps them after env changes', () => {
+    vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_env');
+    vi.stubEnv('COMPOSIO_ORG_API_KEY', 'oak_env');
+    const composio = new Composio(baseConfig);
+    expect(composio.getConfig()).toMatchObject({ userApiKey: 'uak_env', orgApiKey: 'oak_env' });
+
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    vi.stubEnv('COMPOSIO_ORG_API_KEY', 'oak_other');
+    const session = composio.createSession({ headers: { 'x-request-id': '1' } });
+    expect(session.getClient().userApiKey).toBe('uak_env');
+    expect(session.getClient().orgApiKey).toBe('oak_env');
+  });
 });
