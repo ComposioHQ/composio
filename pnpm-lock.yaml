@@ -37,8 +37,8 @@ catalogs:
       specifier: 4.0.0-rc.112
       version: 4.0.0-rc.112
     '@effect/vitest':
-      specifier: 4.0.0-rc.112
-      version: 4.0.0-rc.112
+      specifier: 4.0.0-rc.115
+      version: 4.0.0-rc.115
     '@mastra/core':
       specifier: 1.53.0
       version: 1.53.0
@@ -1291,7 +1291,7 @@ importers:
         version: 0.87.2
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+        version: 4.0.0-rc.115(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@types/bun':
         specifier: 'catalog:'
         version: 1.4.1
@@ -2356,11 +2356,11 @@ packages:
     peerDependencies:
       effect: ^4.0.0-rc.112
 
-  '@effect/vitest@4.0.0-rc.112':
-    resolution: {integrity: sha512-mEKh/FI64mt8JK1/v9mpOrJYdnp+UFZdRUBMEdZMiKz7klg6NPqVgg/oeAGH6wOOQc2iAPcfc2H9BbAv1KyzMQ==}
+  '@effect/vitest@4.0.0-rc.115':
+    resolution: {integrity: sha512-DJR0hfdr3HNXAkzW8AzfvUz6VmrNFLrKk9tZGDURi33faMyxkc7ZewxELMMZwGpOTGN4mfqYVbX2CXgI+ZJBeQ==}
     peerDependencies:
-      effect: ^4.0.0-rc.112
-      vitest: '>=4.1.0 <5.0.0'
+      effect: ^4.0.0-rc.115
+      vitest: '>=5.0.0 <6.0.0'
 
   '@emnapi/core@1.11.2':
     resolution: {integrity: sha512-TC8MkTuZUtcTSiFeuC0ksCh9QIJ5+F21MvZ4Wn4ORfYaFJ/0dsiudv5tVkejgwZlwQ39jL9WWDe2lz8x0WglOA==}
@@ -7323,7 +7323,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/vitest@4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)':
+  '@effect/vitest@4.0.0-rc.115(effect@4.0.0-rc.112)(vitest@4.1.11)':
     dependencies:
       effect: 4.0.0-rc.112
       vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/ui@4.1.11)(vite@7.3.5(@types/node@26.4.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
