@@ -87,7 +87,8 @@ export async function generateMetadata({
       'reference',
       [],
       'API Reference',
-      'REST API and SDK reference for Composio'
+      'REST API and SDK reference for Composio',
+      { version: 'v3.1' }
     );
     return {
       title: 'API Reference',
@@ -103,7 +104,10 @@ export async function generateMetadata({
   if (!page) notFound();
 
   const description = page.data.description || page.data.title;
-  const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, description);
+  // The card already shows the title; only pass a description when there is a real one.
+  const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, page.data.description, {
+    version: 'v3.1',
+  });
 
   return {
     title: page.data.title,

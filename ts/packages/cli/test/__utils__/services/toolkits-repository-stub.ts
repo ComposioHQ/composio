@@ -5,7 +5,7 @@ import {
 } from 'src/services/composio-clients';
 import type { Toolkits } from 'src/models/toolkits';
 
-export type GetToolkitsError = Effect.Effect.Error<
+export type GetToolkitsError = Effect.Error<
   ReturnType<ComposioToolkitsRepositoryShape['getToolkits']>
 >;
 

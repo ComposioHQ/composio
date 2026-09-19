@@ -3,8 +3,12 @@ import {
   deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
   ensureObjectTypeOnProperties,
+  jsonSchemaToZodSchema,
 } from '../../src/utils/jsonSchema';
-import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
+import {
+  JsonSchemaRefResolutionError,
+  JsonSchemaToZodError,
+} from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
 import { ToolSchema } from '../../src/types/tool.types';
 import {
@@ -630,6 +634,24 @@ describe('ToolSchema parameter-root preservation', () => {
     });
 
     expect(tool.inputParameters).not.toHaveProperty('additionalProperties');
+  });
+});
+
+describe('jsonSchemaToZodSchema', () => {
+  it('names the property whose pattern cannot be compiled', () => {
+    let caught: unknown;
+    try {
+      jsonSchemaToZodSchema({
+        type: 'object',
+        properties: { name: { type: 'string', pattern: '(' } },
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(JsonSchemaToZodError);
+    expect((caught as JsonSchemaToZodError).message).toContain('at properties.name');
+    expect((caught as JsonSchemaToZodError).cause).toBeInstanceOf(Error);
   });
 });
 

@@ -179,7 +179,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
-  tagged({ name: 'orgs', description: 'Manage current organization context (list, switch)' }),
+  tagged({ name: 'orgs', description: 'Manage default global organization/project context.' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
   tagged({ name: 'config', description: 'View and manage CLI configuration' }),
@@ -486,7 +486,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       `composio execute GITHUB_CREATE_ISSUE --account work -d '{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }'`,
       '',
       '# Preview what a tool call would send without executing',
-      `composio execute SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL --dry-run -d '{ channel: "general", text: "Hello team" }'`,
+      `composio execute SLACK_SEND_MESSAGE --dry-run -d '{ channel: "general", markdown_text: "Hello team" }'`,
       '',
       '# Check what inputs a tool needs',
       'composio execute GMAIL_SEND_EMAIL --get-schema',
@@ -539,7 +539,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5',
       'composio listen GMAIL_NEW_GMAIL_MESSAGE --account work --timeout 5m',
       "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
-      'composio listen SLACK_RECEIVE_MESSAGE -p \'{ trigger_config: { channel: "C123" } }\'',
+      'composio listen SLACK_CHANNEL_MESSAGE_RECEIVED -p \'{ trigger_config: { channel_id: "C123" } }\'',
       'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
       "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
     ],
@@ -586,6 +586,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       "composio execute <slug> --account <alias> -d '{ ... }'   Use a named account",
       'composio connections list --toolkit <toolkit>              List account selectors',
     ],
+  },
+  connections: {
+    usage: 'composio connections <subcommand>',
+    description: 'View and manage Composio connected accounts.',
+    seeAlso: ['composio connections list', 'composio connections remove'],
   },
   'connections list': {
     usage: 'composio connections list [--toolkit <text>]',
@@ -767,7 +772,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       '# Sequential: chain tool outputs across services',
       `composio run '`,
       `  const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Deploy v2" });`,
-      `  await execute("SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL", { channel: "eng", text: "Created: " + issue.data.html_url });`,
+      `  await execute("SLACK_SEND_MESSAGE", { channel: "eng", markdown_text: "Created: " + issue.data.html_url });`,
       `'`,
       '',
       '# Parallel: fetch from multiple services at once with Promise.all',
@@ -858,6 +863,87 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   // ── Account commands ──────────────────────────────────────────────────
 
+  agent: {
+    usage: 'composio agent <subcommand>',
+    description: 'Manage Composio agent identity, inbox, and handoff.',
+    seeAlso: [
+      'composio agent signup',
+      'composio agent login',
+      'composio agent whoami',
+      'composio agent inbox',
+      'composio agent claim',
+    ],
+  },
+  'agent signup': {
+    usage: 'composio agent signup [-f, --force] [--no-wait] [--no-login]',
+    description: 'Sign up and optionally log in as a Composio agent.',
+    options: [
+      {
+        name: '-f, --force',
+        description: 'Create a new agent identity even if ~/.composio/agent.json already exists',
+      },
+      {
+        name: '--no-wait',
+        description: 'Start agent signup and exit without waiting for credentials',
+      },
+      {
+        name: '--no-login',
+        description: 'Create or verify the agent identity without logging the CLI in',
+      },
+    ],
+  },
+  'agent login': {
+    usage: 'composio agent login <composio_agent_key>',
+    description: 'Log in with an existing Composio agent key.',
+    args: [
+      {
+        name: '<composio_agent_key>',
+        description: 'Composio agent key for an existing agent identity',
+      },
+    ],
+  },
+  'agent whoami': {
+    usage: 'composio agent whoami',
+    description: 'Show the stored Composio agent identity.',
+  },
+  'agent inbox': {
+    usage: 'composio agent inbox [--limit integer]',
+    description: 'Read the stored Composio agent inbox.',
+    options: [
+      {
+        name: '--limit <integer>',
+        description: 'Maximum number of inbox messages to fetch (default: 50)',
+      },
+    ],
+  },
+  'agent claim': {
+    usage: 'composio agent claim <email>',
+    description: 'Invite a human admin to claim this agent org.',
+    args: [
+      {
+        name: '<email>',
+        description: 'Human email address to invite as an admin for this agent org',
+      },
+    ],
+  },
+  signup: {
+    usage: 'composio signup [-f, --force] [--no-wait] [--no-login]',
+    description: 'Sign up and optionally log in as a Composio agent.',
+    options: [
+      {
+        name: '-f, --force',
+        description: 'Create a new agent identity even if ~/.composio/agent.json already exists',
+      },
+      {
+        name: '--no-wait',
+        description: 'Start agent signup and exit without waiting for credentials',
+      },
+      {
+        name: '--no-login',
+        description: 'Create or verify the agent identity without logging the CLI in',
+      },
+    ],
+  },
   login: {
     usage:
       'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
@@ -898,6 +984,32 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   whoami: {
     usage: 'composio whoami',
     description: 'Display your account information.',
+  },
+  orgs: {
+    usage: 'composio orgs <subcommand>',
+    description: 'Manage default global organization/project context.',
+    seeAlso: ['composio orgs list', 'composio orgs switch'],
+  },
+  'orgs list': {
+    usage: 'composio orgs list [--limit integer]',
+    description: 'List organizations and show current global selection.',
+    options: [
+      {
+        name: '--limit <integer>',
+        description: 'Max organizations to fetch from API (default: 50)',
+      },
+    ],
+  },
+  'orgs switch': {
+    usage: 'composio orgs switch [--org-id text] [--limit integer]',
+    description: 'Switch current organization context.',
+    options: [
+      { name: '--org-id <text>', description: 'Organization ID to use as global default' },
+      {
+        name: '--limit <integer>',
+        description: 'Max orgs to fetch from API (default: 50)',
+      },
+    ],
   },
   setup: {
     usage: 'composio setup [--target auto|claude|codex|all] [--uninstall] [--yes] [--if-present]',
@@ -963,7 +1075,33 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   },
 
-  // ── Tools commands ────────────────────────────────────────────────────
+  artifacts: {
+    usage: 'composio artifacts <subcommand>',
+    description: 'Inspect session artifact directories.',
+    seeAlso: ['composio artifacts cwd'],
+  },
+  'artifacts cwd': {
+    usage: 'composio artifacts cwd',
+    description: 'Print the cwd-scoped session artifact directory.',
+  },
+  install: {
+    usage: 'composio install [--completions] [--shell zsh|bash|fish]',
+    description:
+      'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.',
+    options: [
+      { name: '--completions', description: 'Also install shell completions (skipped by default)' },
+      {
+        name: '--shell <shell>',
+        description: 'Override automatic shell detection: zsh, bash, or fish',
+      },
+      {
+        name: '--no-completions',
+        description: 'Deprecated: shell completions are skipped by default',
+      },
+    ],
+  },
+
+  // ── Tools commands ──────────────────────────────────────────────────────
 
   tools: {
     usage: 'composio tools <command>',
@@ -989,6 +1127,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description:
       'View a brief summary of a tool and show the CLI-facing schema used by `composio execute --get-schema`.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
+  },
+  triggers: {
+    usage: 'composio triggers <subcommand>',
+    description: 'Inspect and subscribe to trigger events.',
+    seeAlso: ['composio triggers list', 'composio triggers info'],
   },
   'triggers list': {
     usage: 'composio triggers list <toolkit> [--limit integer]',
@@ -1526,7 +1669,7 @@ export function printRootHelp(
           '',
           `  ${dim('# Execute multiple tools in parallel')}`,
           `  ${name} execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \\`,
-          `                     SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Hello" }'`,
+          `                     SLACK_SEND_MESSAGE -d '{ channel: "general", markdown_text: "Hello" }'`,
           '',
           `  ${dim('# Call an API directly through proxy')}`,
           `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,

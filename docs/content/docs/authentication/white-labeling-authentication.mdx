@@ -13,6 +13,17 @@ There are four places where Composio branding shows up during authentication:
 | [**Browser address bar**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes during OAuth redirect-back | Proxy the redirect through your domain |
 | [**Post-auth success page**](#redirecting-users-after-authentication) | Composio-branded success page after OAuth completes | Pass a `callbackUrl` when initiating the connection |
 
+## Start with the smallest setup
+
+You do not need every option to launch a branded connection flow. Apply only the layers your users will see:
+
+1. Set your app title, logo, and theme for the hosted Connect Link.
+2. Add your own OAuth app only for toolkits where the provider consent screen must show your brand.
+3. Add a redirect proxy only when the browser must stay on your domain during the OAuth callback.
+4. Pass a `callbackUrl` when users should return directly to your product after connecting.
+
+Start with Connect Link branding, then test the complete flow for one representative OAuth toolkit. Add the other layers only if that test exposes Composio branding you need to remove.
+
 ## Customizing the Connect Link
 
 The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding on a neutral light theme. You can swap in your logo and name, then restyle the whole page to match your product.
@@ -107,7 +118,7 @@ app = FastAPI()
 
 @app.get("/api/composio-redirect")
 def composio_redirect(request: Request):
-    composio_url = "https://backend.composio.dev/api/v1/auth-apps/add"
+    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
     return RedirectResponse(url=f"{composio_url}?{request.url.query}")
 ```
 </Tab>
@@ -117,7 +128,7 @@ def composio_redirect(request: Request):
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const composioUrl = "https://backend.composio.dev/api/v1/auth-apps/add";
+  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(302, `${composioUrl}?${params.toString()}`);
 }
@@ -175,6 +186,36 @@ const connectionRequest = await session.authorize("gmail", {
 
 After authentication, Composio redirects the user to your callback URL instead of the default success page. For full details on the parameters appended to your callback URL, see [Manually authenticating users → Redirecting users after authentication](/docs/authentication/manually-authenticating#redirecting-users-after-authentication).
 
+## Frequently asked questions
+
+### Do I need a custom OAuth app for every toolkit?
+
+No. Create one only for OAuth toolkits where users see a provider consent screen and your product needs its own branding, scopes, or quotas. API-key toolkits do not have an OAuth consent screen. You can mix managed and custom auth configs in the same project.
+
+### Does changing the Connect Link logo change the provider consent screen?
+
+No. Connect Link branding changes the Composio-hosted connection page. Google, GitHub, Slack, and other OAuth providers get their consent-screen identity from the OAuth app. Use [your own OAuth app](#using-your-own-oauth-apps) to change it.
+
+### Can each customer have different branding?
+
+Each Composio project has one app title, logo, and theme. If separate products or customers need independent branding, use separate projects and account for the additional provisioning and credential management.
+
+### What happens to existing connections when I switch auth configs?
+
+They remain tied to the auth config used when they were created. New connections can use the custom config, while existing users continue with their current connected accounts until they re-authenticate or you migrate their credentials where supported.
+
+### How do I remove the Composio domain and success page?
+
+Use a [redirect proxy](#routing-the-callback-through-your-domain) to keep the browser callback on your domain. Pass a [`callbackUrl`](#redirecting-users-after-authentication) to return users directly to your product after authentication. These solve separate parts of the redirect flow.
+
+### Why does the "Secured by Composio" badge still appear?
+
+Connect Link styling alone does not remove it. Configure your own OAuth app for that toolkit so the provider consent flow uses your credentials and identity.
+
 ## Next
 
-<Card icon={<Key />} title="Managed vs custom auth" href="/docs/authentication/custom-app-vs-managed-app" description="Set up auth configs for OAuth apps, API keys, and toolkits without managed auth" />
+<Cards>
+  <Card icon={<Key />} title="Managed vs custom auth" href="/docs/authentication/custom-app-vs-managed-app" description="Set up auth configs for OAuth apps, API keys, and toolkits without managed auth." />
+  <Card title="B2B agent architecture" href="/docs/b2b-agents" description="Decide when customer-specific branding or credentials require separate projects." />
+  <Card title="Production readiness" href="/docs/production-readiness" description="Test authentication, isolation, logs, and failure recovery before launch." />
+</Cards>

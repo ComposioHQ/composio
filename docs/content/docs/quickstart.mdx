@@ -8,6 +8,12 @@ Build an agent that chooses Composio tools at runtime. Type a task, connect an a
 
 Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [1000+ apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
 
+<AgentSetupActions className="not-prose my-6" />
+
+<Callout type="info" title="Running as an unattended coding agent?">
+If no human is available to log in, use `composio login --agent` to obtain a Composio credential. Follow [Authenticate an unattended agent](/docs/agent-setup/unattended-authentication) to configure `COMPOSIO_API_KEY` and verify a live tool call.
+</Callout>
+
 <Callout type="info">
 The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `import` syntax rather than CommonJS `require()`.
 </Callout>
@@ -482,4 +488,12 @@ You can inspect the selected tools, inputs, responses, and timing with the [Logs
   <Card title="Configure the session" href="/docs/configuring-sessions" description="Restrict toolkits, preload tools, or select connected accounts." />
   <Card title="Design authentication" href="/docs/authentication" description="Add Connect Links and per-user connections to your application." />
   <Card title="Expose an MCP endpoint" href="/docs/sessions-via-mcp" description="Use the same Composio session from an MCP-compatible application." />
+</Cards>
+
+## Plan your application
+
+<Cards>
+  <Card title="Consumer agent architecture" href="/docs/consumer-agents" description="Map individual users to isolated connections and reusable sessions." />
+  <Card title="B2B agent architecture" href="/docs/b2b-agents" description="Choose member-owned or workspace-owned connections for a multi-tenant product." />
+  <Card title="Production readiness" href="/docs/production-readiness" description="Review identity, auth, security, logging, and trigger decisions before launch." />
 </Cards>

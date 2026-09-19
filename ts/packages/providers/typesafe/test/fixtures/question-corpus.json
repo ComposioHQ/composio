@@ -1,0 +1,966 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "name": "string_enum_required",
+      "tool": {
+        "slug": "TICKETS_CREATE",
+        "name": "Create ticket",
+        "description": "Open a support ticket.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "priority": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "How urgent the ticket is."
+            },
+            "title": {
+              "type": "string",
+              "description": "Ticket title."
+            }
+          },
+          "required": ["priority", "title"]
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "TICKETS_CREATE",
+        "name": "Create ticket",
+        "routingDescription": "Create ticket: Open a support ticket.",
+        "risk": "mutating",
+        "arguments": [
+          {
+            "kind": "choice",
+            "name": "priority",
+            "required": true,
+            "questionId": "a0",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Create ticket\", which value of \"priority\" does the request state? How urgent the ticket is.",
+              "criteria": {
+                "low": "The value \"low\" for \"priority\".",
+                "medium": "The value \"medium\" for \"priority\".",
+                "high": "The value \"high\" for \"priority\".",
+                "__not_stated__": "The request does not state a value for \"priority\"."
+              }
+            },
+            "options": [
+              {
+                "key": "low",
+                "value": "low"
+              },
+              {
+                "key": "medium",
+                "value": "medium"
+              },
+              {
+                "key": "high",
+                "value": "high"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          }
+        ],
+        "openEnded": ["title"],
+        "required": ["priority", "title"]
+      }
+    },
+    {
+      "name": "boolean_with_default",
+      "tool": {
+        "slug": "REPOS_WATCH",
+        "name": "Watch repository",
+        "description": "Subscribe to a repository.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "send_notifications": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether to send notifications."
+            }
+          },
+          "required": []
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "REPOS_WATCH",
+        "name": "Watch repository",
+        "routingDescription": "Watch repository: Subscribe to a repository.",
+        "risk": "mutating",
+        "arguments": [
+          {
+            "kind": "choice",
+            "name": "send_notifications",
+            "required": false,
+            "questionId": "a0",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Watch repository\", which value of \"send_notifications\" does the request state? Whether to send notifications.",
+              "criteria": {
+                "yes": "The request states that \"send_notifications\" is true.",
+                "no": "The request states that \"send_notifications\" is false.",
+                "__not_stated__": "The request does not state a value for \"send_notifications\"."
+              }
+            },
+            "options": [
+              {
+                "key": "yes",
+                "value": true
+              },
+              {
+                "key": "no",
+                "value": false
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          }
+        ],
+        "openEnded": [],
+        "required": []
+      }
+    },
+    {
+      "name": "enum_array_max_items",
+      "tool": {
+        "slug": "ISSUES_ADD_LABELS",
+        "name": "Add labels",
+        "description": "Add labels to an issue.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["bug", "docs", "question"]
+              },
+              "maxItems": 2,
+              "description": "Labels to add."
+            }
+          },
+          "required": ["labels"]
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "ISSUES_ADD_LABELS",
+        "name": "Add labels",
+        "routingDescription": "Add labels: Add labels to an issue.",
+        "risk": "mutating",
+        "arguments": [
+          {
+            "kind": "array",
+            "name": "labels",
+            "required": true,
+            "mentionedId": "a0_mentioned",
+            "mentioned": {
+              "type": "noul",
+              "instructions": "For the tool \"Add labels\", does the request state which values \"labels\" should contain? Labels to add."
+            },
+            "members": [
+              {
+                "questionId": "a0_m0",
+                "value": "bug",
+                "question": {
+                  "type": "noul",
+                  "instructions": "For the tool \"Add labels\", does the request state that \"labels\" should include the value \"bug\"?"
+                }
+              },
+              {
+                "questionId": "a0_m1",
+                "value": "docs",
+                "question": {
+                  "type": "noul",
+                  "instructions": "For the tool \"Add labels\", does the request state that \"labels\" should include the value \"docs\"?"
+                }
+              },
+              {
+                "questionId": "a0_m2",
+                "value": "question",
+                "question": {
+                  "type": "noul",
+                  "instructions": "For the tool \"Add labels\", does the request state that \"labels\" should include the value \"question\"?"
+                }
+              }
+            ],
+            "maxItems": 2
+          }
+        ],
+        "openEnded": [],
+        "required": ["labels"]
+      }
+    },
+    {
+      "name": "destructive_tag",
+      "tool": {
+        "slug": "REPOS_DELETE",
+        "name": "Delete repository",
+        "description": "Delete a repository for good.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "confirm_name": {
+              "type": "string"
+            }
+          },
+          "required": ["confirm_name"]
+        },
+        "tags": ["destructiveHint"],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        },
+        "version": "20250909_00"
+      },
+      "expected": {
+        "slug": "REPOS_DELETE",
+        "name": "Delete repository",
+        "routingDescription": "Delete repository: Delete a repository for good.",
+        "version": "20250909_00",
+        "risk": "destructive",
+        "arguments": [],
+        "openEnded": ["confirm_name"],
+        "required": ["confirm_name"]
+      }
+    },
+    {
+      "name": "no_input_parameters",
+      "tool": {
+        "slug": "SYMBOLS_LIST",
+        "name": "List symbols",
+        "description": "List every symbol.",
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "SYMBOLS_LIST",
+        "name": "List symbols",
+        "routingDescription": "List symbols: List every symbol.",
+        "risk": "mutating",
+        "arguments": [],
+        "openEnded": [],
+        "required": []
+      }
+    },
+    {
+      "name": "empty_description",
+      "tool": {
+        "slug": "NO_DESCRIPTION",
+        "name": "No description",
+        "description": "",
+        "inputParameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "NO_DESCRIPTION",
+        "name": "No description",
+        "routingDescription": "No description",
+        "risk": "mutating",
+        "arguments": [],
+        "openEnded": [],
+        "required": []
+      }
+    },
+    {
+      "name": "closed_set_forms",
+      "tool": {
+        "slug": "CLOSED_SETS",
+        "name": "Closed sets",
+        "description": "Every closed-set form.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "anyOf": [
+                {
+                  "const": "open"
+                },
+                {
+                  "const": "closed"
+                }
+              ],
+              "description": "Target state."
+            },
+            "kind": {
+              "oneOf": [
+                {
+                  "enum": ["bug", "feature"]
+                },
+                {
+                  "const": "chore"
+                }
+              ]
+            },
+            "milestone": {
+              "enum": ["v1", "v2", null],
+              "description": "Milestone name, or null to clear."
+            },
+            "label": {
+              "type": "string",
+              "enum": ["bug", "docs"],
+              "nullable": true
+            },
+            "size": {
+              "type": ["string", "null"],
+              "enum": ["small", "large"]
+            },
+            "format": {
+              "type": "string",
+              "enum": ["csv"]
+            },
+            "version": {
+              "const": 2
+            },
+            "weight": {
+              "type": "integer",
+              "enum": [1, 2, 3]
+            },
+            "level": {
+              "$ref": "#/$defs/Level"
+            }
+          },
+          "required": ["level", "ghost", "level"],
+          "$defs": {
+            "Level": {
+              "type": "string",
+              "enum": ["info", "warn"],
+              "description": "Log level."
+            }
+          }
+        },
+        "tags": ["readOnlyHint", "idempotentHint"],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "CLOSED_SETS",
+        "name": "Closed sets",
+        "routingDescription": "Closed sets: Every closed-set form.",
+        "risk": "read_only",
+        "arguments": [
+          {
+            "kind": "choice",
+            "name": "format",
+            "required": false,
+            "questionId": "a0",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"format\" does the request state?",
+              "criteria": {
+                "csv": "The value \"csv\" for \"format\".",
+                "__not_stated__": "The request does not state a value for \"format\"."
+              }
+            },
+            "options": [
+              {
+                "key": "csv",
+                "value": "csv"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "kind",
+            "required": false,
+            "questionId": "a1",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"kind\" does the request state?",
+              "criteria": {
+                "bug": "The value \"bug\" for \"kind\".",
+                "feature": "The value \"feature\" for \"kind\".",
+                "chore": "The value \"chore\" for \"kind\".",
+                "__not_stated__": "The request does not state a value for \"kind\"."
+              }
+            },
+            "options": [
+              {
+                "key": "bug",
+                "value": "bug"
+              },
+              {
+                "key": "feature",
+                "value": "feature"
+              },
+              {
+                "key": "chore",
+                "value": "chore"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "label",
+            "required": false,
+            "questionId": "a2",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"label\" does the request state?",
+              "criteria": {
+                "bug": "The value \"bug\" for \"label\".",
+                "docs": "The value \"docs\" for \"label\".",
+                "__null__": "The request explicitly asks for no value (null) for \"label\".",
+                "__not_stated__": "The request does not state a value for \"label\"."
+              }
+            },
+            "options": [
+              {
+                "key": "bug",
+                "value": "bug"
+              },
+              {
+                "key": "docs",
+                "value": "docs"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "level",
+            "required": true,
+            "questionId": "a3",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"level\" does the request state? Log level.",
+              "criteria": {
+                "info": "The value \"info\" for \"level\".",
+                "warn": "The value \"warn\" for \"level\".",
+                "__not_stated__": "The request does not state a value for \"level\"."
+              }
+            },
+            "options": [
+              {
+                "key": "info",
+                "value": "info"
+              },
+              {
+                "key": "warn",
+                "value": "warn"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "milestone",
+            "required": false,
+            "questionId": "a4",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"milestone\" does the request state? Milestone name, or null to clear.",
+              "criteria": {
+                "v1": "The value \"v1\" for \"milestone\".",
+                "v2": "The value \"v2\" for \"milestone\".",
+                "__null__": "The request explicitly asks for no value (null) for \"milestone\".",
+                "__not_stated__": "The request does not state a value for \"milestone\"."
+              }
+            },
+            "options": [
+              {
+                "key": "v1",
+                "value": "v1"
+              },
+              {
+                "key": "v2",
+                "value": "v2"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "size",
+            "required": false,
+            "questionId": "a5",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"size\" does the request state?",
+              "criteria": {
+                "small": "The value \"small\" for \"size\".",
+                "large": "The value \"large\" for \"size\".",
+                "__null__": "The request explicitly asks for no value (null) for \"size\".",
+                "__not_stated__": "The request does not state a value for \"size\"."
+              }
+            },
+            "options": [
+              {
+                "key": "small",
+                "value": "small"
+              },
+              {
+                "key": "large",
+                "value": "large"
+              },
+              {
+                "key": "__null__",
+                "value": null
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "state",
+            "required": false,
+            "questionId": "a6",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"state\" does the request state? Target state.",
+              "criteria": {
+                "open": "The value \"open\" for \"state\".",
+                "closed": "The value \"closed\" for \"state\".",
+                "__not_stated__": "The request does not state a value for \"state\"."
+              }
+            },
+            "options": [
+              {
+                "key": "open",
+                "value": "open"
+              },
+              {
+                "key": "closed",
+                "value": "closed"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "version",
+            "required": false,
+            "questionId": "a7",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"version\" does the request state?",
+              "criteria": {
+                "o0_2": "The value \"2\" for \"version\".",
+                "__not_stated__": "The request does not state a value for \"version\"."
+              }
+            },
+            "options": [
+              {
+                "key": "o0_2",
+                "value": 2
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "weight",
+            "required": false,
+            "questionId": "a8",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Closed sets\", which value of \"weight\" does the request state?",
+              "criteria": {
+                "o0_1": "The value \"1\" for \"weight\".",
+                "o1_2": "The value \"2\" for \"weight\".",
+                "o2_3": "The value \"3\" for \"weight\".",
+                "__not_stated__": "The request does not state a value for \"weight\"."
+              }
+            },
+            "options": [
+              {
+                "key": "o0_1",
+                "value": 1
+              },
+              {
+                "key": "o1_2",
+                "value": 2
+              },
+              {
+                "key": "o2_3",
+                "value": 3
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          }
+        ],
+        "openEnded": [],
+        "required": ["level"]
+      }
+    },
+    {
+      "name": "hostile_labels_and_names",
+      "tool": {
+        "slug": "HOSTILE_SET",
+        "name": "Set hostile",
+        "description": "Set a hostile value.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "1": {
+              "type": "boolean"
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "__proto__",
+                "constructor",
+                "",
+                "__not_stated__",
+                "o0_x",
+                " padded",
+                "café 😀",
+                "10",
+                "2"
+              ]
+            },
+            "a.b": {
+              "type": "string",
+              "enum": ["one", "two"]
+            },
+            "$top": {
+              "type": "string",
+              "enum": ["one", "two"]
+            }
+          },
+          "required": ["$top"]
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "HOSTILE_SET",
+        "name": "Set hostile",
+        "routingDescription": "Set hostile: Set a hostile value.",
+        "risk": "mutating",
+        "arguments": [
+          {
+            "kind": "choice",
+            "name": "$top",
+            "required": true,
+            "questionId": "a0",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"$top\" does the request state?",
+              "criteria": {
+                "one": "The value \"one\" for \"$top\".",
+                "two": "The value \"two\" for \"$top\".",
+                "__not_stated__": "The request does not state a value for \"$top\"."
+              }
+            },
+            "options": [
+              {
+                "key": "one",
+                "value": "one"
+              },
+              {
+                "key": "two",
+                "value": "two"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "1",
+            "required": false,
+            "questionId": "a1",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"1\" does the request state?",
+              "criteria": {
+                "yes": "The request states that \"1\" is true.",
+                "no": "The request states that \"1\" is false.",
+                "__not_stated__": "The request does not state a value for \"1\"."
+              }
+            },
+            "options": [
+              {
+                "key": "yes",
+                "value": true
+              },
+              {
+                "key": "no",
+                "value": false
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "a.b",
+            "required": false,
+            "questionId": "a2",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"a.b\" does the request state?",
+              "criteria": {
+                "one": "The value \"one\" for \"a.b\".",
+                "two": "The value \"two\" for \"a.b\".",
+                "__not_stated__": "The request does not state a value for \"a.b\"."
+              }
+            },
+            "options": [
+              {
+                "key": "one",
+                "value": "one"
+              },
+              {
+                "key": "two",
+                "value": "two"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          },
+          {
+            "kind": "choice",
+            "name": "value",
+            "required": false,
+            "questionId": "a3",
+            "question": {
+              "type": "choice",
+              "instructions": "For the tool \"Set hostile\", which value of \"value\" does the request state?",
+              "criteria": {
+                "o0___proto__": "The value \"__proto__\" for \"value\".",
+                "o1_constructor": "The value \"constructor\" for \"value\".",
+                "o2_": "The value \"\" for \"value\".",
+                "o3___not_stated__": "The value \"__not_stated__\" for \"value\".",
+                "o4_o0_x": "The value \"o0_x\" for \"value\".",
+                "o5__padded": "The value \" padded\" for \"value\".",
+                "café 😀": "The value \"café 😀\" for \"value\".",
+                "o7_10": "The value \"10\" for \"value\".",
+                "o8_2": "The value \"2\" for \"value\".",
+                "__not_stated__": "The request does not state a value for \"value\"."
+              }
+            },
+            "options": [
+              {
+                "key": "o0___proto__",
+                "value": "__proto__"
+              },
+              {
+                "key": "o1_constructor",
+                "value": "constructor"
+              },
+              {
+                "key": "o2_",
+                "value": ""
+              },
+              {
+                "key": "o3___not_stated__",
+                "value": "__not_stated__"
+              },
+              {
+                "key": "o4_o0_x",
+                "value": "o0_x"
+              },
+              {
+                "key": "o5__padded",
+                "value": " padded"
+              },
+              {
+                "key": "café 😀",
+                "value": "café 😀"
+              },
+              {
+                "key": "o7_10",
+                "value": "10"
+              },
+              {
+                "key": "o8_2",
+                "value": "2"
+              }
+            ],
+            "notStatedKey": "__not_stated__"
+          }
+        ],
+        "openEnded": [],
+        "required": ["$top"]
+      }
+    },
+    {
+      "name": "open_ended_forms",
+      "tool": {
+        "slug": "MESSAGES_SEND",
+        "name": "Send message",
+        "description": "Send a message.",
+        "inputParameters": {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "string"
+            },
+            "count": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "due": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "id": {
+              "type": "string",
+              "description": "Message ID."
+            },
+            "payload": {
+              "type": "object"
+            },
+            "pair": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "mixed": {
+              "enum": [1, "1"]
+            },
+            "color": {
+              "anyOf": [
+                {
+                  "enum": ["red", "blue"]
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "filter": {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": ["open", "closed"]
+                }
+              }
+            },
+            "data": {
+              "$ref": "#/$defs/Missing"
+            },
+            "when": {
+              "type": "date"
+            }
+          },
+          "required": ["body"]
+        },
+        "tags": [],
+        "toolkit": {
+          "slug": "corpus",
+          "name": "Corpus"
+        }
+      },
+      "expected": {
+        "slug": "MESSAGES_SEND",
+        "name": "Send message",
+        "routingDescription": "Send message: Send a message.",
+        "risk": "mutating",
+        "arguments": [],
+        "openEnded": [
+          "body",
+          "color",
+          "count",
+          "data",
+          "due",
+          "filter",
+          "id",
+          "limit",
+          "mixed",
+          "pair",
+          "payload",
+          "when"
+        ],
+        "required": ["body"]
+      }
+    }
+  ],
+  "sets": [
+    {
+      "name": "basic_routing",
+      "tools": ["TICKETS_CREATE", "REPOS_DELETE", "NO_DESCRIPTION"],
+      "expected": {
+        "question": {
+          "type": "choice",
+          "instructions": "Which tool carries out what the user asks for?",
+          "criteria": {
+            "TICKETS_CREATE": "Create ticket: Open a support ticket.",
+            "REPOS_DELETE": "Delete repository: Delete a repository for good.",
+            "NO_DESCRIPTION": "No description",
+            "__none__": "None of these tools carries out the request."
+          }
+        },
+        "keys": ["TICKETS_CREATE", "REPOS_DELETE", "NO_DESCRIPTION"]
+      }
+    },
+    {
+      "name": "hostile_slugs",
+      "tools": [
+        {
+          "slug": "123",
+          "routingDescription": "Numeric slug"
+        },
+        {
+          "slug": "__none__",
+          "routingDescription": "Collides with the none option"
+        },
+        {
+          "slug": "SAFE_SLUG",
+          "routingDescription": "Safe slug"
+        }
+      ],
+      "expected": {
+        "question": {
+          "type": "choice",
+          "instructions": "Which tool carries out what the user asks for?",
+          "criteria": {
+            "o0_123": "Numeric slug",
+            "o1___none__": "Collides with the none option",
+            "SAFE_SLUG": "Safe slug",
+            "__none__": "None of these tools carries out the request."
+          }
+        },
+        "keys": ["o0_123", "o1___none__", "SAFE_SLUG"]
+      }
+    }
+  ]
+}

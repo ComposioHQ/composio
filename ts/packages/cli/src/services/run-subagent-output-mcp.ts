@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
-import * as FileSystem from '@effect/platform/FileSystem';
+import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';

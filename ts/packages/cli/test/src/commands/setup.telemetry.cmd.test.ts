@@ -1,33 +1,24 @@
-import * as Command from '@effect/platform/Command';
-import * as CommandExecutor from '@effect/platform/CommandExecutor';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
+import { NodeOs } from 'src/services/node-os';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-
-const tracked = vi.hoisted(() => ({
-  events: [] as Array<{ readonly name: string; readonly properties?: Record<string, unknown> }>,
-}));
+import { eventsNamed, trackedEvents } from 'test/__utils__/tracked-events';
 
 vi.mock('src/analytics/dispatch', async importOriginal => {
-  const actual = await importOriginal<typeof import('src/analytics/dispatch')>();
-  const { Effect } = await import('effect');
+  const { recordTrackedEvent } = await import('test/__utils__/tracked-events');
   return {
-    ...actual,
-    trackCliEventEffect: (
-      event: { readonly name: string; readonly properties?: Record<string, unknown> } | null
-    ) =>
-      Effect.sync(() => {
-        if (event) tracked.events.push(event);
-      }),
+    ...(await importOriginal<typeof import('src/analytics/dispatch')>()),
+    trackCliEventEffect: recordTrackedEvent,
   };
 });
-
-const eventsNamed = (name: string) => tracked.events.filter(event => event.name === name);
 
 type AgentHost = 'claude' | 'codex';
 
@@ -85,10 +76,12 @@ const makeFakeHosts = (
   };
 
   const runner = CommandRunner.of({
-    run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
     capture: rawCommand => {
-      const flattened = Command.flatten(rawCommand)[0];
-      const parts = [flattened.command, ...flattened.args];
+      if (!ChildProcess.isStandardCommand(rawCommand)) {
+        throw new Error('Expected a standard command');
+      }
+      const parts = [rawCommand.command, ...rawCommand.args];
       const host = parts[0] as AgentHost;
       const command = parts.join(' ');
       const respond = (result: { exitCode?: number; stdout?: string; stderr?: string }) =>
@@ -175,11 +168,44 @@ const decliningUI = TerminalUI.of({
 
 describe('CLI: composio setup telemetry', () => {
   beforeEach(() => {
-    tracked.events.length = 0;
+    trackedEvents.length = 0;
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.exitCode = undefined;
+  });
+
+  const hostSignals = makeFakeHosts({ claude: { available: true } });
+  layer(
+    TestLive({
+      commandRunner: hostSignals.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('undetected host presence signals', it => {
+    it.effect('reports the config dir and known binary paths only for the undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CODEX_HOME', '');
+        const os = yield* NodeOs;
+        mkdirSync(join(os.homedir, '.codex'), { recursive: true });
+        mkdirSync(join(os.homedir, '.local', 'bin'), { recursive: true });
+        writeFileSync(join(os.homedir, '.local', 'bin', 'codex'), '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        const codex = detected.find(event => event.properties?.agent_host === 'codex');
+        const claude = detected.find(event => event.properties?.agent_host === 'claude');
+        expect(codex?.properties).toMatchObject({
+          available: false,
+          host_config_dir_present: true,
+          host_binary_in_known_paths: true,
+        });
+        expect(claude?.properties).toMatchObject({ available: true });
+        expect(claude?.properties?.host_config_dir_present).toBeUndefined();
+        expect(claude?.properties?.host_binary_in_known_paths).toBeUndefined();
+      })
+    );
   });
 
   const freshClaude = makeFakeHosts({ claude: { available: true } });
@@ -189,7 +215,7 @@ describe('CLI: composio setup telemetry', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('fresh Claude install', it => {
-    it.scoped('tracks per-host detection and a verified plugin install', () =>
+    it.effect('tracks per-host detection and a verified plugin install', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -235,7 +261,7 @@ describe('CLI: composio setup telemetry', () => {
     { codexVersion: 'codex-cli 0.137.0' }
   );
   layer(TestLive({ commandRunner: legacyCodex.runner }))('unsupported Codex only', it => {
-    it.scoped('tracks the normalized reason code and the installer skip', () =>
+    it.effect('tracks the normalized reason code and the installer skip', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -269,7 +295,7 @@ describe('CLI: composio setup telemetry', () => {
 
   const noHosts = makeFakeHosts({});
   layer(TestLive({ commandRunner: noHosts.runner }))('no detected host', it => {
-    it.scoped('tracks the installer skip when nothing is detected', () =>
+    it.effect('tracks the installer skip when nothing is detected', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -284,6 +310,25 @@ describe('CLI: composio setup telemetry', () => {
         expect(eventsNamed('CLI_SETUP_CANCELLED')).toHaveLength(0);
       })
     );
+
+    it.effect('reports absent config dirs for every undetected host', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CLAUDE_CONFIG_DIR', '');
+        vi.stubEnv('CODEX_HOME', '');
+
+        yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
+
+        const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
+        expect(detected).toHaveLength(2);
+        for (const event of detected) {
+          expect(event.properties).toMatchObject({
+            available: false,
+            host_config_dir_present: false,
+            host_binary_in_known_paths: expect.any(Boolean),
+          });
+        }
+      })
+    );
   });
 
   const declinedSetup = makeFakeHosts({ claude: { available: true } });
@@ -294,7 +339,7 @@ describe('CLI: composio setup telemetry', () => {
       terminalUI: decliningUI,
     })
   )('declined interactive setup', it => {
-    it.scoped('tracks user cancellation without mutating the host', () =>
+    it.effect('tracks user cancellation without mutating the host', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'claude']);
 
@@ -323,7 +368,7 @@ describe('CLI: composio setup telemetry', () => {
       terminalUI: decliningUI,
     })
   )('declined interactive uninstall', it => {
-    it.scoped('tracks user cancellation for the uninstall operation', () =>
+    it.effect('tracks user cancellation for the uninstall operation', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--uninstall', '--target', 'claude']);
 
@@ -351,7 +396,7 @@ describe('CLI: composio setup telemetry', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('native install failure', it => {
-    it.scoped('tracks the per-host failure with its phase', () =>
+    it.effect('tracks the per-host failure with its phase', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);

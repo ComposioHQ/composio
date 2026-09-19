@@ -1,6 +1,6 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as HttpClient from '@effect/platform/HttpClient';
-import * as Path from '@effect/platform/Path';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { HttpClient } from 'effect/unstable/http';
 import { Config, Effect, Context, Layer } from 'effect';
 import {
   inferSkillReleaseChannel,
@@ -45,12 +45,12 @@ const checkClaudeSkillCurrent = (
       .readFileString(path.join(target, SKILL_RELEASE_TAG_FILENAME), 'utf8')
       .pipe(
         Effect.map(value => value.trim()),
-        Effect.catchAll(() => Effect.succeed(undefined))
+        Effect.catch(() => Effect.succeed(undefined))
       );
     if (installedReleaseTag !== releaseTag) return false;
     return yield* fs.readFileString(path.join(target, 'SKILL.md'), 'utf8').pipe(
       Effect.as(true),
-      Effect.catchAll(() => Effect.succeed(false))
+      Effect.catch(() => Effect.succeed(false))
     );
   });
 
@@ -64,7 +64,7 @@ export const isClaudeSkillCurrent = (home: string, releaseTag: string) =>
 const isLinkedTo = (fs: FileSystem.FileSystem, path: Path.Path, source: string, target: string) =>
   fs.readLink(source).pipe(
     Effect.map(link => path.resolve(path.dirname(source), link) === target),
-    Effect.catchAll(() => Effect.succeed(false))
+    Effect.catch(() => Effect.succeed(false))
   );
 
 export const hasManagedClaudeSkill = (home: string) =>
@@ -150,11 +150,11 @@ const makeSetupSkillInstaller = Effect.gen(function* () {
   };
 });
 
-export type SetupSkillInstallerShape = Effect.Effect.Success<typeof makeSetupSkillInstaller>;
+export type SetupSkillInstallerShape = Effect.Success<typeof makeSetupSkillInstaller>;
 
-export class SetupSkillInstaller extends Context.Tag('services/SetupSkillInstaller')<
+export class SetupSkillInstaller extends Context.Service<
   SetupSkillInstaller,
   SetupSkillInstallerShape
->() {
+>()('services/SetupSkillInstaller') {
   static readonly Default = Layer.effect(SetupSkillInstaller, makeSetupSkillInstaller);
 }

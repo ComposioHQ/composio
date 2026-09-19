@@ -5,6 +5,7 @@ import { parseAnyOf } from './parse-any-of';
 import { parseOneOf } from './parse-one-of';
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
+import { compilePattern } from '../utils/compile-pattern';
 import { its } from '../utils/its';
 
 /**
@@ -104,7 +105,7 @@ function parseDynamicKeyObject(
 ): z.ZodTypeAny {
   const patterns = Object.entries(normalizedSchema.patternProperties ?? {}).map(
     ([pattern, schema]) => ({
-      regex: new RegExp(pattern),
+      regex: compilePattern('patternProperties', pattern, refs),
       parser: parseSchema(schema, {
         ...refs,
         path: [...refs.path, 'patternProperties', pattern],

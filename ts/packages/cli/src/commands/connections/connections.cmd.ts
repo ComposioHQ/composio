@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { connectionsCmd$List } from './commands/connections.list.cmd';
 import { connectionsCmd$Remove } from './commands/connections.remove.cmd';
 

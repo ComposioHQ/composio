@@ -1,8 +1,8 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
 import { describe, expect, layer } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import * as tempy from 'tempy';
 import {
   appendCliSessionHistory,
@@ -15,14 +15,15 @@ import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TestLive } from 'test/__utils__';
 
-const cacheEnabledTestConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false']])
-).pipe(
-  ConfigProvider.orElse(() => ConfigProvider.fromEnv()),
+// Backed by the live `process.env` record so `vi.stubEnv` calls made inside a test are
+// observed by later config reads; `ConfigProvider.fromEnv()` would snapshot the environment.
+const environmentTestConfigProvider = ConfigProvider.fromEnvRecord(process.env).pipe(
   extendConfigProvider
 );
 
-const environmentTestConfigProvider = ConfigProvider.fromEnv().pipe(extendConfigProvider);
+const cacheEnabledTestConfigProvider = ConfigProvider.fromEnvRecord({
+  COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'false',
+}).pipe(ConfigProvider.orElse(ConfigProvider.fromEnvRecord(process.env)), extendConfigProvider);
 
 describe('CLI session artifacts', () => {
   beforeEach(() => {
@@ -35,7 +36,7 @@ describe('CLI session artifacts', () => {
   });
 
   layer(TestLive({ baseConfigProvider: environmentTestConfigProvider }))(it => {
-    it.scoped('resolves artifact roots in documented precedence order', () =>
+    it.effect('resolves artifact roots in documented precedence order', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const config = yield* ComposioCliUserConfig;
@@ -66,7 +67,7 @@ describe('CLI session artifacts', () => {
       })
     );
 
-    it.scoped('stores a sanitized artifact with the requested extension', () =>
+    it.effect('stores a sanitized artifact with the requested extension', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -89,7 +90,7 @@ describe('CLI session artifacts', () => {
       })
     );
 
-    it.scoped('returns undefined when the artifact directory cannot be created', () =>
+    it.effect('returns undefined when the artifact directory cannot be created', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const filePath = yield* fs.makeTempFileScoped();
@@ -104,7 +105,7 @@ describe('CLI session artifacts', () => {
       })
     );
 
-    it.scoped('stores an adhoc artifact when no CLI session is available', () =>
+    it.effect('stores an adhoc artifact when no CLI session is available', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const artifactsRoot = tempy.temporaryDirectory();
@@ -132,7 +133,7 @@ describe('CLI session artifacts', () => {
       consumerUserId: 'consumer-user-test',
     } as const;
 
-    it.scoped('stores artifacts under the current CLI session without a directory override', () =>
+    it.effect('stores artifacts under the current CLI session without a directory override', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const artifactsRoot = tempy.temporaryDirectory();
@@ -154,7 +155,7 @@ describe('CLI session artifacts', () => {
       })
     );
 
-    it.scoped('appends multiple JSONL history entries to the same session', () =>
+    it.effect('appends multiple JSONL history entries to the same session', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const artifactsRoot = tempy.temporaryDirectory();
@@ -179,7 +180,7 @@ describe('CLI session artifacts', () => {
       })
     );
 
-    it.scoped('keeps history writes best-effort when the artifact root is not a directory', () =>
+    it.effect('keeps history writes best-effort when the artifact root is not a directory', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const rootFile = yield* fs.makeTempFileScoped();

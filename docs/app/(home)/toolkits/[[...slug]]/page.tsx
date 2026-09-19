@@ -185,7 +185,9 @@ export async function generateMetadata({
     if (toolkit) {
       const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
       const description = `Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description}`;
-      const ogImage = getOgImageUrl('toolkits', slug, title, description);
+      const ogImage = getOgImageUrl('toolkits', slug, title, description, {
+        logo: toolkit.logo,
+      });
       return {
         title,
         description,

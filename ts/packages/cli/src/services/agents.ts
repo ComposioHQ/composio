@@ -1,6 +1,6 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Data, Effect, Option, Predicate, Result, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -15,53 +15,68 @@ export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 
-const UnknownFields = JsonRecordSchema;
+const UnknownFields = [JsonRecordSchema] as const;
 
-const AgentComposioCredentials = Schema.Struct({
-  member_id: Schema.optional(Schema.NullOr(Schema.String)),
-  org_id: Schema.optional(Schema.NullOr(Schema.String)),
-  project_id: Schema.optional(Schema.NullOr(Schema.String)),
-  api_key: Schema.optional(Schema.NullOr(Schema.String)),
-  user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentComposioCredentials = Schema.StructWithRest(
+  Schema.Struct({
+    member_id: Schema.optional(Schema.NullOr(Schema.String)),
+    org_id: Schema.optional(Schema.NullOr(Schema.String)),
+    project_id: Schema.optional(Schema.NullOr(Schema.String)),
+    api_key: Schema.optional(Schema.NullOr(Schema.String)),
+    user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentComposioCredentials = Schema.Schema.Type<typeof AgentComposioCredentials>;
 
-const AgentIdentity = Schema.Struct({
-  status: Schema.optional(Schema.NullOr(Schema.String)),
-  request_id: Schema.optional(Schema.NullOr(Schema.String)),
-  slug: Schema.optional(Schema.NullOr(Schema.String)),
-  email: Schema.optional(Schema.NullOr(Schema.String)),
-  agent_key: Schema.optional(Schema.NullOr(Schema.String)),
-  composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
-  claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
-  claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
-  composio: Schema.optional(AgentComposioCredentials),
-}).pipe(Schema.extend(UnknownFields));
+const AgentIdentity = Schema.StructWithRest(
+  Schema.Struct({
+    status: Schema.optional(Schema.NullOr(Schema.String)),
+    request_id: Schema.optional(Schema.NullOr(Schema.String)),
+    slug: Schema.optional(Schema.NullOr(Schema.String)),
+    email: Schema.optional(Schema.NullOr(Schema.String)),
+    agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+    composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+    claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
+    claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
+    composio: Schema.optional(AgentComposioCredentials),
+  }),
+  UnknownFields
+);
 export type AgentIdentity = Schema.Schema.Type<typeof AgentIdentity>;
 
-const AgentMailMessage = Schema.Struct({
-  id: Schema.optional(Schema.NullOr(Schema.String)),
-  thread_id: Schema.optional(Schema.NullOr(Schema.String)),
-  from: Schema.optional(Schema.NullOr(Schema.String)),
-  to: Schema.optional(Schema.NullOr(Schema.String)),
-  subject: Schema.optional(Schema.NullOr(Schema.String)),
-  preview: Schema.optional(Schema.NullOr(Schema.String)),
-  received_at: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentMailMessage = Schema.StructWithRest(
+  Schema.Struct({
+    id: Schema.optional(Schema.NullOr(Schema.String)),
+    thread_id: Schema.optional(Schema.NullOr(Schema.String)),
+    from: Schema.optional(Schema.NullOr(Schema.String)),
+    to: Schema.optional(Schema.NullOr(Schema.String)),
+    subject: Schema.optional(Schema.NullOr(Schema.String)),
+    preview: Schema.optional(Schema.NullOr(Schema.String)),
+    received_at: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentMailMessage = Schema.Schema.Type<typeof AgentMailMessage>;
 
-const AgentMailResponse = Schema.Struct({
-  count: Schema.optional(Schema.Number),
-  messages: Schema.optional(Schema.Array(AgentMailMessage)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentMailResponse = Schema.StructWithRest(
+  Schema.Struct({
+    count: Schema.optional(Schema.Number),
+    messages: Schema.optional(Schema.Array(AgentMailMessage)),
+  }),
+  UnknownFields
+);
 export type AgentMailResponse = Schema.Schema.Type<typeof AgentMailResponse>;
 
-const AgentClaimResponse = Schema.Struct({
-  status: Schema.optional(Schema.NullOr(Schema.String)),
-  email: Schema.optional(Schema.NullOr(Schema.String)),
-  org_id: Schema.optional(Schema.NullOr(Schema.String)),
-  invite_code: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentClaimResponse = Schema.StructWithRest(
+  Schema.Struct({
+    status: Schema.optional(Schema.NullOr(Schema.String)),
+    email: Schema.optional(Schema.NullOr(Schema.String)),
+    org_id: Schema.optional(Schema.NullOr(Schema.String)),
+    invite_code: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentClaimResponse = Schema.Schema.Type<typeof AgentClaimResponse>;
 
 export class AgentAuthError extends Data.TaggedError('services/AgentAuthError')<{
@@ -90,9 +105,9 @@ const agentsBaseURL = APP_CONFIG.AGENTS_BASE_URL.pipe(
 );
 
 const decodeAgentResponse =
-  <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
+  <A, I>(pathname: string, schema: Schema.Codec<A, I>) =>
   (payload: unknown) =>
-    Schema.decodeUnknown(schema)(payload).pipe(
+    Schema.decodeUnknownEffect(schema)(payload).pipe(
       Effect.mapError(
         cause =>
           new AgentResponseDecodeError({
@@ -178,7 +193,7 @@ export const readStoredAgentIdentity = Effect.gen(function* () {
 
   return yield* ensurePrivateFileMode({ fs, target: configPath }).pipe(
     Effect.andThen(fs.readFileString(configPath, 'utf8')),
-    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(AgentIdentity))),
+    Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(AgentIdentity))),
     Effect.map(normalizeDecodedAgentIdentity),
     Effect.tapError(error => Effect.logDebug('Failed to read agent identity:', error)),
     Effect.option
@@ -237,7 +252,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
         }),
     });
     const payload = text
-      ? yield* Schema.decodeUnknown(Schema.parseJson(Schema.Unknown))(text).pipe(
+      ? yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown))(text).pipe(
           Effect.mapError(
             cause =>
               new AgentResponseDecodeError({
@@ -251,7 +266,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
 
     if (!response.ok) {
       const message =
-        Predicate.isRecord(payload) && typeof payload.message === 'string'
+        Predicate.isObject(payload) && typeof payload.message === 'string'
           ? payload.message
           : `agents.composio.dev request failed with HTTP ${response.status}`;
       return yield* new AgentRequestError({
@@ -391,16 +406,16 @@ export const getStoredReadyAgent = Effect.gen(function* () {
   const agentKey = getAgentKey(stored.value);
   if (!agentKey) return Option.none<AgentIdentity>();
 
-  const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.either);
+  const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.result);
   // An auth rejection means the API examined and refused this key — the stored
   // identity is revoked, not unreachable. Only transport-shaped failures may
   // fall back to the on-disk identity.
-  if (Either.isLeft(remote) && isAgentKeyRejection(remote.left)) {
+  if (Result.isFailure(remote) && isAgentKeyRejection(remote.failure)) {
     return Option.none<AgentIdentity>();
   }
 
-  const identity = Either.isRight(remote)
-    ? yield* writeStoredAgentIdentity(remote.right)
+  const identity = Result.isSuccess(remote)
+    ? yield* writeStoredAgentIdentity(remote.success)
     : stored.value;
 
   const ready =
@@ -447,7 +462,7 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
     // Best-effort analytics stitch after the credential persists; must never break login.
     yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
-      Effect.catchAllCause(() => Effect.void)
+      Effect.catchCause(() => Effect.void)
     );
     yield* primeConsumerConnectedToolkitsCacheInBackground({ orgId });
   });

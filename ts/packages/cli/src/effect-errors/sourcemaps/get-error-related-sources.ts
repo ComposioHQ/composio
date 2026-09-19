@@ -1,5 +1,5 @@
-import { FileSystem } from '@effect/platform/FileSystem';
-import { Path } from '@effect/platform/Path';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
 import { Effect } from 'effect';
 
 import { getErrorLocationFrom } from './get-error-location-from-file-path';

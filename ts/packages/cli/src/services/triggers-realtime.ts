@@ -2,10 +2,9 @@ import {
   Array as Arr,
   Data,
   Effect,
-  Either,
+  Result,
   Option,
   Predicate,
-  Runtime,
   Schema,
   Context,
   Layer,
@@ -90,7 +89,7 @@ export const resolvePusherConstructor = (
 const makeTriggersRealtime = Effect.gen(function* () {
   const sessionRepo = yield* ComposioSessionRepository;
   const clientSingleton = yield* ComposioClientSingleton;
-  const runtime = yield* Effect.runtime<never>();
+  const services = yield* Effect.context<never>();
 
   const listenWith = (params: {
     getRealtimeCredentials: () => Effect.Effect<
@@ -113,7 +112,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
           catch: subscriptionError('Failed to load the realtime client'),
         });
 
-        const Pusher = yield* resolvePusherConstructor(pusherModule).pipe(
+        const Pusher = yield* Effect.fromOption(resolvePusherConstructor(pusherModule)).pipe(
           Effect.mapError(subscriptionError('Realtime client module does not expose a constructor'))
         );
 
@@ -127,7 +126,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
                   const socket_id = authOptions.socketId;
 
                   const doAuth = async () => {
-                    const response = await Runtime.runPromise(runtime)(
+                    const response = await Effect.runPromiseWith(services)(
                       params.authRealtimeChannel({
                         channel_name,
                         socket_id,
@@ -246,8 +245,8 @@ const makeTriggersRealtime = Effect.gen(function* () {
             chunkedEvents.delete(typed.id);
             // Silently discard events that fail to parse after chunk
             // reassembly; the buffer entry is already cleared either way.
-            const parsed = Either.try((): unknown => JSON.parse(reassembled)).pipe(
-              Either.getRight,
+            const parsed = Result.try((): unknown => JSON.parse(reassembled)).pipe(
+              Result.getSuccess,
               Option.flatMap(decodeRawRealtimeEvent)
             );
             if (Option.isSome(parsed)) {
@@ -270,7 +269,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
         Effect.tryPromise({
           try: () => resource.shutdown(),
           catch: subscriptionError('Failed to shut down the realtime subscription'),
-        }).pipe(Effect.catchAll(() => Effect.void))
+        }).pipe(Effect.catch(() => Effect.void))
     );
 
   const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
@@ -314,12 +313,11 @@ const makeTriggersRealtime = Effect.gen(function* () {
   return { listen, listenInProject };
 });
 
-export type TriggersRealtimeShape = Effect.Effect.Success<typeof makeTriggersRealtime>;
+export type TriggersRealtimeShape = Effect.Success<typeof makeTriggersRealtime>;
 
-export class TriggersRealtime extends Context.Tag('services/TriggersRealtime')<
-  TriggersRealtime,
-  TriggersRealtimeShape
->() {
+export class TriggersRealtime extends Context.Service<TriggersRealtime, TriggersRealtimeShape>()(
+  'services/TriggersRealtime'
+) {
   static readonly Default = Layer.effect(TriggersRealtime, makeTriggersRealtime).pipe(
     Layer.provide(
       Layer.mergeAll(ComposioSessionRepository.Default, ComposioClientSingleton.Default)

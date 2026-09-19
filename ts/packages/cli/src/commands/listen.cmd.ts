@@ -1,8 +1,8 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
-import { Data, Deferred, Effect, Either, Option, Predicate, Runtime } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { NotFoundError, type Composio as RawComposioClient } from '@composio/client';
+import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -35,6 +35,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
     | 'project_context'
     | 'connected_accounts'
     | 'connected_account_not_found'
+    | 'unknown_trigger'
     | 'create_trigger'
     | 'disable_trigger';
   readonly message: string;
@@ -43,53 +44,57 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
   readonly cause?: unknown;
 }> {}
 
-const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+class ListenOptionError extends Data.TaggedError('commands/ListenOptionError')<{
+  readonly message: string;
+}> {}
+
+const invalidOptionValue = (message: string) => new ListenOptionError({ message });
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription(
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription(
     'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE") or project event type (e.g. "composio.connected_account.expired")'
   )
 );
 
-const params = Options.text('params').pipe(
-  Options.withAlias('p'),
-  Options.withDescription(
+const params = Flag.string('params').pipe(
+  Flag.withAlias('p'),
+  Flag.withDescription(
     'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const maxEvents = Options.integer('max-events').pipe(
-  Options.withDescription('Stop after receiving N matching events'),
-  Options.optional
+const maxEvents = Flag.integer('max-events').pipe(
+  Flag.withDescription('Stop after receiving N matching events'),
+  Flag.optional
 );
 
-const timeout = Options.text('timeout').pipe(
-  Options.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
-  Options.optional
+const timeout = Flag.string('timeout').pipe(
+  Flag.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
+  Flag.optional
 );
 
-const stream = Options.text('stream').pipe(
-  Options.withDescription(
+const stream = Flag.string('stream').pipe(
+  Flag.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
   ),
-  Options.optional
+  Flag.optional
 );
-const account = Options.text('account').pipe(
-  Options.withDescription(
+const account = Flag.string('account').pipe(
+  Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const debug = Options.boolean('debug').pipe(
-  Options.withDescription(
+const debug = Flag.boolean('debug').pipe(
+  Flag.withDescription(
     'Print verbose debug information (raw events, filter results, Pusher state)'
   ),
-  Options.withDefault(false)
+  Flag.withDefault(false)
 );
 
 const sanitizePathPart = (value: string): string =>
@@ -123,7 +128,7 @@ const resolveParamsInput = (input: Option.Option<string>) =>
 
 const parseCreateParams = (raw: string) =>
   parseJsonRecord(raw).pipe(
-    Either.mapLeft(error =>
+    Result.mapError(error =>
       invalidOptionValue(
         error.reason === 'not-a-record'
           ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
@@ -144,6 +149,37 @@ const assertSupportedListenParams = (params: {
         )
       )
     : Effect.void;
+
+/**
+ * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
+ *
+ * Called when no active connected account matched, and when creating the temporary trigger fails,
+ * so a mistyped slug is reported as such instead of as a missing connection or a generic creation
+ * failure. Neither call site is on the happy path, which makes no additional request.
+ */
+const assertTriggerTypeExists = (params: {
+  client: RawComposioClient;
+  slug: string;
+  toolkitSlug?: string;
+}) =>
+  Effect.gen(function* () {
+    const lookup = yield* Effect.tryPromise({
+      try: () => params.client.triggersTypes.retrieve(params.slug),
+      catch: cause => cause,
+    }).pipe(Effect.result);
+
+    if (Result.isFailure(lookup) && lookup.failure instanceof NotFoundError) {
+      return yield* new ListenCommandError({
+        reason: 'unknown_trigger',
+        message: `Unknown trigger slug "${params.slug}". List available slugs with \`composio triggers list <toolkit>\`.`,
+        slug: params.slug,
+        toolkitSlug: params.toolkitSlug,
+        cause: lookup.failure,
+      });
+    }
+    // A found trigger type, or any failure other than 404, is inconclusive here: fall through to
+    // the caller's own error.
+  });
 
 const resolveConnectedAccountIdForTrigger = (params: {
   client: RawComposioClient;
@@ -198,6 +234,8 @@ const resolveConnectedAccountIdForTrigger = (params: {
       return selectedAccount.id;
     }
 
+    yield* assertTriggerTypeExists({ client: params.client, slug: params.slug, toolkitSlug });
+
     const choices = formatConnectedAccountChoices(selectableAccounts);
     const suffix =
       Option.isSome(params.account) && choices.length > 0
@@ -222,7 +260,7 @@ const eventTypeOf = (eventData: Record<string, unknown>): string | undefined =>
   typeof eventData.type === 'string' && eventData.type.length > 0 ? eventData.type : undefined;
 
 const extractEventFileId = (eventData: Record<string, unknown>): string => {
-  const metadata = Predicate.isRecord(eventData.metadata) ? eventData.metadata : undefined;
+  const metadata = Predicate.isObject(eventData.metadata) ? eventData.metadata : undefined;
   const candidates = [eventData.id, eventData.log_id, metadata?.id];
 
   for (const candidate of candidates) {
@@ -283,7 +321,7 @@ const applyStreamPath = (value: unknown, pathTokens: ReadonlyArray<string | numb
       continue;
     }
 
-    if (!Predicate.isRecord(current)) {
+    if (!Predicate.isObject(current)) {
       return undefined;
     }
 
@@ -386,7 +424,7 @@ const resolveListenSetup = (params: {
     const rawParams = Option.isSome(params.inputParams)
       ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
       : '{}';
-    const createParamsInput = yield* parseCreateParams(rawParams);
+    const createParamsInput = yield* Effect.fromResult(parseCreateParams(rawParams));
     yield* assertSupportedListenParams({
       listeningToProjectEvent,
       slug: params.slug,
@@ -439,7 +477,7 @@ export const listenCmd = Command.make(
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const runtime = yield* Effect.runtime<never>();
+      const services = yield* Effect.context<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
@@ -511,7 +549,15 @@ export const listenCmd = Command.make(
                   slug,
                   cause,
                 }),
-            }),
+            }).pipe(
+              // An active account for the inferred toolkit skips the lookup in
+              // resolveConnectedAccountIdForTrigger, so a mistyped slug with a valid toolkit prefix
+              // only surfaces here. The lookup's unknown_trigger failure replaces the create_trigger
+              // error; any other outcome re-fails with the original error.
+              Effect.catch(error =>
+                assertTriggerTypeExists({ client, slug }).pipe(Effect.andThen(Effect.fail(error)))
+              )
+            ),
         createdTrigger =>
           Effect.gen(function* () {
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
@@ -530,7 +576,7 @@ export const listenCmd = Command.make(
             }
 
             const onEvent = (eventData: Record<string, unknown>) => {
-              Runtime.runFork(runtime)(
+              Effect.runForkWith(services)(
                 Effect.gen(function* () {
                   if (debug) {
                     yield* emitStreamLine(

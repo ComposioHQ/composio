@@ -11,10 +11,9 @@ import {
   Context,
   Layer,
 } from 'effect';
-import * as HttpClient from '@effect/platform/HttpClient';
-import * as HttpClientResponse from '@effect/platform/HttpClientResponse';
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -64,7 +63,7 @@ interface UpgradeBinaryContext {
   readonly httpClient: HttpClient.HttpClient;
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
-  readonly githubConfig: Config.Config.Success<typeof GITHUB_CONFIG_ALL>;
+  readonly githubConfig: Config.Success<typeof GITHUB_CONFIG_ALL>;
 }
 
 /**
@@ -93,9 +92,9 @@ const fetchGitHubRelease = (
     if (response.status < 200 || response.status >= 300) {
       const pretty = yield* response.json.pipe(
         Effect.map(json =>
-          Predicate.isRecord(json) ? renderPrettyError(EffectRecord.toEntries(json)) : ''
+          Predicate.isObject(json) ? renderPrettyError(EffectRecord.toEntries(json)) : ''
         ),
-        Effect.catchAll(() => Effect.succeed(''))
+        Effect.catch(() => Effect.succeed(''))
       );
 
       const cause = pretty ? `HTTP ${response.status}\n${pretty}` : `HTTP ${response.status}`;
@@ -356,14 +355,14 @@ const fetchChecksums = (
 
     const response = yield* httpClient
       .get(checksumsAsset.browser_download_url)
-      .pipe(Effect.catchAll(() => Effect.succeed(null)));
+      .pipe(Effect.catch(() => Effect.succeed(null)));
 
     if (!response || response.status < 200 || response.status >= 300) {
       yield* Effect.logDebug('Failed to download checksums.txt');
       return Option.none();
     }
 
-    const text = yield* response.text.pipe(Effect.catchAll(() => Effect.succeed('')));
+    const text = yield* response.text.pipe(Effect.catch(() => Effect.succeed('')));
     if (!text) {
       return Option.none();
     }
@@ -450,7 +449,7 @@ const extractBinary = (
     });
 
     // Check if binary exists
-    const exists = yield* fs.exists(binaryPath).pipe(Effect.catchAll(() => Effect.succeed(false)));
+    const exists = yield* fs.exists(binaryPath).pipe(Effect.catch(() => Effect.succeed(false)));
 
     if (!exists) {
       return yield* Effect.fail(
@@ -537,7 +536,7 @@ const replaceBinary = (
       const sourceCompanion = path.join(sourceDirectory, relativePath);
       const sourceExists = yield* fs
         .exists(sourceCompanion)
-        .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        .pipe(Effect.catch(() => Effect.succeed(false)));
 
       if (!sourceExists) {
         return yield* Effect.fail(
@@ -558,7 +557,7 @@ const replaceBinary = (
     const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
     const localToolsAssetExists = yield* fs
       .exists(localToolsAssetSource)
-      .pipe(Effect.catchAll(() => Effect.succeed(false)));
+      .pipe(Effect.catch(() => Effect.succeed(false)));
     const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
 
     const releaseTag = options.releaseTag;
@@ -743,12 +742,11 @@ const makeUpgradeBinary = Effect.gen(function* () {
   } as const;
 });
 
-export type UpgradeBinaryShape = Effect.Effect.Success<typeof makeUpgradeBinary>;
+export type UpgradeBinaryShape = Effect.Success<typeof makeUpgradeBinary>;
 
-export class UpgradeBinary extends Context.Tag('services/UpgradeBinary')<
-  UpgradeBinary,
-  UpgradeBinaryShape
->() {
+export class UpgradeBinary extends Context.Service<UpgradeBinary, UpgradeBinaryShape>()(
+  'services/UpgradeBinary'
+) {
   static readonly Default = Layer.effect(UpgradeBinary, makeUpgradeBinary).pipe(
     Layer.provide(Path.layer)
   );

@@ -1,6 +1,4 @@
-import * as FileSystem from '@effect/platform/FileSystem';
-import * as Path from '@effect/platform/Path';
-import { Effect, Option } from 'effect';
+import { Effect, FileSystem, Option, Path } from 'effect';
 
 const SKILL_NAME = 'composio-cli';
 

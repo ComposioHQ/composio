@@ -1,0 +1,107 @@
+---
+title: Move from prototype to production
+description: Review the identity, environment, authentication, security, and reliability decisions required for production
+keywords: [production, poc, launch checklist, architecture, security, reliability]
+---
+
+A prototype proves that an agent can connect an account and call a tool. A production integration must also preserve user isolation, survive repeat visits, limit what the agent can do, and give your team enough evidence to diagnose failures.
+
+Use this guide after the [quickstart](/docs/quickstart) works and before customers depend on the integration.
+
+## Production decisions at a glance
+
+| Prototype default | Production decision |
+|---|---|
+| One sample user such as `user_123` | Stable, immutable application user IDs |
+| One project for every test | Separate projects for environments that must not share credentials or resources |
+| A new session on every run | Persist and reuse session IDs for multi-turn work |
+| Every toolkit is discoverable | Restrict toolkits and tools to the product's intended scope |
+| Managed auth | Keep it, or use custom auth for branding, scopes, quotas, or custom providers |
+| API keys in a local `.env` file | Server-side secret manager and environment-specific keys |
+| A successful demo call | Real account, failure-path, webhook, and tenant-isolation tests |
+
+## 1. Finalize your identity model
+
+Replace sample values with an immutable ID from your application database. Never use an email address or a shared value such as `default` in production.
+
+For a consumer product, each person usually owns their connections. See [Design a consumer agent](/docs/consumer-agents).
+
+For a B2B product, decide whether connections belong to an individual member or to the customer workspace. See [Design a B2B agent](/docs/b2b-agents).
+
+## 2. Separate environments where it matters
+
+Use separate Composio projects for development, staging, and production when those environments must not share API keys, auth configs, connected accounts, webhooks, or logs.
+
+Keep every project API key on the server. Store production keys in your deployment platform's secret manager, rotate them according to your security policy, and never expose them to browser or mobile clients.
+
+## 3. Decide how customers authenticate
+
+Keep managed auth when its provider app, scopes, and quotas fit your product. It removes OAuth app setup and token-refresh work.
+
+Use a [custom auth config](/docs/authentication/custom-app-vs-managed-app) when you need:
+
+- Your own app name on the provider consent screen
+- Different or additional OAuth scopes
+- Dedicated provider quotas
+- A custom, regional, or self-hosted provider instance
+- Customer-specific OAuth credentials
+
+Test both first-time authentication and a returning user whose connected account already exists. If you need a branded flow, follow the [white-labeling guide](/docs/authentication/white-labeling-authentication).
+
+## 4. Bound the agent's authority
+
+Configure sessions with only the toolkits and tools required by the feature. Narrower access improves tool discovery and reduces the number of actions the agent can attempt.
+
+Require explicit user confirmation before destructive or externally visible actions, such as sending a message, creating a purchase, or deleting data. Enforce product authorization before creating or restoring the session, especially for workspace-owned connections.
+
+See [Configuring sessions](/docs/configuring-sessions) for toolkit and tool filters.
+
+## 5. Persist the right state
+
+Store the Composio session ID with your conversation or task and reuse it with `composio.use()`. This preserves the session's tool, authentication, and workbench context across turns.
+
+Also store the mapping between your application user, Composio user ID, connected accounts, and tenant when applicable. Your database remains the source of truth for product membership and permissions.
+
+## 6. Test real execution and failure paths
+
+Run at least one safe, read-only call against a real connected account. Confirm that:
+
+- The tool returns expected data for the correct user
+- A second user cannot access the first user's connection
+- A missing or expired connection returns the expected recovery flow
+- Invalid tool arguments produce a useful error
+- The tool call appears in [Logs](/reference/api-reference/logs) with a non-empty log ID
+
+Do not treat a successful Connect Link alone as an end-to-end test. Authentication can succeed while a provider API, scope, or tool input still fails.
+
+## 7. Verify triggers through your real webhook
+
+If your product uses triggers, test the deployed HTTPS webhook rather than only a local callback. Parse events with the Composio SDK, verify the payload reaches the correct environment, and map it to the expected user or workspace before doing work.
+
+See [Subscribing to trigger events](/docs/setting-up-triggers/subscribing-to-events) for the webhook flow.
+
+## 8. Set security and data-retention expectations
+
+Review which tool inputs, outputs, logs, and files your integration creates. Align retention with your own product policy and customer commitments. See [Data retention](/docs/security/data-retention) for the controls Composio provides.
+
+Document who can access production projects, rotate keys, manage auth configs, and inspect logs. Keep those permissions limited to the people and services that need them.
+
+## Ready to ship
+
+- Stable user and tenant IDs are used everywhere.
+- Development, staging, and production use the intended project boundaries.
+- API keys are server-side and stored in a secret manager.
+- Authentication, reconnect, and returning-user flows work.
+- Session IDs are persisted for multi-turn work.
+- Tool access and confirmation rules match the product's intended authority.
+- Cross-user or cross-tenant isolation has been tested.
+- Real tool calls and trigger events appear in logs and map to the correct user.
+- The team knows how to diagnose and recover from provider or authentication failures.
+
+## Next
+
+<Cards>
+  <Card title="Review security" href="/docs/security/overview" description="Understand security controls, data retention, and operational boundaries." />
+  <Card title="Configure sessions" href="/docs/configuring-sessions" description="Restrict toolkits, tools, auth configs, and connected accounts." />
+  <Card title="Set up triggers" href="/docs/setting-up-triggers/creating-triggers" description="Create triggers and receive events through your webhook." />
+</Cards>

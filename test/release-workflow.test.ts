@@ -388,7 +388,7 @@ if (
 }
 
 if (
-  !tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')
+  !tsReleaseWorkflow.includes('changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2')
 ) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
@@ -426,8 +426,15 @@ if (
   const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
     ({ manifest }) => manifest.private !== true
   );
+  // @typesafe-ai/sdk 0.6.0 terminates the process after a handled cancellation on Node
+  // releases before 24.17 (typesafe-ai/typesafe-sdk-js#2), so that provider advertises a
+  // higher floor until the SDK is fixed.
+  const NODE_VERSION_EXCEPTIONS = {
+    '@composio/typesafe': '>=24.17.0',
+  };
   const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
-    ({ manifest }) => manifest.engines?.node !== MIN_NODE_VERSION
+    ({ manifest }) =>
+      manifest.engines?.node !== (NODE_VERSION_EXCEPTIONS[manifest.name] ?? MIN_NODE_VERSION)
   );
 
   if (publicTsReleaseWorkspaces.length === 0) {
@@ -438,7 +445,7 @@ if (
       .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
       .join('\n');
     throw new Error(
-      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}, or their documented exception:\n${details}`
     );
   }
 }

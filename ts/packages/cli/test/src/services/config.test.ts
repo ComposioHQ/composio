@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from '@effect/vitest';
-import { assertEquals } from '@effect/vitest/utils';
+import { deepStrictEqual } from '@effect/vitest/utils';
 
-import { Config, ConfigProvider, Effect, Option, Data, LogLevel } from 'effect';
+import { Config, ConfigProvider, Effect, Option } from 'effect';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { extendConfigProvider } from 'src/services/config';
+import { liveEnvConfigProvider } from '../../__utils__/live-env-config-provider';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import * as constants from 'src/constants';
 
@@ -24,31 +25,29 @@ const NORMALIZED_APP_CONFIG_DEFAULTS = {
 describe('Config', () => {
   describe('[When] using `ConfigProvider.fromMap`', () => {
     const withMapConfigProvider = (map: Map<string, string>) =>
-      Effect.withConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)));
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        extendConfigProvider(ConfigProvider.fromEnvRecord(Object.fromEntries(map)))
+      );
 
     describe('APP_CONFIG', () => {
       it.effect('[When] no map entry is set', () =>
         Effect.gen(function* () {
           const map = new Map([]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-              WEB_URL: 'https://dashboard.composio.dev/',
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+            WEB_URL: 'https://dashboard.composio.dev/',
+          });
         })
       );
 
@@ -61,24 +60,19 @@ describe('Config', () => {
             ['LOG_LEVEL', 'info'],
           ]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-              WEB_URL: 'https://dashboard.composio.dev/',
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+            WEB_URL: 'https://dashboard.composio.dev/',
+          });
         })
       );
 
@@ -91,7 +85,7 @@ describe('Config', () => {
             ['COMPOSIO_CACHE_DIR', '~/.composio'],
             ['COMPOSIO_SESSION_DIR', '/tmp/composio-sessions'],
             ['COMPOSIO_BIN_DIR', '/usr/local/bin'],
-            ['COMPOSIO_LOG_LEVEL', 'info'],
+            ['COMPOSIO_LOG_LEVEL', 'Info'],
             ['COMPOSIO_AGENTS_BASE_URL', 'https://agents.test.localhost'],
             ['COMPOSIO_WEBHOOK_SECRET', 'secret'],
             ['COMPOSIO_CLI_INVOCATION_ORIGIN', 'run'],
@@ -102,34 +96,29 @@ describe('Config', () => {
             ['COMPOSIO_TOOL_DEBUG', '1'],
           ]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.some('api_key'),
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://test.localhost',
-              WEB_URL: 'https://test.localhost',
-              CACHE_DIR: '~/.composio',
-              SESSION_DIR: '/tmp/composio-sessions',
-              BIN_DIR: '/usr/local/bin',
-              LOG_LEVEL: Option.some(LogLevel.Info),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              AGENTS_BASE_URL: 'https://agents.test.localhost',
-              WEBHOOK_SECRET: 'secret',
-              CLI_INVOCATION_ORIGIN: 'run',
-              CLI_PARENT_RUN_ID: 'run_parent',
-              RUN_ACP_ONLY: true,
-              RUN_OUTPUT_DIR: '/tmp/composio-output',
-              PERF_DEBUG: true,
-              TOOL_DEBUG: true,
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.some('api_key'),
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://test.localhost',
+            WEB_URL: 'https://test.localhost',
+            CACHE_DIR: '~/.composio',
+            SESSION_DIR: '/tmp/composio-sessions',
+            BIN_DIR: '/usr/local/bin',
+            LOG_LEVEL: Option.some('Info' as const),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            AGENTS_BASE_URL: 'https://agents.test.localhost',
+            WEBHOOK_SECRET: 'secret',
+            CLI_INVOCATION_ORIGIN: 'run',
+            CLI_PARENT_RUN_ID: 'run_parent',
+            RUN_ACP_ONLY: true,
+            RUN_OUTPUT_DIR: '/tmp/composio-output',
+            PERF_DEBUG: true,
+            TOOL_DEBUG: true,
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -148,18 +137,15 @@ describe('Config', () => {
               sessionDirectory: APP_CONFIG.SESSION_DIR,
               binDirectory: APP_CONFIG.BIN_DIR,
               runOutputDirectory: APP_CONFIG.RUN_OUTPUT_DIR,
-            }).pipe(Effect.andThen(Data.struct))
-          );
-
-          assertEquals(
-            actual,
-            Data.struct({
-              cacheDirectory: '/tmp/composio-cache',
-              sessionDirectory: undefined,
-              binDirectory: '/usr/local/bin',
-              runOutputDirectory: '/tmp/composio-output',
             })
           );
+
+          deepStrictEqual(actual, {
+            cacheDirectory: '/tmp/composio-cache',
+            sessionDirectory: undefined,
+            binDirectory: '/usr/local/bin',
+            runOutputDirectory: '/tmp/composio-output',
+          });
         })
       );
 
@@ -181,21 +167,18 @@ describe('Config', () => {
               toolDebug: APP_CONFIG.TOOL_DEBUG,
               acpOnly: APP_CONFIG.RUN_ACP_ONLY,
               disableConnectedAccountCache: APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE,
-            }).pipe(Effect.andThen(Data.struct))
-          );
-
-          assertEquals(
-            actual,
-            Data.struct({
-              // Blank falls back to the flag's own default, ...
-              perfDebug: false,
-              toolDebug: false,
-              // ... which must hold for a default-true flag too, ...
-              disableConnectedAccountCache: true,
-              // ... while any other non-falsy value counts as set.
-              acpOnly: true,
             })
           );
+
+          deepStrictEqual(actual, {
+            // Blank falls back to the flag's own default, ...
+            perfDebug: false,
+            toolDebug: false,
+            // ... which must hold for a default-true flag too, ...
+            disableConnectedAccountCache: true,
+            // ... while any other non-falsy value counts as set.
+            acpOnly: true,
+          });
         })
       );
 
@@ -212,10 +195,10 @@ describe('Config', () => {
               perfDebug: APP_CONFIG.PERF_DEBUG,
               toolDebug: APP_CONFIG.TOOL_DEBUG,
               acpOnly: APP_CONFIG.RUN_ACP_ONLY,
-            }).pipe(Effect.andThen(Data.struct))
+            })
           );
 
-          assertEquals(actual, Data.struct({ perfDebug: false, toolDebug: false, acpOnly: false }));
+          deepStrictEqual(actual, { perfDebug: false, toolDebug: false, acpOnly: false });
         })
       );
 
@@ -225,24 +208,19 @@ describe('Config', () => {
             ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false'],
           ]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              WEB_URL: 'https://dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: false,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: false,
+          });
         })
       );
 
@@ -253,24 +231,19 @@ describe('Config', () => {
             string
           >;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.some('production'),
-              BASE_URL: constants.DEFAULT_BASE_URL,
-              WEB_URL: constants.DEFAULT_WEB_URL,
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.some('production'),
+            BASE_URL: constants.DEFAULT_BASE_URL,
+            WEB_URL: constants.DEFAULT_WEB_URL,
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -278,24 +251,19 @@ describe('Config', () => {
         Effect.gen(function* () {
           const map = new Map([['COMPOSIO_ENVIRONMENT', 'staging']]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.some('staging'),
-              BASE_URL: constants.STAGING_BASE_URL,
-              WEB_URL: 'https://staging-dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.some('staging'),
+            BASE_URL: constants.STAGING_BASE_URL,
+            WEB_URL: 'https://staging-dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -308,24 +276,19 @@ describe('Config', () => {
               ['COMPOSIO_BASE_URL', 'https://custom-backend.localhost'],
             ]) satisfies Map<string, string>;
 
-            const actual = yield* withMapConfigProvider(map)(
-              Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-            );
+            const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-            assertEquals(
-              actual,
-              Data.struct({
-                USER_API_KEY: Option.none(),
-                ...NORMALIZED_APP_CONFIG_DEFAULTS,
-                ENVIRONMENT: Option.some('staging'),
-                BASE_URL: 'https://custom-backend.localhost',
-                WEB_URL: constants.STAGING_WEB_URL,
-                LOG_LEVEL: Option.none(),
-                ORG_ID: Option.none(),
-                PROJECT_ID: Option.none(),
-                DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-              })
-            );
+            deepStrictEqual(actual, {
+              USER_API_KEY: Option.none(),
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
+              ENVIRONMENT: Option.some('staging'),
+              BASE_URL: 'https://custom-backend.localhost',
+              WEB_URL: constants.STAGING_WEB_URL,
+              LOG_LEVEL: Option.none(),
+              ORG_ID: Option.none(),
+              PROJECT_ID: Option.none(),
+              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+            });
           })
       );
 
@@ -338,24 +301,19 @@ describe('Config', () => {
               ['COMPOSIO_WEB_URL', 'https://custom-web.localhost'],
             ]) satisfies Map<string, string>;
 
-            const actual = yield* withMapConfigProvider(map)(
-              Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-            );
+            const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-            assertEquals(
-              actual,
-              Data.struct({
-                USER_API_KEY: Option.none(),
-                ...NORMALIZED_APP_CONFIG_DEFAULTS,
-                ENVIRONMENT: Option.some('staging'),
-                BASE_URL: constants.STAGING_BASE_URL,
-                WEB_URL: 'https://custom-web.localhost',
-                LOG_LEVEL: Option.none(),
-                ORG_ID: Option.none(),
-                PROJECT_ID: Option.none(),
-                DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-              })
-            );
+            deepStrictEqual(actual, {
+              USER_API_KEY: Option.none(),
+              ...NORMALIZED_APP_CONFIG_DEFAULTS,
+              ENVIRONMENT: Option.some('staging'),
+              BASE_URL: constants.STAGING_BASE_URL,
+              WEB_URL: 'https://custom-web.localhost',
+              LOG_LEVEL: Option.none(),
+              ORG_ID: Option.none(),
+              PROJECT_ID: Option.none(),
+              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+            });
           })
       );
 
@@ -363,24 +321,19 @@ describe('Config', () => {
         Effect.gen(function* () {
           const map = new Map([['COMPOSIO_ENVIRONMENT', 'unknown']]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.some('unknown'),
-              BASE_URL: constants.DEFAULT_BASE_URL,
-              WEB_URL: constants.DEFAULT_WEB_URL,
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.some('unknown'),
+            BASE_URL: constants.DEFAULT_BASE_URL,
+            WEB_URL: constants.DEFAULT_WEB_URL,
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
     });
@@ -390,17 +343,12 @@ describe('Config', () => {
         Effect.gen(function* () {
           const map = new Map([]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.none(),
-              VERSION: Option.none(),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.none(),
+            VERSION: Option.none(),
+          });
         })
       );
 
@@ -411,17 +359,12 @@ describe('Config', () => {
             ['VERSION', 'x.x.x'],
           ]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.none(),
-              VERSION: Option.none(),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.none(),
+            VERSION: Option.none(),
+          });
         })
       );
 
@@ -434,17 +377,12 @@ describe('Config', () => {
               ['COMPOSIO_VERSION', 'x.x.x'],
             ]) satisfies Map<string, string>;
 
-            const actual = yield* withMapConfigProvider(map)(
-              Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-            );
+            const actual = yield* withMapConfigProvider(map)(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-            assertEquals(
-              actual,
-              Data.struct({
-                UPGRADE_TARGET: Option.none(),
-                VERSION: Option.none(),
-              })
-            );
+            deepStrictEqual(actual, {
+              UPGRADE_TARGET: Option.none(),
+              VERSION: Option.none(),
+            });
           })
       );
       it.effect('[When] map entries are set with `DEBUG_OVERRIDE_` prefix', () =>
@@ -454,17 +392,12 @@ describe('Config', () => {
             ['DEBUG_OVERRIDE_VERSION', 'x.x.x'],
           ]) satisfies Map<string, string>;
 
-          const actual = yield* withMapConfigProvider(map)(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withMapConfigProvider(map)(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.some('upgrade_target'),
-              VERSION: Option.some('x.x.x'),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.some('upgrade_target'),
+            VERSION: Option.some('x.x.x'),
+          });
         })
       );
     });
@@ -472,8 +405,8 @@ describe('Config', () => {
     describe('UNPREFIXED_CONFIG', () => {
       it.effect('[Then] it normalizes unprefixed host values into runtime facts', () =>
         Effect.gen(function* () {
-          const provider = ConfigProvider.fromMap(
-            new Map([
+          const provider = ConfigProvider.fromEnvRecord(
+            Object.fromEntries([
               ['CACHE_DIR', '  /host/cache  '],
               ['npm_config_user_agent', 'pnpm/9.0.0 npm/? node/v22.0.0 darwin arm64'],
               ['CI', ' TRUE '],
@@ -483,11 +416,10 @@ describe('Config', () => {
               ['CLAUDE_FUTURE_MARKER', 'cli'],
               ['COMPOSIO_CALLER_AGENT', 'Open-Claw'],
               ['VITEST', 'off'],
-            ]),
-            { pathDelim: '_' }
+            ])
           );
 
-          const actual = yield* provider.load(Config.all(UNPREFIXED_CONFIG));
+          const actual = yield* Config.all(UNPREFIXED_CONFIG).parse(provider);
 
           expect(actual).toEqual({
             CACHE_DIR: '/host/cache',
@@ -509,17 +441,16 @@ describe('Config', () => {
 
       it.effect('[Then] an explicit permission UI value overrides CI detection', () =>
         Effect.gen(function* () {
-          const provider = ConfigProvider.fromMap(
-            new Map([
+          const provider = ConfigProvider.fromEnvRecord(
+            Object.fromEntries([
               ['COMPOSIO_DISABLE_PERMISSION_UI', 'false'],
               ['CI', 'true'],
               ['VITEST', 'true'],
-            ]),
-            { pathDelim: '_' }
+            ])
           );
 
-          assertEquals(
-            yield* provider.load(UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED),
+          deepStrictEqual(
+            yield* UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED.parse(provider),
             false
           );
         })
@@ -528,8 +459,9 @@ describe('Config', () => {
   });
 
   describe('[When] using `ConfigProvider.env`', () => {
-    const withEnvConfigProvider = Effect.withConfigProvider(
-      extendConfigProvider(ConfigProvider.fromEnv())
+    const withEnvConfigProvider = Effect.provideService(
+      ConfigProvider.ConfigProvider,
+      extendConfigProvider(liveEnvConfigProvider)
     );
 
     // These cases assert what the config resolves from a clean environment,
@@ -560,24 +492,19 @@ describe('Config', () => {
     describe('APP_CONFIG', () => {
       it.effect('[When] no env variable is set', () =>
         Effect.gen(function* () {
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              WEB_URL: 'https://dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -588,24 +515,19 @@ describe('Config', () => {
           vi.stubEnv('CACHE_DIR', '~/.composio');
           vi.stubEnv('LOG_LEVEL', 'info');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              WEB_URL: 'https://dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -617,7 +539,7 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_CACHE_DIR', '~/.composio');
           vi.stubEnv('COMPOSIO_SESSION_DIR', '/tmp/composio-sessions');
           vi.stubEnv('COMPOSIO_BIN_DIR', '/usr/local/bin');
-          vi.stubEnv('COMPOSIO_LOG_LEVEL', 'info');
+          vi.stubEnv('COMPOSIO_LOG_LEVEL', 'Info');
           vi.stubEnv('COMPOSIO_AGENTS_BASE_URL', 'https://agents.test.localhost');
           vi.stubEnv('COMPOSIO_WEBHOOK_SECRET', 'secret');
           vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'run');
@@ -627,34 +549,29 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
           vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.some('api_key'),
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://test.localhost',
-              WEB_URL: 'https://test.localhost',
-              CACHE_DIR: '~/.composio',
-              SESSION_DIR: '/tmp/composio-sessions',
-              BIN_DIR: '/usr/local/bin',
-              LOG_LEVEL: Option.some(LogLevel.Info),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              AGENTS_BASE_URL: 'https://agents.test.localhost',
-              WEBHOOK_SECRET: 'secret',
-              CLI_INVOCATION_ORIGIN: 'run',
-              CLI_PARENT_RUN_ID: 'run_parent',
-              RUN_ACP_ONLY: true,
-              RUN_OUTPUT_DIR: '/tmp/composio-output',
-              PERF_DEBUG: true,
-              TOOL_DEBUG: true,
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.some('api_key'),
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://test.localhost',
+            WEB_URL: 'https://test.localhost',
+            CACHE_DIR: '~/.composio',
+            SESSION_DIR: '/tmp/composio-sessions',
+            BIN_DIR: '/usr/local/bin',
+            LOG_LEVEL: Option.some('Info' as const),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            AGENTS_BASE_URL: 'https://agents.test.localhost',
+            WEBHOOK_SECRET: 'secret',
+            CLI_INVOCATION_ORIGIN: 'run',
+            CLI_PARENT_RUN_ID: 'run_parent',
+            RUN_ACP_ONLY: true,
+            RUN_OUTPUT_DIR: '/tmp/composio-output',
+            PERF_DEBUG: true,
+            TOOL_DEBUG: true,
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -662,24 +579,19 @@ describe('Config', () => {
         Effect.gen(function* () {
           vi.stubEnv('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.none(),
-              BASE_URL: 'https://backend.composio.dev',
-              WEB_URL: 'https://dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: false,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: false,
+          });
         })
       );
 
@@ -687,24 +599,19 @@ describe('Config', () => {
         Effect.gen(function* () {
           vi.stubEnv('COMPOSIO_ENVIRONMENT', 'staging');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.some('staging'),
-              BASE_URL: constants.STAGING_BASE_URL,
-              WEB_URL: 'https://staging-dashboard.composio.dev/',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.some('staging'),
+            BASE_URL: constants.STAGING_BASE_URL,
+            WEB_URL: 'https://staging-dashboard.composio.dev/',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
 
@@ -714,24 +621,19 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_BASE_URL', 'https://custom.localhost');
           vi.stubEnv('COMPOSIO_WEB_URL', 'https://custom-web.localhost');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              USER_API_KEY: Option.none(),
-              ...NORMALIZED_APP_CONFIG_DEFAULTS,
-              ENVIRONMENT: Option.some('staging'),
-              BASE_URL: 'https://custom.localhost',
-              WEB_URL: 'https://custom-web.localhost',
-              LOG_LEVEL: Option.none(),
-              ORG_ID: Option.none(),
-              PROJECT_ID: Option.none(),
-              DISABLE_CONNECTED_ACCOUNT_CACHE: true,
-            })
-          );
+          deepStrictEqual(actual, {
+            USER_API_KEY: Option.none(),
+            ...NORMALIZED_APP_CONFIG_DEFAULTS,
+            ENVIRONMENT: Option.some('staging'),
+            BASE_URL: 'https://custom.localhost',
+            WEB_URL: 'https://custom-web.localhost',
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          });
         })
       );
     });
@@ -739,17 +641,12 @@ describe('Config', () => {
     describe('DEBUG_OVERRIDE_CONFIG', () => {
       it.effect('[When] no env variable is set', () =>
         Effect.gen(function* () {
-          const actual = yield* withEnvConfigProvider(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.none(),
-              VERSION: Option.none(),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.none(),
+            VERSION: Option.none(),
+          });
         })
       );
 
@@ -758,17 +655,12 @@ describe('Config', () => {
           vi.stubEnv('UPGRADE_TARGET', 'upgrade_target');
           vi.stubEnv('VERSION', 'x.x.x');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.none(),
-              VERSION: Option.none(),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.none(),
+            VERSION: Option.none(),
+          });
         })
       );
 
@@ -779,17 +671,12 @@ describe('Config', () => {
             vi.stubEnv('COMPOSIO_UPGRADE_TARGET', 'upgrade_target');
             vi.stubEnv('COMPOSIO_VERSION', 'x.x.x');
 
-            const actual = yield* withEnvConfigProvider(
-              Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-            );
+            const actual = yield* withEnvConfigProvider(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-            assertEquals(
-              actual,
-              Data.struct({
-                UPGRADE_TARGET: Option.none(),
-                VERSION: Option.none(),
-              })
-            );
+            deepStrictEqual(actual, {
+              UPGRADE_TARGET: Option.none(),
+              VERSION: Option.none(),
+            });
           })
       );
 
@@ -798,17 +685,12 @@ describe('Config', () => {
           vi.stubEnv('DEBUG_OVERRIDE_UPGRADE_TARGET', 'upgrade_target');
           vi.stubEnv('DEBUG_OVERRIDE_VERSION', 'x.x.x');
 
-          const actual = yield* withEnvConfigProvider(
-            Config.all(DEBUG_OVERRIDE_CONFIG).pipe(Effect.andThen(Data.struct))
-          );
+          const actual = yield* withEnvConfigProvider(Config.all(DEBUG_OVERRIDE_CONFIG));
 
-          assertEquals(
-            actual,
-            Data.struct({
-              UPGRADE_TARGET: Option.some('upgrade_target'),
-              VERSION: Option.some('x.x.x'),
-            })
-          );
+          deepStrictEqual(actual, {
+            UPGRADE_TARGET: Option.some('upgrade_target'),
+            VERSION: Option.some('x.x.x'),
+          });
         })
       );
     });

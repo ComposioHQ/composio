@@ -33,6 +33,10 @@ export {
   isBlockedSensitiveFileUploadPath,
   BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
 } from './utils/sensitiveFileUploadPaths';
+// Bounded response reader for files fetched from user-supplied URLs. Exported
+// for the same reason as the denylist guard above: downstream packages read
+// remote files too, and every such read must enforce the same size cap.
+export { readResponseBodyWithLimit, MAX_URL_UPLOAD_SIZE_BYTES } from './utils/readResponseBody';
 export {
   sanitizeSchemaPropertyKeys,
   restoreOriginalKeys,
