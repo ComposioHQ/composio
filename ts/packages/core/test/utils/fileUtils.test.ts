@@ -360,7 +360,7 @@ describe('fileUtils', () => {
       ).rejects.toThrow('Failed to download file: Not Found');
     });
 
-    it('throws a typed ComposioFileDownloadError on fetch failure', async () => {
+    it('throws a typed ComposioFileDownloadError on an unsuccessful HTTP response', async () => {
       mockFetch.mockResolvedValue({ ok: false, status: 403, statusText: 'Forbidden' });
 
       const error = await downloadFileFromS3({

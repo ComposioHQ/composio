@@ -14,14 +14,14 @@ export interface ComposioFileDownloadErrorOptions extends Omit<ComposioErrorOpti
   s3Url?: string;
   /** The file name the download was going to be saved under. */
   fileName?: string;
-  /** HTTP status text of the failed fetch, when the failure was remote. */
+  /** HTTP status text of the unsuccessful response, when available. */
   statusText?: string;
 }
 
 /**
- * Thrown when automatic file download during tool execution fails, either
- * because the remote fetch was rejected or because the downloaded bytes could
- * not be written to disk. The underlying failure is preserved in `cause`.
+ * Thrown when a file download receives an unsuccessful HTTP response or when
+ * the downloaded bytes cannot be written to disk. Filesystem failures are
+ * preserved in `cause`.
  */
 export class ComposioFileDownloadError extends ComposioError {
   constructor(
