@@ -14,16 +14,50 @@ from composio_client import (
     DEFAULT_MAX_RETRIES,
     NOT_GIVEN,
     APIError,
+    APIStatusError,
     NotGiven,
     _base_client,
 )
 from composio_client import Composio as BaseComposio
-from httpx import URL, Client, Request, Timeout
+from httpx import URL, Client, Request, Response, Timeout
 
+from composio.exceptions import ComposioError
 from composio.utils.logging import WithLogger
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
+
+
+_SDK_ERROR_CLASSES: t.Dict[t.Type[APIStatusError], t.Type[APIStatusError]] = {}
+
+
+def _with_sdk_error_base(
+    error_class: t.Type[APIStatusError],
+) -> t.Type[APIStatusError]:
+    """
+    Return a subclass of a generated-client status error that also derives
+    from the SDK's ``ComposioError``.
+
+    The generated client has its own exception root, unrelated to
+    ``composio.exceptions.ComposioError``, so HTTP failures such as an invalid
+    API key used to escape ``except ComposioError``. Keeping the generated
+    class as the first base preserves its constructor, ``status_code`` and
+    ``isinstance`` checks, so existing ``except APIStatusError`` handlers keep
+    working unchanged.
+    """
+    cached = _SDK_ERROR_CLASSES.get(error_class)
+    if cached is not None:
+        return cached
+    sdk_class = t.cast(
+        t.Type[APIStatusError],
+        type(
+            error_class.__name__,
+            (error_class, ComposioError),
+            {"__module__": error_class.__module__},
+        ),
+    )
+    # setdefault keeps the first class if two threads race to build one.
+    return _SDK_ERROR_CLASSES.setdefault(error_class, sdk_class)
 
 
 def _get_python_implementation() -> str:
@@ -241,6 +275,20 @@ class HttpClient(BaseComposio, WithLogger):
         if self._without_retries is None:
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
+
+    def _make_status_error(
+        self,
+        err_msg: str,
+        *,
+        body: object,
+        response: Response,
+    ) -> APIStatusError:
+        """
+        Build the generated client's status error so it is also a
+        ``ComposioError``; see ``_with_sdk_error_base``.
+        """
+        error = super()._make_status_error(err_msg, body=body, response=response)
+        return _with_sdk_error_base(type(error))(err_msg, response=response, body=body)
 
     def _prepare_request(self, request: Request) -> None:
         """
