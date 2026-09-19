@@ -178,13 +178,31 @@ export class RemoteFile {
       throw new Error('Cannot determine save location: home directory is not available');
     }
 
-    const savePath =
-      path ?? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME, this.filename);
+    const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    let savePath: string;
+
+    if (path != null) {
+      savePath = path;
+    } else {
+      const rawBasename = this.filename?.trim() ?? '';
+      if (
+        !rawBasename ||
+        rawBasename === '.' ||
+        rawBasename === '..' ||
+        /^[.]+$/.test(rawBasename) ||
+        rawBasename.includes('\0')
+      ) {
+        throw new ValidationError(
+          `Path traversal detected: mount path '${this.mountRelativePath}' leaves no usable basename to write to.`
+        );
+      }
+      savePath = platform.joinPath(defaultDir, rawBasename);
+    }
 
     const dir =
       path != null
         ? getParentDir(savePath)
-        : platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+        : defaultDir;
     if (dir && !platform.existsSync(dir)) {
       platform.mkdirSync(dir);
     }

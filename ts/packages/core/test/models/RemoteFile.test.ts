@@ -283,5 +283,23 @@ describe('RemoteFile', () => {
       const written = platform.readFileSync(savePath) as Uint8Array;
       expect(new Uint8Array(written)).toEqual(content);
     });
+
+    it.each(['', '.', 'sub/.', '..', '...'])(
+      'should throw ValidationError when mountRelativePath (%s) leaves no usable basename and path is omitted',
+      async malformedPath => {
+        const content = new Uint8Array([1, 2, 3]);
+        globalThis.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(content.buffer),
+        });
+
+        const file = new RemoteFile({
+          ...validCamelCaseData,
+          mountRelativePath: malformedPath,
+        });
+
+        await expect(file.save()).rejects.toThrow(ValidationError);
+      }
+    );
   });
 });
