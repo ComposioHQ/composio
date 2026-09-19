@@ -283,5 +283,54 @@ describe('RemoteFile', () => {
       const written = platform.readFileSync(savePath) as Uint8Array;
       expect(new Uint8Array(written)).toEqual(content);
     });
+
+    it.each(['', '.', 'sub/.', '..', '...'])(
+      'should throw ValidationError when mountRelativePath (%s) leaves no usable basename and path is omitted',
+      async malformedPath => {
+        const file = new RemoteFile({
+          ...validCamelCaseData,
+          mountRelativePath: malformedPath,
+        });
+
+        await expect(file.save()).rejects.toThrow(ValidationError);
+      }
+    );
+
+    it('should validate destination before fetching content', async () => {
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      const file = new RemoteFile({
+        ...validCamelCaseData,
+        mountRelativePath: '.',
+      });
+
+      await expect(file.save()).rejects.toThrow(ValidationError);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it.each(['report.txt ', 'report.txt.', 'test '])(
+      'should reject filenames ending in a space or dot (%s)',
+      async malformedPath => {
+        const file = new RemoteFile({
+          ...validCamelCaseData,
+          mountRelativePath: malformedPath,
+        });
+
+        await expect(file.save()).rejects.toThrow(ValidationError);
+      }
+    );
+
+    it.each(['NUL', 'con', 'AUX.txt', 'com1.json', 'LPT2'])(
+      'should reject Windows reserved device names (%s)',
+      async deviceName => {
+        const file = new RemoteFile({
+          ...validCamelCaseData,
+          mountRelativePath: deviceName,
+        });
+
+        await expect(file.save()).rejects.toThrow(ValidationError);
+      }
+    );
   });
 });

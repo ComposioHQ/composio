@@ -2,6 +2,31 @@ import { platform } from '#platform';
 import { ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
 
+const WINDOWS_RESERVED_NAMES = new Set([
+  'CON',
+  'PRN',
+  'AUX',
+  'NUL',
+  'COM1',
+  'COM2',
+  'COM3',
+  'COM4',
+  'COM5',
+  'COM6',
+  'COM7',
+  'COM8',
+  'COM9',
+  'LPT1',
+  'LPT2',
+  'LPT3',
+  'LPT4',
+  'LPT5',
+  'LPT6',
+  'LPT7',
+  'LPT8',
+  'LPT9',
+]);
+
 function getParentDir(filePath: string): string {
   const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
   if (lastSep <= 0) return '';
@@ -172,19 +197,57 @@ export class RemoteFile {
       );
     }
 
-    const content = await this.buffer();
     const homeDir = platform.homedir();
     if (!homeDir) {
       throw new Error('Cannot determine save location: home directory is not available');
     }
 
-    const savePath =
-      path ?? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME, this.filename);
+    const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    let savePath: string;
+
+    if (path != null) {
+      savePath = path;
+    } else {
+      const rawBasename = this.filename;
+      if (
+        !rawBasename ||
+        !rawBasename.trim() ||
+        rawBasename === '.' ||
+        rawBasename === '..' ||
+        /^[.]+$/.test(rawBasename) ||
+        rawBasename.includes('\0')
+      ) {
+        throw new ValidationError(
+          `Path traversal detected: mount path '${this.mountRelativePath}' leaves no usable basename to write to.`
+        );
+      }
+
+      if (rawBasename.endsWith(' ') || rawBasename.endsWith('.')) {
+        throw new ValidationError(
+          `Refusing to write filename ending in a space or dot: '${rawBasename}'`
+        );
+      }
+
+      const baseNameUpper = rawBasename.toUpperCase();
+      const baseNameWithoutExt = rawBasename.split('.')[0].toUpperCase();
+      if (
+        WINDOWS_RESERVED_NAMES.has(baseNameUpper) ||
+        WINDOWS_RESERVED_NAMES.has(baseNameWithoutExt)
+      ) {
+        throw new ValidationError(
+          `Refusing to write reserved Windows device name: '${rawBasename}'`
+        );
+      }
+
+      savePath = platform.joinPath(defaultDir, rawBasename);
+    }
+
+    const content = await this.buffer();
 
     const dir =
       path != null
         ? getParentDir(savePath)
-        : platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+        : defaultDir;
     if (dir && !platform.existsSync(dir)) {
       platform.mkdirSync(dir);
     }
