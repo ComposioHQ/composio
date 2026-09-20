@@ -321,6 +321,32 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     expect(tool.responseSchema).toEqual({ type: "object" });
   });
 
+  test("rejects a top-level anyOf schema that Vertex AI cannot serialize", () => {
+    expect(() =>
+      transformTool({
+        slug: "COMPOSIO_MANAGE_SKILL",
+        name: "composio_manage_skill",
+        input_parameters: {
+          anyOf: [
+            { type: "object", properties: { action: { const: "create" } } },
+            { type: "object", properties: { action: { const: "update" } } },
+            { type: "object", properties: { action: { const: "delete" } } },
+          ],
+        },
+      })
+    ).toThrow('Meta tool COMPOSIO_MANAGE_SKILL has a non-object input schema');
+  });
+
+  test("accepts object input schemas", () => {
+    expect(
+      transformTool({
+        slug: "COMPOSIO_SEARCH_TOOLS",
+        name: "composio_search_tools",
+        input_parameters: { type: "object", properties: {} },
+      }).inputParameters
+    ).toEqual({ type: "object", properties: {} });
+  });
+
   test("toolkit falls back to null when absent or non-string", () => {
     expect(transformTool({ slug: "x", name: "x" }).toolkit).toBeNull();
     expect(transformTool({ slug: "x", name: "x", toolkit: "" }).toolkit).toBeNull();

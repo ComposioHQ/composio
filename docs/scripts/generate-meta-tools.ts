@@ -139,6 +139,23 @@ async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
   return parsed.data;
 }
 
+function ensureObjectInputParameters(
+  inputParameters: Record<string, unknown>,
+  slug: string
+): Record<string, unknown> {
+  if (inputParameters.type === 'object') {
+    return inputParameters;
+  }
+
+  if (Array.isArray(inputParameters.anyOf)) {
+    throw new Error(
+      `Meta tool ${slug} has a non-object input schema; every tool parameters schema must have type: "object"`
+    );
+  }
+
+  return inputParameters;
+}
+
 export function transformTool(value: unknown): GeneratedMetaTool {
   const parsed = rawMetaToolSchema.safeParse(value);
   const raw = parsed.success ? parsed.data : rawMetaToolSchema.parse({});
@@ -151,7 +168,7 @@ export function transformTool(value: unknown): GeneratedMetaTool {
     description: raw.description,
     tags: raw.tags,
     toolkit: raw.toolkit || null,
-    inputParameters: raw.input_parameters,
+    inputParameters: ensureObjectInputParameters(raw.input_parameters, slug),
     responseSchema: raw.output_parameters,
   };
 }
