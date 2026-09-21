@@ -247,9 +247,9 @@ for (const { exportPrefix, slug } of BROWSER_GRANT_TOOLKITS) {
   } else {
     ok = false;
     if (INITIATE_MISSING) {
-      const created = await api('POST', '/api/v3.1/connected_accounts', {
-        auth_config: { id: config.id },
-        connection: { user_id: USER_ID },
+      const created = await api('POST', '/api/v3/connected_accounts/link', {
+        auth_config_id: config.id,
+        user_id: USER_ID,
       });
       pendingGrants.push(
         `${slug}: authorize in a browser -> ${created.connectionData?.val?.redirectUrl ?? created.redirect_url ?? created.redirect_uri ?? '(no redirect url returned)'}`

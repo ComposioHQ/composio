@@ -32,6 +32,7 @@
     "test:provider-compatibility": "bun test test/provider-compatibility.test.ts",
     "test:toolchain": "bun run test/mise-bun-pin.test.ts",
     "test:examples": "tsx ts/scripts/validate-examples.ts",
+    "test:examples-provision": "node --test test/examples-provision.test.mjs",
     "test:e2e": "turbo test:e2e --filter='@e2e-tests/*'",
     "test:e2e:node": "turbo test:e2e:node --filter='@e2e-tests/node-*'",
     "test:e2e:deno": "turbo test:e2e:deno --filter='@e2e-tests/deno-*'",
