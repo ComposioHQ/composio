@@ -12,7 +12,7 @@ import { Webhooks } from './models/Webhooks';
 import { Logs } from './models/Logs';
 import { Keyring } from './models/Keyring';
 import { telemetry } from './telemetry/Telemetry';
-import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
+import { getSDKConfig, getToolkitVersionsFromEnv, getUserApiKeyHeader } from './utils/sdk';
 import logger from './utils/logger';
 import type { ComposioLogger, LogLevel } from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -32,25 +32,36 @@ export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   /**
-   * The API key for the Composio API.
-   * @example 'sk-1234567890'
+   * The project API key for the Composio API, sent as the `x-api-key` header.
+   *
+   * - A string is used as-is; the environment and the CLI user config file are not consulted.
+   * - Omitted: falls back to `COMPOSIO_API_KEY`, then to the project key stored by the Composio
+   *   CLI in `~/.composio/user_data.json`. A stored user key (`uak_...`) is never used as a
+   *   project key; the SDK throws instead of sending it.
+   * - `null`: disables project-key authentication entirely, including both fallbacks. The SDK
+   *   then requires another credential (`userApiKey`, `orgApiKey`, or an `x-user-api-key`
+   *   entry in `defaultHeaders`) and sends no `x-api-key`.
+   *
+   * @example 'ak_1234567890'
    */
   apiKey?: string | null;
   /**
    * User API key (`uak_*`) for the organization, consumer, and user-scoped
    * endpoints reached through `getClient()` (for example `client.org.list()`).
-   * Sent as `x-user-api-key` only on operations whose security scheme requires
+   * Sent as `x-user-api-key` only on operations whose security scheme accepts
    * it, never alongside the project key. Falls back to
-   * `process.env['COMPOSIO_USER_API_KEY']`. A project `apiKey` is still required.
+   * `process.env['COMPOSIO_USER_API_KEY']`; `null` disables that fallback.
+   * Combine with `apiKey: null` to authenticate with the user key alone.
    * @example 'uak_1234567890'
    */
   userApiKey?: string | null;
   /**
    * Organization API key (`oak_*`) for the organization-owner endpoints reached
    * through `getClient()` (for example `client.org.owner.project.list()`).
-   * Sent as `x-org-api-key` only on operations whose security scheme requires
+   * Sent as `x-org-api-key` only on operations whose security scheme accepts
    * it, never alongside the project key. Falls back to
-   * `process.env['COMPOSIO_ORG_API_KEY']`. A project `apiKey` is still required.
+   * `process.env['COMPOSIO_ORG_API_KEY']`; `null` disables that fallback.
+   * Combine with `apiKey: null` to authenticate with the organization key alone.
    * @example 'oak_1234567890'
    */
   orgApiKey?: string | null;
@@ -123,8 +134,11 @@ export type ComposioConfig<
    */
   host?: string;
   /**
-   * Request options to be passed to the Composio API client.
-   * This is useful for passing in a custom fetch implementation.
+   * Default headers attached to every request made through this instance.
+   *
+   * `x-user-api-key` is the one header the SDK treats as a credential: together
+   * with `apiKey: null` it authenticates requests with a Composio user API key
+   * instead of a project key. Every other header is passed through untouched.
    * @example
    * ```typescript
    * const composio = new Composio({
@@ -398,7 +412,12 @@ export class Composio<
   constructor(config?: ComposioConfig<TProvider>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
-      config?.apiKey
+      config?.apiKey,
+      {
+        defaultHeaders: config?.defaultHeaders,
+        userApiKey: config?.userApiKey,
+        orgApiKey: config?.orgApiKey,
+      }
     );
 
     if (config?.logger !== undefined || config?.logLevel !== undefined) {
@@ -579,7 +598,18 @@ export class Composio<
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
-    const sessionHeaders = getDefaultHeaders(options?.headers, this.provider);
+    // The clone inherits the resolved credentials: the project, user, and
+    // organization keys travel via `this.config`; a user API key placed in the
+    // default headers travels via its header unless the caller overrides it.
+    const userApiKeyHeader = getUserApiKeyHeader(options?.headers)
+      ? undefined
+      : getUserApiKeyHeader(this.config.defaultHeaders);
+    const sessionHeaders = getDefaultHeaders(
+      userApiKeyHeader
+        ? { [userApiKeyHeader.name]: userApiKeyHeader.value, ...options?.headers }
+        : options?.headers,
+      this.provider
+    );
     return new Composio({
       ...this.config,
       defaultHeaders: sessionHeaders,
