@@ -24,9 +24,9 @@ export const rootToolsCmd = Command.make('tools').pipe(
 (`ts/packages/cli/src/commands/tools/tools.cmd.ts`, unchanged shape from v3 apart from
 the import path — `Command.make`/`.withDescription`/`.withSubcommands` all carried over.)
 
-Flags/arguments: `Flag.string/boolean/integer/choice/directory(...)` (was
+Flags/arguments: `Flag.String/Boolean/Int/Literals/Directory(...)` (was
 `Options.text`/`.boolean`/`.integer`/`.choice`/`.directory`), with the same
-`.withDescription`/`.withDefault`/`.withAlias`/`.optional` combinators. `Argument.string(name)`
+`.withDescription`/`.withDefault`/`.withAlias`/`.optional` combinators. `Argument.String(name)`
 takes a bare string name, not `{ name }`. Variadic: `Argument.variadic()` must be called
 with parens when piped — the bare unapplied reference resolves to the wrong overload.
 

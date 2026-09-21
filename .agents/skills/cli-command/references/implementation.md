@@ -8,7 +8,7 @@
 
 ## Effect Patterns
 
-The CLI is on `effect@4.0.0-rc.112` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/unstable/*` submodules.
+The CLI is on `effect@4.0.0-rc.115` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/unstable/*` submodules.
 
 Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.ts`:
 
@@ -16,16 +16,16 @@ Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.t
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 
-const toolkit = Argument.string('toolkit').pipe(
+const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list tools for (e.g. "gmail")')
 );
 
-const query = Flag.string('query').pipe(
+const query = Flag.String('query').pipe(
   Flag.withDescription('Text search by name, slug, or description'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );
@@ -40,7 +40,7 @@ export const myCmd = Command.make(
 ).pipe(Command.withDescription('...'));
 ```
 
-`Args`/`Options` (v3 `@effect/cli`) are gone — use `Argument` for positionals and `Flag` for named options, both from `effect/unstable/cli`. Constructors and combinators carry the same names 1:1 (`Argument.string`, `Argument.variadic()` — call it, don't pipe the bare reference — `Flag.string`/`.boolean`/`.integer`/`.choice`, `.withDefault`/`.withDescription`/`.withAlias`/`.optional`). Optional flags read via `Option.getOrUndefined(...)`/`Option.isSome(...)`, matching the `query`/`tags` pattern above.
+`Args`/`Options` (v3 `@effect/cli`) are gone — use `Argument` for positionals and `Flag` for named options, both from `effect/unstable/cli`. Constructors are capitalized (`Argument.String`, `Flag.String`/`.Boolean`/`.Int`/`.Literals`); `Argument.variadic()` remains lowercase and must be called rather than piped as a bare reference. Combinators remain lowercase (`.withDefault`/`.withDescription`/`.withAlias`/`.optional`). Optional flags read via `Option.getOrUndefined(...)`/`Option.isSome(...)`, matching the `query`/`tags` pattern above.
 
 Follow existing local patterns before introducing new service abstractions.
 

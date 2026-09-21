@@ -15,7 +15,7 @@ import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
 
-const devMode = Flag.choice('mode', ['on', 'off'] as const).pipe(
+const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
   Flag.optional
 );

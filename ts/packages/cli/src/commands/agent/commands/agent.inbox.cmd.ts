@@ -4,7 +4,7 @@ import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { fetchAgentInbox, resolveStoredAgentKey } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(50),
   Flag.withDescription('Maximum number of inbox messages to fetch')
 );

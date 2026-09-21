@@ -1185,7 +1185,7 @@ describe('CLI: composio execute', () => {
         expect(output.tokenCount).toBe(Math.ceil(output.sizeBytes / 4));
         // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
         // vitest setup pins to a per-test temp directory.
-        const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
+        const cacheDir = yield* Config.String('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
         expect(output.outputFilePath).toMatch(/\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/);
         expect(output.outputFilePath.startsWith(`${cacheDir}/`)).toBe(true);
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
