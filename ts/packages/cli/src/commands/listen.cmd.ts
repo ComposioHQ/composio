@@ -53,13 +53,13 @@ const invalidOptionValue = (message: string) => new ListenOptionError({ message 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription(
     'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE") or project event type (e.g. "composio.connected_account.expired")'
   )
 );
 
-const params = Flag.string('params').pipe(
+const params = Flag.String('params').pipe(
   Flag.withAlias('p'),
   Flag.withDescription(
     'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
@@ -67,30 +67,30 @@ const params = Flag.string('params').pipe(
   Flag.optional
 );
 
-const maxEvents = Flag.integer('max-events').pipe(
+const maxEvents = Flag.Int('max-events').pipe(
   Flag.withDescription('Stop after receiving N matching events'),
   Flag.optional
 );
 
-const timeout = Flag.string('timeout').pipe(
+const timeout = Flag.String('timeout').pipe(
   Flag.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
   Flag.optional
 );
 
-const stream = Flag.string('stream').pipe(
+const stream = Flag.String('stream').pipe(
   Flag.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
   ),
   Flag.optional
 );
-const account = Flag.string('account').pipe(
+const account = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
   Flag.optional
 );
 
-const debug = Flag.boolean('debug').pipe(
+const debug = Flag.Boolean('debug').pipe(
   Flag.withDescription(
     'Print verbose debug information (raw events, filter results, Pusher state)'
   ),

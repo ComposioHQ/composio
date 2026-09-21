@@ -364,7 +364,7 @@
     "name": "Discord Bot",
     "logo": "https://logos.composio.dev/api/discordbot",
     "category": "team chat",
-    "toolCount": 165,
+    "toolCount": 167,
     "triggerCount": 0
   },
   {
@@ -396,7 +396,7 @@
     "name": "Apollo",
     "logo": "https://logos.composio.dev/api/apollo",
     "category": "crm",
-    "toolCount": 48,
+    "toolCount": 54,
     "triggerCount": 0
   },
   {
@@ -924,7 +924,7 @@
     "name": "Miro",
     "logo": "https://logos.composio.dev/api/miro",
     "category": "team collaboration",
-    "toolCount": 81,
+    "toolCount": 82,
     "triggerCount": 0
   },
   {
@@ -1372,7 +1372,7 @@
     "name": "Gorgias",
     "logo": "https://logos.composio.dev/api/gorgias",
     "category": "crm",
-    "toolCount": 34,
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -1396,7 +1396,7 @@
     "name": "Zoho Desk",
     "logo": "https://logos.composio.dev/api/zoho_desk",
     "category": "crm",
-    "toolCount": 32,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -2245,6 +2245,14 @@
     "logo": "https://logos.composio.dev/api/ambient_weather",
     "category": "internet of things",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "amplitude_mcp",
+    "name": "Amplitude MCP",
+    "logo": "https://logos.composio.dev/api/amplitude_mcp",
+    "category": "model context protocol",
+    "toolCount": 48,
     "triggerCount": 0
   },
   {
@@ -3616,6 +3624,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "clay",
+    "name": "Clay",
+    "logo": "https://logos.composio.dev/api/clay",
+    "category": "sales & crm",
+    "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
     "slug": "clay_mcp",
     "name": "Clay MCP",
     "logo": "https://logos.composio.dev/api/clay_mcp",
@@ -3829,6 +3845,14 @@
     "logo": "https://logos.composio.dev/api/cody",
     "category": "ai assistants",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "coinbase_wallet_mcp",
+    "name": "Coinbase Wallet MCP",
+    "logo": "https://logos.composio.dev/api/coinbase_wallet_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -6168,6 +6192,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "greptile_mcp",
+    "name": "Greptile MCP",
+    "logo": "https://logos.composio.dev/api/greptile_mcp",
+    "category": "model context protocol",
+    "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
     "slug": "griptape",
     "name": "Griptape",
     "logo": "https://www.griptape.ai/logo.png",
@@ -6389,6 +6421,14 @@
     "logo": "https://www.highergov.com/favicon.ico",
     "category": "business intelligence",
     "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
+    "slug": "highlevel_mcp",
+    "name": "HighLevel MCP",
+    "logo": "https://logos.composio.dev/api/highlevel_mcp",
+    "category": "model context protocol",
+    "toolCount": 36,
     "triggerCount": 0
   },
   {
@@ -6736,6 +6776,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "inspo_mcp",
+    "name": "Inspo MCP",
+    "logo": "https://logos.composio.dev/api/inspo_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
+    "triggerCount": 0
+  },
+  {
     "slug": "instacart",
     "name": "Instacart",
     "logo": "https://logos.composio.dev/api/instacart",
@@ -6928,11 +6976,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "jev",
+    "name": "Jev",
+    "logo": "https://logos.composio.dev/api/jev",
+    "category": "artificial intelligence",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "jigsawstack",
     "name": "Jigsawstack",
     "logo": "https://logos.composio.dev/api/jigsawstack",
     "category": "artificial intelligence",
     "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
+    "slug": "jinko",
+    "name": "Jinko",
+    "logo": "https://logos.composio.dev/api/jinko",
+    "category": "scheduling & booking",
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
@@ -8021,6 +8085,14 @@
     "logo": "https://logos.composio.dev/api/modem",
     "category": "analytics",
     "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
+    "slug": "modem_mcp",
+    "name": "Modem MCP",
+    "logo": "https://logos.composio.dev/api/modem_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -9680,6 +9752,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "ramp_mcp",
+    "name": "Ramp MCP",
+    "logo": "https://logos.composio.dev/api/ramp_mcp",
+    "category": "model context protocol",
+    "toolCount": 213,
+    "triggerCount": 0
+  },
+  {
     "slug": "rawg_video_games_database",
     "name": "RAWG Video Games Database",
     "logo": "https://logos.composio.dev/api/rawg_video_games_database",
@@ -10740,7 +10820,7 @@
     "name": "Snapchat",
     "logo": "https://logos.composio.dev/api/snapchat",
     "category": "marketing",
-    "toolCount": 139,
+    "toolCount": 140,
     "triggerCount": 0
   },
   {
@@ -11380,7 +11460,7 @@
     "name": "TikTok Ads",
     "logo": "https://logos.composio.dev/api/tiktok_ads",
     "category": "marketing",
-    "toolCount": 142,
+    "toolCount": 418,
     "triggerCount": 0
   },
   {

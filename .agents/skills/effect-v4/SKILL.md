@@ -1,6 +1,6 @@
 ---
 name: effect-v4
-description: Write, review, or upgrade Effect v4 code in the Composio CLI, cli-keyring, and json-schema-to-effect-schema packages, all pinned exactly to effect@4.0.0-rc.112 — Context.Service and explicit layers, Schema.TaggedError and typed recovery, the effect/unstable/cli command surface, and the vendored effect source oracle. Use when writing or reviewing Effect v4 code, answering a v4 API question, working in effect/unstable/cli, defining a Context.Service service, modeling an error with Schema.TaggedError, bumping the Effect prerelease pins, or verifying an unfamiliar API against ts/vendor/effect. Do not use for CLI command UX/wiring design (use cli-command) or CLI E2E tests (use cli-e2e).
+description: Write, review, or upgrade Effect v4 code in the Composio CLI, cli-keyring, and json-schema-to-effect-schema packages, all pinned exactly to effect@4.0.0-rc.115 — Context.Service and explicit layers, Schema.TaggedError and typed recovery, the effect/unstable/cli command surface, and the vendored effect source oracle. Use when writing or reviewing Effect v4 code, answering a v4 API question, working in effect/unstable/cli, defining a Context.Service service, modeling an error with Schema.TaggedError, bumping the Effect prerelease pins, or verifying an unfamiliar API against ts/vendor/effect. Do not use for CLI command UX/wiring design (use cli-command) or CLI E2E tests (use cli-e2e).
 ---
 
 # Effect v4
@@ -11,7 +11,7 @@ Effect v4 (release candidate). Every claim below is grounded in the migrated sou
 ## Exact version matrix
 
 `effect`, `@effect/platform-bun`, and `@effect/vitest`
-are pinned to the **same exact** `4.0.0-rc.112` — never `^`, `@next`, or a mismatched
+are pinned to the **same exact** `4.0.0-rc.115` — never `^`, `@next`, or a mismatched
 prerelease across packages. `@effect/cli` and `@effect/platform` no longer exist as
 dependencies; their surfaces are consolidated into `effect` and `effect/unstable/*`.
 See [versions.json](versions.json) for the full matrix (also `typescript`, `vitest`).
@@ -51,7 +51,7 @@ trust the file and fix the reference.
   ESLint bans them in `ts/packages/cli/src`.
 - Treat every remembered v3 package name and API as wrong until verified against
   `ts/vendor/effect` (read-only source oracle — never edit or import from it) and the
-  installed `effect@4.0.0-rc.112` typings. Source may be ahead of the published package;
+  installed `effect@4.0.0-rc.115` typings. Source may be ahead of the published package;
   the compiler is the compatibility gate.
 
 ## Verification

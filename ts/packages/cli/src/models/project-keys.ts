@@ -55,7 +55,6 @@ export type ProjectKeys = Schema.Schema.Type<typeof ProjectKeys>;
 
 export const ProjectKeysJSON = JSONTransformSchema(ProjectKeys);
 export const projectKeysFromJSON = Schema.decodeEffect(ProjectKeysJSON, {
-  propertyOrder: 'original',
   onExcessProperty: 'ignore',
 });
 export const projectKeysToJSON = Schema.encodeEffect(ProjectKeysJSON);

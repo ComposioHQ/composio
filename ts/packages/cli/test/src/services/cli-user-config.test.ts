@@ -202,6 +202,49 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
+  it.effect('preserves unknown settings across read-modify-write updates', () => {
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, '.composio', 'config.json'),
+      JSON.stringify({
+        future_setting: {
+          enabled: true,
+          modes: ['fast', 'safe'],
+        },
+      })
+    );
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const config = yield* ComposioCliUserConfig;
+
+      yield* config.update({ security: 'json' });
+
+      const persisted = yield* fileSystem.readFileString(
+        path.join(cwd, '.composio', 'config.json'),
+        'utf8'
+      );
+      const parsed = JSON.parse(persisted) as {
+        security: string;
+        future_setting: { enabled: boolean; modes: Array<string> };
+      };
+
+      assertEquals(parsed.security, 'json');
+      assertEquals(parsed.future_setting, {
+        enabled: true,
+        modes: ['fast', 'safe'],
+      });
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
   it.effect('replaces malformed persisted config with safe defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;

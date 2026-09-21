@@ -123,7 +123,7 @@ def create(slug: str, user_id: str | None = ..., connected_account_id: str | Non
 Subscribe to a trigger and receive trigger events.
 
 ```python
-def subscribe(timeout: float = ..., on_subscription_error: Optional[Callable[[Dict[str, Any]], None]] = ...) -> TriggerSubscription
+def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCallback | None = ...) -> TriggerSubscription
 ```
 
 **Parameters**
@@ -131,7 +131,7 @@ def subscribe(timeout: float = ..., on_subscription_error: Optional[Callable[[Di
 | Name | Type |
 |------|------|
 | `timeout?` | `float` |
-| `on_subscription_error?` | `Optional[Callable[[Dict[str, Any]], None]]` — Optional callback invoked when the channel subscription fails: with the raw Pusher payload for asynchronous `pusher:subscription_error` events, or with `{"error": ...}` for failures raised while establishing the subscription (for example an auth rejection — pysher performs channel auth synchronously). Establish-time failures also make `subscribe()` raise the underlying error promptly instead of waiting out the timeout. Exceptions raised inside the callback are contained and logged, never rethrown. |
+| `on_subscription_error?` | `SubscriptionErrorCallback \| None` |
 
 **Returns**
 
@@ -247,4 +247,4 @@ async def webhook(request: Request):
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1057)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1138)

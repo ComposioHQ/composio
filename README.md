@@ -128,6 +128,7 @@ A provider adapts Composio tools to your agent framework's native tool format:
 | Mastra | [`@composio/mastra`](ts/packages/providers/mastra) | — |
 | Pi | [`@composio/experimental`](ts/packages/experimental)* | — |
 | Cloudflare Workers AI | [`@composio/cloudflare`](ts/packages/providers/cloudflare) | — |
+| TypeSafe (Jev) | [`@composio/typesafe`](ts/packages/providers/typesafe) | [`composio-typesafe`](python/providers/typesafe) |
 | CrewAI | — | [`composio-crewai`](python/providers/crewai) |
 | AutoGen | — | [`composio-autogen`](python/providers/autogen) |
 
@@ -146,9 +147,9 @@ Everything published from this repo:
 | [`composio` CLI](ts/packages/cli) | Standalone CLI binary: `curl -fsSL https://composio.dev/install \| sh` |
 | [`@composio/experimental`](ts/packages/experimental) | Experimental integrations, including the Pi provider |
 | [`@composio/json-schema-to-zod`](ts/packages/json-schema-to-zod) | JSON Schema to Zod conversion |
-| `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare |
+| `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare, TypeSafe |
 | [`composio`](python) | Python SDK |
-| `composio-*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Gemini, Google, Google ADK, LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen |
+| `composio-*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Gemini, Google, Google ADK, LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, TypeSafe |
 
 ## Repository layout
 

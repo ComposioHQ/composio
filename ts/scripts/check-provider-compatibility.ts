@@ -65,6 +65,11 @@ const PROVIDER_CONTRACTS: Record<
     exportName: 'OpenAIAgentsProvider',
     verifiedMinimumCore: '0.18.0',
   },
+  '@composio/typesafe': {
+    agentic: false,
+    exportName: 'TypesafeProvider',
+    verifiedMinimumCore: '0.18.1',
+  },
   '@composio/vercel': {
     agentic: true,
     exportName: 'VercelProvider',

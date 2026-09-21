@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   discoverModelFiles,
+  escapeTableTextForMdx,
   escapeTextForMdx,
   escapeTypeForMdx,
+  isParameterRequired,
   parseSourceSignatureTypesAtLine,
   runTypeDocCommand,
   simplifyTypeForSignature,
@@ -47,6 +49,16 @@ describe('generate-docs type rendering', () => {
     expect(escapeTextForMdx(String.raw`Use \{value\}, \|, or <literal>`)).toBe(
       String.raw`Use \\\{value\\\}, \\\|, or &lt;literal&gt;`
     );
+  });
+
+  it('keeps multiline descriptions in one table cell', () => {
+    expect(escapeTableTextForMdx('First line\n  second line')).toBe('First line second line');
+  });
+
+  it('treats optional and default-valued parameters as optional', () => {
+    expect(isParameterRequired({ flags: { isOptional: true } })).toBe(false);
+    expect(isParameterRequired({ defaultValue: '{}' })).toBe(false);
+    expect(isParameterRequired({})).toBe(true);
   });
 
   it('reads named parameter and return types from source signatures', () => {

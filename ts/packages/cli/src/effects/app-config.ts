@@ -43,7 +43,7 @@ type UNPREFIXED_CONFIG = Config.Wrap<{
 }>;
 
 const optionalString = (name: string): Config.Config<string | undefined> =>
-  Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined));
+  Config.option(Config.String(name)).pipe(Config.map(Option.getOrUndefined));
 
 const optionalTrimmedString = (name: string): Config.Config<string | undefined> =>
   optionalString(name).pipe(
@@ -73,9 +73,9 @@ const optionalEnvironmentFlag = (name: string): Config.Config<boolean | undefine
     Config.map(value => (value === undefined ? undefined : isEnvFlagEnabled(value)))
   );
 
-// Deliberately tolerant rather than `Config.boolean`: these flags arrive from the ambient
+// Deliberately tolerant rather than `Config.Boolean`: these flags arrive from the ambient
 // environment, where a blank (`COMPOSIO_PERF_DEBUG=`) or unexpected value is routine.
-// `Config.boolean` rejects both with `InvalidData`, and `Config.withDefault` only recovers
+// `Config.Boolean` rejects both with `InvalidData`, and `Config.withDefault` only recovers
 // `MissingData`, so a stray value would surface as an unrecoverable defect instead of `false`.
 const booleanFlag = (name: string, defaultValue = false): Config.Config<boolean> =>
   optionalEnvironmentFlag(name).pipe(Config.map(value => value ?? defaultValue));
@@ -112,7 +112,7 @@ const environmentBasedDefault = (
   prodDefault: string,
   stagingDefault: string
 ): Config.Config<string> =>
-  Config.string('ENVIRONMENT').pipe(
+  Config.String('ENVIRONMENT').pipe(
     Config.map(env => (env === 'staging' ? stagingDefault : prodDefault)),
     Config.withDefault(prodDefault)
   );
@@ -127,20 +127,20 @@ const environmentBasedDefault = (
  */
 export const APP_CONFIG = {
   // The API key for the Composio API
-  USER_API_KEY: Config.option(Config.string('USER_API_KEY')),
+  USER_API_KEY: Config.option(Config.String('USER_API_KEY')),
 
   // The deployment environment ("production" | "staging"). Controls URL defaults.
-  ENVIRONMENT: Config.option(Config.string('ENVIRONMENT')),
+  ENVIRONMENT: Config.option(Config.String('ENVIRONMENT')),
 
   // The base URL for the Composio API
-  BASE_URL: Config.string('BASE_URL').pipe(
+  BASE_URL: Config.String('BASE_URL').pipe(
     Config.orElse(() =>
       environmentBasedDefault(constants.DEFAULT_BASE_URL, constants.STAGING_BASE_URL)
     )
   ),
 
   // The base URL for the Composio web app
-  WEB_URL: Config.string('WEB_URL').pipe(
+  WEB_URL: Config.String('WEB_URL').pipe(
     Config.orElse(() =>
       environmentBasedDefault(constants.DEFAULT_WEB_URL, constants.STAGING_WEB_URL)
     )
@@ -156,13 +156,13 @@ export const APP_CONFIG = {
   BIN_DIR: optionalTrimmedString('BIN_DIR'),
 
   // The log level for the Composio CLI
-  LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
+  LOG_LEVEL: Config.option(Config.LogLevel('LOG_LEVEL')),
 
   // The organization ID for multi-project auth (overrides file-based config)
-  ORG_ID: Config.option(Config.string('ORG_ID')),
+  ORG_ID: Config.option(Config.String('ORG_ID')),
 
   // The project ID for multi-project auth (overrides file-based config)
-  PROJECT_ID: Config.option(Config.string('PROJECT_ID')),
+  PROJECT_ID: Config.option(Config.String('PROJECT_ID')),
 
   // Override the Composio agents service URL
   AGENTS_BASE_URL: optionalString('AGENTS_BASE_URL'),

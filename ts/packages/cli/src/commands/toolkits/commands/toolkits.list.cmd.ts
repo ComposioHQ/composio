@@ -16,22 +16,22 @@ class ToolkitsListRequestError extends Data.TaggedError('commands/ToolkitsListRe
   readonly cause: unknown;
 }> {}
 
-const query = Flag.string('query').pipe(
+const query = Flag.String('query').pipe(
   Flag.withDescription('Text search by name, slug, or description'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );
 
-const connected = Flag.boolean('connected').pipe(
+const connected = Flag.Boolean('connected').pipe(
   Flag.withDescription('Filter to connected toolkits only'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('User ID for connection status (falls back to project/global test_user_id)')
 );

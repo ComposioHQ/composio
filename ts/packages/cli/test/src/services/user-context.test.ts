@@ -18,6 +18,7 @@ import {
   KeyringError,
   CredentialPersistence,
 } from '@composio/cli-keyring';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const InMemoryKeyringLayer = (() => {
@@ -239,6 +240,45 @@ describe('ComposioUserContext', () => {
           deepStrictEqual(ctx.isLoggedIn(), true);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
+    });
+
+    it.effect('[Then] preserves unknown fields across read-modify-write updates', () => {
+      const cwd = tempy.temporaryDirectory();
+      const map = new Map([]) satisfies Map<string, string>;
+      const userDataPath = path.join(cwd, '.composio', 'user_data.json');
+      fs.mkdirSync(path.dirname(userDataPath), { recursive: true });
+      fs.writeFileSync(
+        userDataPath,
+        JSON.stringify({
+          api_key: 'old-api-key',
+          future_auth: {
+            provider: 'custom',
+            scopes: ['read', 'write'],
+          },
+        })
+      );
+
+      const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+      const ComposioUserContextTest = Layer.provideMerge(
+        ComposioUserContextLive,
+        Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+      );
+
+      return Effect.gen(function* () {
+        const fileSystem = yield* FileSystem.FileSystem;
+        const ctx = yield* ComposioUserContext;
+        yield* ctx.login('new-api-key');
+
+        const parsed = JSON.parse(yield* fileSystem.readFileString(userDataPath, 'utf8')) as {
+          api_key: string;
+          future_auth: { provider: string; scopes: Array<string> };
+        };
+        assertEquals(parsed.api_key, 'new-api-key');
+        assertEquals(parsed.future_auth, {
+          provider: 'custom',
+          scopes: ['read', 'write'],
+        });
+      }).pipe(Effect.provide(ComposioUserContextTest));
     });
 
     describe('[When] the file is empty', () => {

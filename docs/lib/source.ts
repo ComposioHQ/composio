@@ -7,7 +7,13 @@ import {
   changelog,
 } from 'fumadocs-mdx:collections/server';
 import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
-import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
+import type { Folder, Node } from 'fumadocs-core/page-tree';
+import {
+  type ContentStorage,
+  type InferPageType,
+  loader,
+  multiple,
+} from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -48,6 +54,39 @@ function loadOpenapiPages() {
 
 type OpenapiPages = Awaited<ReturnType<typeof loadOpenapiPages>>;
 
+const API_METHOD_ORDER: Partial<Record<string, number>> = {
+  get: 0, // read
+  post: 1, // create
+  patch: 2, // update
+  put: 2, // update
+  delete: 3,
+};
+
+const openApiPageDataSchema = z.object({
+  _openapi: z.object({ method: z.string() }),
+});
+
+/** Orders generated OpenAPI siblings while leaving authored sidebar items in place. */
+function orderApiOperations(folder: Folder, storage: ContentStorage): Folder {
+  const ranks = new Map<Node, number>();
+  for (const node of folder.children) {
+    if (node.type !== 'page' || !node.$ref) continue;
+    const file = storage.read(node.$ref);
+    if (!file || file.format !== 'page') continue;
+
+    const parsed = openApiPageDataSchema.safeParse(file.data);
+    if (parsed.success) ranks.set(node, API_METHOD_ORDER[parsed.data._openapi.method] ?? 4);
+  }
+
+  const ordered = [...ranks].sort((a, b) => a[1] - b[1]).map(([node]) => node);
+  let index = 0;
+
+  return {
+    ...folder,
+    children: folder.children.map(node => (ranks.has(node) ? ordered[index++] : node)),
+  };
+}
+
 // One combined reference source with both v3.1 and v3.0 OpenAPI pages.
 // v3.1 at api-reference/, v3.0 at api-reference/v3/
 let _openapiPagesPromise: ReturnType<typeof loadOpenapiPages> | null = null;
@@ -78,6 +117,7 @@ function createReferenceSource(openapiLatest: OpenapiPages[0], openapiV3Pages: O
       transformers: [
         {
           folder(node, folderPath) {
+            node = orderApiOperations(node, this.storage);
             if (
               folderPath === 'api-reference' ||
               folderPath === 'sdk-reference' ||
