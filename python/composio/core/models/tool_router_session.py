@@ -12,7 +12,8 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from composio_client import BadRequestError, Omit, omit
+import typing_extensions as te
+from composio_client import BadRequestError, ConflictError, Omit, omit
 from composio_client._types import SequenceNotStr
 from composio_client.types.tool_list_response import (
     ItemDeprecated,
@@ -52,9 +53,9 @@ from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
     InlineCustomToolsWirePayload,
-    ToolRouterSessionProxyExecuteResponse,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+    ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
@@ -106,6 +107,19 @@ ToolRouterSessionConfig = t.Union[
 ]
 
 
+class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
+    """``manage_connections`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    Unlike the create-time config, ``callback_url=None`` removes the stored
+    callback URL while leaving the sibling connection settings untouched.
+    """
+
+    enable: t.Optional[bool]
+    callback_url: t.Optional[str]
+    enable_connection_removal: t.Optional[bool]
+    enable_wait_for_connections: t.Optional[bool]
+
+
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
@@ -137,6 +151,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     config: ToolRouterSessionConfig
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
+    #: Version of the server-side configuration this object last observed.
+    #: Refreshed in place by :meth:`update`; pass it as
+    #: ``expected_config_version`` to make an update conditional on it.
+    config_version: t.Optional[int]
 
     def __init__(
         self,
@@ -151,6 +169,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
         config: t.Optional[ToolRouterSessionConfig] = None,
+        config_version: t.Optional[int] = None,
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
@@ -178,6 +197,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
         # not surface `mcp` on the base class — MCP is an explicit opt-in.
         setattr(self, "mcp", mcp)
+        self.config_version = config_version
         self.experimental = experimental
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
@@ -935,7 +955,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[t.Dict[str, SequenceNotStr[str]]], "Omit"
         ] = omit,
         manage_connections: t.Union[
-            t.Optional[session_patch_params.ManageConnections], "Omit"
+            t.Optional[session_patch_params.ManageConnections],
+            t.Optional["ToolRouterUpdateManageConnectionsConfig"],
+            "Omit",
         ] = omit,
         sandbox: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
@@ -943,20 +965,34 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[session_patch_params.MultiAccount], "Omit"
         ] = omit,
         preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
+        expected_config_version: t.Optional[int] = None,
     ) -> ToolRouterSessionConfig:
         """Partially update the session configuration.
 
         Only the fields provided will be changed; omitted fields are preserved.
-        Mutates this session's ``config`` and ``preload`` in-place and returns
-        the updated session configuration.
+        Mutates this session's ``config``, ``config_version`` and ``preload``
+        in-place, only after a successful response, and returns the updated
+        session configuration.
 
         Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
-        ``multi_account`` to clear the stored value.
+        ``multi_account`` to clear the stored value. Inside
+        ``manage_connections``, ``callback_url=None`` removes the stored
+        callback URL without touching the sibling connection settings. An empty
+        toolkit allowlist (``{"enable": []}``) is sent as-is and denies every
+        app toolkit.
+
+        ``expected_config_version`` (opt-in) is sent as the request
+        precondition ``expected_config_version``. When the stored version
+        differs the API answers 409, which is raised as
+        :class:`~composio.exceptions.SessionConfigConflictError` while this
+        object stays unchanged: re-fetch the session with
+        ``composio.sessions.use(session_id)`` and retry against the fresh
+        ``config_version``.
 
         ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer
         ``sandbox`` in new code.
 
-        All parameters use the same types as the Stainless-generated
+        All other parameters use the same types as the Stainless-generated
         ``client.tool_router.session.patch()`` method.
         """
         from composio.core.models.tool_router import _session_preload_config
@@ -966,22 +1002,58 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
             )
+        if expected_config_version is not None and (
+            isinstance(expected_config_version, bool) or expected_config_version < 1
+        ):
+            raise exceptions.InvalidParams(
+                "`expected_config_version` must be a positive integer"
+            )
 
         workbench_payload = sandbox if sandbox is not omit else workbench
-
-        response = self._client.tool_router.session.patch(
-            session_id=self.session_id,
-            toolkits=toolkits,
-            tools=tools,
-            tags=tags,
-            auth_configs=auth_configs,
-            connected_accounts=connected_accounts,
-            manage_connections=manage_connections,
-            workbench=workbench_payload,
-            multi_account=multi_account,
-            preload=preload,
+        # The pinned client has no typed parameter for the precondition, so it
+        # travels as an extra root body field.
+        extra_body = (
+            {"expected_config_version": expected_config_version}
+            if expected_config_version is not None
+            else None
         )
+
+        try:
+            response = self._client.tool_router.session.patch(
+                session_id=self.session_id,
+                toolkits=toolkits,
+                tools=tools,
+                tags=tags,
+                auth_configs=auth_configs,
+                connected_accounts=connected_accounts,
+                manage_connections=t.cast(
+                    t.Union[t.Optional[session_patch_params.ManageConnections], "Omit"],
+                    manage_connections,
+                ),
+                workbench=workbench_payload,
+                multi_account=multi_account,
+                preload=preload,
+                extra_body=extra_body,
+            )
+        except ConflictError as exc:
+            if expected_config_version is None:
+                message = (
+                    f"Session {self.session_id} configuration changed while this "
+                    "update was in flight; re-fetch the session and retry the update"
+                )
+            else:
+                message = (
+                    f"Session {self.session_id} configuration is no longer at "
+                    f"version {expected_config_version}; re-fetch the session and "
+                    "retry the update"
+                )
+            raise exceptions.SessionConfigConflictError(
+                message,
+                session_id=self.session_id,
+                expected_config_version=expected_config_version,
+            ) from exc
         self.config = response.config
+        self.config_version = response.config_version
         self.preload = _session_preload_config(response.config.preload)
         return self.config
 

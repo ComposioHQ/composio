@@ -53,6 +53,7 @@ import {
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -131,6 +132,12 @@ export class ToolRouter<
     telemetry.instrument(this, 'ToolRouter');
   }
 
+  /**
+   * Derives the MCP config for a session from the auth context the session
+   * request was made with: the project key when one is configured, otherwise
+   * the `x-user-api-key` default header. The credential is only attached when
+   * the MCP URL shares the client's API origin; see `buildMCPServerConfig`.
+   */
   private createMCPServerConfig({
     type,
     url,
@@ -138,13 +145,13 @@ export class ToolRouter<
     type: MCPServerType;
     url: string;
   }): ToolRouterMCPServerConfig {
-    return {
+    return buildMCPServerConfig({
       type,
       url,
-      headers: {
-        ...(this.config?.apiKey ? { 'x-api-key': this.config.apiKey } : {}),
-      },
-    };
+      apiBaseURL: this.client.baseURL,
+      apiKey: this.config?.apiKey,
+      defaultHeaders: this.config?.defaultHeaders,
+    });
   }
 
   /**

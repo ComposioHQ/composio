@@ -13,6 +13,8 @@ import {
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
   ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateManageConnectionsConfig,
+  ToolRouterUpdateManageConnectionsSchema,
   ToolRouterSandboxConfig,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
@@ -149,14 +151,35 @@ export const transformToolRouterWorkbenchParams = transformToolRouterSandboxPara
  * PATCH-safe variant of transformToolRouterManageConnectionsParams.
  * Does NOT apply defaults — only includes fields explicitly present in the input.
  */
+/**
+ * `manage_connections` as sent by `session.update()`. `callback_url: null`
+ * removes the stored callback; the pinned client types it as string-only.
+ */
+export type SessionPatchManageConnectionsBody = Omit<
+  SessionPatchParams.ManageConnections,
+  'callback_url'
+> & {
+  callback_url?: string | null;
+};
+
+/**
+ * Request body of `session.update()`. Extends the pinned client's
+ * `SessionPatchParams` with the nullable callback URL and the
+ * `expected_config_version` root precondition.
+ */
+export type SessionPatchBody = Omit<SessionPatchParams, 'manage_connections'> & {
+  manage_connections?: SessionPatchManageConnectionsBody | null;
+  expected_config_version?: number;
+};
+
 export const transformToolRouterUpdateManageConnectionsParams = (
-  params: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionPatchParams.ManageConnections => {
+  params: boolean | ToolRouterUpdateManageConnectionsConfig
+): SessionPatchManageConnectionsBody => {
   if (typeof params === 'boolean') {
     return { enable: params };
   }
 
-  const parsedResult = ToolRouterConfigManageConnectionsSchema.safeParse(params);
+  const parsedResult = ToolRouterUpdateManageConnectionsSchema.safeParse(params);
   if (!parsedResult.success) {
     throw new ValidationError('Failed to parse manage connections config', {
       cause: parsedResult.error,
@@ -164,7 +187,7 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   }
 
   const config = parsedResult.data;
-  const result: Record<string, unknown> = {};
+  const result: SessionPatchManageConnectionsBody = {};
   if (config.enable !== undefined) {
     result.enable = config.enable;
   }
@@ -174,7 +197,7 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   if (config.waitForConnections !== undefined) {
     result.enable_wait_for_connections = config.waitForConnections;
   }
-  return result as SessionPatchParams.ManageConnections;
+  return result;
 };
 
 /**
@@ -246,8 +269,8 @@ export const transformToolRouterToolkitsParams = (
 
 export const transformToolRouterUpdateParams = (
   config: ToolRouterUpdateSessionConfig
-): SessionPatchParams => {
-  const params: SessionPatchParams = {};
+): SessionPatchBody => {
+  const params: SessionPatchBody = {};
 
   if (config.toolkits !== undefined) {
     params.toolkits = transformToolRouterToolkitsParams(config.toolkits);
@@ -300,6 +323,9 @@ export const transformToolRouterUpdateParams = (
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;
+  }
+  if (config.expectedConfigVersion !== undefined) {
+    params.expected_config_version = config.expectedConfigVersion;
   }
 
   return params;

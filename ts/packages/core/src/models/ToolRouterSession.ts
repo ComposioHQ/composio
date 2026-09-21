@@ -1,10 +1,15 @@
 import { telemetry } from '../telemetry/Telemetry';
-import { Composio as ComposioClient, BadRequestError } from '@composio/client';
+import { Composio as ComposioClient, BadRequestError, ConflictError } from '@composio/client';
+import type {
+  SessionPatchParams,
+  SessionPatchResponse,
+} from '@composio/client/resources/tool-router/session/session.mjs';
 import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -760,17 +765,55 @@ export class ToolRouterSession<
    * Only the fields provided will be changed; omitted fields are preserved.
    * Mutates this session's `config`, `configVersion`, `preload`, `sandbox`,
    * and `warnings` in-place, and resolves to the updated session `config`.
+   *
+   * - `manageConnections.callbackUrl: null` removes the stored callback URL
+   *   without touching the sibling connection settings.
+   * - An empty toolkit allowlist (`toolkits: []`) is sent as-is and denies
+   *   every app toolkit; it is never dropped from the request.
+   * - `expectedConfigVersion` (opt-in) is sent as the request precondition
+   *   `expected_config_version`. When the stored version differs the API
+   *   answers 409, which surfaces as `ComposioSessionConfigConflictError`
+   *   and leaves this object unchanged: re-fetch the session with
+   *   `sessions.use(sessionId)` and retry against the fresh `configVersion`.
+   *
+   * Local state is only refreshed after a successful response.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionConfig> {
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
-    const params = transformToolRouterUpdateParams(parsed);
-    const response = await withCancellation(
-      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
-      requestOptions?.signal
-    );
+    const body = transformToolRouterUpdateParams(parsed);
+    let response: SessionPatchResponse;
+    try {
+      response = await withCancellation(
+        () =>
+          this.client.toolRouter.session.patch(
+            this.sessionId,
+            // The pinned client does not type `expected_config_version` or a
+            // null `callback_url`; the body is serialized as-is.
+            body as SessionPatchParams,
+            requestOptions
+          ),
+        requestOptions?.signal
+      );
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        throw new ComposioSessionConfigConflictError(
+          parsed.expectedConfigVersion === undefined
+            ? `Session ${this.sessionId} configuration changed while this update was in flight; re-fetch the session and retry the update`
+            : `Session ${this.sessionId} configuration is no longer at version ${parsed.expectedConfigVersion}; re-fetch the session and retry the update`,
+          {
+            cause: error,
+            meta: {
+              sessionId: this.sessionId,
+              expectedConfigVersion: parsed.expectedConfigVersion,
+            },
+          }
+        );
+      }
+      throw error;
+    }
     this.configVersion = response.config_version;
     this.config = response.config;
     this.preload = response.config.preload;

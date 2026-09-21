@@ -9,6 +9,13 @@ import {
 } from '../../errors/TriggerErrors';
 import logger from '../../utils/logger';
 import { telemetry } from '../../telemetry/Telemetry';
+import { getUserApiKeyHeader, USER_API_KEY_HEADER } from '../../utils/sdk';
+import type { ComposioRequestHeaders } from '../../types/composio.types';
+
+export type PusherServiceOptions = {
+  /** Default headers of the owning SDK instance; only `x-user-api-key` is consulted. */
+  defaultHeaders?: ComposioRequestHeaders;
+};
 
 export class PusherService {
   // these values are set via the Apollo API `/internal/sdk/realtime/credentials` endpoint
@@ -18,14 +25,24 @@ export class PusherService {
   private pusherChannel!: string;
   // these details are set via the client SDK
   private pusherBaseURL!: string;
-  private apiKey!: string;
+  /**
+   * Credential headers for channel authorization. They mirror the client's
+   * effective auth: the project key as `x-api-key`, otherwise the configured
+   * `x-user-api-key`. The environment is never consulted here.
+   */
+  private authHeaders!: Record<string, string>;
   private pusherClient!: PusherClient;
   private composioClient!: ComposioClient;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
-    this.apiKey = client.apiKey ?? process.env.COMPOSIO_API_KEY ?? '';
+    const userApiKey = client.apiKey ? undefined : getUserApiKeyHeader(options.defaultHeaders);
+    this.authHeaders = client.apiKey
+      ? { 'x-api-key': client.apiKey }
+      : userApiKey
+        ? { [USER_API_KEY_HEADER]: userApiKey.value }
+        : {};
     telemetry.instrument(this, 'PusherService');
   }
 
@@ -66,9 +83,7 @@ export class PusherService {
           cluster: this.pusherCluster,
           channelAuthorization: {
             endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: {
-              'x-api-key': this.apiKey,
-            },
+            headers: { ...this.authHeaders },
             transport: 'ajax',
           },
         });

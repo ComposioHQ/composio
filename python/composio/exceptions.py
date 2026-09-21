@@ -325,6 +325,45 @@ class ApiKeyNotProvidedError(ApiKeyError, NotFoundError):
         )
 
 
+class MCPDestinationError(ComposioClientError):
+    """Raised when a session's hosted MCP endpoint is not a destination the
+    SDK will hand the session credential to.
+
+    The credential header is only attached when the MCP URL shares the origin
+    of the API base URL the session was created against. The message names
+    both origins and never includes a credential value.
+    """
+
+    def __init__(self, message: str, *, mcp_origin: str, api_origin: str) -> None:
+        super().__init__(message)
+        self.mcp_origin = mcp_origin
+        self.api_origin = api_origin
+
+
+class SessionConfigConflictError(ComposioClientError):
+    """Raised when a session update is rejected with HTTP 409 because the
+    session configuration changed since it was last read (for example the
+    supplied ``expected_config_version`` is stale).
+
+    The local session object is left as it was before the call. Re-fetch the
+    session with ``composio.sessions.use(session_id)`` and retry the update
+    against the fresh ``config_version``.
+    """
+
+    status_code = 409
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        session_id: str,
+        expected_config_version: t.Optional[int] = None,
+    ) -> None:
+        super().__init__(message)
+        self.session_id = session_id
+        self.expected_config_version = expected_config_version
+
+
 class ResourceError(ComposioClientError):
     pass
 

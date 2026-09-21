@@ -652,6 +652,38 @@ export type ToolRouterSessionProxyExecuteFn = (
   params: SessionProxyExecuteParams
 ) => Promise<ToolRouterSessionProxyExecuteResponse>;
 
+/**
+ * `manageConnections` shape accepted by `session.update()`. Unlike the create
+ * schema, `callbackUrl: null` removes the stored callback URL while leaving
+ * the sibling connection settings untouched.
+ */
+export const ToolRouterUpdateManageConnectionsSchema = z
+  .object({
+    enable: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
+      ),
+    callbackUrl: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'The callback url to use in the tool router session. `null` removes the stored callback url'
+      ),
+    waitForConnections: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready'
+      ),
+  })
+  .strict();
+export type ToolRouterUpdateManageConnectionsConfig = z.infer<
+  typeof ToolRouterUpdateManageConnectionsSchema
+>;
+
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
     toolkits: z
@@ -660,7 +692,10 @@ export const ToolRouterUpdateSessionConfigSchema = z
         ToolRouterToolkitsDisabledConfigSchema,
         ToolRouterToolkitsEnabledConfigSchema,
       ])
-      .optional(),
+      .optional()
+      .describe(
+        'Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit'
+      ),
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional(),
@@ -677,7 +712,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
       })
       .optional(),
     manageConnections: z
-      .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
+      .union([z.boolean(), ToolRouterUpdateManageConnectionsSchema])
       .nullable()
       .optional(),
     sandbox: ToolRouterSandboxConfigSchema.partial().nullable().optional(),
@@ -696,6 +731,14 @@ export const ToolRouterUpdateSessionConfigSchema = z
       })
       .strict()
       .optional(),
+    expectedConfigVersion: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe(
+        'Optional precondition: the configVersion this update was computed from. The API rejects the update with 409 when the stored version differs, which the SDK surfaces as ComposioSessionConfigConflictError. Omitted by default'
+      ),
   })
   .partial()
   .superRefine((config, ctx) => {

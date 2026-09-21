@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
-import ComposioClient from '@composio/client';
+import ComposioClient, { ConflictError } from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
@@ -15,6 +15,7 @@ import {
 import type { ConnectionRequest } from '../../src/types/connectionRequest.types';
 import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
+import { ComposioSessionConfigConflictError } from '../../src/errors/ToolRouterErrors';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -67,7 +68,7 @@ const mockSessionCreateResponse = {
   session_id: 'session_123',
   mcp: {
     type: 'http',
-    url: 'https://mcp.example.com/session_123',
+    url: 'https://api.composio.dev/api/v3/tool_router/session/session_123',
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
@@ -85,7 +86,7 @@ const mockSessionRetrieveResponse = {
   session_id: 'session_123',
   mcp: {
     type: 'http',
-    url: 'https://mcp.example.com/session_123',
+    url: 'https://api.composio.dev/api/v3/tool_router/session/session_123',
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
@@ -221,7 +222,7 @@ describe('ToolRouter', () => {
         expect(session).toHaveProperty('mcp');
         expect(session.mcp).toEqual({
           type: 'http',
-          url: 'https://mcp.example.com/session_123',
+          url: 'https://api.composio.dev/api/v3/tool_router/session/session_123',
           headers: {
             'x-api-key': 'test-api-key',
           },
@@ -1845,7 +1846,7 @@ describe('ToolRouter', () => {
           ...mockSessionCreateResponse,
           mcp: {
             type: 'http',
-            url: 'https://mcp.example.com/session_123',
+            url: 'https://api.composio.dev/api/v3/tool_router/session/session_123',
           },
         };
 
@@ -1861,7 +1862,7 @@ describe('ToolRouter', () => {
           ...mockSessionCreateResponse,
           mcp: {
             type: 'sse',
-            url: 'https://mcp.example.com/sse/session_123',
+            url: 'https://api.composio.dev/api/v3/tool_router/session/sse/session_123',
           },
         };
 
@@ -1870,7 +1871,9 @@ describe('ToolRouter', () => {
         const session = await toolRouter.create(userId);
 
         expect(session.mcp.type).toBe('sse');
-        expect(session.mcp.url).toBe('https://mcp.example.com/sse/session_123');
+        expect(session.mcp.url).toBe(
+          'https://api.composio.dev/api/v3/tool_router/session/sse/session_123'
+        );
       });
 
       it('should return session with all required properties', async () => {
@@ -3279,7 +3282,9 @@ describe('ToolRouter', () => {
       });
 
       expect(session.sessionId).toBe('session_123');
-      expect(session.mcp.url).toBe('https://mcp.example.com/session_123');
+      expect(session.mcp.url).toBe(
+        'https://api.composio.dev/api/v3/tool_router/session/session_123'
+      );
 
       // Use authorize function
       const connection = await session.authorize('gmail');
@@ -3417,7 +3422,7 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('mcp');
       expect(session.mcp).toEqual({
         type: 'http',
-        url: 'https://mcp.example.com/session_123',
+        url: 'https://api.composio.dev/api/v3/tool_router/session/session_123',
         headers: {
           'x-api-key': 'test-api-key',
         },
@@ -3721,7 +3726,9 @@ describe('ToolRouter', () => {
       const session = await toolRouter.use(sessionId);
 
       expect(session.mcp.type).toBe('http');
-      expect(session.mcp.url).toBe('https://mcp.example.com/session_123');
+      expect(session.mcp.url).toBe(
+        'https://api.composio.dev/api/v3/tool_router/session/session_123'
+      );
     });
 
     it('should throw error if session retrieve fails', async () => {
@@ -3813,6 +3820,104 @@ describe('ToolRouter', () => {
       expect(session.warnings).toEqual([
         { code: 'TOOLKIT_NOT_CONNECTED', message: 'gmail is not connected' },
       ]);
+    });
+
+    const patchBody = (callIndex = 0) =>
+      mockClient.toolRouter.session.patch.mock.calls[callIndex][1] as Record<string, unknown>;
+
+    it('sends an explicit null callback URL so the stored callback is removed', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      await session.update({ manageConnections: { callbackUrl: null } });
+
+      expect(patchBody().manage_connections).toEqual({ callback_url: null });
+    });
+
+    it('preserves an empty toolkit allowlist instead of omitting it', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      await session.update({ toolkits: [] });
+      await session.update({ toolkits: { enable: [] } });
+
+      expect(patchBody(0).toolkits).toEqual({ enable: [] });
+      expect(patchBody(1).toolkits).toEqual({ enable: [] });
+    });
+
+    it('does not send an expected config version unless the caller opts in', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      await session.update({ toolkits: ['gmail'] });
+
+      expect(patchBody()).not.toHaveProperty('expected_config_version');
+    });
+
+    it('sends expectedConfigVersion as the request body root field', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      await session.update({ toolkits: ['gmail'], expectedConfigVersion: 7 });
+
+      const body = patchBody();
+      expect(body.expected_config_version).toBe(7);
+      expect(body).not.toHaveProperty('expectedConfigVersion');
+      expect(body.toolkits).toEqual({ enable: ['gmail'] });
+    });
+
+    it('rejects a non-positive expectedConfigVersion before calling the API', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      await expect(session.update({ expectedConfigVersion: 0 })).rejects.toThrow();
+      expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a 409 as a typed conflict error and leaves local state untouched', async () => {
+      const session = await toolRouter.use(sessionId);
+      const configBefore = session.config;
+      mockClient.toolRouter.session.patch.mockRejectedValueOnce(
+        new ConflictError(409, { error: 'version conflict' }, 'Conflict', new Headers())
+      );
+
+      const failure = await session
+        .update({ toolkits: ['gmail'], expectedConfigVersion: 7 })
+        .catch(e => e);
+
+      expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
+      expect(failure.message).toMatch(/re-fetch/i);
+      expect(failure.message).toMatch(/retry/i);
+      expect(failure.statusCode).toBe(409);
+      expect(session.config).toBe(configBefore);
+      expect(session.configVersion).toBe(7);
+      expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
+    });
+
+    it('lets the first of two handles at version N win and the stale one conflict', async () => {
+      const first = await toolRouter.use(sessionId);
+      const second = await toolRouter.use(sessionId);
+      expect(first.configVersion).toBe(7);
+      expect(second.configVersion).toBe(7);
+
+      await first.update({ toolkits: ['gmail'], expectedConfigVersion: first.configVersion });
+      expect(first.configVersion).toBe(8);
+
+      mockClient.toolRouter.session.patch.mockRejectedValueOnce(
+        new ConflictError(409, { error: 'version conflict' }, 'Conflict', new Headers())
+      );
+      await expect(
+        second.update({ toolkits: ['slack'], expectedConfigVersion: second.configVersion })
+      ).rejects.toBeInstanceOf(ComposioSessionConfigConflictError);
+      expect(second.configVersion).toBe(7);
+      expect(second.config).toEqual(mockSessionRetrieveResponse.config);
+
+      // A fresh read makes a deliberate retry possible.
+      const refreshed = await toolRouter.use(sessionId);
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce({
+        ...mockSessionRetrieveResponse,
+        config_version: 8,
+      });
+      const reread = await toolRouter.use(sessionId);
+      expect(reread.configVersion).toBe(8);
+      await reread.update({ toolkits: ['slack'], expectedConfigVersion: reread.configVersion });
+      expect(patchBody(2).expected_config_version).toBe(8);
+      void refreshed;
     });
   });
 });

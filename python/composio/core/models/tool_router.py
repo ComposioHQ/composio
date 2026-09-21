@@ -10,6 +10,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 from enum import Enum
+from urllib.parse import urlsplit
 
 import typing_extensions as te
 from composio_client import omit
@@ -48,6 +49,7 @@ from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
+    ToolRouterUpdateManageConnectionsConfig,
 )
 from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
@@ -56,7 +58,45 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.exceptions import InvalidParams
+from composio.exceptions import InvalidParams, MCPDestinationError
+
+#: Header that carries a Composio user API key (``uak_...``) instead of a
+#: project API key. It is the only client default header the MCP export reads.
+USER_API_KEY_HEADER = "x-user-api-key"
+
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _origin(url: str) -> str:
+    """Return the origin of an absolute URL.
+
+    The origin is ``scheme://host[:port]`` in lowercase with the scheme's
+    default port dropped, matching the WHATWG ``URL.origin`` used by the
+    TypeScript SDK.
+    """
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.hostname:
+        raise MCPDestinationError(
+            f"{url!r} is not an absolute URL", mcp_origin="", api_origin=""
+        )
+    scheme = parts.scheme.lower()
+    hostname = parts.hostname.lower()
+    host = f"[{hostname}]" if ":" in hostname else hostname
+    port = parts.port
+    if port is not None and port != _DEFAULT_PORTS.get(scheme):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}"
+
+
+def _user_api_key_header_value(
+    headers: t.Mapping[str, t.Any],
+) -> t.Optional[str]:
+    """The configured ``x-user-api-key`` value, matched case-insensitively."""
+    for name, value in headers.items():
+        if name.lower() == USER_API_KEY_HEADER and isinstance(value, str) and value:
+            return value
+    return None
+
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -542,17 +582,43 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Create an MCP server config object with authentication headers.
 
+        The credential header mirrors the effective auth of the underlying
+        client: its project key as ``x-api-key`` when one is configured,
+        otherwise the ``x-user-api-key`` default header. No other default
+        header is copied and the environment is never re-read.
+
+        The credential is only attached when the MCP URL has the same origin
+        as the client's API base URL, whatever scheme is configured: that
+        origin already receives the credential on every SDK request. Any other
+        destination raises :class:`~composio.exceptions.MCPDestinationError`
+        naming both origins.
+        The SDK itself never connects to the MCP URL and does not follow
+        redirects for it; an MCP client consuming this config must not forward
+        these headers to a different origin.
+
         :param mcp_type: The type of MCP server (HTTP or SSE)
         :param url: The URL of the MCP server
         :return: MCP server config with headers
         """
-        return ToolRouterMCPServerConfig(
-            type=mcp_type,
-            url=url,
-            headers={
-                "x-api-key": self._client.api_key,
-            },
-        )
+        api_origin = _origin(str(self._client.base_url))
+        mcp_origin = _origin(url)
+        if mcp_origin != api_origin:
+            raise MCPDestinationError(
+                f"The session MCP endpoint origin {mcp_origin} does not match the "
+                f"API origin {api_origin}; the session credential was not attached",
+                mcp_origin=mcp_origin,
+                api_origin=api_origin,
+            )
+
+        headers: t.Dict[str, t.Optional[str]] = {}
+        api_key = self._client.api_key
+        if api_key:
+            headers["x-api-key"] = api_key
+        else:
+            user_api_key = _user_api_key_header_value(self._client.default_headers)
+            if user_api_key:
+                headers[USER_API_KEY_HEADER] = user_api_key
+        return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
     def _transform_tags_params(
         self, tags: t.Optional[ToolRouterConfigTags]
@@ -1119,6 +1185,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             config=session.config,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
@@ -1268,6 +1335,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             config=session.config,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
@@ -1306,6 +1374,7 @@ __all__ = [
     "ToolRouterTagsEnableDisableConfig",
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
+    "ToolRouterUpdateManageConnectionsConfig",
     "ToolRouterSandboxConfig",
     "ToolRouterWorkbenchConfig",
     "SandboxSize",
