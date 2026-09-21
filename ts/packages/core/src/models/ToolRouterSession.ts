@@ -124,7 +124,18 @@ export class ToolRouterSession<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   public readonly sessionId: string;
-  /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
+  /**
+   * Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on
+   * every session at runtime, but only surfaced in the type when the session
+   * is created with `{ mcp: true }` (which returns `Session`); the default
+   * `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in.
+   *
+   * `headers` carries the credential this SDK instance authenticated with:
+   * the project key as `x-api-key`, otherwise the user API key as
+   * `x-user-api-key`. It is only populated when the MCP URL shares the API
+   * base URL's origin, so treat the config as a secret.
+   * See https://docs.composio.dev/docs/sessions-via-mcp
+   */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   /**
@@ -136,6 +147,11 @@ export class ToolRouterSession<
   public preload: ToolRouterSessionPreloadConfig;
   /** Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. */
   public sandbox?: ToolRouterSessionWorkbenchConfig;
+  /**
+   * Version of the server-side configuration this object last observed.
+   * Refreshed in place by `update()`; pass it as `expectedConfigVersion` to
+   * make an update conditional on it.
+   */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];

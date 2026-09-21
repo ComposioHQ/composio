@@ -73,11 +73,84 @@ Managed auth is the quickest way to start. Create a [custom auth config](/docs/a
 
 Restrict the session to the toolkits and tools your feature needs. This makes discovery more relevant and prevents unrelated actions from appearing in the agent's available surface. Ask for user confirmation before destructive or externally visible actions.
 
+## Run sessions in your organization's consumer project
+
+Every Composio organization also has one consumer project: the project behind Composio Connect and the For You clients, where your members' own connections live. Sessions in it are created with a [user API key](/reference/authenticating-to-composio#user-api-key) and an explicit scope. Composio never mints or returns the consumer project's API key.
+
+The flow is three calls. Resolve the consumer project, check which toolkits the user already connected, then create the session with the resolved scope:
+
+```bash
+# 1. Resolve the organization's consumer project (provisions it when absent)
+curl -X POST https://backend.composio.dev/api/v3.1/org/consumer/project/resolve \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: $COMPOSIO_ORG_ID"
+# {"project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "org_id": "org_9f2k1x",
+#  "project_type": "CONSUMER", "config": {"consumer_experience_enabled": true, ...}}
+
+# 2. List the toolkits this consumer user has already connected
+curl "https://backend.composio.dev/api/v3.1/org/consumer/connected_toolkits?user_id=user_123" \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: $COMPOSIO_ORG_ID"
+# {"toolkits": ["gmail"], "project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "user_id": "user_123"}
+
+# 3. Create the session in that project
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: $COMPOSIO_ORG_ID" \
+  -H "x-project-id: proj_4b8m2q" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["gmail"]}}'
+```
+
+Use the nano IDs from the resolve response (`org_id` and `project_nano_id`) for `x-org-id` and `x-project-id`, always together. A UUID in either header is a `400`. A user with no connections yet gets an empty `toolkits` list with the project scope still filled in, so you can create their session before they connect anything. An organization without a consumer project gets `null` project identifiers from the listing, which never provisions one.
+
+The beta SDKs carry the same scope for you and export it with the session's MCP config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import os
+
+from composio import Composio
+
+composio = Composio(
+    disable_api_key=True,
+    user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+    org_id="org_9f2k1x",
+    project_id="proj_4b8m2q",
+)
+
+session = composio.sessions.create(user_id="user_123", toolkits=["gmail"], mcp=True)
+# session.mcp.headers carries x-user-api-key, x-org-id, and x-project-id
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: process.env.COMPOSIO_USER_API_KEY,
+  orgId: "org_9f2k1x",
+  projectId: "proj_4b8m2q",
+});
+
+const session = await composio.create("user_123", { toolkits: ["gmail"], mcp: true });
+// session.mcp.headers carries x-user-api-key, x-org-id, and x-project-id
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Consumer project scope in the SDK requires `@composio/core` `1.0.0-beta` or `composio` `2.0.0b`. `orgId` and `projectId` (`org_id` and `project_id` in Python) must be set together, and the SDK rejects a scope that disagrees with `x-org-id` or `x-project-id` entries in `defaultHeaders`. The stable SDKs accept a user-only credential for the developer project but do not carry a consumer scope into session clones or the MCP config, so use the API calls above on the stable releases.
+</Callout>
+
 ## Before you launch
 
 - Verify two different users cannot see or use each other's connected accounts.
 - Test both the first-time connection flow and a returning user with an existing connection.
-- Store the Composio API key only on your server.
+- Store the Composio API key only on your server. A session created with a user API key exports that organization-wide key in its MCP config, so store that config as a secret too.
 - Persist session IDs for multi-turn conversations.
 - Test one safe, read-only call against a real connected account.
 - Inspect the resulting tool call in [Logs](/reference/api-reference/logs).

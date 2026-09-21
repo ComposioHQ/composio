@@ -134,7 +134,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     session, but is only surfaced in the type when you opt in with
     ``create(..., mcp=True)`` / ``use(..., mcp=True)``, which returns a
     :class:`ToolRouterSessionWithMcp`. By default agents use native tools via
-    :meth:`tools`. See https://docs.composio.dev/docs/sessions-via-mcp
+    :meth:`tools`. ``session.mcp.headers`` carries the credential this SDK
+    instance authenticated with (the project key as ``x-api-key``, otherwise
+    the user API key as ``x-user-api-key``) and is only populated when the
+    MCP URL shares the API base URL's origin, so treat it as a secret.
+    See https://docs.composio.dev/docs/sessions-via-mcp
 
     Attributes:
         session_id: Unique session identifier
