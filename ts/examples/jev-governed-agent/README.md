@@ -146,7 +146,7 @@ Deterministic policy stays authoritative because an on-intent action can still b
 ## Know where your data goes
 
 - TypeSafe receives your request, tool names and descriptions, and the exact proposed call arguments, including draft content and recipients.
-- OpenAI receives your request, three shortlisted tool schemas, and successful tool output. That output can contain mailbox data even though the terminal does not print the raw result.
+- OpenAI receives your request, three shortlisted tool schemas, successful tool output, and a stable SHA-256 hash of `COMPOSIO_EXAMPLES_USER_ID` as its `safety_identifier`. Tool output can contain mailbox data even though the terminal does not print the raw result.
 - Composio performs authenticated Gmail access using the connection associated with `COMPOSIO_EXAMPLES_USER_ID`.
 
 The example suppresses SDK logs and does not dump credentials, schemas, or raw tool responses. OpenAI is instructed to summarize results without quoting email bodies. That instruction is not a guarantee about model-generated text. The confirmation prompt deliberately displays all write arguments, including any content you asked it to draft or send. Treat terminal recordings accordingly.

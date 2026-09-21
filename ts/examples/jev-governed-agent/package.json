@@ -9,7 +9,7 @@
     "attack-demo": "bun src/index.ts --attack-demo",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "oxlint src",
-    "test": "bun test src/policy.test.ts"
+    "test": "bun test src/*.test.ts"
   },
   "dependencies": {
     "@composio/core": "workspace:*",
