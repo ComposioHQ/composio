@@ -7,12 +7,14 @@ export type EveSafetyDecision = {
 
 const PROMPT_BYPASS_PATTERNS = [
   /\b(ignore|disregard|override)\s+(all\s+)?(the\s+)?(previous|prior|above|earlier)\s+(instructions?|rules?|messages?)\b/i,
-  /\bwhat\s+(are|were)\s+you\s+told\b/i,
 ];
 
 const PROMPT_EXTRACTION_INTENT_PATTERNS = [
   /\b(leak|dump|extract|reveal|print|quote|verbatim|repeat|show|list|reconstruct|summarize)\b/i,
   /\bword\s*for\s*word\b/i,
+  // Needs a private target too, so "what were you told about Composio
+  // sessions?" stays a legitimate docs question.
+  /\bwhat\s+(are|were)\s+you\s+told\b/i,
 ];
 
 const PROMPT_PRIVATE_TARGET_PATTERNS = [
