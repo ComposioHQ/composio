@@ -15,15 +15,86 @@ from composio_client import (
     DEFAULT_MAX_RETRIES,
     NOT_GIVEN,
     APIError,
+    APIStatusError,
     NotGiven,
 )
 from composio_client import Composio as BaseComposio
-from httpx import URL, Client, Request, Timeout
+from httpx import URL, Client, Request, Response, Timeout
 
+from composio.exceptions import ComposioError
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
+
+
+_SDK_ERROR_CLASSES: t.Dict[t.Type[APIStatusError], t.Type[APIStatusError]] = {}
+
+
+def _with_sdk_error_base(
+    error_class: t.Type[APIStatusError],
+) -> t.Type[APIStatusError]:
+    """
+    Return a subclass of a generated-client status error that also derives
+    from the SDK's ``ComposioError``.
+
+    The generated client has its own exception root, unrelated to
+    ``composio.exceptions.ComposioError``, so HTTP failures such as an invalid
+    API key used to escape ``except ComposioError``. Keeping the generated
+    class as the first base preserves its constructor, ``status_code`` and
+    ``isinstance`` checks, so existing ``except APIStatusError`` handlers keep
+    working unchanged.
+    """
+    cached = _SDK_ERROR_CLASSES.get(error_class)
+    if cached is not None:
+        return cached
+    sdk_class = t.cast(
+        t.Type[APIStatusError],
+        type(
+            error_class.__name__,
+            (error_class, ComposioError),
+            {
+                "__module__": error_class.__module__,
+                "__reduce__": _reduce_sdk_error,
+            },
+        ),
+    )
+    # setdefault keeps the first class if two threads race to build one.
+    return _SDK_ERROR_CLASSES.setdefault(error_class, sdk_class)
+
+
+def _reduce_sdk_error(self: APIStatusError) -> t.Tuple[t.Any, ...]:
+    """
+    Pickle support for the classes built by ``_with_sdk_error_base``.
+
+    They are not module attributes, so pickle cannot find them by name. Record
+    the generated class instead and rebuild the SDK subclass on load.
+    """
+    error_class = type(self).__mro__[1]
+    return (
+        _rebuild_sdk_error,
+        (error_class, self.message, self.response, self.body),
+        self.__dict__,
+    )
+
+
+def _rebuild_sdk_error(
+    error_class: t.Type[APIStatusError],
+    message: str,
+    response: Response,
+    body: object,
+) -> APIStatusError:
+    return _with_sdk_error_base(error_class)(message, response=response, body=body)
+
+
+def _as_sdk_error(error: APIStatusError) -> APIStatusError:
+    if isinstance(error, ComposioError):
+        return error
+    sdk_error = _with_sdk_error_base(type(error))(
+        error.message, response=error.response, body=error.body
+    )
+    return sdk_error.with_traceback(error.__traceback__)
+
 
 CLIENT_LOGGER_NAME = "composio_client"
 """Name of the logger the generated ``composio_client`` package writes to."""
@@ -313,6 +384,28 @@ class HttpClient(BaseComposio, WithLogger):
         if self._without_retries is None:
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
+
+    def _decode(self, response: Response) -> t.Any:
+        """
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
+        """
+        try:
+            return super()._decode(response)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
+
+    def _process_response(
+        self, response: Response, cast_to: t.Optional[t.Type[t.Any]]
+    ) -> t.Any:
+        """
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
+        """
+        try:
+            return super()._process_response(response, cast_to)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
 
     def _prepare_request(self, request: Request) -> None:
         """
