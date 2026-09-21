@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   transformToolRouterTagsParams,
+  transformToolRouterToolsParams,
   transformToolRouterMultiAccountParams,
   transformToolRouterUpdateParams,
 } from '../../src/lib/toolRouterParams';
@@ -316,6 +317,24 @@ describe('transformToolRouterUpdateParams', () => {
 describe('ToolRouterTagsParamSchema', () => {
   it('accepts createHint and updateHint', () => {
     expect(ToolRouterTagsParamSchema.safeParse(['createHint', 'updateHint']).success).toBe(true);
+  });
+
+  it('passes createHint and updateHint through to the session tags payload', () => {
+    expect(transformToolRouterTagsParams(['createHint', 'updateHint'])).toEqual({
+      enable: ['createHint', 'updateHint'],
+    });
+  });
+
+  it('passes toolkit-level createHint and updateHint through to the tools payload', () => {
+    expect(
+      transformToolRouterToolsParams({
+        gmail: { tags: { disable: ['updateHint'] } },
+        github: { tags: { enable: ['createHint'] } },
+      })
+    ).toEqual({
+      gmail: { tags: { disable: ['updateHint'] } },
+      github: { tags: { enable: ['createHint'] } },
+    });
   });
 
   it('rejects unknown hints', () => {

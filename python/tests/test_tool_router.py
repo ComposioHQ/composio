@@ -311,6 +311,15 @@ class TestToolRouter:
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert kwargs["tags"] == tags
 
+    def test_create_session_with_toolkit_create_and_update_hints(
+        self, tool_router, mock_client
+    ):
+        tags = {"enable": ["createHint"], "disable": ["updateHint"]}
+        tool_router.create(user_id="user_123", tools={"gmail": {"tags": tags}})
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["tools"]["gmail"] == {"tags": tags}
+
     def test_create_session_with_global_tags_object_enable(
         self, tool_router, mock_client
     ):
