@@ -10,7 +10,9 @@ import {
   ToolRouterCreateSessionConfig,
   Session,
   SessionPreset,
+  type ToolRouterSessionConfig,
 } from '../../src/types/toolRouter.types';
+import type { ConnectionRequest } from '../../src/types/connectionRequest.types';
 import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
 
@@ -46,6 +48,7 @@ const createMockClient = () => ({
       create: vi.fn(),
       retrieve: vi.fn(),
       attach: vi.fn(),
+      patch: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
       search: vi.fn(),
@@ -87,7 +90,7 @@ const mockSessionRetrieveResponse = {
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
     user_id: 'user_123',
-    toolkits: { enable: ['gmail', 'slack', 'github'] },
+    toolkits: { enabled: ['gmail', 'slack', 'github'] },
     auth_configs: {},
     connected_accounts: {},
     manage_connections: {
@@ -250,6 +253,7 @@ describe('ToolRouter', () => {
         expect(session.sessionId).toBe('session_123');
         expect(session.preload.tools).toEqual([]);
         expect(session.configVersion).toBe(1);
+        expect(session.config).toEqual(mockSessionCreateResponse.config);
       });
 
       it('should create a session with preloaded tools', async () => {
@@ -2087,6 +2091,107 @@ describe('ToolRouter', () => {
     });
   });
 
+  describe('ensureConnected function', () => {
+    const userId = 'user_123';
+    const sessionId = 'session_123';
+
+    beforeEach(async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    });
+
+    it('returns the active connection without linking when the toolkit is already connected', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.ensureConnected('gmail');
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        expect.objectContaining({ toolkits: ['gmail'] }),
+        undefined
+      );
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        toolkit: 'gmail',
+        wasConnected: true,
+        connectedAccount: { id: 'conn_123', status: 'ACTIVE' },
+      });
+    });
+
+    it('treats a no-auth toolkit as connected without linking', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce({
+        items: [{ slug: 'search', name: 'Search', is_no_auth: true, connected_account: null }],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const session = await toolRouter.create(userId);
+      const result = await session.ensureConnected('search');
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+      expect(result).toEqual({ toolkit: 'search', wasConnected: true });
+    });
+
+    it('links and waits for a connection when the toolkit has none', async () => {
+      // github has connected_account: null in the shared mock response.
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const waitForConnection = vi.fn().mockResolvedValue({ id: 'conn_456', status: 'ACTIVE' });
+      const authorizeSpy = vi.spyOn(session, 'authorize').mockResolvedValue({
+        id: 'conn_456',
+        status: ConnectedAccountStatuses.INITIATED,
+        redirectUrl: 'https://composio.dev/auth/redirect',
+        waitForConnection,
+      } as unknown as ConnectionRequest);
+
+      const result = await session.ensureConnected('github', { timeout: 5000 });
+
+      expect(authorizeSpy).toHaveBeenCalledWith('github', {}, undefined);
+      expect(waitForConnection).toHaveBeenCalledWith(5000);
+      expect(result).toEqual({
+        toolkit: 'github',
+        wasConnected: false,
+        connectedAccount: { id: 'conn_456', status: 'ACTIVE' },
+      });
+    });
+
+    it('links a new connection when the only linked account is still pending', async () => {
+      // slack has an INITIATED (non-active) connected_account in the shared mock.
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const waitForConnection = vi.fn().mockResolvedValue({ id: 'conn_789', status: 'ACTIVE' });
+      const authorizeSpy = vi.spyOn(session, 'authorize').mockResolvedValue({
+        id: 'conn_789',
+        status: ConnectedAccountStatuses.INITIATED,
+        redirectUrl: null,
+        waitForConnection,
+      } as unknown as ConnectionRequest);
+
+      const result = await session.ensureConnected('slack');
+
+      expect(authorizeSpy).toHaveBeenCalledWith('slack', {}, undefined);
+      expect(waitForConnection).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual({
+        toolkit: 'slack',
+        wasConnected: false,
+        connectedAccount: { id: 'conn_789', status: 'ACTIVE' },
+      });
+    });
+
+    it('rejects invalid timeout options without calling the API', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      const session = await toolRouter.create(userId);
+
+      await expect(session.ensureConnected('github', { timeout: -1 })).rejects.toMatchObject({
+        name: 'ValidationError',
+      });
+      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
+  });
+
   describe('toolkits function', () => {
     const userId = 'user_123';
     const sessionId = 'session_123';
@@ -3323,6 +3428,8 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('delete');
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
+      expect(session.config).toEqual(mockSessionRetrieveResponse.config);
+      expect(session.config.toolkits).toEqual({ enabled: ['gmail', 'slack', 'github'] });
     });
 
     it('should attach custom tools when provided', async () => {
@@ -3656,6 +3763,56 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
       expect(mockClient.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update method', () => {
+    const sessionId = 'session_123';
+    const patchedConfig: ToolRouterSessionConfig = {
+      ...mockSessionRetrieveResponse.config,
+      toolkits: { enabled: ['gmail'] },
+      tags: { enabled: ['readOnlyHint'] },
+      preload: { tools: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+      workbench: { enable: false },
+    };
+
+    beforeEach(() => {
+      mockClient.toolRouter.session.patch.mockResolvedValue({
+        session_id: sessionId,
+        config: patchedConfig,
+        config_version: 8,
+        warnings: [{ code: 'TOOLKIT_NOT_CONNECTED', message: 'gmail is not connected' }],
+      });
+    });
+
+    it('should resolve to the updated session config', async () => {
+      const session = await toolRouter.use(sessionId);
+
+      const config = await session.update({ toolkits: ['gmail'], tags: ['readOnlyHint'] });
+
+      expect(mockClient.toolRouter.session.patch).toHaveBeenCalledWith(
+        sessionId,
+        expect.objectContaining({ toolkits: { enable: ['gmail'] } }),
+        undefined
+      );
+      expect(config).toEqual(patchedConfig);
+      expect(config.toolkits).toEqual({ enabled: ['gmail'] });
+    });
+
+    it('should refresh config, preload, sandbox, configVersion and warnings in place', async () => {
+      const session = await toolRouter.use(sessionId);
+      expect(session.config).toEqual(mockSessionRetrieveResponse.config);
+      expect(session.configVersion).toBe(7);
+
+      const config = await session.update({ toolkits: ['gmail'] });
+
+      expect(session.config).toBe(config);
+      expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL']);
+      expect(session.sandbox).toEqual({ enable: false });
+      expect(session.configVersion).toBe(8);
+      expect(session.warnings).toEqual([
+        { code: 'TOOLKIT_NOT_CONNECTED', message: 'gmail is not connected' },
+      ]);
     });
   });
 });

@@ -19,7 +19,7 @@ const result = await composio.authConfigs.list();
 Create a new auth config
 
 ```typescript
-async create(toolkit: string, options: CreateAuthConfigParams, requestOptions?: ComposioRequestOptions): Promise<CreateAuthConfigResponse>
+async create(toolkit: string, options?: CreateAuthConfigParams, requestOptions?: ComposioRequestOptions): Promise<CreateAuthConfigResponse>
 ```
 
 **Parameters**
@@ -27,7 +27,7 @@ async create(toolkit: string, options: CreateAuthConfigParams, requestOptions?: 
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `string` | Unique identifier of the toolkit |
-| `options` | `CreateAuthConfigParams` | Options for creating a new auth config |
+| `options?` | `CreateAuthConfigParams` | Options for creating a new auth config |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
