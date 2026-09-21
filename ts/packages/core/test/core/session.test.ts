@@ -1,9 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { Composio } from '../../src/composio';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { OpenAIProvider } from '../../src/provider/OpenAIProvider';
 import { getDefaultHeaders, getSessionHeaders } from '../../src/utils/session';
 import { version } from '../../package.json';
+import { ComposioAPIKeyKindError, ComposioNoAPIKeyError } from '../../src/errors/SDKErrors';
 
 describe('Composio Session Management', () => {
   const baseConfig = {
@@ -464,5 +468,134 @@ describe('Session Headers Configuration Integration', () => {
       'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
+  });
+});
+
+describe('Credential resolution at the transport boundary', () => {
+  let home: string;
+  const userKey = 'uak_cliUserKeyValue';
+  const projectKey = 'ak_explicitProjectKey';
+
+  const writeUserData = (contents: Record<string, unknown>) => {
+    const dir = path.join(home, '.composio');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'user_data.json'), JSON.stringify(contents));
+  };
+
+  const captureFetch = () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({ slug: 'github', name: 'GitHub', meta: {}, is_local_toolkit: false })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  const capturedHeaders = (fetchMock: ReturnType<typeof captureFetch>, callIndex = 0) => {
+    const call = fetchMock.mock.calls[callIndex] as unknown as [string, { headers: HeadersInit }];
+    return new Headers(call[1].headers);
+  };
+
+  const build = (config: ConstructorParameters<typeof Composio>[0]) =>
+    new Composio({
+      baseURL: 'https://api.test.com',
+      provider: new MockProvider(),
+      allowTracking: false,
+      disableVersionCheck: true,
+      ...config,
+    });
+
+  beforeEach(() => {
+    home = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-credentials-'));
+    vi.stubEnv('HOME', home);
+    vi.stubEnv('COMPOSIO_API_KEY', undefined);
+    vi.stubEnv('COMPOSIO_BASE_URL', undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('sends the explicit project key even when a CLI user key is stored on disk', async () => {
+    writeUserData({ api_key: userKey });
+    const fetchMock = captureFetch();
+
+    await build({ apiKey: projectKey }).getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBe(projectKey);
+    expect(headers.get('x-user-api-key')).toBeNull();
+  });
+
+  it('never sends a stored CLI user key as the project key', () => {
+    writeUserData({ api_key: userKey });
+    const fetchMock = captureFetch();
+
+    expect(() => build({})).toThrow(ComposioAPIKeyKindError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sends only the user API key header when the project key is disabled', async () => {
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
+    writeUserData({ api_key: 'ak_foreignDiskKey' });
+    const fetchMock = captureFetch();
+
+    const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+    await composio.getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBeNull();
+    expect(headers.get('x-user-api-key')).toBe(userKey);
+    expect(composio.getConfig().apiKey).toBeNull();
+  });
+
+  it('rejects a disabled project key without a user API key header', () => {
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
+
+    expect(() => build({ apiKey: null })).toThrow(ComposioNoAPIKeyError);
+  });
+
+  it('keeps the resolved project key on clones when the environment changes later', async () => {
+    const fetchMock = captureFetch();
+    const composio = build({ apiKey: projectKey });
+
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_laterEnvKey');
+    const clone = composio.createSession({ headers: { 'x-request-id': 'req-1' } });
+    await clone.getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBe(projectKey);
+    expect(headers.get('x-request-id')).toBe('req-1');
+  });
+
+  it('keeps the project key disabled on clones when the environment changes later', async () => {
+    const fetchMock = captureFetch();
+    const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_laterEnvKey');
+    const clone = composio.createSession({ headers: { 'x-request-id': 'req-2' } });
+    await clone.getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBeNull();
+    expect(headers.get('x-user-api-key')).toBe(userKey);
+    expect(headers.get('x-request-id')).toBe('req-2');
+    expect(clone.getConfig().apiKey).toBeNull();
+  });
+
+  it('exports no project key header for MCP when the project key is disabled', async () => {
+    const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+    const client = composio.getClient() as unknown;
+    client.toolRouter.session.create = vi.fn().mockResolvedValue({
+      session_id: 'session_null_key',
+      mcp: { type: 'http', url: 'https://mcp.example.com/session_null_key' },
+      config: { preload: { tools: [] } },
+      config_version: 1,
+    });
+
+    const session = await composio.sessions.create('user_123');
+
+    expect(session.mcp.headers).not.toHaveProperty('x-api-key');
   });
 });
