@@ -1,0 +1,27 @@
+{
+  "name": "jev-governed-agent-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A one-shot Gmail planner constrained by Jev and application policy",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "attack-demo": "bun src/index.ts --attack-demo",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint src",
+    "test": "bun test src/policy.test.ts"
+  },
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/openai": "workspace:*",
+    "@composio/typesafe": "workspace:*",
+    "@typesafe-ai/sdk": "0.6.0",
+    "dotenv": "catalog:",
+    "openai": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
