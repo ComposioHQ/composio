@@ -619,7 +619,7 @@ const resolveRepairReleaseTag = ({
   Effect.gen(function* () {
     // GITHUB_TAG pins the release used for self-repair (set by the binary build workflow).
     const pinnedTag = yield* Effect.orDie(
-      Config.option(Config.string('GITHUB_TAG')).pipe(
+      Config.option(Config.String('GITHUB_TAG')).pipe(
         Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
       )
     ).pipe(
@@ -636,7 +636,7 @@ const resolveRepairReleaseTag = ({
   });
 
 const nonEmptyConfigWithFallback = (name: string, fallback: string) =>
-  Config.string(name).pipe(
+  Config.String(name).pipe(
     Config.map(value => value || fallback),
     Config.withDefault(fallback)
   );
@@ -647,7 +647,7 @@ const githubRepairConfig = Effect.orDie(
     apiBaseUrl: nonEmptyConfigWithFallback('GITHUB_API_BASE_URL', DEFAULT_GITHUB_CONFIG.apiBaseUrl),
     owner: nonEmptyConfigWithFallback('GITHUB_OWNER', DEFAULT_GITHUB_CONFIG.owner),
     repo: nonEmptyConfigWithFallback('GITHUB_REPO', DEFAULT_GITHUB_CONFIG.repo),
-    accessToken: Config.option(Config.string('GITHUB_ACCESS_TOKEN')).pipe(
+    accessToken: Config.option(Config.String('GITHUB_ACCESS_TOKEN')).pipe(
       Config.map(Option.getOrUndefined)
     ),
   })

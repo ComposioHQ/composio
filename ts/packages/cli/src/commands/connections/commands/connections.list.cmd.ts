@@ -25,7 +25,7 @@ class ConnectionsListRequestError extends Data.TaggedError('commands/Connections
   readonly cause: unknown;
 }> {}
 
-const toolkit = Flag.string('toolkit').pipe(
+const toolkit = Flag.String('toolkit').pipe(
   Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
   Flag.optional
 );

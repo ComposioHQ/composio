@@ -76,9 +76,9 @@ const authHeaders: Effect.Effect<
   Record<string, string>,
   Config.ConfigError | ToolkitFetchError
 > = Effect.gen(function* () {
-  const userApiKey = yield* Config.option(Config.string('COMPOSIO_USER_API_KEY'));
-  const orgId = yield* Config.option(Config.string('COMPOSIO_ORG_ID'));
-  const apiKey = yield* Config.option(Config.string('COMPOSIO_API_KEY'));
+  const userApiKey = yield* Config.option(Config.String('COMPOSIO_USER_API_KEY'));
+  const orgId = yield* Config.option(Config.String('COMPOSIO_ORG_ID'));
+  const apiKey = yield* Config.option(Config.String('COMPOSIO_API_KEY'));
 
   if (Option.isSome(userApiKey)) {
     // Built imperatively: a conditional spread of `{ 'x-org-id': string }`
@@ -226,7 +226,7 @@ export const BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '${params.refreshedAt}';
 export function generateToolkitSlugs() {
   return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const baseUrl = yield* Config.string('COMPOSIO_BASE_URL').pipe(
+    const baseUrl = yield* Config.String('COMPOSIO_BASE_URL').pipe(
       Config.withDefault(PRODUCTION_BASE_URL)
     );
     const headers = yield* authHeaders;

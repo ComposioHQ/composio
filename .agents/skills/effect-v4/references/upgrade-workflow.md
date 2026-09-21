@@ -33,7 +33,7 @@ the existing convention, not a new rule.
 
 `ts/vendor/effect` is a git submodule pinned at a commit on the canonical
 `Effect-TS/effect` repo, currently
-`2600f62f4532026928454dcea8d1c48557b3f942` (tagged `effect@4.0.0-rc.112`
+`4a05d4914fa2327a42bd75fe77c22c188becf3b4` (tagged `effect@4.0.0-rc.115`
 at the time of writing — confirm with `git submodule status ts/vendor/effect`). Advance
 it to the commit/tag matching the new npm version:
 

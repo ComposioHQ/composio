@@ -9,26 +9,26 @@ import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigCreated } from '../format';
 
-const name = Argument.string('name').pipe(
+const name = Argument.String('name').pipe(
   Argument.withDescription('Display name for the auth config'),
   Argument.optional
 );
 
-const toolkit = Flag.string('toolkit').pipe(Flag.withDescription('Toolkit slug (e.g. "gmail")'));
+const toolkit = Flag.String('toolkit').pipe(Flag.withDescription('Toolkit slug (e.g. "gmail")'));
 
-const authScheme = Flag.string('auth-scheme').pipe(
+const authScheme = Flag.String('auth-scheme').pipe(
   Flag.withDescription(
     'Auth scheme (e.g. OAUTH2, API_KEY, BEARER_TOKEN). If omitted, uses Composio managed defaults.'
   ),
   Flag.optional
 );
 
-const scopes = Flag.string('scopes').pipe(
+const scopes = Flag.String('scopes').pipe(
   Flag.withDescription('Comma-separated scopes (OAuth only, e.g. "send_email,read_email")'),
   Flag.optional
 );
 
-const customCredentials = Flag.string('custom-credentials').pipe(
+const customCredentials = Flag.String('custom-credentials').pipe(
   Flag.withDescription('Custom credentials as JSON string (for white-labeling)'),
   Flag.optional
 );
