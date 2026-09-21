@@ -98,16 +98,6 @@ export const readUserDataFile = (): UserDataFileRead => {
   return { status: 'ok', path: dataPath, data: parsed.data };
 };
 
-/**
- * Reads and parses the user data JSON file from the Composio directory.
- *
- * @returns The validated user data (api_key, base_url, etc.), or an empty object if the file doesn't exist or can't be read
- */
-export const getUserDataJson = (): UserDataFile => {
-  const read = readUserDataFile();
-  return read.status === 'ok' ? read.data : {};
-};
-
 const findHeader = (
   headers: ComposioRequestHeaders | undefined,
   name: string
