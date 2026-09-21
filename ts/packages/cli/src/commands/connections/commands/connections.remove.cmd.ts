@@ -25,7 +25,7 @@ class ConnectionsRemovalRequestError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const account = Argument.string('account').pipe(
+const account = Argument.String('account').pipe(
   Argument.withDescription(
     'Connection selector: toolkit slug, alias, word_id, or connected account ID'
   )

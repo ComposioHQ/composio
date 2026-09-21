@@ -6,7 +6,7 @@ import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatAuthConfigInfo } from '../format';
 
-const id = Argument.string('id').pipe(
+const id = Argument.String('id').pipe(
   Argument.withDescription('Auth config ID (nanoid)'),
   Argument.optional
 );

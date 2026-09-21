@@ -401,28 +401,38 @@ describe('eve replay', () => {
     const wrapped = new EveProvider({
       needsApproval: requireApprovalForTools(name),
     }).wrapTools([tool(name)], execute)[name];
+    const owner = {
+      sessionId: 'eve-session',
+      scope: 'session' as const,
+      resolverSlug: 'composio',
+      entryKey: name,
+      name,
+    };
 
-    const callbacks = validateDurableDynamicToolCallbacks(name, wrapped);
+    const callbacks = validateDurableDynamicToolCallbacks(name, wrapped, owner);
     expect(callbacks).toEqual({
       execute: { closure: { slug: name, binding: expect.any(String) } },
       approvalRequest: { closure: { slug: name, binding: expect.any(String) } },
     });
 
-    const [replayed] = replayDynamicTools([
-      {
-        callbacks: JSON.parse(JSON.stringify(callbacks)),
-        description: wrapped.description,
-        entryKey: name,
-        inputSchema: wrapped.inputSchema,
-        name,
-        resolverSlug: 'composio',
-      },
-    ]);
+    const [replayed] = replayDynamicTools(
+      [
+        {
+          callbacks: JSON.parse(JSON.stringify(callbacks)),
+          description: wrapped.description,
+          entryKey: name,
+          inputSchema: wrapped.inputSchema,
+          name,
+          resolverSlug: 'composio',
+        },
+      ],
+      { sessionId: owner.sessionId, scope: owner.scope }
+    );
     await expect(replayed.approval(approvalContext(name, { q: 'hi' }))).resolves.toBe(true);
 
     // The harness execute wrapper needs a live eve context, so call the registry
     // the way replayDynamicTools does: the registered callback plus the JSON closure.
-    const registered = lookupDurableDynamicCallback(name, 'execute');
+    const registered = lookupDurableDynamicCallback(owner, 'execute');
     const persistedClosure = JSON.parse(JSON.stringify(callbacks.execute.closure));
     await expect(
       callDurableDynamicCallback(registered, persistedClosure, { q: 'hi' }, {})

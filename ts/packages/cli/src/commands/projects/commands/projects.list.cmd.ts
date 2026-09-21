@@ -6,12 +6,12 @@ import { listOrganizationProjects } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 
-const orgId = Flag.string('org-id').pipe(
+const orgId = Flag.String('org-id').pipe(
   Flag.optional,
   Flag.withDescription('Organization ID to list projects for (defaults to current global org)')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(50),
   Flag.withDescription('Max projects to fetch from API (default: 50)')
 );

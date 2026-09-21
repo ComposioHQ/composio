@@ -23,7 +23,7 @@ export const TOOLKIT_VERSION_OVERRIDES_CONFIG: Config.Config<
   Option.Option<Readonly<Record<string, string>>>
 > = Config.option(
   // Optional, so missing env vars don't fail the config
-  Config.schema(Config.Record(Schema.String, Schema.String), ['COMPOSIO', 'TOOLKIT', 'VERSION'])
+  Config.Record(Schema.String, Schema.String, ['COMPOSIO', 'TOOLKIT', 'VERSION'])
 );
 
 /**

@@ -81,8 +81,8 @@ type ConsumerShortTermCacheState = Record<
 // read rather than memoized at module scope -- otherwise env changes made
 // after import (including `vi.stubEnv` in tests) are never observed.
 const getEnvironmentProvider = (): ConfigProvider.ConfigProvider => ConfigProvider.fromEnv();
-const optionalString = (name: string) => Config.option(Config.string(name));
-const booleanWithDefault = (name: string) => Config.boolean(name).pipe(Config.withDefault(false));
+const optionalString = (name: string) => Config.option(Config.String(name));
+const booleanWithDefault = (name: string) => Config.Boolean(name).pipe(Config.withDefault(false));
 const configuredString = (value: Option.Option<string>): string | undefined =>
   value.pipe(
     Option.map(value => value.trim()),
@@ -95,7 +95,7 @@ const analyticsDisabled = Effect.suspend(() =>
     cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
     telemetryDisabled: booleanWithDefault('TELEMETRY_DISABLED'),
     composioTelemetryDisabled: booleanWithDefault('COMPOSIO_DISABLE_TELEMETRY'),
-    nodeEnvironment: Config.string('NODE_ENV').pipe(Config.withDefault('')),
+    nodeEnvironment: Config.String('NODE_ENV').pipe(Config.withDefault('')),
     ci: booleanWithDefault('CI'),
   })
     .pipe(

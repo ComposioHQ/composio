@@ -65,20 +65,20 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Flag.string('data').pipe(
+const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
   Flag.optional
 );
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
   Flag.optional
 );
-const accountOption = Flag.string('account').pipe(
+const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
@@ -94,33 +94,33 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Flag.boolean('get-schema').pipe(
+const getSchema = Flag.Boolean('get-schema').pipe(
   Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Flag.withDefault(false)
 );
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Validate and preview the tool call without executing'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
