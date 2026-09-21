@@ -1,0 +1,34 @@
+---
+title: 'Python SDK 0.23.0 and TypeScript SDK 0.20.0 move to the Composio-owned client'
+description: 'Both SDKs now use the Composio-owned 2.0.0-rc.8 client and add webhook, logs, keyring, usage, custom toolkit, connected account, toolkit, and session APIs.'
+date: '2026-09-22'
+---
+
+Python SDK `0.23.0` and TypeScript SDK `0.20.0` replace the frozen generated client with the Composio-owned client (`composio-client` `2.0.0rc8` and `@composio/client` `2.0.0-rc.8`). These APIs shipped first in the TypeScript `1.0.0` betas and the Python `2.0.0b0` beta, and are now part of the stable release line.
+
+### Release versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`           | `0.23.0` |
+| TypeScript `@composio/core` | `0.20.0` |
+| TypeScript `@composio/slim` | `0.20.0` |
+
+### Owned client
+
+The owned client covers the released v3.1 operations while preserving the SDK's existing imports, types, retries, timeouts, error classes, raw responses, streaming responses, and `AbortSignal` support.
+
+### What's new
+
+- Project webhooks (`webhooks.subscriptions` and `webhooks.endpoints`), tool execution logs, customer-managed keyring transfer keys, experimental usage metering, and experimental project-owned custom toolkits.
+- Connected account revocation and deferred OAuth completion.
+- Toolkit bulk retrieval, changelogs, OAuth scope recommendations, and grant contexts. Toolkit auth details now include each field's end-user visibility and the scopes an auth method always requests.
+- Tool Router session configuration history through `session.listConfigHistory()` in TypeScript and `session.list_config_history()` in Python.
+- `userApiKey` and `orgApiKey` in TypeScript, and `user_api_key` and `org_api_key` in Python, for user- and organization-scoped operations. A project API key is still required.
+- Configurable SDK logging with redacted output. TypeScript routes owned-client deprecation warnings through the SDK logger, and Python raises them as `ComposioDeprecationWarning`.
+
+<Callout>
+  `connectedAccounts.refresh()` is deprecated because the API deprecated its endpoint. The API also
+  removed credential validation from refresh, so TypeScript now ignores `validateCredentials` and
+  logs a warning when you set it.
+</Callout>

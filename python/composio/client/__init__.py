@@ -3,6 +3,7 @@ This module is a light wrapper around the auto-generated composio client.
 """
 
 import contextvars
+import logging
 import os
 import platform
 import typing as t
@@ -16,13 +17,12 @@ from composio_client import (
     APIError,
     APIStatusError,
     NotGiven,
-    _base_client,
 )
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Response, Timeout
 
 from composio.exceptions import ComposioError
-from composio.utils.logging import WithLogger
+from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
@@ -85,6 +85,75 @@ def _rebuild_sdk_error(
     body: object,
 ) -> APIStatusError:
     return _with_sdk_error_base(error_class)(message, response=response, body=body)
+
+
+def _as_sdk_error(error: APIStatusError) -> APIStatusError:
+    if isinstance(error, ComposioError):
+        return error
+    sdk_error = _with_sdk_error_base(type(error))(
+        error.message, response=error.response, body=error.body
+    )
+    return sdk_error.with_traceback(error.__traceback__)
+
+
+CLIENT_LOGGER_NAME = "composio_client"
+"""Name of the logger the generated ``composio_client`` package writes to."""
+
+
+class _ClientLogForwarder(logging.Handler):
+    """Forward ``composio_client`` records into the SDK logger.
+
+    The generated client logs request/response lifecycle through
+    ``logging.getLogger("composio_client")``. Routing those records through
+    the SDK's :class:`_VerbosityWrapper` keeps one destination for SDK users
+    and applies the same credential redaction and line truncation the SDK's
+    own records get. The client's INFO records (per-request lifecycle) are
+    forwarded as DEBUG.
+    """
+
+    def __init__(self, wrapper: _VerbosityWrapper) -> None:
+        super().__init__()
+        self.wrapper = wrapper
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            message = record.getMessage()
+            if record.levelno >= logging.ERROR:
+                self.wrapper.error(message, exc_info=record.exc_info)
+            elif record.levelno >= logging.WARNING:
+                self.wrapper.warning(message, exc_info=record.exc_info)
+            else:
+                self.wrapper.debug(message, exc_info=record.exc_info)
+        except Exception:  # noqa: BLE001 - logging must never fail the call
+            self.handleError(record)
+
+
+def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
+    """Attach a single forwarder for ``wrapper`` to the client logger.
+
+    Idempotent: a forwarder already bound to ``wrapper`` is kept; forwarders
+    bound to another wrapper (an earlier SDK instance with a different logger)
+    are replaced so records are delivered once, to the most recent logger.
+    """
+    client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
+    installed = False
+    for handler in list(client_logger.handlers):
+        if not isinstance(handler, _ClientLogForwarder):
+            continue
+        if handler.wrapper is wrapper and not installed:
+            installed = True
+            continue
+        client_logger.removeHandler(handler)
+    if not installed:
+        client_logger.addHandler(_ClientLogForwarder(wrapper))
+    # The client's INFO records are forwarded as DEBUG, so only let the client
+    # produce them when the SDK logger is at DEBUG.
+    level = wrapper.logger.getEffectiveLevel()
+    client_logger.setLevel(
+        level if level <= logging.DEBUG else max(level, logging.WARNING)
+    )
+    client_logger.propagate = False
+    return client_logger
 
 
 def _get_python_implementation() -> str:
@@ -198,6 +267,8 @@ class HttpClient(BaseComposio, WithLogger):
         *,
         provider: str,
         api_key: t.Optional[str] = None,
+        user_api_key: t.Optional[str] = None,
+        org_api_key: t.Optional[str] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
         base_url: t.Optional[t.Union[str, URL, NotGiven]] = NOT_GIVEN,
         timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
@@ -205,13 +276,19 @@ class HttpClient(BaseComposio, WithLogger):
         default_headers: t.Optional[t.Mapping[str, str]] = None,
         default_query: t.Optional[t.Mapping[str, object]] = None,
         http_client: t.Optional[Client] = None,
+        logger: t.Optional[logging.Logger] = None,
+        logging_level: t.Optional[LogLevel] = None,
         _strict_response_validation: bool = False,
     ) -> None:
         """
         Initialize the client.
 
         :param provider: The provider to use for the client.
+        :param logger: Logger that receives SDK and ``composio_client`` records.
+        :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
+        :param user_api_key: User API key, sent only on operations that require it.
+        :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
         :param base_url: The base URL to use for the client.
         :param timeout: The timeout to use for the client.
@@ -220,10 +297,12 @@ class HttpClient(BaseComposio, WithLogger):
         :param default_query: The default query parameters to use for the client.
         :param http_client: The HTTP client to use for the client.
         """
-        WithLogger.__init__(self)
+        WithLogger.__init__(self, logger=logger, logging_level=logging_level)
         BaseComposio.__init__(
             self,
             api_key=api_key,
+            user_api_key=user_api_key,
+            org_api_key=org_api_key,
             environment=environment,
             base_url=base_url,
             timeout=timeout,
@@ -233,8 +312,7 @@ class HttpClient(BaseComposio, WithLogger):
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
         )
-        # TOFIX: Verbosity wrapper impl
-        _base_client.log = self._logger  # type: ignore
+        _install_client_log_forwarder(self._logger)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",
@@ -269,6 +347,10 @@ class HttpClient(BaseComposio, WithLogger):
                 # (False) even when the original had it enabled — keeping the sibling
                 # a faithful copy that differs from the parent only in `max_retries`.
                 "_strict_response_validation": self._strict_response_validation,
+                # Share the parent's logger; otherwise constructing the clone
+                # rebinds the process-wide client log forwarder to the default
+                # `composio` logger.
+                "logger": self._logger.logger,
                 **_extra_kwargs,
             },
             **kwargs,
@@ -303,19 +385,27 @@ class HttpClient(BaseComposio, WithLogger):
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
 
-    def _make_status_error(
-        self,
-        err_msg: str,
-        *,
-        body: object,
-        response: Response,
-    ) -> APIStatusError:
+    def _decode(self, response: Response) -> t.Any:
         """
-        Build the generated client's status error so it is also a
-        ``ComposioError``; see ``_with_sdk_error_base``.
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
         """
-        error = super()._make_status_error(err_msg, body=body, response=response)
-        return _with_sdk_error_base(type(error))(err_msg, response=response, body=body)
+        try:
+            return super()._decode(response)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
+
+    def _process_response(
+        self, response: Response, cast_to: t.Optional[t.Type[t.Any]]
+    ) -> t.Any:
+        """
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
+        """
+        try:
+            return super()._process_response(response, cast_to)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
 
     def _prepare_request(self, request: Request) -> None:
         """

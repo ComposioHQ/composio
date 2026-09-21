@@ -40,6 +40,29 @@ class TestComposioSDK:
                             sdk = Composio(api_key="test-key")
                             assert sdk is not None
 
+    def test_sdk_forwards_user_and_org_api_keys_to_client(self):
+        """User and org keys reach the API client, which selects them per operation."""
+        sdk = Composio(
+            api_key="ak_test", user_api_key="uak_test", org_api_key="oak_test"
+        )
+        assert sdk.client.api_key == "ak_test"
+        assert sdk.client.user_api_key == "uak_test"
+        assert sdk.client.org_api_key == "oak_test"
+
+    def test_sdk_reads_user_and_org_api_keys_from_env(self):
+        """The client resolves COMPOSIO_USER_API_KEY / COMPOSIO_ORG_API_KEY itself."""
+        with patch.dict(
+            os.environ,
+            {
+                "COMPOSIO_API_KEY": "ak_env",
+                "COMPOSIO_USER_API_KEY": "uak_env",
+                "COMPOSIO_ORG_API_KEY": "oak_env",
+            },
+        ):
+            sdk = Composio()
+        assert sdk.client.user_api_key == "uak_env"
+        assert sdk.client.org_api_key == "oak_env"
+
     def test_sdk_config_types(self):
         """Test SDK configuration types."""
         from composio.sdk import SDKConfig
@@ -51,6 +74,8 @@ class TestComposioSDK:
         expected_fields = {
             "environment",
             "api_key",
+            "user_api_key",
+            "org_api_key",
             "base_url",
             "timeout",
             "max_retries",
@@ -61,6 +86,9 @@ class TestComposioSDK:
             "sensitive_file_upload_protection",
             "file_upload_path_deny_segments",
             "file_upload_dirs",
+            "http_client",
+            "logger",
+            "logging_level",
         }
         assert set(SDKConfig.__annotations__.keys()) == expected_fields
 
@@ -77,6 +105,28 @@ class TestComposioSDK:
         assert ToolkitVersion is not None
         assert ToolkitVersions is not None
         assert ToolkitVersionParam is not None
+
+    def test_sdk_mounts_webhooks_and_logs(self):
+        from composio.core.models import Logs, Webhooks
+
+        composio = Composio(api_key="test-key")
+
+        assert isinstance(composio.webhooks, Webhooks)
+        assert isinstance(composio.logs, Logs)
+        assert composio.webhooks._client is composio._client
+        assert composio.logs._client is composio._client
+
+    def test_sdk_mounts_keyring_and_custom_toolkits(self):
+        from composio.core.models import ExperimentalCustomToolkits, Keyring
+
+        composio = Composio(api_key="test-key")
+
+        assert isinstance(composio.keyring, Keyring)
+        assert composio.keyring._client is composio._client
+        assert isinstance(
+            composio.experimental.custom_toolkits, ExperimentalCustomToolkits
+        )
+        assert composio.experimental.custom_toolkits._client is composio._client
 
     def test_sdk_has_required_attributes(self):
         """Test that SDK has required attributes after initialization."""

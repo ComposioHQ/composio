@@ -39,10 +39,28 @@ jobs:
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
 
+      - name: Resolve release package set
+        id: release_mode
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          import tomllib
+
+          with open("pyproject.toml", "rb") as pyproject:
+              version = tomllib.load(pyproject)["project"]["version"]
+
+          is_prerelease = re.search(r"(?:a|b|rc|dev)\d", version, re.IGNORECASE) is not None
+          print(f"core_only={'true' if is_prerelease else 'false'}")
+          PY
+
       - name: Build Artifacts
         run: |
           make env
-          make build
+          if [[ "${{ steps.release_mode.outputs.core_only }}" == "true" ]]; then
+            make build-core
+          else
+            make build
+          fi
 
       - name: Publish Artifacts
         if: github.event_name == 'push'

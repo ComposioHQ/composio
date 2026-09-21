@@ -24,6 +24,10 @@ on:
         description: 'Comma-separated entry ids (empty = full manifest)'
         type: string
         default: ''
+      exclude_toolkits:
+        description: 'Comma-separated toolkits to exclude, including dependent entries'
+        type: string
+        default: googledrive
       client_tarball_url:
         description: 'Candidate TypeScript client tarball URL (required for TS candidate entries)'
         type: string
@@ -54,6 +58,9 @@ env:
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  # Keep unavailable coverage explicit. The harness records excluded entry ids
+  # in its summary artifact; remove this default when staging has Drive auth.
+  EXCLUDE_TOOLKITS: ${{ inputs.exclude_toolkits || 'googledrive' }}
   # mock unless explicitly dispatched live; the nightly adds a small live canary.
   LLM_MODE: ${{ inputs.llm || 'mock' }}
   # Entries mocks cannot cover (llmMock:false) plus one representative
@@ -62,7 +69,7 @@ env:
 
 jobs:
   examples-live:
-    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }})
+    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }}, excluding ${{ inputs.exclude_toolkits || 'googledrive' }})
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -130,7 +137,19 @@ jobs:
         run: node harness/run.mjs selftest
 
       - name: Verify provisioned project state
-        run: node scripts/examples-provision.mjs --gc > /tmp/examples-provision.env
+        env:
+          IDS_INPUT: ${{ inputs.ids }}
+          LANG_INPUT: ${{ inputs.lang || 'all' }}
+        run: |
+          set -euo pipefail
+          ARGS=(--gc --exclude-toolkits "$EXCLUDE_TOOLKITS")
+          if [ "$LANG_INPUT" != "all" ]; then
+            ARGS+=(--lang "$LANG_INPUT")
+          fi
+          if [ -n "$IDS_INPUT" ]; then
+            ARGS+=(--ids "$IDS_INPUT")
+          fi
+          node scripts/examples-provision.mjs "${ARGS[@]}" > /tmp/examples-provision.env
 
       - name: Sweep
         env:
@@ -148,6 +167,7 @@ jobs:
           if [ -n "$IDS_INPUT" ]; then
             ARGS+=(--ids "$IDS_INPUT")
           fi
+          ARGS+=(--exclude-toolkits "$EXCLUDE_TOOLKITS")
           node harness/run.mjs sweep "${ARGS[@]}"
 
       - name: Live LLM canary
@@ -155,7 +175,7 @@ jobs:
         run: |
           set -euo pipefail
           source /tmp/examples-provision.env
-          node harness/run.mjs sweep --client baseline --llm live --ids "$CANARY_IDS"
+          node harness/run.mjs sweep --client baseline --llm live --ids "$CANARY_IDS" --exclude-toolkits "$EXCLUDE_TOOLKITS"
 
       - name: Upload sweep results and traces
         if: ${{ always() }}
