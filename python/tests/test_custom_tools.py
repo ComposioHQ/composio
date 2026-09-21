@@ -947,6 +947,13 @@ def _session(deps, **overrides):
 
 
 class TestToolRouterSessionCustomTools:
+    def test_fallback_config_disables_premium_usage(self, mock_session_deps):
+        session = _session(mock_session_deps)
+
+        assert session.config.model_dump()["premium_usage"] is False
+        assert session.config.user_id == "u"
+        assert session.config.preload.tools == []
+
     def test_execute_local(self, mock_session_deps):
         s = _session(mock_session_deps)
         result = s.execute("GREP", arguments={"pattern": "x"})

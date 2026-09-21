@@ -167,11 +167,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         # Sessions built from an API response always carry their config; the
         # fallback only covers direct construction without one (tests).
-        self.config = config or session_create_response.Config(
-            user_id=user_id or "",
-            execute=session_create_response.ConfigExecute(),
-            search=session_create_response.ConfigSearch(),
-            preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+        self.config = config or session_create_response.Config.model_validate(
+            {
+                "user_id": user_id or "",
+                "execute": {},
+                "search": {},
+                "preload": {"tools": self.preload.tools},
+                "premium_usage": False,
+            }
         )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
