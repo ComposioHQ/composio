@@ -1,15 +1,15 @@
 ---
-title: "Scoped API Keys: Tools Read Operations Now Accept Read-Scoped Keys"
-description: "Fixed a bug where reading tools required a write-scoped API key instead of a read-scoped one"
+title: "Scoped API Keys: Tools Read Now Accepts Read-Scoped Keys"
+description: "Fixed a bug where reading multiple toolkits required a write-scoped API key instead of a read-scoped one"
 date: "2026-09-21"
 ---
 
-Tools read operations were incorrectly gated behind the write API key scope. Read-scoped API keys can now fetch and list tools as expected.
+When creating a scoped API key through the API key creation flow, you can assign either read or write scope. Reading multiple toolkits at once was incorrectly requiring a write-scoped API key. This has been fixed to accept read-scoped keys as intended.
 
 ### Bug Fixes
 
-- Tools read endpoints (fetching and listing tools) previously required a write-scoped API key. They are now correctly scoped as read operations, so read-scoped API keys work without needing write permissions.
+- Fetching and listing tools across multiple toolkits previously required a write-scoped API key. The scope check was corrected so that read-scoped API keys are now accepted for these read operations.
 
 ### Backward Compatibility
 
-This is a bug fix with no breaking changes. If you were already using a write-scoped key, nothing changes. If you have a read-scoped key, you can now use it to read tools.
+This is a backward-compatible fix. Existing API keys with write scope continue to work exactly as before. Read-scoped keys can now be used for tools read operations without needing to upgrade to write scope.
