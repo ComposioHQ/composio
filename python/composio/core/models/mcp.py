@@ -214,14 +214,15 @@ class MCP(Resource):
                     auth_config_ids.append(toolkit_config["auth_config_id"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
-            custom_tools = none_to_omit(allowed_tools)
+            # (`custom_tools` is the deprecated create-time alias)
+            allowed_tools_param = none_to_omit(allowed_tools)
 
             # Use the custom MCP create endpoint
             response = self._client.mcp.custom.create(
                 name=name,
                 toolkits=toolkit_names,
                 auth_config_ids=auth_config_ids,
-                custom_tools=custom_tools,
+                allowed_tools=allowed_tools_param,
                 managed_auth_via_composio=not manually_manage_connections,
             )
 
@@ -395,7 +396,9 @@ class MCP(Resource):
                 update_params["auth_config_ids"] = auth_config_ids
 
             if allowed_tools is not None:
-                update_params["custom_tools"] = allowed_tools
+                # The update endpoint only reads `allowed_tools`; the create-time
+                # `custom_tools` alias is deprecated and ignored on PATCH.
+                update_params["allowed_tools"] = allowed_tools
 
             if manually_manage_connections is not None:
                 update_params[
