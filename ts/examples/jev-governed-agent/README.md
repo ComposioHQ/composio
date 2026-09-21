@@ -40,7 +40,7 @@ set -a
 source .env
 set +a
 export COMPOSIO_BASE_URL=https://backend.composio.dev
-out=$(node ../../../scripts/examples-provision.mjs) && eval "$out"
+node ../../../scripts/examples-provision.mjs
 ```
 
 The explicit backend keeps the provisioner and example on the same Composio project. The provisioner otherwise defaults to staging. It checks the shared examples setup for several toolkits, though this example uses Gmail only.
@@ -51,7 +51,7 @@ If the report says Gmail has no active connection, start the existing OAuth work
 node ../../../scripts/examples-provision.mjs --initiate-missing
 ```
 
-Open the Gmail authorization URL, connect your test mailbox, and rerun the command that captures and loads the provisioner's exports.
+Open the Gmail authorization URL and connect your test mailbox. You can run this example as soon as the provisioner reports that Gmail is `ACTIVE`. Drive, GitHub, and Slack can still leave the shared provisioner in `INCOMPLETE` state, which does not block this Gmail-only example. The example reads `COMPOSIO_EXAMPLES_USER_ID` directly from `.env`, so it does not need the provisioner's exported values.
 
 ## Follow one request through the checks
 
