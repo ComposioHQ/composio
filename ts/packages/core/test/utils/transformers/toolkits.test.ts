@@ -29,6 +29,7 @@ const rawToolkit = {
       name: 'API Key',
       mode: 'API_KEY',
       auth_hint_url: 'https://shopify.dev/api-keys',
+      required_scopes: ['read_products'],
       fields: {
         auth_config_creation: {
           required: [
@@ -40,6 +41,7 @@ const rawToolkit = {
               required: true,
               is_secret: true,
               legacy_template_name: 'clientSecret',
+              user_visible: false,
             },
           ],
           optional: [
@@ -157,6 +159,13 @@ describe('transformToolkitRetrieveResponse', () => {
     const details = transformToolkitRetrieveResponse(rawToolkit).authConfigDetails?.[0];
 
     expect(details?.authHintUrl).toBe('https://shopify.dev/api-keys');
+  });
+
+  it('preserves required scopes and false field visibility from the current API', () => {
+    const details = transformToolkitRetrieveResponse(rawToolkit).authConfigDetails?.[0];
+
+    expect(details?.requiredScopes).toEqual(['read_products']);
+    expect(details?.fields.authConfigCreation.required[0].userVisible).toBe(false);
   });
 
   /**

@@ -55,7 +55,9 @@ export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),
   name: z.string().optional(),
   credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
-  authScheme: AuthSchemeEnum,
+  // CIMD can appear in API responses, but the pinned client does not yet
+  // expose it as a create input. Keep the existing create contract until its bump.
+  authScheme: AuthSchemeEnum.exclude(['CIMD_OAUTH']),
   proxyConfig: z
     .object({
       proxyUrl: z.string(),

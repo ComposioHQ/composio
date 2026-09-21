@@ -33,11 +33,20 @@ type RawToolkitAuthConfigDetailFields = NonNullable<
  * generated client grows a key in any of the four groups that is not listed
  * there.
  */
-type RawToolkitAuthField =
+// Optional additions from the current API, also accepted with the pinned
+// alpha client's earlier response types during the client release transition.
+type RawToolkitAuthField = (
   | RawToolkitAuthConfigDetailFields['auth_config_creation']['required'][number]
   | RawToolkitAuthConfigDetailFields['auth_config_creation']['optional'][number]
   | RawToolkitAuthConfigDetailFields['connected_account_initiation']['required'][number]
-  | RawToolkitAuthConfigDetailFields['connected_account_initiation']['optional'][number];
+  | RawToolkitAuthConfigDetailFields['connected_account_initiation']['optional'][number]
+) & { user_visible?: boolean };
+
+type RawAuthConfigDetail = NonNullable<
+  RawToolkitRetrieveResponse['auth_config_details']
+>[number] & {
+  required_scopes?: string[];
+};
 
 const transformToolkitAuthField = (field: RawToolkitAuthField): ToolkitAuthField => ({
   name: field.name,
@@ -138,7 +147,7 @@ export const transformToolkitRetrieveResponse = (
       },
       isLocalToolkit: response.is_local_toolkit,
       composioManagedAuthSchemes: response.composio_managed_auth_schemes,
-      authConfigDetails: response.auth_config_details?.map(authConfig => ({
+      authConfigDetails: response.auth_config_details?.map((authConfig: RawAuthConfigDetail) => ({
         name: authConfig.name,
         mode: authConfig.mode,
         ...(authConfig.auth_hint_url !== undefined && {

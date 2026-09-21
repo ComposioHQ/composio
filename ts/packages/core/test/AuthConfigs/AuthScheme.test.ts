@@ -1,12 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { AuthScheme } from '../../src/models/AuthScheme';
-import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
+import {
+  AuthSchemeTypes,
+  AuthSchemeEnum,
+  CreateCustomAuthConfigParamsSchema,
+} from '../../src/types/authConfigs.types';
 import {
   ConnectionStatuses,
   ConnectionDataSchema,
 } from '../../src/types/connectedAccountAuthStates.types';
 
 describe('AuthScheme', () => {
+  it('accepts CIMD responses without expanding the pinned client create contract', () => {
+    expect(AuthSchemeEnum.parse('CIMD_OAUTH')).toBe('CIMD_OAUTH');
+    expect(
+      CreateCustomAuthConfigParamsSchema.safeParse({
+        type: 'use_custom_auth',
+        authScheme: 'CIMD_OAUTH',
+        credentials: {},
+      }).success
+    ).toBe(false);
+  });
   describe('OAuth2', () => {
     it('should set ACTIVE status when access_token is provided', () => {
       const params = {

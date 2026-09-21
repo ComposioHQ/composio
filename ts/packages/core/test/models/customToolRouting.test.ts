@@ -313,6 +313,12 @@ describe('ToolRouterSession execution routing', () => {
   });
 
   describe('session.execute() routing', () => {
+    it('defaults premium usage to false when session metadata is absent', () => {
+      const session = createSession(mockClient);
+
+      expect(session.config).toHaveProperty('premium_usage', false);
+    });
+
     it('should route local tool by original slug to in-process execution', async () => {
       const session = createSession(mockClient, [customToolHandle]);
 

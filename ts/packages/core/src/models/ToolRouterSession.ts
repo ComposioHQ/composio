@@ -149,12 +149,14 @@ export class ToolRouterSession<
     private readonly userId?: string,
     metadata?: ToolRouterSessionMetadata
   ) {
-    const config: ToolRouterSessionConfig = metadata?.config ?? {
+    const fallbackConfig = {
       user_id: userId ?? '',
       execute: {},
       search: {},
       preload: { tools: [] },
+      premium_usage: false as const,
     };
+    const config: ToolRouterSessionConfig = metadata?.config ?? fallbackConfig;
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
     }
