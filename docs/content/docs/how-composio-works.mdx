@@ -39,7 +39,7 @@ A session scopes four things:
 
 
 ## What comes in a session
-Every session is designed to come with all of the things you will need for an agentic run for your user. By default, the session will come with all of the [tools and toolkits](#tools-and-toolkits), [authentication](#authentication) (for the given user) and skills needed to execute. Every session also comes with an agent [sandbox](#sandbox) so the agent can handle and manipulate large response, files, etc. outside of the context window for longer responses.
+By default, a session gives your agent meta tools to discover and execute app tools and manage connections for your user. All toolkits are discoverable, and search includes skill guidance when a matching skill exists. Standard sessions also include a [sandbox](#sandbox) for processing files and large responses outside the model's context window. You can restrict tool access or disable the sandbox through [session configuration](/docs/configuring-sessions).
 
 Later we'll discuss [configuring sessions](/docs/configuring-sessions) for specialized use cases. But for now you can think of the Composio session as the basic building block for your agent.
 
