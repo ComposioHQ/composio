@@ -16,6 +16,10 @@ If you use Codex or Claude Code and did not explicitly choose MCP, install the n
 Want to bring tools from your own remote MCP server into Composio instead? See [Custom MCP](/docs/extending-sessions/custom-mcp).
 </Callout>
 
+<Callout type="info">
+MCP on this page is the transport that exposes a session to a client. It is independent of Provider MCP toolkits such as `notion_mcp`, which are catalog toolkits you can use over any transport. See [Apps and toolkits](/docs/apps-and-toolkits).
+</Callout>
+
 ## The MCP endpoint
 
 Opt into MCP by passing `mcp: true` when you create the session. The session then exposes its hosted MCP server. Read the URL and headers off `session.mcp`:
