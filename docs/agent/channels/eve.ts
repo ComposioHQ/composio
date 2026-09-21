@@ -1,6 +1,7 @@
 import type { UserContent } from 'ai';
 import { none } from 'eve/channels/auth';
 import { defaultEveAuth, eveChannel } from 'eve/channels/eve';
+import { buildEveSafetyContext, eveMessageToText } from '../lib/safety';
 import { searchDocs, shouldRunEagerDocsSearch, type SearchDocsResult } from '../lib/docs-search';
 
 /**
@@ -17,15 +18,6 @@ const EAGER_CONTENT_RESULTS = 2;
 const EAGER_MAX_CONTENT_CHARS = 6000;
 const EAGER_MAX_SECTIONS = 6;
 const MAX_CONTEXT_SECTIONS = EAGER_MAX_SECTIONS;
-
-function messageToText(message: string | UserContent): string {
-  if (typeof message === 'string') return message;
-
-  return message
-    .map(part => (part.type === 'text' ? part.text : ''))
-    .join('\n')
-    .trim();
-}
 
 function shouldEagerSearch(text: string): boolean {
   return shouldRunEagerDocsSearch(text);
@@ -71,7 +63,7 @@ ${docs}
 }
 
 function buildEagerSearchContext(message: string | UserContent): string[] | undefined {
-  const text = messageToText(message);
+  const text = eveMessageToText(message);
   if (!shouldEagerSearch(text)) return undefined;
 
   try {
@@ -96,7 +88,8 @@ export default eveChannel({
   auth: [none()],
   onMessage(ctx, message) {
     const auth = defaultEveAuth(ctx);
-    const context = buildEagerSearchContext(message);
-    return context ? { auth, context } : { auth };
+    const safety = buildEveSafetyContext(message);
+    const context = [safety.context, ...(buildEagerSearchContext(message) ?? [])];
+    return { auth, context };
   },
 });
