@@ -8,6 +8,8 @@ can catch one root while existing ``except APIStatusError`` handlers, including
 the SDK's own, keep working.
 """
 
+import copy
+import pickle
 import typing as t
 from unittest.mock import Mock
 
@@ -19,6 +21,7 @@ from composio import exceptions
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
+from composio.core.models.triggers import Triggers
 
 
 @pytest.fixture(autouse=True)
@@ -29,15 +32,27 @@ def disable_telemetry():
     allow_tracking.reset(token)
 
 
-def _client_returning(status: int) -> HttpClient:
+def _client_returning(
+    status: int,
+    *,
+    max_retries: int = 0,
+    calls: t.Optional[t.List[httpx.Request]] = None,
+) -> HttpClient:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status, json={"error": {"message": "nope"}})
+        if calls is not None:
+            calls.append(request)
+        return httpx.Response(
+            status,
+            json={"error": {"message": "nope"}},
+            # Keep retry backoff short in tests.
+            headers={"retry-after-ms": "1"},
+        )
 
     return HttpClient(
         provider="test",
         api_key="sk-test",
         base_url="https://backend.invalid",
-        max_retries=0,
+        max_retries=max_retries,
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
@@ -111,3 +126,54 @@ def test_schema_fetch_auth_error_is_a_composio_error() -> None:
 
     assert isinstance(exc_info.value, exceptions.ComposioError)
     assert not isinstance(exc_info.value, exceptions.ToolNotFoundError)
+
+
+def test_trigger_type_not_found_mapping_still_applies() -> None:
+    triggers = Triggers(client=_client_returning(404))
+
+    with pytest.raises(exceptions.TriggerTypeNotFound) as exc_info:
+        triggers.create(slug="NONEXISTENT_TRIGGER", user_id="user")
+
+    assert isinstance(exc_info.value.__cause__, composio_client.NotFoundError)
+
+
+def test_without_retries_client_raises_composio_error() -> None:
+    client = _client_returning(401)
+
+    with pytest.raises(exceptions.ComposioError) as exc_info:
+        client.without_retries.tools.retrieve(tool_slug="GITHUB_CREATE_AN_ISSUE")
+
+    assert isinstance(exc_info.value, composio_client.AuthenticationError)
+
+
+def test_error_after_exhausted_retries_is_composio_error() -> None:
+    calls: t.List[httpx.Request] = []
+    client = _client_returning(503, max_retries=2, calls=calls)
+
+    with pytest.raises(exceptions.ComposioError) as exc_info:
+        client.tools.retrieve(tool_slug="GITHUB_CREATE_AN_ISSUE")
+
+    assert isinstance(exc_info.value, composio_client.InternalServerError)
+    assert len(calls) == 3
+
+
+@pytest.mark.parametrize(
+    "clone",
+    [lambda error: pickle.loads(pickle.dumps(error)), copy.deepcopy],
+    ids=["pickle", "deepcopy"],
+)
+def test_status_errors_survive_serialization(
+    clone: t.Callable[[BaseException], BaseException],
+) -> None:
+    client = _client_returning(401)
+    with pytest.raises(exceptions.ComposioError) as exc_info:
+        client.tools.retrieve(tool_slug="GITHUB_CREATE_AN_ISSUE")
+    error = exc_info.value
+
+    restored = clone(error)
+
+    assert type(restored) is type(error)
+    assert isinstance(restored, composio_client.AuthenticationError)
+    assert isinstance(restored, exceptions.ComposioError)
+    assert t.cast(composio_client.APIStatusError, restored).status_code == 401
+    assert str(restored) == str(error)

@@ -53,11 +53,38 @@ def _with_sdk_error_base(
         type(
             error_class.__name__,
             (error_class, ComposioError),
-            {"__module__": error_class.__module__},
+            {
+                "__module__": error_class.__module__,
+                "__reduce__": _reduce_sdk_error,
+            },
         ),
     )
     # setdefault keeps the first class if two threads race to build one.
     return _SDK_ERROR_CLASSES.setdefault(error_class, sdk_class)
+
+
+def _reduce_sdk_error(self: APIStatusError) -> t.Tuple[t.Any, ...]:
+    """
+    Pickle support for the classes built by ``_with_sdk_error_base``.
+
+    They are not module attributes, so pickle cannot find them by name. Record
+    the generated class instead and rebuild the SDK subclass on load.
+    """
+    error_class = type(self).__mro__[1]
+    return (
+        _rebuild_sdk_error,
+        (error_class, self.message, self.response, self.body),
+        self.__dict__,
+    )
+
+
+def _rebuild_sdk_error(
+    error_class: t.Type[APIStatusError],
+    message: str,
+    response: Response,
+    body: object,
+) -> APIStatusError:
+    return _with_sdk_error_base(error_class)(message, response=response, body=body)
 
 
 def _get_python_implementation() -> str:
