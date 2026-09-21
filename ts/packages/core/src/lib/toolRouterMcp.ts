@@ -1,12 +1,7 @@
 import { ComposioMCPDestinationError } from '../errors/ToolRouterErrors';
 import type { ComposioRequestHeaders } from '../types/composio.types';
 import type { MCPServerType, ToolRouterMCPServerConfig } from '../types/toolRouter.types';
-import {
-  getUserApiKeyHeader,
-  ORG_ID_HEADER,
-  PROJECT_ID_HEADER,
-  USER_API_KEY_HEADER,
-} from '../utils/sdk';
+import { ORG_ID_HEADER, PROJECT_ID_HEADER, resolveCredentialHeaders } from '../utils/sdk';
 
 const parseOrigin = (url: string, role: 'API base URL' | 'MCP URL'): URL => {
   try {
@@ -65,17 +60,7 @@ export const buildMCPServerConfig = (input: MCPServerConfigInput): ToolRouterMCP
     );
   }
 
-  const headers: Record<string, string> = {};
-  if (typeof input.apiKey === 'string' && input.apiKey.length > 0) {
-    headers['x-api-key'] = input.apiKey;
-  } else if (typeof input.userApiKey === 'string' && input.userApiKey.length > 0) {
-    headers[USER_API_KEY_HEADER] = input.userApiKey;
-  } else {
-    const userApiKeyHeader = getUserApiKeyHeader(input.defaultHeaders);
-    if (userApiKeyHeader) {
-      headers[USER_API_KEY_HEADER] = userApiKeyHeader.value;
-    }
-  }
+  const headers = resolveCredentialHeaders(input);
   if (input.orgId) {
     headers[ORG_ID_HEADER] = input.orgId;
   }

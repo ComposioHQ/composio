@@ -42,8 +42,11 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_attach_experimental,
 )
 from composio.core.models.tool_router_constants import (
+    ORG_ID_HEADER,
     PRELOAD_TOOLS_ALL,
+    PROJECT_ID_HEADER,
     SESSION_PRESET_DIRECT_TOOLS,
+    USER_API_KEY_HEADER,
 )
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
@@ -61,13 +64,6 @@ from composio.core.models.tool_router_session_files import ToolRouterSessionFile
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 from composio.exceptions import InvalidParams, MCPDestinationError
-
-#: Header that carries a Composio user API key (``uak_...``) instead of a
-#: project API key. It is the only credential default header the MCP export reads.
-USER_API_KEY_HEADER = "x-user-api-key"
-#: Headers that carry the explicit organization / project scope.
-ORG_ID_HEADER = "x-org-id"
-PROJECT_ID_HEADER = "x-project-id"
 
 _DEFAULT_PORTS = {"http": 80, "https": 443}
 

@@ -23,6 +23,7 @@ from composio.core.models import (
 )
 from composio.core.models.base import allow_tracking
 from composio.core.models.mcp import MCP
+from composio.core.models.tool_router_constants import ORG_ID_HEADER, PROJECT_ID_HEADER
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider._openai import (
     OpenAIProvider,
@@ -38,10 +39,6 @@ _TOOL_ROUTER_DEPRECATION = (
     "`composio.tool_router` is deprecated; use `composio.sessions` instead "
     "(or the `composio.create` / `composio.use` shortcuts). It returns the same object."
 )
-
-
-ORG_ID_HEADER = "x-org-id"
-PROJECT_ID_HEADER = "x-project-id"
 
 
 class SDKConfig(te.TypedDict):

@@ -146,6 +146,33 @@ export const getUserApiKeyHeader = (
   return header && header.value.length > 0 ? header : undefined;
 };
 
+export type CredentialHeaderInput = {
+  /** The project API key the client resolved, or `null` when disabled. */
+  apiKey: string | null | undefined;
+  /** The user API key the client resolved (`userApiKey` option or `COMPOSIO_USER_API_KEY`). */
+  userApiKey: string | null | undefined;
+  /** The default headers configured on the SDK instance; only `x-user-api-key` is consulted. */
+  defaultHeaders: ComposioRequestHeaders | undefined;
+};
+
+/**
+ * The single credential header that mirrors the effective auth of an SDK
+ * instance: the project key as `x-api-key` when one is configured, otherwise
+ * the resolved user API key, otherwise the `x-user-api-key` default header,
+ * as `x-user-api-key`. Empty when no credential is held. The environment is
+ * never consulted here.
+ */
+export const resolveCredentialHeaders = (input: CredentialHeaderInput): Record<string, string> => {
+  if (hasValue(input.apiKey)) {
+    return { 'x-api-key': input.apiKey };
+  }
+  if (hasValue(input.userApiKey)) {
+    return { [USER_API_KEY_HEADER]: input.userApiKey };
+  }
+  const userApiKeyHeader = getUserApiKeyHeader(input.defaultHeaders);
+  return userApiKeyHeader ? { [USER_API_KEY_HEADER]: userApiKeyHeader.value } : {};
+};
+
 export type SDKScopeOptions = {
   /** The `orgId` constructor option. */
   orgId?: string;
