@@ -21594,6 +21594,22 @@
                             ],
                             "description": "When \"required\", the agent must specify which account to use. Present only when multiple accounts exist."
                           },
+                          "composio_managed": {
+                            "type": "object",
+                            "properties": {
+                              "allowed_tool_slugs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Tools of this toolkit that run on the Composio managed account"
+                              }
+                            },
+                            "required": [
+                              "allowed_tool_slugs"
+                            ],
+                            "description": "Present when the toolkit is connected through the Composio managed account rather than a connected account of the user."
+                          },
                           "status_message": {
                             "type": "string",
                             "description": "Human-readable message about the connection status and next steps"
