@@ -1,7 +1,7 @@
 # Effect v4 CLI testing
 
-The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.0-rc.112` and
-`@effect/vitest@4.0.0-rc.112` (pinned exactly, matching `ts/packages/cli/package.json` and the
+The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.0-rc.115` and
+`@effect/vitest@4.0.0-rc.115` (pinned exactly, matching `ts/packages/cli/package.json` and the
 workspace catalog in `pnpm-workspace.yaml`). `@effect/cli` and `@effect/platform` no longer exist
 as dependencies — their functionality moved into `effect`/`effect/unstable/*`. Read
 `ts/packages/cli/test/__utils__/services/test-layer.ts` before writing a new test suite; it is the
@@ -108,7 +108,8 @@ choice.
   `Layer.provideMerge` over `Layer.provide` when the reference's value must stay visible to
   everything downstream (see the `ConfigProvider` comment in `test-layer.ts` for the bug this
   distinction fixed).
-- `TestClock` and `FastCheck` live under `effect/testing`, not the core `effect` barrel.
+- `TestClock` lives under `effect/testing`. The FastCheck bridge was removed in rc.113; native
+  arbitrary generation lives under `effect/unstable/arbitrary/Arbitrary`.
 
 ## CLI behavior matrix
 

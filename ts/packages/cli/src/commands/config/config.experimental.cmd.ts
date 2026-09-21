@@ -14,14 +14,14 @@ class ConfigOptionError extends Data.TaggedError('commands/ConfigOptionError')<{
   readonly message: string;
 }> {}
 
-const featureArg = Argument.string('feature').pipe(
+const featureArg = Argument.String('feature').pipe(
   Argument.withDescription(
     `Experimental feature name. Known features: ${knownFeatures.join(', ')}`
   ),
   Argument.optional
 );
 
-const stateArg = Argument.string('state').pipe(
+const stateArg = Argument.String('state').pipe(
   Argument.withDescription('Set to "on" or "off"'),
   Argument.optional
 );

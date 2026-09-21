@@ -18,7 +18,7 @@ import { APP_CONFIG } from 'src/effects/app-config';
  * COMPOSIO_USER_API_KEY=your_user_api_key
  * ```
  *
- * Read via `yield* Config.string('USER_API_KEY')`.
+ * Read via `yield* Config.String('USER_API_KEY')`.
  */
 
 /**

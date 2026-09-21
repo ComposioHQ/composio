@@ -118,6 +118,10 @@
       "description": "Dashboard playground chat"
     },
     {
+      "name": "Arena",
+      "description": "Arena conversations, messages and terms"
+    },
+    {
       "name": "Organization Management"
     },
     {
@@ -466,7 +470,7 @@
               "minLength": 1,
               "maxLength": 16384
             },
-            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials. Rotates the stored client_secret without Apollo ever holding it.",
+            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials. Rotates the stored client_secret without Composio ever holding it.",
             "x-experimental": true
           },
           "proxy_config": {
@@ -3342,6 +3346,9 @@
                                   "base_url": {
                                     "type": "string"
                                   },
+                                  "displayName": {
+                                    "type": "string"
+                                  },
                                   "status": {
                                     "type": "string",
                                     "enum": [
@@ -3640,6 +3647,9 @@
                               "base_url": {
                                 "type": "string"
                               },
+                              "displayName": {
+                                "type": "string"
+                              },
                               "status": {
                                 "type": "string",
                                 "enum": [
@@ -3891,6 +3901,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -4393,6 +4406,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -5268,6 +5284,9 @@
                       "base_url": {
                         "type": "string"
                       },
+                      "displayName": {
+                        "type": "string"
+                      },
                       "oauth_token": {
                         "type": "string"
                       },
@@ -6096,7 +6115,7 @@
                       "theme": {
                         "type": "object",
                         "additionalProperties": {},
-                        "description": "Link-auth theme for the hosted connect page. Opaque to Apollo; the dashboard owns the token vocabulary and all value validation."
+                        "description": "Link-auth theme for the hosted connect page. Opaque to the API; the dashboard owns the token vocabulary and all value validation."
                       }
                     },
                     "required": [
@@ -9117,6 +9136,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests - The upstream service is rate limiting the request; retry after a short backoff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error - Failed to sync toolkit",
             "content": {
@@ -10924,6 +10953,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -11676,6 +11708,9 @@
                           "base_url": {
                             "type": "string"
                           },
+                          "displayName": {
+                            "type": "string"
+                          },
                           "state_prefix": {
                             "type": "string",
                             "maxLength": 40,
@@ -12047,6 +12082,13 @@
                   "user_id": {
                     "type": "string",
                     "description": "The user id (entity id) that owns the connection. When connected_account_id is omitted, the first active connection for this user and the trigger's toolkit is auto-resolved (same as tool execution). When connected_account_id is also provided and the project has 2FA enabled, user_id is validated against the owner of that connection."
+                  },
+                  "egress_url": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "description": "Overrides the delivery URL for this trigger instance only: its events are sent to this HTTPS URL instead of the project webhook URL. Your project webhook subscription is still required and still controls signing (the webhook secret), the payload version and which events are enabled; only the destination changes for this instance. Omit to leave the current value unchanged; pass null to remove the override and deliver to the project webhook URL again."
                   },
                   "trigger_config": {
                     "type": "object",
@@ -12522,6 +12564,11 @@
                             "additionalProperties": {},
                             "description": "Configuration for the trigger"
                           },
+                          "egress_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Delivery URL override for this trigger instance: its events are sent here instead of the project webhook URL, while signing, the payload version and enabled events still come from the project webhook subscription. Null means no override."
+                          },
                           "state": {
                             "type": "object",
                             "nullable": true,
@@ -12587,6 +12634,7 @@
                           "user_id",
                           "version",
                           "trigger_config",
+                          "egress_url",
                           "state",
                           "updated_at",
                           "disabled_at",
@@ -12770,8 +12818,8 @@
         "x-api-version": "3.0"
       },
       "patch": {
-        "summary": "Enable or disable a trigger",
-        "description": "Updates the status of a trigger instance to enable or disable it. Disabling a trigger pauses event listening without deleting the trigger configuration. Re-enabling restores the trigger to its active state. Use this for temporary maintenance or to control trigger execution.",
+        "summary": "Update a trigger",
+        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
         "tags": [
           "Triggers"
         ],
@@ -12798,6 +12846,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -12808,12 +12857,22 @@
                     "enum": [
                       "enable",
                       "disable"
-                    ]
+                    ],
+                    "description": "Enable or disable the trigger instance."
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The user id that owns the connected account behind this trigger. Optional: when sent on a project with 2FA enabled it must be the owner of a private connection or allowed on a shared one, whatever is being updated. Required to set egress_url when 2FA is enabled. Ignored when 2FA is disabled."
+                  },
+                  "egress_url": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "description": "Overrides the delivery URL for this trigger instance only: its events are sent to this HTTPS URL instead of the project webhook URL. Your project webhook subscription is still required and still controls signing (the webhook secret), the payload version and which events are enabled; only the destination changes for this instance. Omit to leave the current value unchanged; pass null to remove the override and deliver to the project webhook URL again."
                   }
-                },
-                "required": [
-                  "status"
-                ]
+                }
               }
             }
           }
@@ -12853,6 +12912,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -16928,6 +16997,11 @@
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
                       },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials."
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "default": true,
@@ -17697,6 +17771,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -18180,6 +18258,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload too large",
             "content": {
@@ -18361,6 +18449,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -18695,6 +18793,10 @@
                             "enable": {
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
                             },
                             "proxy_execution_enabled": {
                               "type": "boolean",
@@ -19326,6 +19428,10 @@
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
                       },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials. Changing this flag recreates the sandbox: notebook state and local files are lost, but /mnt/files/ persists. Tool descriptions and search guidance reflect the updated flag, but assistive_prompt is returned only at session creation and is not regenerated by PATCH; callers must update any previously retained prompt guidance."
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "description": "Whether proxy execution is enabled. When enabled, workbench can call URLs and APIs directly.",
@@ -19720,6 +19826,10 @@
                             "enable": {
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
                             },
                             "proxy_execution_enabled": {
                               "type": "boolean",
@@ -20455,6 +20565,7 @@
                     ]
                   },
                   "custom_connection_data": {
+                    "deprecated": true,
                     "type": "object",
                     "properties": {
                       "authScheme": {
@@ -20543,6 +20654,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -20810,6 +20924,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -21111,6 +21235,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload too large",
             "content": {
@@ -21339,6 +21473,10 @@
                           "plan_id": {
                             "type": "string",
                             "description": "ID of cached plan if available"
+                          },
+                          "cached_plan_usecase": {
+                            "type": "string",
+                            "description": "Use case the cached plan was originally built for, if a cached plan is available. May differ from `use_case` when the cached plan was matched from a similar query."
                           },
                           "error": {
                             "type": "string",
@@ -21646,6 +21784,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -22152,7 +22300,7 @@
     "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/delete": {
       "post": {
         "summary": "Delete a file from a session mount",
-        "description": "Deletes a file from a workbench session storage mount. S3 delete is idempotent — deleting a non-existent file succeeds silently.",
+        "description": "Deletes a file from a workbench session storage mount. Deleting a non-existent file succeeds silently (idempotent).",
         "tags": [
           "Tool Router"
         ],

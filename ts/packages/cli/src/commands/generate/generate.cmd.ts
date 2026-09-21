@@ -8,19 +8,19 @@ import { generatePythonTypeStubs } from '../py/commands/py.generate.cmd';
 import { generateCmd$Py } from './generate.py.cmd';
 import { generateCmd$Ts } from './generate.ts.cmd';
 
-const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
   Flag.withDescription('Output directory for type stubs')
 );
 
-const typeTools = Flag.boolean('type-tools').pipe(
+const typeTools = Flag.Boolean('type-tools').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Generate typed input/output schemas for each tool (TypeScript only, slower)'
   )
 );
 
-const toolkitsOpt = Flag.string('toolkits').pipe(
+const toolkitsOpt = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'

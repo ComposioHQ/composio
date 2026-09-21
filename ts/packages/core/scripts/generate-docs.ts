@@ -233,6 +233,12 @@ interface TypeDocParameter {
   defaultValue?: string;
 }
 
+export function isParameterRequired(
+  param: Pick<TypeDocParameter, 'flags' | 'defaultValue'>
+): boolean {
+  return !param.flags?.isOptional && param.defaultValue === undefined;
+}
+
 interface TypeDocType {
   type: string;
   name?: string;
@@ -750,7 +756,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
       // Clean up ugly TypeScript internal names
       name: param.name.startsWith('__') ? 'options' : param.name,
       type: sourceTypes?.parameters.get(param.name) ?? formatType(param.type),
-      required: !param.flags?.isOptional,
+      required: isParameterRequired(param),
       description: extractDescription(param.comment),
       default: param.defaultValue,
     }));
@@ -897,7 +903,7 @@ function generateMethodMdx(method: MethodDoc): string {
         lines.push('|------|------|-------------|');
         for (const param of sig.parameters) {
           const opt = param.required ? '' : '?';
-          const desc = escapeTextForMdx(param.description || '');
+          const desc = escapeTableTextForMdx(param.description || '');
           const typeCell = escapeTypeForMdx(simplifyTypeForTable(param.type));
           lines.push(`| \`${param.name}${opt}\` | \`${typeCell}\` | ${desc} |`);
         }
@@ -1025,7 +1031,7 @@ function generateClassMdx(classDoc: ClassDoc): string {
       lines.push('|------|------|-------------|');
       for (const prop of publicProps) {
         const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
-        const safeDesc = escapeTextForMdx(prop.description || '');
+        const safeDesc = escapeTableTextForMdx(prop.description || '');
         lines.push(`| \`${prop.name}\` | \`${typeCell}\` | ${safeDesc} |`);
       }
     } else {
@@ -1068,6 +1074,10 @@ export function escapeTextForMdx(str: string): string {
     .replace(/\}/g, '\\}')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+export function escapeTableTextForMdx(str: string): string {
+  return escapeTextForMdx(str).replace(/\s*\n\s*/g, ' ');
 }
 
 // Clean up internal generic type parameters that don't add value for users
@@ -1254,7 +1264,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTextForMdx(description)} |`
+        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTableTextForMdx(description)} |`
     )
     .join('\n');
 

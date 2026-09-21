@@ -1116,6 +1116,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
+            config=session.config,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
@@ -1264,6 +1265,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
+            config=session.config,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,

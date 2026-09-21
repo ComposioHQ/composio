@@ -27,7 +27,7 @@ import {
  * to a public address during validation and rebind to an internal one before
  * the connect — a TOCTOU window the Python guard closes the same way.
  *
- * Residual: a hop whose effective dispatcher is a configured route — a
+ * By default, a hop whose effective dispatcher is a configured route — a
  * caller-supplied `init.dispatcher`, a non-stock global dispatcher (a
  * `ProxyAgent` or `EnvHttpProxyAgent` installed via `setGlobalDispatcher`), or
  * the runtime's env-proxy mode (automatic on Bun, opt-in via
@@ -35,10 +35,21 @@ import {
  * pre-flight validation. Pinning would dial the validated address instead of
  * the proxy, and the proxy resolves the hostname itself where the SDK cannot
  * see or pin that resolution. The Python guard carries the same residual for
- * the same reason (`_proxy_applies`).
+ * the same reason (`_proxy_applies`). Callers that cannot accept that residual
+ * can set `requirePinnedConnection`, which fails closed before fetching.
  */
 
 const MAX_REDIRECTS = 5;
+
+export interface SsrfSafeFetchOptions {
+  /** Maximum number of redirects to follow. Defaults to 5. */
+  maxRedirects?: number;
+  /**
+   * Refuse a request when a configured dispatcher or environment proxy means
+   * the connection cannot be pinned to the address validated by the guard.
+   */
+  requirePinnedConnection?: boolean;
+}
 
 /**
  * The Fetch standard's "redirect status" set. A 3xx outside it is not a
@@ -305,15 +316,20 @@ export const assertSafeFetchTarget = async (rawUrl: string): Promise<string[]> =
  * returned unchanged. Each hop carries the method, body, and credential headers
  * the Fetch standard says it should — see {@link applyRedirectSemantics}.
  *
- * A hop whose effective dispatcher is a configured route (caller-supplied
- * `init.dispatcher`, non-stock global dispatcher, env-proxy mode) is *not*
- * pinned — see the module residual above.
+ * By default, a hop whose effective dispatcher is a configured route
+ * (caller-supplied `init.dispatcher`, non-stock global dispatcher, env-proxy
+ * mode) is *not* pinned. Set `requirePinnedConnection` to fail closed instead.
  */
 export const ssrfSafeFetch = async (
   rawUrl: string,
   init: RequestInit = {},
-  maxRedirects: number = MAX_REDIRECTS
+  optionsOrMaxRedirects: SsrfSafeFetchOptions | number = {}
 ): Promise<Response> => {
+  const options =
+    typeof optionsOrMaxRedirects === 'number'
+      ? { maxRedirects: optionsOrMaxRedirects }
+      : optionsOrMaxRedirects;
+  const maxRedirects = options.maxRedirects ?? MAX_REDIRECTS;
   let currentUrl = rawUrl;
   // Rebound per hop: a redirect can drop the method and body (see
   // `applyRedirectSemantics`), and the following hops must send what is left.
@@ -331,6 +347,13 @@ export const ssrfSafeFetch = async (
       callerDispatcher !== undefined ||
       envProxyApplies(new URL(currentUrl), isBun) ||
       hasCustomGlobalDispatcher();
+
+    if (options.requirePinnedConnection && respectConfiguredRoute) {
+      throw new ComposioBlockedInternalUrlError(
+        'Refusing to fetch through a configured network route because the validated address cannot be pinned',
+        { url: currentUrl }
+      );
+    }
 
     const dispatcher =
       respectConfiguredRoute || isBun ? undefined : await createPinnedDispatcher(addresses);

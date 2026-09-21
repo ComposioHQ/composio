@@ -1110,10 +1110,43 @@ class TestToolRouter:
         assert callable(session.toolkits)
         assert callable(session.delete)
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
+        assert (
+            session.config
+            is mock_client.tool_router.session.retrieve.return_value.config
+        )
 
         mock_client.tool_router.session.retrieve.assert_called_once_with("session_123")
         mock_client.tool_router.session.attach.assert_not_called()
         mock_client.post.assert_not_called()
+
+    def test_create_session_exposes_config(self, tool_router, mock_client):
+        """create() exposes the server-side session config on the session."""
+        create_config = mock_client.tool_router.session.create.return_value.config
+        create_config.toolkits = {"enabled": ["gmail"]}
+
+        session = tool_router.create(user_id="user_123", toolkits=["gmail"])
+
+        assert session.config is create_config
+        assert session.config.toolkits == {"enabled": ["gmail"]}
+
+    def test_update_session_returns_config(self, tool_router, mock_client):
+        """update() returns the patched config and refreshes it on the session."""
+        patched = MagicMock()
+        patched.toolkits = {"enabled": ["gmail"]}
+        patched.preload = MagicMock()
+        patched.preload.tools = ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+        mock_client.tool_router.session.patch.return_value.config = patched
+
+        session = tool_router.use(session_id="session_123")
+        before = session.config
+
+        config = session.update(toolkits={"enable": ["gmail"]})
+
+        mock_client.tool_router.session.patch.assert_called_once()
+        assert config is patched
+        assert session.config is patched
+        assert session.config is not before
+        assert session.preload.tools == ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
 
     def test_session_delete(self, tool_router, mock_client):
         """Session delete removes the current session."""

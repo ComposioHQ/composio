@@ -38,7 +38,11 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/composio-connect')).toBe('for-you');
     expect(classifyDocsProduct('/docs/providers/openai')).toBe('platform');
     expect(classifyDocsProduct('/docs/authentication/controlling-scopes')).toBe('platform');
+    expect(classifyDocsProduct('/docs/consumer-agents')).toBe('platform');
+    expect(classifyDocsProduct('/docs/b2b-agents')).toBe('platform');
+    expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
+    expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
   });
@@ -123,6 +127,9 @@ describe('Docs product navigation', () => {
       '/docs/authentication',
       '/docs/skills',
       '/docs/triggers',
+      '/docs/consumer-agents',
+      '/docs/b2b-agents',
+      '/docs/production-readiness',
     ]) {
       expect(platformUrls).toContain(url);
     }
@@ -146,7 +153,10 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).not.toContain('/docs');
     expect(platformUrls).not.toContain('/docs');
 
-    for (const sharedUrl of ['/docs/security/overview']) {
+    for (const sharedUrl of [
+      '/docs/using-composio-skill',
+      '/docs/security/overview',
+    ]) {
       expect(forYouUrls).toContain(sharedUrl);
       expect(platformUrls).toContain(sharedUrl);
     }

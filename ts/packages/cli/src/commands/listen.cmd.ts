@@ -1,7 +1,7 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
+import { NotFoundError, type Composio as RawComposioClient } from '@composio/client';
 import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -35,6 +35,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
     | 'project_context'
     | 'connected_accounts'
     | 'connected_account_not_found'
+    | 'unknown_trigger'
     | 'create_trigger'
     | 'disable_trigger';
   readonly message: string;
@@ -52,13 +53,13 @@ const invalidOptionValue = (message: string) => new ListenOptionError({ message 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription(
     'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE") or project event type (e.g. "composio.connected_account.expired")'
   )
 );
 
-const params = Flag.string('params').pipe(
+const params = Flag.String('params').pipe(
   Flag.withAlias('p'),
   Flag.withDescription(
     'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
@@ -66,30 +67,30 @@ const params = Flag.string('params').pipe(
   Flag.optional
 );
 
-const maxEvents = Flag.integer('max-events').pipe(
+const maxEvents = Flag.Int('max-events').pipe(
   Flag.withDescription('Stop after receiving N matching events'),
   Flag.optional
 );
 
-const timeout = Flag.string('timeout').pipe(
+const timeout = Flag.String('timeout').pipe(
   Flag.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
   Flag.optional
 );
 
-const stream = Flag.string('stream').pipe(
+const stream = Flag.String('stream').pipe(
   Flag.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
   ),
   Flag.optional
 );
-const account = Flag.string('account').pipe(
+const account = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
   Flag.optional
 );
 
-const debug = Flag.boolean('debug').pipe(
+const debug = Flag.Boolean('debug').pipe(
   Flag.withDescription(
     'Print verbose debug information (raw events, filter results, Pusher state)'
   ),
@@ -149,6 +150,37 @@ const assertSupportedListenParams = (params: {
       )
     : Effect.void;
 
+/**
+ * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
+ *
+ * Called when no active connected account matched, and when creating the temporary trigger fails,
+ * so a mistyped slug is reported as such instead of as a missing connection or a generic creation
+ * failure. Neither call site is on the happy path, which makes no additional request.
+ */
+const assertTriggerTypeExists = (params: {
+  client: RawComposioClient;
+  slug: string;
+  toolkitSlug?: string;
+}) =>
+  Effect.gen(function* () {
+    const lookup = yield* Effect.tryPromise({
+      try: () => params.client.triggersTypes.retrieve(params.slug),
+      catch: cause => cause,
+    }).pipe(Effect.result);
+
+    if (Result.isFailure(lookup) && lookup.failure instanceof NotFoundError) {
+      return yield* new ListenCommandError({
+        reason: 'unknown_trigger',
+        message: `Unknown trigger slug "${params.slug}". List available slugs with \`composio triggers list <toolkit>\`.`,
+        slug: params.slug,
+        toolkitSlug: params.toolkitSlug,
+        cause: lookup.failure,
+      });
+    }
+    // A found trigger type, or any failure other than 404, is inconclusive here: fall through to
+    // the caller's own error.
+  });
+
 const resolveConnectedAccountIdForTrigger = (params: {
   client: RawComposioClient;
   slug: string;
@@ -201,6 +233,8 @@ const resolveConnectedAccountIdForTrigger = (params: {
     if (selectedAccount?.id) {
       return selectedAccount.id;
     }
+
+    yield* assertTriggerTypeExists({ client: params.client, slug: params.slug, toolkitSlug });
 
     const choices = formatConnectedAccountChoices(selectableAccounts);
     const suffix =
@@ -515,7 +549,15 @@ export const listenCmd = Command.make(
                   slug,
                   cause,
                 }),
-            }),
+            }).pipe(
+              // An active account for the inferred toolkit skips the lookup in
+              // resolveConnectedAccountIdForTrigger, so a mistyped slug with a valid toolkit prefix
+              // only surfaces here. The lookup's unknown_trigger failure replaces the create_trigger
+              // error; any other outcome re-fails with the original error.
+              Effect.catch(error =>
+                assertTriggerTypeExists({ client, slug }).pipe(Effect.andThen(Effect.fail(error)))
+              )
+            ),
         createdTrigger =>
           Effect.gen(function* () {
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);

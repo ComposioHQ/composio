@@ -10,22 +10,22 @@ class NativeUiSetupError extends Data.TaggedError('commands/NativeUiSetupError')
   readonly cause: unknown;
 }> {}
 
-const title = Flag.string('title').pipe(
+const title = Flag.String('title').pipe(
   Flag.withDefault('Composio'),
   Flag.withDescription('Title for the native sidecar window.')
 );
 
-const message = Flag.string('message').pipe(
+const message = Flag.String('message').pipe(
   Flag.withDefault('Native UI sidecar scaffold'),
   Flag.withDescription('Primary text displayed in the native sidecar window.')
 );
 
-const detail = Flag.string('detail').pipe(
+const detail = Flag.String('detail').pipe(
   Flag.withDefault('This window is rendered by a Swift sidecar bundled with the CLI.'),
   Flag.withDescription('Secondary text displayed in the native sidecar window.')
 );
 
-const timeout = Flag.optional(Flag.string('timeout')).pipe(
+const timeout = Flag.optional(Flag.String('timeout')).pipe(
   Flag.withDescription('Optional auto-close timeout in seconds.')
 );
 

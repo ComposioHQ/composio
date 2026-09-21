@@ -60,7 +60,7 @@ Each command uses `effect/unstable/cli`'s `Command.make()` pattern. Top-level co
 | `dev` | Developer-only utilities |
 | `artifacts` | Manage generated artifacts |
 
-Named options use `Flag.string()`, `Flag.boolean()`, `Flag.integer()`, `Flag.choice()`, `Flag.directory()` (from `effect/unstable/cli`); positionals use `Argument.string()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
+Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/unstable/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
 ### Services — `src/services/`
 
@@ -97,6 +97,8 @@ Pipeline for `composio generate {ts,py}`:
 
 `--type-tools` includes full type definitions.
 
+Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runtime` companion module — `dist/generation-runtime.mjs` next to the executable, not inside it. Commands reach it through `loadInstalledCompanionModule` (`src/services/run-companion-modules.ts`), never by importing `src/generation/*`, `src/commands/run-source-transforms.ts`, or `typescript` directly: the binary build fails if the executable's bundle reaches any of those (`assertExecutableExcludesCompanionModules` in `scripts/_shared.ts`). A companion bundles its own copy of `effect`, so its API is plain functions and promises; failures cross as values that `src/generation/errors.ts` turns back into the CLI's error classes.
+
 ### Configuration
 
 - CLI: `cli-config.ts` defines `ComposioCliConfig` (`builtIns: [GlobalFlag.Help]`, `effect/unstable/cli`'s `CliConfig.Service` shrank to just that one field in v4) — the only `CliConfig` customization Composio makes, wired into `cli-main.ts`'s layer stack as `CliConfigLive`. v3's `autoCorrectLimit`/`isCaseSensitive` have no v4 config equivalent, and neither is reproduced anymore: "Did you mean?" suggestions on `UnrecognizedOption`/`UnknownSubcommand` now render as v4's parser always computes them (no config knob exists to disable them, and Composio wants them), and v4's parser performs no case-folding at all, so case-sensitivity needs no knob. `cli-main.ts` provides no custom `CliOutput.Formatter` — `Command.runWith` uses v4's own `CliOutput.defaultFormatter()`. `GlobalFlag.Version` is deliberately not enabled: `composio --version`, `composio -v`, and the `composio version` command all print the same bare `pkg.version` via `ui.output()`, because `src/commands/index.ts` rewrites the flag spellings to the `version` command before parsing (`normalizeVersionFlag`).
@@ -106,7 +108,7 @@ Pipeline for `composio generate {ts,py}`:
 
 ### Key Dependencies
 
-`effect` (pinned `4.0.0-rc.112`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/unstable/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned `4.0.0-rc.115`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/unstable/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 
@@ -197,7 +199,7 @@ The only code allowed to bypass services sits at declared runtime boundaries: th
 
 ## Vendor Reference Sources
 
-Read-only submodules under `ts/vendor/`, pinned at the `effect@4.0.0-rc.112` release commit (do NOT modify — actual deps come from npm). v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
+Read-only submodules under `ts/vendor/`, pinned at the `effect@4.0.0-rc.115` release commit (do NOT modify — actual deps come from npm). v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
 
 - `ts/vendor/effect/packages/effect/src/` — core Effect runtime (`Effect`, `Schema`, `Layer`, `Context`, `Result`, `Cause`, `Config`, `FileSystem`, `Path`, `PlatformError`, …)
 - `ts/vendor/effect/packages/effect/src/unstable/cli/` — `effect/unstable/cli` (`Command`, `Flag`, `Argument`, `CliError`, `CliConfig`, `CliOutput`, `GlobalFlag`, `HelpDoc`, `Completions`, `Prompt`)

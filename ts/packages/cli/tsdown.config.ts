@@ -9,6 +9,7 @@ export default defineConfig({
     'src/services/run-subagent-acp.ts',
     'src/services/run-subagent-legacy.ts',
     'src/services/run-subagent-output-mcp.ts',
+    'src/services/generation-runtime.ts',
   ],
   format: ['esm'],
   shims: true,

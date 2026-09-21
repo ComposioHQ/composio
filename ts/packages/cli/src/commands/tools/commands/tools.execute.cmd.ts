@@ -2,7 +2,6 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
-import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -66,20 +65,20 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Flag.string('data').pipe(
+const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
   Flag.optional
 );
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
   Flag.optional
 );
-const accountOption = Flag.string('account').pipe(
+const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
@@ -95,33 +94,33 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Flag.boolean('get-schema').pipe(
+const getSchema = Flag.Boolean('get-schema').pipe(
   Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Flag.withDefault(false)
 );
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Validate and preview the tool call without executing'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
@@ -321,15 +320,23 @@ const redactRequestId = (value: object): object => {
   };
 };
 
-const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
-let executeOutputEncoder: ReturnType<typeof encodingForModel> | undefined;
+// Responses larger than this are stored in a session file instead of printed,
+// so a caller such as an agent does not take a huge payload into its context.
+// Measured in UTF-8 bytes: about 10,000 tokens of JSON at the estimate below.
+const EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD = 40_000;
 
-const getExecuteOutputEncoder = () => {
-  if (!executeOutputEncoder) {
-    executeOutputEncoder = encodingForModel('gpt-4o');
-  }
-  return executeOutputEncoder;
-};
+// JSON averages roughly four bytes per token. The `tokenCount` of a stored
+// response is this estimate rather than a tokenizer count, since the real count
+// depends on the model that reads the file.
+const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
+
+const describeStoredOutputSize = ({
+  sizeBytes,
+  tokenCount,
+}: {
+  readonly sizeBytes: number;
+  readonly tokenCount: number;
+}): string => `${Math.ceil(sizeBytes / 1024)} KB, ~${tokenCount} tokens`;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -342,6 +349,7 @@ type StoredExecuteOutputSummary = {
   readonly logId: string;
   readonly storedInFile: true;
   readonly tokenCount: number;
+  readonly sizeBytes: number;
   readonly outputFilePath: string;
 };
 
@@ -378,7 +386,12 @@ const executionSuccessSuffix = (result: {
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
 };
 
-const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
+const persistLargeExecuteOutput = (
+  toolSlug: string,
+  json: string,
+  sizeBytes: number,
+  sharedDirectory?: string
+) =>
   Effect.gen(function* () {
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -393,7 +406,8 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount: getExecuteOutputEncoder().encode(json).length,
+      tokenCount: Math.ceil(sizeBytes / ESTIMATED_BYTES_PER_OUTPUT_TOKEN),
+      sizeBytes,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -407,9 +421,10 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    const tokenCount = getExecuteOutputEncoder().encode(json).length;
+    const sizeBytes = new TextEncoder().encode(json).length;
+    // `composio run` always prints inline.
     if (
-      tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD ||
+      sizeBytes <= EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD ||
       !(yield* shouldStoreLargeExecuteOutput)
     ) {
       return {
@@ -421,7 +436,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, sizeBytes, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
@@ -1126,6 +1141,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         userId: resolvedUserId.value,
         arguments: args,
         client,
+        projectScope: {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        },
         connectedAccounts:
           toolkitSlug && selectedConnectedAccountId
             ? {
@@ -1474,7 +1493,7 @@ const runExecuteWithSpinner = (params: {
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
         if (output.kind === 'file') {
           yield* params.ui.log.message(
-            `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
+            `Response stored in ${output.summary.outputFilePath} (${describeStoredOutputSize(output.summary)})`
           );
           yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
@@ -1487,6 +1506,7 @@ const runExecuteWithSpinner = (params: {
               storedInFile: true,
               outputFilePath: output.summary.outputFilePath,
               tokenCount: output.summary.tokenCount,
+              sizeBytes: output.summary.sizeBytes,
               logId: result.logId,
             },
           }).pipe(Effect.catch(() => Effect.void));
@@ -2059,7 +2079,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
         if ('storedInFile' in result && result.storedInFile) {
           yield* ui.log.step(
-            `[${result.slug}] Response stored in ${result.outputFilePath} (${result.tokenCount} tokens)`
+            `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
           );
           continue;
         }

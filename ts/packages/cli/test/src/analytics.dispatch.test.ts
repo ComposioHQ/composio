@@ -295,6 +295,9 @@ describe('CLI analytics dispatch', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
+    vi.stubEnv('CLAUDECODE', '');
+    vi.stubEnv('CODEX_THREAD_ID', '');
+    vi.stubEnv('CODEX_SANDBOX', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -316,7 +319,7 @@ describe('CLI analytics dispatch', () => {
       expect(args).toHaveLength(3);
       expect(decodeWorkerPayload(args[2]!)).toMatchObject({
         event: 'producer_event',
-        properties: { cli_version: APP_VERSION, sample: 'value' },
+        properties: { cli_version: APP_VERSION, sample: 'value', agent_host_env: 'none' },
         source: 'cli',
       });
       expect(options).toMatchObject({
@@ -326,6 +329,25 @@ describe('CLI analytics dispatch', () => {
       expect(options).not.toHaveProperty('env');
       expect(childProcessMocks.once).toHaveBeenCalledWith('error', expect.any(Function));
       expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('stamps the enqueued envelope with the agent host it runs under', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry();
+    vi.stubEnv('CLAUDECODE', '1');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({ name: 'producer_event' });
+
+      const [, args] = childProcessMocks.spawn.mock.calls[0] as unknown as [string, string[]];
+      expect(decodeWorkerPayload(args[2]!)).toMatchObject({
+        properties: { agent_host_env: 'claude' },
+      });
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 

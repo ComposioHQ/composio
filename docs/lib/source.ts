@@ -7,7 +7,13 @@ import {
   changelog,
 } from 'fumadocs-mdx:collections/server';
 import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
-import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
+import type { Folder, Node } from 'fumadocs-core/page-tree';
+import {
+  type ContentStorage,
+  type InferPageType,
+  loader,
+  multiple,
+} from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -24,6 +30,7 @@ import { PACKAGE_MANAGERS } from './package-install';
 import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
+import { HOME_OG_DESCRIPTION } from './toolkit-count';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -46,6 +53,39 @@ function loadOpenapiPages() {
 }
 
 type OpenapiPages = Awaited<ReturnType<typeof loadOpenapiPages>>;
+
+const API_METHOD_ORDER: Partial<Record<string, number>> = {
+  get: 0, // read
+  post: 1, // create
+  patch: 2, // update
+  put: 2, // update
+  delete: 3,
+};
+
+const openApiPageDataSchema = z.object({
+  _openapi: z.object({ method: z.string() }),
+});
+
+/** Orders generated OpenAPI siblings while leaving authored sidebar items in place. */
+function orderApiOperations(folder: Folder, storage: ContentStorage): Folder {
+  const ranks = new Map<Node, number>();
+  for (const node of folder.children) {
+    if (node.type !== 'page' || !node.$ref) continue;
+    const file = storage.read(node.$ref);
+    if (!file || file.format !== 'page') continue;
+
+    const parsed = openApiPageDataSchema.safeParse(file.data);
+    if (parsed.success) ranks.set(node, API_METHOD_ORDER[parsed.data._openapi.method] ?? 4);
+  }
+
+  const ordered = [...ranks].sort((a, b) => a[1] - b[1]).map(([node]) => node);
+  let index = 0;
+
+  return {
+    ...folder,
+    children: folder.children.map(node => (ranks.has(node) ? ordered[index++] : node)),
+  };
+}
 
 // One combined reference source with both v3.1 and v3.0 OpenAPI pages.
 // v3.1 at api-reference/, v3.0 at api-reference/v3/
@@ -77,6 +117,7 @@ function createReferenceSource(openapiLatest: OpenapiPages[0], openapiV3Pages: O
       transformers: [
         {
           folder(node, folderPath) {
+            node = orderApiOperations(node, this.storage);
             if (
               folderPath === 'api-reference' ||
               folderPath === 'sdk-reference' ||
@@ -160,17 +201,41 @@ export type ChangelogEntry = DocCollectionEntry<
 // checker. Preserve the collection's public shape for all route consumers.
 export const changelogEntries = changelog as ChangelogEntry[];
 
+export interface OgImageExtras {
+  /** Toolkit logo URL. Only https://logos.composio.dev and https://assets.composio.dev are rendered. */
+  logo?: string | null;
+  /** Changelog date, already formatted for display. */
+  date?: string | null;
+  /** API reference version label, e.g. "v3.1". */
+  version?: string | null;
+}
+
+const OG_ROUTE = 'https://docs.composio.dev/api/og';
+
 export function getOgImageUrl(
   section: string,
   slugs: string[],
   title?: string,
-  _description?: string
+  description?: string,
+  extras: OgImageExtras = {}
 ): string {
+  const params = new URLSearchParams();
   if (section === 'docs' && slugs.length === 0) {
-    return 'https://docs.composio.dev/api/og?variant=home';
+    // The home card has fixed copy; the page's own description is ignored so
+    // the root layout and the /docs index page produce the same image URL.
+    params.set('section', 'home');
+    params.set('description', HOME_OG_DESCRIPTION);
+    return `${OG_ROUTE}?${params.toString()}`;
   }
-  const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
-  return `https://docs.composio.dev/api/og?title=${encodedTitle}`;
+  const isChangelog = section === 'docs' && slugs[0] === 'changelog';
+  params.set('section', isChangelog ? 'changelog' : section);
+  params.set('title', title ?? 'Composio Docs');
+  if (description) params.set('description', description);
+  for (const key of ['logo', 'date', 'version'] as const) {
+    const value = extras[key];
+    if (value) params.set(key, value);
+  }
+  return `${OG_ROUTE}?${params.toString()}`;
 }
 
 /**

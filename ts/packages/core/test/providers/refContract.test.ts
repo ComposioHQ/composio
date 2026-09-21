@@ -105,6 +105,11 @@ const PROVIDER_PACKAGES: Record<string, Classification> = {
     treatment: 'passthrough',
     reason: 'forwards the whole schema',
   },
+  typesafe: {
+    treatment: 'needs-deref',
+    reason:
+      'compiles each property into questions, so an enum behind a ref must be materialized to be asked',
+  },
 };
 
 /** Non-`providers/` sources that also hand schemas to vendors. */

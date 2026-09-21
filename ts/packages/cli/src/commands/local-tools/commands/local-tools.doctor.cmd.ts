@@ -11,22 +11,22 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print readiness report as JSON')
 );
 
-const allPlatforms = Flag.boolean('all-platforms').pipe(
+const allPlatforms = Flag.Boolean('all-platforms').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Include local toolkits that are not supported on this CLI platform')
 );
 
-const strict = Flag.boolean('strict').pipe(
+const strict = Flag.Boolean('strict').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Exit with an error when any visible local tool is not ready')
 );
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.optional,
   Flag.withDescription('Filter by local toolkit slugs, comma-separated')
 );

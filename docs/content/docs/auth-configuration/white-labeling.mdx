@@ -78,7 +78,7 @@ Only white-label toolkits where users see a consent screen (Google, GitHub, Slac
 Register a new OAuth app with the toolkit. Set the callback URL to:
 
 ```
-https://backend.composio.dev/api/v1/auth-apps/add
+https://backend.composio.dev/api/v3/toolkits/auth/callback
 ```
 
 You'll get a **Client ID** and **Client Secret**.
@@ -96,7 +96,8 @@ In the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_m
 3. Choose **OAuth2** scheme
 4. Toggle on **Use your own developer credentials**
 5. Enter your **Client ID** and **Client Secret**
-6. Click **Create**
+6. Set **Redirect URI** to the same callback URL you registered with the provider
+7. Click **Create**
 
 Copy the auth config ID (e.g., `ac_1234abcd`).
 
@@ -236,7 +237,7 @@ app = FastAPI()
 
 @app.get("/api/composio-redirect")
 def composio_redirect(request: Request):
-    composio_url = "https://backend.composio.dev/api/v1/auth-apps/add"
+    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
     return RedirectResponse(url=f"{composio_url}?{request.url.query}")
 ```
 </Tab>
@@ -246,7 +247,7 @@ def composio_redirect(request: Request):
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const composioUrl = "https://backend.composio.dev/api/v1/auth-apps/add";
+  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(302, `${composioUrl}?${params.toString()}`);
 }

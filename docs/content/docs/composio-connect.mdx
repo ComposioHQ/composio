@@ -1,7 +1,7 @@
 ---
 title: Composio Connect
 description: Connect Composio to an existing MCP client without using the SDK
-keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n]
+keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent]
 ---
 
 Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
@@ -128,6 +128,29 @@ Open the [Composio plugin in the Cursor marketplace](https://cursor.com/marketpl
 ```
 Install the Composio CLI: curl -fsSL https://composio.dev/install | sh, then run composio login.
 ```
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="atomic-agent" name="Atomic Agent" description="Local-first agent with a built-in Composio integration" icon="/images/clients/atomic-agent.svg" category="other">
+
+<Steps>
+<Step>
+<StepTitle>Add your Composio API key</StepTitle>
+
+Open the **Integrations** tab in the TUI and select **Composio**, or add the key to `~/.atomic-agent/.env`:
+
+```
+COMPOSIO_API_KEY=your-api-key
+```
+
+</Step>
+<Step>
+<StepTitle>Restart the agent</StepTitle>
+
+Composio tools are registered at startup and appear as `mcp.composio.*`. Ask the agent for something that lives in one of your apps and it will search for the right tool, then prompt you to authorize the app on first use.
 
 </Step>
 </Steps>
