@@ -93,6 +93,61 @@ const inception = createOpenAI({
   fetch: safeInceptionFetch,
 });
 
+type InceptionChatModel = ReturnType<typeof inception.chat>;
+type InceptionStreamResult = Awaited<ReturnType<InceptionChatModel['doStream']>>;
+type InceptionStreamPart =
+  InceptionStreamResult['stream'] extends ReadableStream<infer Part> ? Part : never;
+
+// AI SDK provider errors carry `requestBodyValues`, which holds the chat payload
+// and therefore the system prompt. safeInceptionFetch cannot stop the ones the
+// provider builds itself (e.g. an error frame inside a 200 SSE stream).
+const sanitizeInceptionModelError = (error: unknown): unknown =>
+  isAbortLikeError(error) ? error : new Error(INCEPTION_SAFE_ERROR_MESSAGE);
+
+export function withSanitizedModelErrors(model: InceptionChatModel): InceptionChatModel {
+  return {
+    specificationVersion: model.specificationVersion,
+    provider: model.provider,
+    modelId: model.modelId,
+    supportedUrls: model.supportedUrls,
+    async doGenerate(options) {
+      try {
+        return await model.doGenerate(options);
+      } catch (error) {
+        throw sanitizeInceptionModelError(error);
+      }
+    },
+    async doStream(options) {
+      let result: InceptionStreamResult;
+      try {
+        result = await model.doStream(options);
+      } catch (error) {
+        throw sanitizeInceptionModelError(error);
+      }
+
+      // Error parts that arrive after the first output chunk never pass through
+      // the provider's pre-output check, so sanitize the stream as well.
+      return {
+        ...result,
+        stream: result.stream.pipeThrough(
+          new TransformStream<InceptionStreamPart, InceptionStreamPart>({
+            transform(part, controller) {
+              controller.enqueue(
+                part.type === 'error'
+                  ? { type: 'error', error: sanitizeInceptionModelError(part.error) }
+                  : part
+              );
+            },
+          })
+        ),
+      };
+    },
+  };
+}
+
+export const createInceptionChatModel = (modelId: string = INCEPTION_MODEL): InceptionChatModel =>
+  withSanitizedModelErrors(inception.chat(modelId));
+
 const gatewayModel = (model: string): AgentModelDefinition => {
   // Eve supports AI Gateway model id strings here. Cast until the published
   // type catches up with the documented `defineAgent({ model: "provider/model" })`
@@ -109,7 +164,7 @@ const resolveDocsAgentModel = (): DocsAgentModelConfig => {
     case 'mercury':
       return {
         // Use the chat-completions path because Mercury exposes tool calling there.
-        model: inception.chat(INCEPTION_MODEL),
+        model: createInceptionChatModel(),
         // Mercury 2's chat context window is 128K tokens.
         modelContextWindowTokens: 128_000,
         modelOptions: {
