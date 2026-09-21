@@ -808,26 +808,6 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: redirectUrl,
-          validate_credentials: undefined,
-        },
-        undefined
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should refresh a connected account with validateCredentials option', async () => {
-      const nanoid = 'conn_123';
-      const mockResponse = { id: nanoid, refreshed: true };
-
-      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
-
-      const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
-
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
-        nanoid,
-        {
-          query_redirect_url: undefined,
-          validate_credentials: true,
         },
         undefined
       );
@@ -836,10 +816,7 @@ describe('ConnectedAccounts', () => {
 
     it('should refresh a connected account with both options', async () => {
       const nanoid = 'conn_123';
-      const options = {
-        redirectUrl: 'https://example.com/callback',
-        validateCredentials: false,
-      };
+      const options = { redirectUrl: 'https://example.com/callback' };
       const mockResponse = { id: nanoid, refreshed: true };
 
       extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
@@ -850,7 +827,6 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: options.redirectUrl,
-          validate_credentials: options.validateCredentials,
         },
         undefined
       );
@@ -880,7 +856,6 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: undefined,
-          validate_credentials: undefined,
         },
         undefined
       );

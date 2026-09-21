@@ -48,6 +48,7 @@ type MappedFieldKeys =
   | 'required'
   | 'default'
   | 'is_secret'
+  | 'user_visible'
   | 'legacy_template_name';
 
 const everyFieldKeyIsMapped: NoneLeftOver<Exclude<KeysOfUnion<RawAuthField>, MappedFieldKeys>> =
@@ -60,7 +61,13 @@ void everyFieldKeyIsMapped;
  * marks it `@deprecated` and warns against further use.
  */
 type CoveredDetailKeys =
-  'name' | 'mode' | 'fields' | 'proxy' | 'auth_hint_url' | 'deprecated_auth_provider_details';
+  | 'name'
+  | 'mode'
+  | 'fields'
+  | 'proxy'
+  | 'auth_hint_url'
+  | 'required_scopes'
+  | 'deprecated_auth_provider_details';
 
 const everyDetailKeyIsCovered: NoneLeftOver<
   Exclude<KeysOfUnion<RawAuthConfigDetail>, CoveredDetailKeys>
@@ -76,6 +83,7 @@ type MissingOnField = Exclude<
   | 'required'
   | 'default'
   | 'isSecret'
+  | 'userVisible'
   | 'legacyTemplateName',
   keyof ToolkitAuthField
 >;
@@ -83,7 +91,7 @@ const fieldTargetsExist: NoneLeftOver<MissingOnField> = true;
 void fieldTargetsExist;
 
 type MissingOnDetail = Exclude<
-  'name' | 'mode' | 'fields' | 'proxy' | 'authHintUrl',
+  'name' | 'mode' | 'fields' | 'proxy' | 'authHintUrl' | 'requiredScopes',
   keyof ToolkitAuthConfigDetails
 >;
 const detailTargetsExist: NoneLeftOver<MissingOnDetail> = true;

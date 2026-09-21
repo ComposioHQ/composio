@@ -572,7 +572,6 @@ export class ConnectedAccounts {
 
       params = {
         query_redirect_url: parsedOptions.data.redirectUrl,
-        validate_credentials: parsedOptions.data.validateCredentials,
       };
     }
 

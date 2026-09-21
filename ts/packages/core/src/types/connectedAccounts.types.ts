@@ -356,7 +356,6 @@ export type CreateConnectedAccountLinkResponse = z.infer<
 
 export const ConnectedAccountRefreshOptionsSchema = z.object({
   redirectUrl: z.string().optional(),
-  validateCredentials: z.boolean().optional(),
 });
 export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;
 

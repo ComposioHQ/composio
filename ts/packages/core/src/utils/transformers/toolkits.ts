@@ -53,6 +53,7 @@ const transformToolkitAuthField = (field: RawToolkitAuthField): ToolkitAuthField
   // survive.
   ...(field.default !== undefined && { default: field.default }),
   ...(field.is_secret !== undefined && { isSecret: field.is_secret }),
+  ...(field.user_visible !== undefined && { userVisible: field.user_visible }),
   ...(field.legacy_template_name !== undefined && {
     legacyTemplateName: field.legacy_template_name,
   }),
@@ -142,6 +143,9 @@ export const transformToolkitRetrieveResponse = (
         mode: authConfig.mode,
         ...(authConfig.auth_hint_url !== undefined && {
           authHintUrl: authConfig.auth_hint_url,
+        }),
+        ...(authConfig.required_scopes !== undefined && {
+          requiredScopes: authConfig.required_scopes,
         }),
         fields: {
           authConfigCreation: transformToolkitAuthFieldGroup(

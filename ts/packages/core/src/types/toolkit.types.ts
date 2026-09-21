@@ -72,6 +72,7 @@ export const ToolkitAuthFieldSchema = z.object({
    * UI. The property is absent when the API omits the flag for the field.
    */
   isSecret: z.boolean().optional(),
+  userVisible: z.boolean().optional(),
   /**
    * The legacy template name the API reports for this field, mapped from
    * `legacy_template_name`. The API declares it as an optional string without
@@ -87,6 +88,7 @@ export const ToolkitAuthConfigDetailsSchema = z.object({
    * authentication method, e.g. `https://github.com/settings/tokens`.
    */
   authHintUrl: z.string().nullable().optional(),
+  requiredScopes: z.array(z.string()).optional(),
   fields: z.object({
     authConfigCreation: z.object({
       optional: z.array(ToolkitAuthFieldSchema),
