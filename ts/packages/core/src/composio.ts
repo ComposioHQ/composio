@@ -12,7 +12,13 @@ import { Webhooks } from './models/Webhooks';
 import { Logs } from './models/Logs';
 import { Keyring } from './models/Keyring';
 import { telemetry } from './telemetry/Telemetry';
-import { getSDKConfig, getToolkitVersionsFromEnv, getUserApiKeyHeader } from './utils/sdk';
+import {
+  getScopeHeaders,
+  getSDKConfig,
+  getToolkitVersionsFromEnv,
+  getUserApiKeyHeader,
+  resolveSDKScope,
+} from './utils/sdk';
 import logger from './utils/logger';
 import type { ComposioLogger, LogLevel } from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -65,6 +71,28 @@ export type ComposioConfig<
    * @example 'oak_1234567890'
    */
   orgApiKey?: string | null;
+  /**
+   * Organization nano ID that scopes user-key requests, sent as the
+   * `x-org-id` header on every request and exported with the session MCP
+   * config. This is the short public identifier the API returns as `org_id`
+   * (for example from the consumer project resolve endpoint), not a UUID.
+   * Must be supplied together with `projectId`; without an explicit scope a
+   * user API key addresses the API default (the developer project). May also
+   * be supplied as the `x-org-id` entry in `defaultHeaders`; the two must
+   * agree.
+   * @example 'org_9f2k1x'
+   */
+  orgId?: string;
+  /**
+   * Project nano ID that scopes user-key requests, sent as the
+   * `x-project-id` header on every request and exported with the session MCP
+   * config. This is the short public identifier the API returns as
+   * `project_nano_id`, not the project UUID. Must be supplied together with
+   * `orgId`. May also be supplied as the `x-project-id` entry in
+   * `defaultHeaders`; the two must agree.
+   * @example 'proj_4b8m2q'
+   */
+  projectId?: string;
   /**
    * The base URL of the Composio API.
    * @example 'https://backend.composio.dev'
@@ -410,6 +438,11 @@ export class Composio<
    * ```
    */
   constructor(config?: ComposioConfig<TProvider>) {
+    const scope = resolveSDKScope({
+      orgId: config?.orgId,
+      projectId: config?.projectId,
+      defaultHeaders: config?.defaultHeaders,
+    });
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
       config?.apiKey,
@@ -451,9 +484,16 @@ export class Composio<
       fileUploadDirs: expandHomeAndResolveMany(config?.fileUploadDirs),
       fileDownloadDir: expandHomeAndResolve(config?.fileDownloadDir),
       provider: config?.provider ?? this.provider,
+      orgId: scope.orgId,
+      projectId: scope.projectId,
     };
 
-    const defaultHeaders = getDefaultHeaders(this.config.defaultHeaders, this.provider);
+    // The resolved scope is the single source of the x-org-id / x-project-id
+    // headers: it travels via `this.config` to clones and to the MCP export.
+    const defaultHeaders = getDefaultHeaders(
+      { ...this.config.defaultHeaders, ...getScopeHeaders(scope) },
+      this.provider
+    );
 
     /**
      * Initialize the Composio SDK client.

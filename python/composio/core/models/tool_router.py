@@ -10,6 +10,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 from enum import Enum
+from urllib.parse import urlsplit
 
 import typing_extensions as te
 from composio_client import omit
@@ -48,6 +49,9 @@ from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
+    ToolRouterUpdateExperimentalConfig,
+    ToolRouterUpdateManageConnectionsConfig,
+    ToolRouterUpdateMultiAccountConfig,
 )
 from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
@@ -56,7 +60,48 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.exceptions import InvalidParams
+from composio.exceptions import InvalidParams, MCPDestinationError
+
+#: Header that carries a Composio user API key (``uak_...``) instead of a
+#: project API key. It is the only credential default header the MCP export reads.
+USER_API_KEY_HEADER = "x-user-api-key"
+#: Headers that carry the explicit organization / project scope.
+ORG_ID_HEADER = "x-org-id"
+PROJECT_ID_HEADER = "x-project-id"
+
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _origin(url: str) -> str:
+    """Return the origin of an absolute URL.
+
+    The origin is ``scheme://host[:port]`` in lowercase with the scheme's
+    default port dropped, matching the WHATWG ``URL.origin`` used by the
+    TypeScript SDK.
+    """
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.hostname:
+        raise MCPDestinationError(
+            f"{url!r} is not an absolute URL", mcp_origin="", api_origin=""
+        )
+    scheme = parts.scheme.lower()
+    hostname = parts.hostname.lower()
+    host = f"[{hostname}]" if ":" in hostname else hostname
+    port = parts.port
+    if port is not None and port != _DEFAULT_PORTS.get(scheme):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}"
+
+
+def _header_value(headers: t.Mapping[str, t.Any], name: str) -> t.Optional[str]:
+    """The value of ``name`` in ``headers``, matched case-insensitively."""
+    wanted = name.lower()
+    for key, value in headers.items():
+        if isinstance(key, str) and key.lower() == wanted:
+            if isinstance(value, str) and value:
+                return value
+    return None
+
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -542,17 +587,53 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Create an MCP server config object with authentication headers.
 
+        The headers mirror the effective auth of the underlying client: its
+        project key as ``x-api-key`` when one is configured, otherwise the
+        resolved user API key (the ``user_api_key`` option, then the
+        ``x-user-api-key`` default header) as ``x-user-api-key``, plus
+        ``x-org-id`` / ``x-project-id`` when the client carries an explicit
+        scope. No other default header is copied and the environment is never
+        re-read.
+
+        The headers are only attached when the MCP URL has the same origin as
+        the client's API base URL, whatever scheme is configured: that origin
+        already receives them on every SDK request. Any other destination
+        raises :class:`~composio.exceptions.MCPDestinationError` naming both
+        origins. The SDK itself never connects to the MCP URL and does not
+        follow redirects for it; an MCP client consuming this config must not
+        forward these headers to a different origin.
+
         :param mcp_type: The type of MCP server (HTTP or SSE)
         :param url: The URL of the MCP server
         :return: MCP server config with headers
         """
-        return ToolRouterMCPServerConfig(
-            type=mcp_type,
-            url=url,
-            headers={
-                "x-api-key": self._client.api_key,
-            },
-        )
+        api_origin = _origin(str(self._client.base_url))
+        mcp_origin = _origin(url)
+        if mcp_origin != api_origin:
+            raise MCPDestinationError(
+                f"The session MCP endpoint origin {mcp_origin} does not match the "
+                f"API origin {api_origin}; the session credential was not attached",
+                mcp_origin=mcp_origin,
+                api_origin=api_origin,
+            )
+
+        default_headers: t.Mapping[str, t.Any] = self._client.default_headers
+        headers: t.Dict[str, t.Optional[str]] = {}
+        api_key = self._client.api_key
+        user_api_key = self._client.user_api_key
+        if isinstance(api_key, str) and api_key:
+            headers["x-api-key"] = api_key
+        elif isinstance(user_api_key, str) and user_api_key:
+            headers[USER_API_KEY_HEADER] = user_api_key
+        else:
+            header_key = _header_value(default_headers, USER_API_KEY_HEADER)
+            if header_key:
+                headers[USER_API_KEY_HEADER] = header_key
+        for scope_header in (ORG_ID_HEADER, PROJECT_ID_HEADER):
+            scope_value = _header_value(default_headers, scope_header)
+            if scope_value:
+                headers[scope_header] = scope_value
+        return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
     def _transform_tags_params(
         self, tags: t.Optional[ToolRouterConfigTags]
@@ -1118,6 +1199,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
@@ -1266,6 +1348,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
@@ -1304,6 +1387,9 @@ __all__ = [
     "ToolRouterTagsEnableDisableConfig",
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
+    "ToolRouterUpdateManageConnectionsConfig",
+    "ToolRouterUpdateMultiAccountConfig",
+    "ToolRouterUpdateExperimentalConfig",
     "ToolRouterSandboxConfig",
     "ToolRouterWorkbenchConfig",
     "SandboxSize",

@@ -1,10 +1,11 @@
 import { telemetry } from '../telemetry/Telemetry';
-import { Composio as ComposioClient, BadRequestError } from '@composio/client';
+import { Composio as ComposioClient, BadRequestError, ConflictError } from '@composio/client';
 import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -63,6 +64,7 @@ import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
   SessionExecuteParams,
   SessionLinkParams,
+  SessionPatchResponse,
   SessionSearchParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
@@ -666,19 +668,67 @@ export class ToolRouterSession<
 
   /**
    * Partially update the session configuration.
-   * Only the fields provided will be changed; omitted fields are preserved.
-   * Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
+   *
+   * Only the fields provided are changed; omitted fields are preserved. For
+   * each policy block `null` removes the stored override (which can increase
+   * access: `toolkits: null` restores the unrestricted default, while
+   * `toolkits: []` denies every app toolkit and is sent as-is). Supplied
+   * `tools`, `authConfigs` and `connectedAccounts` maps replace the stored
+   * map entirely. `manageConnections.callbackUrl: null` removes only the
+   * stored callback URL.
+   *
+   * The request carries the `configVersion` this object last observed as the
+   * `expected_config_version` precondition, so a concurrent change surfaces as
+   * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
+   * overwritten. Pass `expectedConfigVersion` to send another version, or
+   * `expectedConfigVersion: false` to send no precondition (last writer
+   * wins). The PATCH is never retried by the transport, so a 409 is reported
+   * exactly once. On conflict this object is left unchanged: re-fetch the
+   * session with `sessions.use(sessionId)` and retry against the fresh
+   * `configVersion`.
+   *
+   * `configVersion`, `preload`, `sandbox` and `warnings` are refreshed in
+   * place only after a successful response.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<void> {
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
-    const params = transformToolRouterUpdateParams(parsed);
-    const response = await withCancellation(
-      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
-      requestOptions?.signal
-    );
+    const body = transformToolRouterUpdateParams(parsed);
+    const expectedConfigVersion =
+      parsed.expectedConfigVersion === false
+        ? undefined
+        : (parsed.expectedConfigVersion ?? this.configVersion);
+    if (expectedConfigVersion !== undefined) {
+      body.expected_config_version = expectedConfigVersion;
+    }
+
+    let response: SessionPatchResponse;
+    try {
+      response = await withCancellation(
+        () =>
+          this.client.toolRouter.session.patch(this.sessionId, body, {
+            ...requestOptions,
+            maxRetries: 0,
+          }),
+        requestOptions?.signal
+      );
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        throw new ComposioSessionConfigConflictError(
+          expectedConfigVersion === undefined
+            ? `Session ${this.sessionId} configuration changed while this update was in flight; re-fetch the session and retry the update`
+            : `Session ${this.sessionId} configuration is no longer at version ${expectedConfigVersion}; re-fetch the session and retry the update`,
+          {
+            cause: error,
+            meta: { sessionId: this.sessionId, expectedConfigVersion },
+          }
+        );
+      }
+      throw error;
+    }
+
     this.configVersion = response.config_version;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;

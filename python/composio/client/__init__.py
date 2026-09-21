@@ -196,6 +196,7 @@ class HttpClient(BaseComposio, WithLogger):
         *,
         provider: str,
         api_key: t.Optional[str] = None,
+        disable_api_key: bool = False,
         user_api_key: t.Optional[str] = None,
         org_api_key: t.Optional[str] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
@@ -216,6 +217,8 @@ class HttpClient(BaseComposio, WithLogger):
         :param logger: Logger that receives SDK and ``composio_client`` records.
         :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
+        :param disable_api_key: Turn project-key authentication off, including the
+            ``COMPOSIO_API_KEY`` fallback; ``None`` alone keeps that fallback.
         :param user_api_key: User API key, sent only on operations that require it.
         :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
@@ -230,6 +233,7 @@ class HttpClient(BaseComposio, WithLogger):
         BaseComposio.__init__(
             self,
             api_key=api_key,
+            disable_api_key=disable_api_key,
             user_api_key=user_api_key,
             org_api_key=org_api_key,
             environment=environment,

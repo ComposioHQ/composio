@@ -183,6 +183,90 @@ describe('transformToolRouterTagsParams', () => {
 });
 
 describe('transformToolRouterUpdateParams', () => {
+  it('keeps an empty toolkit allowlist in the request', () => {
+    expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
+      toolkits: { enable: [] },
+    });
+    expect(transformToolRouterUpdateParams({ toolkits: { enable: [] } })).toEqual({
+      toolkits: { enable: [] },
+    });
+  });
+
+  it('sends null for every clearable block', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        toolkits: null,
+        tools: null,
+        tags: null,
+        authConfigs: null,
+        connectedAccounts: null,
+        preload: null,
+        search: null,
+        execute: null,
+        experimental: null,
+      })
+    ).toEqual({
+      toolkits: null,
+      tools: null,
+      tags: null,
+      auth_configs: null,
+      connected_accounts: null,
+      preload: null,
+      search: null,
+      execute: null,
+      experimental: null,
+    });
+  });
+
+  it('passes a null callback URL through manage_connections', () => {
+    expect(transformToolRouterUpdateParams({ manageConnections: { callbackUrl: null } })).toEqual({
+      manage_connections: { callback_url: null },
+    });
+  });
+
+  it('passes a null maximum through multi_account', () => {
+    expect(
+      transformToolRouterUpdateParams({ multiAccount: { maxAccountsPerToolkit: null } })
+    ).toEqual({ multi_account: { max_accounts_per_toolkit: null } });
+  });
+
+  it('maps search, execute and experimental leaves to their wire names', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        search: { enable: false },
+        execute: { enableMultiExecute: false },
+        experimental: {
+          linkUrlOverwrite: null,
+          fastMode: true,
+          submitFeedback: { enable: true },
+          permissions: {
+            default: 'allow_all',
+            overrides: { 'GMAIL_SEND:__none__': 'always_deny' },
+          },
+          sessionConfigId: 'cfg_1',
+        },
+      })
+    ).toEqual({
+      search: { enable: false },
+      execute: { enable_multi_execute: false },
+      experimental: {
+        link_url_overwrite: null,
+        fast_mode: true,
+        submit_feedback: { enable: true },
+        permissions: { default: 'allow_all', overrides: { 'GMAIL_SEND:__none__': 'always_deny' } },
+        session_config_id: 'cfg_1',
+      },
+    });
+  });
+
+  it('never serializes the expectedConfigVersion option itself', () => {
+    expect(
+      transformToolRouterUpdateParams({ toolkits: ['github'], expectedConfigVersion: 4 })
+    ).toEqual({
+      toolkits: { enable: ['github'] },
+    });
+  });
+
   it('should pass through toolkits correctly', () => {
     const result = transformToolRouterUpdateParams({
       toolkits: ['github', 'gmail'],

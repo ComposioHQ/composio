@@ -1,5 +1,9 @@
 import { z } from 'zod/v3';
-import { ComposioAPIKeyKindError, ComposioNoAPIKeyError } from '../errors/SDKErrors';
+import {
+  ComposioAPIKeyKindError,
+  ComposioNoAPIKeyError,
+  ComposioScopeConfigError,
+} from '../errors/SDKErrors';
 import { COMPOSIO_DIR, DEFAULT_BASE_URL, USER_DATA_FILE_NAME } from './constants';
 import { getEnvsWithPrefix, getEnvVariable } from './env';
 import logger from './logger';
@@ -17,6 +21,12 @@ export const USER_API_KEY_HEADER = 'x-user-api-key';
 
 /** Prefix of Composio user API keys as issued by `composio login`. */
 const USER_API_KEY_PREFIX = 'uak_';
+
+/** Header carrying the organization nano ID that scopes user-key requests. */
+export const ORG_ID_HEADER = 'x-org-id';
+
+/** Header carrying the project nano ID that scopes user-key requests. */
+export const PROJECT_ID_HEADER = 'x-project-id';
 
 // File path helpers
 export const userDataPath = () => {
@@ -135,6 +145,79 @@ export const getUserApiKeyHeader = (
   const header = findHeader(headers, USER_API_KEY_HEADER);
   return header && header.value.length > 0 ? header : undefined;
 };
+
+export type SDKScopeOptions = {
+  /** The `orgId` constructor option. */
+  orgId?: string;
+  /** The `projectId` constructor option. */
+  projectId?: string;
+  /** Default headers the SDK will attach to every request. */
+  defaultHeaders?: ComposioRequestHeaders;
+};
+
+export type SDKScope = {
+  orgId?: string;
+  projectId?: string;
+};
+
+const resolveScopeValue = (
+  option: string | undefined,
+  headers: ComposioRequestHeaders | undefined,
+  headerName: string,
+  optionName: 'orgId' | 'projectId'
+): string | undefined => {
+  const header = findHeader(headers, headerName);
+  const headerValue = header && header.value.length > 0 ? header.value : undefined;
+  const optionValue = hasValue(option) ? option : undefined;
+  if (optionValue !== undefined && headerValue !== undefined && optionValue !== headerValue) {
+    throw new ComposioScopeConfigError(
+      `\`${optionName}\` and the \`${headerName}\` default header disagree`,
+      {
+        cause: `The ${optionName} option and the ${headerName} entry in defaultHeaders carry different values; the SDK keeps a single scope source`,
+        meta: { option: optionName, header: headerName },
+      }
+    );
+  }
+  return optionValue ?? headerValue;
+};
+
+/**
+ * Resolves the organization/project scope of an SDK instance.
+ *
+ * The scope comes from the `orgId` / `projectId` options, or from the
+ * `x-org-id` / `x-project-id` default headers when the options are omitted.
+ * A value present in both places must agree, and the two IDs must be supplied
+ * together: a user API key without an explicit scope keeps the API default
+ * (the developer project), so a half-configured scope is rejected instead of
+ * silently selecting a project.
+ */
+export function resolveSDKScope(options: SDKScopeOptions): SDKScope {
+  const orgId = resolveScopeValue(options.orgId, options.defaultHeaders, ORG_ID_HEADER, 'orgId');
+  const projectId = resolveScopeValue(
+    options.projectId,
+    options.defaultHeaders,
+    PROJECT_ID_HEADER,
+    'projectId'
+  );
+  if ((orgId === undefined) !== (projectId === undefined)) {
+    throw new ComposioScopeConfigError(
+      orgId === undefined
+        ? '`projectId` requires `orgId`: the organization and project nano IDs scope requests together'
+        : '`orgId` requires `projectId`: the organization and project nano IDs scope requests together',
+      {
+        cause: 'Only one of the two scope identifiers was configured',
+        meta: { orgId: orgId !== undefined, projectId: projectId !== undefined },
+      }
+    );
+  }
+  return orgId === undefined || projectId === undefined ? {} : { orgId, projectId };
+}
+
+/** The `x-org-id` / `x-project-id` headers for a resolved scope. */
+export const getScopeHeaders = (scope: SDKScope): ComposioRequestHeaders =>
+  scope.orgId && scope.projectId
+    ? { [ORG_ID_HEADER]: scope.orgId, [PROJECT_ID_HEADER]: scope.projectId }
+    : {};
 
 export type SDKConfigOptions = {
   /** Default headers the SDK will attach to every request. */

@@ -157,7 +157,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     this.client = client;
-    this.pusherService = new PusherService(client);
+    this.pusherService = new PusherService(client, { defaultHeaders: config?.defaultHeaders });
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     telemetry.instrument(this, 'Triggers');
   }
