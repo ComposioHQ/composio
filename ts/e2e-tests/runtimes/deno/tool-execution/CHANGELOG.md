@@ -1,6 +1,6 @@
-# cloudflare-wrangler-example
+# @e2e-tests/deno-tool-execution
 
-## 0.0.2
+## 0.0.1
 
 ### Patch Changes
 
@@ -20,16 +20,3 @@
 - Updated dependencies [e9fcbe3]
 - Updated dependencies [9a69683]
   - @composio/core@0.19.0
-
-## 0.0.1
-
-### Patch Changes
-
-- Updated dependencies [449f4e1]
-- Updated dependencies [9545806]
-- Updated dependencies [db7b576]
-- Updated dependencies [fe66cbe]
-- Updated dependencies [c0f1609]
-- Updated dependencies [d544006]
-- Updated dependencies [04817cb]
-  - @composio/core@0.18.0
