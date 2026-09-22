@@ -103,6 +103,89 @@ const openAllOfBranches = (source: JsonObject, normalized: JsonObject): void => 
   normalized.additionalProperties = false;
 };
 
+const canonicalizeSchemaNode = (node: unknown): string => {
+  if (!isJsonObject(node)) {
+    return JSON.stringify(node);
+  }
+  const keys = Object.keys(node).sort();
+  const sortedObj: JsonObject = {};
+  for (const k of keys) {
+    sortedObj[k] = node[k];
+  }
+  return JSON.stringify(sortedObj);
+};
+
+const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
+  const seen = new Set<string>();
+  const deduplicated: Array<unknown> = [];
+  const enumValues: Array<unknown> = [];
+  let enumHasNull = false;
+  let hasLiteralBranchesOnly = true;
+
+  for (const branch of branches) {
+    const key = canonicalizeSchemaNode(branch);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+
+    if (isJsonObject(branch)) {
+      if ('const' in branch && Object.keys(branch).length === 1) {
+        enumValues.push(branch.const);
+        continue;
+      }
+      if (
+        Array.isArray(branch.enum) &&
+        (Object.keys(branch).length === 1 || (Object.keys(branch).length === 2 && branch.type))
+      ) {
+        for (const val of branch.enum) {
+          enumValues.push(val);
+        }
+        continue;
+      }
+    }
+
+    hasLiteralBranchesOnly = false;
+    deduplicated.push(branch);
+  }
+
+  if (enumValues.length > 0) {
+    const uniqueEnum = Array.from(new Set(enumValues));
+    if (deduplicated.length === 0) {
+      return [{ enum: uniqueEnum }];
+    }
+    deduplicated.push({ enum: uniqueEnum });
+  }
+
+  return deduplicated;
+};
+
+const simplifyCombiners = (schema: JsonObject): void => {
+  const combiners = ['anyOf', 'oneOf'] as const;
+  for (const combiner of combiners) {
+    const branches = schema[combiner];
+    if (!Array.isArray(branches)) {
+      continue;
+    }
+
+    const simplified = foldCombinerBranches(branches);
+
+    if (simplified.length === 1) {
+      delete schema[combiner];
+      const single = simplified[0];
+      if (isJsonObject(single)) {
+        for (const [key, val] of Object.entries(single)) {
+          if (schema[key] === undefined) {
+            schema[key] = val;
+          }
+        }
+      }
+    } else {
+      schema[combiner] = simplified;
+    }
+  }
+};
+
 const appendAllOf = (schema: JsonObject, constraint: JsonObject): void => {
   const current = schema.allOf;
   schema.allOf = Array.isArray(current) ? [...current, constraint] : [constraint];
@@ -250,6 +333,8 @@ const normalizeSchemaNode = (
   }
 
   openAllOfBranches(value, normalized);
+
+  simplifyCombiners(normalized);
 
   normalizeBounds(normalized);
   // Draft 4 is the dialect that defines the boolean spelling, and the

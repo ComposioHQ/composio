@@ -88,6 +88,38 @@ describe('jsonSchemaToEffectSchema', () => {
     expect(effectAccepts(schema, { value: false })).toBe(false);
   });
 
+  it('simplifies duplicate and redundant combiner branches (anyOf / oneOf)', () => {
+    const redundantSchema = {
+      type: 'object',
+      properties: {
+        status: {
+          anyOf: [
+            { type: 'string' },
+            { type: 'string' },
+            { const: 'active' },
+            { const: 'inactive' },
+          ],
+        },
+      },
+    } satisfies JsonSchema;
+
+    expect(effectAccepts(redundantSchema, { status: 'active' })).toBe(true);
+    expect(effectAccepts(redundantSchema, { status: 'pending' })).toBe(true);
+    expect(effectAccepts(redundantSchema, { status: 123 })).toBe(false);
+
+    const singleBranchCombiner = {
+      type: 'object',
+      properties: {
+        code: {
+          oneOf: [{ type: 'integer', minimum: 100 }],
+        },
+      },
+    } satisfies JsonSchema;
+
+    expect(effectAccepts(singleBranchCombiner, { code: 200 })).toBe(true);
+    expect(effectAccepts(singleBranchCombiner, { code: 50 })).toBe(false);
+  });
+
   it('reports all failures with field paths and groups unknown keys', () => {
     const schema = {
       type: 'object',
