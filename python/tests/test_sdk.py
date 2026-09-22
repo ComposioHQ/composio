@@ -1,11 +1,15 @@
 """Test SDK functionality."""
 
 import os
+import typing as t
 from unittest.mock import patch
 
+import composio_client
+import httpx
 import pytest
 
 from composio import Composio, exceptions
+from composio.client import HttpClient
 from composio.core.provider._openai import OpenAIProvider
 from composio.core.types import ToolkitVersionParam
 
@@ -18,6 +22,12 @@ class TestComposioSDK:
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(exceptions.ApiKeyNotProvidedError):
                 Composio()
+
+    def test_sdk_explicit_none_api_key_does_not_fall_back_to_env(self):
+        """Only an omitted ``api_key`` falls back to COMPOSIO_API_KEY."""
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
+            with pytest.raises(exceptions.ApiKeyNotProvidedError):
+                Composio(api_key=None)
 
     def test_sdk_accepts_api_key_from_env(self):
         """Test that SDK accepts API key from environment."""
@@ -74,8 +84,11 @@ class TestComposioSDK:
         expected_fields = {
             "environment",
             "api_key",
+            "disable_api_key",
             "user_api_key",
             "org_api_key",
+            "org_id",
+            "project_id",
             "base_url",
             "timeout",
             "max_retries",
@@ -286,3 +299,168 @@ class TestComposioSDK:
                                     "jira": "user_jira",  # User provided
                                 }
                                 assert toolkit_versions == expected
+
+
+MCP_URL = "https://backend.composio.dev/api/v3/tool_router/session/session_123/mcp"
+
+
+def _session_transport() -> t.Tuple[httpx.Client, t.List[httpx.Request]]:
+    requests: t.List[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "session_id": "session_123",
+                "mcp": {"type": "http", "url": MCP_URL},
+                "config": {
+                    "user_id": "user_123",
+                    "execute": {},
+                    "search": {},
+                    "preload": {"tools": []},
+                },
+                "config_version": 3,
+                "warnings": [],
+            },
+        )
+
+    return httpx.Client(transport=httpx.MockTransport(handler)), requests
+
+
+class TestUserOnlyInitialization:
+    """``disable_api_key`` turns the project key off and keeps one credential."""
+
+    def test_user_key_session_carries_only_the_user_key(self):
+        http_client, requests = _session_transport()
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
+            sdk = Composio(
+                disable_api_key=True,
+                user_api_key="uak_user_key",
+                base_url="https://backend.composio.dev",
+                http_client=http_client,
+            )
+            assert sdk.client.api_key is None
+            session = sdk.sessions.create(user_id="user_123", mcp=True)
+
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_user_key"
+        assert "x-org-id" not in requests[0].headers
+        assert "x-project-id" not in requests[0].headers
+        assert session.mcp.headers == {"x-user-api-key": "uak_user_key"}
+
+    def test_user_key_session_carries_the_org_and_project_scope(self):
+        http_client, requests = _session_transport()
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
+            sdk = Composio(
+                disable_api_key=True,
+                user_api_key="uak_user_key",
+                org_id="org_nano_abc",
+                project_id="proj_nano_xyz",
+                base_url="https://backend.composio.dev",
+                http_client=http_client,
+            )
+            session = sdk.sessions.create(user_id="user_123", mcp=True)
+
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_user_key"
+        assert requests[0].headers["x-org-id"] == "org_nano_abc"
+        assert requests[0].headers["x-project-id"] == "proj_nano_xyz"
+        assert session.mcp.headers == {
+            "x-user-api-key": "uak_user_key",
+            "x-org-id": "org_nano_abc",
+            "x-project-id": "proj_nano_xyz",
+        }
+
+    def test_user_key_is_read_from_the_environment_when_disabled(self):
+        with patch.dict(
+            os.environ,
+            {
+                "COMPOSIO_API_KEY": "ak_foreign_env_key",
+                "COMPOSIO_USER_API_KEY": "uak_env",
+            },
+        ):
+            sdk = Composio(disable_api_key=True)
+
+        assert sdk.client.api_key is None
+        assert sdk.client.user_api_key == "uak_env"
+
+    def test_disable_without_a_user_key_raises(self):
+        with patch.dict(
+            os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}, clear=True
+        ):
+            with pytest.raises(exceptions.UserApiKeyNotProvidedError):
+                Composio(disable_api_key=True)
+
+    def test_disable_beside_a_raw_project_key_header_raises(self):
+        http_client, requests = _session_transport()
+        with pytest.raises(exceptions.InvalidParams) as excinfo:
+            HttpClient(
+                provider="test",
+                disable_api_key=True,
+                user_api_key="uak_user_key",
+                default_headers={"X-Api-Key": "ak_raw_header"},
+                http_client=http_client,
+            )
+
+        assert "`X-Api-Key`" in str(excinfo.value)
+        assert "ak_raw_header" not in str(excinfo.value)
+        assert requests == []
+
+    def test_client_clones_cannot_reintroduce_a_raw_project_key_header(self):
+        http_client, requests = _session_transport()
+        sdk = Composio(
+            disable_api_key=True,
+            user_api_key="uak_user_key",
+            base_url="https://backend.composio.dev",
+            http_client=http_client,
+        )
+
+        with pytest.raises(exceptions.InvalidParams):
+            sdk.client.with_options(default_headers={"x-api-key": "ak_raw_header"})
+        sdk.sessions.create(user_id="user_123")
+
+        assert len(requests) == 1
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_user_key"
+
+    def test_disable_beside_an_explicit_project_key_raises(self):
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(disable_api_key=True, api_key="ak_explicit", user_api_key="uak")
+
+    def test_half_scope_raises(self):
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", org_id="org_nano_abc")
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", project_id="proj_nano_xyz")
+
+    def test_empty_scope_id_counts_as_unset(self):
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", org_id="org_nano_abc", project_id="")
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", org_id="", project_id="proj_nano_xyz")
+
+        sdk = Composio(api_key="ak_test", org_id="", project_id="")
+        assert "x-org-id" not in sdk.client.default_headers
+        assert "x-project-id" not in sdk.client.default_headers
+
+    def test_omitted_api_key_keeps_the_environment_fallback(self):
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_env"}):
+            sdk = Composio(user_api_key="uak")
+        assert sdk.client.api_key == "ak_env"
+
+    def test_client_clones_stay_user_only_when_the_environment_changes(self):
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
+            sdk = Composio(disable_api_key=True, user_api_key="uak_user_key")
+            clone = sdk.client.with_options(max_retries=0)
+
+        assert (sdk.client.api_key, sdk.client.user_api_key) == (None, "uak_user_key")
+        assert (clone.api_key, clone.user_api_key) == (None, "uak_user_key")
+        assert clone.max_retries == 0
+
+    def test_generated_client_keeps_its_environment_fallback_for_a_bare_none(self):
+        """The SDK, not the generated client, turns the project key off."""
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_env"}):
+            client = composio_client.Composio(api_key=None, user_api_key="uak")
+
+        assert (client.api_key, client.user_api_key) == ("ak_env", "uak")

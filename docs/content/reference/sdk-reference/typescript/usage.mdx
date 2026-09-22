@@ -1,0 +1,78 @@
+---
+title: "Usage"
+description: "`composio.experimental.usage` — metering for the project the API key belongs to. **Experimental — shape may change in future releases.**"
+---
+
+## Usage
+
+Access this class through the `composio.usage` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.usage.list();
+```
+
+## Methods
+
+### breakdown()
+
+Usage for one metering entity type, grouped by a dimension.
+**Experimental — shape may change in future releases.**
+
+```typescript
+async breakdown(entityType: string, params?: { filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; groupBy?: string; limit?: number; orderBy?: 'key' | 'total_quantity' | 'event_count'; orderDirection?: 'asc' | 'desc'; to?: number }, requestOptions?: ComposioRequestOptions): Promise<{ entityType: string; eventCount: number; groups: { eventCount: number; key: string; totalQuantity: string }[]; totalQuantity: string; unit: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `entityType` | `string` | Entity type to break down (e.g. `tool_calls`, `sessions`) |
+| `params?` | `\{ filters?: \{ sessionId?: string[] \| null; userId?: string[] \| null \}; from?: number; groupBy?: string; limit?: number; orderBy?: 'key' \| 'total_quantity' \| 'event_count'; orderDirection?: 'asc' \| 'desc'; to?: number \}` | Optional range, `groupBy`, ordering, `limit` and filters |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ entityType: string; eventCount: number; groups: \{ eventCount: number; key: string; totalQuantity: string \}[]; totalQuantity: string; unit: string \}>` — Totals plus per-group rows
+
+**Example**
+
+```typescript
+const byUser = await composio.experimental.usage.breakdown('sessions', {
+  groupBy: 'user_id',
+  orderBy: 'event_count',
+});
+```
+
+---
+
+### summary()
+
+Usage totals per metering entity type for a time range.
+**Experimental — shape may change in future releases.**
+
+```typescript
+async summary(params?: { entityTypes?: string[]; filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; to?: number }, requestOptions?: ComposioRequestOptions): Promise<{ entities: Record<string, { eventCount: number; totalQuantity: string; unit: string }> }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params?` | `\{ entityTypes?: string[]; filters?: \{ sessionId?: string[] \| null; userId?: string[] \| null \}; from?: number; to?: number \}` | Optional range, `entityTypes` and filters |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — Totals keyed by entity type
+
+**Example**
+
+```typescript
+const summary = await composio.experimental.usage.summary({
+  from: Date.now() - 7 * 24 * 60 * 60 * 1000,
+  filters: { userId: ['user_123'] },
+});
+```
+
+---

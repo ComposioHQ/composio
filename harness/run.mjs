@@ -13,8 +13,12 @@ import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmS
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  describeExclusions,
+  emptySelectionMessage,
   entryToolkits,
   loadManifest,
+  parseOption,
+  parseSelectionOptions,
   requiredBrowserGrantToolkits,
   requiresDemoToolkit,
   selectManifestEntries,
@@ -34,30 +38,16 @@ let LLM_MOCK = false;
 
 const args = process.argv.slice(2);
 const cmd = args[0];
-const opt = (name, fallback) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback;
-};
+const opt = (name, fallback) => parseOption(args, name, fallback);
 
 const fail = (msg, code = 2) => {
   throw new HarnessError(msg, code);
 };
 
-const selectionOptions = () => ({
-  lang: opt('lang'),
-  ids: opt('ids'),
-  tiers: opt('tiers', '1,2,3'),
-  excludeToolkits: opt('exclude-toolkits'),
-});
-
-const selectEntries = () => selectManifestEntries(loadManifest(), selectionOptions());
+const selectEntries = () => selectManifestEntries(loadManifest(), parseSelectionOptions(args));
 
 const reportExclusions = selection => {
-  if (selection.excludedEntries.length === 0) return;
-  console.log(
-    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`
-  );
-  for (const entry of selection.excludedEntries) console.log(`  - ${entry.id}`);
+  for (const line of describeExclusions(selection)) console.log(line);
 };
 
 const baseUrl = () => {
@@ -410,10 +400,10 @@ const cmdSweep = async () => {
   if (!['live', 'mock'].includes(llm)) fail(`--llm must be live|mock`);
   LLM_MOCK = llm === 'mock';
   const selection = selectEntries();
-  const entries = selection.entries;
-  if (entries.length === 0) fail('no entries selected');
-  if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
   reportExclusions(selection);
+  const entries = selection.entries;
+  if (entries.length === 0) fail(emptySelectionMessage(selection));
+  if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
 
   const id = `${runId()}-${client}${LLM_MOCK ? '-mock' : ''}`;
   const runDir = join(ARTIFACTS, id);
