@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { Composio } from '../../src/composio';
 import { MockProvider } from '../utils/mocks/provider.mock';
+import { ComposioNoAPIKeyError } from '../../src/errors/SDKErrors';
 
 /**
  * `userApiKey` / `orgApiKey` are forwarded to the API client, which selects the
@@ -71,5 +72,39 @@ describe('Composio user and organization API keys', () => {
     const session = composio.createSession({ headers: { 'x-request-id': '1' } });
     expect(session.getClient().userApiKey).toBe('uak_env');
     expect(session.getClient().orgApiKey).toBe('oak_env');
+  });
+
+  it('accepts a disabled project key when a user API key is configured', () => {
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_env');
+    const composio = new Composio({ ...baseConfig, apiKey: null, userApiKey: 'uak_test' });
+    const client = composio.getClient();
+    expect(client.apiKey).toBeNull();
+    expect(client.userApiKey).toBe('uak_test');
+    expect(composio.getConfig().apiKey).toBeNull();
+  });
+
+  it('accepts a disabled project key when an organization API key is configured', () => {
+    const client = new Composio({ ...baseConfig, apiKey: null, orgApiKey: 'oak_test' }).getClient();
+    expect(client.apiKey).toBeNull();
+    expect(client.orgApiKey).toBe('oak_test');
+  });
+
+  it('rejects a raw x-api-key default header when the project key is disabled', () => {
+    expect(
+      () =>
+        new Composio({
+          ...baseConfig,
+          apiKey: null,
+          userApiKey: 'uak_test',
+          defaultHeaders: { 'x-api-key': 'ak_raw' },
+        })
+    ).toThrow(ComposioNoAPIKeyError);
+  });
+
+  it('rejects a disabled project key when neither alternate key is configured', () => {
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_env');
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    vi.stubEnv('COMPOSIO_ORG_API_KEY', '');
+    expect(() => new Composio({ ...baseConfig, apiKey: null })).toThrow(ComposioNoAPIKeyError);
   });
 });

@@ -23,6 +23,7 @@ from composio.core.models import (
 )
 from composio.core.models.base import allow_tracking
 from composio.core.models.mcp import MCP
+from composio.core.models.tool_router_constants import ORG_ID_HEADER, PROJECT_ID_HEADER
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider._openai import (
     OpenAIProvider,
@@ -43,8 +44,11 @@ _TOOL_ROUTER_DEPRECATION = (
 class SDKConfig(te.TypedDict):
     environment: te.NotRequired[APIEnvironment]
     api_key: te.NotRequired[str]
+    disable_api_key: te.NotRequired[bool]
     user_api_key: te.NotRequired[str]
     org_api_key: te.NotRequired[str]
+    org_id: te.NotRequired[str]
+    project_id: te.NotRequired[str]
     base_url: te.NotRequired[str]
     timeout: te.NotRequired[int]
     max_retries: te.NotRequired[int]
@@ -58,6 +62,27 @@ class SDKConfig(te.TypedDict):
     http_client: te.NotRequired[httpx.Client]
     logger: te.NotRequired[logging.Logger]
     logging_level: te.NotRequired[LogLevel]
+
+
+def _scope_headers(
+    *, org_id: t.Optional[str], project_id: t.Optional[str]
+) -> t.Dict[str, str]:
+    """The ``x-org-id`` / ``x-project-id`` default headers for an explicit scope.
+
+    The two nano IDs scope requests together: a user API key without an
+    explicit scope keeps the API default (the developer project), so a
+    half-configured scope is rejected instead of silently selecting a project.
+    """
+    org_id = org_id or None
+    project_id = project_id or None
+    if (org_id is None) != (project_id is None):
+        raise exceptions.InvalidParams(
+            "`org_id` and `project_id` scope requests together; pass both "
+            "(the organization and consumer project nano IDs) or neither"
+        )
+    if org_id is None or project_id is None:
+        return {}
+    return {ORG_ID_HEADER: org_id, PROJECT_ID_HEADER: project_id}
 
 
 class Composio(t.Generic[TTool, TToolCollection], WithLogger):
@@ -111,17 +136,40 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
 
         :param provider: The provider to use for the SDK. Defaults to OpenAIProvider.
         :param environment: The environment to use for the SDK.
-        :param api_key: The API key to use for the SDK.
+        :param api_key: The project API key, sent as ``x-api-key``. When the
+            argument is omitted it falls back to ``COMPOSIO_API_KEY``, as it
+            always has. Passing ``api_key=None`` explicitly does not fall back
+            and raises :class:`~composio.exceptions.ApiKeyNotProvidedError`;
+            use ``disable_api_key=True`` to opt out of project-key
+            authentication.
+        :param disable_api_key: Turn project-key authentication off entirely,
+            including the ``COMPOSIO_API_KEY`` fallback. The SDK then authenticates
+            with the user API key alone (``user_api_key`` or
+            ``COMPOSIO_USER_API_KEY``) and sends no ``x-api-key``; requests that
+            require a project key keep their operation-specific errors. Combining
+            it with an explicit ``api_key`` is an error. Defaults to ``False``.
         :param user_api_key: User API key (``uak_*``) for the organization, consumer,
-            and user-scoped endpoints reached through ``composio.client``. Sent as
-            ``x-user-api-key`` only on operations whose security scheme requires it,
+            and user-scoped endpoints reached through ``composio.client``, and for
+            every session operation when ``disable_api_key=True``. Sent as
+            ``x-user-api-key`` only on operations whose security scheme accepts it,
             never alongside the project key. Falls back to ``COMPOSIO_USER_API_KEY``.
-            A project ``api_key`` is still required.
         :param org_api_key: Organization API key (``oak_*``) for the organization-owner
             endpoints reached through ``composio.client``. Sent as ``x-org-api-key`` only
             on operations whose security scheme requires it, never alongside the
             project key. Falls back to ``COMPOSIO_ORG_API_KEY``. A project ``api_key``
             is still required.
+        :param org_id: Organization nano ID that scopes user-key requests, sent as the
+            ``x-org-id`` header on every request and exported with the session MCP
+            config. This is the short public identifier the API returns as
+            ``org_id`` (for example from the consumer project resolve endpoint), not
+            a UUID. Must be supplied together with ``project_id``; without an
+            explicit scope a user API key addresses the API default (the developer
+            project).
+        :param project_id: Project nano ID that scopes user-key requests, sent as the
+            ``x-project-id`` header on every request and exported with the session
+            MCP config. This is the short public identifier the API returns as
+            ``project_nano_id``, not the project UUID. Must be supplied together
+            with ``org_id``.
         :param base_url: The base URL to use for the SDK.
         :param timeout: The timeout to use for the SDK.
         :param max_retries: The maximum number of retries to use for the SDK.
@@ -166,9 +214,28 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         logger = kwargs.get("logger")
         logging_level = kwargs.get("logging_level")
         WithLogger.__init__(self, logger=logger, logging_level=logging_level)
-        api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
-        if not api_key:
-            raise exceptions.ApiKeyNotProvidedError()
+        disable_api_key = kwargs.get("disable_api_key", False)
+        api_key: t.Optional[str]
+        if disable_api_key:
+            if kwargs.get("api_key") is not None:
+                raise exceptions.InvalidParams(
+                    "`disable_api_key=True` cannot be combined with an explicit "
+                    "`api_key`; pass one or the other"
+                )
+            api_key = None
+            user_api_key = kwargs.get("user_api_key") or os.environ.get(
+                "COMPOSIO_USER_API_KEY"
+            )
+            if not user_api_key:
+                raise exceptions.UserApiKeyNotProvidedError()
+        else:
+            api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
+            if not api_key:
+                raise exceptions.ApiKeyNotProvidedError()
+
+        default_headers = _scope_headers(
+            org_id=kwargs.get("org_id"), project_id=kwargs.get("project_id")
+        )
 
         # Each instance gets its own provider so that the execute_tool_fn binding
         # performed by Tools.__init__ cannot leak across SDK instances (issue #4369).
@@ -185,11 +252,13 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             environment=kwargs.get("environment", "production"),
             provider=actual_provider.name,
             api_key=api_key,
+            disable_api_key=disable_api_key,
             user_api_key=kwargs.get("user_api_key"),
             org_api_key=kwargs.get("org_api_key"),
             base_url=kwargs.get("base_url") or os.environ.get("COMPOSIO_BASE_URL"),
             timeout=kwargs.get("timeout"),
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),
+            default_headers=default_headers or None,
             http_client=kwargs.get("http_client"),
             logger=logger,
             logging_level=logging_level,

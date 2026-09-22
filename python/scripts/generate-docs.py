@@ -143,8 +143,13 @@ def get_source_link(obj: griffe_t.Object) -> str | None:
     return f"{GITHUB_BASE}/{rel_path}#L{line}"
 
 
-def format_type(annotation: Any) -> str:
-    """Format a type annotation to readable string."""
+def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
+    """Format a type annotation to readable string.
+
+    Types longer than ``max_length`` are elided; pass ``None`` to keep the
+    full type, which parameter signatures need so quoted forward references
+    such as ``'Omit'`` are never cut mid-token.
+    """
     if annotation is None:
         return "Any"
 
@@ -159,8 +164,8 @@ def format_type(annotation: Any) -> str:
     type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
 
     # Truncate very long types
-    if len(type_str) > 60:
-        return type_str[:57] + "..."
+    if max_length is not None and len(type_str) > max_length:
+        return type_str[: max_length - 3] + "..."
     return type_str
 
 
@@ -359,7 +364,7 @@ def extract_class_info(
                 params.append(
                     {
                         "name": p.name,
-                        "type": format_type(p.annotation),
+                        "type": format_type(p.annotation, max_length=None),
                         "optional": p.default is not None,
                         "description": method_doc["params"].get(p.name, ""),
                     }
@@ -742,7 +747,7 @@ def main():
                     params.append(
                         {
                             "name": p.name,
-                            "type": format_type(p.annotation),
+                            "type": format_type(p.annotation, max_length=None),
                             "optional": p.default is not None,
                             "description": doc["params"].get(p.name, ""),
                         }

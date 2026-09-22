@@ -16,6 +16,8 @@ mappings fails locally.
 import typing as t
 from unittest.mock import MagicMock
 
+import httpx
+
 import pytest
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 from composio_client.types.tool_router.session_toolkits_response import (
@@ -107,10 +109,14 @@ def test_generated_client_builds_nested_response_models(
 def _client_with_session() -> MagicMock:
     """A mocked client whose session.create is just real enough to build a session."""
     client = MagicMock()
+    client.base_url = httpx.URL("https://backend.composio.dev")
+    client.default_headers = {}
     session_response = MagicMock()
     session_response.session_id = "session_123"
     session_response.mcp.type = "http"
-    session_response.mcp.url = "https://mcp.example.com/session_123"
+    session_response.mcp.url = (
+        "https://backend.composio.dev/api/v3/tool_router/session/session_123"
+    )
     session_response.config.preload.tools = []
     session_response.experimental = None
     client.tool_router.session.create.return_value = session_response

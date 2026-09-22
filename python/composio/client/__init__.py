@@ -22,7 +22,11 @@ from composio_client import (
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Response, Timeout
 
-from composio.exceptions import ComposioError
+from composio.core.models.tool_router_constants import (
+    PROJECT_API_KEY_HEADER,
+    USER_API_KEY_HEADER,
+)
+from composio.exceptions import ComposioError, InvalidParams
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
@@ -312,6 +316,7 @@ class HttpClient(BaseComposio, WithLogger):
         *,
         provider: str,
         api_key: t.Optional[str] = None,
+        disable_api_key: bool = False,
         user_api_key: t.Optional[str] = None,
         org_api_key: t.Optional[str] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
@@ -324,6 +329,7 @@ class HttpClient(BaseComposio, WithLogger):
         logger: t.Optional[logging.Logger] = None,
         logging_level: t.Optional[LogLevel] = None,
         _strict_response_validation: bool = False,
+        _environment_variables: t.Optional[t.Mapping[str, str]] = None,
     ) -> None:
         """
         Initialize the client.
@@ -332,6 +338,11 @@ class HttpClient(BaseComposio, WithLogger):
         :param logger: Logger that receives SDK and ``composio_client`` records.
         :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
+        :param disable_api_key: Turn project-key authentication off, including the
+            ``COMPOSIO_API_KEY`` fallback; ``None`` alone keeps that fallback.
+        :param _environment_variables: Environment snapshot the generated client
+            resolves its fallbacks from instead of ``os.environ``; clones of a
+            client built from a snapshot receive an empty one.
         :param user_api_key: User API key, sent only on operations that require it.
         :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
@@ -343,6 +354,50 @@ class HttpClient(BaseComposio, WithLogger):
         :param http_client: The HTTP client to use for the client.
         """
         WithLogger.__init__(self, logger=logger, logging_level=logging_level)
+        self._disable_api_key = disable_api_key
+        if disable_api_key:
+            # The project credential is only ever set from `api_key`: a raw
+            # `x-api-key` default header would bypass the disabled project key.
+            project_key_header = next(
+                (
+                    name
+                    for name in (default_headers or {})
+                    if name.lower() == PROJECT_API_KEY_HEADER
+                ),
+                None,
+            )
+            if project_key_header is not None:
+                raise InvalidParams(
+                    f"`disable_api_key=True` sends no project key, but "
+                    f"`default_headers` carries a `{project_key_header}` entry; "
+                    "pass the project API key as `api_key` instead of a raw "
+                    f"`{PROJECT_API_KEY_HEADER}` header, or remove the entry to "
+                    "authenticate with the user API key alone"
+                )
+            # The generated client reads COMPOSIO_API_KEY whenever `api_key` is
+            # None, so hand it an environment without that variable. Clones
+            # inherit the resolved values and an empty snapshot.
+            api_key = None
+            if _environment_variables is None:
+                _environment_variables = {
+                    name: value
+                    for name, value in os.environ.items()
+                    if name != "COMPOSIO_API_KEY"
+                }
+            # The generated client sends its user key only on operations whose
+            # security scheme names it, which excludes sessions. The resolved
+            # user key is placed as the `x-user-api-key` default header instead,
+            # so every request carries exactly that credential.
+            resolved_user_api_key = user_api_key or _environment_variables.get(
+                "COMPOSIO_USER_API_KEY"
+            )
+            if resolved_user_api_key and not any(
+                name.lower() == USER_API_KEY_HEADER for name in (default_headers or {})
+            ):
+                default_headers = {
+                    **(default_headers or {}),
+                    USER_API_KEY_HEADER: resolved_user_api_key,
+                }
         BaseComposio.__init__(
             self,
             api_key=api_key,
@@ -356,6 +411,7 @@ class HttpClient(BaseComposio, WithLogger):
             default_query=default_query,
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
+            _environment_variables=_environment_variables,
         )
         _install_client_log_forwarder(self._logger)
         self.provider = provider
@@ -387,6 +443,9 @@ class HttpClient(BaseComposio, WithLogger):
         return super().copy(  # type: ignore[misc]
             _extra_kwargs={
                 "provider": self.provider,
+                # Clones keep the project key disabled, so a default header
+                # added through `with_options` goes through the same checks.
+                "disable_api_key": self._disable_api_key,
                 # The generated `copy` does not re-pass `_strict_response_validation`,
                 # so without this the clone would silently fall back to the default
                 # (False) even when the original had it enabled — keeping the sibling
