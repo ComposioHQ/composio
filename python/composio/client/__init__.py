@@ -448,27 +448,23 @@ class HttpClient(BaseComposio, WithLogger):
         finally:
             _active_log_wrapper.reset(token)
 
-    def _decode(self, response: Response) -> t.Any:
+    def _make_status_error(
+        self,
+        err_msg: str,
+        *,
+        body: object,
+        response: Response,
+    ) -> APIStatusError:
         """
-        Raise status errors that are also ``ComposioError``s; see
+        Build status errors that are also ``ComposioError``s; see
         ``_with_sdk_error_base``.
-        """
-        try:
-            return super()._decode(response)
-        except APIStatusError as error:
-            raise _as_sdk_error(error) from None
 
-    def _process_response(
-        self, response: Response, cast_to: t.Optional[t.Type[t.Any]]
-    ) -> t.Any:
+        Every status error the client raises is built through this hook, so
+        overriding it here covers all response paths at once.
         """
-        Raise status errors that are also ``ComposioError``s; see
-        ``_with_sdk_error_base``.
-        """
-        try:
-            return super()._process_response(response, cast_to)
-        except APIStatusError as error:
-            raise _as_sdk_error(error) from None
+        return _as_sdk_error(
+            super()._make_status_error(err_msg, body=body, response=response)
+        )
 
     def _prepare_request(self, request: Request) -> None:
         """

@@ -60,7 +60,10 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   # Keep unavailable coverage explicit. The harness records excluded entry ids
   # in its summary artifact; remove this default when staging has Drive auth.
-  EXCLUDE_TOOLKITS: ${{ inputs.exclude_toolkits || 'googledrive' }}
+  # The nightly excludes googledrive; a dispatch uses the exclude_toolkits
+  # input as given (its default is googledrive), so clearing it runs the full
+  # manifest.
+  EXCLUDE_TOOLKITS: ${{ github.event_name == 'schedule' && 'googledrive' || inputs.exclude_toolkits }}
   # mock unless explicitly dispatched live; the nightly adds a small live canary.
   LLM_MODE: ${{ inputs.llm || 'mock' }}
   # Entries mocks cannot cover (llmMock:false) plus one representative
@@ -69,7 +72,7 @@ env:
 
 jobs:
   examples-live:
-    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }}, excluding ${{ inputs.exclude_toolkits || 'googledrive' }})
+    name: ${{ inputs.client || 'baseline' }} sweep (${{ inputs.lang || 'all' }}, excluding ${{ (github.event_name == 'schedule' && 'googledrive' || inputs.exclude_toolkits) || 'none' }})
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 60
