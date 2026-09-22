@@ -2360,8 +2360,9 @@ class TestMcpAuthContext:
             tool_router.create(user_id="user_123", mcp=True)
 
         message = str(excinfo.value)
-        assert "https://mcp.example.com" in message
-        assert "https://backend.composio.dev" in message
+        assert message == (
+            "The session MCP endpoint origin https://mcp.example.com does not match the API origin https://backend.composio.dev; the session credential was not attached"
+        )
         assert "test-api-key" not in message
         assert excinfo.value.mcp_origin == "https://mcp.example.com"
         assert excinfo.value.api_origin == "https://backend.composio.dev"
@@ -2376,8 +2377,9 @@ class TestMcpAuthContext:
             tool_router.use("session_123", mcp=True)
 
         message = str(excinfo.value)
-        assert "https://mcp.example.com" in message
-        assert "https://backend.composio.dev" in message
+        assert message == (
+            "The session MCP endpoint origin https://mcp.example.com does not match the API origin https://backend.composio.dev; the session credential was not attached"
+        )
         assert "test-api-key" not in message
 
     def test_cross_origin_mcp_url_without_mcp_flag_exports_no_headers_and_warns(
@@ -2399,9 +2401,10 @@ class TestMcpAuthContext:
         warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
         assert len(warnings) == 2
         message = warnings[0].getMessage()
-        assert "https://mcp.example.com" in message
-        assert "https://backend.composio.dev" in message
-        assert "mcp=True" in message
+        assert message == (
+            "The session MCP endpoint origin https://mcp.example.com does not match the API origin https://backend.composio.dev; the session credential was not attached"
+            ". session.mcp.headers was left empty; pass mcp=True to make this an error"
+        )
         assert "test-api-key" not in caplog.text
 
     def test_opaque_origin_mcp_url_is_rejected_before_comparison(

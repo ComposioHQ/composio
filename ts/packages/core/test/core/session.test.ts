@@ -821,8 +821,9 @@ describe('Credential resolution at the transport boundary', () => {
       const failure = await composio.sessions.create('user_123', { mcp: true }).catch(e => e);
 
       expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
-      expect(failure.message).toContain('https://mcp.example.com');
-      expect(failure.message).toContain('https://api.test.com');
+      expect(failure.message).toBe(
+        'The session MCP endpoint origin https://mcp.example.com does not match the API origin https://api.test.com; the session credential was not attached'
+      );
       expect(failure.meta).toEqual({
         mcpOrigin: 'https://mcp.example.com',
         apiOrigin: 'https://api.test.com',
@@ -837,8 +838,9 @@ describe('Credential resolution at the transport boundary', () => {
       const failure = await composio.sessions.use('session_mcp', { mcp: true }).catch(e => e);
 
       expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
-      expect(failure.message).toContain('https://mcp.example.com');
-      expect(failure.message).toContain('https://api.test.com');
+      expect(failure.message).toBe(
+        'The session MCP endpoint origin https://mcp.example.com does not match the API origin https://api.test.com; the session credential was not attached'
+      );
       expect(JSON.stringify(failure)).not.toContain(projectKey);
     });
 
@@ -873,9 +875,9 @@ describe('Credential resolution at the transport boundary', () => {
       expect(usedMcp.headers).toEqual({});
       expect(warnSpy).toHaveBeenCalledTimes(2);
       const warning = String(warnSpy.mock.calls[0][0]);
-      expect(warning).toContain('https://mcp.example.com');
-      expect(warning).toContain('https://api.test.com');
-      expect(warning).toContain('mcp: true');
+      expect(warning).toBe(
+        'The session MCP endpoint origin https://mcp.example.com does not match the API origin https://api.test.com; the session credential was not attached. session.mcp.headers was left empty; pass `mcp: true` to make this an error'
+      );
       expect(warning).not.toContain(projectKey);
     });
 
