@@ -37,13 +37,30 @@ A session scopes four things:
 - **Authentication**: managed auth, custom auth configs, and connected-account selection.
 - **Execution state**: logs, tool memory, MCP state, and workbench files for the task.
 
-## Tools and toolkits
 
-A **toolkit** is a collection of related tools for a service. The `github` toolkit, for example, contains tools for creating issues, managing pull requests, and starring repositories.
+## What comes in a session
+By default, a session gives your agent meta tools to discover and execute app tools and manage connections for your user. All toolkits are discoverable, and search includes skill guidance when a matching skill exists. Standard sessions also include a [sandbox](#sandbox) for processing files and large responses outside the model's context window. You can restrict tool access or disable the sandbox through [session configuration](/docs/configuring-sessions).
 
-A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
+Later we'll discuss [configuring sessions](/docs/configuring-sessions) for specialized use cases. But for now you can think of the Composio session as the basic building block for your agent.
 
-Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/configuring-sessions). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
+```mermaid
+architecture-beta
+    group session(lucide:box)[Composio Session]
+
+    service toolsearch(lucide:book-search)[Tool Search] in session
+    service toolkits(lucide:toolbox)[Toolkits] in session
+    service tools(lucide:wrench)[Tools] in session
+    service sandbox(lucide:scan-box)[Sandbox] in session
+    
+    service user(lucide:user)[User Context] in session
+    service auth(lucide:lock)[Authentication] in session
+
+    user:R -- L:auth
+    toolsearch:R -- L:toolkits
+    toolkits:B -- T:tools
+```
+
+Below we're going to explain each of the concepts that come with a session.
 
 ## Users
 
@@ -60,7 +77,23 @@ A user is an identifier from your app. Composio stores connections under that ID
 
 A user can connect multiple accounts for the same toolkit, like work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific one. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
 
-## Meta tools
+## Authentication
+
+When a tool needs a connection, the session generates a Connect Link with `session.authorize()`, or the agent handles the flow through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+In chat, the agent can pause, ask the user to connect an app, then retry the tool once auth completes. Composio manages the OAuth redirects, token exchange, and refresh. Once a user connects a toolkit, the connected account persists and future sessions reuse it without re-authentication.
+
+For OAuth toolkits, Composio uses [managed apps](/docs/authentication/custom-app-vs-managed-app) by default. Bring your own app when you need your own branding, scopes, or consent screen.
+
+## Tools and Toolkits
+
+A **toolkit** is a collection of related tools for a service. The `github` toolkit, for example, contains tools for creating issues, managing pull requests, and starring repositories.
+
+A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
+
+Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/configuring-sessions). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
+
+### Meta tools
 
 A session gives your agent meta tools, a small fixed set that discover, authenticate, and execute tools at runtime, so you never load hundreds of tool definitions into context:
 
@@ -70,7 +103,7 @@ The agent searches for relevant tools, authenticates if needed, and executes the
 
 Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns them directly from `session.tools()` with no search step, while keeping session auth, connected accounts, and the workbench.
 
-## Executing session tools
+### Executing session tools
 
 When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session's tool router, which is the only place session meta-tools run:
 
@@ -93,19 +126,11 @@ const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_
 
 Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
-## Authentication
-
-When a tool needs a connection, the session generates a Connect Link with `session.authorize()`, or the agent handles the flow through `COMPOSIO_MANAGE_CONNECTIONS`.
-
-In chat, the agent can pause, ask the user to connect an app, then retry the tool once auth completes. Composio manages the OAuth redirects, token exchange, and refresh. Once a user connects a toolkit, the connected account persists and future sessions reuse it without re-authentication.
-
-For OAuth toolkits, Composio uses [managed apps](/docs/authentication/custom-app-vs-managed-app) by default. Bring your own app when you need your own branding, scopes, or consent screen.
-
 ## Sandbox
 
 Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
 
-The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task.
+The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task. Learn more about [sandboxes here](/docs/sandbox/remote).
 
 ## How sessions behave
 
