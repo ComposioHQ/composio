@@ -345,8 +345,11 @@ class MCPDestinationError(ComposioClientError):
     SDK will hand the session headers to.
 
     The credential and scope headers are only attached when the MCP URL shares
-    the origin of the API base URL the session was created against. The
-    message names both origins and never includes a credential value.
+    the origin of the API base URL the session was created against. The error
+    is raised only when the caller asked for the endpoint with ``mcp=True``;
+    otherwise the session is returned with empty ``mcp.headers`` and a warning
+    is logged instead. The message names both origins and never includes a
+    credential value.
     """
 
     def __init__(self, message: str, *, mcp_origin: str, api_origin: str) -> None:

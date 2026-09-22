@@ -13,6 +13,7 @@ import {
   ComposioScopeConfigError,
 } from '../../src/errors/SDKErrors';
 import { ComposioMCPDestinationError } from '../../src/errors/ToolRouterErrors';
+import logger from '../../src/utils/logger';
 
 describe('Composio Session Management', () => {
   const baseConfig = {
@@ -519,6 +520,7 @@ describe('Credential resolution at the transport boundary', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     fs.rmSync(home, { recursive: true, force: true });
@@ -788,7 +790,7 @@ describe('Credential resolution at the transport boundary', () => {
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
     });
 
-    it('refuses to attach credentials when the MCP URL is on a different origin', async () => {
+    it('throws when the MCP URL is on a different origin and the caller asked for MCP', async () => {
       captureSessionFetch('https://mcp.example.com/session_mcp');
       const composio = build({ apiKey: projectKey });
 
@@ -802,6 +804,48 @@ describe('Credential resolution at the transport boundary', () => {
         apiOrigin: 'https://api.test.com',
       });
       expect(JSON.stringify(failure)).not.toContain(projectKey);
+    });
+
+    it('returns the session with empty MCP headers and warns when the caller did not ask for MCP', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      captureSessionFetch('https://mcp.example.com/session_mcp');
+      const composio = build({ apiKey: projectKey });
+
+      const created = await composio.sessions.create('user_123');
+      const used = await composio.sessions.use('session_mcp');
+
+      const createdMcp = (created as unknown as { mcp: { url: string; headers: unknown } }).mcp;
+      const usedMcp = (used as unknown as { mcp: { url: string; headers: unknown } }).mcp;
+      expect(createdMcp).toEqual({
+        type: 'http',
+        url: 'https://mcp.example.com/session_mcp',
+        headers: {},
+      });
+      expect(usedMcp.headers).toEqual({});
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+      const warning = String(warnSpy.mock.calls[0][0]);
+      expect(warning).toContain('https://mcp.example.com');
+      expect(warning).toContain('https://api.test.com');
+      expect(warning).toContain('mcp: true');
+      expect(warning).not.toContain(projectKey);
+    });
+
+    it('rejects an MCP URL with an opaque origin before comparing origins', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      captureSessionFetch('data:text/plain,session_mcp');
+      const composio = build({ apiKey: projectKey });
+
+      const failure = await composio.sessions.create('user_123', { mcp: true }).catch(e => e);
+      expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
+      expect(failure.message).toBe('The MCP URL has an opaque origin');
+      expect(failure.meta).toEqual({ role: 'MCP URL' });
+      expect(JSON.stringify(failure)).not.toContain(projectKey);
+
+      const session = await composio.sessions.create('user_123');
+      const mcp = (session as unknown as { mcp: { headers: unknown } }).mcp;
+      expect(mcp.headers).toEqual({});
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain('opaque origin');
     });
 
     it('exports credentials to a same-origin MCP URL on a plain-http custom base URL', async () => {

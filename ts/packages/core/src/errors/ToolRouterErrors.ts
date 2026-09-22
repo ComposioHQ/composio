@@ -9,8 +9,10 @@ export const ToolRouterErrorCodes = {
  * Thrown when a session's hosted MCP endpoint is not a destination the SDK
  * will hand the session credential to. The SDK only attaches its credential
  * and scope headers when the MCP URL shares the origin of the API base URL
- * the session was created against. The error names both origins and never
- * includes a credential value.
+ * the session was created against. The error is raised only when the caller
+ * asked for the endpoint with `mcp: true`; otherwise the session is returned
+ * with empty `mcp.headers` and a warning is logged instead. The error names
+ * both origins and never includes a credential value.
  */
 export class ComposioMCPDestinationError extends ComposioError {
   constructor(

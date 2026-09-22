@@ -1,5 +1,6 @@
 """Test ToolRouter functionality."""
 
+import logging
 import os
 import typing as t
 from unittest.mock import MagicMock, patch
@@ -2331,6 +2332,47 @@ class TestMcpAuthContext:
         assert "test-api-key" not in message
         assert excinfo.value.mcp_origin == "https://mcp.example.com"
         assert excinfo.value.api_origin == "https://backend.composio.dev"
+
+    def test_cross_origin_mcp_url_without_mcp_flag_exports_no_headers_and_warns(
+        self, tool_router, mock_client, caplog
+    ):
+        for response in (
+            mock_client.tool_router.session.create.return_value,
+            mock_client.tool_router.session.retrieve.return_value,
+        ):
+            response.mcp.url = "https://mcp.example.com/session_123"
+
+        with caplog.at_level(logging.WARNING):
+            created = tool_router.create(user_id="user_123")
+            used = tool_router.use("session_123")
+
+        assert created.mcp.url == "https://mcp.example.com/session_123"
+        assert created.mcp.headers == {}
+        assert used.mcp.headers == {}
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 2
+        message = warnings[0].getMessage()
+        assert "https://mcp.example.com" in message
+        assert "https://backend.composio.dev" in message
+        assert "mcp=True" in message
+        assert "test-api-key" not in caplog.text
+
+    def test_opaque_origin_mcp_url_is_rejected_before_comparison(
+        self, tool_router, mock_client, caplog
+    ):
+        response = mock_client.tool_router.session.create.return_value
+        response.mcp.url = "data:text/plain,session_123"
+
+        with pytest.raises(MCPDestinationError) as excinfo:
+            tool_router.create(user_id="user_123", mcp=True)
+        assert str(excinfo.value) == "The MCP URL has an opaque origin"
+        assert excinfo.value.mcp_origin == ""
+
+        with caplog.at_level(logging.WARNING):
+            session = tool_router.create(user_id="user_123")
+        assert session.mcp.headers == {}
+        assert "The MCP URL has an opaque origin" in caplog.text
+        assert "test-api-key" not in caplog.text
 
     def test_user_key_default_header_wins_over_the_configured_project_key(self):
         client, requests = _transport_client(

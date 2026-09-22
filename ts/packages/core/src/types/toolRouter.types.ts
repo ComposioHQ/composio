@@ -216,7 +216,7 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .boolean()
       .optional()
       .describe(
-        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
+        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type, and an MCP URL that is not on the API base URL origin throws `ComposioMCPDestinationError` instead of leaving `session.mcp.headers` empty with a warning. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
       ),
 
     tools: z
