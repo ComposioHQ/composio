@@ -133,7 +133,9 @@ export class ToolRouterSession<
    * `headers` carries the credential this SDK instance authenticated with:
    * the project key as `x-api-key`, otherwise the user API key as
    * `x-user-api-key`. It is only populated when the MCP URL shares the API
-   * base URL's origin, so treat the config as a secret.
+   * base URL's origin, so treat the config as a secret. A different origin
+   * throws `ComposioMCPDestinationError` when the session was requested with
+   * `{ mcp: true }`; otherwise `headers` is empty and a warning is logged.
    * See https://docs.composio.dev/docs/sessions-via-mcp
    */
   public readonly mcp: ToolRouterMCPServerConfig;

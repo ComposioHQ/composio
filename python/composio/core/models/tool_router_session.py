@@ -137,7 +137,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     :meth:`tools`. ``session.mcp.headers`` carries the credential this SDK
     instance authenticated with (the project key as ``x-api-key``, otherwise
     the user API key as ``x-user-api-key``) and is only populated when the
-    MCP URL shares the API base URL's origin, so treat it as a secret.
+    MCP URL shares the API base URL's origin, so treat it as a secret. A
+    different origin raises ``MCPDestinationError`` when the session was
+    requested with ``mcp=True``; otherwise ``headers`` is empty and a warning
+    is logged.
     See https://docs.composio.dev/docs/sessions-via-mcp
 
     Attributes:

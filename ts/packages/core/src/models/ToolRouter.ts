@@ -136,21 +136,21 @@ export class ToolRouter<
    * Derives the MCP config for a session from the auth context the session
    * request was made with: the project key when one is configured, otherwise
    * the `x-user-api-key` default header. The credential is only attached when
-   * the MCP URL shares the client's API origin; see `buildMCPServerConfig`.
+   * the MCP URL shares the client's API origin; a different origin throws
+   * when the caller asked for MCP and otherwise yields empty headers plus a
+   * warning. See `buildMCPServerConfig`.
    */
-  private createMCPServerConfig({
-    type,
-    url,
-  }: {
-    type: MCPServerType;
-    url: string;
-  }): ToolRouterMCPServerConfig {
+  private createMCPServerConfig(
+    { type, url }: { type: MCPServerType; url: string },
+    mcpRequested: boolean
+  ): ToolRouterMCPServerConfig {
     return buildMCPServerConfig({
       type,
       url,
       apiBaseURL: this.client.baseURL,
       apiKey: this.config?.apiKey,
       defaultHeaders: this.config?.defaultHeaders,
+      mcpRequested,
     });
   }
 
@@ -159,9 +159,17 @@ export class ToolRouter<
    * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
    * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
+   * Pass `{ mcp: true }` to surface `session.mcp` in the returned type. The
+   * SDK attaches its credential to `session.mcp.headers` only when the MCP
+   * URL shares the origin of the API base URL. When it does not, `{ mcp: true }`
+   * throws `ComposioMCPDestinationError` (naming both origins, never the key);
+   * without it the session is returned with empty `mcp.headers` and a warning
+   * is logged.
+   *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   * @throws {ComposioMCPDestinationError} When `mcp: true` and the MCP URL is on a different origin
    *
    * @example
    * ```typescript
@@ -289,7 +297,7 @@ export class ToolRouter<
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp),
+      this.createMCPServerConfig(session.mcp, routerConfig.mcp === true),
       { assistivePrompt },
       customToolsMap,
       userId,
@@ -298,9 +306,18 @@ export class ToolRouter<
   }
 
   /**
-   * Use an existing session
+   * Use an existing session.
+   *
+   * Pass `{ mcp: true }` to surface `session.mcp` in the returned type. The
+   * SDK attaches its credential to `session.mcp.headers` only when the MCP
+   * URL shares the origin of the API base URL. When it does not, `{ mcp: true }`
+   * throws `ComposioMCPDestinationError` (naming both origins, never the key);
+   * without it the session is returned with empty `mcp.headers` and a warning
+   * is logged.
+   *
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   * @throws {ComposioMCPDestinationError} When `mcp: true` and the MCP URL is on a different origin
    *
    * @example
    * ```typescript
@@ -391,7 +408,7 @@ export class ToolRouter<
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp),
+      this.createMCPServerConfig(session.mcp, options?.mcp === true),
       undefined,
       customToolsMap,
       userId,

@@ -1,6 +1,7 @@
 import { ComposioMCPDestinationError } from '../errors/ToolRouterErrors';
 import type { ComposioRequestHeaders } from '../types/composio.types';
 import type { MCPServerType, ToolRouterMCPServerConfig } from '../types/toolRouter.types';
+import logger from '../utils/logger';
 import { getUserApiKeyHeader, USER_API_KEY_HEADER } from '../utils/sdk';
 
 const parseOrigin = (url: string, role: 'API base URL' | 'MCP URL'): URL => {
@@ -10,6 +11,23 @@ const parseOrigin = (url: string, role: 'API base URL' | 'MCP URL'): URL => {
     throw new ComposioMCPDestinationError(`The ${role} is not a valid absolute URL`, {
       meta: { role },
     });
+  }
+};
+
+/**
+ * Checks that the MCP URL shares the origin of the API base URL. Throws
+ * {@link ComposioMCPDestinationError} naming both origins otherwise; the
+ * message never includes a credential value.
+ */
+const assertSameOrigin = (apiBaseURL: string, mcpURL: string): void => {
+  const api = parseOrigin(apiBaseURL, 'API base URL');
+  const mcp = parseOrigin(mcpURL, 'MCP URL');
+
+  if (mcp.origin !== api.origin) {
+    throw new ComposioMCPDestinationError(
+      `The session MCP endpoint origin ${mcp.origin} does not match the API origin ${api.origin}; the session credential was not attached`,
+      { meta: { mcpOrigin: mcp.origin, apiOrigin: api.origin } }
+    );
   }
 };
 
@@ -23,6 +41,11 @@ export type MCPServerConfigInput = {
   apiKey: string | null | undefined;
   /** The default headers configured on the SDK instance; only `x-user-api-key` is consulted. */
   defaultHeaders: ComposioRequestHeaders | undefined;
+  /**
+   * Whether the caller asked for the MCP endpoint (`{ mcp: true }`). Decides
+   * whether a rejected destination is an error or a warning.
+   */
+  mcpRequested: boolean;
 };
 
 /**
@@ -35,20 +58,25 @@ export type MCPServerConfigInput = {
  * The credential is only attached when the MCP URL has the same origin as the
  * API base URL the session was created against, whatever scheme the caller
  * configured: that origin already receives the credential on every SDK
- * request. Any other destination raises {@link ComposioMCPDestinationError}
- * naming both origins. The SDK itself never connects to the MCP URL and does
- * not follow redirects for it; an MCP client consuming this config must not
- * forward these headers to a different origin.
+ * request. For any other destination the outcome depends on whether the
+ * caller asked for MCP: with `{ mcp: true }` a {@link ComposioMCPDestinationError}
+ * naming both origins is thrown; otherwise the session is returned with empty
+ * `mcp.headers` and a warning naming both origins is logged, so callers who
+ * only use native tools are not affected. The SDK itself never connects to
+ * the MCP URL and does not follow redirects for it; an MCP client consuming
+ * this config must not forward these headers to a different origin.
  */
 export const buildMCPServerConfig = (input: MCPServerConfigInput): ToolRouterMCPServerConfig => {
-  const api = parseOrigin(input.apiBaseURL, 'API base URL');
-  const mcp = parseOrigin(input.url, 'MCP URL');
-
-  if (mcp.origin !== api.origin) {
-    throw new ComposioMCPDestinationError(
-      `The session MCP endpoint origin ${mcp.origin} does not match the API origin ${api.origin}; the session credential was not attached`,
-      { meta: { mcpOrigin: mcp.origin, apiOrigin: api.origin } }
+  try {
+    assertSameOrigin(input.apiBaseURL, input.url);
+  } catch (error) {
+    if (input.mcpRequested || !(error instanceof ComposioMCPDestinationError)) {
+      throw error;
+    }
+    logger.warn(
+      `${error.message}. session.mcp.headers is empty; pass { mcp: true } to make this an error.`
     );
+    return { type: input.type, url: input.url, headers: {} };
   }
 
   const headers: Record<string, string> = {};

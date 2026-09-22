@@ -1,5 +1,6 @@
 """Test ToolRouter functionality."""
 
+import logging
 import os
 import typing as t
 from unittest.mock import MagicMock, patch
@@ -2298,6 +2299,63 @@ class TestMcpAuthContext:
         assert "https://mcp.example.com" in message
         assert "https://backend.composio.dev" in message
         assert "test-api-key" not in message
+
+    def test_cross_origin_mcp_url_raises_on_use_when_mcp_is_requested(
+        self, tool_router, mock_client
+    ):
+        response = mock_client.tool_router.session.retrieve.return_value
+        response.mcp.url = "https://mcp.example.com/session_123"
+
+        with pytest.raises(MCPDestinationError) as excinfo:
+            tool_router.use("session_123", mcp=True)
+
+        message = str(excinfo.value)
+        assert "https://mcp.example.com" in message
+        assert "https://backend.composio.dev" in message
+        assert "test-api-key" not in message
+
+    def test_cross_origin_mcp_url_without_mcp_returns_empty_headers_and_warns(
+        self, tool_router, mock_client, caplog
+    ):
+        response = mock_client.tool_router.session.create.return_value
+        response.mcp.url = "https://mcp.example.com/session_123"
+
+        with caplog.at_level(logging.WARNING):
+            session = tool_router.create(user_id="user_123")
+
+        assert session.session_id == "session_123"
+        assert session.mcp.url == "https://mcp.example.com/session_123"
+        assert session.mcp.headers == {}
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        message = warnings[0].getMessage()
+        assert "https://mcp.example.com" in message
+        assert "https://backend.composio.dev" in message
+        assert "test-api-key" not in message
+
+    def test_cross_origin_mcp_url_without_mcp_on_use_returns_empty_headers_and_warns(
+        self, tool_router, mock_client, caplog
+    ):
+        response = mock_client.tool_router.session.retrieve.return_value
+        response.mcp.url = "https://mcp.example.com/session_123"
+
+        with caplog.at_level(logging.WARNING):
+            session = tool_router.use("session_123")
+
+        assert session.session_id == "session_123"
+        assert session.mcp.headers == {}
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        message = warnings[0].getMessage()
+        assert "https://mcp.example.com" in message
+        assert "test-api-key" not in message
+
+    def test_same_origin_mcp_url_does_not_warn(self, tool_router, caplog):
+        with caplog.at_level(logging.WARNING):
+            session = tool_router.create(user_id="user_123")
+
+        assert session.mcp.headers == {"x-api-key": "test-api-key"}
+        assert not [r for r in caplog.records if r.levelno == logging.WARNING]
 
     def test_same_origin_plain_http_base_url_exports_credentials(self):
         client, requests = _transport_client(
