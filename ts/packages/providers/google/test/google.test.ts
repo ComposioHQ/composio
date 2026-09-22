@@ -247,6 +247,77 @@ describe('GoogleProvider', () => {
         modifiers
       );
     });
+
+    it('should execute a tool call against a Tool Router session instead of the direct tools API', async () => {
+      const toolCall = {
+        name: 'test-tool',
+        args: { input: 'test-value' },
+      };
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { result: 'session-success' },
+          error: null,
+          logId: 'log-success',
+        }),
+      };
+
+      const result = await provider.executeToolCall(session, toolCall);
+
+      expect(session.execute).toHaveBeenCalledWith('test-tool', { input: 'test-value' });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(result).toBe(
+        JSON.stringify({
+          data: { result: 'session-success' },
+          error: null,
+          logId: 'log-success',
+          successful: true,
+        })
+      );
+    });
+
+    it('should surface a failed session execution without throwing', async () => {
+      const toolCall = {
+        name: 'test-tool',
+        args: { input: 'test-value' },
+      };
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: {},
+          error: 'Tool execution failed',
+          logId: 'log-failure',
+        }),
+      };
+
+      const result = await provider.executeToolCall(session, toolCall);
+
+      expect(result).toBe(
+        JSON.stringify({
+          data: {},
+          error: 'Tool execution failed',
+          logId: 'log-failure',
+          successful: false,
+        })
+      );
+    });
+
+    it('should reject direct-only options when the target is a session', async () => {
+      const toolCall = {
+        name: 'test-tool',
+        args: { input: 'test-value' },
+      };
+      const session = { execute: vi.fn() };
+
+      await expect(
+        provider.executeToolCall(
+          // @ts-expect-error - options/modifiers are not part of the session overload
+          session,
+          toolCall,
+          { connectedAccountId: 'conn-123' }
+        )
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+    });
   });
 
   describe('executeTool', () => {
