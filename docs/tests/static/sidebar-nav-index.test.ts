@@ -11,11 +11,31 @@ import { join } from 'node:path';
 import { flattenTree } from 'fumadocs-core/page-tree';
 
 import { buildSidebarNavIndex } from '../../lib/sidebar-nav-index';
-import { source } from '../../lib/source';
+import { examplesSource, source } from '../../lib/source';
 
 const index = buildSidebarNavIndex(source.pageTree);
 
 describe('buildSidebarNavIndex', () => {
+  test('example sections retain every page once and group the SDK walkthroughs', () => {
+    const pages = flattenTree(examplesSource.pageTree.children);
+    const urls = pages.map(page => page.url);
+    expect(new Set(urls).size).toBe(urls.length);
+    expect([...urls].sort()).toEqual(examplesSource.getPages().map(page => page.url).sort());
+
+    const examplesIndex = buildSidebarNavIndex(examplesSource.pageTree);
+    const groups = {
+      '/examples/sdk-examples': 'SDK examples',
+      '/examples/csv-report-agent': 'Complete agents',
+      '/examples/email-triggered-agent': 'Complete agents',
+      '/examples/multiple-accounts': 'Integration patterns',
+      '/examples/custom-tools': 'Integration patterns',
+      '/examples/cloudflare-workers': 'Deployment',
+    };
+    for (const [url, group] of Object.entries(groups)) {
+      expect(examplesIndex[url]?.group).toBe(group);
+    }
+  });
+
   test('folder children carry their group, folder and depth', () => {
     expect(index['/docs/authentication/white-labeling-authentication']).toEqual({
       group: 'Core concepts',
