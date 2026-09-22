@@ -35,6 +35,11 @@ export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhance
 
 const CACHE_FILE_NAME = 'tool-permissions-cache.json';
 const PERMISSION_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Each path is passed once for the request and once for the error payload, so
+// they live in constants to keep those uses in sync.
+const ORG_CONSUMER_CONFIG_PATH = '/api/v3.1/org/consumer/config';
+const CONSUMER_PERMISSIONS_RESOLVE_PATH = '/api/v3.1/consumer/permissions/resolve';
 const ALLOW_FOR_DURATION_LABEL = '1 hr';
 const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
@@ -373,17 +378,17 @@ export const refreshConsumerPermissionSnapshot = (params: {
       apiKey,
       orgId: params.orgId,
       projectId: params.projectId,
-      path: '/api/v3.1/org/consumer/config',
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
     const config = yield* Effect.tryPromise({
       try: () =>
         requestJson(ConsumerConfigResponseSchema, {
           client,
-          path: '/api/v3.1/org/consumer/config',
+          path: ORG_CONSUMER_CONFIG_PATH,
         }),
       catch: cause =>
         new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
+          path: ORG_CONSUMER_CONFIG_PATH,
           message: 'Failed to fetch the org consumer config.',
           cause,
         }),
@@ -403,7 +408,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
             try: () =>
               requestJson(PermissionResolveResponseSchema, {
                 client,
-                path: '/api/v3.1/consumer/permissions/resolve',
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 method: 'POST',
                 body: {
                   connected_account_ids: connectedAccountIds,
@@ -412,7 +417,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
               }),
             catch: cause =>
               new ToolPermissionsRequestError({
-                path: '/api/v3.1/consumer/permissions/resolve',
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 message: 'Failed to resolve consumer permissions.',
                 cause,
               }),
@@ -518,17 +523,17 @@ export const getOrgEnhancedControlsStatus = (params: {
       apiKey,
       orgId: params.orgId,
       projectId: params.projectId,
-      path: '/api/v3.1/org/consumer/config',
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
     const config = yield* Effect.tryPromise({
       try: () =>
         requestJson(ConsumerConfigResponseSchema, {
           client,
-          path: '/api/v3.1/org/consumer/config',
+          path: ORG_CONSUMER_CONFIG_PATH,
         }),
       catch: cause =>
         new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
+          path: ORG_CONSUMER_CONFIG_PATH,
           message: 'Failed to fetch the org consumer config.',
           cause,
         }),
