@@ -71,53 +71,76 @@ class WebhookSubscription(t.TypedDict, total=False):
 DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS = ("composio.trigger.message",)
 
 
+class _WebhookSubscriptionWire(pydantic.BaseModel):
+    """Boundary schema for a subscription response.
+
+    Accepts snake_case or camelCase wire keys and rejects a payload that
+    lacks the fields :class:`WebhookSubscription` promises, so a malformed
+    2xx surfaces as a :class:`~composio.exceptions.ValidationError` instead
+    of a typed subscription with empty or defaulted values.
+    """
+
+    model_config = pydantic.ConfigDict(extra="ignore", populate_by_name=True)
+
+    id: str = pydantic.Field(min_length=1)
+    webhook_url: str = pydantic.Field(
+        min_length=1,
+        validation_alias=pydantic.AliasChoices("webhook_url", "webhookUrl"),
+    )
+    version: str = pydantic.Field(min_length=1)
+    enabled_events: t.List[str] = pydantic.Field(
+        validation_alias=pydantic.AliasChoices("enabled_events", "enabledEvents"),
+    )
+    secret: t.Optional[str] = None
+    created_at: t.Optional[str] = pydantic.Field(
+        default=None,
+        validation_alias=pydantic.AliasChoices("created_at", "createdAt"),
+    )
+    updated_at: t.Optional[str] = pydantic.Field(
+        default=None,
+        validation_alias=pydantic.AliasChoices("updated_at", "updatedAt"),
+    )
+
+
 def normalize_webhook_subscription(raw: object) -> WebhookSubscription:
     """Build a typed :class:`WebhookSubscription` from an API response.
 
-    Accepts either the client's pydantic response models or a plain dict.
-    Maps explicitly (accepting either snake_case or camelCase wire keys)
-    instead of ``cast``-ing the raw object, so the returned dict always
-    matches the declared shape and a shift in the wire format surfaces as a
-    normalized field rather than a ``KeyError`` at the call site.
+    Accepts either the client's pydantic response models or a plain dict and
+    validates it against :class:`_WebhookSubscriptionWire`, so the returned
+    dict always matches the declared shape and a malformed response raises
+    :class:`~composio.exceptions.ValidationError` at the boundary.
     """
     if isinstance(raw, pydantic.BaseModel):
         # The client builds response models without validation, so enum
         # fields hold plain strings; silence pydantic's serializer warnings.
-        data: t.Dict[str, t.Any] = raw.model_dump(mode="json", warnings=False)
+        data: t.Any = raw.model_dump(mode="json", warnings=False)
     elif isinstance(raw, dict):
         data = raw
     else:
-        data = {}
+        raise exceptions.ValidationError(
+            "malformed webhook subscription response: expected an object, "
+            f"got {type(raw).__name__}"
+        )
 
-    def _first_str(*keys: str) -> t.Optional[str]:
-        for key in keys:
-            value = data.get(key)
-            if isinstance(value, str) and value:
-                return value
-        return None
-
-    def _str_list(*keys: str) -> t.List[str]:
-        for key in keys:
-            value = data.get(key)
-            if isinstance(value, list):
-                return [item for item in value if isinstance(item, str)]
-        return []
+    try:
+        parsed = _WebhookSubscriptionWire.model_validate(data)
+    except pydantic.ValidationError as error:
+        raise exceptions.ValidationError(
+            f"malformed webhook subscription response: {error}"
+        ) from error
 
     result: WebhookSubscription = {
-        "id": _first_str("id") or "",
-        "webhook_url": _first_str("webhook_url", "webhookUrl") or "",
-        "version": _first_str("version") or WebhookVersion.V3.value,
-        "enabled_events": _str_list("enabled_events", "enabledEvents"),
+        "id": parsed.id,
+        "webhook_url": parsed.webhook_url,
+        "version": parsed.version,
+        "enabled_events": list(parsed.enabled_events),
     }
-    secret = _first_str("secret")
-    if secret is not None:
-        result["secret"] = secret
-    created_at = _first_str("created_at", "createdAt")
-    if created_at is not None:
-        result["created_at"] = created_at
-    updated_at = _first_str("updated_at", "updatedAt")
-    if updated_at is not None:
-        result["updated_at"] = updated_at
+    if parsed.secret is not None:
+        result["secret"] = parsed.secret
+    if parsed.created_at is not None:
+        result["created_at"] = parsed.created_at
+    if parsed.updated_at is not None:
+        result["updated_at"] = parsed.updated_at
     return result
 
 

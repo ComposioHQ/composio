@@ -241,7 +241,8 @@ class TestWebhookSubscriptionsSet:
         mock_client.webhook_subscriptions.create.return_value = {
             "id": "sub_1",
             "webhookUrl": "https://x",
-            "enabledEvents": ["composio.trigger.message", 42],
+            "version": "V3",
+            "enabledEvents": ["composio.trigger.message"],
             "createdAt": "2026-01-01",
         }
 
@@ -254,6 +255,39 @@ class TestWebhookSubscriptionsSet:
             "enabled_events": ["composio.trigger.message"],
             "created_at": "2026-01-01",
         }
+
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            pytest.param({}, id="empty"),
+            pytest.param(
+                {"webhook_url": "https://x", "version": "V3", "enabled_events": []},
+                id="missing-id",
+            ),
+            pytest.param(
+                {"id": "sub_1", "webhook_url": "https://x", "enabled_events": []},
+                id="missing-version",
+            ),
+            pytest.param(
+                {
+                    "id": "sub_1",
+                    "webhook_url": "https://x",
+                    "version": "V3",
+                    "enabled_events": ["composio.trigger.message", 42],
+                },
+                id="non-string-event",
+            ),
+            pytest.param("not-an-object", id="not-an-object"),
+        ],
+    )
+    def test_rejects_malformed_create_response(self, subscriptions, mock_client, raw):
+        mock_client.webhook_subscriptions.list.return_value = Mock(items=[])
+        mock_client.webhook_subscriptions.create.return_value = raw
+
+        with pytest.raises(
+            exceptions.ValidationError, match="malformed webhook subscription"
+        ):
+            subscriptions.set(webhook_url="https://x")
 
     @pytest.mark.parametrize(
         "listed",
@@ -295,7 +329,12 @@ class TestTriggersDelegation:
         mock_client.trigger_instances = Mock()
         resource = mock_client.webhook_subscriptions
         resource.list.return_value = Mock(items=[Mock(id="sub_9")])
-        resource.update.return_value = {"id": "sub_9", "webhook_url": "https://x"}
+        resource.update.return_value = {
+            "id": "sub_9",
+            "webhook_url": "https://x",
+            "version": "V3",
+            "enabled_events": ["composio.trigger.message"],
+        }
 
         via_triggers = Triggers(client=mock_client).set_webhook_subscription(
             webhook_url="https://x"
@@ -307,7 +346,12 @@ class TestTriggersDelegation:
         )
         mock_client.reset_mock()
         resource.list.return_value = Mock(items=[Mock(id="sub_9")])
-        resource.update.return_value = {"id": "sub_9", "webhook_url": "https://x"}
+        resource.update.return_value = {
+            "id": "sub_9",
+            "webhook_url": "https://x",
+            "version": "V3",
+            "enabled_events": ["composio.trigger.message"],
+        }
 
         via_webhooks = WebhookSubscriptions(client=mock_client).set(
             webhook_url="https://x"
