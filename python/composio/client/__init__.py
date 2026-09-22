@@ -100,6 +100,19 @@ CLIENT_LOGGER_NAME = "composio_client"
 """Name of the logger the generated ``composio_client`` package writes to."""
 
 
+_active_log_wrapper: contextvars.ContextVar[t.Optional[_VerbosityWrapper]] = (
+    contextvars.ContextVar("composio_client_log_wrapper", default=None)
+)
+"""The SDK logger of the :class:`HttpClient` currently performing a request.
+
+The generated client writes every lifecycle record to one process-wide
+``composio_client`` logger, so the record itself does not say which SDK
+instance made the request. :meth:`HttpClient.request` binds this variable
+for the duration of each call so the forwarder can deliver the record to
+that instance's logger instead of whichever instance was constructed last.
+"""
+
+
 class _ClientLogForwarder(logging.Handler):
     """Forward ``composio_client`` records into the SDK logger.
 
@@ -109,6 +122,11 @@ class _ClientLogForwarder(logging.Handler):
     and applies the same credential redaction and line truncation the SDK's
     own records get. The client's INFO records (per-request lifecycle) are
     forwarded as DEBUG.
+
+    One forwarder is installed per process. A record emitted while an
+    :class:`HttpClient` request is in flight goes to that client's logger
+    (see :data:`_active_log_wrapper`); a record emitted outside any request
+    goes to the logger of the most recently constructed client.
     """
 
     def __init__(self, wrapper: _VerbosityWrapper) -> None:
@@ -116,38 +134,45 @@ class _ClientLogForwarder(logging.Handler):
         self.wrapper = wrapper
 
     def emit(self, record: logging.LogRecord) -> None:
+        wrapper = _active_log_wrapper.get() or self.wrapper
         try:
             message = record.getMessage()
             if record.levelno >= logging.ERROR:
-                self.wrapper.error(message, exc_info=record.exc_info)
+                wrapper.error(message, exc_info=record.exc_info)
             elif record.levelno >= logging.WARNING:
-                self.wrapper.warning(message, exc_info=record.exc_info)
+                wrapper.warning(message, exc_info=record.exc_info)
             else:
-                self.wrapper.debug(message, exc_info=record.exc_info)
+                wrapper.debug(message, exc_info=record.exc_info)
         except Exception:  # noqa: BLE001 - logging must never fail the call
             self.handleError(record)
 
 
 def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
-    """Attach a single forwarder for ``wrapper`` to the client logger.
+    """Attach the process-wide forwarder to the client logger.
 
-    Idempotent: a forwarder already bound to ``wrapper`` is kept; forwarders
-    bound to another wrapper (an earlier SDK instance with a different logger)
-    are replaced so records are delivered once, to the most recent logger.
+    Idempotent: the single forwarder is created on first use and kept
+    afterwards. Each call rebinds its fallback logger to ``wrapper`` (the
+    most recently constructed SDK instance); records emitted during a
+    request are routed to the requesting instance regardless of that
+    fallback, so earlier instances keep receiving their own request logs.
     """
     client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
-    installed = False
+    forwarder: t.Optional[_ClientLogForwarder] = None
     for handler in list(client_logger.handlers):
         if not isinstance(handler, _ClientLogForwarder):
             continue
-        if handler.wrapper is wrapper and not installed:
-            installed = True
+        if forwarder is None:
+            forwarder = handler
             continue
         client_logger.removeHandler(handler)
-    if not installed:
+    if forwarder is None:
         client_logger.addHandler(_ClientLogForwarder(wrapper))
+    else:
+        forwarder.wrapper = wrapper
     # The client's INFO records are forwarded as DEBUG, so only let the client
-    # produce them when the SDK logger is at DEBUG.
+    # produce them when the SDK logger is at DEBUG. The level is process-wide
+    # (one client logger), so the most recently constructed instance sets it;
+    # each instance's own wrapper still filters what it actually emits.
     level = wrapper.logger.getEffectiveLevel()
     client_logger.setLevel(
         level if level <= logging.DEBUG else max(level, logging.WARNING)
@@ -384,6 +409,24 @@ class HttpClient(BaseComposio, WithLogger):
         if self._without_retries is None:
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
+
+    def request(  # type: ignore[override]
+        self,
+        cast_to: t.Any,
+        options: t.Mapping[str, t.Any],
+        *,
+        stream: bool = False,
+        stream_cls: t.Optional[t.Type[t.Any]] = None,
+    ) -> t.Any:
+        # Bind this instance's logger for the request so the client's
+        # lifecycle records reach it (see `_active_log_wrapper`).
+        token = _active_log_wrapper.set(self._logger)
+        try:
+            return super().request(
+                cast_to, options, stream=stream, stream_cls=stream_cls
+            )
+        finally:
+            _active_log_wrapper.reset(token)
 
     def _decode(self, response: Response) -> t.Any:
         """

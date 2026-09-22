@@ -145,7 +145,7 @@ class TestCustomLogger:
         assert len(forwarders) == 1
         assert forwarders[0].wrapper.logger is logger
 
-    def test_forwarder_is_replaced_for_a_different_logger(self, custom_logger):
+    def test_client_records_follow_the_requesting_instance(self, custom_logger):
         logger, output = custom_logger
         other = logging.getLogger("composio-test-sdk-owned-logger-other")
         other_output = io.StringIO()
@@ -153,13 +153,24 @@ class TestCustomLogger:
         other.propagate = False
         other.setLevel(logging.DEBUG)
         try:
-            Composio(api_key="test-key", logger=other)
-            Composio(api_key="test-key", logger=logger)
+            first = Composio(
+                api_key="test-key", http_client=_mock_transport(), logger=other
+            )
+            second = Composio(
+                api_key="test-key", http_client=_mock_transport(), logger=logger
+            )
+            assert len(_forwarders()) == 1
 
-            forwarders = _forwarders()
-            assert len(forwarders) == 1
-            assert forwarders[0].wrapper.logger is logger
+            # A request through the earlier instance still logs to its own
+            # logger, even though a newer instance was constructed since.
+            first.client.without_retries.toolkits.list()
+            assert "path=/api/v3.1/toolkits" in other_output.getvalue()
+            assert "path=/api/v3.1/toolkits" not in output.getvalue()
 
+            second.client.without_retries.toolkits.list()
+            assert "path=/api/v3.1/toolkits" in output.getvalue()
+
+            # Outside any request, records go to the most recent instance.
             logging.getLogger(CLIENT_LOGGER_NAME).info("delivered once")
             assert "delivered once" in output.getvalue()
             assert "delivered once" not in other_output.getvalue()
