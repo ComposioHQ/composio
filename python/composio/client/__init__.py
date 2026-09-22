@@ -3,9 +3,11 @@ This module is a light wrapper around the auto-generated composio client.
 """
 
 import contextvars
+import logging
 import os
 import platform
 import typing as t
+import weakref
 from importlib.metadata import version
 from uuid import uuid4
 
@@ -16,13 +18,12 @@ from composio_client import (
     APIError,
     APIStatusError,
     NotGiven,
-    _base_client,
 )
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Response, Timeout
 
 from composio.exceptions import ComposioError
-from composio.utils.logging import WithLogger
+from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
@@ -85,6 +86,119 @@ def _rebuild_sdk_error(
     body: object,
 ) -> APIStatusError:
     return _with_sdk_error_base(error_class)(message, response=response, body=body)
+
+
+def _as_sdk_error(error: APIStatusError) -> APIStatusError:
+    if isinstance(error, ComposioError):
+        return error
+    sdk_error = _with_sdk_error_base(type(error))(
+        error.message, response=error.response, body=error.body
+    )
+    return sdk_error.with_traceback(error.__traceback__)
+
+
+CLIENT_LOGGER_NAME = "composio_client"
+"""Name of the logger the generated ``composio_client`` package writes to."""
+
+
+_active_log_wrapper: contextvars.ContextVar[t.Optional[_VerbosityWrapper]] = (
+    contextvars.ContextVar("composio_client_log_wrapper", default=None)
+)
+"""The SDK logger of the :class:`HttpClient` currently performing a request.
+
+The generated client writes every lifecycle record to one process-wide
+``composio_client`` logger, so the record itself does not say which SDK
+instance made the request. :meth:`HttpClient.request` binds this variable
+for the duration of each call so the forwarder can deliver the record to
+that instance's logger instead of whichever instance was constructed last.
+"""
+
+
+class _ClientLogForwarder(logging.Handler):
+    """Forward ``composio_client`` records into the SDK logger.
+
+    The generated client logs request/response lifecycle through
+    ``logging.getLogger("composio_client")``. Routing those records through
+    the SDK's :class:`_VerbosityWrapper` keeps one destination for SDK users
+    and applies the same credential redaction and line truncation the SDK's
+    own records get. The client's INFO records (per-request lifecycle) are
+    forwarded as DEBUG.
+
+    One forwarder is installed per process. A record emitted while an
+    :class:`HttpClient` request is in flight goes to that client's logger
+    (see :data:`_active_log_wrapper`); a record emitted outside any request
+    goes to the logger of the most recently constructed client.
+    """
+
+    def __init__(self, wrapper: _VerbosityWrapper) -> None:
+        super().__init__()
+        self.wrapper = wrapper
+
+    def emit(self, record: logging.LogRecord) -> None:
+        wrapper = _active_log_wrapper.get() or self.wrapper
+        try:
+            message = record.getMessage()
+            if record.levelno >= logging.ERROR:
+                wrapper.error(message, exc_info=record.exc_info)
+            elif record.levelno >= logging.WARNING:
+                wrapper.warning(message, exc_info=record.exc_info)
+            else:
+                wrapper.debug(message, exc_info=record.exc_info)
+        except Exception:  # noqa: BLE001 - logging must never fail the call
+            self.handleError(record)
+
+
+_forwarding_wrappers: "weakref.WeakSet[_VerbosityWrapper]" = weakref.WeakSet()
+"""The SDK loggers of the :class:`HttpClient` instances still alive.
+
+The ``composio_client`` logger has one process-wide level, so it is kept at
+the most permissive level any live instance needs; each instance's wrapper
+then filters what it actually emits. Weak references let an instance that
+was garbage collected stop holding the level down.
+"""
+
+
+def _client_level_for(wrapper: _VerbosityWrapper) -> int:
+    """The ``composio_client`` level that lets ``wrapper`` see what it wants.
+
+    The client's INFO records are forwarded as DEBUG, so the client only
+    needs to produce them when the SDK logger is at DEBUG; otherwise only
+    its WARNING and above records are worth producing.
+    """
+    level = wrapper.logger.getEffectiveLevel()
+    return level if level <= logging.DEBUG else max(level, logging.WARNING)
+
+
+def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
+    """Attach the process-wide forwarder to the client logger.
+
+    Idempotent: the single forwarder is created on first use and kept
+    afterwards. Each call rebinds its fallback logger to ``wrapper`` (the
+    most recently constructed SDK instance); records emitted during a
+    request are routed to the requesting instance regardless of that
+    fallback, so earlier instances keep receiving their own request logs.
+
+    The client logger's level is the most permissive one any live instance
+    needs, so constructing a quieter instance never silences the lifecycle
+    records of an earlier, more verbose one.
+    """
+    client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
+    forwarder: t.Optional[_ClientLogForwarder] = None
+    for handler in list(client_logger.handlers):
+        if not isinstance(handler, _ClientLogForwarder):
+            continue
+        if forwarder is None:
+            forwarder = handler
+            continue
+        client_logger.removeHandler(handler)
+    if forwarder is None:
+        client_logger.addHandler(_ClientLogForwarder(wrapper))
+    else:
+        forwarder.wrapper = wrapper
+    _forwarding_wrappers.add(wrapper)
+    client_logger.setLevel(min(_client_level_for(w) for w in _forwarding_wrappers))
+    client_logger.propagate = False
+    return client_logger
 
 
 def _get_python_implementation() -> str:
@@ -198,6 +312,8 @@ class HttpClient(BaseComposio, WithLogger):
         *,
         provider: str,
         api_key: t.Optional[str] = None,
+        user_api_key: t.Optional[str] = None,
+        org_api_key: t.Optional[str] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
         base_url: t.Optional[t.Union[str, URL, NotGiven]] = NOT_GIVEN,
         timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
@@ -205,13 +321,19 @@ class HttpClient(BaseComposio, WithLogger):
         default_headers: t.Optional[t.Mapping[str, str]] = None,
         default_query: t.Optional[t.Mapping[str, object]] = None,
         http_client: t.Optional[Client] = None,
+        logger: t.Optional[logging.Logger] = None,
+        logging_level: t.Optional[LogLevel] = None,
         _strict_response_validation: bool = False,
     ) -> None:
         """
         Initialize the client.
 
         :param provider: The provider to use for the client.
+        :param logger: Logger that receives SDK and ``composio_client`` records.
+        :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
         :param api_key: The API key to use for the client.
+        :param user_api_key: User API key, sent only on operations that require it.
+        :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
         :param base_url: The base URL to use for the client.
         :param timeout: The timeout to use for the client.
@@ -220,10 +342,12 @@ class HttpClient(BaseComposio, WithLogger):
         :param default_query: The default query parameters to use for the client.
         :param http_client: The HTTP client to use for the client.
         """
-        WithLogger.__init__(self)
+        WithLogger.__init__(self, logger=logger, logging_level=logging_level)
         BaseComposio.__init__(
             self,
             api_key=api_key,
+            user_api_key=user_api_key,
+            org_api_key=org_api_key,
             environment=environment,
             base_url=base_url,
             timeout=timeout,
@@ -233,8 +357,7 @@ class HttpClient(BaseComposio, WithLogger):
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
         )
-        # TOFIX: Verbosity wrapper impl
-        _base_client.log = self._logger  # type: ignore
+        _install_client_log_forwarder(self._logger)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",
@@ -269,6 +392,10 @@ class HttpClient(BaseComposio, WithLogger):
                 # (False) even when the original had it enabled — keeping the sibling
                 # a faithful copy that differs from the parent only in `max_retries`.
                 "_strict_response_validation": self._strict_response_validation,
+                # Share the parent's logger; otherwise constructing the clone
+                # rebinds the process-wide client log forwarder to the default
+                # `composio` logger.
+                "logger": self._logger.logger,
                 **_extra_kwargs,
             },
             **kwargs,
@@ -303,19 +430,45 @@ class HttpClient(BaseComposio, WithLogger):
             self._without_retries = self.with_options(max_retries=0)
         return self._without_retries
 
-    def _make_status_error(
+    def request(  # type: ignore[override]
         self,
-        err_msg: str,
+        cast_to: t.Any,
+        options: t.Mapping[str, t.Any],
         *,
-        body: object,
-        response: Response,
-    ) -> APIStatusError:
+        stream: bool = False,
+        stream_cls: t.Optional[t.Type[t.Any]] = None,
+    ) -> t.Any:
+        # Bind this instance's logger for the request so the client's
+        # lifecycle records reach it (see `_active_log_wrapper`).
+        token = _active_log_wrapper.set(self._logger)
+        try:
+            return super().request(
+                cast_to, options, stream=stream, stream_cls=stream_cls
+            )
+        finally:
+            _active_log_wrapper.reset(token)
+
+    def _decode(self, response: Response) -> t.Any:
         """
-        Build the generated client's status error so it is also a
-        ``ComposioError``; see ``_with_sdk_error_base``.
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
         """
-        error = super()._make_status_error(err_msg, body=body, response=response)
-        return _with_sdk_error_base(type(error))(err_msg, response=response, body=body)
+        try:
+            return super()._decode(response)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
+
+    def _process_response(
+        self, response: Response, cast_to: t.Optional[t.Type[t.Any]]
+    ) -> t.Any:
+        """
+        Raise status errors that are also ``ComposioError``s; see
+        ``_with_sdk_error_base``.
+        """
+        try:
+            return super()._process_response(response, cast_to)
+        except APIStatusError as error:
+            raise _as_sdk_error(error) from None
 
     def _prepare_request(self, request: Request) -> None:
         """

@@ -2,8 +2,8 @@
 // Examples runner: sweeps the entrypoints in examples-manifest.json against
 // the live backend, recording per-entry results and Composio traces.
 //
-//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--llm live|mock]
-//   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--sample N] [--seed S]
+//   node harness/run.mjs sweep    --client baseline|candidate [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--exclude-toolkits a,b] [--llm live|mock]
+//   node harness/run.mjs neg      [--lang ts|py] [--ids a,b] [--exclude-toolkits a,b] [--sample N] [--seed S]
 //   node harness/run.mjs selftest
 //
 // Exit codes: 0 ok · 1 findings (red entries / failed expectations) · 2 usage/env error.
@@ -12,11 +12,19 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  entryToolkits,
+  loadManifest,
+  requiredBrowserGrantToolkits,
+  requiresDemoToolkit,
+  selectManifestEntries,
+  validateManifestEntries,
+} from './manifest.mjs';
 import { resolveBackendBaseUrl, STAGING_BASE_URL } from './backend-url.mjs';
+import { HarnessError } from './errors.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
-const STAINLESS_TS_VERSION = '0.1.0-alpha.76';
 const AIMOCK_VERSION = '1.38.0';
 const AIMOCK_PORT = Number(process.env.AIMOCK_PORT ?? 4010);
 
@@ -31,38 +39,25 @@ const opt = (name, fallback) => {
   return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback;
 };
 
-class HarnessError extends Error {
-  constructor(message, exitCode = 2) {
-    super(message);
-    this.exitCode = exitCode;
-  }
-}
-
 const fail = (msg, code = 2) => {
   throw new HarnessError(msg, code);
 };
 
-const loadManifest = () => {
-  const manifest = JSON.parse(readFileSync(join(ROOT, 'examples-manifest.json'), 'utf8'));
-  for (const e of manifest.entries) {
-    if (!e.id || !e.lang || !e.file || !e.tier) fail(`manifest entry missing required fields: ${JSON.stringify(e)}`);
-    if (e.lang === 'ts' && e.tier !== 'X' && !e.pkg) fail(`ts entry ${e.id} missing pkg`);
-    if (e.tier === '3' && !e.readiness) fail(`tier-3 entry ${e.id} missing readiness regex`);
-  }
-  return manifest.entries;
-};
+const selectionOptions = () => ({
+  lang: opt('lang'),
+  ids: opt('ids'),
+  tiers: opt('tiers', '1,2,3'),
+  excludeToolkits: opt('exclude-toolkits'),
+});
 
-const selectEntries = () => {
-  const lang = opt('lang');
-  const ids = opt('ids') ? opt('ids').split(',') : null;
-  const tiers = (opt('tiers', '1,2,3')).split(',');
-  return loadManifest().filter(
-    (e) =>
-      e.tier !== 'X' &&
-      tiers.includes(e.tier) &&
-      (!lang || e.lang === lang) &&
-      (!ids || ids.includes(e.id))
+const selectEntries = () => selectManifestEntries(loadManifest(), selectionOptions());
+
+const reportExclusions = selection => {
+  if (selection.excludedEntries.length === 0) return;
+  console.log(
+    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`
   );
+  for (const entry of selection.excludedEntries) console.log(`  - ${entry.id}`);
 };
 
 const baseUrl = () => {
@@ -268,13 +263,28 @@ const sh = (cmdline, opts = {}) =>
     child.on('exit', (code) => (code === 0 ? resolveSh(out) : rejectSh(new Error(`${cmdline.join(' ')} → exit ${code}\n${out.slice(-2000)}`))));
   });
 
-const resolvedTsClientVersion = async () => {
-  const out = await sh(['node', '-e', "console.log(JSON.parse(require('fs').readFileSync(require.resolve('@composio/client/package.json', {paths:[require('path').join(process.cwd(),'ts/packages/core')]}), 'utf8')).version)"]);
-  return out.trim().split('\n').pop();
+/**
+ * Resolve @composio/client as @composio/core sees it. The realpath identifies
+ * the installed copy: a `file:` override lands in its own store directory even
+ * when the tarball reports the same version as the catalog pin, so comparing
+ * paths (not versions) is what tells a real swap from a no-op.
+ */
+const resolvedTsClient = async () => {
+  const out = await sh(['node', '-e', "const path=require('path');const fs=require('fs');const manifest=require.resolve('@composio/client/package.json', {paths:[path.join(process.cwd(),'ts/packages/core')]});console.log(JSON.stringify({path:fs.realpathSync(manifest),version:JSON.parse(fs.readFileSync(manifest,'utf8')).version}))"]);
+  return JSON.parse(out.trim().split('\n').pop());
+};
+
+const assertTsCandidateApplied = (baseline, candidate) => {
+  if (candidate.path === baseline.path) {
+    fail(
+      `override did not take effect: @composio/client still resolves to the installed baseline at ${candidate.path} (${candidate.version})`
+    );
+  }
 };
 
 const applyTsCandidate = async (tarball) => {
   if (!existsSync(tarball)) fail(`COMPOSIO_CLIENT_TARBALL not found: ${tarball}`);
+  const baseline = await resolvedTsClient();
   const yaml = readFileSync(WORKSPACE_YAML, 'utf8');
   if (/^overrides:$/m.test(yaml)) {
     // Merge into the repo's existing overrides block (e.g. security pins);
@@ -284,11 +294,9 @@ const applyTsCandidate = async (tarball) => {
     writeFileSync(WORKSPACE_YAML, `${yaml}\noverrides:\n  '@composio/client': file:${tarball}\n`);
   }
   await sh(['pnpm', 'install', '--no-frozen-lockfile']);
-  const version = await resolvedTsClientVersion();
-  if (version === STAINLESS_TS_VERSION) {
-    fail(`override did not take effect: @composio/client still resolves to ${version}`);
-  }
-  console.log(`candidate @composio/client resolved: ${version}`);
+  const candidate = await resolvedTsClient();
+  assertTsCandidateApplied(baseline, candidate);
+  console.log(`candidate @composio/client resolved: ${candidate.version} (${candidate.path})`);
   await sh(['pnpm', 'run', 'build:packages']);
 };
 
@@ -305,14 +313,30 @@ const restoreTsBaseline = async (snapshot) => {
   await sh(['pnpm', 'install', '--frozen-lockfile']);
 };
 
+/**
+ * Resolve composio-client as the python project sees it. `uv run --with <wheel>`
+ * layers an ephemeral overlay on the project environment, so the realpath tells
+ * a real swap from a no-op even when the wheel matches the pinned version.
+ */
+const resolvedPyClient = async (extraArgs = []) => {
+  const out = await sh(['uv', 'run', '--project', 'python', ...extraArgs, 'python', '-c', 'import composio_client, importlib.metadata, json, os; print(json.dumps({"path": os.path.realpath(composio_client.__file__), "version": importlib.metadata.version("composio-client")}))']);
+  return JSON.parse(out.trim().split('\n').pop());
+};
+
+const assertPyCandidateApplied = (baseline, candidate) => {
+  if (candidate.path === baseline.path) {
+    fail(
+      `python candidate did not take effect: composio-client still resolves to the installed baseline at ${candidate.path} (${candidate.version})`
+    );
+  }
+};
+
 const verifyPyCandidate = async (wheel) => {
   if (!existsSync(wheel)) fail(`COMPOSIO_CLIENT_WHEEL not found: ${wheel}`);
-  const out = await sh(['uv', 'run', '--project', 'python', '--with', wheel, 'python', '-c', 'import composio_client, importlib.metadata; print(importlib.metadata.version("composio-client"))']);
-  const version = out.trim().split('\n').pop();
-  if (!version.startsWith('2.')) {
-    fail(`python candidate did not take effect (resolved ${version}); Stage B (SDK migration) must land first`);
-  }
-  return version;
+  const baseline = await resolvedPyClient();
+  const candidate = await resolvedPyClient(['--with', wheel]);
+  assertPyCandidateApplied(baseline, candidate);
+  return candidate.version;
 };
 
 const PY_PROJECT = join(ROOT, 'python', 'pyproject.toml');
@@ -385,9 +409,11 @@ const cmdSweep = async () => {
   const llm = opt('llm', 'live');
   if (!['live', 'mock'].includes(llm)) fail(`--llm must be live|mock`);
   LLM_MOCK = llm === 'mock';
-  const entries = selectEntries();
+  const selection = selectEntries();
+  const entries = selection.entries;
   if (entries.length === 0) fail('no entries selected');
   if (!process.env.COMPOSIO_API_KEY) fail('COMPOSIO_API_KEY is required for a sweep (disposable examples-project key)', 2);
+  reportExclusions(selection);
 
   const id = `${runId()}-${client}${LLM_MOCK ? '-mock' : ''}`;
   const runDir = join(ARTIFACTS, id);
@@ -427,7 +453,22 @@ const cmdSweep = async () => {
     };
     writeFileSync(
       join(runDir, 'summary.json'),
-      JSON.stringify({ runId: id, client, llm, baseUrl: baseUrl(), counts, startedAt: new Date().toISOString() }, null, 2)
+      JSON.stringify(
+        {
+          runId: id,
+          client,
+          llm,
+          baseUrl: baseUrl(),
+          counts,
+          selection: {
+            excludedToolkits: selection.excludedToolkits,
+            excludedEntries: selection.excludedEntries.map(entry => entry.id),
+          },
+          startedAt: new Date().toISOString(),
+        },
+        null,
+        2
+      )
     );
     console.log(`sweep ${id}: ${counts.green} green / ${counts.red} red / ${counts.skipped} skipped`);
     process.exitCode = counts.red > 0 ? 1 : 0;
@@ -439,7 +480,9 @@ const cmdSweep = async () => {
 };
 
 const cmdNeg = async () => {
-  let entries = selectEntries().filter((e) => e.backend !== false);
+  const selection = selectEntries();
+  reportExclusions(selection);
+  let entries = selection.entries.filter((e) => e.backend !== false);
   const sample = opt('sample');
   if (sample) {
     const rand = mulberry32(Number(opt('seed', '42')));
@@ -509,6 +552,95 @@ const cmdSelftest = async () => {
   check(
     'usage failures unwind through cleanup',
     cleanupRan && cleanupError instanceof HarnessError
+  );
+
+  const installedBaseline = {
+    path: '/repo/node_modules/.pnpm/@composio+client@2.0.0-rc.3/node_modules/@composio/client',
+    version: '2.0.0-rc.3',
+  };
+  let noOpCandidateRejected = false;
+  try {
+    assertTsCandidateApplied(installedBaseline, { ...installedBaseline });
+  } catch {
+    noOpCandidateRejected = true;
+  }
+  check('candidate swap rejects the installed baseline copy', noOpCandidateRejected);
+
+  let sameVersionCandidateAccepted = true;
+  try {
+    assertTsCandidateApplied(installedBaseline, {
+      path: '/repo/node_modules/.pnpm/file+client.tgz/node_modules/@composio/client',
+      version: installedBaseline.version,
+    });
+  } catch {
+    sameVersionCandidateAccepted = false;
+  }
+  check('candidate swap accepts a tarball reporting the pinned version', sameVersionCandidateAccepted);
+
+  const installedPyBaseline = {
+    path: '/repo/.venv/lib/python3.12/site-packages/composio_client/__init__.py',
+    version: '2.0.0rc5',
+  };
+  let noOpPyCandidateRejected = false;
+  try {
+    assertPyCandidateApplied(installedPyBaseline, { ...installedPyBaseline });
+  } catch {
+    noOpPyCandidateRejected = true;
+  }
+  check('python candidate swap rejects the installed baseline copy', noOpPyCandidateRejected);
+
+  let sameVersionPyCandidateAccepted = true;
+  try {
+    assertPyCandidateApplied(installedPyBaseline, {
+      path: '/cache/uv/archive-v0/abc123/lib/python3.12/site-packages/composio_client/__init__.py',
+      version: installedPyBaseline.version,
+    });
+  } catch {
+    sameVersionPyCandidateAccepted = false;
+  }
+  check('python candidate swap accepts a wheel reporting the pinned version', sameVersionPyCandidateAccepted);
+
+  let invalidManifestIsUsageError = false;
+  try {
+    validateManifestEntries([{ id: 'missing-required-fields' }]);
+  } catch (error) {
+    invalidManifestIsUsageError = error instanceof HarnessError && error.exitCode === 2;
+  }
+  check('invalid manifest entries are usage errors', invalidManifestIsUsageError);
+
+  const manifest = loadManifest();
+  const withoutGoogleDrive = selectManifestEntries(manifest, {
+    excludeToolkits: 'googledrive',
+  });
+  check(
+    'Google Drive exclusion removes every dependent entry and preserves the rest',
+    withoutGoogleDrive.excludedEntries.length > 0 &&
+      withoutGoogleDrive.excludedEntries.every(entry =>
+        entryToolkits(entry).includes('googledrive')
+      ) &&
+      withoutGoogleDrive.entries.every(entry => !entryToolkits(entry).includes('googledrive')) &&
+      withoutGoogleDrive.entries.length + withoutGoogleDrive.excludedEntries.length ===
+        selectManifestEntries(manifest).entries.length
+  );
+  check(
+    'Google Drive exclusion removes it from provisioning',
+    !requiredBrowserGrantToolkits(withoutGoogleDrive.entries).some(
+      toolkit => toolkit.slug === 'googledrive'
+    )
+  );
+  const apiKeyOnly = selectManifestEntries(manifest, {
+    ids: 'ts/connected-accounts/api-key',
+  }).entries;
+  check(
+    'selected API-key example provisions only its demo toolkit',
+    requiredBrowserGrantToolkits(apiKeyOnly).length === 0 && requiresDemoToolkit(apiKeyOnly)
+  );
+  const implicitGmail = selectManifestEntries(manifest, {
+    ids: 'py/fastapi_app',
+  }).entries;
+  check(
+    'resource identifiers contribute implicit toolkit requirements',
+    requiredBrowserGrantToolkits(implicitGmail).some(toolkit => toolkit.slug === 'gmail')
   );
 
   const cleanupFixture = join(runDir, 'cleanup-fixture.txt');

@@ -2,7 +2,7 @@ name: Test Python SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'python/**/*.py'
       - 'python/**/*.json'
@@ -17,7 +17,7 @@ on:
       # The TypeSafe provider tests read the question corpus of the TypeScript provider.
       - 'ts/packages/providers/typesafe/test/fixtures/question-corpus.json'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'python/**/*.py'
       - 'python/**/*.json'

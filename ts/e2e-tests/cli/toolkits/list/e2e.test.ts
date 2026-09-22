@@ -28,6 +28,7 @@ e2e(import.meta.url, {
 
       const envPrefix = [
         `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_ALLOW_INSECURE_HTTP=1',
         'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-list',
         'COMPOSIO_USER_API_KEY=uak_mock_toolkits_list',
       ].join(' ');
