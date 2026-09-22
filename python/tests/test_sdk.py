@@ -22,6 +22,12 @@ class TestComposioSDK:
             with pytest.raises(exceptions.ApiKeyNotProvidedError):
                 Composio()
 
+    def test_sdk_explicit_none_api_key_does_not_fall_back_to_env(self):
+        """Only an omitted ``api_key`` falls back to COMPOSIO_API_KEY."""
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
+            with pytest.raises(exceptions.ApiKeyNotProvidedError):
+                Composio(api_key=None)
+
     def test_sdk_accepts_api_key_from_env(self):
         """Test that SDK accepts API key from environment."""
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):

@@ -136,8 +136,12 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
 
         :param provider: The provider to use for the SDK. Defaults to OpenAIProvider.
         :param environment: The environment to use for the SDK.
-        :param api_key: The project API key, sent as ``x-api-key``. Omitted or
-            ``None`` falls back to ``COMPOSIO_API_KEY``, as it always has.
+        :param api_key: The project API key, sent as ``x-api-key``. When the
+            argument is omitted it falls back to ``COMPOSIO_API_KEY``, as it
+            always has. Passing ``api_key=None`` explicitly does not fall back
+            and raises :class:`~composio.exceptions.ApiKeyNotProvidedError`;
+            use ``disable_api_key=True`` to opt out of project-key
+            authentication.
         :param disable_api_key: Turn project-key authentication off entirely,
             including the ``COMPOSIO_API_KEY`` fallback. The SDK then authenticates
             with the user API key alone (``user_api_key`` or
