@@ -49,6 +49,7 @@ def mock_client():
     """Create a mock HTTP client."""
     client = MagicMock()
     client.api_key = "test-api-key"
+    client.user_api_key = None
     client.base_url = httpx.URL("https://backend.composio.dev")
     client.default_headers = {}
 
@@ -2227,6 +2228,8 @@ def _transport_client(
     *,
     api_key: t.Optional[str],
     base_url: str,
+    disable_api_key: bool = False,
+    user_api_key: t.Optional[str] = None,
     default_headers: t.Optional[t.Dict[str, str]] = None,
     mcp_url: str = MCP_SAME_ORIGIN_URL,
 ) -> t.Tuple[HttpClient, t.List[httpx.Request]]:
@@ -2239,6 +2242,8 @@ def _transport_client(
     client = HttpClient(
         provider="test",
         api_key=api_key,
+        disable_api_key=disable_api_key,
+        user_api_key=user_api_key,
         base_url=base_url,
         default_headers=default_headers,
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
@@ -2247,7 +2252,7 @@ def _transport_client(
 
 
 class TestMcpAuthContext:
-    """The exported MCP credential matches the effective session auth context."""
+    """The exported MCP headers match the effective session auth context."""
 
     def test_project_key_session_exports_only_the_project_key(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
@@ -2263,10 +2268,28 @@ class TestMcpAuthContext:
         assert requests[0].headers["x-api-key"] == "ak_project_key"
         assert session.mcp.headers == {"x-api-key": "ak_project_key"}
 
-    def test_user_key_session_exports_only_the_user_key(self):
-        with patch.dict(os.environ, {}, clear=True):
+    def test_user_key_option_session_exports_only_the_user_key(self):
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
                 api_key=None,
+                disable_api_key=True,
+                user_api_key="uak_user_key",
+                base_url="https://backend.composio.dev",
+                default_headers={"x-request-id": "r"},
+            )
+            session = ToolRouter(client=client, provider=MagicMock()).create(
+                user_id="user_123", mcp=True
+            )
+
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_user_key"
+        assert session.mcp.headers == {"x-user-api-key": "uak_user_key"}
+
+    def test_user_key_header_session_exports_only_the_user_key(self):
+        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
+            client, requests = _transport_client(
+                api_key=None,
+                disable_api_key=True,
                 base_url="https://backend.composio.dev",
                 default_headers={"x-user-api-key": "uak_user_key", "x-request-id": "r"},
             )
@@ -2278,10 +2301,35 @@ class TestMcpAuthContext:
         assert requests[0].headers["x-user-api-key"] == "uak_user_key"
         assert session.mcp.headers == {"x-user-api-key": "uak_user_key"}
 
+    def test_scope_headers_are_exported_with_the_user_key(self):
+        client, requests = _transport_client(
+            api_key=None,
+            disable_api_key=True,
+            user_api_key="uak_user_key",
+            base_url="https://backend.composio.dev",
+            default_headers={
+                "x-org-id": "org_nano_abc",
+                "x-project-id": "proj_nano_xyz",
+                "x-request-id": "r",
+            },
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).use(
+            "session_123", mcp=True
+        )
+
+        assert requests[0].headers["x-org-id"] == "org_nano_abc"
+        assert requests[0].headers["x-project-id"] == "proj_nano_xyz"
+        assert session.mcp.headers == {
+            "x-user-api-key": "uak_user_key",
+            "x-org-id": "org_nano_abc",
+            "x-project-id": "proj_nano_xyz",
+        }
+
     def test_retrieve_preserves_the_user_key_after_environment_changes(self):
         with patch.dict(os.environ, {}, clear=True):
             client, requests = _transport_client(
                 api_key=None,
+                disable_api_key=True,
                 base_url="https://backend.composio.dev",
                 default_headers={"X-User-Api-Key": "uak_user_key"},
             )
@@ -2315,6 +2363,8 @@ class TestMcpAuthContext:
         assert "https://mcp.example.com" in message
         assert "https://backend.composio.dev" in message
         assert "test-api-key" not in message
+        assert excinfo.value.mcp_origin == "https://mcp.example.com"
+        assert excinfo.value.api_origin == "https://backend.composio.dev"
 
     def test_cross_origin_mcp_url_raises_on_use_when_mcp_is_requested(
         self, tool_router, mock_client
@@ -2330,41 +2380,87 @@ class TestMcpAuthContext:
         assert "https://backend.composio.dev" in message
         assert "test-api-key" not in message
 
-    def test_cross_origin_mcp_url_without_mcp_returns_empty_headers_and_warns(
+    def test_cross_origin_mcp_url_without_mcp_flag_exports_no_headers_and_warns(
         self, tool_router, mock_client, caplog
     ):
-        response = mock_client.tool_router.session.create.return_value
-        response.mcp.url = "https://mcp.example.com/session_123"
+        for response in (
+            mock_client.tool_router.session.create.return_value,
+            mock_client.tool_router.session.retrieve.return_value,
+        ):
+            response.mcp.url = "https://mcp.example.com/session_123"
 
         with caplog.at_level(logging.WARNING):
-            session = tool_router.create(user_id="user_123")
+            created = tool_router.create(user_id="user_123")
+            used = tool_router.use("session_123")
 
-        assert session.session_id == "session_123"
-        assert session.mcp.url == "https://mcp.example.com/session_123"
-        assert session.mcp.headers == {}
+        assert created.mcp.url == "https://mcp.example.com/session_123"
+        assert created.mcp.headers == {}
+        assert used.mcp.headers == {}
         warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-        assert len(warnings) == 1
+        assert len(warnings) == 2
         message = warnings[0].getMessage()
         assert "https://mcp.example.com" in message
         assert "https://backend.composio.dev" in message
-        assert "test-api-key" not in message
+        assert "mcp=True" in message
+        assert "test-api-key" not in caplog.text
 
-    def test_cross_origin_mcp_url_without_mcp_on_use_returns_empty_headers_and_warns(
+    def test_opaque_origin_mcp_url_is_rejected_before_comparison(
         self, tool_router, mock_client, caplog
     ):
-        response = mock_client.tool_router.session.retrieve.return_value
-        response.mcp.url = "https://mcp.example.com/session_123"
+        response = mock_client.tool_router.session.create.return_value
+        response.mcp.url = "data:text/plain,session_123"
+
+        with pytest.raises(MCPDestinationError) as excinfo:
+            tool_router.create(user_id="user_123", mcp=True)
+        assert str(excinfo.value) == "The MCP URL has an opaque origin"
+        assert excinfo.value.mcp_origin == ""
 
         with caplog.at_level(logging.WARNING):
-            session = tool_router.use("session_123")
-
-        assert session.session_id == "session_123"
+            session = tool_router.create(user_id="user_123")
         assert session.mcp.headers == {}
-        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
-        assert len(warnings) == 1
-        message = warnings[0].getMessage()
-        assert "https://mcp.example.com" in message
-        assert "test-api-key" not in message
+        assert "The MCP URL has an opaque origin" in caplog.text
+        assert "test-api-key" not in caplog.text
+
+    def test_user_key_default_header_wins_over_the_configured_project_key(self):
+        client, requests = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            default_headers={"x-user-api-key": "uak_header_key"},
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123", mcp=True
+        )
+
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_header_key"
+        assert session.mcp.headers == {"x-user-api-key": "uak_header_key"}
+
+    def test_invalid_port_in_mcp_url_raises_the_typed_error(self):
+        client, _ = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            mcp_url="https://backend.composio.dev:bad/mcp",
+        )
+        with pytest.raises(MCPDestinationError) as excinfo:
+            ToolRouter(client=client, provider=MagicMock()).create(
+                user_id="user_123", mcp=True
+            )
+
+        assert str(excinfo.value) == "The MCP URL is not a valid absolute URL"
+
+    def test_malformed_mcp_url_is_not_echoed_in_the_error(self):
+        client, _ = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            mcp_url="not-a-url?token=secret_value",
+        )
+        with pytest.raises(MCPDestinationError) as excinfo:
+            ToolRouter(client=client, provider=MagicMock()).create(
+                user_id="user_123", mcp=True
+            )
+
+        assert str(excinfo.value) == "The MCP URL is not a valid absolute URL"
+        assert "secret_value" not in str(excinfo.value)
 
     def test_same_origin_mcp_url_does_not_warn(self, tool_router, caplog):
         with caplog.at_level(logging.WARNING):
@@ -2376,8 +2472,8 @@ class TestMcpAuthContext:
     def test_same_origin_plain_http_base_url_exports_credentials(self):
         client, requests = _transport_client(
             api_key="ak_project_key",
-            base_url="http://apollo:3000",
-            mcp_url="http://apollo:3000/api/v3/tool_router/session/session_123/mcp",
+            base_url="http://localhost:3000",
+            mcp_url="http://localhost:3000/api/v3/tool_router/session/session_123/mcp",
         )
         session = ToolRouter(client=client, provider=MagicMock()).create(
             user_id="user_123", mcp=True
@@ -2394,48 +2490,55 @@ class TestMcpAuthContext:
         )
         assert session.mcp.headers == {"x-api-key": "test-api-key"}
 
-    def test_malformed_mcp_url_port_raises_destination_error(
-        self, tool_router, mock_client
-    ):
-        response = mock_client.tool_router.session.create.return_value
-        response.mcp.url = "https://backend.composio.dev:abc/session_123"
-
-        with pytest.raises(MCPDestinationError) as excinfo:
-            tool_router.create(user_id="user_123", mcp=True)
-
-        assert "not an absolute URL" in str(excinfo.value)
-        assert "test-api-key" not in str(excinfo.value)
-
 
 class TestSessionUpdateContract:
-    """update() nullable fields, empty allowlists, and expected versions."""
+    """update() nullable fields, empty allowlists, and version preconditions."""
 
     @pytest.fixture
     def session(self, tool_router, mock_client):
         patched = MagicMock()
         patched.preload = MagicMock()
-        patched.preload.tools = []
+        patched.preload.tools = ["SLACK_SEND_MESSAGE"]
         mock_client.tool_router.session.patch.return_value.config = patched
         mock_client.tool_router.session.patch.return_value.config_version = 8
         return tool_router.use(session_id="session_123")
 
+    @staticmethod
+    def _conflict() -> ConflictError:
+        response = httpx.Response(
+            409,
+            request=httpx.Request("PATCH", "https://backend.composio.dev/patch"),
+            json={"error": "version conflict"},
+        )
+        return ConflictError(
+            "Conflict", response=response, body={"error": "version conflict"}
+        )
+
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
-    def test_update_omits_expected_version_by_default(self, session, mock_client):
+    def test_update_sends_the_observed_version_by_default_without_retries(
+        self, session, mock_client
+    ):
         session.update(toolkits={"enable": ["gmail"]})
 
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs.get("extra_body") is None
+        assert kwargs["extra_body"] == {"expected_config_version": 7}
+        assert kwargs["request_options"] == {"max_retries": 0}
+        assert session.config_version == 8
+        assert session.preload.tools == ["SLACK_SEND_MESSAGE"]
 
-    def test_update_sends_expected_config_version_in_the_body(
-        self, session, mock_client
-    ):
-        session.update(toolkits={"enable": ["gmail"]}, expected_config_version=7)
+    def test_update_opt_out_sends_no_precondition(self, session, mock_client):
+        session.update(toolkits={"enable": ["gmail"]}, expected_config_version=False)
 
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["extra_body"] == {"expected_config_version": 7}
-        assert session.config_version == 8
+        assert kwargs["extra_body"] is None
+
+    def test_update_sends_an_explicit_expected_version(self, session, mock_client):
+        session.update(toolkits={"enable": ["gmail"]}, expected_config_version=9)
+
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["extra_body"] == {"expected_config_version": 9}
 
     def test_update_rejects_non_positive_expected_version(self, session, mock_client):
         with pytest.raises(InvalidParams):
@@ -2454,43 +2557,62 @@ class TestSessionUpdateContract:
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
         assert kwargs["toolkits"] == {"enable": []}
 
-    def test_update_conflict_is_typed_and_keeps_local_state(self, session, mock_client):
-        config_before = session.config
-        preload_before = session.preload
-        response = httpx.Response(
-            409,
-            request=httpx.Request("PATCH", "https://backend.composio.dev/patch"),
-            json={"error": "version conflict"},
-        )
-        mock_client.tool_router.session.patch.side_effect = ConflictError(
-            "Conflict", response=response, body={"error": "version conflict"}
+    def test_update_sends_none_for_cleared_blocks(self, session, mock_client):
+        session.update(
+            toolkits=None,
+            tools=None,
+            tags=None,
+            auth_configs=None,
+            connected_accounts=None,
+            preload=None,
+            multi_account=None,
+            search=None,
+            execute=None,
+            experimental=None,
         )
 
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        for name in (
+            "toolkits",
+            "tools",
+            "tags",
+            "auth_configs",
+            "connected_accounts",
+            "preload",
+            "multi_account",
+            "search",
+            "execute",
+            "experimental",
+        ):
+            assert kwargs[name] is None, name
+        assert kwargs["manage_connections"] is omit
+        assert kwargs["workbench"] is omit
+
+    def test_update_conflict_is_typed_and_keeps_local_state(self, session, mock_client):
+        preload_before = session.preload
+        mock_client.tool_router.session.patch.side_effect = self._conflict()
+
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(toolkits={"enable": ["gmail"]}, expected_config_version=7)
+            session.update(toolkits={"enable": ["gmail"]})
 
         assert "re-fetch" in str(excinfo.value).lower()
         assert "retry" in str(excinfo.value).lower()
         assert excinfo.value.status_code == 409
-        assert session.config is config_before
+        assert excinfo.value.session_id == "session_123"
+        assert excinfo.value.expected_config_version == 7
         assert session.preload is preload_before
         assert session.config_version == 7
 
-    def test_update_conflict_without_expected_version_reports_in_flight_change(
+    def test_update_conflict_without_precondition_reports_in_flight_change(
         self, session, mock_client
     ):
         config_before = session.config
-        response = httpx.Response(
-            409,
-            request=httpx.Request("PATCH", "https://backend.composio.dev/patch"),
-            json={"error": "version conflict"},
-        )
-        mock_client.tool_router.session.patch.side_effect = ConflictError(
-            "Conflict", response=response, body={"error": "version conflict"}
-        )
+        mock_client.tool_router.session.patch.side_effect = self._conflict()
 
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(toolkits={"enable": ["gmail"]})
+            session.update(
+                toolkits={"enable": ["gmail"]}, expected_config_version=False
+            )
 
         message = str(excinfo.value)
         assert "changed while this update was in flight" in message
@@ -2498,3 +2620,31 @@ class TestSessionUpdateContract:
         assert excinfo.value.expected_config_version is None
         assert session.config is config_before
         assert session.config_version == 7
+
+    def test_two_handles_at_the_same_version(self, tool_router, mock_client):
+        mock_client.tool_router.session.patch.return_value.config_version = 8
+        first = tool_router.use(session_id="session_123")
+        second = tool_router.use(session_id="session_123")
+        assert first.config_version == second.config_version == 7
+
+        first.update(toolkits={"enable": ["gmail"]})
+        assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
+            "expected_config_version": 7
+        }
+        assert first.config_version == 8
+
+        mock_client.tool_router.session.patch.side_effect = self._conflict()
+        with pytest.raises(SessionConfigConflictError):
+            second.update(toolkits={"enable": ["slack"]})
+        assert second.config_version == 7
+
+        mock_client.tool_router.session.patch.side_effect = None
+        mock_client.tool_router.session.retrieve.return_value.config_version = 8
+        mock_client.tool_router.session.patch.return_value.config_version = 9
+        reread = tool_router.use(session_id="session_123")
+        assert reread.config_version == 8
+        reread.update(toolkits={"enable": ["slack"]})
+        assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
+            "expected_config_version": 8
+        }
+        assert reread.config_version == 9
