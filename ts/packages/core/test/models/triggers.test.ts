@@ -30,9 +30,11 @@ vi.mock('../../src/services/pusher/Pusher');
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
-  get: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
+  webhookSubscriptions: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
   triggerInstances: {
     listActive: vi.fn(),
     upsert: vi.fn(),
@@ -257,22 +259,21 @@ describe('Triggers', () => {
     };
 
     it('should create a webhook subscription when none exists', async () => {
-      mockClient.get.mockResolvedValue({ items: [] });
-      mockClient.post.mockResolvedValue(rawSubscription);
+      mockClient.webhookSubscriptions.list.mockResolvedValue({ items: [] });
+      mockClient.webhookSubscriptions.create.mockResolvedValue(rawSubscription);
 
       const result = await triggers.setWebhookSubscription({ webhookUrl });
 
-      expect(mockClient.get).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
-        query: { limit: 1 },
-      });
-      expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
-        body: {
+      expect(mockClient.webhookSubscriptions.list).toHaveBeenCalledWith({ limit: 1 }, undefined);
+      expect(mockClient.webhookSubscriptions.create).toHaveBeenCalledWith(
+        {
           webhook_url: webhookUrl,
           enabled_events: ['composio.trigger.message'],
           version: 'V3',
         },
-      });
-      expect(mockClient.patch).not.toHaveBeenCalled();
+        undefined
+      );
+      expect(mockClient.webhookSubscriptions.update).not.toHaveBeenCalled();
       // Only camelCase keys — the snake_case wire fields must not leak through.
       expect(result).toEqual({
         id: 'sub_123',
@@ -286,8 +287,8 @@ describe('Triggers', () => {
     });
 
     it('should update the first webhook subscription when one exists', async () => {
-      mockClient.get.mockResolvedValue({ items: [{ id: 'sub_123' }] });
-      mockClient.patch.mockResolvedValue(rawSubscription);
+      mockClient.webhookSubscriptions.list.mockResolvedValue({ items: [{ id: 'sub_123' }] });
+      mockClient.webhookSubscriptions.update.mockResolvedValue(rawSubscription);
 
       await triggers.setWebhookSubscription({
         webhookUrl,
@@ -295,21 +296,23 @@ describe('Triggers', () => {
         version: 'V3',
       });
 
-      expect(mockClient.patch).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions/sub_123', {
-        body: {
+      expect(mockClient.webhookSubscriptions.update).toHaveBeenCalledWith(
+        'sub_123',
+        {
           webhook_url: webhookUrl,
           enabled_events: ['composio.trigger.message', 'composio.connected_account.expired'],
           version: 'V3',
         },
-      });
-      expect(mockClient.post).not.toHaveBeenCalled();
+        undefined
+      );
+      expect(mockClient.webhookSubscriptions.create).not.toHaveBeenCalled();
     });
 
     it('should throw validation error for invalid webhook subscription parameters', async () => {
       await expect(
         triggers.setWebhookSubscription({ webhookUrl, enabledEvents: [] })
       ).rejects.toThrow(ValidationError);
-      expect(mockClient.get).not.toHaveBeenCalled();
+      expect(mockClient.webhookSubscriptions.list).not.toHaveBeenCalled();
     });
   });
 

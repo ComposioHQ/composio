@@ -9,6 +9,13 @@ import {
 } from '../../errors/TriggerErrors';
 import logger from '../../utils/logger';
 import { telemetry } from '../../telemetry/Telemetry';
+import { resolveCredentialHeaders } from '../../utils/sdk';
+import type { ComposioRequestHeaders } from '../../types/composio.types';
+
+export type PusherServiceOptions = {
+  /** Default headers of the owning SDK instance; only `x-user-api-key` is consulted. */
+  defaultHeaders?: ComposioRequestHeaders;
+};
 
 export class PusherService {
   // these values are set via the Apollo API `/internal/sdk/realtime/credentials` endpoint
@@ -18,14 +25,20 @@ export class PusherService {
   private pusherChannel!: string;
   // these details are set via the client SDK
   private pusherBaseURL!: string;
-  private apiKey!: string;
+  private authHeaders!: Record<string, string>;
   private pusherClient!: PusherClient;
   private composioClient!: ComposioClient;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
-    this.apiKey = client.apiKey ?? process.env.COMPOSIO_API_KEY ?? '';
+    // Channel authorization mirrors the client's effective auth; the
+    // environment is never consulted here.
+    this.authHeaders = resolveCredentialHeaders({
+      apiKey: client.apiKey,
+      userApiKey: client.userApiKey,
+      defaultHeaders: options.defaultHeaders,
+    });
     telemetry.instrument(this, 'PusherService');
   }
 
@@ -66,9 +79,7 @@ export class PusherService {
           cluster: this.pusherCluster,
           channelAuthorization: {
             endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: {
-              'x-api-key': this.apiKey,
-            },
+            headers: { ...this.authHeaders },
             transport: 'ajax',
           },
         });

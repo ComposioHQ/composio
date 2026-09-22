@@ -161,7 +161,7 @@ export function QuickstartFlow({ children }: QuickstartFlowProps) {
       {/* Framework + integration type selector */}
       {frameworks.length > 0 && (
         <div className="not-prose mb-6 rounded-lg border border-fd-border bg-fd-card/50 p-4">
-          <p className="mb-3 text-sm font-medium text-fd-muted-foreground">Choose your framework</p>
+          <p className="mb-3 text-sm font-medium text-fd-muted-foreground">Choose your agent framework</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {frameworks.map((framework) => (
               <FrameworkCard

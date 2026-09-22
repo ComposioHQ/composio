@@ -45,6 +45,11 @@ export {
 export type { KeyMapping, KeySanitizationPolicy } from './utils/schemaPropertyKeys';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
+export { Webhooks, WebhookSubscriptions, WebhookEndpoints } from './models/Webhooks';
+export { Logs } from './models/Logs';
+export { Usage } from './models/Usage';
+export { Keyring } from './models/Keyring';
+export { CustomToolkits } from './models/CustomToolkits';
 export { RemoteFile } from './models/RemoteFile';
 export { createConnectionRequest } from './models/ConnectionRequest';
 export { ToolRouterSession } from './models/ToolRouterSession';
@@ -59,6 +64,11 @@ export * from './types/connectedAccounts.types';
 export * from './types/toolkit.types';
 export * from './types/triggers.types';
 export * from './types/webhookEvents.types';
+export * from './types/webhooks.types';
+export * from './types/logs.types';
+export * from './types/usage.types';
+export * from './types/keyring.types';
+export * from './types/customToolkits.types';
 export * from './types/mcp.types';
 export * from './types/files.types';
 export * from './types/connectionRequest.types';
@@ -68,6 +78,7 @@ export * from './types/requestOptions.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+export type { ComposioLogger, LogLevel } from './utils/logger';
 export { telemetry } from './telemetry/Telemetry';
 
 // Experimental custom tools — exported with experimental_ prefix for top-level import

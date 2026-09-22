@@ -26,6 +26,15 @@ By default, a session has access to every toolkit in the Composio catalog. Your 
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
+### API key permissions
+
+If you use a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), grant permissions for the session operations your application needs:
+
+- **Session management** controls creating, viewing, configuring, and deleting sessions. It does not grant tool execution access.
+- **Session tool execution** covers search, tool execution, proxy execution, and session-linked MCP access.
+
+Enable both permissions if your application manages sessions and executes tools through them.
+
 ## Reading and updating session configuration
 
 In TypeScript, `session.config` exposes the configuration returned by the server. Call `session.update()` to change selected fields. It preserves omitted fields, updates `session.config` in place, and returns the updated configuration. See [Updating a session](/docs/how-composio-works#how-sessions-behave) for an example.
@@ -96,6 +105,45 @@ const session = await composio.create("user_123", {
 ```
 </Tab>
 </Tabs>
+
+## Denying every app toolkit
+
+An explicit empty allowlist means no app toolkits at all. Omitting `toolkits` keeps the unrestricted default, and an empty `disable` list is also unrestricted. The three requests are different:
+
+| Toolkit config | Effect |
+|---|---|
+| Omitted | Every toolkit in the catalog is available |
+| `{ enable: [] }` | No app toolkit is listed, searchable, executable, or served over MCP |
+| `{ disable: [] }` | Every toolkit in the catalog is available |
+
+Use an empty allowlist when a session should only run [custom tools](/docs/extending-sessions/custom-tools-and-toolkits) or session helpers. Meta tools such as `COMPOSIO_SEARCH_TOOLS`, connection management, and the sandbox keep their own enablement, so `session.tools()` can still return them.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits={"enable": []},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: { enable: [] },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python) when you narrow an existing session with `session.update()`. Both SDKs send the empty allowlist as `{ enable: [] }`; the backend previously read an empty allowlist as "allow every toolkit", which left the session unrestricted.
+</Callout>
+
+The session API rejects unknown root keys with a `400` before it creates anything. A typo such as a singular `toolkit` fails the request instead of silently creating an unrestricted session.
 
 ## Direct tools preset
 
@@ -693,6 +741,230 @@ const session = await composio.create("user_123", {
 
 Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts) survives the restart.
 
+## Updating a session
+
+`session.update()` patches the stored configuration in place. Fields you omit are preserved, so you can widen or narrow one part of a session without restating the rest. The SDK refreshes `session.config` and the session's config version only after the API accepts the change.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.use("session_id")
+
+session.update(toolkits={"enable": ["gmail", "github"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.sessions.use("session_id");
+
+await session.update({ toolkits: { enable: ["gmail", "github"] } });
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+The update behavior below requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python).
+</Callout>
+
+### Maps replace, they don't merge
+
+A `tools`, `authConfigs`, or `connectedAccounts` map you send replaces the stored map entirely. The API does not merge entries, so a Slack-only `tools` map removes a Gmail entry that was stored before it.
+
+Stored before the update:
+
+```json
+{
+  "tools": {
+    "gmail": { "enable": ["GMAIL_FETCH_EMAILS"] },
+    "slack": { "enable": ["SLACK_SEND_MESSAGE"] }
+  }
+}
+```
+
+The update:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    tools={"slack": {"enable": ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]}},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({
+  tools: { slack: { enable: ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"] } },
+});
+```
+</Tab>
+</Tabs>
+
+Stored after the update. The `gmail` entry is gone:
+
+```json
+{
+  "tools": {
+    "slack": { "enable": ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"] }
+  }
+}
+```
+
+To change one entry, send the whole map with every entry you want to keep. An empty map (`{}`) is stored as an explicit empty map.
+
+The same rule applies to `toolkits`, `tags`, and `preload`: a value replaces the stored policy. `manageConnections`, `sandbox`, and `multiAccount` merge the subfields you send, and an empty object changes nothing.
+
+### Narrowing an existing session to no app toolkits
+
+An empty allowlist on update denies every app toolkit, exactly as it does on create. The SDK sends `{ "enable": [] }` as-is instead of dropping it from the request.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(toolkits={"enable": []})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({ toolkits: { enable: [] } });
+```
+</Tab>
+</Tabs>
+
+### Removing a callback URL
+
+`manageConnections.callbackUrl: null` removes only the stored callback URL. `enable` and the other connection settings stay as they are. An empty string is rejected.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(manage_connections={"callback_url": None})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({ manageConnections: { callbackUrl: null } });
+```
+</Tab>
+</Tabs>
+
+### Clearing a block with null
+
+Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `multiAccount`, `search`, `execute`, and `experimental`.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(manage_connections=None, multi_account=None)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({ manageConnections: null, multiAccount: null });
+```
+</Tab>
+</Tabs>
+
+Clearing a policy can widen access. `toolkits: null` removes the toolkit policy and restores the unrestricted default, which is the opposite of `{ "enable": [] }`; clearing `preload` does the same for preloaded tools, so the agent can reach more than before the update. Send `toolkits: []` when you want to deny every app toolkit. Clearing `multiAccount` resolves to disabled, while omitting it preserves the stored setting.
+
+### Multi-account mode after an update
+
+The canonical disabled state is `{ "enable": false, "require_explicit_selection": false }` with no maximum. Sending `enable: false` resets a stale maximum or selection setting, and reapplying that disabled configuration is accepted. Combining `enable: false` with `maxAccountsPerToolkit` or `requireExplicitSelection: true` is rejected with a `400`.
+
+### Preload must stay inside the policy
+
+An update that narrows `toolkits`, `tools`, or `tags` while leaving an explicitly preloaded tool outside the new policy is rejected with a `400`, and nothing changes. Fix `preload` in the same update:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    toolkits={"enable": ["slack"]},
+    preload={"tools": ["SLACK_SEND_MESSAGE"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({
+  toolkits: { enable: ["slack"] },
+  preload: { tools: ["SLACK_SEND_MESSAGE"] },
+});
+```
+</Tab>
+</Tabs>
+
+### Concurrent updates
+
+Every session response carries a config version (`session.configVersion` in TypeScript, `session.config_version` in Python, `config_version` on the wire). `session.update()` sends the version the session object last observed as the `expected_config_version` precondition, and the API applies the update only when the stored version still matches. Otherwise it answers `409` and writes nothing: no config change, no history entry, no cache update. The SDK never retries that request, so a conflict is reported exactly once.
+
+The SDK raises `ComposioSessionConfigConflictError` (TypeScript) or `SessionConfigConflictError` (Python) and leaves the session object as it was. Re-read the session with `sessions.use()`, reapply your change on top of the fresh config, and retry:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio.exceptions import SessionConfigConflictError
+
+session = composio.sessions.use("session_id")
+
+try:
+    session.update(toolkits={"enable": ["gmail", "github"]})
+except SessionConfigConflictError:
+    # Another client changed the session first. Nothing was written.
+    session = composio.sessions.use("session_id")
+    session.update(toolkits={"enable": ["gmail", "github"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, ComposioSessionConfigConflictError } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+let session = await composio.sessions.use("session_id");
+
+try {
+  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+} catch (error) {
+  if (!(error instanceof ComposioSessionConfigConflictError)) throw error;
+  // Another client changed the session first. Nothing was written.
+  session = await composio.sessions.use("session_id");
+  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+}
+```
+</Tab>
+</Tabs>
+
+Pass `expectedConfigVersion` (`expected_config_version` in Python) to send a version you read elsewhere, for example one stored with a queued job. Pass `expectedConfigVersion: false` (`expected_config_version=False`) on a call that should apply regardless: the last writer then wins. The API still commits only a fully validated configuration, so a losing update never leaves a half-applied session behind.
+
+Raw HTTP callers set `expected_config_version` in the `PATCH` body themselves; without it the last writer wins.
+
+To roll a session back, read a previous configuration from its config history (`GET /api/v3.1/tool_router/session/{session_id}/config_history`) and convert it into an update request. A history entry is not a request body: it carries metadata and version fields, and it names toolkits and tools as `enabled` and `disabled`, which map to `enable` and `disable` in the update.
+
 ## Session methods
 
 For framework examples, see provider-specific documentation like [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel). To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
@@ -829,6 +1101,27 @@ do {
   allToolkits.push(...items);
   cursor = nextCursor;
 } while (cursor);
+```
+</Tab>
+</Tabs>
+
+### update()
+
+Patch the session configuration in place. See [Updating a session](#updating-a-session) for what omitted fields, replaced maps, `null`, and `expectedConfigVersion` do.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+config = session.update(toolkits={"enable": ["gmail", "github"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const config = await session.update({ toolkits: { enable: ["gmail", "github"] } });
 ```
 </Tab>
 </Tabs>
