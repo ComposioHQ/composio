@@ -105,7 +105,7 @@ import os
 
 from composio import Composio
 
-# Stable (composio >= 0.21.2): api_key=None keeps the COMPOSIO_API_KEY fallback.
+# Stable (composio >= 0.22.1): api_key=None keeps the COMPOSIO_API_KEY fallback.
 composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
 
 # Beta (composio 2.0.0b): turn the project key off and use the user key alone.
@@ -120,7 +120,7 @@ composio = Composio(
 // @noErrors
 import { Composio } from "@composio/core";
 
-// Stable (@composio/core >= 0.18.2): user-only auth through the default header.
+// Stable (@composio/core >= 0.19.1): user-only auth through the default header.
 const composio = new Composio({
   apiKey: null,
   defaultHeaders: { "x-user-api-key": process.env.COMPOSIO_USER_API_KEY },

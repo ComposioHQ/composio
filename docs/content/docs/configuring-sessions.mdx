@@ -123,7 +123,7 @@ const session = await composio.create("user_123", {
 </Tabs>
 
 <Callout type="info">
-Requires `@composio/core` ≥ `0.18.2` (TypeScript) or `composio` ≥ `0.21.2` (Python) when you narrow an existing session with `session.update()`. Earlier SDK releases dropped an empty allowlist from the update request, which left the session unrestricted.
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python) when you narrow an existing session with `session.update()`. Both SDKs send the empty allowlist as `{ enable: [] }`; the backend previously read an empty allowlist as "allow every toolkit", which left the session unrestricted.
 </Callout>
 
 The session API rejects unknown root keys with a `400` before it creates anything. A typo such as a singular `toolkit` fails the request instead of silently creating an unrestricted session.
@@ -749,7 +749,7 @@ await session.update({ toolkits: { enable: ["gmail", "github"] } });
 </Tabs>
 
 <Callout type="info">
-The update behavior below requires `@composio/core` ≥ `0.18.2` (TypeScript) or `composio` ≥ `0.21.2` (Python). Where the `@composio/core` `1.0.0-beta` and `composio` `2.0.0b` prereleases differ, a callout says so.
+The update behavior below requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). Where the `@composio/core` `1.0.0-beta` and `composio` `2.0.0b` prereleases differ, a callout says so.
 </Callout>
 
 ### Maps replace, they don't merge
