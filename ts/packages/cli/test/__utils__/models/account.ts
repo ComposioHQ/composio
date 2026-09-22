@@ -1,7 +1,7 @@
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import type { OrgProject } from 'src/services/composio-clients';
 
-const TIMESTAMP = '2026-01-01T00:00:00.000Z';
+export const TIMESTAMP = '2026-01-01T00:00:00.000Z';
 
 /**
  * A complete `GET /api/v3.1/auth/session/info` response. Suites override only

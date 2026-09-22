@@ -13,6 +13,7 @@ import type {
 import type { LinkCreateResponse } from '@composio/client/resources/link';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
+import { TIMESTAMP } from '../models/account';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import {
@@ -1048,7 +1049,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           instructions: 'Reuse this session id for follow-up calls.',
         },
         time_info: {
-          current_time_utc: '2026-01-01T00:00:00.000Z',
+          current_time_utc: TIMESTAMP,
           current_time_utc_epoch_seconds: 1767225600,
           message: 'UTC time',
         },
@@ -1336,8 +1337,8 @@ export const TestLayer = (input?: TestLiveInput) =>
         return scope;
       };
       const timestamps = {
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z',
+        created_at: TIMESTAMP,
+        updated_at: TIMESTAMP,
       };
 
       return {
