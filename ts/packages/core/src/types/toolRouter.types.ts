@@ -217,7 +217,7 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .boolean()
       .optional()
       .describe(
-        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
+        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type, and an MCP URL that is not on the API base URL origin throws `ComposioMCPDestinationError` instead of leaving `session.mcp.headers` empty with a warning. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
       ),
 
     tools: z
@@ -673,7 +673,7 @@ export const ToolRouterUpdateManageConnectionsSchema = z
       .nullable()
       .optional()
       .describe(
-        'The callback url to use in the tool router session. `null` removes the stored callback url'
+        'The callback url to use in the tool router session. `null` removes the stored callback url; sibling settings are untouched'
       ),
     waitForConnections: z
       .boolean()
@@ -681,12 +681,81 @@ export const ToolRouterUpdateManageConnectionsSchema = z
       .describe(
         'Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready'
       ),
+    enableConnectionRemoval: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe(
+        'Whether the session exposes the connection removal tool. `null` removes the stored override'
+      ),
   })
   .strict();
 export type ToolRouterUpdateManageConnectionsConfig = z.infer<
   typeof ToolRouterUpdateManageConnectionsSchema
 >;
 
+const ToolRouterElicitationDefaultSchema = z.enum([
+  'allow_all',
+  'ask_every_call',
+  'ask_once_per_session',
+]);
+const ToolRouterElicitationOverrideSchema = z.enum([
+  'always_allow',
+  'always_deny',
+  'ask_once',
+  'ask_always',
+]);
+
+/**
+ * `experimental` block accepted by `session.update()`. Each leaf follows the
+ * PATCH contract of the API: omit to keep the stored value, `null` to remove
+ * it, a value to replace it.
+ */
+export const ToolRouterUpdateExperimentalSchema = z
+  .object({
+    permissions: z
+      .object({
+        default: ToolRouterElicitationDefaultSchema,
+        overrides: z.record(z.string(), ToolRouterElicitationOverrideSchema).optional(),
+      })
+      .strict()
+      .nullable()
+      .optional()
+      .describe('Per-tool elicitation permission config. `null` removes the stored block'),
+    linkUrlOverwrite: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'Base URL override for connection link redirects. `null` removes the stored override'
+      ),
+    fastMode: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe('Fast search mode. `null` removes the stored override'),
+    submitFeedback: z
+      .object({ enable: z.boolean() })
+      .strict()
+      .nullable()
+      .optional()
+      .describe(
+        'Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block'
+      ),
+    sessionConfigId: z
+      .string()
+      .optional()
+      .describe('Apply the latest active Session config from this project to this session'),
+  })
+  .strict();
+export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdateExperimentalSchema>;
+
+/**
+ * Options for `session.update()`. For every policy block, omitting the key
+ * preserves the stored value and `null` removes the stored override (which can
+ * increase access: `toolkits: null` restores the unrestricted default, unlike
+ * `toolkits: []`, which denies every app toolkit).
+ */
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
     toolkits: z
@@ -695,15 +764,24 @@ export const ToolRouterUpdateSessionConfigSchema = z
         ToolRouterToolkitsDisabledConfigSchema,
         ToolRouterToolkitsEnabledConfigSchema,
       ])
+      .nullable()
       .optional()
       .describe(
-        'Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit'
+        'Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default'
       ),
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
-      .optional(),
-    tags: ToolRouterConfigTagsSchema.optional(),
-    authConfigs: z.record(z.string(), z.string()).optional(),
+      .nullable()
+      .optional()
+      .describe('Replaces the entire stored tools map; `null` removes the override'),
+    tags: ToolRouterConfigTagsSchema.nullable()
+      .optional()
+      .describe('Replaces the global tag policy; `null` removes the override'),
+    authConfigs: z
+      .record(z.string(), z.string())
+      .nullable()
+      .optional()
+      .describe('Replaces the entire stored auth config map; `null` removes the override'),
     connectedAccounts: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
       .transform(rec => {
@@ -713,7 +791,9 @@ export const ToolRouterUpdateSessionConfigSchema = z
         }
         return out;
       })
-      .optional(),
+      .nullable()
+      .optional()
+      .describe('Replaces the entire stored connected accounts map; `null` removes the override'),
     manageConnections: z
       .union([z.boolean(), ToolRouterUpdateManageConnectionsSchema])
       .nullable()
@@ -723,24 +803,47 @@ export const ToolRouterUpdateSessionConfigSchema = z
     multiAccount: z
       .object({
         enable: z.boolean().optional(),
-        maxAccountsPerToolkit: z.number().int().min(2).max(10).optional(),
+        maxAccountsPerToolkit: z
+          .number()
+          .int()
+          .min(2)
+          .max(10)
+          .nullable()
+          .optional()
+          .describe('`null` removes the stored maximum so the default applies again'),
         requireExplicitSelection: z.boolean().optional(),
       })
       .nullable()
-      .optional(),
+      .optional()
+      .describe('`null` removes the session override; the mode then resolves to disabled'),
     preload: z
       .object({
         tools: z.union([z.array(z.string()), z.literal('all')]).optional(),
       })
       .strict()
-      .optional(),
+      .nullable()
+      .optional()
+      .describe('Replaces the stored preload; `null` removes it'),
+    search: z
+      .object({ enable: z.boolean().optional() })
+      .strict()
+      .nullable()
+      .optional()
+      .describe('Replaces the search block; `null` removes it and restores the defaults'),
+    execute: z
+      .object({ enableMultiExecute: z.boolean().optional() })
+      .strict()
+      .nullable()
+      .optional()
+      .describe('Replaces the execute block; `null` removes it and restores the defaults'),
+    experimental: ToolRouterUpdateExperimentalSchema.nullable()
+      .optional()
+      .describe('Experimental settings; `null` removes the stored block'),
     expectedConfigVersion: z
-      .number()
-      .int()
-      .positive()
+      .union([z.number().int().positive(), z.literal(false)])
       .optional()
       .describe(
-        'Optional precondition: the configVersion this update was computed from. The API rejects the update with 409 when the stored version differs, which the SDK surfaces as ComposioSessionConfigConflictError. Omitted by default'
+        'Precondition sent as `expected_config_version`. Omitted: the session sends the configVersion it last observed, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten. A positive integer sends that version instead. `false` sends no precondition (last writer wins)'
       ),
   })
   .partial()

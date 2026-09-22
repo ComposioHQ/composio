@@ -40,9 +40,7 @@ describe('getSDKConfig on edge runtimes', () => {
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_envKeyValue');
 
     expect(
-      getSDKConfig('https://explicit.example.com', null, {
-        defaultHeaders: { 'x-user-api-key': 'uak_userKeyValue' },
-      })
+      getSDKConfig('https://explicit.example.com', null, { userApiKey: 'uak_userKeyValue' })
     ).toEqual({ baseURL: 'https://explicit.example.com', apiKey: null });
     expect(platformMock.homedir).not.toHaveBeenCalled();
     expect(platformMock.readFileSync).not.toHaveBeenCalled();

@@ -135,10 +135,11 @@ export class ToolRouter<
   /**
    * Derives the MCP config for a session from the auth context the session
    * request was made with: the project key when one is configured, otherwise
-   * the `x-user-api-key` default header. The credential is only attached when
-   * the MCP URL shares the client's API origin; a different origin throws
-   * when the caller asked for MCP and otherwise yields empty headers plus a
-   * warning. See `buildMCPServerConfig`.
+   * the resolved user API key, plus the org/project scope when configured.
+   * Headers are only attached when the MCP URL shares the client's API
+   * origin. Any other destination throws when the caller passed `mcp: true`
+   * and otherwise yields empty headers plus a warning; see
+   * `buildMCPServerConfig`.
    */
   private createMCPServerConfig(
     { type, url }: { type: MCPServerType; url: string },
@@ -149,7 +150,10 @@ export class ToolRouter<
       url,
       apiBaseURL: this.client.baseURL,
       apiKey: this.config?.apiKey,
+      userApiKey: this.config?.userApiKey,
       defaultHeaders: this.config?.defaultHeaders,
+      orgId: this.config?.orgId,
+      projectId: this.config?.projectId,
       mcpRequested,
     });
   }
@@ -159,17 +163,17 @@ export class ToolRouter<
    * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
    * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
-   * Pass `{ mcp: true }` to surface `session.mcp` in the returned type. The
-   * SDK attaches its credential to `session.mcp.headers` only when the MCP
-   * URL shares the origin of the API base URL. When it does not, `{ mcp: true }`
-   * throws `ComposioMCPDestinationError` (naming both origins, never the key);
-   * without it the session is returned with empty `mcp.headers` and a warning
-   * is logged.
+   * The session's MCP config carries the session credential only when the
+   * MCP URL shares the origin of the configured API base URL. When it does
+   * not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+   * (naming both origins, never a key); without `mcp: true` the session is
+   * returned with `session.mcp.headers` empty and a warning naming both
+   * origins is logged, so native tools keep working.
    *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
-   * @throws {ComposioMCPDestinationError} When `mcp: true` and the MCP URL is on a different origin
+   * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
    *
    * @example
    * ```typescript
@@ -306,18 +310,18 @@ export class ToolRouter<
   }
 
   /**
-   * Use an existing session.
+   * Use an existing session
    *
-   * Pass `{ mcp: true }` to surface `session.mcp` in the returned type. The
-   * SDK attaches its credential to `session.mcp.headers` only when the MCP
-   * URL shares the origin of the API base URL. When it does not, `{ mcp: true }`
-   * throws `ComposioMCPDestinationError` (naming both origins, never the key);
-   * without it the session is returned with empty `mcp.headers` and a warning
-   * is logged.
+   * The session's MCP config carries the session credential only when the
+   * MCP URL shares the origin of the configured API base URL. When it does
+   * not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+   * (naming both origins, never a key); without `mcp: true` the session is
+   * returned with `session.mcp.headers` empty and a warning naming both
+   * origins is logged, so native tools keep working.
    *
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
-   * @throws {ComposioMCPDestinationError} When `mcp: true` and the MCP URL is on a different origin
+   * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
    *
    * @example
    * ```typescript

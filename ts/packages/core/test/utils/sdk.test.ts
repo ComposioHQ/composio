@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { getSDKConfig } from '../../src/utils/sdk';
+import { getSDKConfig, getUserApiKeyHeader, resolveCredentialHeaders } from '../../src/utils/sdk';
 import {
   ComposioAPIKeyKindError,
   ComposioNoAPIKeyError,
@@ -11,6 +11,7 @@ import {
 import { DEFAULT_BASE_URL } from '../../src/utils/constants';
 
 const USER_KEY = 'uak_cliUserKeyValue';
+const ORG_KEY = 'oak_orgKeyValue';
 const PROJECT_KEY = 'ak_projectKeyValue';
 const ENV_KEY = 'ak_envKeyValue';
 const EXPLICIT_KEY = 'ak_explicitKeyValue';
@@ -33,6 +34,8 @@ describe('getSDKConfig credential resolution', () => {
     vi.stubEnv('HOME', home);
     vi.stubEnv('COMPOSIO_API_KEY', undefined);
     vi.stubEnv('COMPOSIO_BASE_URL', undefined);
+    vi.stubEnv('COMPOSIO_USER_API_KEY', undefined);
+    vi.stubEnv('COMPOSIO_ORG_API_KEY', undefined);
   });
 
   afterEach(() => {
@@ -114,6 +117,15 @@ describe('getSDKConfig credential resolution', () => {
       expect(serialized).not.toContain(USER_KEY);
       expect(serialized).toContain('user_data.json');
       expect(serialized).toContain('user API key');
+      expect(serialized).toContain('userApiKey');
+    });
+
+    it('does not let a configured user API key rescue an omitted project key', () => {
+      // Omitting the project key keeps its historical meaning: the project key
+      // is required. Only an explicit `null` opts into user-key-only auth.
+      expect(() => getSDKConfig(undefined, undefined, { userApiKey: USER_KEY })).toThrow(
+        ComposioNoAPIKeyError
+      );
     });
 
     it('throws the no-key error when nothing is configured', () => {
@@ -170,7 +182,48 @@ describe('getSDKConfig credential resolution', () => {
       expect(caught).toBeInstanceOf(ComposioNoAPIKeyError);
       const error = caught as ComposioNoAPIKeyError;
       expect(error.message).toMatch(/disabled/i);
+      expect(JSON.stringify(error.possibleFixes)).toContain('userApiKey');
       expect(JSON.stringify(error.possibleFixes)).toContain('x-user-api-key');
+    });
+
+    it('resolves to a null project key when a user API key option is configured', () => {
+      vi.stubEnv('COMPOSIO_API_KEY', ENV_KEY);
+      writeUserData({ api_key: PROJECT_KEY });
+
+      expect(getSDKConfig(undefined, null, { userApiKey: USER_KEY })).toEqual({
+        baseURL: DEFAULT_BASE_URL,
+        apiKey: null,
+      });
+    });
+
+    it('resolves to a null project key when an organization API key option is configured', () => {
+      expect(getSDKConfig(undefined, null, { orgApiKey: ORG_KEY }).apiKey).toBeNull();
+    });
+
+    it('accepts the user API key the client will read from COMPOSIO_USER_API_KEY', () => {
+      vi.stubEnv('COMPOSIO_USER_API_KEY', USER_KEY);
+
+      expect(getSDKConfig(undefined, null).apiKey).toBeNull();
+    });
+
+    it('accepts the organization API key the client will read from COMPOSIO_ORG_API_KEY', () => {
+      vi.stubEnv('COMPOSIO_ORG_API_KEY', ORG_KEY);
+
+      expect(getSDKConfig(undefined, null).apiKey).toBeNull();
+    });
+
+    it('does not read COMPOSIO_USER_API_KEY when the user API key option is null', () => {
+      vi.stubEnv('COMPOSIO_USER_API_KEY', USER_KEY);
+
+      expect(() => getSDKConfig(undefined, null, { userApiKey: null })).toThrow(
+        ComposioNoAPIKeyError
+      );
+    });
+
+    it('does not accept an empty user API key option', () => {
+      expect(() => getSDKConfig(undefined, null, { userApiKey: '' })).toThrow(
+        ComposioNoAPIKeyError
+      );
     });
 
     it('resolves to a null project key when a user API key header is configured', () => {
@@ -191,14 +244,6 @@ describe('getSDKConfig credential resolution', () => {
     it('does not accept an empty user API key header', () => {
       expect(() =>
         getSDKConfig(undefined, null, { defaultHeaders: { 'x-user-api-key': '' } })
-      ).toThrow(ComposioNoAPIKeyError);
-    });
-
-    it('does not accept a user API key header whose value is not a string', () => {
-      expect(() =>
-        getSDKConfig(undefined, null, {
-          defaultHeaders: { 'x-user-api-key': undefined as unknown as string },
-        })
       ).toThrow(ComposioNoAPIKeyError);
     });
 
@@ -226,5 +271,60 @@ describe('getSDKConfig credential resolution', () => {
     it('falls back to the default base URL', () => {
       expect(getSDKConfig(undefined, EXPLICIT_KEY).baseURL).toBe(DEFAULT_BASE_URL);
     });
+  });
+});
+
+describe('getUserApiKeyHeader', () => {
+  it('matches the header name case-insensitively and keeps the original key', () => {
+    expect(getUserApiKeyHeader({ 'X-User-Api-Key': USER_KEY })).toEqual({
+      name: 'X-User-Api-Key',
+      value: USER_KEY,
+    });
+  });
+
+  it('ignores a header whose value is not a non-empty string', () => {
+    const untyped = (value: unknown) =>
+      ({ 'x-user-api-key': value }) as unknown as Record<string, string>;
+
+    expect(getUserApiKeyHeader(untyped(''))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(undefined))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(null))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(42))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped([USER_KEY]))).toBeUndefined();
+    expect(getUserApiKeyHeader(undefined)).toBeUndefined();
+  });
+});
+
+describe('resolveCredentialHeaders', () => {
+  it('prefers the x-user-api-key default header over the configured keys', () => {
+    expect(
+      resolveCredentialHeaders({
+        apiKey: PROJECT_KEY,
+        userApiKey: USER_KEY,
+        defaultHeaders: { 'X-User-Api-Key': 'uak_headerKey' },
+      })
+    ).toEqual({ 'x-user-api-key': 'uak_headerKey' });
+  });
+
+  it('sends the project key when no credential header is placed', () => {
+    expect(
+      resolveCredentialHeaders({ apiKey: PROJECT_KEY, userApiKey: USER_KEY, defaultHeaders: {} })
+    ).toEqual({ 'x-api-key': PROJECT_KEY });
+  });
+
+  it('sends the resolved user key when the project key is disabled', () => {
+    expect(
+      resolveCredentialHeaders({ apiKey: null, userApiKey: USER_KEY, defaultHeaders: undefined })
+    ).toEqual({ 'x-user-api-key': USER_KEY });
+  });
+
+  it('ignores an empty credential header and returns nothing without a credential', () => {
+    expect(
+      resolveCredentialHeaders({
+        apiKey: null,
+        userApiKey: null,
+        defaultHeaders: { 'x-user-api-key': '' },
+      })
+    ).toEqual({});
   });
 });

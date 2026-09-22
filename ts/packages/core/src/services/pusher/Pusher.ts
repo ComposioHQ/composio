@@ -9,7 +9,7 @@ import {
 } from '../../errors/TriggerErrors';
 import logger from '../../utils/logger';
 import { telemetry } from '../../telemetry/Telemetry';
-import { getUserApiKeyHeader, USER_API_KEY_HEADER } from '../../utils/sdk';
+import { resolveCredentialHeaders } from '../../utils/sdk';
 import type { ComposioRequestHeaders } from '../../types/composio.types';
 
 export type PusherServiceOptions = {
@@ -25,11 +25,6 @@ export class PusherService {
   private pusherChannel!: string;
   // these details are set via the client SDK
   private pusherBaseURL!: string;
-  /**
-   * Credential headers for channel authorization. They mirror the client's
-   * effective auth: the project key as `x-api-key`, otherwise the configured
-   * `x-user-api-key`. The environment is never consulted here.
-   */
   private authHeaders!: Record<string, string>;
   private pusherClient!: PusherClient;
   private composioClient!: ComposioClient;
@@ -37,12 +32,13 @@ export class PusherService {
   constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
-    const userApiKey = client.apiKey ? undefined : getUserApiKeyHeader(options.defaultHeaders);
-    this.authHeaders = client.apiKey
-      ? { 'x-api-key': client.apiKey }
-      : userApiKey
-        ? { [USER_API_KEY_HEADER]: userApiKey.value }
-        : {};
+    // Channel authorization mirrors the client's effective auth; the
+    // environment is never consulted here.
+    this.authHeaders = resolveCredentialHeaders({
+      apiKey: client.apiKey,
+      userApiKey: client.userApiKey,
+      defaultHeaders: options.defaultHeaders,
+    });
     telemetry.instrument(this, 'PusherService');
   }
 

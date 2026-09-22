@@ -8,9 +8,11 @@ export const ToolRouterErrorCodes = {
 /**
  * Thrown when a session's hosted MCP endpoint is not a destination the SDK
  * will hand the session credential to. The SDK only attaches its credential
- * header when the MCP URL shares the origin of the API base URL the session
- * was created against. The error names both origins and never includes a
- * credential value.
+ * and scope headers when the MCP URL shares the origin of the API base URL
+ * the session was created against. The error is raised only when the caller
+ * asked for the endpoint with `mcp: true`; otherwise the session is returned
+ * with empty `mcp.headers` and a warning is logged instead. The error names
+ * both origins and never includes a credential value.
  */
 export class ComposioMCPDestinationError extends ComposioError {
   constructor(
@@ -30,10 +32,11 @@ export class ComposioMCPDestinationError extends ComposioError {
 
 /**
  * Thrown when a session update is rejected with HTTP 409 because the session
- * configuration changed since it was last read (for example, the supplied
- * `expectedConfigVersion` is stale). The local session object is left as it
- * was before the call. Re-fetch the session with `sessions.use(sessionId)`
- * and retry the update against the fresh `configVersion`.
+ * configuration changed since it was last read: the `expected_config_version`
+ * precondition (the session's last observed `configVersion` by default) is
+ * stale. The local session object is left as it was before the call.
+ * Re-fetch the session with `sessions.use(sessionId)` and retry the update
+ * against the fresh `configVersion`.
  */
 export class ComposioSessionConfigConflictError extends ComposioError {
   constructor(
@@ -46,7 +49,7 @@ export class ComposioSessionConfigConflictError extends ComposioError {
       statusCode: 409,
       possibleFixes: options.possibleFixes ?? [
         'Re-fetch the session with `composio.sessions.use(sessionId)` to observe the current configVersion, then retry the update',
-        'Omit `expectedConfigVersion` to apply the update regardless of concurrent changes',
+        'Pass `expectedConfigVersion: false` to apply the update regardless of concurrent changes (last writer wins)',
       ],
     });
     this.name = 'ComposioSessionConfigConflictError';

@@ -224,7 +224,7 @@ describe('PusherService channel authorization credentials', () => {
   });
 
   it('sends no project key and never reads COMPOSIO_API_KEY when the client key is null', async () => {
-    const service = new PusherService({ baseURL, apiKey: null } as never);
+    const service = new PusherService({ baseURL, apiKey: null, userApiKey: null } as never);
 
     await service.subscribe(vi.fn());
 
@@ -232,13 +232,25 @@ describe('PusherService channel authorization credentials', () => {
     expect(JSON.stringify(pusherConstructorOptions)).not.toContain('ak_foreignAmbientKey');
   });
 
-  it('sends the user API key header instead when the client key is null', async () => {
-    const service = new PusherService({ baseURL, apiKey: null } as never, {
-      defaultHeaders: { 'X-User-Api-Key': 'uak_userKey', 'x-request-id': 'req-1' },
-    });
+  it('sends the resolved user API key of the client when the project key is null', async () => {
+    const service = new PusherService({
+      baseURL,
+      apiKey: null,
+      userApiKey: 'uak_userKey',
+    } as never);
 
     await service.subscribe(vi.fn());
 
     expect(channelAuthHeaders()).toEqual({ 'x-user-api-key': 'uak_userKey' });
+  });
+
+  it('falls back to the x-user-api-key default header when the client holds no key', async () => {
+    const service = new PusherService({ baseURL, apiKey: null, userApiKey: null } as never, {
+      defaultHeaders: { 'X-User-Api-Key': 'uak_headerKey', 'x-request-id': 'req-1' },
+    });
+
+    await service.subscribe(vi.fn());
+
+    expect(channelAuthHeaders()).toEqual({ 'x-user-api-key': 'uak_headerKey' });
   });
 });

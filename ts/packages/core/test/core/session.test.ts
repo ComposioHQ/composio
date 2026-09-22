@@ -7,7 +7,11 @@ import { MockProvider } from '../utils/mocks/provider.mock';
 import { OpenAIProvider } from '../../src/provider/OpenAIProvider';
 import { getDefaultHeaders, getSessionHeaders } from '../../src/utils/session';
 import { version } from '../../package.json';
-import { ComposioAPIKeyKindError, ComposioNoAPIKeyError } from '../../src/errors/SDKErrors';
+import {
+  ComposioAPIKeyKindError,
+  ComposioNoAPIKeyError,
+  ComposioScopeConfigError,
+} from '../../src/errors/SDKErrors';
 import { ComposioMCPDestinationError } from '../../src/errors/ToolRouterErrors';
 import logger from '../../src/utils/logger';
 
@@ -511,6 +515,8 @@ describe('Credential resolution at the transport boundary', () => {
     vi.stubEnv('HOME', home);
     vi.stubEnv('COMPOSIO_API_KEY', undefined);
     vi.stubEnv('COMPOSIO_BASE_URL', undefined);
+    vi.stubEnv('COMPOSIO_USER_API_KEY', undefined);
+    vi.stubEnv('COMPOSIO_ORG_API_KEY', undefined);
   });
 
   afterEach(() => {
@@ -539,7 +545,22 @@ describe('Credential resolution at the transport boundary', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('sends only the user API key header when the project key is disabled', async () => {
+  it('sends only the user API key when the project key is disabled via the userApiKey option', async () => {
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
+    writeUserData({ api_key: 'ak_foreignDiskKey' });
+    const fetchMock = captureFetch();
+
+    const composio = build({ apiKey: null, userApiKey: userKey });
+    await composio.getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBeNull();
+    expect(headers.get('x-user-api-key')).toBe(userKey);
+    expect(composio.getConfig().apiKey).toBeNull();
+    expect(composio.getClient().apiKey).toBeNull();
+  });
+
+  it('sends only the user API key header when the project key is disabled via defaultHeaders', async () => {
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
     writeUserData({ api_key: 'ak_foreignDiskKey' });
     const fetchMock = captureFetch();
@@ -553,7 +574,7 @@ describe('Credential resolution at the transport boundary', () => {
     expect(composio.getConfig().apiKey).toBeNull();
   });
 
-  it('rejects a disabled project key without a user API key header', () => {
+  it('rejects a disabled project key without any user credential', () => {
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
 
     expect(() => build({ apiKey: null })).toThrow(ComposioNoAPIKeyError);
@@ -572,9 +593,9 @@ describe('Credential resolution at the transport boundary', () => {
     expect(headers.get('x-request-id')).toBe('req-1');
   });
 
-  it('keeps the project key disabled on clones when the environment changes later', async () => {
+  it('keeps the project key disabled on clones built from the userApiKey option', async () => {
     const fetchMock = captureFetch();
-    const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+    const composio = build({ apiKey: null, userApiKey: userKey });
 
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_laterEnvKey');
     const clone = composio.createSession({ headers: { 'x-request-id': 'req-2' } });
@@ -587,7 +608,26 @@ describe('Credential resolution at the transport boundary', () => {
     expect(clone.getConfig().apiKey).toBeNull();
   });
 
+  it('keeps the project key disabled on clones built from the user API key header', async () => {
+    const fetchMock = captureFetch();
+    const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_laterEnvKey');
+    const clone = composio.createSession({ headers: { 'x-request-id': 'req-3' } });
+    await clone.getClient().toolkits.retrieve('github');
+
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBeNull();
+    expect(headers.get('x-user-api-key')).toBe(userKey);
+    expect(headers.get('x-request-id')).toBe('req-3');
+    expect(clone.getConfig().apiKey).toBeNull();
+  });
+
   describe('MCP export follows the effective session auth context', () => {
+    const orgId = 'org_nano_abc';
+    const projectId = 'proj_nano_xyz';
+    const sameOriginMcp = 'https://api.test.com/api/v3/tool_router/session/session_mcp/mcp';
+
     const sessionResponse = (mcpUrl: string) => ({
       session_id: 'session_mcp',
       mcp: { type: 'http', url: mcpUrl },
@@ -596,31 +636,133 @@ describe('Credential resolution at the transport boundary', () => {
       warnings: [],
     });
 
-    const captureSessionFetch = (mcpUrl: string) => {
+    const captureSessionFetch = (mcpUrl: string = sameOriginMcp) => {
       const fetchMock = vi.fn(async () => Response.json(sessionResponse(mcpUrl)));
       vi.stubGlobal('fetch', fetchMock);
       return fetchMock;
     };
 
-    const sameOriginMcp = 'https://api.test.com/api/v3/tool_router/session/session_mcp/mcp';
-
     it('exports only the user API key when the project key is disabled and a foreign key is ambient', async () => {
       vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
       writeUserData({ api_key: 'ak_foreignDiskKey' });
-      const fetchMock = captureSessionFetch(sameOriginMcp);
+      const fetchMock = captureSessionFetch();
 
-      const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+      const composio = build({ apiKey: null, userApiKey: userKey });
       const session = await composio.sessions.create('user_123', { mcp: true });
 
       const requestHeaders = capturedHeaders(fetchMock);
       expect(requestHeaders.get('x-api-key')).toBeNull();
       expect(requestHeaders.get('x-user-api-key')).toBe(userKey);
+      expect(requestHeaders.get('x-org-id')).toBeNull();
+      expect(requestHeaders.get('x-project-id')).toBeNull();
       expect(session.mcp.url).toBe(sameOriginMcp);
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
     });
 
+    it('exports the user API key placed in defaultHeaders when the project key is disabled', async () => {
+      vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      expect(capturedHeaders(fetchMock).get('x-api-key')).toBeNull();
+      expect(capturedHeaders(fetchMock).get('x-user-api-key')).toBe(userKey);
+      expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
+    });
+
+    it('exports the user API key a clone was given over the key the parent resolved', async () => {
+      const otherUserKey = 'uak_overridingUserKey';
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, userApiKey: userKey });
+      const clone = composio.createSession({ headers: { 'x-user-api-key': otherUserKey } });
+      const session = await clone.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-api-key')).toBeNull();
+      expect(requestHeaders.get('x-user-api-key')).toBe(otherUserKey);
+      expect(session.mcp.headers).toEqual({ 'x-user-api-key': otherUserKey });
+    });
+
+    it('exports the user API key placed in defaultHeaders over a configured project key', async () => {
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: projectKey, defaultHeaders: { 'x-user-api-key': userKey } });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-api-key')).toBeNull();
+      expect(requestHeaders.get('x-user-api-key')).toBe(userKey);
+      expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
+    });
+
+    it('sends and exports the org/project scope headers together with the user key', async () => {
+      vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, userApiKey: userKey, orgId, projectId });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-api-key')).toBeNull();
+      expect(requestHeaders.get('x-user-api-key')).toBe(userKey);
+      expect(requestHeaders.get('x-org-id')).toBe(orgId);
+      expect(requestHeaders.get('x-project-id')).toBe(projectId);
+      expect(session.mcp.headers).toEqual({
+        'x-user-api-key': userKey,
+        'x-org-id': orgId,
+        'x-project-id': projectId,
+      });
+      expect(composio.getConfig().orgId).toBe(orgId);
+      expect(composio.getConfig().projectId).toBe(projectId);
+    });
+
+    it('rejects a half-configured scope', () => {
+      expect(() => build({ apiKey: null, userApiKey: userKey, orgId })).toThrow(
+        ComposioScopeConfigError
+      );
+      expect(() => build({ apiKey: null, userApiKey: userKey, projectId })).toThrow(
+        ComposioScopeConfigError
+      );
+    });
+
+    it('rejects a scope option that disagrees with the same header in defaultHeaders', () => {
+      expect(() =>
+        build({
+          apiKey: null,
+          userApiKey: userKey,
+          orgId,
+          projectId,
+          defaultHeaders: { 'X-Org-Id': 'org_nano_other' },
+        })
+      ).toThrow(ComposioScopeConfigError);
+    });
+
+    it('adopts a scope supplied through defaultHeaders as the single header source', async () => {
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({
+        apiKey: null,
+        userApiKey: userKey,
+        defaultHeaders: { 'x-org-id': orgId, 'x-project-id': projectId },
+      });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-org-id')).toBe(orgId);
+      expect(requestHeaders.get('x-project-id')).toBe(projectId);
+      expect(composio.getConfig().orgId).toBe(orgId);
+      expect(composio.getConfig().projectId).toBe(projectId);
+      expect(session.mcp.headers).toEqual({
+        'x-user-api-key': userKey,
+        'x-org-id': orgId,
+        'x-project-id': projectId,
+      });
+    });
+
     it('exports only the project key for project-key sessions', async () => {
-      const fetchMock = captureSessionFetch(sameOriginMcp);
+      const fetchMock = captureSessionFetch();
 
       const composio = build({
         apiKey: projectKey,
@@ -633,7 +775,7 @@ describe('Credential resolution at the transport boundary', () => {
     });
 
     it('never copies unrelated default headers into the MCP config', async () => {
-      captureSessionFetch(sameOriginMcp);
+      captureSessionFetch();
 
       const composio = build({
         apiKey: null,
@@ -648,99 +790,87 @@ describe('Credential resolution at the transport boundary', () => {
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
     });
 
-    describe('when the MCP URL is on a different origin', () => {
-      const crossOriginMcp = 'https://mcp.example.com/session_mcp';
+    it('throws when the MCP URL is on a different origin and the caller asked for MCP', async () => {
+      captureSessionFetch('https://mcp.example.com/session_mcp');
+      const composio = build({ apiKey: projectKey });
 
-      const expectDestinationError = (failure: unknown) => {
-        expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
-        const error = failure as ComposioMCPDestinationError;
-        expect(error.message).toContain('https://mcp.example.com');
-        expect(error.message).toContain('https://api.test.com');
-        expect(JSON.stringify(error)).not.toContain(projectKey);
-        expect(error.message).not.toContain(projectKey);
-      };
+      const failure = await composio.sessions.create('user_123', { mcp: true }).catch(e => e);
 
-      it('refuses to attach credentials on create() when mcp: true was passed', async () => {
-        captureSessionFetch(crossOriginMcp);
-        const composio = build({ apiKey: projectKey });
-
-        const failure = await composio.sessions.create('user_123', { mcp: true }).catch(e => e);
-
-        expectDestinationError(failure);
+      expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
+      expect(failure.message).toContain('https://mcp.example.com');
+      expect(failure.message).toContain('https://api.test.com');
+      expect(failure.meta).toEqual({
+        mcpOrigin: 'https://mcp.example.com',
+        apiOrigin: 'https://api.test.com',
       });
-
-      it('refuses to attach credentials on use() when mcp: true was passed', async () => {
-        captureSessionFetch(crossOriginMcp);
-        const composio = build({ apiKey: projectKey });
-
-        const failure = await composio.sessions.use('session_mcp', { mcp: true }).catch(e => e);
-
-        expectDestinationError(failure);
-      });
-
-      it('returns the session from create() with empty MCP headers and warns when MCP was not requested', async () => {
-        captureSessionFetch(crossOriginMcp);
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-        const composio = build({ apiKey: projectKey });
-
-        const session = await composio.sessions.create('user_123');
-
-        expect(session.sessionId).toBe('session_mcp');
-        expect((session as unknown as { mcp: unknown }).mcp).toEqual({
-          type: 'http',
-          url: crossOriginMcp,
-          headers: {},
-        });
-        expect(warnSpy).toHaveBeenCalledTimes(1);
-        const warning = String(warnSpy.mock.calls[0][0]);
-        expect(warning).toContain('https://mcp.example.com');
-        expect(warning).toContain('https://api.test.com');
-        expect(warning).not.toContain(projectKey);
-      });
-
-      it('returns the session from use() with empty MCP headers and warns when MCP was not requested', async () => {
-        captureSessionFetch(crossOriginMcp);
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-        const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
-
-        const session = await composio.sessions.use('session_mcp');
-
-        expect(session.sessionId).toBe('session_mcp');
-        expect((session as unknown as { mcp: unknown }).mcp).toEqual({
-          type: 'http',
-          url: crossOriginMcp,
-          headers: {},
-        });
-        expect(warnSpy).toHaveBeenCalledTimes(1);
-        const warning = String(warnSpy.mock.calls[0][0]);
-        expect(warning).toContain('https://mcp.example.com');
-        expect(warning).not.toContain(userKey);
-      });
-
-      it('does not warn for a same-origin MCP URL', async () => {
-        captureSessionFetch(sameOriginMcp);
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-        const composio = build({ apiKey: projectKey });
-
-        const session = await composio.sessions.create('user_123');
-
-        expect((session as unknown as { mcp: { headers: unknown } }).mcp.headers).toEqual({
-          'x-api-key': projectKey,
-        });
-        expect(warnSpy).not.toHaveBeenCalled();
-      });
+      expect(JSON.stringify(failure)).not.toContain(projectKey);
     });
 
-    it('exports credentials to a same-origin MCP URL on a plain-http custom base URL', async () => {
-      const fetchMock = captureSessionFetch(
-        'http://apollo:3000/api/v3/tool_router/session/session_mcp/mcp'
-      );
-      const composio = build({ apiKey: projectKey, baseURL: 'http://apollo:3000' });
+    it('throws from use() as well when the caller asked for MCP on a different origin', async () => {
+      captureSessionFetch('https://mcp.example.com/session_mcp');
+      const composio = build({ apiKey: projectKey });
 
-      const session = await composio.sessions.create('user_123', { mcp: true });
+      const failure = await composio.sessions.use('session_mcp', { mcp: true }).catch(e => e);
 
-      expect(capturedHeaders(fetchMock).get('x-api-key')).toBe(projectKey);
-      expect(session.mcp.headers).toEqual({ 'x-api-key': projectKey });
+      expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
+      expect(failure.message).toContain('https://mcp.example.com');
+      expect(failure.message).toContain('https://api.test.com');
+      expect(JSON.stringify(failure)).not.toContain(projectKey);
+    });
+
+    it('does not warn for a same-origin MCP URL', async () => {
+      captureSessionFetch(sameOriginMcp);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      const composio = build({ apiKey: projectKey });
+
+      const session = await composio.sessions.create('user_123');
+
+      expect((session as unknown as { mcp: { headers: unknown } }).mcp.headers).toEqual({
+        'x-api-key': projectKey,
+      });
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns the session with empty MCP headers and warns when the caller did not ask for MCP', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      captureSessionFetch('https://mcp.example.com/session_mcp');
+      const composio = build({ apiKey: projectKey });
+
+      const created = await composio.sessions.create('user_123');
+      const used = await composio.sessions.use('session_mcp');
+
+      const createdMcp = (created as unknown as { mcp: { url: string; headers: unknown } }).mcp;
+      const usedMcp = (used as unknown as { mcp: { url: string; headers: unknown } }).mcp;
+      expect(createdMcp).toEqual({
+        type: 'http',
+        url: 'https://mcp.example.com/session_mcp',
+        headers: {},
+      });
+      expect(usedMcp.headers).toEqual({});
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+      const warning = String(warnSpy.mock.calls[0][0]);
+      expect(warning).toContain('https://mcp.example.com');
+      expect(warning).toContain('https://api.test.com');
+      expect(warning).toContain('mcp: true');
+      expect(warning).not.toContain(projectKey);
+    });
+
+    it('rejects an MCP URL with an opaque origin before comparing origins', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      captureSessionFetch('data:text/plain,session_mcp');
+      const composio = build({ apiKey: projectKey });
+
+      const failure = await composio.sessions.create('user_123', { mcp: true }).catch(e => e);
+      expect(failure).toBeInstanceOf(ComposioMCPDestinationError);
+      expect(failure.message).toBe('The MCP URL has an opaque origin');
+      expect(failure.meta).toEqual({ role: 'MCP URL' });
+      expect(JSON.stringify(failure)).not.toContain(projectKey);
+
+      const session = await composio.sessions.create('user_123');
+      const mcp = (session as unknown as { mcp: { headers: unknown } }).mcp;
+      expect(mcp.headers).toEqual({});
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain('opaque origin');
     });
 
     it('exports credentials to a same-origin https MCP URL as before', async () => {
@@ -756,9 +886,21 @@ describe('Credential resolution at the transport boundary', () => {
       });
     });
 
-    it('keeps the disabled project key when a clone retrieves a session after the environment changes', async () => {
-      const fetchMock = captureSessionFetch(sameOriginMcp);
-      const composio = build({ apiKey: null, defaultHeaders: { 'x-user-api-key': userKey } });
+    it('exports credentials to a same-origin MCP URL on a plain-http custom base URL', async () => {
+      const fetchMock = captureSessionFetch(
+        'http://localhost:3000/api/v3/tool_router/session/session_mcp/mcp'
+      );
+      const composio = build({ apiKey: projectKey, baseURL: 'http://localhost:3000' });
+
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      expect(capturedHeaders(fetchMock).get('x-api-key')).toBe(projectKey);
+      expect(session.mcp.headers).toEqual({ 'x-api-key': projectKey });
+    });
+
+    it('keeps the disabled project key and scope when a clone retrieves a session after the environment changes', async () => {
+      const fetchMock = captureSessionFetch();
+      const composio = build({ apiKey: null, userApiKey: userKey, orgId, projectId });
 
       vi.stubEnv('COMPOSIO_API_KEY', 'ak_laterEnvKey');
       const clone = composio.createSession({ headers: { 'x-request-id': 'req-3' } });
@@ -767,7 +909,14 @@ describe('Credential resolution at the transport boundary', () => {
       const requestHeaders = capturedHeaders(fetchMock);
       expect(requestHeaders.get('x-api-key')).toBeNull();
       expect(requestHeaders.get('x-user-api-key')).toBe(userKey);
-      expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
+      expect(requestHeaders.get('x-org-id')).toBe(orgId);
+      expect(requestHeaders.get('x-project-id')).toBe(projectId);
+      expect(requestHeaders.get('x-request-id')).toBe('req-3');
+      expect(session.mcp.headers).toEqual({
+        'x-user-api-key': userKey,
+        'x-org-id': orgId,
+        'x-project-id': projectId,
+      });
     });
   });
 });
