@@ -1,6 +1,6 @@
 export type DocsProduct = 'for-you' | 'platform';
 
-export type ProductSidebarGroupLink =
+type ProductSidebarGroupLink =
   | { type?: 'page'; url: string; label?: string }
   | { type: 'folder'; path: string; label?: string }
   | { type: 'link'; url: string; label: string; external?: boolean };
@@ -43,17 +43,13 @@ interface DocsProductConfig {
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
+const SHARED_SIDEBAR_ITEMS = [
   { type: 'page', url: '/docs/using-composio-skill' },
   { type: 'folder', path: 'security', label: 'Security and data' },
-];
+] as const satisfies readonly ProductSidebarItem[];
 
-const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.flatMap(item =>
-  item.type === 'page' || item.type === 'link'
-    ? [item.url]
-    : item.type === 'folder'
-      ? [`/docs/${item.path}`]
-      : item.links.map(link => (link.type === 'folder' ? `/docs/${link.path}` : link.url))
+const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
+  item.type === 'page' ? item.url : `/docs/${item.path}`
 );
 
 /**
