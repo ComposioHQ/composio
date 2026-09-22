@@ -23,7 +23,7 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
-from composio.core.models.base import Resource
+from composio.core.models.base import Resource, credential_headers, header_value
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
     assert_no_custom_tool_slugs_in_preload,
@@ -46,7 +46,6 @@ from composio.core.models.tool_router_constants import (
     PRELOAD_TOOLS_ALL,
     PROJECT_ID_HEADER,
     SESSION_PRESET_DIRECT_TOOLS,
-    USER_API_KEY_HEADER,
 )
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
@@ -68,35 +67,31 @@ from composio.exceptions import InvalidParams, MCPDestinationError
 _DEFAULT_PORTS = {"http": 80, "https": 443}
 
 
-def _origin(url: str) -> str:
+def _origin(url: str, role: str) -> str:
     """Return the origin of an absolute URL.
 
     The origin is ``scheme://host[:port]`` in lowercase with the scheme's
     default port dropped, matching the WHATWG ``URL.origin`` used by the
-    TypeScript SDK.
+    TypeScript SDK. ``role`` names the URL in the error; the URL itself is
+    never echoed, since it may carry a query token.
     """
     parts = urlsplit(url)
+    try:
+        port = parts.port
+    except ValueError as exc:
+        raise MCPDestinationError(
+            f"The {role} is not a valid absolute URL", mcp_origin="", api_origin=""
+        ) from exc
     if not parts.scheme or not parts.hostname:
         raise MCPDestinationError(
-            f"{url!r} is not an absolute URL", mcp_origin="", api_origin=""
+            f"The {role} is not a valid absolute URL", mcp_origin="", api_origin=""
         )
     scheme = parts.scheme.lower()
     hostname = parts.hostname.lower()
     host = f"[{hostname}]" if ":" in hostname else hostname
-    port = parts.port
     if port is not None and port != _DEFAULT_PORTS.get(scheme):
         host = f"{host}:{port}"
     return f"{scheme}://{host}"
-
-
-def _header_value(headers: t.Mapping[str, t.Any], name: str) -> t.Optional[str]:
-    """The value of ``name`` in ``headers``, matched case-insensitively."""
-    wanted = name.lower()
-    for key, value in headers.items():
-        if isinstance(key, str) and key.lower() == wanted:
-            if isinstance(value, str) and value:
-                return value
-    return None
 
 
 # Type alias for MCP tag literals
@@ -583,12 +578,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Create an MCP server config object with authentication headers.
 
-        The headers mirror the effective auth of the underlying client: its
-        project key as ``x-api-key`` when one is configured, otherwise the
-        resolved user API key (the ``user_api_key`` option, then the
-        ``x-user-api-key`` default header) as ``x-user-api-key``, plus
-        ``x-org-id`` / ``x-project-id`` when the client carries an explicit
-        scope. No other default header is copied and the environment is never
+        The headers mirror the effective auth of the underlying client: the
+        ``x-user-api-key`` default header when one is placed (the client sends
+        it and suppresses the configured keys), otherwise its project key as
+        ``x-api-key``, otherwise the resolved ``user_api_key`` option as
+        ``x-user-api-key``, plus ``x-org-id`` / ``x-project-id`` when the
+        client carries an explicit scope. No other default header is copied and the environment is never
         re-read.
 
         The headers are only attached when the MCP URL has the same origin as
@@ -603,8 +598,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param url: The URL of the MCP server
         :return: MCP server config with headers
         """
-        api_origin = _origin(str(self._client.base_url))
-        mcp_origin = _origin(url)
+        api_origin = _origin(str(self._client.base_url), "API base URL")
+        mcp_origin = _origin(url, "MCP URL")
         if mcp_origin != api_origin:
             raise MCPDestinationError(
                 f"The session MCP endpoint origin {mcp_origin} does not match the "
@@ -614,19 +609,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
         default_headers: t.Mapping[str, t.Any] = self._client.default_headers
-        headers: t.Dict[str, t.Optional[str]] = {}
-        api_key = self._client.api_key
-        user_api_key = self._client.user_api_key
-        if isinstance(api_key, str) and api_key:
-            headers["x-api-key"] = api_key
-        elif isinstance(user_api_key, str) and user_api_key:
-            headers[USER_API_KEY_HEADER] = user_api_key
-        else:
-            header_key = _header_value(default_headers, USER_API_KEY_HEADER)
-            if header_key:
-                headers[USER_API_KEY_HEADER] = header_key
+        headers: t.Dict[str, t.Optional[str]] = dict(credential_headers(self._client))
         for scope_header in (ORG_ID_HEADER, PROJECT_ID_HEADER):
-            scope_value = _header_value(default_headers, scope_header)
+            scope_value = header_value(default_headers, scope_header)
             if scope_value:
                 headers[scope_header] = scope_value
         return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)

@@ -25,7 +25,7 @@ from pysher.connection import Connection as PusherConnection
 from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import trigger_instance_upsert_response
-from composio.core.models.base import Resource
+from composio.core.models.base import Resource, credential_headers
 from composio.core.models.internal import Internal
 from composio.core.models.webhooks import (
     DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS,
@@ -996,7 +996,7 @@ class _SubcriptionBuilder(WithLogger):
             cluster=_validate_pusher_cluster(cluster),
             auth_endpoint=PUSHER_AUTH_URL.format(base_url=self._client.base_url),
             auth_endpoint_headers={
-                "x-api-key": self._client.api_key,
+                **credential_headers(self._client),
                 "x-request-id": str(uuid.uuid4()),
             },
             auto_sub=True,

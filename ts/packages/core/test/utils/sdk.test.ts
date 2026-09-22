@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { getSDKConfig } from '../../src/utils/sdk';
+import { getSDKConfig, resolveCredentialHeaders } from '../../src/utils/sdk';
 import {
   ComposioAPIKeyKindError,
   ComposioNoAPIKeyError,
@@ -271,5 +271,39 @@ describe('getSDKConfig credential resolution', () => {
     it('falls back to the default base URL', () => {
       expect(getSDKConfig(undefined, EXPLICIT_KEY).baseURL).toBe(DEFAULT_BASE_URL);
     });
+  });
+});
+
+describe('resolveCredentialHeaders', () => {
+  it('prefers the x-user-api-key default header over the configured keys', () => {
+    expect(
+      resolveCredentialHeaders({
+        apiKey: PROJECT_KEY,
+        userApiKey: USER_KEY,
+        defaultHeaders: { 'X-User-Api-Key': 'uak_headerKey' },
+      })
+    ).toEqual({ 'x-user-api-key': 'uak_headerKey' });
+  });
+
+  it('sends the project key when no credential header is placed', () => {
+    expect(
+      resolveCredentialHeaders({ apiKey: PROJECT_KEY, userApiKey: USER_KEY, defaultHeaders: {} })
+    ).toEqual({ 'x-api-key': PROJECT_KEY });
+  });
+
+  it('sends the resolved user key when the project key is disabled', () => {
+    expect(
+      resolveCredentialHeaders({ apiKey: null, userApiKey: USER_KEY, defaultHeaders: undefined })
+    ).toEqual({ 'x-user-api-key': USER_KEY });
+  });
+
+  it('ignores an empty credential header and returns nothing without a credential', () => {
+    expect(
+      resolveCredentialHeaders({
+        apiKey: null,
+        userApiKey: null,
+        defaultHeaders: { 'x-user-api-key': '' },
+      })
+    ).toEqual({});
   });
 });

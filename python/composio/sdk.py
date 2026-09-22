@@ -73,6 +73,8 @@ def _scope_headers(
     explicit scope keeps the API default (the developer project), so a
     half-configured scope is rejected instead of silently selecting a project.
     """
+    org_id = org_id or None
+    project_id = project_id or None
     if (org_id is None) != (project_id is None):
         raise exceptions.InvalidParams(
             "`org_id` and `project_id` scope requests together; pass both "

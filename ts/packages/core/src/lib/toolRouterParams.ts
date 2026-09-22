@@ -181,6 +181,9 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   if (config.waitForConnections !== undefined) {
     result.enable_wait_for_connections = config.waitForConnections;
   }
+  if (config.enableConnectionRemoval !== undefined) {
+    result.enable_connection_removal = config.enableConnectionRemoval;
+  }
   return result;
 };
 

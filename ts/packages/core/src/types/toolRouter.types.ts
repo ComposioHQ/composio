@@ -669,6 +669,13 @@ export const ToolRouterUpdateManageConnectionsSchema = z
       .describe(
         'Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready'
       ),
+    enableConnectionRemoval: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe(
+        'Whether the session exposes the connection removal tool. `null` removes the stored override'
+      ),
   })
   .strict();
 export type ToolRouterUpdateManageConnectionsConfig = z.infer<

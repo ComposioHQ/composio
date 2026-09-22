@@ -2332,6 +2332,47 @@ class TestMcpAuthContext:
         assert excinfo.value.mcp_origin == "https://mcp.example.com"
         assert excinfo.value.api_origin == "https://backend.composio.dev"
 
+    def test_user_key_default_header_wins_over_the_configured_project_key(self):
+        client, requests = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            default_headers={"x-user-api-key": "uak_header_key"},
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123", mcp=True
+        )
+
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_header_key"
+        assert session.mcp.headers == {"x-user-api-key": "uak_header_key"}
+
+    def test_invalid_port_in_mcp_url_raises_the_typed_error(self):
+        client, _ = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            mcp_url="https://backend.composio.dev:bad/mcp",
+        )
+        with pytest.raises(MCPDestinationError) as excinfo:
+            ToolRouter(client=client, provider=MagicMock()).create(
+                user_id="user_123", mcp=True
+            )
+
+        assert str(excinfo.value) == "The MCP URL is not a valid absolute URL"
+
+    def test_malformed_mcp_url_is_not_echoed_in_the_error(self):
+        client, _ = _transport_client(
+            api_key="ak_project_key",
+            base_url="https://backend.composio.dev",
+            mcp_url="not-a-url?token=secret_value",
+        )
+        with pytest.raises(MCPDestinationError) as excinfo:
+            ToolRouter(client=client, provider=MagicMock()).create(
+                user_id="user_123", mcp=True
+            )
+
+        assert str(excinfo.value) == "The MCP URL is not a valid absolute URL"
+        assert "secret_value" not in str(excinfo.value)
+
     def test_same_origin_plain_http_base_url_exports_credentials(self):
         client, requests = _transport_client(
             api_key="ak_project_key",

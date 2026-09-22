@@ -156,21 +156,26 @@ export type CredentialHeaderInput = {
 };
 
 /**
- * The single credential header that mirrors the effective auth of an SDK
- * instance: the project key as `x-api-key` when one is configured, otherwise
- * the resolved user API key, otherwise the `x-user-api-key` default header,
- * as `x-user-api-key`. Empty when no credential is held. The environment is
+ * The single credential header that mirrors what the API client puts on the
+ * wire for an SDK instance. A non-empty `x-user-api-key` entry in the default
+ * headers wins: the client treats a caller-placed credential header as the
+ * credential and suppresses the configured keys. Otherwise the project key
+ * travels as `x-api-key`, otherwise the resolved user API key as
+ * `x-user-api-key`. Empty when no credential is held. The environment is
  * never consulted here.
  */
 export const resolveCredentialHeaders = (input: CredentialHeaderInput): Record<string, string> => {
+  const userApiKeyHeader = getUserApiKeyHeader(input.defaultHeaders);
+  if (userApiKeyHeader) {
+    return { [USER_API_KEY_HEADER]: userApiKeyHeader.value };
+  }
   if (hasValue(input.apiKey)) {
     return { 'x-api-key': input.apiKey };
   }
   if (hasValue(input.userApiKey)) {
     return { [USER_API_KEY_HEADER]: input.userApiKey };
   }
-  const userApiKeyHeader = getUserApiKeyHeader(input.defaultHeaders);
-  return userApiKeyHeader ? { [USER_API_KEY_HEADER]: userApiKeyHeader.value } : {};
+  return {};
 };
 
 export type SDKScopeOptions = {

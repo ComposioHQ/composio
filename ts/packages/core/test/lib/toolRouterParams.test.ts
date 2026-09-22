@@ -224,6 +224,15 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
+  it('maps enableConnectionRemoval through manage_connections, including null', () => {
+    expect(
+      transformToolRouterUpdateParams({ manageConnections: { enableConnectionRemoval: false } })
+    ).toEqual({ manage_connections: { enable_connection_removal: false } });
+    expect(
+      transformToolRouterUpdateParams({ manageConnections: { enableConnectionRemoval: null } })
+    ).toEqual({ manage_connections: { enable_connection_removal: null } });
+  });
+
   it('passes a null maximum through multi_account', () => {
     expect(
       transformToolRouterUpdateParams({ multiAccount: { maxAccountsPerToolkit: null } })

@@ -395,6 +395,16 @@ class TestUserOnlyInitialization:
         with pytest.raises(exceptions.InvalidParams):
             Composio(api_key="ak_test", project_id="proj_nano_xyz")
 
+    def test_empty_scope_id_counts_as_unset(self):
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", org_id="org_nano_abc", project_id="")
+        with pytest.raises(exceptions.InvalidParams):
+            Composio(api_key="ak_test", org_id="", project_id="proj_nano_xyz")
+
+        sdk = Composio(api_key="ak_test", org_id="", project_id="")
+        assert "x-org-id" not in sdk.client.default_headers
+        assert "x-project-id" not in sdk.client.default_headers
+
     def test_omitted_api_key_keeps_the_environment_fallback(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_env"}):
             sdk = Composio(user_api_key="uak")

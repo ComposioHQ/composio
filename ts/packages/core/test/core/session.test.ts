@@ -669,6 +669,32 @@ describe('Credential resolution at the transport boundary', () => {
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
     });
 
+    it('exports the user API key a clone was given over the key the parent resolved', async () => {
+      const otherUserKey = 'uak_overridingUserKey';
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, userApiKey: userKey });
+      const clone = composio.createSession({ headers: { 'x-user-api-key': otherUserKey } });
+      const session = await clone.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-api-key')).toBeNull();
+      expect(requestHeaders.get('x-user-api-key')).toBe(otherUserKey);
+      expect(session.mcp.headers).toEqual({ 'x-user-api-key': otherUserKey });
+    });
+
+    it('exports the user API key placed in defaultHeaders over a configured project key', async () => {
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: projectKey, defaultHeaders: { 'x-user-api-key': userKey } });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      const requestHeaders = capturedHeaders(fetchMock);
+      expect(requestHeaders.get('x-api-key')).toBeNull();
+      expect(requestHeaders.get('x-user-api-key')).toBe(userKey);
+      expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
+    });
+
     it('sends and exports the org/project scope headers together with the user key', async () => {
       vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignEnvKey');
       const fetchMock = captureSessionFetch();

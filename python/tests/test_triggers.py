@@ -1895,6 +1895,36 @@ class TestPusherClusterValidation:
         assert pusher.host == f"ws-{cluster}.pusher.com"
         assert pusher.auth_endpoint_headers["x-api-key"] == "sk-secret-value"
 
+    def test_user_only_client_authorizes_the_channel_with_the_user_key(self):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = None
+        client.user_api_key = "uak_user_key"
+        client.default_headers = {}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_user_key"
+
+    def test_user_key_default_header_authorizes_the_channel_over_the_project_key(
+        self,
+    ):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = "sk-secret-value"
+        client.user_api_key = None
+        client.default_headers = {"X-User-Api-Key": "uak_header_key"}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_header_key"
+
     @pytest.mark.parametrize(
         ("cluster", "reason"),
         [
