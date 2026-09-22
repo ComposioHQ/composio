@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Ref, Context, Layer } from 'effect';
+import { DateTime, Duration, Effect, Option, Ref, Semaphore, Context, Layer } from 'effect';
 import { BAKED_TOOLKIT_SLUGS } from 'src/generated/toolkit-slugs';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import {
@@ -110,20 +110,30 @@ const loadLocalToolkitSlugs = Effect.gen(function* () {
  */
 const makeToolkitSlugCatalog = Effect.gen(function* () {
   const local = yield* Effect.cached(loadLocalToolkitSlugs);
-  const hasRecorded = yield* Ref.make(false);
+  const recorded = yield* Ref.make<ReadonlySet<string>>(new Set());
+  const writes = yield* Semaphore.make(1);
 
   /**
-   * Records slugs learned from a catalog fetch, in the background, at most
-   * once per run. Every miss in a run merges the same memoized fetch into
-   * the same local list, so later calls would fork a daemon fiber only to
-   * rewrite an identical file — and each pending fiber holds the finished
-   * command open a little longer.
+   * Records slugs learned from a catalog fetch, in the background, only when
+   * they add something. Most misses in a run merge the same memoized fetch,
+   * and rewriting an identical file would only hold the finished command open
+   * longer; but a later miss can see a catalog an earlier one did not (the
+   * command's own project, after an unscoped startup lookup), and those slugs
+   * must not be dropped. Writes are serialized and each writes everything
+   * recorded so far, so a slow earlier write never lands over a later one.
    */
   const remember = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
     Effect.gen(function* () {
-      const alreadyRecorded = yield* Ref.getAndSet(hasRecorded, true);
-      if (alreadyRecorded) return;
-      yield* Effect.forkDetach(writeKnownToolkitSlugs(slugs));
+      const learnedSomething = yield* Ref.modify(recorded, current => {
+        const next = new Set([...current, ...slugs.map(slug => slug.toLowerCase())]);
+        return [next.size > current.size, next] as const;
+      });
+      if (!learnedSomething) return;
+      yield* Effect.forkDetach(
+        writes.withPermits(1)(
+          Ref.get(recorded).pipe(Effect.flatMap(slugs => writeKnownToolkitSlugs([...slugs])))
+        )
+      );
     });
 
   return { local, remember };

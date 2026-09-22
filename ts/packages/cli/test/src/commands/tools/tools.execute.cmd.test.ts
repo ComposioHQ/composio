@@ -49,6 +49,12 @@ const isolatedCacheConfigProvider = (fixture: string) => {
   fs.cpSync(new URL(`../../../__fixtures__/${fixture}/.composio`, import.meta.url), cacheDir, {
     recursive: true,
   });
+  // Fresh learned slugs keep the background catalog refresh from running, so
+  // every toolkit lookup a suite observes comes from the command itself.
+  fs.writeFileSync(
+    path.join(cacheDir, 'known-toolkit-slugs.json'),
+    JSON.stringify({ slugs: [], refreshedAt: new Date().toISOString() })
+  );
   return ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_CACHE_DIR: cacheDir },
   }).pipe(extendConfigProvider);
@@ -734,10 +740,15 @@ describe('CLI: composio execute', () => {
           expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
             custom_grain: 'ca_1',
           });
-          expect(recordedProjectToolkitScopes).toContainEqual({
-            orgId: 'org_test',
-            projectId: 'consumer_project_test',
-          });
+          // Every lookup — account selection, the permission gate, error
+          // mapping — must ask for the project execute resolved.
+          expect(recordedProjectToolkitScopes.length).toBeGreaterThan(0);
+          expect(recordedProjectToolkitScopes).toEqual(
+            recordedProjectToolkitScopes.map(() => ({
+              orgId: 'org_test',
+              projectId: 'consumer_project_test',
+            }))
+          );
         })
     );
 

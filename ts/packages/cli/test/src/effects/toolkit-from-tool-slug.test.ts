@@ -4,7 +4,11 @@ import { ConfigProvider, DateTime, Effect, FileSystem, Layer, Schedule } from 'e
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  HttpServerError,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { KNOWN_TOOLKIT_SLUGS_FILE } from 'src/services/known-toolkit-slugs';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -43,7 +47,9 @@ const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
 
 interface ResolverOptions {
   readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
-  readonly getProjectToolkits?: () => Effect.Effect<Toolkits, GetProjectToolkitsError>;
+  readonly getProjectToolkits?: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError>;
   readonly seedLearnedFile?: string;
 }
 
@@ -212,18 +218,18 @@ describe('toolkitFromToolSlug', () => {
     )
   );
 
-  it.live('records learned slugs at most once per run', () =>
+  it.live('merges later recordings in a run instead of dropping them', () =>
     withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ waitForLearnedFile }) =>
       Effect.gen(function* () {
         const catalog = yield* ToolkitSlugCatalog;
-        // Every miss in a run merges the same memoized fetch, so a second
-        // recording could only rewrite the same file. Passing a different list
-        // here makes the gate observable: its slugs must never land.
+        // Misses in one run can see different catalogs — an unscoped startup
+        // lookup, then the command's project — so a later recording that
+        // brings new slugs must land alongside the first one.
         yield* catalog.remember([UNRELEASED_TOOLKIT]);
-        yield* catalog.remember(['slug_from_a_second_recording']);
+        yield* catalog.remember([UNRELEASED_TOOLKIT, CUSTOM_TOOLKIT]);
 
-        const learned = yield* waitForLearnedFile(content => content.includes(UNRELEASED_TOOLKIT));
-        expect(learned).not.toContain('slug_from_a_second_recording');
+        const learned = yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+        expect(learned).toContain(UNRELEASED_TOOLKIT);
       })
     )
   );
@@ -420,6 +426,29 @@ describe('toolkitFromToolSlug', () => {
           })
       );
     });
+
+    it.live('learns a custom toolkit found by a scoped lookup after an unscoped one', () =>
+      withResolver(
+        {
+          getProjectToolkits: scope =>
+            Effect.succeed(scope ? [makeToolkitFixture(CUSTOM_TOOLKIT)] : []),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            // Startup telemetry resolves before the command knows its project.
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+            expect(
+              yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS', {
+                orgId: 'org_1',
+                projectId: 'proj_1',
+              })
+            ).toBe(CUSTOM_TOOLKIT);
+
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
 
     it.live('includes project toolkits in the background refresh', () =>
       withResolver(
