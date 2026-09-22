@@ -879,6 +879,38 @@ await session.update({ manageConnections: null, multiAccount: null });
 
 Clearing a policy can widen access. `toolkits: null` removes the toolkit policy and restores the unrestricted default, which is the opposite of `{ "enable": [] }`; clearing `preload` does the same for preloaded tools, so the agent can reach more than before the update. Send `toolkits: []` when you want to deny every app toolkit. Clearing `multiAccount` resolves to disabled, while omitting it preserves the stored setting.
 
+### Blocks you can set only on update
+
+`search`, `execute`, and `experimental` are not part of `create()`. Reach them with `session.update()` on an existing session.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    search={"enable": False},
+    execute={"enable_multi_execute": False},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.sessions.use("session_id");
+// ---cut---
+await session.update({
+  search: { enable: false },
+  execute: { enableMultiExecute: false },
+});
+```
+</Tab>
+</Tabs>
+
+Both blocks are on by default. `search` controls the session's search helper, so disabling it leaves the agent with the tools you preloaded. `execute.enableMultiExecute` controls whether the agent can run several tool calls in one request. `manageConnections.enableConnectionRemoval` is update-only as well, and controls whether the session exposes the connection-removal tool.
+
+The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. It is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
+
 ### Multi-account mode after an update
 
 The canonical disabled state is `{ "enable": false, "require_explicit_selection": false }` with no maximum. Sending `enable: false` resets a stale maximum or selection setting, and reapplying that disabled configuration is accepted. Combining `enable: false` with `maxAccountsPerToolkit` or `requireExplicitSelection: true` is rejected with a `400`.
