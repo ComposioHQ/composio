@@ -214,6 +214,15 @@ export const validateToolkitVersionOverrides = ({
               reason: 'client-unavailable',
             })
           )
+        ),
+        Effect.catchTag('services/ComposioClientConfigurationError', error =>
+          Effect.fail(
+            new ToolkitVersionValidationError({
+              cause: error,
+              message: error.message,
+              reason: 'client-unavailable',
+            })
+          )
         )
       );
 

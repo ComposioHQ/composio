@@ -75,6 +75,7 @@ export interface ToolsExecutor {
     | NodeOs
     | NodeProcess
     | ComposioUserContext
+    | ComposioClientSingleton
     | ComposioToolkitsRepository
     | ComposioCliUserConfig
     | TerminalUI

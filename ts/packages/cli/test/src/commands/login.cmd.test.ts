@@ -10,7 +10,10 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
+import { InternalServerError } from '@composio/client';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
+import { makeSessionInfo } from 'test/__utils__/models/account';
+import type { MockAccountRequest } from 'test/__utils__/services/test-layer';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -394,55 +397,33 @@ describe('CLI: composio login', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  const directLoginRequests: MockAccountRequest[] = [];
+  layer(
+    TestLive({
+      accountData: {
+        organizations: [
+          { id: 'org_default', name: 'Example Org' },
+          { id: 'org_selected', name: 'Selected Org' },
+        ],
+        sessionInfo: scope =>
+          scope.orgId === undefined
+            ? makeSessionInfo({
+                orgId: 'org_default',
+                orgMemberId: 'member_default',
+                userId: 'user_123',
+              })
+            : makeSessionInfo({
+                orgId: scope.orgId,
+                orgName: 'Selected Org',
+                orgMemberId: 'member_selected',
+                userId: 'user_123',
+              }),
+        onRequest: request => directLoginRequests.push(request),
+      },
+    })
+  )(it => {
     it.effect('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockImplementation(
-          async (requestInput: RequestInfo | URL, init?: RequestInit) => {
-            const url = requestUrl(requestInput);
-
-            if (url.includes('/api/v3/auth/session/info')) {
-              const selectedOrgId = new Headers(init?.headers).get('x-org-id');
-              return mockFetchResponse({
-                project: {
-                  name: 'Default Project',
-                  id: 'project_id_default',
-                  org_id: selectedOrgId ?? 'org_default',
-                  nano_id: 'project_default',
-                  email: 'project@example.com',
-                  created_at: '2026-01-01T00:00:00.000Z',
-                  updated_at: '2026-01-01T00:00:00.000Z',
-                  org: {
-                    id: selectedOrgId ?? 'org_default',
-                    name: selectedOrgId ? 'Selected Org' : 'Example Org',
-                    plan: 'enterprise',
-                  },
-                },
-                org_member: {
-                  id: selectedOrgId ? 'member_selected' : 'member_default',
-                  user_id: 'user_123',
-                  email: 'cli@example.com',
-                  name: 'CLI User',
-                  role: 'admin',
-                },
-                api_key: null,
-              });
-            }
-
-            if (url.includes('/api/v3/org/list?limit=50')) {
-              expect(new Headers(init?.headers).get('x-user-api-key')).toBe('uak_direct_key');
-              return mockFetchResponse({
-                organizations: [
-                  { id: 'org_default', name: 'Example Org' },
-                  { id: 'org_selected', name: 'Selected Org' },
-                ],
-              });
-            }
-
-            return mockFetchResponse({});
-          }
-        );
-
         yield* cli([
           'login',
           '--user-api-key',
@@ -465,6 +446,11 @@ describe('CLI: composio login', () => {
         // `~/.composio/config.json`.
         expect(userConfig.api_key).toBe('uak_direct_key');
         expect(userConfig.org_id).toBe('org_selected');
+        expect(
+          directLoginRequests
+            .filter(request => request.operation === 'org.list')
+            .map(request => request.scope.userApiKey)
+        ).toEqual(['uak_direct_key']);
         expect((yield* fs.stat(userConfigPath)).mode & 0o777).toBe(0o600);
 
         // ComposioUserContext also exposes the resolved key in-memory
@@ -485,7 +471,43 @@ describe('CLI: composio login', () => {
     );
   });
 
-  layer(TestLive())(it => {
+  layer(
+    TestLive({
+      accountData: {
+        organizations: [
+          { id: 'org_selected', name: 'Selected Org' },
+          { id: 'org_home', name: 'Home Org' },
+        ],
+        sessionInfo: scope => {
+          if (scope.projectId !== undefined) {
+            throw new InternalServerError(
+              500,
+              { message: 'Selected-org enrichment failed' },
+              'Selected-org enrichment failed',
+              new Headers()
+            );
+          }
+          return scope.orgId === undefined
+            ? makeSessionInfo({
+                orgId: 'org_home',
+                orgName: 'Home Org',
+                orgMemberId: 'member_home',
+                userId: 'user_123',
+                email: 'poll@example.com',
+                name: 'Poll User',
+              })
+            : makeSessionInfo({
+                orgId: scope.orgId,
+                orgName: 'Selected Org',
+                orgMemberId: 'member_selected',
+                userId: 'user_123',
+                email: 'poll@example.com',
+                name: 'Poll User',
+              });
+        },
+      },
+    })
+  )(it => {
     it.effect(
       '[Given] selected-org enrichment fails [When] completing --poll [Then] links the selected org membership',
       () =>
@@ -541,55 +563,6 @@ describe('CLI: composio login', () => {
               null,
               2
             )}\n`
-          );
-
-          vi.spyOn(globalThis, 'fetch').mockImplementation(
-            async (requestInput: RequestInfo | URL, init?: RequestInit) => {
-              const url = requestUrl(requestInput);
-              const headers = new Headers(init?.headers);
-
-              if (url.includes('/api/v3/auth/session/info')) {
-                const selectedOrgId = headers.get('x-org-id');
-                if (headers.has('x-project-id')) {
-                  return mockFetchResponse({ message: 'Selected-org enrichment failed' }, 500);
-                }
-                return mockFetchResponse({
-                  project: {
-                    name: 'Default Project',
-                    id: 'project_id_default',
-                    org_id: selectedOrgId ?? 'org_home',
-                    nano_id: 'project_default',
-                    email: 'project@example.com',
-                    created_at: '2026-01-01T00:00:00.000Z',
-                    updated_at: '2026-01-01T00:00:00.000Z',
-                    org: {
-                      id: selectedOrgId ?? 'org_home',
-                      name: selectedOrgId ? 'Selected Org' : 'Home Org',
-                      plan: 'enterprise',
-                    },
-                  },
-                  org_member: {
-                    id: selectedOrgId ? 'member_selected' : 'member_home',
-                    user_id: 'user_123',
-                    email: 'poll@example.com',
-                    name: 'Poll User',
-                    role: 'admin',
-                  },
-                  api_key: null,
-                });
-              }
-
-              if (url.includes('/api/v3/org/list?limit=50')) {
-                return mockFetchResponse({
-                  organizations: [
-                    { id: 'org_selected', name: 'Selected Org' },
-                    { id: 'org_home', name: 'Home Org' },
-                  ],
-                });
-              }
-
-              return mockFetchResponse({});
-            }
           );
 
           yield* cli(['login', '--poll', '--no-skill-install']).pipe(

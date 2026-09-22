@@ -50,7 +50,6 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
     if (params.mode === 'consumer') {
       if (params.projectName) {
         const developerProject = yield* findDeveloperProjectByName({
-          baseURL: ctx.data.baseURL,
           apiKey,
           orgId: currentOrgId,
           name: params.projectName,
@@ -66,7 +65,6 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       }
 
       const consumerProject = yield* resolveConsumerProject({
-        baseURL: ctx.data.baseURL,
         apiKey,
         orgId: currentOrgId,
       });
@@ -83,7 +81,6 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
 
     if (params.projectName) {
       const developerProject = yield* findDeveloperProjectByName({
-        baseURL: ctx.data.baseURL,
         apiKey,
         orgId: currentOrgId,
         name: params.projectName,

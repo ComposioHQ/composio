@@ -399,7 +399,6 @@ const resolveConsumerScope = (params?: {
       return null;
     }
     const consumerProject = yield* resolveConsumerProject({
-      baseURL: userContext.data.baseURL,
       apiKey,
       orgId,
     }).pipe(Effect.option);
@@ -433,7 +432,6 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     const clientSingleton = yield* ComposioClientSingleton;
     const directToolkits = yield* Effect.gen(function* () {
       const consumerProject = yield* resolveConsumerProject({
-        baseURL: userContext.data.baseURL,
         apiKey,
         orgId: scope.orgId,
       });
@@ -456,7 +454,6 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       Option.isSome(directToolkits) && directToolkits.value.connectedToolkits.length > 0
         ? directToolkits.value.connectedToolkits
         : (yield* getConsumerConnectedToolkits({
-            baseURL: userContext.data.baseURL,
             apiKey,
             orgId: scope.orgId,
             consumerUserId: scope.consumerUserId,

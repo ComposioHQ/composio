@@ -12,6 +12,7 @@ type APP_CONFIG = Config.Wrap<{
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
   ORG_ID: Option.Option<string>;
   PROJECT_ID: Option.Option<string>;
+  ALLOW_INSECURE_HTTP: boolean;
   AGENTS_BASE_URL: string | undefined;
   WEBHOOK_SECRET: string | undefined;
   CLI_INVOCATION_ORIGIN: string | undefined;
@@ -163,6 +164,16 @@ export const APP_CONFIG = {
 
   // The project ID for multi-project auth (overrides file-based config)
   PROJECT_ID: Config.option(Config.String('PROJECT_ID')),
+
+  // Allow credentials on a plain-HTTP, non-loopback COMPOSIO_BASE_URL.
+  // Read strictly rather than through `booleanFlag`: this flag is what stands
+  // between a user API key and the cleartext wire, so only the documented
+  // spellings enable it and anything else — a typo, a stale value, a word the
+  // tolerant reader would have accepted — leaves it off. Mirrors the client's
+  // own `COMPOSIO_ALLOW_INSECURE_HTTP === '1'` read.
+  ALLOW_INSECURE_HTTP: optionalTrimmedString('ALLOW_INSECURE_HTTP').pipe(
+    Config.map(value => value === '1' || value?.toLowerCase() === 'true')
+  ),
 
   // Override the Composio agents service URL
   AGENTS_BASE_URL: optionalString('AGENTS_BASE_URL'),

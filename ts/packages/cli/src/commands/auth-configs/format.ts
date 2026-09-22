@@ -1,5 +1,5 @@
 import type { AuthConfigItem } from 'src/models/auth-configs';
-import type { AuthConfigCreateResponse } from 'src/services/composio-clients';
+import type { AuthConfigCreateResponse } from '@composio/client/resources/auth-configs';
 import { bold, gray } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
 import { truncate } from 'src/ui/truncate';

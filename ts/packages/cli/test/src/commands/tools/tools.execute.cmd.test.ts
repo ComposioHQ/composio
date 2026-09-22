@@ -5,6 +5,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
+import { APIError } from '@composio/client';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -2277,15 +2278,20 @@ describe('CLI: composio execute', () => {
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async () => {
-          throw Object.assign(new Error("No active connection found for toolkit(s) 'gmail'"), {
-            error: {
-              message: "No active connection found for toolkit(s) 'gmail' in this session",
-              code: 4302,
-              slug: 'ToolRouterV2_NoActiveConnection',
-              status: 400,
-              request_id: 'test-request-id',
+          throw APIError.generate(
+            400,
+            {
+              error: {
+                message: "No active connection found for toolkit(s) 'gmail' in this session",
+                code: 4302,
+                slug: 'ToolRouterV2_NoActiveConnection',
+                status: 400,
+                request_id: 'test-request-id',
+              },
             },
-          });
+            undefined,
+            new Headers()
+          );
         },
       },
     })
@@ -2373,11 +2379,23 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: { error: { message: 'API error: invalid input' } },
+        failWith: APIError.generate(
+          400,
+          {
+            error: {
+              message: 'API error: invalid input',
+              code: 1001,
+              slug: 'Validation_Failed',
+              status: 400,
+            },
+          },
+          undefined,
+          new Headers()
+        ),
       },
     })
-  )('[Given] executor throws object error [Then] prints message and details', it => {
-    it.effect('prints object error message and details', () =>
+  )('[Given] executor throws an API error [Then] prints message and details', it => {
+    it.effect('prints API error message and details', () =>
       Effect.gen(function* () {
         yield* cli([
           'execute',

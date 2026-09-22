@@ -20,6 +20,7 @@ const NORMALIZED_APP_CONFIG_DEFAULTS = {
   RUN_OUTPUT_DIR: undefined,
   PERF_DEBUG: false,
   TOOL_DEBUG: false,
+  ALLOW_INSECURE_HTTP: false,
 };
 
 describe('Config', () => {
@@ -94,6 +95,7 @@ describe('Config', () => {
             ['COMPOSIO_RUN_OUTPUT_DIR', '/tmp/composio-output'],
             ['COMPOSIO_PERF_DEBUG', '1'],
             ['COMPOSIO_TOOL_DEBUG', '1'],
+            ['COMPOSIO_ALLOW_INSECURE_HTTP', '1'],
           ]) satisfies Map<string, string>;
 
           const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
@@ -117,6 +119,7 @@ describe('Config', () => {
             RUN_OUTPUT_DIR: '/tmp/composio-output',
             PERF_DEBUG: true,
             TOOL_DEBUG: true,
+            ALLOW_INSECURE_HTTP: true,
             DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           });
         })
@@ -548,6 +551,7 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_RUN_OUTPUT_DIR', '/tmp/composio-output');
           vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
           vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
+          vi.stubEnv('COMPOSIO_ALLOW_INSECURE_HTTP', '1');
 
           const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
@@ -570,6 +574,7 @@ describe('Config', () => {
             RUN_OUTPUT_DIR: '/tmp/composio-output',
             PERF_DEBUG: true,
             TOOL_DEBUG: true,
+            ALLOW_INSECURE_HTTP: true,
             DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           });
         })

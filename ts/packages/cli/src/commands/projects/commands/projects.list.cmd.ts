@@ -40,7 +40,6 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     const projects = yield* ui.withSpinner(
       'Loading projects...',
       listOrganizationProjects({
-        baseURL: ctx.data.baseURL,
         apiKey,
         orgId: resolvedOrgId,
         limit: clampedLimit,

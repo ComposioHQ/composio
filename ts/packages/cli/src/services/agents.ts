@@ -460,7 +460,7 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
 
     yield* ctx.login(userApiKey, orgId);
     // Best-effort analytics stitch after the credential persists; must never break login.
-    yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
+    yield* getSessionInfoByUserApiKey({ userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
       Effect.catchCause(() => Effect.void)
     );

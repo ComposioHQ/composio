@@ -1,5 +1,5 @@
 import type { Tool } from 'src/models/tools';
-import type { ToolDetailedResponse } from 'src/services/composio-clients';
+import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
 import { bold, gray } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 import { extractSchemaProperties } from 'src/ui/extract-schema-properties';
@@ -94,7 +94,7 @@ function formatSchemaPropertiesDetailed(schema: Record<string, unknown>): string
 /**
  * Format a detailed tool for interactive display.
  */
-export function formatToolInfo(tool: ToolDetailedResponse): string {
+export function formatToolInfo(tool: ToolRetrieveResponse): string {
   const lines: string[] = [];
 
   lines.push(`${bold('Name:')} ${tool.name}`);
@@ -130,7 +130,7 @@ export function formatToolInfo(tool: ToolDetailedResponse): string {
 /**
  * Format only tool input parameters for execute-help flows.
  */
-export function formatToolInputParameters(tool: ToolDetailedResponse): string {
+export function formatToolInputParameters(tool: ToolRetrieveResponse): string {
   const lines: string[] = [];
   lines.push(`${bold('Name:')} ${tool.name}`);
   lines.push(`${bold('Slug:')} ${tool.slug}`);

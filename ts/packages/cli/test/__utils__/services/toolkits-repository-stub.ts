@@ -50,6 +50,18 @@ const unusedRepositoryMethods = {
 } as const;
 
 /**
+ * A repository whose every method dies unless the test overrides it.
+ */
+export const makeToolkitsRepositoryStub = (
+  overrides: Partial<ComposioToolkitsRepositoryShape>
+): ComposioToolkitsRepositoryShape =>
+  ComposioToolkitsRepository.of({
+    ...unusedRepositoryMethods,
+    getToolkits: notUsed('getToolkits'),
+    ...overrides,
+  });
+
+/**
  * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test
  * can assert not just what was resolved but what it cost.
  */
