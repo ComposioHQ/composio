@@ -27,7 +27,7 @@ import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'sr
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
 import { TriggerInstanceItems } from 'src/models/triggers';
-import { ToolsAsEnums, Tools, type Tool } from 'src/models/tools';
+import { ToolsAsEnums, Tools } from 'src/models/tools';
 import {
   groupByVersion,
   type ToolkitVersionSpec,
@@ -205,6 +205,25 @@ const sortBySlug = <T extends { readonly slug: string }>(
     Order.mapInput(Order.String, (item: T) => item.slug)
   );
 
+/**
+ * Converts a 404 from a toolkit lookup into `InvalidToolkitsError` naming
+ * that slug; every other failure propagates unchanged.
+ */
+const invalidToolkitOn404 = <A>(slug: string, toolkit: Effect.Effect<A, ClientError>) =>
+  Effect.catchTag(
+    toolkit,
+    'services/HttpServerError',
+    (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
+      e.status === 404
+        ? Effect.fail(
+            new InvalidToolkitsError({
+              invalidToolkits: [slug],
+              availableToolkits: [],
+            })
+          )
+        : Effect.fail(e)
+  );
+
 const validateToolkitVersionsImpl = (
   retrieveToolkit: (slug: string) => Effect.Effect<Toolkit, ClientError, never>,
   overrides: ToolkitVersionOverrides,
@@ -259,24 +278,15 @@ const validateToolkitVersionsImpl = (
     > =>
       Effect.all(
         overridesToValidate.map(([toolkit, requestedVersion]) =>
-          retrieveToolkit(toolkit).pipe(
-            Effect.map(toolkitData => ({
-              toolkit,
-              requestedVersion,
-              availableVersions: toolkitData.meta.available_versions,
-              isValid: toolkitData.meta.available_versions.includes(requestedVersion),
-            })),
-            Effect.catchTag(
-              'services/HttpServerError',
-              (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
-                e.status === 404
-                  ? Effect.fail(
-                      new InvalidToolkitsError({
-                        invalidToolkits: [toolkit],
-                        availableToolkits: [],
-                      })
-                    )
-                  : Effect.fail(e)
+          invalidToolkitOn404(
+            toolkit,
+            retrieveToolkit(toolkit).pipe(
+              Effect.map(toolkitData => ({
+                toolkit,
+                requestedVersion,
+                availableVersions: toolkitData.meta.available_versions,
+                isValid: toolkitData.meta.available_versions.includes(requestedVersion),
+              }))
             )
           )
         ),
@@ -519,7 +529,7 @@ const buildDefaultHeaders = (params: {
       : {}),
   };
 
-  return Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined;
+  return defaultHeaders;
 };
 
 /**
@@ -1130,24 +1140,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
    */
   const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
     Effect.all(
-      slugs.map(slug =>
-        getToolkit(slug).pipe(
-          // Only convert 404 errors to InvalidToolkitsError.
-          // Other HTTP errors (500, 401, network failures, etc.) should propagate as-is.
-          Effect.catchTag(
-            'services/HttpServerError',
-            (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
-              e.status === 404
-                ? Effect.fail(
-                    new InvalidToolkitsError({
-                      invalidToolkits: [slug],
-                      availableToolkits: [],
-                    })
-                  )
-                : Effect.fail(e)
-          )
-        )
-      ),
+      slugs.map(slug => invalidToolkitOn404(slug, getToolkit(slug))),
       { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
     ).pipe(Effect.map(sortBySlug));
 
@@ -1186,10 +1179,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
           listTools({ toolkit_slug: slugs.join(','), toolkit_versions: version })
         ),
         { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
-      ).pipe(
-        Effect.map(groups => groups.flat()),
-        Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
-      ),
+      ).pipe(Effect.map(groups => sortBySlug(groups.flat()))),
     /**
      * Retrieves a list of all available trigger type enum values that can be used across the API.
      */
