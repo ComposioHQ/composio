@@ -3,10 +3,11 @@ title: Fetching tools and schemas
 description: Fetch and filter tools, and inspect schemas
 keywords: [get tools, list tools, filter, schema]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
-<Callout type="info">
-Use this guide when your code selects tools and controls execution. For runtime discovery through sessions, see [Tools and toolkits](/docs/how-composio-works). Compare both approaches in [Sessions vs direct execution](/docs/sessions-vs-direct-execution).
+<Callout type="info" title="Legacy API: prefer sessions">
+This guide covers legacy direct-execution methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) to discover and fetch tools at runtime. If you need a fixed tool set, consider the [direct tools preset](/docs/configuring-sessions#direct-tools-preset). See [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions).
 </Callout>
 
 Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.

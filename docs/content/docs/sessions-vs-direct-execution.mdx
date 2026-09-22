@@ -2,15 +2,18 @@
 title: Sessions vs Direct Execution
 description: When to use session-based meta tools vs direct tool fetching and execution
 keywords: [session, direct execution, tool router, meta tools, architecture, decision]
+legacy: true
 ---
 
 A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
 **Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
-Start with sessions for runtime tool discovery and managed authentication. Use direct execution when your application selects tool schemas and calls `tools.execute()` itself, including when you need to approve each app-tool call before it runs.
+<Callout type="info" title="Use sessions for new integrations">
+Direct execution is a legacy interface that remains supported for existing integrations. We recommend sessions for new integrations and encourage existing users to [migrate to sessions](/docs/migration-guide/direct-to-sessions). Sessions handle runtime tool discovery, authentication, and execution.
+</Callout>
 
-These are two ways to use the current SDK. Choosing direct execution does not require an older SDK package. Deprecations such as the managed-OAuth `initiate()` endpoint apply to specific methods; see the [Connect Link migration guide](/docs/auth-configuration/migrating-initiate-to-link).
+If your application needs a fixed tool set, consider the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) within a session. If you need approval before execution, evaluate how your integration intercepts session tool calls, including meta tools that can execute multiple app-tool calls. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
 
 | | Sessions | Direct execution |
 |---|---|---|

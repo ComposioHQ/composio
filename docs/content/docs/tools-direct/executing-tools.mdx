@@ -1,12 +1,13 @@
 ---
 title: Executing tools directly
-description: Execute tools from your application with composio.tools.execute()
+description: Maintain legacy integrations that call composio.tools.execute(); prefer sessions for new integrations
 keywords: [execute, run, tool calling, function calling, direct execution]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
-<Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically. See [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) to understand the tradeoffs.
+<Callout type="info" title="Legacy API: prefer sessions">
+This guide covers legacy direct-execution methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) to manage tool fetching, authentication, and execution. If you use direct execution today, consider [migrating to sessions](/docs/migration-guide/direct-to-sessions). See [Sessions vs direct execution](/docs/sessions-vs-direct-execution) for the tradeoffs.
 </Callout>
 
 LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, act, observe, and adapt.

@@ -167,7 +167,7 @@ export const DOCS_PRODUCTS = {
         ],
       },
       {
-        label: 'Direct execution and migration',
+        label: 'Migration and legacy',
         items: [
           { type: 'folder', path: 'migration-guide' },
           { type: 'page', url: '/docs/sessions-vs-direct-execution' },
