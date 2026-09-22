@@ -600,6 +600,103 @@
                       },
                       "description": "Auth config overrides per toolkit"
                     },
+                    "premium_usage": {
+                      "anyOf": [
+                        {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "toolkits": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disabled": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "disabled"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                            },
+                            "tools": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "enabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "enabled"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "disabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "disabled"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                            },
+                            "return_premium_charge": {
+                              "type": "boolean",
+                              "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                            }
+                          },
+                          "required": [
+                            "return_premium_charge"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                    },
                     "manage_connections": {
                       "type": "object",
                       "properties": {
@@ -854,6 +951,7 @@
                   },
                   "required": [
                     "user_id",
+                    "premium_usage",
                     "preload",
                     "search",
                     "execute"
@@ -5820,6 +5918,122 @@
                     },
                     "description": "The connected accounts to use for the session, as an array of nano-IDs per toolkit. This overrides the default behaviour and pins specific connected accounts when toolkits are executed. Each account must exist (not deleted or disabled) and belong to the same `user_id` as the session. Multi-account sessions can pin multiple; non-multi-account sessions are capped at length 1."
                   },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
+                  },
                   "manage_connections": {
                     "type": "object",
                     "properties": {
@@ -6700,6 +6914,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -6954,6 +7265,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -7357,6 +7669,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -7611,6 +8020,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -7967,6 +8377,122 @@
                       "minItems": 1
                     },
                     "description": "The connected accounts to use for the session, as an array of nano-IDs per toolkit. This overrides the default behaviour and pins specific connected accounts when toolkits are executed. Each account must exist (not deleted or disabled) and belong to the same `user_id` as the session. Multi-account sessions can pin multiple; non-multi-account sessions are capped at length 1."
+                  },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
                   },
                   "manage_connections": {
                     "type": "object",
@@ -8460,6 +8986,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -8714,6 +9337,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -9415,6 +10039,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -9669,6 +10390,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"

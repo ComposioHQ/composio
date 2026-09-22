@@ -50,6 +50,62 @@ Use these when you call a model SDK directly.
   />
 </ProviderGrid>
 
+## TypeSafe
+
+Use TypeSafe's Jev model to select a Composio tool with a confidence score. The provider compiles tools into typed questions and returns a complete `call`, a `partial` call with missing arguments, or an `abstain` decision.
+
+Set `COMPOSIO_API_KEY` and `TYPESAFE_API_KEY` in your environment before running decisions.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+
+```bash
+pip install composio composio-typesafe typesafe-sdk==0.6.0
+```
+
+```python
+from composio import Composio
+from composio_typesafe import TypesafeProvider
+
+provider = TypesafeProvider()
+composio = Composio(provider=provider)
+tool_set = composio.tools.get(
+    user_id="user_123",
+    tools=["GITHUB_LIST_REPOSITORY_ISSUES"],
+)
+decision = provider.decide(tool_set, "List the closed issues of ComposioHQ/composio")
+
+if decision["kind"] != "abstain":
+    result = provider.execute(
+        "user_123",
+        decision,
+        arguments={"owner": "ComposioHQ", "repo": "composio"},
+    )
+    print(result["data"])
+```
+
+Use `provider.shortlist_tools()` to narrow the tools before deciding, or `provider.confidence_gate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `provider.execute(..., confirm=True)`.
+
+</Tab>
+<Tab value="TypeScript">
+
+```bash
+npm install @composio/core @composio/typesafe @typesafe-ai/sdk@0.6.0 zod
+```
+
+Import `TypesafeProvider` from `@composio/typesafe` and pass an instance as the `provider` option to `new Composio()`. Fetch tools with `composio.tools.get()`, then call `await provider.decide(toolSet, request)` and `await provider.execute(userId, decision, { arguments })`.
+
+Use `provider.shortlistTools()` to narrow the tools before deciding, or `provider.confidenceGate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `provider.execute(userId, decision, { confirm: true })`.
+
+This provider requires Node.js 24.17 or newer. Root schema composition that can hide required arguments is rejected. Supply prototype-named arguments explicitly; `__proto__` is preserved as caller data during execution.
+
+</Tab>
+</Tabs>
+
+Jev binds closed-set arguments such as enums and booleans. You supply open-ended values such as text, IDs, and numbers through `arguments` when executing. Handle `abstain` without executing a tool, and supply the missing arguments for a `partial` call.
+
+The confidence score is the least certain judgement the call depends on, not the probability that the whole call is correct. Only pass confirmation after you've approved a destructive action.
+
 ## Agent frameworks
 
 Use these when an agent framework orchestrates the tool calls for you.
