@@ -15,7 +15,11 @@ import httpx
 import pytest
 
 from composio import Composio, ComposioDeprecationWarning, exceptions
-from composio.client import CLIENT_LOGGER_NAME, _ClientLogForwarder
+from composio.client import (
+    CLIENT_LOGGER_NAME,
+    _ClientLogForwarder,
+    _forwarding_wrappers,
+)
 from composio.core.models.base import allow_tracking
 from composio.utils.logging import LogLevel
 
@@ -33,6 +37,23 @@ def disable_telemetry():
     token = allow_tracking.set(False)
     yield
     allow_tracking.reset(token)
+
+
+@pytest.fixture(autouse=True)
+def reset_client_logger():
+    """Start each test without the forwarder state earlier tests left behind.
+
+    The forwarder and the set of live wrappers are process-wide, so a DEBUG
+    instance from an earlier test would otherwise keep the client logger
+    permissive and mask level assertions here.
+    """
+    client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
+    for handler in list(client_logger.handlers):
+        if isinstance(handler, _ClientLogForwarder):
+            client_logger.removeHandler(handler)
+    _forwarding_wrappers.clear()
+    client_logger.setLevel(logging.NOTSET)
+    yield
 
 
 @pytest.fixture
@@ -176,6 +197,56 @@ class TestCustomLogger:
             assert "delivered once" not in other_output.getvalue()
         finally:
             other.handlers = []
+
+    def test_quieter_instance_does_not_silence_earlier_debug_instance(
+        self, custom_logger
+    ):
+        logger, output = custom_logger
+        quiet = logging.getLogger("composio-test-sdk-owned-logger-quiet")
+        quiet_output = io.StringIO()
+        quiet.handlers = [logging.StreamHandler(quiet_output)]
+        quiet.propagate = False
+        quiet.setLevel(logging.WARNING)
+        try:
+            debug_instance = Composio(
+                api_key="test-key", http_client=_mock_transport(), logger=logger
+            )
+            quiet_instance = Composio(
+                api_key="test-key", http_client=_mock_transport(), logger=quiet
+            )
+            # The shared source logger stays permissive enough for the DEBUG
+            # instance; the quiet instance's wrapper filters its own output.
+            assert logging.getLogger(CLIENT_LOGGER_NAME).level == logging.DEBUG
+
+            debug_instance.client.without_retries.toolkits.list()
+            assert "path=/api/v3.1/toolkits" in output.getvalue()
+
+            quiet_instance.client.without_retries.toolkits.list()
+            assert "path=/api/v3.1/toolkits" not in quiet_output.getvalue()
+        finally:
+            quiet.handlers = []
+
+    def test_debug_instance_lowers_level_set_by_earlier_quiet_instance(
+        self, custom_logger
+    ):
+        logger, output = custom_logger
+        quiet = logging.getLogger("composio-test-sdk-owned-logger-quiet")
+        quiet.handlers = [logging.StreamHandler(io.StringIO())]
+        quiet.propagate = False
+        quiet.setLevel(logging.WARNING)
+        try:
+            Composio(api_key="test-key", http_client=_mock_transport(), logger=quiet)
+            assert logging.getLogger(CLIENT_LOGGER_NAME).level == logging.WARNING
+
+            debug_instance = Composio(
+                api_key="test-key", http_client=_mock_transport(), logger=logger
+            )
+            assert logging.getLogger(CLIENT_LOGGER_NAME).level == logging.DEBUG
+
+            debug_instance.client.without_retries.toolkits.list()
+            assert "path=/api/v3.1/toolkits" in output.getvalue()
+        finally:
+            quiet.handlers = []
 
 
 class TestLoggingLevel:

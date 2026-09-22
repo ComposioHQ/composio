@@ -7,6 +7,7 @@ import logging
 import os
 import platform
 import typing as t
+import weakref
 from importlib.metadata import version
 from uuid import uuid4
 
@@ -147,6 +148,27 @@ class _ClientLogForwarder(logging.Handler):
             self.handleError(record)
 
 
+_forwarding_wrappers: "weakref.WeakSet[_VerbosityWrapper]" = weakref.WeakSet()
+"""The SDK loggers of the :class:`HttpClient` instances still alive.
+
+The ``composio_client`` logger has one process-wide level, so it is kept at
+the most permissive level any live instance needs; each instance's wrapper
+then filters what it actually emits. Weak references let an instance that
+was garbage collected stop holding the level down.
+"""
+
+
+def _client_level_for(wrapper: _VerbosityWrapper) -> int:
+    """The ``composio_client`` level that lets ``wrapper`` see what it wants.
+
+    The client's INFO records are forwarded as DEBUG, so the client only
+    needs to produce them when the SDK logger is at DEBUG; otherwise only
+    its WARNING and above records are worth producing.
+    """
+    level = wrapper.logger.getEffectiveLevel()
+    return level if level <= logging.DEBUG else max(level, logging.WARNING)
+
+
 def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
     """Attach the process-wide forwarder to the client logger.
 
@@ -155,6 +177,10 @@ def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
     most recently constructed SDK instance); records emitted during a
     request are routed to the requesting instance regardless of that
     fallback, so earlier instances keep receiving their own request logs.
+
+    The client logger's level is the most permissive one any live instance
+    needs, so constructing a quieter instance never silences the lifecycle
+    records of an earlier, more verbose one.
     """
     client_logger = logging.getLogger(CLIENT_LOGGER_NAME)
     forwarder: t.Optional[_ClientLogForwarder] = None
@@ -169,14 +195,8 @@ def _install_client_log_forwarder(wrapper: _VerbosityWrapper) -> logging.Logger:
         client_logger.addHandler(_ClientLogForwarder(wrapper))
     else:
         forwarder.wrapper = wrapper
-    # The client's INFO records are forwarded as DEBUG, so only let the client
-    # produce them when the SDK logger is at DEBUG. The level is process-wide
-    # (one client logger), so the most recently constructed instance sets it;
-    # each instance's own wrapper still filters what it actually emits.
-    level = wrapper.logger.getEffectiveLevel()
-    client_logger.setLevel(
-        level if level <= logging.DEBUG else max(level, logging.WARNING)
-    )
+    _forwarding_wrappers.add(wrapper)
+    client_logger.setLevel(min(_client_level_for(w) for w in _forwarding_wrappers))
     client_logger.propagate = False
     return client_logger
 
