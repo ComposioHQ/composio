@@ -119,6 +119,10 @@ The [customer-managed key architecture](https://composio.dev/blog/two-questions-
 
 If your requirement is that Composio cannot decrypt provider credentials, evaluate the customer-managed key arrangement with the team. For VPC or self-hosted deployments, confirm who operates each service, who can decrypt credentials, where logs and backups reside, and which outbound connections are required. A deployment label alone does not answer those questions. [Contact Composio](https://composio.dev/contact?utm_source=docs) to establish the architecture and contractual requirements.
 
+### Customer-managed keyring transfer keys
+
+If your organization has an active customer-managed keyring, retrieve its public transfer keys with `composio.keyring.list_transfer_keys()` in Python or `await composio.keyring.listTransferKeys()` in TypeScript. Use the key identified by `active_kid` (Python) or `activeKid` (TypeScript) when sealing new secrets for transfer. The API returns `404` if your organization has no active keyring.
+
 ## Application authorization and retained data
 
 Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.

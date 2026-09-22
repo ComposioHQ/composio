@@ -34,6 +34,8 @@ Use separate Composio projects for development, staging, and production when tho
 
 Keep every project API key on the server. Store production keys in your deployment platform's secret manager, rotate them according to your security policy, and never expose them to browser or mobile clients.
 
+For user- or organization-scoped operations, pass `user_api_key` or `org_api_key` to the Python `Composio` constructor, or `userApiKey` or `orgApiKey` in TypeScript. You can also set `COMPOSIO_USER_API_KEY` and `COMPOSIO_ORG_API_KEY`. A project API key is still required. The client sends the scoped key only to operations that require it.
+
 ## 3. Decide how customers authenticate
 
 Keep managed auth when its provider app, scopes, and quotas fit your product. It removes OAuth app setup and token-refresh work.
@@ -73,6 +75,20 @@ Run at least one safe, read-only call against a real connected account. Confirm 
 - The tool call appears in [Logs](/reference/api-reference/logs) with a non-empty log ID
 
 Do not treat a successful Connect Link alone as an end-to-end test. Authentication can succeed while a provider API, scope, or tool input still fails.
+
+### Configure SDK logging
+
+Pass `logger` and `logLevel` to the TypeScript `Composio` constructor to send SDK logs to your logging system. The logger must provide `error`, `warn`, `info`, and `debug` methods. Messages have credential-shaped values redacted before reaching the logger, including owned-client deprecation warnings. Logger configuration is process-wide: the last configured instance controls the SDK logger.
+
+In Python, pass a standard `logging.Logger` as `logger` and a `composio.utils.logging.LogLevel` as `logging_level`. Sensitive values are redacted before records reach the logger. Deprecation notices use `ComposioDeprecationWarning` warnings rather than log records.
+
+### Inspect project usage
+
+Use `composio.experimental.usage.summary()` for totals by entity type and `composio.experimental.usage.breakdown()` for grouped usage of one entity type, such as `tool_calls` or `sessions`. Both SDKs scope these queries to the project associated with your API key.
+
+<Callout>
+Usage metering is experimental, and its response shape may change.
+</Callout>
 
 ## 7. Verify triggers through your real webhook
 
