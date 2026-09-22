@@ -1,0 +1,21 @@
+[project]
+name = "composio-typesafe"
+version = "0.22.0"
+description = "Use Composio tools with TypeSafe's Jev model: a tool call, a partial call, or an abstention, each with a confidence score."
+readme = "README.md"
+requires-python = ">=3.10,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typesafe-sdk>=0.6.0,<0.7.0",
+    "composio",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"

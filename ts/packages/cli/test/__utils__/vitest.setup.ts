@@ -5,6 +5,7 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Effect, FileSystem } from 'effect';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 
 // Point every test at a fresh, empty config directory so nothing reads or
 // writes the developer's real `~/.composio`. An empty directory holds no
@@ -16,6 +17,10 @@ let testConfigDirectory: string | undefined;
 
 const runFs = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem>): Promise<A> =>
   Effect.runPromise(effect.pipe(Effect.provide(BunFileSystem.layer)));
+
+// Process-lifetime memos (tool versions, connected-account lists) would
+// otherwise carry one case's mocked answer into the next.
+beforeEach(clearInProcessMemos);
 
 beforeEach(async () => {
   testConfigDirectory = await runFs(

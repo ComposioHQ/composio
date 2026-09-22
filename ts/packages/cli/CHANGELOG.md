@@ -4,6 +4,17 @@
 
 ### Patch Changes
 
+- `composio run` now validates binary download URLs returned by the proxy API
+  before fetching them. Private, loopback, link-local, and redirect-based SSRF
+  targets are blocked, DNS resolutions are pinned to prevent rebinding, and the
+  download fails closed when a configured proxy prevents address pinning.
+- The plugin hint shown under Claude Code or Codex now reads
+  `'composio setup --yes' installs it`, and setup error messages that suggest
+  a rerun now include `--yes` too, so an agent following the printed text no
+  longer fails on the non-interactive `--yes` requirement. CLI telemetry gains
+  `agent_host_env` on every event, a `CLI_PLUGIN_HINT_SHOWN` event, host
+  presence signals on `CLI_SETUP_HOST_DETECTED` when a host is not detected,
+  and a `failure_reason_code` on `CLI_SETUP_FAILED`.
 - The CLI now runs on Effect 4 (`effect@4.0.0-rc.112`). Unrecognized commands and
   flags now print a "Did you mean?" suggestion next to the help text for the command
   that failed to parse, and parse errors for a nested command show that command's
@@ -41,6 +52,28 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
+- `composio orgs --help`, `composio signup --help`, the `agent` family pages (signup,
+  login, whoami, inbox, claim), and the group help pages for `connections`, `triggers`,
+  `artifacts`, and `install` now render the same curated, styled help page as every
+  other command family, instead of falling back to the framework's raw flag dump.
+  `composio help <command>` is now a supported spelling of command help (`composio help
+orgs` shows the same page as `composio orgs --help`, with the same longest-prefix
+  fallback for deeper paths); an unknown target fails through the framework parser like
+  any other unknown command. The `orgs` description in contextual error help now matches
+  the command's actual description.
+- `composio listen <slug> --stream` without a path is accepted again and streams
+  the whole event payload. It previously failed with
+  `Received unknown argument: '--stream='`.
+- `composio listen` reports an unknown trigger slug as such. A mistyped slug
+  used to fail with a missing-connection error for the toolkit inferred from its
+  prefix, or with a generic trigger-creation error when that toolkit already had
+  an active account.
+- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
+  and `status` commands that share its API error handling, now exit non-zero on
+  an API error and print the error when stderr is not a terminal. `composio tools
+info <unknown-slug>` used to print nothing and exit 0 when piped.
+- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
+  instead of a removed Slack tool slug and a trigger without configuration.
 
 ## 0.3.3
 

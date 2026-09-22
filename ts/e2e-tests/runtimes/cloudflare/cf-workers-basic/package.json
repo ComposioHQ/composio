@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/cf-workers-basic",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "@cloudflare/workers-types": "catalog:",
     "dotenv": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
+    "vitest": "catalog:vitest4",
     "wrangler": "catalog:"
   },
   "dependencies": {

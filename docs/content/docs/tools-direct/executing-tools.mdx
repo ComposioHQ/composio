@@ -212,7 +212,7 @@ If you just want to call a tool without using any framework or LLM provider, you
 **A toolkit version is required for direct execution** — calling `tools.execute()` without one raises `ToolVersionRequiredError`, and `"latest"` alone is not accepted here. Two ways to satisfy it:
 
 - **An LLM or agent consumes the outputs:** keep `"latest"` and pass `dangerously_skip_version_check=True` (TypeScript: `dangerouslySkipVersionCheck: true`) on the execute call — you always run the newest tools, and the flag's name is the reminder that output schemas can change between releases.
-- **Your code parses the outputs:** pin a dated version — look it up with `composio.toolkits.get(slug="...").meta.version` or in the [Toolkits catalog](/toolkits), and pass it at SDK initialization or per call via `version="..."`.
+- **Your code parses the outputs:** pin a dated version: look it up in the [Toolkits catalog](/toolkits) or from the SDK (see [Pin a version](#pin-a-version)), and pass it at SDK initialization or per call via `version`.
 
 See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for the full tradeoffs.
 </Callout>
@@ -234,7 +234,7 @@ from composio import Composio
 
 user_id = "user-k7334"
 # Configure toolkit versions at SDK level for every toolkit you execute.
-# Use "latest", or pin a version — find them with composio.toolkits.get(slug="github").meta.available_versions
+# Use "latest", or pin a version (see "Pin a version" below)
 composio = Composio(
     api_key="your_composio_key",
     toolkit_versions={"github": "latest"}
@@ -245,7 +245,7 @@ result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     user_id=user_id,
     arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
-    # "latest" requires this opt-in; to pin instead, pass version=composio.toolkits.get(slug="github").meta.version
+    # "latest" requires this opt-in; to pin instead, pass version (see "Pin a version" below)
     dangerously_skip_version_check=True,
 )
 print(result)
@@ -257,7 +257,7 @@ import { Composio } from "@composio/core";
 
 const userId = "user-k7334";
 // Configure toolkit versions at SDK level for every toolkit you execute.
-// Use "latest", or pin a version — find them with (await composio.toolkits.get("github")).meta.availableVersions
+// Use "latest", or pin a version (see "Pin a version" below)
 const composio = new Composio({
     apiKey: "your_composio_key",
     toolkitVersions: { github: "latest" }
@@ -272,10 +272,51 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     "page": 1,
     "per_page": 5
   },
-  // "latest" requires this opt-in; to pin instead, pass version from (await composio.toolkits.get("github")).meta.version
+  // "latest" requires this opt-in; to pin instead, pass `version` (see "Pin a version" below)
   dangerouslySkipVersionCheck: true,
 });
 console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
+```
+  </Tab>
+</Tabs>
+
+### Pin a version
+
+When your code parses tool outputs, look up the current version once, then pass that dated string as `version` on every call. Hard-code the string (or keep it in config) rather than looking it up at runtime, so a new release can't change the output shape without you noticing.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_composio_key")
+
+# One-off lookup: prints something like "20250909_00"
+print(composio.toolkits.get(slug="github").meta.version)
+
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    user_id="user-k7334",
+    version="20250909_00",
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_composio_key" });
+
+// One-off lookup: prints something like "20250909_00"
+const tool = await composio.tools.getRawComposioToolBySlug("GITHUB_LIST_STARGAZERS");
+console.log(tool.version);
+
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+  userId: "user-k7334",
+  version: "20250909_00",
+  arguments: { owner: "ComposioHQ", repo: "composio", page: 1, per_page: 5 },
+});
 ```
   </Tab>
 </Tabs>
@@ -298,6 +339,8 @@ The `endpoint` can be a relative path or absolute URL. Relative paths are resolv
 
 <Callout type="warn">
 Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
+
+A relative endpoint is appended to the base URL, and many base URLs already include a path. Google Calendar's base URL is `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`. Passing `/calendar/v3/users/me/calendarList` requests `/calendar/v3/calendar/v3/users/me/calendarList` and returns a `404`.
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -490,6 +533,12 @@ console.log(result);
 ```
   </Tab>
 </Tabs>
+
+Automatic S3 downloads stop at 100 MiB, even when the server omits or reports an incorrect
+`Content-Length`. Python removes partial files for transport and filesystem failures and raises
+`ErrorDownloadingFile`; oversized responses raise `ResponseTooLargeError`. In TypeScript, failed
+automatic S3 downloads return `file_downloaded: false`. `RemoteFile` connection failures and
+streamed-body failures raise `RemoteFileDownloadError`.
 
 ## Security for local file paths
 

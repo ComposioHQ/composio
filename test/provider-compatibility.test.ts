@@ -19,12 +19,12 @@ describe('provider compatibility plan', () => {
     const beta = plan.find(lane => lane.id === 'workspace-major-prerelease');
     const minimum = plan.filter(lane => lane.id.startsWith('verified-minimum-core-'));
 
-    expect(providerNames).toHaveLength(10);
+    expect(providerNames).toHaveLength(11);
     expect(current?.providerNames).toEqual(providerNames);
     expect(beta?.providerNames).toEqual(providerNames);
     expect(beta?.core).toEqual({ kind: 'workspace-prerelease', version: '1.0.0-beta.0' });
     expect(minimum.flatMap(lane => lane.providerNames).sort()).toEqual([...providerNames].sort());
-    expect(minimum).toHaveLength(10);
+    expect(minimum).toHaveLength(11);
     expect(
       Object.fromEntries(
         minimum.map(lane => [
@@ -42,6 +42,7 @@ describe('provider compatibility plan', () => {
       '@composio/mastra': '0.18.0',
       '@composio/openai': '0.18.0',
       '@composio/openai-agents': '0.18.0',
+      '@composio/typesafe': '0.18.1',
       '@composio/vercel': '0.18.0',
     });
     expect(minimum.every(lane => lane.providerNames.length === 1)).toBe(true);
@@ -62,6 +63,7 @@ describe('provider compatibility plan', () => {
       '@composio/mastra': '0.10.0',
       '@composio/openai': '0.10.0',
       '@composio/openai-agents': '0.10.0',
+      '@composio/typesafe': '0.18.1',
       '@composio/vercel': '0.10.0',
     });
   });

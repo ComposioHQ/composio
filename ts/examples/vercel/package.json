@@ -1,7 +1,7 @@
 {
   "name": "vercel-example",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "",
   "main": "src/ai.ts",
   "scripts": {
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.0",
     "typescript": "catalog:"
   },
   "type": "module"

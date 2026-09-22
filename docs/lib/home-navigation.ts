@@ -1,8 +1,7 @@
 export type DocsProduct = 'for-you' | 'platform';
 
 export type ProductSidebarItem =
-  | { type: 'page'; url: string; label?: string }
-  | { type: 'folder'; path: string; label?: string };
+  { type: 'page'; url: string; label?: string } | { type: 'folder'; path: string; label?: string };
 
 export interface ProductSidebarGroup {
   label: string;
@@ -37,11 +36,12 @@ interface DocsProductConfig {
 }
 
 const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
+  { type: 'page', url: '/docs/using-composio-skill' },
   { type: 'folder', path: 'security', label: 'Security and data' },
 ];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
-  item.type === 'page' ? item.url : `/docs/${item.path}`,
+  item.type === 'page' ? item.url : `/docs/${item.path}`
 );
 
 /**
@@ -113,6 +113,9 @@ export const DOCS_PRODUCTS = {
     routePrefixes: [
       '/docs/agent-setup',
       '/docs/quickstart',
+      '/docs/consumer-agents',
+      '/docs/b2b-agents',
+      '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
@@ -146,13 +149,16 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/how-composio-works', label: 'Sessions' },
           { type: 'page', url: '/docs/configuring-sessions' },
           { type: 'folder', path: 'authentication' },
-          { type: 'page', url: '/docs/skills', label: 'Tools and skills' },
+          { type: 'page', url: '/docs/skills', label: 'Skills' },
           { type: 'page', url: '/docs/triggers' },
         ],
       },
       {
         label: 'Guides',
         items: [
+          { type: 'page', url: '/docs/consumer-agents' },
+          { type: 'page', url: '/docs/b2b-agents' },
+          { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/sessions-via-mcp' },
           { type: 'folder', path: 'sandbox' },
           { type: 'folder', path: 'extending-sessions' },
@@ -228,23 +234,24 @@ export function classifyDocsProduct(pathname: string): DocsProduct | null {
 
 export function resolveDocsProduct(
   pathname: string,
-  persistedProduct?: string | null,
+  persistedProduct?: string | null
 ): DocsProduct {
   return (
-    classifyDocsProduct(pathname) ??
-    parseDocsProduct(persistedProduct) ??
-    DEFAULT_DOCS_PRODUCT
+    classifyDocsProduct(pathname) ?? parseDocsProduct(persistedProduct) ?? DEFAULT_DOCS_PRODUCT
   );
 }
 
 export function docsProductDestination(pathname: string, target: DocsProduct): string {
   const sourceProduct = target === 'platform' ? 'for-you' : 'platform';
-  const counterpart = PRODUCT_COUNTERPARTS.find(pair => matchesRoute(pathname, pair[sourceProduct]));
+  const counterpart = PRODUCT_COUNTERPARTS.find(pair =>
+    matchesRoute(pathname, pair[sourceProduct])
+  );
   if (counterpart) return counterpart[target];
   if (
     classifyDocsProduct(pathname) !== sourceProduct &&
     SHARED_ROUTE_PREFIXES.some(prefix => matchesRoute(pathname, prefix))
-  ) return pathname;
+  )
+    return pathname;
   return DOCS_PRODUCTS[target].landingRoute;
 }
 
@@ -254,7 +261,7 @@ export function serializeDocsProductCookie(product: DocsProduct): string {
 
 export function shouldAnimateDocsProductSwitch(
   supportsViewTransitions: boolean,
-  prefersReducedMotion: boolean,
+  prefersReducedMotion: boolean
 ): boolean {
   return supportsViewTransitions && !prefersReducedMotion;
 }
@@ -264,7 +271,10 @@ export function shouldAnimateDocsProductSwitch(
  * `intent.product`, so the ids are `#platform` / `#for-you`.
  */
 export function homeIntentAnchor(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export function homeIntentsToMarkdown(): string {

@@ -8,6 +8,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioClients from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
@@ -264,6 +265,24 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260115_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient: { type: 'string' },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
       connectedAccountsData: {
         items: [
           {
@@ -343,6 +362,33 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
+      })
+    );
+
+    it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
+      Effect.gen(function* () {
+        const latestVersion = vi
+          .spyOn(composioClients, 'getLatestToolVersion')
+          .mockImplementation(({ toolSlug }) =>
+            Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
+          );
+        // Warm the on-disk schema cache, then forget the memoized version so
+        // the next run has to ask the server again.
+        yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
+        clearInProcessMemos();
+        latestVersion.mockClear();
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        // The command's own version check and the executor's schema lookup
+        // both run on this path; they must share one request.
+        expect(latestVersion).toHaveBeenCalledTimes(1);
       })
     );
   });
@@ -1128,26 +1174,64 @@ describe('CLI: composio execute', () => {
           logId: string;
           storedInFile: boolean;
           tokenCount: number;
+          sizeBytes: number;
           outputFilePath: string;
         };
 
         expect(output.successful).toBe(true);
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
-        expect(output.tokenCount).toBeGreaterThan(10_000);
+        expect(output.sizeBytes).toBeGreaterThan(40_000);
+        expect(output.tokenCount).toBe(Math.ceil(output.sizeBytes / 4));
         // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
         // vitest setup pins to a per-test temp directory.
-        const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
+        const cacheDir = yield* Config.String('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
         expect(output.outputFilePath).toMatch(/\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/);
         expect(output.outputFilePath.startsWith(`${cacheDir}/`)).toBe(true);
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');
+        expect(Buffer.byteLength(storedJson, 'utf8')).toBe(output.sizeBytes);
 
         fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
           recursive: true,
           force: true,
         });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: largeOutputConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {
+            // ~36KB: under the 40KB threshold once serialized.
+            content: 'composio '.repeat(4_000),
+          },
+          error: null,
+          successful: true,
+          logId: 'log_dense_output',
+        },
+      },
+    })
+  )('[Given] a response under the byte threshold [Then] it prints inline', it => {
+    it.effect('does not store the payload in a file', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          successful: boolean;
+          storedInFile?: boolean;
+          data: { content: string };
+        };
+
+        expect(output.successful).toBe(true);
+        expect(output.storedInFile).toBeUndefined();
+        expect(output.data.content).toHaveLength(36_000);
       })
     );
   });

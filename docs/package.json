@@ -39,6 +39,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.60",
     "@fuma-translate/react": "^1.0.2",
+    "@iconify-json/lucide": "^1.2.135",
     "@pierre/diffs": "^1.4.1",
     "@pierre/trees": "^1.0.0-beta.6",
     "@radix-ui/react-tabs": "^1.1.21",

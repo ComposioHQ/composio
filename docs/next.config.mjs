@@ -44,6 +44,8 @@ const config = {
     '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
     '/kb/**': ['./kb/**'],
     '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
+    // The OG route reads its fonts and wordmark from disk at request time.
+    '/api/og/**': ['./app/fonts/Geist*.ttf', './public/Composio Logo*.svg', './public/og/*'],
   },
   images: {
     // Enable modern image formats for better compression

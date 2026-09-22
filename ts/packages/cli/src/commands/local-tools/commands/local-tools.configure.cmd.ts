@@ -11,36 +11,36 @@ import { Data, Effect, Option, Predicate } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
 
-const selector = Argument.string('selector').pipe(
+const selector = Argument.String('selector').pipe(
   Argument.withDescription('Local toolkit slug or LOCAL_* tool slug to configure')
 );
 
-const command = Flag.string('command').pipe(
+const command = Flag.String('command').pipe(
   Flag.optional,
   Flag.withDescription('Override the local binary/launcher command')
 );
 
-const disable = Flag.boolean('disable').pipe(
+const disable = Flag.Boolean('disable').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Disable this local toolkit/tool')
 );
 
-const enable = Flag.boolean('enable').pipe(
+const enable = Flag.Boolean('enable').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Enable this local toolkit/tool by clearing disabled=false')
 );
 
-const authenticated = Flag.boolean('authenticated').pipe(
+const authenticated = Flag.Boolean('authenticated').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Mark this local toolkit/tool as authenticated in metadata')
 );
 
-const unauthenticated = Flag.boolean('unauthenticated').pipe(
+const unauthenticated = Flag.Boolean('unauthenticated').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Mark this local toolkit/tool as unauthenticated in metadata')
 );
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print the updated metadata entry as JSON')
 );

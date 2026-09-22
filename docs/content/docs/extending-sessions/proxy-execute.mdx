@@ -11,7 +11,7 @@ The session is already scoped to a [userID](/docs/how-composio-works), so you pa
 Proxy execute is a building block, not just a fallback. Use it to build experiences on top of Composio that reach past predefined tools, like the [Pi + Slack bot example](/examples/general-agent-with-pi#reach-the-gaps-with-the-proxy), which drops down to the proxy for the Slack Web API calls the toolkit doesn't wrap as tools. We'll link more examples here as we add them.
 
 <Callout title="Use a scoped API key">
-Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has the **Proxy execute** permission granted. Default full-access keys already include it.
+Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has **Proxy execute** enabled. Session tool execution alone does not cover `session.proxyExecute()` or proxy calls made from that session's sandbox. Default full-access keys already include this permission.
 </Callout>
 
 ## When to use it
@@ -65,9 +65,42 @@ console.log(data);
 
 The `endpoint` is a path relative to the toolkit's base URL (`/repos/...` resolves against `api.github.com`). Pass an absolute URL only when you need a host that isn't the toolkit's standard API, such as a regional Salesforce or Zendesk domain.
 
+<Callout type="warn" title="Don't repeat the base URL's path">
+The `endpoint` is appended to the base URL, and many base URLs already include a path. Google Calendar's base URL is `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`. Passing `/calendar/v3/users/me/calendarList` requests `/calendar/v3/calendar/v3/users/me/calendarList` and returns a `404`.
+</Callout>
+
 <Callout type="warn">
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>
+
+## Session restrictions
+
+Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.
+
+Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from the session's sandbox, turn proxy execution off in the sandbox config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tags=["readOnlyHint"],
+    sandbox={"enable_proxy_execution": False}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tags: ["readOnlyHint"],
+  sandbox: { enable: true, enableProxyExecution: false },
+});
+```
+</Tab>
+</Tabs>
 
 ## Parameters
 

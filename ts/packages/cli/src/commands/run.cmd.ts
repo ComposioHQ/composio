@@ -4,8 +4,8 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
-import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
+import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
@@ -34,33 +34,33 @@ import { loadHostConfig } from 'src/services/config';
 import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withAlias('f'),
   Flag.withDescription('Run a TS/JS file instead of inline code'),
   Flag.optional
 );
 
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Preview execute() calls without running them'),
   Flag.withDefault(false)
 );
-const debug = Flag.boolean('debug').pipe(
+const debug = Flag.Boolean('debug').pipe(
   Flag.withDescription('Log helper steps while the script runs'),
   Flag.withDefault(false)
 );
-const logsOff = Flag.boolean('logs-off').pipe(
+const logsOff = Flag.Boolean('logs-off').pipe(
   Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
@@ -84,7 +84,7 @@ export const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
 ]);
 export const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
 
-const args = Argument.string('arg').pipe(
+const args = Argument.String('arg').pipe(
   Argument.variadic(),
   Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );
@@ -105,91 +105,16 @@ export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | unde
   { defaultValue: () => undefined }
 );
 
-export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<string> => {
-  if (!source.trim()) {
-    return [];
-  }
-
-  const parsed = ts.createSourceFile(
-    'composio-run-inline.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const slugs = new Set<string>();
-
-  const visit = (node: ts.Node) => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'execute'
-    ) {
-      const [slugArg] = node.arguments;
-      if (slugArg && ts.isStringLiteralLike(slugArg)) {
-        slugs.add(slugArg.text);
-      }
-    }
-
-    ts.forEachChild(node, visit);
-  };
-
-  visit(parsed);
-  return [...slugs];
-};
-
-export const wrapInlineCodeForRun = (source: string): string => {
-  const parsed = ts.createSourceFile(
-    'composio-run-inline.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const statements = [...parsed.statements];
-  if (statements.length === 0) {
-    return source;
-  }
-
-  const lastStatement = statements.at(-1);
-  if (!lastStatement || !ts.isExpressionStatement(lastStatement)) {
-    return source;
-  }
-
-  const prefix = source.slice(0, lastStatement.getFullStart());
-  const suffix = source.slice(lastStatement.getEnd());
-  const expressionText = lastStatement.expression.getText(parsed);
-  return `${prefix}return (${expressionText});${suffix}`;
-};
-
-export const wrapFileSourceForRun = (source: string): string => {
-  const parsed = ts.createSourceFile(
-    'composio-run-file.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const statements = [...parsed.statements];
-  const firstNonImportIndex = statements.findIndex(statement => !ts.isImportDeclaration(statement));
-  if (firstNonImportIndex === -1) {
-    return source;
-  }
-
-  const bodyStart = statements[firstNonImportIndex]!.getFullStart();
-  const importPrefix = source.slice(0, bodyStart);
-  const body = source.slice(bodyStart);
-  return [
-    importPrefix,
-    'const __composioResult = await (async () => {',
-    wrapInlineCodeForRun(body),
-    '})();',
-    'if (__composioResult !== undefined) {',
-    '  console.log(__composioResult);',
-    '}',
-    '',
-  ].join('\n');
-};
+/**
+ * The source rewrites need the TypeScript compiler, which ships in the
+ * `generation-runtime` companion module next to the executable rather than in
+ * the executable itself. Loading it here keeps it off every other command's
+ * startup path. A missing companion goes through the same self-repair as the
+ * `run-*` modules, and its error surfaces exactly as theirs does below.
+ */
+const loadSourceTransforms = loadGenerationRuntime.pipe(
+  Effect.mapError(error => new Error(error.message))
+);
 
 export const inferCliInvocationPrefix = (
   path: Path.Path,
@@ -323,6 +248,7 @@ export const buildRunCommand = ({
 }) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const { wrapFileSourceForRun, wrapInlineCodeForRun } = yield* loadSourceTransforms;
     // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
     // which makes compiled Bun binaries act as a plain Bun runtime.
     // Avoid the `run` subcommand entirely since Bun intercepts it as its own
@@ -621,6 +547,7 @@ export const runCmd = Command.make('run', {
         const telemetryDebug = yield* isTelemetryDebugEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
+          const { extractInlineExecuteToolSlugs } = yield* loadSourceTransforms;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
           if (preloadSlugs.length > 0) {
             yield* warmToolInputDefinitions(preloadSlugs).pipe(

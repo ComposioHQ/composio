@@ -26,12 +26,9 @@ import {
 } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
-import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
-import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
-import { transpileTypeScriptSources } from 'src/generation/typescript/transpile';
-import { BANNER } from 'src/generation/constants';
+import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
 import type { Toolkit } from 'src/models/toolkits';
 import type { TriggerType } from 'src/models/trigger-types';
 import type { Tool, ToolsAsEnums } from 'src/models/tools';
@@ -60,29 +57,29 @@ export class TypeScriptGenerationInputError extends Data.TaggedError(
 
 const invalidGenerateValue = (message: string) => new TypeScriptGenerationInputError({ message });
 
-export const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
   Flag.withDescription('Output directory for the generated TypeScript type stubs.')
 );
 
-export const compact = Flag.boolean('compact').pipe(
+export const compact = Flag.Boolean('compact').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Emit a single TypeScript file')
 );
 
-export const transpiled = Flag.boolean('transpiled').pipe(
+export const transpiled = Flag.Boolean('transpiled').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
 );
 
-export const typeTools = Flag.boolean('type-tools').pipe(
+export const typeTools = Flag.Boolean('type-tools').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
   )
 );
 
-export const toolkitsOpt = Flag.string('toolkits').pipe(
+export const toolkitsOpt = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
@@ -420,15 +417,29 @@ export function generateTypescriptTypeStubs({
           : fetchAllData(client, typeTools, validatedOverrides, spinner);
 
         yield* spinner.message('Generating TypeScript type stubs...');
-        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+        // The generation pipeline and the TypeScript compiler live in the
+        // `generation-runtime` companion module, loaded from disk here so no
+        // other command pays for them at startup.
+        const generation = yield* loadGenerationRuntime;
+        const index = generation.createToolkitIndex({
+          toolkits,
+          typeableTools,
+          triggerTypes,
+          versionMap,
+        });
 
         // Generate TypeScript sources
-        const sources = yield* generateTypeScriptSources({
-          outputDir,
-          emitSingleFile: Boolean(compact), // Ensure boolean type
-          banner: BANNER,
-          importExtension: 'js',
-        })(index);
+        const sources = yield* generationOutcome(() =>
+          generation.generateTypeScriptSourceFiles(
+            {
+              outputDir,
+              emitSingleFile: Boolean(compact), // Ensure boolean type
+              banner: generation.BANNER,
+              importExtension: 'js',
+            },
+            index
+          )
+        );
 
         yield* spinner.message('Writing files to disk...');
 
@@ -455,7 +466,9 @@ export function generateTypescriptTypeStubs({
         if (transpiled) {
           yield* spinner.message('Transpiling to JavaScript...');
           yield* pipe(
-            transpileTypeScriptSources({ sources, outputDir }),
+            generationOutcome(() =>
+              generation.transpileTypeScriptSourceFiles({ sources, outputDir })
+            ),
             Effect.catch(error =>
               Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
             )

@@ -19,7 +19,14 @@ from composio_client.types.tool_list_response import (
     ItemDeprecatedToolkit,
     ItemToolkit,
 )
-from composio_client.types.tool_router import session_link_params, session_patch_params
+from composio_client.types.tool_router import (
+    session_attach_response,
+    session_create_response,
+    session_link_params,
+    session_patch_params,
+    session_patch_response,
+    session_retrieve_response,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -87,6 +94,18 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
+#: Server-side session configuration as returned by the API: toolkit and tool
+#: allowlists, tags, auth configs, connected accounts, ``manage_connections``,
+#: preload, sandbox (``workbench``), search and execute settings. The four
+#: Stainless response models carry the same fields.
+ToolRouterSessionConfig = t.Union[
+    session_create_response.Config,
+    session_retrieve_response.Config,
+    session_attach_response.Config,
+    session_patch_response.Config,
+]
+
+
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
@@ -105,11 +124,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
     Attributes:
         session_id: Unique session identifier
+        config: Server-side session configuration as returned by the API,
+                refreshed in place by :meth:`update`
         experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     #: Unique session identifier.
     session_id: str
+    #: Server-side session configuration (toolkit/tool allowlists, tags,
+    #: preload, sandbox, manage_connections) as returned by the API. Refreshed
+    #: in place by :meth:`update`.
+    config: ToolRouterSessionConfig
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
 
@@ -125,6 +150,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
+        config: t.Optional[ToolRouterSessionConfig] = None,
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
@@ -138,13 +164,21 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
+        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
+        # Sessions built from an API response always carry their config; the
+        # fallback only covers direct construction without one (tests).
+        self.config = config or session_create_response.Config(
+            user_id=user_id or "",
+            execute=session_create_response.ConfigExecute(),
+            search=session_create_response.ConfigSearch(),
+            preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+        )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
         # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
         # not surface `mcp` on the base class — MCP is an explicit opt-in.
         setattr(self, "mcp", mcp)
         self.experimental = experimental
-        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
         self._preloaded_custom_tool_slugs = preloaded_custom_tool_slugs or []
@@ -909,11 +943,12 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[session_patch_params.MultiAccount], "Omit"
         ] = omit,
         preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
-    ) -> None:
+    ) -> ToolRouterSessionConfig:
         """Partially update the session configuration.
 
         Only the fields provided will be changed; omitted fields are preserved.
-        Mutates this session's ``preload`` in-place.
+        Mutates this session's ``config`` and ``preload`` in-place and returns
+        the updated session configuration.
 
         Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
         ``multi_account`` to clear the stored value.
@@ -946,7 +981,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             multi_account=multi_account,
             preload=preload,
         )
+        self.config = response.config
         self.preload = _session_preload_config(response.config.preload)
+        return self.config
 
     def delete(self) -> ToolRouterSessionDeleteResponse:
         """

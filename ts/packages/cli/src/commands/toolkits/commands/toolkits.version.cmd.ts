@@ -5,7 +5,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { extractMessage } from 'src/utils/api-error-extraction';
 
-const slug = Argument.string('slug').pipe(Argument.withDescription('Toolkit slug (e.g. "gmail")'));
+const slug = Argument.String('slug').pipe(Argument.withDescription('Toolkit slug (e.g. "gmail")'));
 
 /**
  * Show toolkit version information.
