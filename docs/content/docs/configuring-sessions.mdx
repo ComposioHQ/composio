@@ -825,6 +825,12 @@ do {
 </Tab>
 </Tabs>
 
+### Configuration history
+
+Inspect the configurations a session has used with `session.list_config_history(limit=10)` in Python or `await session.listConfigHistory({ limit: 10 })` in TypeScript. Results are newest first, with the live configuration first. Each `session.update()` archives the previous configuration.
+
+The response contains `items` with each version's `config` and an `is_current` (Python) or `isCurrent` (TypeScript) flag. Pass the response's `next_cursor` (Python) or `nextCursor` (TypeScript) as `cursor` to fetch another page; `limit` supports up to 100 items per page.
+
 ### delete()
 
 Delete a session when you're done with it. Deleted sessions immediately stop being retrievable or executable, and the call returns the deleted `session_id`. Deleting a missing or already-deleted session surfaces the backend `404`.
@@ -906,6 +912,8 @@ console.log(tool.outputParameters);
 ```
 </Tab>
 </Tabs>
+
+To fetch several toolkits in one request, use `composio.toolkits.get_many(["github", "slack"])` in Python or `await composio.toolkits.getMany(['github', 'slack'])` in TypeScript. Both return the matching toolkits.
 
 ## Next
 

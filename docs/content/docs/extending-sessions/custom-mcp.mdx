@@ -24,7 +24,15 @@ A Custom MCP moves through this lifecycle:
 5. **Use** the toolkit in a session. For authenticated servers, explicitly select the connected account.
 
 <Callout type="warn" title="API-only while Custom MCP is experimental">
-Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. The SDKs don't expose these endpoints yet, and their contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
+Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. You can also use the experimental SDK methods described below. These contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
+</Callout>
+
+### Manage custom toolkits with the SDK
+
+You can also run this lifecycle through `composio.experimental.custom_toolkits` in Python or `composio.experimental.customToolkits` in TypeScript. Both provide `upsert()` to register a toolkit or update its display metadata, `sync()` to fetch its remote tool definitions, and `delete()` to remove it and its associated auth configs and connections.
+
+<Callout>
+These project-owned toolkit APIs are experimental. They manage remote toolkits registered in Composio; [local custom toolkits](/docs/extending-sessions/custom-tools-and-toolkits) run in your SDK process.
 </Callout>
 
 ## Register a Custom MCP
@@ -382,7 +390,6 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 <Accordions>
 <Accordion title="Setup and lifecycle">
 
-- **API-only setup:** The SDKs don't expose registration, sync, update, or deletion methods yet. Use the lifecycle endpoints on this page, then use the toolkit slug through the SDK.
 - **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
 - **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
 - **Immutable `app_url` and `auth_schemes`:** Re-registering an existing slug updates other fields in place, but changing `app_url` or `auth_schemes` returns `409 Conflict`. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
