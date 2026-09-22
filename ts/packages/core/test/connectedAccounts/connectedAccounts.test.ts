@@ -7,14 +7,22 @@ import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/con
 import {
   ComposioAclOnlyForSharedError,
   ComposioConnectedAccountNotFoundError,
+  ComposioConnectedAccountNotRevokableError,
+  ComposioConnectedAccountRevocationNotSupportedError,
   ComposioFailedToCreateConnectedAccountLink,
 } from '../../src/errors';
-import { BadRequestError } from '@composio/client';
+import {
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+  NotFoundError,
+} from '@composio/client';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ComposioMultipleConnectedAccountsError } from '../../src/errors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { AuthScheme } from '../../src/models/AuthScheme';
 import { ConnectionStatuses } from '../../src/types/connectedAccountAuthStates.types';
+import logger from '../../src/utils/logger';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -25,6 +33,8 @@ const extendedMockClient = {
     retrieve: vi.fn(),
     delete: vi.fn(),
     refresh: vi.fn(),
+    revoke: vi.fn(),
+    completeAuth: vi.fn(),
     patch: vi.fn(),
     updateStatus: vi.fn(),
     createConnectedAccountLink: vi.fn(),
@@ -808,16 +818,16 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: redirectUrl,
-          validate_credentials: undefined,
         },
         undefined
       );
       expect(result).toEqual(mockResponse);
     });
 
-    it('should refresh a connected account with validateCredentials option', async () => {
+    it('should ignore the removed validateCredentials option and warn', async () => {
       const nanoid = 'conn_123';
       const mockResponse = { id: nanoid, refreshed: true };
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
       extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
 
@@ -827,11 +837,12 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: undefined,
-          validate_credentials: true,
         },
         undefined
       );
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('validateCredentials'));
       expect(result).toEqual(mockResponse);
+      warnSpy.mockRestore();
     });
 
     it('should refresh a connected account with both options', async () => {
@@ -850,7 +861,6 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: options.redirectUrl,
-          validate_credentials: options.validateCredentials,
         },
         undefined
       );
@@ -880,7 +890,6 @@ describe('ConnectedAccounts', () => {
         nanoid,
         {
           query_redirect_url: undefined,
-          validate_credentials: undefined,
         },
         undefined
       );
@@ -1872,6 +1881,122 @@ describe('ConnectedAccounts', () => {
       await expect(connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true })).rejects.toBe(
         otherError
       );
+    });
+  });
+
+  describe('revoke', () => {
+    const nanoid = 'conn_123';
+
+    it('should revoke a connected account and transform the response', async () => {
+      extendedMockClient.connectedAccounts.revoke.mockResolvedValueOnce({
+        revoked_tokens: ['access_token', 'refresh_token'],
+        connected_account: { id: nanoid, status: 'REVOKED' },
+      });
+
+      const result = await connectedAccounts.revoke(nanoid);
+
+      expect(extendedMockClient.connectedAccounts.revoke).toHaveBeenCalledWith(nanoid, undefined);
+      expect(result).toEqual({
+        revokedTokens: ['access_token', 'refresh_token'],
+        connectedAccount: { id: nanoid, status: 'REVOKED' },
+      });
+    });
+
+    it('should forward request options', async () => {
+      extendedMockClient.connectedAccounts.revoke.mockResolvedValueOnce({
+        revoked_tokens: [],
+        connected_account: { id: nanoid, status: 'REVOKED' },
+      });
+      const signal = new AbortController().signal;
+
+      await connectedAccounts.revoke(nanoid, { signal });
+
+      expect(extendedMockClient.connectedAccounts.revoke).toHaveBeenCalledWith(nanoid, { signal });
+    });
+
+    it('should surface a 400 as ComposioConnectedAccountRevocationNotSupportedError', async () => {
+      extendedMockClient.connectedAccounts.revoke.mockRejectedValueOnce(
+        new BadRequestError(400, undefined, 'Toolkit does not support revocation', {})
+      );
+
+      const error = await connectedAccounts.revoke(nanoid).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(ComposioConnectedAccountRevocationNotSupportedError);
+      expect(error).toMatchObject({
+        message: expect.stringContaining('does not support revocation'),
+        meta: { nanoid },
+      });
+    });
+
+    it('should surface a 409 as ComposioConnectedAccountNotRevokableError', async () => {
+      extendedMockClient.connectedAccounts.revoke.mockRejectedValueOnce(
+        new ConflictError(409, undefined, 'Connection is not in a revokable state', {})
+      );
+
+      await expect(connectedAccounts.revoke(nanoid)).rejects.toThrow(
+        ComposioConnectedAccountNotRevokableError
+      );
+    });
+
+    it('should rethrow other errors unchanged', async () => {
+      const serverError = new InternalServerError(500, undefined, 'boom', {});
+      extendedMockClient.connectedAccounts.revoke.mockRejectedValueOnce(serverError);
+
+      await expect(connectedAccounts.revoke(nanoid)).rejects.toBe(serverError);
+    });
+  });
+
+  describe('completeAuth', () => {
+    it('should redeem the session and transform the response', async () => {
+      extendedMockClient.connectedAccounts.completeAuth.mockResolvedValueOnce({
+        connected_account_id: 'ca_123',
+        toolkit_slug: 'github',
+      });
+
+      const result = await connectedAccounts.completeAuth({
+        userId: 'user_1',
+        sessionUri: 'session_abc',
+      });
+
+      expect(extendedMockClient.connectedAccounts.completeAuth).toHaveBeenCalledWith(
+        { user_id: 'user_1', session_uri: 'session_abc' },
+        undefined
+      );
+      expect(result).toEqual({ connectedAccountId: 'ca_123', toolkitSlug: 'github' });
+    });
+
+    it('should forward request options', async () => {
+      extendedMockClient.connectedAccounts.completeAuth.mockResolvedValueOnce({
+        connected_account_id: 'ca_123',
+        toolkit_slug: 'github',
+      });
+      const signal = new AbortController().signal;
+
+      await connectedAccounts.completeAuth(
+        { userId: 'user_1', sessionUri: 'session_abc' },
+        { signal }
+      );
+
+      expect(extendedMockClient.connectedAccounts.completeAuth).toHaveBeenCalledWith(
+        { user_id: 'user_1', session_uri: 'session_abc' },
+        { signal }
+      );
+    });
+
+    it('should reject an empty userId before calling the API', async () => {
+      await expect(
+        connectedAccounts.completeAuth({ userId: '', sessionUri: 'session_abc' })
+      ).rejects.toThrow('Failed to parse connected account completeAuth params');
+      expect(extendedMockClient.connectedAccounts.completeAuth).not.toHaveBeenCalled();
+    });
+
+    it('should rethrow API errors unchanged', async () => {
+      const notFound = new NotFoundError(404, undefined, 'Session not found', {});
+      extendedMockClient.connectedAccounts.completeAuth.mockRejectedValueOnce(notFound);
+
+      await expect(
+        connectedAccounts.completeAuth({ userId: 'user_1', sessionUri: 'session_abc' })
+      ).rejects.toBe(notFound);
     });
   });
 });

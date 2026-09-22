@@ -2,7 +2,19 @@ import {
   ToolkitRetrieveResponse as RawToolkitRetrieveResponse,
   ToolkitListResponse as RawToolkitListResponse,
   ToolkitRetrieveCategoriesResponse as RawToolkitRetrieveCategoriesResponse,
+  type Toolkits as ClientToolkits,
 } from '@composio/client/resources/toolkits';
+
+// The `/toolkits/multi` and `/toolkits/changelog` response types are only
+// reachable through the resource class namespace on the published subpath.
+type RawToolkitRetrieveChangelogResponse = ClientToolkits.ToolkitRetrieveChangelogResponse;
+type RawToolkitRetrieveMultiResponse = ClientToolkits.ToolkitRetrieveMultiResponse;
+type RawToolkitRecommendScopesParams = ClientToolkits.ToolkitRecommendScopesParams;
+type RawToolkitRecommendScopesResponse = ClientToolkits.ToolkitRecommendScopesResponse;
+type RawToolkitRetrieveScopesGrantContextParams =
+  ClientToolkits.ToolkitRetrieveScopesGrantContextParams;
+type RawToolkitRetrieveScopesGrantContextResponse =
+  ClientToolkits.ToolkitRetrieveScopesGrantContextResponse;
 import {
   ToolKitListResponse,
   ToolKitListResponseSchema,
@@ -11,6 +23,14 @@ import {
   ToolkitRetrieveResponseSchema,
   ToolkitRetrieveCategoriesResponse,
   ToolkitRetrieveCategoriesResponseSchema,
+  ToolkitChangelogResponse,
+  ToolkitChangelogResponseSchema,
+  ToolkitRecommendScopesParams,
+  ToolkitRecommendScopesResponse,
+  ToolkitRecommendScopesResponseSchema,
+  ToolkitListGrantContextsParams,
+  ToolkitListGrantContextsResponse,
+  ToolkitListGrantContextsResponseSchema,
 } from '../../types/toolkit.types';
 import { transform } from '../transform';
 
@@ -24,8 +44,8 @@ type RawToolkitAuthConfigDetailFields = NonNullable<
  * today, so the union costs nothing and keeps the mapping honest if they ever
  * drift apart.
  *
- * Most keys are already camelCase on the wire (`displayName`), but `is_secret`
- * and `legacy_template_name` are not, so the field needs an explicit mapping
+ * Most keys are already camelCase on the wire (`displayName`), but `is_secret`,
+ * `legacy_template_name`, and `user_visible` are not, so the field needs an explicit mapping
  * instead of a pass-through: a pass-through leaves them under keys the schema
  * does not know and zod strips them while validating.
  *
@@ -56,6 +76,7 @@ const transformToolkitAuthField = (field: RawToolkitAuthField): ToolkitAuthField
   ...(field.legacy_template_name !== undefined && {
     legacyTemplateName: field.legacy_template_name,
   }),
+  ...(field.user_visible !== undefined && { userVisible: field.user_visible }),
 });
 
 /**
@@ -83,8 +104,12 @@ const transformToolkitAuthFieldGroup = (
   optional: (group?.optional ?? []).map(transformToolkitAuthField),
 });
 
+/**
+ * `GET /toolkits` and `POST /toolkits/multi` return the same item shape; the
+ * generated client only names them differently per operation.
+ */
 export const transformToolkitListResponse = (
-  response: RawToolkitListResponse
+  response: RawToolkitListResponse | RawToolkitRetrieveMultiResponse
 ): ToolKitListResponse => {
   return transform(response)
     .with(ToolKitListResponseSchema)
@@ -143,6 +168,9 @@ export const transformToolkitRetrieveResponse = (
         ...(authConfig.auth_hint_url !== undefined && {
           authHintUrl: authConfig.auth_hint_url,
         }),
+        ...(authConfig.required_scopes !== undefined && {
+          requiredScopes: authConfig.required_scopes,
+        }),
         fields: {
           authConfigCreation: transformToolkitAuthFieldGroup(
             authConfig.fields?.auth_config_creation
@@ -161,6 +189,24 @@ export const transformToolkitRetrieveResponse = (
     }));
 };
 
+export const transformToolkitChangelogResponse = (
+  response: RawToolkitRetrieveChangelogResponse
+): ToolkitChangelogResponse => {
+  return transform(response)
+    .with(ToolkitChangelogResponseSchema)
+    .using(response => ({
+      items: response.items.map(item => ({
+        slug: item.slug,
+        name: item.name,
+        displayName: item.display_name,
+        versions: item.versions.map(version => ({
+          version: version.version,
+          changelog: version.changelog,
+        })),
+      })),
+    }));
+};
+
 export const transformToolkitRetrieveCategoriesResponse = (
   response: RawToolkitRetrieveCategoriesResponse
 ): ToolkitRetrieveCategoriesResponse => {
@@ -173,5 +219,62 @@ export const transformToolkitRetrieveCategoriesResponse = (
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
+    }));
+};
+
+export const transformToolkitRecommendScopesParams = (
+  params: ToolkitRecommendScopesParams
+): RawToolkitRecommendScopesParams => ({
+  tools: params.tools,
+  auth_scheme: params.authScheme,
+  toolkit_version: params.toolkitVersion,
+  grant_context: params.grantContext,
+  include: params.include,
+  exclude: params.exclude,
+  available_scopes: params.availableScopes,
+});
+
+export const transformToolkitRecommendScopesResponse = (
+  response: RawToolkitRecommendScopesResponse
+): ToolkitRecommendScopesResponse => {
+  return transform(response)
+    .with(ToolkitRecommendScopesResponseSchema)
+    .using(response => ({
+      authScheme: response.auth_scheme,
+      toolkitVersion: response.toolkit_version,
+      grantContext: response.grant_context,
+      scopes: {
+        leastPrivilege: response.scopes.least_privilege,
+        fewest: response.scopes.fewest,
+        conditional: response.scopes.conditional.map(condition => ({
+          scope: condition.scope,
+          when: condition.when,
+          for: condition.for,
+        })),
+      },
+    }));
+};
+
+export const transformToolkitListGrantContextsParams = (
+  params: ToolkitListGrantContextsParams
+): RawToolkitRetrieveScopesGrantContextParams => ({
+  auth_scheme: params.authScheme,
+  toolkit_version: params.toolkitVersion,
+});
+
+export const transformToolkitListGrantContextsResponse = (
+  response: RawToolkitRetrieveScopesGrantContextResponse
+): ToolkitListGrantContextsResponse => {
+  return transform(response)
+    .with(ToolkitListGrantContextsResponseSchema)
+    .using(response => ({
+      authScheme: response.auth_scheme,
+      toolkitVersion: response.toolkit_version,
+      grantContextDimensions: response.grant_context_dimensions.map(dimension => ({
+        dimension: dimension.dimension,
+        description: dimension.description,
+        values: dimension.values,
+      })),
+      defaultGrantContext: response.default_grant_context,
     }));
 };

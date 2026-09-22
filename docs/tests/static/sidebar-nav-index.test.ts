@@ -66,7 +66,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 1,
-      position: index['/docs/configuring-sessions'].position + 1,
+      position: index['/docs/toolkits'].position + 1,
     });
   });
 

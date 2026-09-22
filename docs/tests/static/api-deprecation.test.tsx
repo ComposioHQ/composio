@@ -5,6 +5,9 @@ import { join } from "path";
 import { renderToStaticMarkup } from "react-dom/server";
 
 mock.module("next/navigation", () => ({
+  notFound: () => {
+    throw new Error("not found");
+  },
   usePathname: () => "/reference/api-reference/tasks",
   useSearchParams: () => new URLSearchParams(),
 }));

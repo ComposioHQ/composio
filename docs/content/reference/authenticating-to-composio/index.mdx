@@ -1,18 +1,21 @@
 ---
 title: Overview
 description: Authenticate requests to the Composio API with an API key
-keywords: [API authentication, API key, x-api-key, x-org-api-key, scoped api key, Composio authentication, authorization]
+keywords: [API authentication, API key, x-api-key, x-org-api-key, x-user-api-key, user api key, scoped api key, consumer project, Composio authentication, authorization]
 ---
 
 Every Composio API request authenticates with an API key. Send the key in a request header and Composio resolves it to your project or organization.
 
-Composio has three kinds of API key. They share the same authentication flow — they differ in what they can reach.
+Composio has four kinds of API key. They share the same authentication flow and differ in what they can reach.
 
 | Key | Header | Scope |
 | --- | --- | --- |
 | Project API key | `x-api-key` | Full access to a single project. |
 | Organization API key | `x-org-api-key` | Access across every project in your organization. |
 | Scoped project API key <span style={{ color: '#059669' }}>**· New**</span> | `x-api-key` | A chosen subset of a single project's resources. |
+| User API key | `x-user-api-key` | Sessions and consumer routes, as a member of your organization. |
+
+Send one credential per request, in the header that matches its kind. A user API key (`uak_...`) sent as `x-api-key` gets its own `401` that names the mismatch without echoing the key.
 
 ## Project API key
 
@@ -56,6 +59,87 @@ curl https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
 ```
 
 See [Scoped project API keys](/reference/authenticating-to-composio/project-api-key-permissions) for the permission areas, access levels, and the routes each one covers.
+
+## User API key
+
+A user API key authenticates you as a member of your organization instead of as one project. It starts with `uak_`, and `composio login` stores one in `~/.composio/user_data.json`. Send it in the `x-user-api-key` header.
+
+Every session route accepts a user API key as an alternative to a project key: create, retrieve, update, delete, attach, link, search, execute, tools, toolkits, mounts, and config history. Without a scope header the key addresses your developer project:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["gmail"]}}'
+```
+
+To act in your organization's consumer project, add `x-org-id` and `x-project-id`, always together and always as nano IDs (`org_...` and `proj_...`, never UUIDs). The [consumer agent guide](/docs/consumer-agents#run-sessions-in-your-organizations-consumer-project) shows how to resolve those IDs first.
+
+A user API key reaches every project its owner can reach, so it is the broader credential. Keep it server-side, and prefer a project API key for application code that only needs one project.
+
+### Scope errors
+
+| Status | Meaning |
+| --- | --- |
+| `401` | The credential is missing or invalid, or a user key was sent as `x-api-key`. |
+| `400` | A scope header is missing or holds a UUID instead of a nano ID. |
+| `404` | The organization or project does not exist or is not accessible to this user. The two cases are deliberately indistinguishable. |
+| `500` | The scope lookup itself failed. Retry, then contact support if it persists. |
+
+## Choosing the key in the SDKs
+
+The SDKs resolve the project API key by intent, so an unexpected key never gets sent by accident.
+
+| `Composio` option | What the SDK sends |
+| --- | --- |
+| `apiKey: "ak_..."` | That key, as `x-api-key`. The environment and the CLI's stored key are not consulted. |
+| `apiKey` omitted | `COMPOSIO_API_KEY`, then the project key stored by `composio login` in `~/.composio/user_data.json`. A stored user key (`uak_...`) is never sent as `x-api-key`; the constructor throws `ComposioAPIKeyKindError` with the value redacted. |
+| `apiKey: null` | No project key at all. Both fallbacks are off, and the instance authenticates with the user API key you configure instead: `userApiKey`, its `COMPOSIO_USER_API_KEY` fallback, or an `x-user-api-key` entry in `defaultHeaders`. In Python, `disable_api_key=True` does the same with `user_api_key` or `COMPOSIO_USER_API_KEY`. |
+
+A user-only instance sends `x-user-api-key` on every request and no `x-api-key`. Only `x-user-api-key` in `defaultHeaders` counts as a credential; every other default header passes through untouched. Clones made with `createSession()` keep the credentials they were resolved with instead of re-reading the environment.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import os
+
+from composio import Composio
+
+# Project key: pass it, or omit api_key to fall back to COMPOSIO_API_KEY.
+composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+
+# User key only: turn the project key off and use the user key alone.
+composio = Composio(
+    disable_api_key=True,
+    user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+
+// Project key: pass it, or omit apiKey to fall back to COMPOSIO_API_KEY.
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+// User key only: turn the project key off and use the user key alone.
+// userApiKey falls back to COMPOSIO_USER_API_KEY when omitted.
+const userScoped = new Composio({
+  apiKey: null,
+  userApiKey: process.env.COMPOSIO_USER_API_KEY,
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). In Python only an omitted `api_key` falls back to `COMPOSIO_API_KEY`; an explicit `api_key=None` raises `ApiKeyNotProvidedError`, and combining `disable_api_key=True` with an explicit `api_key` raises an error. Sessions created by a user-only SDK instance export `x-user-api-key` in their MCP config; see [What the MCP headers carry](/docs/sessions-via-mcp#what-the-mcp-headers-carry). Raw HTTP callers send the same `x-user-api-key` header themselves.
+</Callout>
+
+## Webhook secrets in responses
+
+Project listings and `GET /api/v3.1/auth/session/info` return `webhook_secret: null`. Read a signing secret from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) endpoints, or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) there.
 
 <Cards>
   <Card title="Scoped project API keys" href="/reference/authenticating-to-composio/project-api-key-permissions">

@@ -18,6 +18,8 @@ Want to bring tools from your own remote MCP server into Composio instead? See [
 
 ## The MCP endpoint
 
+If you use a scoped project API key, enable **Session management** to create and configure sessions and **Session tool execution** for session-linked MCP access. See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for access levels and routes.
+
 Opt into MCP by passing `mcp: true` when you create the session. The session then exposes its hosted MCP server. Read the URL and headers off `session.mcp`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -54,6 +56,23 @@ Resuming a stored session? Pass the same flag, `composio.use(sessionId, { mcp: t
 
 <Callout type="info">
 The MCP endpoint and `session.tools()` are backed by the same session. Toolkits, auth configs, and connected accounts you set when [configuring the session](/docs/configuring-sessions) apply to both.
+</Callout>
+
+## What the MCP headers carry
+
+`session.mcp.headers` holds the credential the SDK used to create or load the session, and nothing else. No other default header and no ambient `COMPOSIO_API_KEY` is copied in.
+
+| SDK credential | Exported header | What it can reach |
+|---|---|---|
+| Project API key (`apiKey`, `COMPOSIO_API_KEY`, or the project key stored by `composio login`) | `x-api-key` | That one project |
+| User API key only (`apiKey: null` with `userApiKey` in TypeScript, `disable_api_key=True` with `user_api_key` in Python, or an `x-user-api-key` default header) | `x-user-api-key` | Every project the user can reach across your organization |
+
+Treat the exported config as a secret and store it where you keep the project API key. A user-only session exports the user's organization-wide key, which makes it the broader credential: prefer a project-key session when an MCP client only needs one project. The SDK also exports `x-org-id` and `x-project-id` when the instance is scoped to a consumer project (see [Run sessions in your organization's consumer project](/docs/consumer-agents#run-sessions-in-your-organizations-consumer-project)).
+
+The SDK attaches the headers only when the MCP URL has the same origin as the API base URL it talks to, whatever the scheme, so a custom `baseURL` works as long as it serves the session MCP endpoint. For any other destination, `create()` and `use()` called with `mcp: true` (TypeScript) or `mcp=True` (Python) raise `ComposioMCPDestinationError` or `MCPDestinationError`; the error names both origins and never the key. Without the MCP flag the session is still returned, `session.mcp.headers` is empty, and the SDK logs a warning naming both origins, so agents that only use native tools keep working. The SDK never connects to the MCP URL itself and never follows redirects for it. Configure your MCP client so it does not forward these headers to a different origin either.
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). Earlier releases only exported a project key, so a session driven with a user API key had no usable MCP headers. Pass `session.mcp.headers` through as returned instead of assembling an `x-api-key` header from an environment variable yourself.
 </Callout>
 
 ## A single URL for a fixed set of tools
