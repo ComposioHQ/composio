@@ -34,11 +34,22 @@ const learnedSlugs = (learned: Option.Option<KnownToolkitSlugs>): ReadonlyArray<
 /**
  * Re-reads the catalog and records it, in the background. Failures are
  * swallowed: a refresh that does not happen costs a fetch later, nothing more.
+ * The project's custom toolkits are optional to it — without them, a custom
+ * toolkit costs one fetch on its next miss.
  */
 const refreshKnownToolkitSlugs = Effect.gen(function* () {
   const repository = yield* ComposioToolkitsRepository;
-  const toolkits = yield* repository.getToolkits();
-  yield* writeKnownToolkitSlugs([...BAKED_TOOLKIT_SLUGS, ...toolkits.map(t => t.slug)]);
+  const [toolkits, projectToolkits] = yield* Effect.all(
+    [
+      repository.getToolkits(),
+      repository.getProjectToolkits().pipe(Effect.orElseSucceed(() => [])),
+    ],
+    { concurrency: 'unbounded' }
+  );
+  yield* writeKnownToolkitSlugs([
+    ...BAKED_TOOLKIT_SLUGS,
+    ...[...toolkits, ...projectToolkits].map(t => t.slug),
+  ]);
 }).pipe(Effect.timeout(REFRESH_TIMEOUT), Effect.ignore);
 
 /**

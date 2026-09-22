@@ -49,14 +49,22 @@ const unusedRepositoryMethods = {
   deleteTrigger: notUsed('deleteTrigger'),
 } as const;
 
+export type GetProjectToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getProjectToolkits']>
+>;
+
 /**
  * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test
- * can assert not just what was resolved but what it cost.
+ * can assert not just what was resolved but what it cost. The native and
+ * project-managed catalogs are counted separately.
  */
 export const countingToolkitsRepository = (
-  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>
+  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
+  getProjectToolkits: () => Effect.Effect<Toolkits, GetProjectToolkitsError> = () =>
+    Effect.succeed([])
 ) => {
   let calls = 0;
+  let projectCalls = 0;
 
   const layer = Layer.succeed(
     ComposioToolkitsRepository,
@@ -67,8 +75,13 @@ export const countingToolkitsRepository = (
           calls += 1;
           return getToolkits();
         }),
+      getProjectToolkits: () =>
+        Effect.suspend(() => {
+          projectCalls += 1;
+          return getProjectToolkits();
+        }),
     })
   );
 
-  return { layer, calls: () => calls };
+  return { layer, calls: () => calls, projectCalls: () => projectCalls };
 };

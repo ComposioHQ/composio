@@ -10,6 +10,7 @@ import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -19,6 +20,12 @@ import {
  * — anything real resolves locally and never reaches the repository.
  */
 const UNRELEASED_TOOLKIT = 'acme_analytics';
+
+/**
+ * A project-scoped custom toolkit. Custom toolkits never ship in the baked
+ * catalog, and their slugs share the `custom` prefix with nothing baked.
+ */
+const CUSTOM_TOOLKIT = 'custom_grain';
 
 const failingFetch = () =>
   Effect.fail(new HttpServerError({ cause: 'catalog unavailable', status: 503 }));
@@ -34,8 +41,15 @@ const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
     refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.nowUnsafe(), { days: daysAgo })),
   });
 
+interface ResolverOptions {
+  readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
+  readonly getProjectToolkits?: () => Effect.Effect<Toolkits, GetProjectToolkitsError>;
+  readonly seedLearnedFile?: string;
+}
+
 interface ResolverContext {
   readonly calls: () => number;
+  readonly projectCalls: () => number;
   readonly waitForLearnedFile: (
     predicate: (content: string) => boolean
   ) => Effect.Effect<string, unknown, FileSystem.FileSystem>;
@@ -47,10 +61,7 @@ interface ResolverContext {
  * is written verbatim — including deliberately corrupt content.
  */
 const withResolver = <A>(
-  options: {
-    readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
-    readonly seedLearnedFile?: string;
-  },
+  options: ResolverOptions,
   program: (
     context: ResolverContext
   ) => Effect.Effect<
@@ -66,10 +77,7 @@ const withResolver = <A>(
 
 const runInCacheDir = <A>(
   cacheDir: string,
-  options: {
-    readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
-    readonly seedLearnedFile?: string;
-  },
+  options: ResolverOptions,
   program: (
     context: ResolverContext
   ) => Effect.Effect<
@@ -87,13 +95,15 @@ const runInCacheDir = <A>(
     }
 
     const repository = countingToolkitsRepository(
-      options.getToolkits ?? (() => Effect.succeed([] as Toolkits))
+      options.getToolkits ?? (() => Effect.succeed([] as Toolkits)),
+      options.getProjectToolkits
     );
 
     const readLearnedFile = fs.readFileString(learnedFile);
 
     return yield* program({
       calls: repository.calls,
+      projectCalls: repository.projectCalls,
       // The resolver records what it learns in the background, so a test that
       // asserts on the file has to wait for it rather than read once.
       waitForLearnedFile: predicate =>
@@ -129,7 +139,7 @@ describe('toolkitFromToolSlug', () => {
   );
 
   it.effect('gives meta tools no toolkit, even when one shadows their slug', () =>
-    withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ calls }) =>
+    withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ calls, projectCalls }) =>
       Effect.gen(function* () {
         // `composio_search` is a real, linkable toolkit whose slug is a prefix
         // of this session meta tool. Attributing the meta tool to it would
@@ -137,6 +147,7 @@ describe('toolkitFromToolSlug', () => {
         expect(yield* toolkitFromToolSlug('COMPOSIO_SEARCH_TOOLS')).toBeUndefined();
         expect(yield* toolkitFromToolSlug('COMPOSIO_MANAGE_CONNECTIONS')).toBeUndefined();
         expect(calls()).toBe(0);
+        expect(projectCalls()).toBe(0);
       })
     )
   );
@@ -297,4 +308,131 @@ describe('toolkitFromToolSlug', () => {
         })
     )
   );
+  describe('project-managed custom toolkits', () => {
+    it.live('resolves a custom toolkit from the project catalog, and remembers it', () =>
+      withResolver(
+        {
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        ({ calls, projectCalls, waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+            expect(calls()).toBe(1);
+            expect(projectCalls()).toBe(1);
+
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
+
+    it.live('resolves a remembered custom toolkit without touching the network', () =>
+      withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT]),
+        },
+        ({ calls, projectCalls }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+            expect(calls()).toBe(0);
+            expect(projectCalls()).toBe(0);
+          })
+      )
+    );
+
+    it.live('keeps resolving baked `custom*` toolkits locally', () =>
+      withResolver(
+        { seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT]) },
+        ({ calls, projectCalls }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOMERIO_SEND_EVENT')).toBe('customerio');
+            expect(calls()).toBe(0);
+            expect(projectCalls()).toBe(0);
+          })
+      )
+    );
+
+    it.live('prefers the longest custom toolkit prefix', () =>
+      withResolver(
+        {
+          getProjectToolkits: () =>
+            Effect.succeed([
+              makeToolkitFixture(CUSTOM_TOOLKIT),
+              makeToolkitFixture(`${CUSTOM_TOOLKIT}_search`),
+            ]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(
+              `${CUSTOM_TOOLKIT}_search`
+            );
+          })
+      )
+    );
+
+    it.live('still resolves native toolkits when the project catalog is unreachable', () =>
+      withResolver(
+        {
+          getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('ACME_ANALYTICS_RUN_REPORT')).toBe(
+              UNRELEASED_TOOLKIT
+            );
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+          })
+      )
+    );
+
+    it.live('resolves custom toolkits when only the native catalog is unreachable', () =>
+      withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+          })
+      )
+    );
+
+    it.live('guesses, and records nothing, when both catalogs are unreachable', () => {
+      const seed = learnedFileContent([]);
+      return withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: seed,
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+            yield* Effect.sleep('50 millis');
+            expect(yield* waitForLearnedFile(() => true)).toBe(seed);
+          })
+      );
+    });
+
+    it.live('includes project toolkits in the background refresh', () =>
+      withResolver(
+        {
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent(['stale_toolkit'], 8),
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
+  });
 });

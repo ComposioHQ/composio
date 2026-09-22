@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
@@ -19,7 +19,8 @@ import {
  * common case costs no network at all.
  *
  * Only a slug that matches nothing known falls through to the catalog, which
- * is what a toolkit released after this binary looks like. Everything else
+ * is what a toolkit released after this binary looks like — or a custom
+ * toolkit registered in the current project. Everything else
  * degrades rather than fails: an unreachable catalog still yields the
  * first-underscore guess.
  */
@@ -43,9 +44,20 @@ export const toolkitFromToolSlug = (
       return toolkitFromMatchedPrefix(match);
     }
 
+    // Project-scoped custom toolkits are never in the Composio-managed
+    // catalog, so a miss asks for both. Either one alone is still worth
+    // matching against; only when neither answers does the guess win.
     const repository = yield* ComposioToolkitsRepository;
-    const toolkits = yield* repository.getToolkits();
-    const allSlugs = [...local.slugs, ...toolkits.map(toolkit => toolkit.slug)];
+    const catalogs = yield* Effect.all(
+      [repository.getToolkits(), repository.getProjectToolkits()].map(Effect.option),
+      { concurrency: 'unbounded' }
+    );
+    const fetched = Arr.getSomes(catalogs);
+    if (!Arr.isReadonlyArrayNonEmpty(fetched)) {
+      return guessToolkitFromToolSlug(toolSlug);
+    }
+
+    const allSlugs = [...local.slugs, ...fetched.flat().map(toolkit => toolkit.slug)];
 
     yield* catalog.remember(allSlugs);
 

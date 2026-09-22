@@ -186,6 +186,12 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       // because its result depends on the requested slugs.
       getToolkits: () => cachedGetToolkits,
 
+      // Project toolkits should NOT be cached: `toolkits.json` holds the
+      // Composio-managed catalog, and its readers assume nothing else is in it.
+      // Under `FORCE_USE_CACHE` replay this call still reaches the API, and a
+      // failure only costs toolkit resolution its fallback guess.
+      getProjectToolkits: () => underlyingRepository.getProjectToolkits(),
+
       getToolkitsBySlugs: slugs => {
         const cacheFilter = (data: Toolkits) => {
           const slugSet = new Set(slugs.map(s => s.toUpperCase()));

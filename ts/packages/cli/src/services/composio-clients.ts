@@ -1914,12 +1914,14 @@ const makeComposioClientLive = Effect.gen(function* () {
       /**
        * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
        * Automatically handles pagination to fetch all items.
+       * @param managedBy - Which toolkits to list; the API defaults to Composio-managed ones
        */
-      list: () =>
+      list: (managedBy?: 'composio' | 'project' | 'all') =>
         withMetrics(
           callClientWithPagination(
             clientSingleton,
-            (client, cursor, limit) => client.toolkits.list({ cursor, limit }),
+            (client, cursor, limit) =>
+              client.toolkits.list({ cursor, limit, managed_by: managedBy }),
             ToolkitsResponse
           )
         ),
@@ -2104,6 +2106,17 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     );
 
   /**
+   * Fetches the custom toolkits registered in the current project. They are
+   * project-scoped, so they are absent from the build-time catalog and from
+   * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
+   */
+  const getProjectToolkits = () =>
+    client.toolkits.list('project').pipe(
+      Effect.map(response => response.items),
+      Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
+    );
+
+  /**
    * Fetches specific toolkits by their slugs.
    * Makes parallel API calls to retrieve each toolkit.
    * @param slugs - Array of toolkit slugs to fetch
@@ -2133,6 +2146,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
 
   return {
     getToolkits,
+    getProjectToolkits,
     getToolkitsBySlugs,
     getMetrics: () => client.getMetrics(),
     getToolsAsEnums: () => client.tools.retrieveEnum(),

@@ -12,6 +12,7 @@ import { toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -27,15 +28,25 @@ const withCountingRepository = <A>(
   getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
   program: (context: {
     readonly calls: () => number;
+    readonly projectCalls: () => number;
     readonly cacheDir: string;
-  }) => Effect.Effect<A, GetToolkitsError, ComposioToolkitsRepository | FileSystem.FileSystem>,
-  config: ReadonlyArray<readonly [string, string]> = []
+  }) => Effect.Effect<
+    A,
+    GetToolkitsError | GetProjectToolkitsError,
+    ComposioToolkitsRepository | FileSystem.FileSystem
+  >,
+  config: ReadonlyArray<readonly [string, string]> = [],
+  getProjectToolkits?: () => Effect.Effect<Toolkits, GetProjectToolkitsError>
 ) =>
   Effect.suspend(() => {
     const cacheDir = tempy.temporaryDirectory();
-    const repository = countingToolkitsRepository(getToolkits);
+    const repository = countingToolkitsRepository(getToolkits, getProjectToolkits);
 
-    return program({ calls: repository.calls, cacheDir }).pipe(
+    return program({
+      calls: repository.calls,
+      projectCalls: repository.projectCalls,
+      cacheDir,
+    }).pipe(
       Effect.provide(
         Layer.merge(
           Layer.provide(ComposioToolkitsRepositoryCached, repository.layer),
@@ -129,6 +140,32 @@ describe('ComposioToolkitsRepositoryCached', () => {
           expect(calls()).toBe(0);
         }),
       [['FORCE_USE_CACHE', 'true']]
+    )
+  );
+
+  it.effect('passes project toolkits through, even when FORCE_USE_CACHE is on', () =>
+    withCountingRepository(
+      () => Effect.die('the cached file should have answered this'),
+      ({ calls, projectCalls, cacheDir }) =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheFile = `${cacheDir}/${CACHE_FILES.toolkits}`;
+          const cached = yield* toolkitsToJSON(testToolkits).pipe(Effect.orDie);
+          yield* fs.writeFileString(cacheFile, cached).pipe(Effect.orDie);
+
+          const repository = yield* ComposioToolkitsRepository;
+          const toolkits = yield* repository.getToolkits();
+          const projectToolkits = yield* repository.getProjectToolkits();
+
+          expect(toolkits.map(t => t.slug)).toEqual(['github', 'gmail']);
+          expect(projectToolkits.map(t => t.slug)).toEqual(['custom_grain']);
+          expect(calls()).toBe(0);
+          expect(projectCalls()).toBe(1);
+          // `toolkits.json` holds the Composio-managed catalog only.
+          expect(yield* fs.readFileString(cacheFile).pipe(Effect.orDie)).toBe(cached);
+        }),
+      [['FORCE_USE_CACHE', 'true']],
+      () => Effect.succeed([makeToolkitFixture('custom_grain')])
     )
   );
 });

@@ -111,6 +111,11 @@ export interface TestLiveInput {
    */
   toolkitsData?: {
     toolkits?: Toolkits;
+    /**
+     * Custom toolkits registered in the test project. Kept apart from
+     * `toolkits`, the Composio-managed catalog, as the API keeps them apart.
+     */
+    projectToolkits?: Toolkits;
     detailedToolkits?: ToolkitDetailed[];
     tools?: Tools;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
@@ -305,6 +310,7 @@ export const TestLayer = (input?: TestLiveInput) =>
   Effect.gen(function* () {
     const defaultAppClientData = {
       toolkits: [] as Toolkits,
+      projectToolkits: [] as Toolkits,
       detailedToolkits: [] as ToolkitDetailed[],
       tools: [] as Tools,
       triggerTypesAsEnums: [] as TriggerTypesAsEnums,
@@ -359,6 +365,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       ComposioToolkitsRepository.of({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getProjectToolkits: () => Effect.succeed(toolkitsData.projectToolkits),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
           const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
           const found = toolkitsData.toolkits.filter(t =>
