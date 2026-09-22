@@ -2,14 +2,9 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
-import { afterEach, vi } from 'vitest';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 
 describe('CLI: composio whoami', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   const testConfigProvider = ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'api_key_from_test_config_provider' },
   }).pipe(extendConfigProvider);
