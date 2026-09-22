@@ -54,29 +54,21 @@ print("\nAfter narrowing to slack:")
 print(f"Config version: {session.config_version}")
 print(f"Preload: {session.preload}")
 
-# 4. Conditional update. Pass the config version you read; a stale value is a 409
-#    and nothing is written. A second handle on the same session plays the
-#    concurrent writer.
+# 4. Concurrent updates. Every update sends the config version this handle last
+#    observed as its precondition; a stale value is a 409 and nothing is written.
+#    A second handle on the same session plays the concurrent writer.
 observed_version = session.config_version
 other_client = composio.sessions.use(session.session_id)
 other_client.update(workbench={"enable": False})
 
 try:
-    session.update(
-        toolkits={"enable": ["gmail", "slack"]},
-        preload={"tools": []},
-        expected_config_version=observed_version,
-    )
+    session.update(toolkits={"enable": ["gmail", "slack"]}, preload={"tools": []})
 except SessionConfigConflictError as error:
     print(f"\nConflict at version {observed_version}: {error}")
     # Recover: re-read the session, then retry against the fresh version
-    fresh = composio.sessions.use(session.session_id)
-    fresh.update(
-        toolkits={"enable": ["gmail", "slack"]},
-        preload={"tools": []},
-        expected_config_version=fresh.config_version,
-    )
-    print(f"Retried at version {fresh.config_version}")
+    session = composio.sessions.use(session.session_id)
+    session.update(toolkits={"enable": ["gmail", "slack"]}, preload={"tools": []})
+    print(f"Retried at version {session.config_version}")
 
 # 5. Deny every app toolkit. The empty allowlist is sent as-is; an omitted
 #    `toolkits` would have left the policy unchanged instead.
@@ -85,8 +77,10 @@ session.update(toolkits={"enable": []}, preload={"tools": []})
 print("\nAfter denying every app toolkit:")
 print(f"Toolkits: {session.config.toolkits}")
 
-# 6. Clear a whole block with None: manage_connections falls back to its default
-session.update(manage_connections=None)
+# 6. Clear a whole block with None: manage_connections falls back to its default.
+#    expected_config_version=False skips the precondition, so this write applies
+#    whatever version the session is at (last writer wins).
+session.update(manage_connections=None, expected_config_version=False)
 
 print("\nAfter clearing manage_connections:")
 print(f"Config version: {session.config_version}")

@@ -77,34 +77,7 @@ Restrict the session to the toolkits and tools your feature needs. This makes di
 
 Every Composio organization also has one consumer project: the project behind Composio Connect and the For You clients, where your members' own connections live. Sessions in it are created with a [user API key](/reference/authenticating-to-composio#user-api-key) and an explicit scope. Composio never mints or returns the consumer project's API key.
 
-The flow is three calls. Resolve the consumer project, check which toolkits the user already connected, then create the session with the resolved scope:
-
-```bash
-# 1. Resolve the organization's consumer project (provisions it when absent)
-curl -X POST https://backend.composio.dev/api/v3.1/org/consumer/project/resolve \
-  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
-  -H "x-org-id: $COMPOSIO_ORG_ID"
-# {"project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "org_id": "org_9f2k1x",
-#  "project_type": "CONSUMER", "config": {"consumer_experience_enabled": true, ...}}
-
-# 2. List the toolkits this consumer user has already connected
-curl "https://backend.composio.dev/api/v3.1/org/consumer/connected_toolkits?user_id=user_123" \
-  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
-  -H "x-org-id: $COMPOSIO_ORG_ID"
-# {"toolkits": ["gmail"], "project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "user_id": "user_123"}
-
-# 3. Create the session in that project
-curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
-  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
-  -H "x-org-id: $COMPOSIO_ORG_ID" \
-  -H "x-project-id: proj_4b8m2q" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "toolkits": {"enable": ["gmail"]}}'
-```
-
-Use the nano IDs from the resolve response (`org_id` and `project_nano_id`) for `x-org-id` and `x-project-id`, always together. A UUID in either header is a `400`. A user with no connections yet gets an empty `toolkits` list with the project scope still filled in, so you can create their session before they connect anything. An organization without a consumer project gets `null` project identifiers from the listing, which never provisions one.
-
-The beta SDKs carry the same scope for you and export it with the session's MCP config:
+Resolve the consumer project once to learn its nano IDs, then build the SDK instance with the user API key and that scope. The SDK sends `x-user-api-key`, `x-org-id`, and `x-project-id` on every request, carries the scope into session clones, and exports it with the session's MCP config:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -142,9 +115,30 @@ const session = await composio.create("user_123", { toolkits: ["gmail"], mcp: tr
 </Tab>
 </Tabs>
 
+`orgId` and `projectId` (`org_id` and `project_id` in Python) must be set together, and the SDK rejects a scope that disagrees with `x-org-id` or `x-project-id` entries in `defaultHeaders`. Without a scope, a user API key addresses the API default (the developer project).
+
 <Callout type="info">
-Consumer project scope in the SDK requires `@composio/core` `1.0.0-beta` or `composio` `2.0.0b`. `orgId` and `projectId` (`org_id` and `project_id` in Python) must be set together, and the SDK rejects a scope that disagrees with `x-org-id` or `x-project-id` entries in `defaultHeaders`. The stable SDKs accept a user-only credential for the developer project but do not carry a consumer scope into session clones or the MCP config, so use the API calls above on the stable releases.
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python).
 </Callout>
+
+The nano IDs come from the consumer project resolve endpoint, which also provisions the project when it is absent. The same credential lists the toolkits a consumer user has already connected:
+
+```bash
+# Resolve the organization's consumer project
+curl -X POST https://backend.composio.dev/api/v3.1/org/consumer/project/resolve \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: $COMPOSIO_ORG_ID"
+# {"project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "org_id": "org_9f2k1x",
+#  "project_type": "CONSUMER", "config": {"consumer_experience_enabled": true, ...}}
+
+# List the toolkits this consumer user has already connected
+curl "https://backend.composio.dev/api/v3.1/org/consumer/connected_toolkits?user_id=user_123" \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: $COMPOSIO_ORG_ID"
+# {"toolkits": ["gmail"], "project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "user_id": "user_123"}
+```
+
+Use the nano IDs from the resolve response (`org_id` and `project_nano_id`), always together. A UUID in either header is a `400`. A user with no connections yet gets an empty `toolkits` list with the project scope still filled in, so you can create their session before they connect anything. An organization without a consumer project gets `null` project identifiers from the listing, which never provisions one. Raw HTTP callers create the session with the same three headers on `POST /api/v3.1/tool_router/session`.
 
 ## Before you launch
 

@@ -20,10 +20,17 @@ Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`.
 
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
+
 **Overload 1**
 
 ```typescript
-async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async create(userId: string, config: { authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string | string[]>; experimental?: { assistivePrompt?: { userTimezone?: string }; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] }; manageConnections?: boolean | { callbackUrl?: string; enable?: boolean; waitForConnections?: boolean }; mcp?: boolean; multiAccount?: { enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean }; preload?: { tools?: string[] | 'all' }; sandbox?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' }; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: ... | ... | ... | ...[]; enable?: ... | ... | ... | ...[] }; toolkits?: string[] | { disable: string[] } | { enable: string[] }; tools?: Record<string, string[] | { enable: ...[] } | { disable: ...[] } | { tags: ... | ... }>; workbench?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } } & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -31,7 +38,7 @@ async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config` | `ToolRouterCreateSessionConfig & \{ mcp: true \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config` | `\{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| string[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: string[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: ... \| ... \| ... \| ...[]; enable?: ... \| ... \| ... \| ...[] \}; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \}; tools?: Record<string, string[] \| \{ enable: ...[] \} \| \{ disable: ...[] \} \| \{ tags: ... \| ... \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \} & \{ mcp: true \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -41,7 +48,7 @@ async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true
 **Overload 2**
 
 ```typescript
-async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async create(userId: string, config?: { authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string | string[]>; experimental?: { assistivePrompt?: { userTimezone?: string }; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] }; manageConnections?: boolean | { callbackUrl?: string; enable?: boolean; waitForConnections?: boolean }; mcp?: boolean; multiAccount?: { enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean }; preload?: { tools?: string[] | 'all' }; sandbox?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' }; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[]; enable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] }; toolkits?: string[] | { disable: string[] } | { enable: string[] }; tools?: Record<string, string[] | { enable: string[] } | { disable: string[] } | { tags: ...[] | { disable?: ...; enable?: ... } }>; workbench?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -49,7 +56,7 @@ async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOpti
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config?` | `ToolRouterCreateSessionConfig` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config?` | `\{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| string[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: string[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \}; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \}; tools?: Record<string, string[] \| \{ enable: string[] \} \| \{ disable: string[] \} \| \{ tags: ...[] \| \{ disable?: ...; enable?: ... \} \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -83,7 +90,7 @@ Deleted sessions immediately stop being retrievable or executable. Deleting
 a missing or already-deleted session surfaces the backend 404.
 
 ```typescript
-async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; sessionId: string }>
 ```
 
 **Parameters**
@@ -95,7 +102,7 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolR
 
 **Returns**
 
-`Promise<ToolRouterSessionDeleteResponse>`
+`Promise<\{ deleted: true; sessionId: string \}>`
 
 ---
 
@@ -103,10 +110,17 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolR
 
 Use an existing session
 
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
+
 **Overload 1**
 
 ```typescript
-async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -114,7 +128,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true \}` |  |
+| `options` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -124,7 +138,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 **Overload 2**
 
 ```typescript
-async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -132,7 +146,7 @@ async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: C
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options?` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean \}` |  |
+| `options?` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

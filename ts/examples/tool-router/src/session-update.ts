@@ -16,7 +16,7 @@ const composio = new Composio({
 });
 
 // Create a session with a per-toolkit tools map and a stored callback URL
-const session = await composio.create("session-update-demo", {
+let session = await composio.create("session-update-demo", {
   toolkits: ["gmail", "slack"],
   tools: {
     gmail: { enable: ["GMAIL_FETCH_EMAILS"] },
@@ -56,23 +56,23 @@ console.log(`\nAfter narrowing to slack:`);
 console.log(`Config version: ${session.configVersion}`);
 console.log(`Preload: ${JSON.stringify(session.preload)}`);
 
-// 4. Conditional update. Pass the config version you read; a stale value is a 409
-//    and nothing is written. A second handle on the same session plays the
-//    concurrent writer.
+// 4. Concurrent updates. Every update sends the config version this handle last
+//    observed as its precondition; a stale value is a 409 and nothing is written.
+//    A second handle on the same session plays the concurrent writer.
 const observedVersion = session.configVersion;
 const otherClient = await composio.sessions.use(session.sessionId);
 await otherClient.update({ workbench: { enable: false } });
 
 const widen = { toolkits: { enable: ["gmail", "slack"] }, preload: { tools: [] } };
 try {
-  await session.update({ ...widen, expectedConfigVersion: observedVersion });
+  await session.update(widen);
 } catch (error) {
   if (!(error instanceof ComposioSessionConfigConflictError)) throw error;
   console.log(`\nConflict at version ${observedVersion}: ${error.message}`);
   // Recover: re-read the session, then retry against the fresh version
-  const fresh = await composio.sessions.use(session.sessionId);
-  await fresh.update({ ...widen, expectedConfigVersion: fresh.configVersion });
-  console.log(`Retried at version ${fresh.configVersion}`);
+  session = await composio.sessions.use(session.sessionId);
+  await session.update(widen);
+  console.log(`Retried at version ${session.configVersion}`);
 }
 
 // 5. Deny every app toolkit. The empty allowlist is sent as-is; an omitted
@@ -85,9 +85,12 @@ await session.update({
 console.log(`\nAfter denying every app toolkit:`);
 console.log(`Toolkits: ${JSON.stringify(session.config.toolkits)}`);
 
-// 6. Clear a whole block with null: manageConnections falls back to its default
+// 6. Clear a whole block with null: manageConnections falls back to its default.
+//    expectedConfigVersion: false skips the precondition, so this write applies
+//    whatever version the session is at (last writer wins).
 await session.update({
   manageConnections: null,
+  expectedConfigVersion: false,
 });
 
 console.log(`\nAfter clearing manageConnections:`);

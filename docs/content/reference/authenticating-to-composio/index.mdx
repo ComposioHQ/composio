@@ -94,9 +94,9 @@ The SDKs resolve the project API key by intent, so an unexpected key never gets 
 | --- | --- |
 | `apiKey: "ak_..."` | That key, as `x-api-key`. The environment and the CLI's stored key are not consulted. |
 | `apiKey` omitted | `COMPOSIO_API_KEY`, then the project key stored by `composio login` in `~/.composio/user_data.json`. A stored user key (`uak_...`) is never sent as `x-api-key`; the constructor throws `ComposioAPIKeyKindError` with the value redacted. |
-| `apiKey: null` | No project key at all. Both fallbacks are off, and the instance authenticates with the user API key you configure instead. |
+| `apiKey: null` | No project key at all. Both fallbacks are off, and the instance authenticates with the user API key you configure instead: `userApiKey`, its `COMPOSIO_USER_API_KEY` fallback, or an `x-user-api-key` entry in `defaultHeaders`. In Python, `disable_api_key=True` does the same with `user_api_key` or `COMPOSIO_USER_API_KEY`. |
 
-Only `x-user-api-key` in `defaultHeaders` counts as a credential; every other default header passes through untouched. Clones made with `createSession()` keep the credential they were resolved with instead of re-reading the environment.
+A user-only instance sends `x-user-api-key` on every request and no `x-api-key`. Only `x-user-api-key` in `defaultHeaders` counts as a credential; every other default header passes through untouched. Clones made with `createSession()` keep the credentials they were resolved with instead of re-reading the environment.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -105,10 +105,10 @@ import os
 
 from composio import Composio
 
-# Stable (composio >= 0.22.1): api_key=None keeps the COMPOSIO_API_KEY fallback.
+# Project key: pass it, or omit api_key to fall back to COMPOSIO_API_KEY.
 composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
 
-# Beta (composio 2.0.0b): turn the project key off and use the user key alone.
+# User key only: turn the project key off and use the user key alone.
 composio = Composio(
     disable_api_key=True,
     user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
@@ -120,14 +120,12 @@ composio = Composio(
 // @noErrors
 import { Composio } from "@composio/core";
 
-// Stable (@composio/core >= 0.19.1): user-only auth through the default header.
-const composio = new Composio({
-  apiKey: null,
-  defaultHeaders: { "x-user-api-key": process.env.COMPOSIO_USER_API_KEY },
-});
+// Project key: pass it, or omit apiKey to fall back to COMPOSIO_API_KEY.
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-// Beta (@composio/core 1.0.0-beta): userApiKey, with COMPOSIO_USER_API_KEY as its fallback.
-const composioBeta = new Composio({
+// User key only: turn the project key off and use the user key alone.
+// userApiKey falls back to COMPOSIO_USER_API_KEY when omitted.
+const userScoped = new Composio({
   apiKey: null,
   userApiKey: process.env.COMPOSIO_USER_API_KEY,
 });
@@ -136,7 +134,7 @@ const composioBeta = new Composio({
 </Tabs>
 
 <Callout type="info">
-The stable Python SDK has no way to turn the project key off: `api_key=None` and an omitted `api_key` both mean "fall back to `COMPOSIO_API_KEY`". `disable_api_key=True` is a `composio` `2.0.0b` option, and combining it with an explicit `api_key` raises an error. Sessions created by a user-only SDK instance export `x-user-api-key` in their MCP config; see [What the MCP headers carry](/docs/sessions-via-mcp#what-the-mcp-headers-carry).
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). In Python only an omitted `api_key` falls back to `COMPOSIO_API_KEY`; an explicit `api_key=None` raises `ApiKeyNotProvidedError`, and combining `disable_api_key=True` with an explicit `api_key` raises an error. Sessions created by a user-only SDK instance export `x-user-api-key` in their MCP config; see [What the MCP headers carry](/docs/sessions-via-mcp#what-the-mcp-headers-carry). Raw HTTP callers send the same `x-user-api-key` header themselves.
 </Callout>
 
 ## Webhook secrets in responses
