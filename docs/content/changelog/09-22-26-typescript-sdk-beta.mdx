@@ -1,0 +1,25 @@
+---
+title: 'TypeScript SDK beta adds user and organization API keys'
+description: 'TypeScript SDK 1.0.0-beta.2 adds scoped API credentials and renames the session configuration history method.'
+date: '2026-09-22'
+---
+
+TypeScript SDK `@composio/core` `1.0.0-beta.2` adds explicit credentials for user- and organization-scoped operations and gives session configuration history a clearer method name.
+
+Install the beta with:
+
+```bash
+npm install @composio/core@beta
+```
+
+### SDK versions
+
+| SDK                         | Version        |
+| --------------------------- | -------------- |
+| TypeScript `@composio/core` | `1.0.0-beta.2` |
+| TypeScript `@composio/slim` | `1.0.0-beta.2` |
+
+### What's new
+
+- Pass `userApiKey` or `orgApiKey` to `new Composio()` for operations that require user- or organization-scoped credentials. You can also set `COMPOSIO_USER_API_KEY` or `COMPOSIO_ORG_API_KEY`. A project API key is still required.
+- Use `session.listConfigHistory()` to page through the configurations a session has used. This replaces `session.configHistory()`.
