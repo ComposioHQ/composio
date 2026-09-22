@@ -50,6 +50,14 @@ Redirect the user to the `redirectUrl`. After they authenticate, they'll return 
 If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
 </Callout>
 
+## Reusing an active connection
+
+In TypeScript, call `session.ensureConnected("gmail")` to reuse the session's active connection. If none exists, it starts an authorization flow and waits for the connection to become active. The optional `timeout` sets how long to wait in milliseconds (default: `60000`).
+
+The result includes `toolkit`, `wasConnected`, and `connectedAccount`. `wasConnected` is `true` when an active connection already exists. Toolkits that don't require authentication also return `wasConnected: true`, with no `connectedAccount`.
+
+Use `session.authorize()` and `waitForConnection()` when you need to display or redirect to the Connect Link. `ensureConnected()` waits internally and doesn't return the redirect URL. Calling `authorize()` always starts a new authorization flow, even if an active connection exists.
+
 ## Redirecting users after authentication
 
 Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which `userID` or session triggered the connection.
