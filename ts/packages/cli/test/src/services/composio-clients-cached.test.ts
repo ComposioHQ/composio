@@ -143,7 +143,7 @@ describe('ComposioToolkitsRepositoryCached', () => {
     )
   );
 
-  it.effect('passes project toolkits through, even when FORCE_USE_CACHE is on', () =>
+  it.effect('fetches project toolkits once, and never from the cached file', () =>
     withCountingRepository(
       () => Effect.die('the cached file should have answered this'),
       ({ calls, projectCalls, cacheDir }) =>
@@ -156,6 +156,7 @@ describe('ComposioToolkitsRepositoryCached', () => {
           const repository = yield* ComposioToolkitsRepository;
           const toolkits = yield* repository.getToolkits();
           const projectToolkits = yield* repository.getProjectToolkits();
+          yield* repository.getProjectToolkits();
 
           expect(toolkits.map(t => t.slug)).toEqual(['github', 'gmail']);
           expect(projectToolkits.map(t => t.slug)).toEqual(['custom_grain']);

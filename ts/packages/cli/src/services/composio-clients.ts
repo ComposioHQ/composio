@@ -2099,22 +2099,20 @@ export class ComposioClientLive extends Context.Service<
 const makeComposioToolkitsRepository = Effect.gen(function* () {
   const client = yield* ComposioClientLive;
 
-  const getToolkits = () =>
-    client.toolkits.list().pipe(
+  const listToolkits = (managedBy?: 'project') =>
+    client.toolkits.list(managedBy).pipe(
       Effect.map(response => response.items),
       Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
     );
+
+  const getToolkits = () => listToolkits();
 
   /**
    * Fetches the custom toolkits registered in the current project. They are
    * project-scoped, so they are absent from the build-time catalog and from
    * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
    */
-  const getProjectToolkits = () =>
-    client.toolkits.list('project').pipe(
-      Effect.map(response => response.items),
-      Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
-    );
+  const getProjectToolkits = () => listToolkits('project');
 
   /**
    * Fetches specific toolkits by their slugs.

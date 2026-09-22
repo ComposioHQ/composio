@@ -180,17 +180,23 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       )
     );
 
+    // Project toolkits are never written to `toolkits.json`: that file holds
+    // the Composio-managed catalog, and its readers assume nothing else is in
+    // it. They are still memoized, because every toolkit resolution that
+    // misses locally asks for them. Under `FORCE_USE_CACHE` replay the fetch
+    // still reaches the API, and a failure only costs toolkit resolution its
+    // fallback guess.
+    const cachedGetProjectToolkits = yield* Effect.cached(
+      underlyingRepository.getProjectToolkits()
+    );
+
     // Create the cached implementation that wraps the original implementation
     return ComposioToolkitsRepository.of({
       // Memoized per layer instance; `getToolkitsBySlugs` stays unmemoized
       // because its result depends on the requested slugs.
       getToolkits: () => cachedGetToolkits,
 
-      // Project toolkits should NOT be cached: `toolkits.json` holds the
-      // Composio-managed catalog, and its readers assume nothing else is in it.
-      // Under `FORCE_USE_CACHE` replay this call still reaches the API, and a
-      // failure only costs toolkit resolution its fallback guess.
-      getProjectToolkits: () => underlyingRepository.getProjectToolkits(),
+      getProjectToolkits: () => cachedGetProjectToolkits,
 
       getToolkitsBySlugs: slugs => {
         const cacheFilter = (data: Toolkits) => {
