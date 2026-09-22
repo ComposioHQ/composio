@@ -38,7 +38,10 @@
 import {
   BROWSER_GRANT_TOOLKITS,
   DEMO_TOOLKIT,
+  describeExclusions,
+  emptySelectionMessage,
   loadManifest,
+  parseSelectionOptions,
   requiredBrowserGrantToolkits,
   requiresDemoToolkit,
   selectManifestEntries,
@@ -57,19 +60,12 @@ const USER_ID = process.env.COMPOSIO_EXAMPLES_USER_ID ?? 'examples';
 const INITIATE_MISSING = process.argv.includes('--initiate-missing');
 const GC = process.argv.includes('--gc');
 const DRY_RUN = process.argv.includes('--dry-run');
-const option = name => {
-  const index = process.argv.indexOf(`--${name}`);
-  return index >= 0 ? process.argv[index + 1] : undefined;
-};
+const report = line => console.error(line);
 
-const selection = selectManifestEntries(loadManifest(), {
-  lang: option('lang'),
-  ids: option('ids'),
-  tiers: option('tiers') ?? '1,2,3',
-  excludeToolkits: option('exclude-toolkits'),
-});
+const selection = selectManifestEntries(loadManifest(), parseSelectionOptions(process.argv));
+for (const line of describeExclusions(selection)) report(line);
 if (selection.entries.length === 0) {
-  console.error('no example entries selected for provisioning');
+  report(emptySelectionMessage(selection, 'example entries'));
   process.exit(1);
 }
 const selectedBrowserGrantToolkits = requiredBrowserGrantToolkits(selection.entries);
@@ -82,15 +78,6 @@ const needsDemoToolkit = requiresDemoToolkit(selection.entries);
 if (!API_KEY) {
   console.error('COMPOSIO_API_KEY is required (dedicated examples-project key)');
   process.exit(1);
-}
-
-const report = line => console.error(line);
-
-if (selection.excludedEntries.length > 0) {
-  report(
-    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`
-  );
-  for (const entry of selection.excludedEntries) report(`  - ${entry.id}`);
 }
 
 async function api(method, path, body) {

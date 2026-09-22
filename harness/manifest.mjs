@@ -90,6 +90,40 @@ export const selectManifestEntries = (
   };
 };
 
+// Selection flags shared by harness/run.mjs and scripts/examples-provision.mjs:
+// [--lang ts|py] [--ids a,b] [--tiers 1,2,3] [--exclude-toolkits a,b]
+export const parseOption = (argv, name, fallback) => {
+  const index = argv.indexOf(`--${name}`);
+  return index >= 0 && argv[index + 1] !== undefined ? argv[index + 1] : fallback;
+};
+
+export const parseSelectionOptions = argv => ({
+  lang: parseOption(argv, 'lang'),
+  ids: parseOption(argv, 'ids'),
+  tiers: parseOption(argv, 'tiers', '1,2,3'),
+  excludeToolkits: parseOption(argv, 'exclude-toolkits'),
+});
+
+// One line per excluded entry, preceded by a summary; empty when nothing was excluded.
+export const describeExclusions = selection => {
+  if (selection.excludedEntries.length === 0) return [];
+  return [
+    `excluding ${selection.excludedEntries.length} entries requiring ${selection.excludedToolkits.join(', ')}:`,
+    ...selection.excludedEntries.map(entry => `  - ${entry.id}`),
+  ];
+};
+
+// Names the exclusion as the cause when it emptied the selection, so an
+// operator is not left with a bare "no entries selected".
+export const emptySelectionMessage = (selection, subject = 'entries') => {
+  const excluded = selection.excludedEntries;
+  if (excluded.length === 0) return `no ${subject} selected`;
+  return (
+    `no ${subject} selected: --exclude-toolkits ${selection.excludedToolkits.join(',')} ` +
+    `removed all ${excluded.length} matching ${subject} (${excluded.map(entry => entry.id).join(', ')})`
+  );
+};
+
 export const requiredBrowserGrantToolkits = entries =>
   BROWSER_GRANT_TOOLKITS.filter(toolkit =>
     entries.some(entry => entryToolkits(entry).includes(toolkit.slug))
