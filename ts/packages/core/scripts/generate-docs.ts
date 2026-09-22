@@ -965,7 +965,7 @@ function generateMethodMdx(method: MethodDoc): string {
   return lines.join('\n');
 }
 
-function generateClassMdx(classDoc: ClassDoc): string {
+export function generateClassMdx(classDoc: ClassDoc): string {
   const lines: string[] = [];
 
   // Build full description for frontmatter (first sentence + additional context)
