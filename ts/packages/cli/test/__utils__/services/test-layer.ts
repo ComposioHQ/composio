@@ -177,10 +177,6 @@ export interface TestLiveInput {
     connectedToolkits?: ReadonlyArray<string>;
     latestToolVersion?: { readonly tool_slug: string; readonly version: string };
     projectApiKey?: string;
-    /** Answers `GET /api/v3.1/org/consumer/config` (enhanced-controls flag). */
-    consumerConfig?: { readonly enhanced_controls?: boolean; readonly enhancedControls?: boolean };
-    /** Answers `POST /api/v3.1/consumer/permissions/resolve`. */
-    consumerPermissions?: unknown;
     onRequest?: (request: MockAccountRequest) => void;
   };
 
@@ -1421,11 +1417,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             if (!accountData.latestToolVersion) throw noTestData('tools.getLatestVersion');
             return accountData.latestToolVersion;
           }
-          if (path === '/api/v3.1/org/consumer/config') {
-            record('org.consumer.config', options, { path });
-            if (!accountData.consumerConfig) throw noTestData('org.consumer.config');
-            return accountData.consumerConfig;
-          }
           throw new Error(`Unhandled GET path "${path}"`);
         },
         post: async (path: string, options?: RequestOptions & { body?: unknown }) => {
@@ -1433,11 +1424,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             record('org.project.createApiKey', options, { path, body: options?.body });
             if (!accountData.projectApiKey) throw noTestData('org.project.createApiKey');
             return { api_key: accountData.projectApiKey };
-          }
-          if (path === '/api/v3.1/consumer/permissions/resolve') {
-            record('consumer.permissions.resolve', options, { path, body: options?.body });
-            if (!accountData.consumerPermissions) throw noTestData('consumer.permissions.resolve');
-            return accountData.consumerPermissions;
           }
           throw new Error(`Unhandled POST path "${path}"`);
         },
