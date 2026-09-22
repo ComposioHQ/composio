@@ -1,7 +1,15 @@
 export type DocsProduct = 'for-you' | 'platform';
 
+type ProductSidebarGroupLink =
+  | { type?: 'page'; url: string; label?: string }
+  | { type: 'folder'; path: string; label?: string }
+  | { type: 'link'; url: string; label: string; external?: boolean };
+
 export type ProductSidebarItem =
-  { type: 'page'; url: string; label?: string } | { type: 'folder'; path: string; label?: string };
+  | { type: 'page'; url: string; label?: string }
+  | { type: 'folder'; path: string; label?: string }
+  | { type: 'link'; url: string; label: string; external?: boolean }
+  | { type: 'group'; label: string; links: readonly ProductSidebarGroupLink[] };
 
 export interface ProductSidebarGroup {
   label: string;
@@ -35,10 +43,10 @@ interface DocsProductConfig {
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS: readonly ProductSidebarItem[] = [
+const SHARED_SIDEBAR_ITEMS = [
   { type: 'page', url: '/docs/using-composio-skill' },
   { type: 'folder', path: 'security', label: 'Security and data' },
-];
+] as const satisfies readonly ProductSidebarItem[];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
   item.type === 'page' ? item.url : `/docs/${item.path}`
@@ -119,6 +127,7 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/toolkits',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -144,35 +153,79 @@ export const DOCS_PRODUCTS = {
         ],
       },
       {
-        label: 'Build with Composio',
+        label: 'Build',
         items: [
-          { type: 'page', url: '/docs/how-composio-works', label: 'Sessions' },
-          { type: 'page', url: '/docs/configuring-sessions' },
-          { type: 'folder', path: 'authentication' },
+          {
+            type: 'group',
+            label: 'Sessions',
+            links: [
+              { url: '/docs/how-composio-works', label: 'What is a Session?' },
+              { url: '/docs/configuring-sessions' },
+              { url: '/docs/sessions-via-mcp' },
+            ],
+          },
+          { type: 'page', url: '/docs/toolkits' },
+          {
+            type: 'group',
+            label: 'Authentication',
+            links: [
+              { url: '/docs/authentication', label: 'Authentication with Composio' },
+              {
+                url: '/docs/authentication/managing-multiple-connected-accounts',
+                label: 'Multiple connected accounts',
+              },
+              { url: '/docs/authentication/controlling-scopes' },
+              { url: '/docs/authentication/manually-authenticating' },
+              { url: '/docs/authentication/programmatic-auth-configs' },
+              { url: '/docs/authentication/importing-existing-connections' },
+            ],
+          },
           { type: 'page', url: '/docs/skills', label: 'Skills' },
-          { type: 'page', url: '/docs/triggers' },
+          {
+            type: 'group',
+            label: 'Triggers',
+            links: [{ url: '/docs/triggers' }, { type: 'folder', path: 'setting-up-triggers' }],
+          },
         ],
       },
       {
-        label: 'Guides',
+        label: 'Customize',
         items: [
-          { type: 'page', url: '/docs/consumer-agents' },
-          { type: 'page', url: '/docs/b2b-agents' },
-          { type: 'page', url: '/docs/production-readiness' },
-          { type: 'page', url: '/docs/sessions-via-mcp' },
-          { type: 'folder', path: 'sandbox' },
           { type: 'folder', path: 'extending-sessions' },
-          { type: 'folder', path: 'setting-up-triggers' },
+          { type: 'folder', path: 'sandbox' },
+          {
+            type: 'group',
+            label: 'Guides & Examples',
+            links: [
+              { url: '/docs/consumer-agents' },
+              { url: '/docs/b2b-agents' },
+              { type: 'link', url: '/examples', label: 'Examples' },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Ship',
+        items: [
+          { type: 'page', url: '/docs/production-readiness' },
+          { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
         ],
       },
       {
-        label: 'Migration and legacy',
+        label: 'Reference and Migration',
         items: [
-          { type: 'folder', path: 'migration-guide' },
-          { type: 'page', url: '/docs/sessions-vs-direct-execution' },
-          { type: 'folder', path: 'tools-direct' },
-          { type: 'folder', path: 'auth-configuration' },
+          { type: 'link', url: '/reference', label: 'API reference' },
+          {
+            type: 'group',
+            label: 'Migration and legacy',
+            links: [
+              { type: 'page', url: '/docs/sessions-vs-direct-execution' },
+              { type: 'folder', path: 'migration-guide' },
+              { type: 'folder', path: 'tools-direct' },
+              { type: 'folder', path: 'auth-configuration' },
+            ],
+          },
         ],
       },
       { label: 'Shared resources', items: SHARED_SIDEBAR_ITEMS },
