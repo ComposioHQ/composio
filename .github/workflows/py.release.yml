@@ -49,7 +49,9 @@ jobs:
           with open("pyproject.toml", "rb") as pyproject:
               version = tomllib.load(pyproject)["project"]["version"]
 
-          is_prerelease = re.search(r"(?:a|b|rc|dev)\d", version, re.IGNORECASE) is not None
+          # PEP 440 compact form (0.23.1rc1) and the separator form emitted by
+          # python/scripts/bump.py --pre (0.23.1-rc.1) are both prereleases.
+          is_prerelease = re.search(r"(?:a|b|rc|dev)[-_.]?\d", version, re.IGNORECASE) is not None
           print(f"core_only={'true' if is_prerelease else 'false'}")
           PY
 

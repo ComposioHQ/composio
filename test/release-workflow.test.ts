@@ -481,6 +481,33 @@ if (
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
+// PEP 440 compact prereleases (0.23.1rc1) and the separator form that
+// python/scripts/bump.py --pre emits (0.23.1-rc.1) must both count as prereleases,
+// here and in the workflow's inline detector.
+const PYTHON_PRERELEASE_PATTERN = /(?:a|b|rc|dev)[-_.]?\d/i;
+const PYTHON_PRERELEASE_SAMPLES: ReadonlyArray<readonly [string, boolean]> = [
+  ['0.23.0', false],
+  ['0.23.1', false],
+  ['0.23.1rc1', true],
+  ['0.23.1-rc.1', true],
+  ['0.23.1b2', true],
+  ['0.23.1.dev3', true],
+  ['0.23.1a1', true],
+];
+const workflowPrereleaseDetector = requireMatch(
+  pythonReleaseWorkflow,
+  /is_prerelease = re\.search\(r"([^"]+)", version, re\.IGNORECASE\) is not None/,
+  'py.release.yml prerelease detector'
+);
+for (const [sample, expected] of PYTHON_PRERELEASE_SAMPLES) {
+  if (PYTHON_PRERELEASE_PATTERN.test(sample) !== expected) {
+    throw new Error(`release-workflow prerelease detector misclassifies ${sample}`);
+  }
+  if (new RegExp(workflowPrereleaseDetector, 'i').test(sample) !== expected) {
+    throw new Error(`py.release.yml prerelease detector misclassifies ${sample}`);
+  }
+}
+
 if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   throw new Error('py.release.yml must validate release metadata before publishing');
 }
@@ -521,7 +548,7 @@ if (
   }
 
   const providerDir = new URL('../python/providers/', import.meta.url);
-  const pythonIsPrerelease = /(?:a|b|rc|dev)\d/i.test(pythonVersion);
+  const pythonIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(pythonVersion);
   const providerVersions = new Map<string, string>();
   for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -538,7 +565,7 @@ if (
       `python/providers/${entry.name}/pyproject.toml version`
     );
     providerVersions.set(entry.name, providerPyprojectVersion);
-    const providerIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerPyprojectVersion);
+    const providerIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerPyprojectVersion);
     if (pythonIsPrerelease && providerIsPrerelease) {
       throw new Error(
         `python/providers/${entry.name}/pyproject.toml must remain stable during a composio prerelease (${providerPyprojectVersion})`
@@ -562,7 +589,7 @@ if (
         `python/providers/${entry.name}/setup.py must match its pyproject.toml (${providerSetupVersion} !== ${providerPyprojectVersion})`
       );
     }
-    const providerSetupIsPrerelease = /(?:a|b|rc|dev)\d/i.test(providerSetupVersion);
+    const providerSetupIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerSetupVersion);
     if (pythonIsPrerelease && providerSetupIsPrerelease) {
       throw new Error(
         `python/providers/${entry.name}/setup.py must remain stable during a composio prerelease (${providerSetupVersion})`
