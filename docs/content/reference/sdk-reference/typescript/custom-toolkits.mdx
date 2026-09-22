@@ -1,0 +1,123 @@
+---
+title: "CustomToolkits"
+description: "`composio.experimental.customToolkits` — toolkits your project registers from its own app or MCP server, with their own auth configs and connected accounts. **Experimental — custom toolkits are in pilot; shape may change.**  These live on the Composio platform. They are unrelated to the in-process toolkits built with `experimental_createToolkit()`, which run inside your application."
+---
+
+## Usage
+
+Access this class through the `composio.customToolkits` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.customToolkits.list();
+```
+
+## Methods
+
+### delete()
+
+Deletes a custom toolkit owned by the project, with its tools, auth
+configs and connected accounts. The credentials behind those connected
+accounts are revoked in background jobs (`revokeJobIds`).
+**Experimental — custom toolkits are in pilot; shape may change.**
+
+Composio-managed toolkits cannot be deleted; the API answers 403.
+
+```typescript
+async delete(slug: string, requestOptions?: ComposioRequestOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The custom toolkit slug (`CUSTOM_...`) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — What was deleted
+
+**Example**
+
+```typescript
+const result = await composio.experimental.customToolkits.delete('CUSTOM_MY_TOOLKIT');
+console.log(result.connectedAccountsDeleted);
+```
+
+---
+
+### sync()
+
+Re-fetches the tool definitions of a custom toolkit from its remote MCP
+server. Call it when automatic sync fails or the remote tools change.
+**Experimental — custom toolkits are in pilot; shape may change.**
+
+```typescript
+async sync(slug: string, params?: { connectedAccountId?: string }, requestOptions?: ComposioRequestOptions): Promise<{ slug: string; syncedCount: number; version: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The custom toolkit slug (`CUSTOM_...`) |
+| `params?` | `\{ connectedAccountId?: string \}` | Optional connected account to fetch the definitions with |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ slug: string; syncedCount: number; version: string \}>` — The toolkit version and number of tools synced
+
+**Example**
+
+```typescript
+const { version, syncedCount } = await composio.experimental.customToolkits.sync(
+  'CUSTOM_MY_TOOLKIT',
+  { connectedAccountId: 'ca_abc123' }
+);
+```
+
+---
+
+### upsert()
+
+Creates a custom toolkit, or updates its display metadata (name, API key
+field copy) when the project already owns a toolkit with this slug.
+**Experimental — custom toolkits are in pilot; shape may change.**
+
+`appUrl` and `authSchemes` cannot change on an existing toolkit:
+re-sending them unchanged is a no-op, and changing them fails with a 409.
+Delete and re-register the toolkit instead, which revokes its connections.
+
+```typescript
+async upsert(params: { slug: string; toolkitConfig: { appUrl: string; authSchemes: { mode: 'NO_AUTH' } | { apiKeyField?: { description?: ...; displayName?: ... }; headers: Record<..., ...>; mode: 'API_KEY' } | { discoveryUrl: string; mode: 'DCR_OAUTH' }[]; logoFile?: { content: string; mimeType: 'image/png' | 'image/jpeg' }; name: string } }, requestOptions?: ComposioRequestOptions): Promise<{ slug: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `\{ slug: string; toolkitConfig: \{ appUrl: string; authSchemes: \{ mode: 'NO_AUTH' \} \| \{ apiKeyField?: \{ description?: ...; displayName?: ... \}; headers: Record<..., ...>; mode: 'API_KEY' \} \| \{ discoveryUrl: string; mode: 'DCR_OAUTH' \}[]; logoFile?: \{ content: string; mimeType: 'image/png' \| 'image/jpeg' \}; name: string \} \}` | The slug and toolkit configuration |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ slug: string \}>` — The toolkit's slug
+
+**Example**
+
+```typescript
+await composio.experimental.customToolkits.upsert({
+  slug: 'INTERNAL_API',
+  toolkitConfig: {
+    name: 'Internal API',
+    appUrl: 'https://mcp.internal.example.com/mcp',
+    authSchemes: [
+      { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
+    ],
+  },
+});
+```
+
+---
