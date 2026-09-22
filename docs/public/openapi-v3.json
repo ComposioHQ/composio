@@ -1918,7 +1918,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 50",
+            "description": "Number of items per page, max allowed is 200",
             "name": "limit",
             "in": "query"
           },
