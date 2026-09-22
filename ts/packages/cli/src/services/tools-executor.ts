@@ -7,7 +7,7 @@ import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
 } from '@composio/client/resources/tool-router';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
@@ -51,6 +51,17 @@ export interface ToolExecuteParams {
     readonly consumerUserId: string;
   };
 }
+
+/**
+ * The project custom toolkits are listed for: the command's resolved one when
+ * it handed in both ids, otherwise whatever the project context resolves.
+ */
+const toolkitProjectScope = ({
+  projectScope,
+}: ToolExecuteParams): ToolkitProjectScope | undefined =>
+  projectScope?.orgId && projectScope.projectId
+    ? { orgId: projectScope.orgId, projectId: projectScope.projectId }
+    : undefined;
 
 /**
  * Normalized response that matches the shape consumers expect.
@@ -197,7 +208,7 @@ export const ToolsExecutorLive = Layer.effect(
             connectedAccounts: params.connectedAccounts,
             cacheScope: params.cacheScope,
           });
-          const toolkitSlug = yield* toolkitFromToolSlug(slug);
+          const toolkitSlug = yield* toolkitFromToolSlug(slug, toolkitProjectScope(params));
           const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
             connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
@@ -263,7 +274,7 @@ export const ToolsExecutorLive = Layer.effect(
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(slug).pipe(
+            toolkitFromToolSlug(slug, toolkitProjectScope(params)).pipe(
               Effect.flatMap(toolkitSlug => {
                 const mapped = mapComposioError({ error, toolkit: toolkitSlug, toolSlug: slug });
                 return Effect.fail(

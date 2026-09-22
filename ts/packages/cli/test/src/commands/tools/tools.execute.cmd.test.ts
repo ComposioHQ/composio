@@ -134,8 +134,10 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
+  let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
+    recordedProjectToolkitScopes = [];
   });
 
   layer(
@@ -654,6 +656,10 @@ describe('CLI: composio execute', () => {
         // never lists them, and the baked one cannot.
         toolkits: [makeToolkitFixture('gmail', 'Gmail')],
         projectToolkits: [makeToolkitFixture('custom_grain', 'Grain')],
+        // The consumer project execute resolves, not the fixture's developer
+        // project that the project context would pick without a scope.
+        projectToolkitsScope: { orgId: 'org_test', projectId: 'consumer_project_test' },
+        onGetProjectToolkits: scope => recordedProjectToolkitScopes.push(scope),
       },
       connectedAccountsData: {
         items: [
@@ -727,6 +733,10 @@ describe('CLI: composio execute', () => {
 
           expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
             custom_grain: 'ca_1',
+          });
+          expect(recordedProjectToolkitScopes).toContainEqual({
+            orgId: 'org_test',
+            projectId: 'consumer_project_test',
           });
         })
     );

@@ -1623,6 +1623,27 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   };
 });
 
+/**
+ * The org/project a project-scoped request is made for, as a command resolved it.
+ */
+export interface ToolkitProjectScope {
+  readonly orgId: string;
+  readonly projectId: string;
+}
+
+/**
+ * A view of `clientSingleton` whose `get()` builds the client for `scope`,
+ * so the shared call helpers can make a request for a project other than the
+ * one the project context resolves.
+ */
+const scopedClientSingleton = (
+  clientSingleton: ComposioClientSingletonShape,
+  scope: ToolkitProjectScope
+): ComposioClientSingletonShape => ({
+  ...clientSingleton,
+  get: () => clientSingleton.getFor({ orgId: scope.orgId, projectId: scope.projectId }),
+});
+
 export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
@@ -1915,11 +1936,12 @@ const makeComposioClientLive = Effect.gen(function* () {
        * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
        * Automatically handles pagination to fetch all items.
        * @param managedBy - Which toolkits to list; the API defaults to Composio-managed ones
+       * @param scope - The org/project to list for, instead of the one the project context resolves
        */
-      list: (managedBy?: 'composio' | 'project' | 'all') =>
+      list: (managedBy?: 'composio' | 'project' | 'all', scope?: ToolkitProjectScope) =>
         withMetrics(
           callClientWithPagination(
-            clientSingleton,
+            scope ? scopedClientSingleton(clientSingleton, scope) : clientSingleton,
             (client, cursor, limit) =>
               client.toolkits.list({ cursor, limit, managed_by: managedBy }),
             ToolkitsResponse
@@ -2099,8 +2121,8 @@ export class ComposioClientLive extends Context.Service<
 const makeComposioToolkitsRepository = Effect.gen(function* () {
   const client = yield* ComposioClientLive;
 
-  const listToolkits = (managedBy?: 'project') =>
-    client.toolkits.list(managedBy).pipe(
+  const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
+    client.toolkits.list(managedBy, scope).pipe(
       Effect.map(response => response.items),
       Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
     );
@@ -2111,8 +2133,10 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
    * Fetches the custom toolkits registered in the current project. They are
    * project-scoped, so they are absent from the build-time catalog and from
    * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
+   * @param scope - The org/project the command resolved; without it, the
+   *   project context decides, which is no project at all in consumer mode
    */
-  const getProjectToolkits = () => listToolkits('project');
+  const getProjectToolkits = (scope?: ToolkitProjectScope) => listToolkits('project', scope);
 
   /**
    * Fetches specific toolkits by their slugs.

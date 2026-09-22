@@ -2,6 +2,7 @@ import { Effect, Layer } from 'effect';
 import {
   ComposioToolkitsRepository,
   type ComposioToolkitsRepositoryShape,
+  type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import type { Toolkits } from 'src/models/toolkits';
 
@@ -60,8 +61,9 @@ export type GetProjectToolkitsError = Effect.Error<
  */
 export const countingToolkitsRepository = (
   getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
-  getProjectToolkits: () => Effect.Effect<Toolkits, GetProjectToolkitsError> = () =>
-    Effect.succeed([])
+  getProjectToolkits: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError> = () => Effect.succeed([])
 ) => {
   let calls = 0;
   let projectCalls = 0;
@@ -75,10 +77,10 @@ export const countingToolkitsRepository = (
           calls += 1;
           return getToolkits();
         }),
-      getProjectToolkits: () =>
+      getProjectToolkits: scope =>
         Effect.suspend(() => {
           projectCalls += 1;
-          return getProjectToolkits();
+          return getProjectToolkits(scope);
         }),
     })
   );

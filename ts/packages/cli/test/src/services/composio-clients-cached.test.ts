@@ -1,7 +1,11 @@
 import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  HttpServerError,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
@@ -36,7 +40,9 @@ const withCountingRepository = <A>(
     ComposioToolkitsRepository | FileSystem.FileSystem
   >,
   config: ReadonlyArray<readonly [string, string]> = [],
-  getProjectToolkits?: () => Effect.Effect<Toolkits, GetProjectToolkitsError>
+  getProjectToolkits?: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError>
 ) =>
   Effect.suspend(() => {
     const cacheDir = tempy.temporaryDirectory();
@@ -167,6 +173,57 @@ describe('ComposioToolkitsRepositoryCached', () => {
         }),
       [['FORCE_USE_CACHE', 'true']],
       () => Effect.succeed([makeToolkitFixture('custom_grain')])
+    )
+  );
+
+  it.effect('surfaces a failed project fetch once, and does not retry it', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scope = { orgId: 'org_a', projectId: 'pr_a' };
+
+          const first = yield* Effect.result(repository.getProjectToolkits(scope));
+          const second = yield* Effect.result(repository.getProjectToolkits(scope));
+
+          expect(second).toEqual(first);
+          expect(projectCalls()).toBe(1);
+        }),
+      [],
+      () => Effect.fail(new HttpServerError({ cause: 'network down', status: 503 }))
+    )
+  );
+
+  it.effect('fetches project toolkits once per project scope', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scopeA = { orgId: 'org_a', projectId: 'pr_a' };
+          const scopeB = { orgId: 'org_a', projectId: 'pr_b' };
+
+          const results = yield* Effect.all([
+            repository.getProjectToolkits(scopeA),
+            repository.getProjectToolkits(scopeB),
+            repository.getProjectToolkits({ ...scopeA }),
+            repository.getProjectToolkits(scopeB),
+            repository.getProjectToolkits(),
+          ]);
+
+          expect(results.map(toolkits => toolkits.map(t => t.slug))).toEqual([
+            ['custom_pr_a'],
+            ['custom_pr_b'],
+            ['custom_pr_a'],
+            ['custom_pr_b'],
+            ['custom_unscoped'],
+          ]);
+          // Unscoped is a scope of its own: the project context decides it.
+          expect(projectCalls()).toBe(3);
+        }),
+      [],
+      scope => Effect.succeed([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
     )
   );
 });

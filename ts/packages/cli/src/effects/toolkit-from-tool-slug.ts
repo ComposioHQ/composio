@@ -1,5 +1,8 @@
 import { Array as Arr, Effect } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import {
@@ -23,9 +26,14 @@ import {
  * toolkit registered in the current project. Everything else
  * degrades rather than fails: an unreachable catalog still yields the
  * first-underscore guess.
+ *
+ * Pass the org/project the command resolved as `scope`: custom toolkits are
+ * listed per project, and without it the list follows the project context,
+ * which in consumer mode is no project at all.
  */
 export const toolkitFromToolSlug = (
-  toolSlug: string
+  toolSlug: string,
+  scope?: ToolkitProjectScope
 ): Effect.Effect<string | undefined, never, ComposioToolkitsRepository | ToolkitSlugCatalog> =>
   Effect.gen(function* () {
     // Meta tools belong to the session rather than to a toolkit, and their
@@ -49,7 +57,7 @@ export const toolkitFromToolSlug = (
     // matching against; only when neither answers does the guess win.
     const repository = yield* ComposioToolkitsRepository;
     const catalogs = yield* Effect.all(
-      [repository.getToolkits(), repository.getProjectToolkits()].map(Effect.option),
+      [repository.getToolkits(), repository.getProjectToolkits(scope)].map(Effect.option),
       { concurrency: 'unbounded' }
     );
     const fetched = Arr.getSomes(catalogs);
