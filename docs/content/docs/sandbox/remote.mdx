@@ -66,6 +66,8 @@ Larger tiers require `@composio/core` ≥ `0.8.1` or `composio` ≥ `0.12.1`. Se
 
 ## Files and mounts
 
+For a complete upload, analysis, and download workflow, build the [CSV report agent](/examples/csv-report-agent).
+
 The sandbox has a persistent file mount at `/mnt/files/`. Code running in the sandbox reads and writes files there, and the mount survives sandbox restarts: changing the [compute tier](#compute-tier) recreates the sandbox and clears in-memory state, but `/mnt/files/` persists.
 
 Move files between your app and the mount with `session.experimental.files`. Upload an input file and the agent reads it at `/mnt/files/<path>`. When the agent writes a result, download it from your app.
