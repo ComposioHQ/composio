@@ -18,10 +18,22 @@ from __future__ import annotations
 
 import typing as t
 
+import typing_extensions as te
 from pydantic import BaseModel
 
 from composio.client import HttpClient
-from composio.client.types import connected_account_patch_response
+from composio.utils.pydantic import none_to_omit
+from composio.client.types import (
+    connected_account_patch_response,
+    custom_delete_toolkit_response,
+    custom_sync_response,
+    custom_upsert_params,
+    custom_upsert_response,
+    usage_retrieve_params,
+    usage_retrieve_response,
+    usage_retrieve_summary_params,
+    usage_retrieve_summary_response,
+)
 
 from .custom_tool import (
     CustomTool,
@@ -37,6 +49,176 @@ from .custom_tool import (
 ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT = "acl_config_for_shared is only valid on SHARED"
 
 
+class ExperimentalUsage:
+    """Project usage metering, accessed via ``composio.experimental.usage``.
+
+    Experimental — the response shape may change in future releases. Scoped
+    to the project the API key belongs to.
+    """
+
+    def __init__(self, client: t.Optional[HttpClient] = None) -> None:
+        self._client = client
+
+    def _require_client(self) -> HttpClient:
+        from composio import exceptions
+
+        if self._client is None:
+            raise exceptions.ValidationError(
+                "experimental.usage requires a Composio client. Access it via "
+                "composio.experimental.usage.summary(...)."
+            )
+        return self._client
+
+    def summary(
+        self,
+        **params: te.Unpack[usage_retrieve_summary_params.UsageRetrieveSummaryParams],
+    ) -> usage_retrieve_summary_response.UsageRetrieveSummaryResponse:
+        """
+        Fetch a usage summary for the project. Experimental — shape may change.
+
+        :param from_: Start of the window (Unix epoch milliseconds).
+        :param to: End of the window (Unix epoch milliseconds).
+        :param entity_types: Restrict the summary to these entity types.
+        :param filters: Additional server-side filters.
+        :return: Usage totals keyed by entity type under ``.entities``.
+
+        Example:
+            summary = composio.experimental.usage.summary(
+                entity_types=["tool_calls"],
+            )
+        """
+        return self._require_client().project.usage.retrieve_summary(**params)
+
+    def breakdown(
+        self,
+        entity_type: str,
+        **params: te.Unpack[usage_retrieve_params.UsageRetrieveParams],
+    ) -> usage_retrieve_response.UsageRetrieveResponse:
+        """
+        Fetch a grouped usage breakdown for one entity type. Experimental —
+        shape may change.
+
+        :param entity_type: The metered entity type, e.g. ``tool_calls`` or ``sessions``.
+        :param from_: Start of the window (Unix epoch milliseconds).
+        :param to: End of the window (Unix epoch milliseconds).
+        :param group_by: Field to group the breakdown by (API default: ``tool_slug``
+            for ``tool_calls``, ``user_id`` for ``sessions``).
+        :param order_by: Sort key (``key``, ``total_quantity`` or ``event_count``).
+        :param order_direction: ``asc`` or ``desc``.
+        :param limit: Maximum number of groups to return.
+        :param filters: Additional server-side filters.
+        :return: The usage totals and per-group breakdown.
+
+        Example:
+            breakdown = composio.experimental.usage.breakdown(
+                "tool_calls",
+                group_by="tool_slug",
+            )
+        """
+        return self._require_client().project.usage.retrieve(entity_type, **params)
+
+
+class ExperimentalCustomToolkits:
+    """Project-owned custom toolkits, accessed via
+    ``composio.experimental.custom_toolkits``.
+
+    Experimental — custom toolkits are in pilot and the shape may change.
+    These toolkits are registered in your Composio project from your own app
+    or MCP server, with their own auth configs and connected accounts. They
+    are unrelated to the in-process toolkits built with
+    ``composio.experimental.Toolkit``.
+    """
+
+    def __init__(self, client: t.Optional[HttpClient] = None) -> None:
+        self._client = client
+
+    def _require_client(self) -> HttpClient:
+        from composio import exceptions
+
+        if self._client is None:
+            raise exceptions.ValidationError(
+                "experimental.custom_toolkits requires a Composio client. Access "
+                "it via composio.experimental.custom_toolkits.upsert(...)."
+            )
+        return self._client
+
+    def upsert(
+        self,
+        **params: te.Unpack[custom_upsert_params.CustomUpsertParams],
+    ) -> custom_upsert_response.CustomUpsertResponse:
+        """
+        Create a custom toolkit, or update its display metadata (name, API key
+        field copy) when the project already owns one with this slug.
+        Experimental — shape may change.
+
+        ``app_url`` and ``auth_schemes`` cannot change on an existing
+        toolkit: re-sending them unchanged is a no-op, and changing them fails
+        with a 409. Delete and re-register the toolkit instead, which revokes
+        its connections.
+
+        :param slug: Letters, digits, underscores or spaces (max 30). The API
+            prefixes it with ``CUSTOM_`` and turns spaces into underscores.
+        :param toolkit_config: ``name``, ``app_url`` (the MCP URL for MCP
+            apps), ``auth_schemes`` and an optional base64 ``logo_file``.
+        :return: The toolkit's ``slug``.
+
+        Example:
+            composio.experimental.custom_toolkits.upsert(
+                slug="INTERNAL_API",
+                toolkit_config={
+                    "name": "Internal API",
+                    "app_url": "https://mcp.internal.example.com/mcp",
+                    "auth_schemes": [
+                        {
+                            "mode": "API_KEY",
+                            "headers": {"Authorization": "Bearer {{generic_api_key}}"},
+                        }
+                    ],
+                },
+            )
+        """
+        return self._require_client().custom.upsert(**params)
+
+    def sync(
+        self, slug: str, *, connected_account_id: t.Optional[str] = None
+    ) -> custom_sync_response.CustomSyncResponse:
+        """
+        Re-fetch a custom toolkit's tool definitions from its remote MCP
+        server. Call it when automatic sync fails or the remote tools change.
+        Experimental — shape may change.
+
+        :param slug: The custom toolkit slug (``CUSTOM_...``).
+        :param connected_account_id: Connected account to use when fetching
+            the remote tool definitions.
+        :return: The toolkit ``version`` and ``synced_count``.
+
+        Example:
+            result = composio.experimental.custom_toolkits.sync("CUSTOM_MY_TOOLKIT")
+            print(result.synced_count)
+        """
+        return self._require_client().custom.sync(
+            slug=slug, connected_account_id=none_to_omit(connected_account_id)
+        )
+
+    def delete(
+        self, slug: str
+    ) -> custom_delete_toolkit_response.CustomDeleteToolkitResponse:
+        """
+        Delete a custom toolkit owned by the project, with its tools, auth
+        configs and connected accounts. The credentials behind those
+        connected accounts are revoked in background jobs
+        (``revoke_job_ids``). Composio-managed toolkits cannot be deleted
+        (API 403). Experimental — shape may change.
+
+        :param slug: The custom toolkit slug (``CUSTOM_...``).
+        :return: What was deleted.
+
+        Example:
+            composio.experimental.custom_toolkits.delete("CUSTOM_MY_TOOLKIT")
+        """
+        return self._require_client().custom.delete_toolkit(slug)
+
+
 class ExperimentalAPI:
     """Experimental APIs accessed via ``composio.experimental``.
 
@@ -47,8 +229,16 @@ class ExperimentalAPI:
 
     Toolkit = ExperimentalToolkit
 
+    usage: ExperimentalUsage
+    """Project usage metering. Experimental — shape may change."""
+
+    custom_toolkits: ExperimentalCustomToolkits
+    """Project-owned custom toolkits. Experimental — shape may change."""
+
     def __init__(self, client: t.Optional[HttpClient] = None) -> None:
         self._client = client
+        self.usage = ExperimentalUsage(client=client)
+        self.custom_toolkits = ExperimentalCustomToolkits(client=client)
 
     def update_acl(
         self,
