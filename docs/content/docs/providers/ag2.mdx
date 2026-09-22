@@ -1,0 +1,87 @@
+---
+title: AG2
+description: Build an AG2 agent with Composio tools through the AutoGen-compatible provider.
+keywords: [ag2, autogen, agent framework, composio_autogen]
+---
+
+AG2 is the community-maintained continuation of the classic AutoGen agent framework. The Composio AutoGen provider already targets the `ag2` distribution, so AG2 users should install `ag2[openai]` with `composio_autogen` and use the AG2 `run(...)` flow.
+
+This page is intentionally separate from the AutoGen page so AG2 users can find the supported setup path directly.
+
+<Steps>
+<Step>
+**Install**
+
+<PackageInstall ecosystem="python" packages="composio composio_autogen 'ag2[openai]'" />
+</Step>
+
+<Step>
+**Configure API keys**
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create a session and run**
+
+```python
+import os
+
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
+from composio import Composio
+from composio_autogen import AutogenProvider
+
+composio = Composio(provider=AutogenProvider())
+
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+assistant = AssistantAgent(
+    "assistant",
+    system_message="Reply TERMINATE when the task is done.",
+    llm_config=LLMConfig(
+        {
+            "api_type": "openai",
+            "model": "gpt-5.2",
+            "api_key": os.environ["OPENAI_API_KEY"],
+        }
+    ),
+)
+
+user_proxy = UserProxyAgent(
+    "user_proxy",
+    is_termination_msg=lambda msg: "TERMINATE" in (msg.get("content", "") or ""),
+    human_input_mode="NEVER",
+    code_execution_config={"use_docker": False},
+)
+
+composio.provider.register_tools(caller=assistant, executor=user_proxy, tools=tools)
+
+result = user_proxy.run(
+    assistant,
+    message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+)
+result.process()
+
+print(result)
+```
+</Step>
+</Steps>
+
+## Provider specifics
+
+AG2 still imports the classic agent classes from `autogen`, while the package you install is `ag2`. That is expected.
+
+Register tools with both agents:
+
+- `caller` is the assistant that decides which tool to call.
+- `executor` is the user proxy that executes the registered function.
+
+Composio maps tools into AG2-compatible function tools and truncates long generated function names to satisfy AG2's function-name limit.
+
+## Next
+
+<Card icon={<BookOpen />} title="AutoGen provider" href="/docs/providers/autogen" description="See the shared provider details and registration model." />

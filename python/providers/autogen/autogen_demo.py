@@ -52,10 +52,11 @@ def main():
     task = "Star a repo composiohq/composio on GitHub"
 
     # Execute task.
-    response = user_proxy.initiate_chat(chatbot, message=task)
+    response = user_proxy.run(chatbot, message=task)
+    response.process()
 
     # Print response
-    print(response.chat_history)
+    print(response)
 
 
 if __name__ == "__main__":
