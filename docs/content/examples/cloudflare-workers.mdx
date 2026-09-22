@@ -99,10 +99,11 @@ export default {
 			apiKey: env.COMPOSIO_API_KEY,
 			provider: new OpenAIResponsesProvider(),
 		});
+		let session: Awaited<ReturnType<typeof composio.create>> | undefined;
 
 		try {
 			const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-			const session = await composio.create('hackernews-worker', {
+			session = await composio.create('hackernews-worker', {
 				toolkits: ['hackernews'],
 				manageConnections: false,
 				sandbox: { enable: false },
@@ -141,6 +142,11 @@ export default {
 			console.error('Hacker News agent failed', error);
 			return new Response('The agent could not complete the request.', { status: 502 });
 		} finally {
+			try {
+				await session?.delete();
+			} catch (error) {
+				console.error('Could not delete the Composio session', error);
+			}
 			ctx.waitUntil(composio.flush());
 		}
 	},
@@ -149,7 +155,7 @@ export default {
 
 `handleToolCalls` executes each tool through the session that supplied it. The loop sends the results back to OpenAI and stops when the model returns text, with a limit of ten model turns. Connection management and the remote sandbox are disabled because this task only reads public Hacker News data.
 
-The handler awaits the agent result before returning. `ctx.waitUntil(composio.flush())` lets Composio finish sending telemetry after the response. Cloudflare gives [`waitUntil` up to 30 seconds](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil) after the response or a client disconnect, so keep the agent run in the awaited request path.
+The handler awaits the agent result and deletes the request's session before returning, including when the agent fails. If deletion fails, it logs the error and preserves the response. `ctx.waitUntil(composio.flush())` lets Composio finish sending telemetry after the response. Cloudflare gives [`waitUntil` up to 30 seconds](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil) after the response or a client disconnect, so keep the agent run in the awaited request path.
 
 ## Check and run locally
 
