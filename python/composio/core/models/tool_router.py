@@ -82,7 +82,12 @@ def _origin(url: str) -> str:
     scheme = parts.scheme.lower()
     hostname = parts.hostname.lower()
     host = f"[{hostname}]" if ":" in hostname else hostname
-    port = parts.port
+    try:
+        port = parts.port
+    except ValueError as exc:
+        raise MCPDestinationError(
+            f"{url!r} is not an absolute URL", mcp_origin="", api_origin=""
+        ) from exc
     if port is not None and port != _DEFAULT_PORTS.get(scheme):
         host = f"{host}:{port}"
     return f"{scheme}://{host}"

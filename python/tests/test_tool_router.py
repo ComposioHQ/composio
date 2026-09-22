@@ -2320,6 +2320,18 @@ class TestMcpAuthContext:
         )
         assert session.mcp.headers == {"x-api-key": "test-api-key"}
 
+    def test_malformed_mcp_url_port_raises_destination_error(
+        self, tool_router, mock_client
+    ):
+        response = mock_client.tool_router.session.create.return_value
+        response.mcp.url = "https://backend.composio.dev:abc/session_123"
+
+        with pytest.raises(MCPDestinationError) as excinfo:
+            tool_router.create(user_id="user_123", mcp=True)
+
+        assert "not an absolute URL" in str(excinfo.value)
+        assert "test-api-key" not in str(excinfo.value)
+
 
 class TestSessionUpdateContract:
     """update() nullable fields, empty allowlists, and expected versions."""
@@ -2388,4 +2400,27 @@ class TestSessionUpdateContract:
         assert excinfo.value.status_code == 409
         assert session.config is config_before
         assert session.preload is preload_before
+        assert session.config_version == 7
+
+    def test_update_conflict_without_expected_version_reports_in_flight_change(
+        self, session, mock_client
+    ):
+        config_before = session.config
+        response = httpx.Response(
+            409,
+            request=httpx.Request("PATCH", "https://backend.composio.dev/patch"),
+            json={"error": "version conflict"},
+        )
+        mock_client.tool_router.session.patch.side_effect = ConflictError(
+            "Conflict", response=response, body={"error": "version conflict"}
+        )
+
+        with pytest.raises(SessionConfigConflictError) as excinfo:
+            session.update(toolkits={"enable": ["gmail"]})
+
+        message = str(excinfo.value)
+        assert "changed while this update was in flight" in message
+        assert "no longer at version" not in message
+        assert excinfo.value.expected_config_version is None
+        assert session.config is config_before
         assert session.config_version == 7

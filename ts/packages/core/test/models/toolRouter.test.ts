@@ -3889,6 +3889,23 @@ describe('ToolRouter', () => {
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
     });
 
+    it('reports an in-flight change when a 409 arrives without expectedConfigVersion', async () => {
+      const session = await toolRouter.use(sessionId);
+      const configBefore = session.config;
+      mockClient.toolRouter.session.patch.mockRejectedValueOnce(
+        new ConflictError(409, { error: 'version conflict' }, 'Conflict', new Headers())
+      );
+
+      const failure = await session.update({ toolkits: ['gmail'] }).catch(e => e);
+
+      expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
+      expect(failure.message).toMatch(/changed while this update was in flight/);
+      expect(failure.message).not.toMatch(/no longer at version/);
+      expect(failure.meta?.expectedConfigVersion).toBeUndefined();
+      expect(session.config).toBe(configBefore);
+      expect(session.configVersion).toBe(7);
+    });
+
     it('lets the first of two handles at version N win and the stale one conflict', async () => {
       const first = await toolRouter.use(sessionId);
       const second = await toolRouter.use(sessionId);

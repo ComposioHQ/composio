@@ -49,7 +49,7 @@ export class ComposioAPIKeyKindError extends ComposioError {
         'The user config file holds a user API key written by the Composio CLI; it cannot authenticate SDK requests as a project',
       possibleFixes: options.possibleFixes || [
         'Pass a project API key via `apiKey` or the COMPOSIO_API_KEY environment variable',
-        'Create a project API key in the Composio dashboard at https://platform.composio.dev',
+        'Create a project API key in the Composio dashboard at https://dashboard.composio.dev',
         'To authenticate with the user API key instead, pass `apiKey: null` and set the `x-user-api-key` default header',
       ],
       statusCode: 401,
