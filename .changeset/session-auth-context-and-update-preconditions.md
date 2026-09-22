@@ -1,5 +1,5 @@
 ---
-'@composio/core': patch
+'@composio/core': minor
 ---
 
 Sessions now export their MCP config from the auth context the session request was actually made with: the project key as `x-api-key` when one is configured, otherwise the user API key (`userApiKey` or the `x-user-api-key` default header) as `x-user-api-key`, plus `x-org-id` / `x-project-id` when the instance is scoped. No other default header and no ambient `COMPOSIO_API_KEY` is ever copied. The headers are only attached when the MCP URL shares the origin of the configured API base URL (whatever its scheme). Any other destination (a different origin, an opaque origin such as a `data:` URL, or a URL that does not parse) never receives them: with `mcp: true`, `create()` / `use()` throw `ComposioMCPDestinationError`, which names both origins and never includes a key; without `mcp: true` the session is returned with `session.mcp.headers` empty and a warning naming both origins is logged, so native tools keep working. The SDK never connects to the MCP URL itself and does not follow redirects for it. Trigger subscriptions (Pusher channel auth) follow the same rule instead of falling back to the environment when the project key is disabled.
