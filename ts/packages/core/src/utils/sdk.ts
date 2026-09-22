@@ -22,6 +22,13 @@ export const USER_API_KEY_HEADER = 'x-user-api-key';
 /** Prefix of Composio user API keys as issued by `composio login`. */
 const USER_API_KEY_PREFIX = 'uak_';
 
+/**
+ * Header that carries the project API key. The SDK only ever sets it from the
+ * resolved `apiKey`; a caller-placed entry in `defaultHeaders` is rejected
+ * when project-key auth is disabled.
+ */
+export const PROJECT_API_KEY_HEADER = 'x-api-key';
+
 /** Header carrying the organization nano ID that scopes user-key requests. */
 export const ORG_ID_HEADER = 'x-org-id';
 
@@ -160,7 +167,7 @@ export const resolveCredentialHeaders = (input: CredentialHeaderInput): Record<s
     return { [USER_API_KEY_HEADER]: userApiKeyHeader.value };
   }
   if (hasValue(input.apiKey)) {
-    return { 'x-api-key': input.apiKey };
+    return { [PROJECT_API_KEY_HEADER]: input.apiKey };
   }
   if (hasValue(input.userApiKey)) {
     return { [USER_API_KEY_HEADER]: input.userApiKey };
@@ -312,6 +319,8 @@ const hasAlternateCredential = (options: SDKConfigOptions): boolean =>
  *   another credential: a `userApiKey` or `orgApiKey` (explicit, or resolved
  *   from `COMPOSIO_USER_API_KEY` / `COMPOSIO_ORG_API_KEY` the way the API
  *   client does), or a non-empty `x-user-api-key` entry in `defaultHeaders`.
+ *   An `x-api-key` entry in `defaultHeaders` (any letter case) is rejected in
+ *   that mode: the project credential is only ever set from `apiKey`.
  *
  * A stored `uak_` user key is never used as a project key: when it is the only
  * candidate the resolver throws a {@link ComposioAPIKeyKindError} that names the
@@ -334,6 +343,20 @@ export function getSDKConfig(
 
   const resolveApiKey = (): string | null => {
     if (apiKey === null) {
+      const projectKeyHeader = findHeader(options.defaultHeaders, PROJECT_API_KEY_HEADER);
+      if (projectKeyHeader) {
+        throw new ComposioNoAPIKeyError(
+          `Project API key resolution is disabled, but \`defaultHeaders\` carries a \`${projectKeyHeader.name}\` entry`,
+          {
+            cause:
+              '`apiKey: null` sends no project key, so a raw x-api-key default header would bypass that choice; the SDK keeps a single source for the project credential',
+            possibleFixes: [
+              `Pass the project API key via \`apiKey\` instead of a raw \`${PROJECT_API_KEY_HEADER}\` default header`,
+              `Remove the \`${projectKeyHeader.name}\` entry from \`defaultHeaders\` to authenticate with the user or organization API key alone`,
+            ],
+          }
+        );
+      }
       if (hasAlternateCredential(options)) {
         return null;
       }

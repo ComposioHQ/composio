@@ -9,6 +9,7 @@ import httpx
 import pytest
 
 from composio import Composio, exceptions
+from composio.client import HttpClient
 from composio.core.provider._openai import OpenAIProvider
 from composio.core.types import ToolkitVersionParam
 
@@ -390,6 +391,38 @@ class TestUserOnlyInitialization:
         ):
             with pytest.raises(exceptions.UserApiKeyNotProvidedError):
                 Composio(disable_api_key=True)
+
+    def test_disable_beside_a_raw_project_key_header_raises(self):
+        http_client, requests = _session_transport()
+        with pytest.raises(exceptions.InvalidParams) as excinfo:
+            HttpClient(
+                provider="test",
+                disable_api_key=True,
+                user_api_key="uak_user_key",
+                default_headers={"X-Api-Key": "ak_raw_header"},
+                http_client=http_client,
+            )
+
+        assert "`X-Api-Key`" in str(excinfo.value)
+        assert "ak_raw_header" not in str(excinfo.value)
+        assert requests == []
+
+    def test_client_clones_cannot_reintroduce_a_raw_project_key_header(self):
+        http_client, requests = _session_transport()
+        sdk = Composio(
+            disable_api_key=True,
+            user_api_key="uak_user_key",
+            base_url="https://backend.composio.dev",
+            http_client=http_client,
+        )
+
+        with pytest.raises(exceptions.InvalidParams):
+            sdk.client.with_options(default_headers={"x-api-key": "ak_raw_header"})
+        sdk.sessions.create(user_id="user_123")
+
+        assert len(requests) == 1
+        assert "x-api-key" not in requests[0].headers
+        assert requests[0].headers["x-user-api-key"] == "uak_user_key"
 
     def test_disable_beside_an_explicit_project_key_raises(self):
         with pytest.raises(exceptions.InvalidParams):

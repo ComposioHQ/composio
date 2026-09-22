@@ -89,6 +89,18 @@ describe('Composio user and organization API keys', () => {
     expect(client.orgApiKey).toBe('oak_test');
   });
 
+  it('rejects a raw x-api-key default header when the project key is disabled', () => {
+    expect(
+      () =>
+        new Composio({
+          ...baseConfig,
+          apiKey: null,
+          userApiKey: 'uak_test',
+          defaultHeaders: { 'x-api-key': 'ak_raw' },
+        })
+    ).toThrow(ComposioNoAPIKeyError);
+  });
+
   it('rejects a disabled project key when neither alternate key is configured', () => {
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_env');
     vi.stubEnv('COMPOSIO_USER_API_KEY', '');

@@ -22,8 +22,11 @@ from composio_client import (
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Response, Timeout
 
-from composio.exceptions import ComposioError
-from composio.core.models.tool_router_constants import USER_API_KEY_HEADER
+from composio.core.models.tool_router_constants import (
+    PROJECT_API_KEY_HEADER,
+    USER_API_KEY_HEADER,
+)
+from composio.exceptions import ComposioError, InvalidParams
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 ComposioAPIError = APIError
@@ -351,7 +354,26 @@ class HttpClient(BaseComposio, WithLogger):
         :param http_client: The HTTP client to use for the client.
         """
         WithLogger.__init__(self, logger=logger, logging_level=logging_level)
+        self._disable_api_key = disable_api_key
         if disable_api_key:
+            # The project credential is only ever set from `api_key`: a raw
+            # `x-api-key` default header would bypass the disabled project key.
+            project_key_header = next(
+                (
+                    name
+                    for name in (default_headers or {})
+                    if name.lower() == PROJECT_API_KEY_HEADER
+                ),
+                None,
+            )
+            if project_key_header is not None:
+                raise InvalidParams(
+                    f"`disable_api_key=True` sends no project key, but "
+                    f"`default_headers` carries a `{project_key_header}` entry; "
+                    "pass the project API key as `api_key` instead of a raw "
+                    f"`{PROJECT_API_KEY_HEADER}` header, or remove the entry to "
+                    "authenticate with the user API key alone"
+                )
             # The generated client reads COMPOSIO_API_KEY whenever `api_key` is
             # None, so hand it an environment without that variable. Clones
             # inherit the resolved values and an empty snapshot.
@@ -421,6 +443,9 @@ class HttpClient(BaseComposio, WithLogger):
         return super().copy(  # type: ignore[misc]
             _extra_kwargs={
                 "provider": self.provider,
+                # Clones keep the project key disabled, so a default header
+                # added through `with_options` goes through the same checks.
+                "disable_api_key": self._disable_api_key,
                 # The generated `copy` does not re-pass `_strict_response_validation`,
                 # so without this the clone would silently fall back to the default
                 # (False) even when the original had it enabled — keeping the sibling

@@ -249,8 +249,42 @@ describe('getSDKConfig credential resolution', () => {
 
     it('does not treat other default headers as a credential', () => {
       expect(() =>
-        getSDKConfig(undefined, null, { defaultHeaders: { 'x-api-key': PROJECT_KEY } })
+        getSDKConfig(undefined, null, {
+          defaultHeaders: { authorization: `Bearer ${PROJECT_KEY}` },
+        })
       ).toThrow(ComposioNoAPIKeyError);
+    });
+
+    it('rejects a raw project key header even when a user API key is configured', () => {
+      let caught: unknown;
+      try {
+        getSDKConfig(undefined, null, {
+          userApiKey: USER_KEY,
+          defaultHeaders: { 'x-api-key': PROJECT_KEY },
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(ComposioNoAPIKeyError);
+      const error = caught as ComposioNoAPIKeyError;
+      expect(error.message).toBe(
+        'Project API key resolution is disabled, but `defaultHeaders` carries a `x-api-key` entry'
+      );
+      expect(error.possibleFixes[0]).toBe(
+        'Pass the project API key via `apiKey` instead of a raw `x-api-key` default header'
+      );
+      expect(JSON.stringify(error)).not.toContain(PROJECT_KEY);
+    });
+
+    it('matches a raw project key header name case-insensitively', () => {
+      expect(() =>
+        getSDKConfig(undefined, null, {
+          defaultHeaders: { 'X-Api-Key': PROJECT_KEY, 'x-user-api-key': USER_KEY },
+        })
+      ).toThrow(
+        'Project API key resolution is disabled, but `defaultHeaders` carries a `X-Api-Key` entry'
+      );
     });
   });
 

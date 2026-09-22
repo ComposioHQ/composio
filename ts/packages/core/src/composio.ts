@@ -48,7 +48,8 @@ export type ComposioConfig<
    *   project key; the SDK throws instead of sending it.
    * - `null`: disables project-key authentication entirely, including both fallbacks. The SDK
    *   then requires another credential (`userApiKey`, `orgApiKey`, or an `x-user-api-key`
-   *   entry in `defaultHeaders`) and sends no `x-api-key`.
+   *   entry in `defaultHeaders`) and sends no `x-api-key`; an `x-api-key` entry in
+   *   `defaultHeaders` is rejected, also on `createSession()` clones.
    *
    * @example 'ak_1234567890'
    */
@@ -168,7 +169,9 @@ export type ComposioConfig<
    *
    * `x-user-api-key` is the one header the SDK treats as a credential: together
    * with `apiKey: null` it authenticates requests with a Composio user API key
-   * instead of a project key. Every other header is passed through untouched.
+   * instead of a project key. The project key is only ever set from `apiKey`:
+   * an `x-api-key` entry is rejected when `apiKey` is `null`. Every other
+   * header is passed through untouched.
    * @example
    * ```typescript
    * const composio = new Composio({

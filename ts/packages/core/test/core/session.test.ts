@@ -580,6 +580,30 @@ describe('Credential resolution at the transport boundary', () => {
     expect(() => build({ apiKey: null })).toThrow(ComposioNoAPIKeyError);
   });
 
+  it('rejects a raw project key header when the project key is disabled', () => {
+    const fetchMock = captureFetch();
+
+    expect(() =>
+      build({ apiKey: null, userApiKey: userKey, defaultHeaders: { 'X-Api-Key': projectKey } })
+    ).toThrow(ComposioNoAPIKeyError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not let a clone reintroduce a raw project key header', async () => {
+    const fetchMock = captureFetch();
+    const composio = build({ apiKey: null, userApiKey: userKey });
+
+    expect(() => composio.createSession({ headers: { 'x-api-key': projectKey } })).toThrow(
+      ComposioNoAPIKeyError
+    );
+    await composio.getClient().toolkits.retrieve('github');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const headers = capturedHeaders(fetchMock);
+    expect(headers.get('x-api-key')).toBeNull();
+    expect(headers.get('x-user-api-key')).toBe(userKey);
+  });
+
   it('keeps the resolved project key on clones when the environment changes later', async () => {
     const fetchMock = captureFetch();
     const composio = build({ apiKey: projectKey });
