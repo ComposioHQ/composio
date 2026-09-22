@@ -37,7 +37,11 @@ from composio_client.types.tool_router.session_search_response import (
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import Tool
+from composio.client.types import (
+    Tool,
+    session_config_history_params,
+    session_config_history_response,
+)
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import (
@@ -198,6 +202,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             execute=session_create_response.ConfigExecute(),
             search=session_create_response.ConfigSearch(),
             preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+            premium_usage=False,
         )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
@@ -1063,6 +1068,30 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self.config_version = response.config_version
         self.preload = _session_preload_config(response.config.preload)
         return self.config
+
+    def list_config_history(
+        self,
+        **query: te.Unpack[session_config_history_params.SessionConfigHistoryParams],
+    ) -> session_config_history_response.SessionConfigHistoryResponse:
+        """
+        List the configuration history of this session, newest first.
+
+        Every ``update()`` records a new config version; this returns those
+        versions with cursor-based pagination.
+
+        :param cursor: Pagination cursor from a previous response.
+        :param limit: Number of items per page (max 100).
+        :return: The config versions under ``.items`` plus pagination fields.
+
+        Example:
+            history = session.list_config_history(limit=10)
+            for entry in history.items:
+                print(entry.version, entry.is_current)
+        """
+        return self._client.tool_router.session.config_history(
+            session_id=self.session_id,
+            **query,
+        )
 
     def delete(self) -> ToolRouterSessionDeleteResponse:
         """

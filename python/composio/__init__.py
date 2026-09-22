@@ -22,6 +22,7 @@ from .core.models.webhook_events import (
     WebhookEventType,
     is_connection_expired_event,
 )
+from .exceptions import ComposioDeprecationWarning
 from .core.types import (
     ToolkitLatestVersion,
     ToolkitVersion,
@@ -32,6 +33,7 @@ from .sdk import Composio
 
 __all__ = (
     "Composio",
+    "ComposioDeprecationWarning",
     "CustomTool",
     "ExperimentalToolkit",
     "RemoteFile",

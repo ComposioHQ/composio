@@ -2,7 +2,7 @@ name: E2E Test Typescript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       # A catalog pin or lockfile change swaps what every ts/** package
