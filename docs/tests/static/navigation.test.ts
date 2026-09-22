@@ -49,7 +49,7 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
-  test("root navigation separates current and legacy paths", async () => {
+  test("root navigation separates sessions, direct execution, and migration", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
     const pages = meta.pages as string[];
@@ -59,7 +59,7 @@ describe("Navigation - meta.json validity", () => {
       "---Get Started---",
       "---Core concepts---",
       "---Guides---",
-      "---Direct execution (legacy)---",
+      "---Direct execution---",
       "---Migration and security---",
     ]);
 
@@ -76,7 +76,7 @@ describe("Navigation - meta.json validity", () => {
 
     expect(
       pages.slice(
-        pages.indexOf("---Direct execution (legacy)---") + 1,
+        pages.indexOf("---Direct execution---") + 1,
         pages.indexOf("---Migration and security---")
       )
     ).toEqual([

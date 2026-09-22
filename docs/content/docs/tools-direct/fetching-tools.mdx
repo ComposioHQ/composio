@@ -3,11 +3,10 @@ title: Fetching tools and schemas
 description: Fetch and filter tools, and inspect schemas
 keywords: [get tools, list tools, filter, schema]
 llmGuardrails: "direct-execution"
-legacy: true
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/how-composio-works) for how sessions discover and fetch tools automatically.
+Use this guide when your code selects tools and controls execution. For runtime discovery through sessions, see [Tools and toolkits](/docs/how-composio-works). Compare both approaches in [Sessions vs direct execution](/docs/sessions-vs-direct-execution).
 </Callout>
 
 Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.
@@ -38,7 +37,7 @@ const tools = await composio.tools.get(userId, {
   </Tab>
 </Tabs>
 
-Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User scoping](/docs/how-composio-works) and [Authentication](/docs/tools-direct/authenticating-tools).
+Returns up to 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User scoping](/docs/how-composio-works) and [Authentication](/docs/tools-direct/authenticating-tools).
 
 ## Tool schemas
 
@@ -70,7 +69,13 @@ View tool parameters and schemas visually in the [Composio platform](https://das
 
 ### By toolkit
 
-Get tools from specific apps. Returns top 20 tools by default.
+Get tools from specific apps. Returns up to 20 tools by default.
+
+`limit` caps the number of returned tools. It does not select the tools needed for a task or guarantee relevance order. A small limit can exclude the tool you need. For a fixed workflow, [fetch explicit tool names](#by-name).
+
+<Callout type="info" title="TypeScript: limit and important tools">
+When you filter only by toolkit, the TypeScript SDK automatically requests tools marked `important` unless you set `important: false`. Supplying `limit`, `search`, or `tags` disables that automatic filter. To keep the important subset with a limit, pass `important: true` explicitly. The Python SDK does not expose this option.
+</Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -79,7 +84,7 @@ Get tools from specific apps. Returns top 20 tools by default.
 tools = composio.tools.get(
     user_id,
     toolkits=["GITHUB"],
-    limit=5  # Get top 5 tools
+    limit=5  # Return at most 5 tools
 )
 
 # Same filter but without user_id (for schemas)
@@ -98,12 +103,14 @@ const userId = 'user-123';
 // Fetch with limit for a specific user
 const limitedTools = await composio.tools.get(userId, {
   toolkits: ["GITHUB"],
-  limit: 5  // Get top 5 tools
+  important: true,
+  limit: 5  // Return at most 5 important tools
 });
 
 // Same filter but without userId (for schemas)
 const rawTools = await composio.tools.getRawComposioTools({
   toolkits: ["GITHUB"],
+  important: true,
   limit: 5
 });
 ```
@@ -180,20 +187,24 @@ const scopedTools = await composio.tools.get(userId, {
 
 ### By search (experimental)
 
-Find tools semantically.
+Search for tools with the `search` option. Start with short action keywords such as `create event`, `free busy`, or `send email`, and narrow the query with `toolkits` when you know the app.
+
+Inspect the returned descriptions and input schemas before selecting a tool. Do not assume the first result is the best match or that a natural-language goal returns every relevant tool. If you get no results, shorten the query or [fetch a known tool by name](#by-name).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
-# Search tools semantically
+# Search tools by action keywords
 tools = composio.tools.get(
     user_id,
-    search="create calendar event"
+    search="create event",
+    toolkits=["googlecalendar"]
 )
 
 # Search schemas without user_id
 raw_tools = composio.tools.get_raw_composio_tools(
-    search="create calendar event"
+    search="create event",
+    toolkits=["googlecalendar"]
 )
 
 # Search within a specific toolkit
@@ -216,14 +227,16 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const userId = 'user-123';
 // ---cut---
-// Search tools semantically
+// Search tools by action keywords
 const searchResults = await composio.tools.get(userId, {
-  search: "create google calendar event"
+  search: "create event",
+  toolkits: ["googlecalendar"]
 });
 
 // Search schemas without userId
 const searchRawTools = await composio.tools.getRawComposioTools({
-  search: "create google calendar event"
+  search: "create event",
+  toolkits: ["googlecalendar"]
 });
 
 // Search within a specific toolkit

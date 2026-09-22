@@ -1012,7 +1012,8 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('');
     lines.push('```typescript');
     lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
-    lines.push(`const result = await composio.${accessorName}.list();`);
+    const usageCall = classDoc.name === 'Toolkits' ? 'get({})' : 'list()';
+    lines.push(`const result = await composio.${accessorName}.${usageCall};`);
     lines.push('```');
     lines.push('');
   }

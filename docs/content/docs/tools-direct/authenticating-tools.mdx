@@ -3,7 +3,6 @@ title: Authenticating Tools
 description: Create auth configs and connect user accounts
 keywords: [oauth, api key, auth config, connect account, credentials]
 llmGuardrails: "direct-execution"
-legacy: true
 ---
 
 <Callout type="info">
@@ -17,6 +16,10 @@ An **Auth Config** is a blueprint that defines how authentication works for a to
 1. **Authentication method** - `OAuth2`, `Bearer token`, `API key`, or `Basic Auth`
 2. **Scopes** - what actions your tools can perform
 3. **Credentials** - whether you'll use your own app credentials or Composio's managed auth
+
+<Callout type="info" title="Connecting accounts with managed OAuth">
+For Composio-managed OAuth, use `connectedAccounts.link()` in TypeScript or `connected_accounts.link()` in Python. Follow [Hosted Authentication](#hosted-authentication-connect-link) below. `initiate()` remains available for custom OAuth configs and non-OAuth schemes. See the [migration guide](/docs/auth-configuration/migrating-initiate-to-link).
+</Callout>
 
 ## Creating an auth config
 
