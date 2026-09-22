@@ -62,7 +62,7 @@ In a default [session](/docs/how-composio-works), your agent works through meta 
 2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
 3. **Execute.** The agent calls the discovered tools through `COMPOSIO_MULTI_EXECUTE_TOOL` with the required arguments.
 
-Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
+Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
 
 If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to load them into `session.tools()` without a search step.
 
