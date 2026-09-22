@@ -1,17 +1,14 @@
 # Client Cache Sync
 
-When modifying `ts/packages/cli/src/services/composio-clients.ts`, inspect `ts/packages/cli/src/services/composio-clients-cached.ts` in the same change.
-
-The cached repository wraps `ComposioToolkitsRepository` and must expose the same interface.
+`ts/packages/cli/src/services/composio-clients-cached.ts` spreads the underlying `ComposioToolkitsRepository` from `ts/packages/cli/src/services/composio-clients.ts` and overrides only the methods it caches: `getToolkits`, `getToolkitsBySlugs`, `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, and `getTools`.
 
 Checklist:
 
-- New method: add a cached or passthrough implementation.
-- Signature change: update both services.
-- Removed method: remove both entries.
-- New exported error type: export or map it consistently.
-- Validation methods are usually passthrough.
-- Fetch/list methods are usually cached.
+- New passthrough method: add it to the repository only; the spread exposes it.
+- New full-catalog fetch that should be cached: add a cached override.
+- Signature or result change on a cached method: update both services.
+- Removed cached method: remove its override.
+- Validation, search, single-item, and CRUD methods stay passthrough.
 
 Verification:
 
