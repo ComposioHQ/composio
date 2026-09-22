@@ -1,0 +1,218 @@
+---
+title: "WebhookSubscriptions"
+description: "`composio.webhooks.subscriptions` — the project's outbound webhook subscription. The API allows one subscription per project; every response includes the signing `secret` used to verify deliveries with `composio.triggers.verifyWebhook()` / `composio.triggers.parse()`."
+---
+
+## Usage
+
+Access this class through the `composio.webhookSubscriptions` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.webhookSubscriptions.list();
+```
+
+## Methods
+
+### delete()
+
+Delete a webhook subscription. Deliveries stop immediately.
+
+```typescript
+async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<{ success: boolean }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The subscription id |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ success: boolean \}>` — `\{ success \}`
+
+**Example**
+
+```typescript
+await composio.webhooks.subscriptions.delete('whs_abc123');
+```
+
+---
+
+### get()
+
+Retrieve a webhook subscription by id.
+
+```typescript
+async get(id: string, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The subscription id |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<WebhookSubscription>` — The subscription, including its signing secret
+
+**Example**
+
+```typescript
+const subscription = await composio.webhooks.subscriptions.get('whs_abc123');
+console.log(subscription.enabledEvents);
+```
+
+---
+
+### list()
+
+List the project's webhook subscriptions.
+
+```typescript
+async list(query?: { cursor?: string; limit?: number }, requestOptions?: ComposioRequestOptions): Promise<{ currentPage: number; items: { createdAt?: string; enabledEvents: string[]; id: string; secret?: string; updatedAt?: string; version: 'V1' | 'V2' | 'V3'; webhookUrl: string }[]; nextCursor: string | null; totalItems: number; totalPages: number }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `query?` | `\{ cursor?: string; limit?: number \}` | Pagination options |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ currentPage: number; items: \{ createdAt?: string; enabledEvents: string[]; id: string; secret?: string; updatedAt?: string; version: 'V1' \| 'V2' \| 'V3'; webhookUrl: string \}[]; nextCursor: string \| null; totalItems: number; totalPages: number \}>` — Paginated subscriptions
+
+**Example**
+
+```typescript
+const { items } = await composio.webhooks.subscriptions.list();
+console.log(items[0]?.webhookUrl);
+```
+
+---
+
+### listEventTypes()
+
+List the event types a subscription can enable, with the payload
+versions each one supports.
+
+```typescript
+async listEventTypes(requestOptions?: ComposioRequestOptions): Promise<{ items: { description: string; eventType: string; supportedVersions: ... | ... | ...[] }[] }>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<\{ items: \{ description: string; eventType: string; supportedVersions: ... \| ... \| ...[] \}[] \}>` — The available event types
+
+**Example**
+
+```typescript
+const { items } = await composio.webhooks.subscriptions.listEventTypes();
+console.log(items.map(item => item.eventType));
+```
+
+---
+
+### rotateSecret()
+
+Rotate the signing secret of a webhook subscription. The previous secret
+stops validating, so update your verifier with the returned `secret`.
+
+```typescript
+async rotateSecret(id: string, requestOptions?: ComposioRequestOptions): Promise<{ id: string; secret: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The subscription id |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ id: string; secret: string \}>` — `\{ id, secret \}`
+
+**Example**
+
+```typescript
+const { secret } = await composio.webhooks.subscriptions.rotateSecret('whs_abc123');
+```
+
+---
+
+### set()
+
+Create or update the project webhook subscription.
+
+If a subscription already exists it is updated in place, otherwise a new
+one is created. By default this subscribes to V3 trigger message events.
+
+```typescript
+async set(params: { enabledEvents?: string[]; version?: 'V1' | 'V2' | 'V3'; webhookUrl: string }, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `\{ enabledEvents?: string[]; version?: 'V1' \| 'V2' \| 'V3'; webhookUrl: string \}` | `webhookUrl`, optional `enabledEvents` and `version` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<WebhookSubscription>` — The resulting subscription
+
+**Example**
+
+```typescript
+const subscription = await composio.webhooks.subscriptions.set({
+  webhookUrl: `${APP_URL}/webhooks/composio`,
+  enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],
+});
+process.env.COMPOSIO_WEBHOOK_SECRET = subscription.secret;
+```
+
+---
+
+### update()
+
+Update an existing webhook subscription. Only the provided fields change.
+
+```typescript
+async update(id: string, params: { enabledEvents?: string[]; version?: 'V1' | 'V2' | 'V3'; webhookUrl?: string }, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The subscription id |
+| `params` | `\{ enabledEvents?: string[]; version?: 'V1' \| 'V2' \| 'V3'; webhookUrl?: string \}` | Fields to update |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<WebhookSubscription>` — The updated subscription
+
+**Example**
+
+```typescript
+await composio.webhooks.subscriptions.update('whs_abc123', {
+  enabledEvents: ['composio.trigger.message'],
+});
+```
+
+---
