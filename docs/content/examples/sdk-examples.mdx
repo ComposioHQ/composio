@@ -1,0 +1,39 @@
+---
+title: TypeScript and Python SDK examples
+description: Find runnable Composio examples by task, with links to source code and the relevant guide.
+keywords: [SDK examples, TypeScript examples, Python examples, Cloudflare, TypeSafe, CrewAI, LangChain, MCP]
+---
+
+Use these examples to try a specific Composio feature in your own project. Start with a walkthrough for complete setup instructions, or open a source file alongside its guide.
+
+## Start with a walkthrough
+
+<Cards>
+  <Card title="Run an agent on Cloudflare Workers" href="/examples/cloudflare-workers" description="Build, test, and deploy an authenticated HTTP endpoint that runs an OpenAI agent with Composio tools." />
+  <Card title="Select tools with TypeSafe" href="/examples/typesafe-tool-selection" description="Choose a tool, fill its arguments, and handle incomplete decisions before execution." />
+  <Card title="Use CrewAI and LangChain with MCP" href="/examples/python-mcp-agents" description="Give either Python framework access to a Composio session through its MCP client." />
+</Cards>
+
+## Find source code by task
+
+These are selected examples from [`ts/examples`](https://github.com/ComposioHQ/composio/tree/next/ts/examples), [`python/examples`](https://github.com/ComposioHQ/composio/tree/next/python/examples), and the Python TypeSafe provider. The directories also contain experiments and older API examples. Use the linked guide for the current setup and API choices.
+
+| Task | TypeScript source | Python source | Guide |
+| --- | --- | --- | --- |
+| Run an agent on Cloudflare Workers | [OpenAI Worker](https://github.com/ComposioHQ/composio/blob/next/ts/examples/openai/src/cloudflare.ts), [Mastra Worker](https://github.com/ComposioHQ/composio/blob/next/ts/examples/mastra/src/cloudflare.ts) | Not available | [Worker setup and deployment](/examples/cloudflare-workers) |
+| Select and shortlist tools with TypeSafe | [TypeSafe examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/typesafe) | [TypeSafe demo](https://github.com/ComposioHQ/composio/blob/next/python/providers/typesafe/typesafe_demo.py) | [TypeSafe walkthrough](/examples/typesafe-tool-selection) |
+| Connect an agent over MCP | [Vercel AI SDK](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/mcp.ts) | [CrewAI](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/crewai_agent.py), [LangChain](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/langchain_agent.py) | [Python MCP walkthrough](/examples/python-mcp-agents), [sessions via MCP](/docs/sessions-via-mcp) |
+| Preload tools in a session | [Preload tools](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/preload.ts) | [Preload tools](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/preload.py) | [Configure sessions](/docs/configuring-sessions) |
+| Control which tools a session exposes | [Direct tools](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/direct-tools-preset.ts) | [Direct tools](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/direct_tools_preset.py) | [Configure sessions](/docs/configuring-sessions) |
+| Change a session's configuration | [Update a session](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/session-update.ts) | [Update a session](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/session_update.py) | [Sessions](/docs/how-composio-works) |
+| Upload and download sandbox files | See guide | [Session files](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/files.py) | [Remote sandbox](/docs/sandbox/remote) |
+| Connect an app for a user | [Connected accounts](https://github.com/ComposioHQ/composio/tree/next/ts/examples/connected-accounts) | [Authorize a session](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/authorize.py) | [Authentication](/docs/authentication) |
+| Create triggers and receive events | [Trigger examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/triggers) | [Triggers](https://github.com/ComposioHQ/composio/blob/next/python/examples/triggers.py) | [Create triggers](/docs/setting-up-triggers/creating-triggers), [receive events](/docs/setting-up-triggers/subscribing-to-events) |
+
+## Run a repository example
+
+Follow the [TypeScript setup](https://github.com/ComposioHQ/composio/blob/next/ts/examples/README.md) or [Python setup](https://github.com/ComposioHQ/composio/blob/next/python/examples/README.md) to install the workspace and configure credentials. Check the selected example for its model provider key and connected-account requirements. Scripts that create connections or triggers make changes in your Composio project.
+
+The LangChain MCP script declares its own dependencies. From the repository root, use `uv run --script python/examples/tool_router/langchain_agent.py` as shown in the [walkthrough](/examples/python-mcp-agents).
+
+For a standalone project, use a walkthrough above. To choose a framework first, see [SDKs and frameworks](/docs/providers).

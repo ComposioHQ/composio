@@ -3,9 +3,14 @@
   "root": true,
   "pages": [
     "index",
+    "sdk-examples",
     "general-agent-with-pi",
     "standup-slackbot",
     "local-sandbox-pr-reviewer",
-    "imessage-agent"
+    "imessage-agent",
+    "harness-integration",
+    "cloudflare-workers",
+    "typesafe-tool-selection",
+    "python-mcp-agents"
   ]
 }

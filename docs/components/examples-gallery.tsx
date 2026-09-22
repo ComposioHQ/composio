@@ -164,6 +164,13 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
           End-to-end builds that wire Composio into working agents. Each one is a
           complete project you can read top to bottom and run.
         </p>
+        <Link
+          href="/examples/sdk-examples"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-fd-primary underline underline-offset-4"
+        >
+          Browse TypeScript and Python SDK examples
+          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </header>
 
       {/* Filter pills */}
