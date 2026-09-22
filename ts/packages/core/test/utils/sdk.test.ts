@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { getSDKConfig, resolveCredentialHeaders } from '../../src/utils/sdk';
+import { getSDKConfig, getUserApiKeyHeader, resolveCredentialHeaders } from '../../src/utils/sdk';
 import {
   ComposioAPIKeyKindError,
   ComposioNoAPIKeyError,
@@ -271,6 +271,27 @@ describe('getSDKConfig credential resolution', () => {
     it('falls back to the default base URL', () => {
       expect(getSDKConfig(undefined, EXPLICIT_KEY).baseURL).toBe(DEFAULT_BASE_URL);
     });
+  });
+});
+
+describe('getUserApiKeyHeader', () => {
+  it('matches the header name case-insensitively and keeps the original key', () => {
+    expect(getUserApiKeyHeader({ 'X-User-Api-Key': USER_KEY })).toEqual({
+      name: 'X-User-Api-Key',
+      value: USER_KEY,
+    });
+  });
+
+  it('ignores a header whose value is not a non-empty string', () => {
+    const untyped = (value: unknown) =>
+      ({ 'x-user-api-key': value }) as unknown as Record<string, string>;
+
+    expect(getUserApiKeyHeader(untyped(''))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(undefined))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(null))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped(42))).toBeUndefined();
+    expect(getUserApiKeyHeader(untyped([USER_KEY]))).toBeUndefined();
+    expect(getUserApiKeyHeader(undefined)).toBeUndefined();
   });
 });
 

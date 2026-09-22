@@ -143,7 +143,7 @@ export const getUserApiKeyHeader = (
   headers: ComposioRequestHeaders | undefined
 ): { name: string; value: string } | undefined => {
   const header = findHeader(headers, USER_API_KEY_HEADER);
-  return header && header.value.length > 0 ? header : undefined;
+  return header && typeof header.value === 'string' && header.value.length > 0 ? header : undefined;
 };
 
 export type CredentialHeaderInput = {
