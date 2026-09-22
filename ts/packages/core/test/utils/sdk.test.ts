@@ -194,6 +194,14 @@ describe('getSDKConfig credential resolution', () => {
       ).toThrow(ComposioNoAPIKeyError);
     });
 
+    it('does not accept a user API key header whose value is not a string', () => {
+      expect(() =>
+        getSDKConfig(undefined, null, {
+          defaultHeaders: { 'x-user-api-key': undefined as unknown as string },
+        })
+      ).toThrow(ComposioNoAPIKeyError);
+    });
+
     it('does not treat other default headers as a credential', () => {
       expect(() =>
         getSDKConfig(undefined, null, { defaultHeaders: { 'x-api-key': PROJECT_KEY } })
