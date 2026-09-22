@@ -125,21 +125,32 @@ def first_webhook_subscription_id(response: object) -> t.Optional[str]:
     """Return the id of the first subscription in a list response.
 
     Accepts the client's typed list response (``.items`` of models with an
-    ``.id``) as well as a plain dict of the same shape.
+    ``.id``) as well as a plain dict of the same shape. Returns ``None`` only
+    for an empty list; a payload without an ``items`` list, or whose first
+    item has no id, raises :class:`~composio.exceptions.ValidationError` so
+    the upsert never falls through to ``create`` on malformed data.
     """
     items = (
         response.get("items")
         if isinstance(response, dict)
         else getattr(response, "items", None)
     )
-    if not isinstance(items, list) or len(items) == 0:
+    if not isinstance(items, list):
+        raise exceptions.ValidationError(
+            "malformed webhook subscription list response: missing items"
+        )
+    if len(items) == 0:
         return None
 
     first = items[0]
     subscription_id = (
         first.get("id") if isinstance(first, dict) else getattr(first, "id", None)
     )
-    return subscription_id if isinstance(subscription_id, str) else None
+    if not isinstance(subscription_id, str) or not subscription_id:
+        raise exceptions.ValidationError(
+            "malformed webhook subscription list response: item without id"
+        )
+    return subscription_id
 
 
 class WebhookSubscriptions(Resource):

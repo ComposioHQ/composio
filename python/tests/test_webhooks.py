@@ -255,6 +255,27 @@ class TestWebhookSubscriptionsSet:
             "created_at": "2026-01-01",
         }
 
+    @pytest.mark.parametrize(
+        "listed",
+        [
+            pytest.param({}, id="missing-items"),
+            pytest.param({"items": None}, id="null-items"),
+            pytest.param({"items": [{"id": 42}]}, id="non-string-id"),
+            pytest.param({"items": [{}]}, id="item-without-id"),
+        ],
+    )
+    def test_rejects_malformed_list_probe_before_writing(
+        self, subscriptions, mock_client, listed
+    ):
+        mock_client.webhook_subscriptions.list.return_value = listed
+
+        with pytest.raises(
+            exceptions.ValidationError, match="malformed webhook subscription list"
+        ):
+            subscriptions.set(webhook_url="https://x")
+        mock_client.webhook_subscriptions.create.assert_not_called()
+        mock_client.webhook_subscriptions.update.assert_not_called()
+
     def test_rejects_empty_webhook_url(self, subscriptions, mock_client):
         with pytest.raises(exceptions.ValidationError):
             subscriptions.set(webhook_url="")

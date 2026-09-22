@@ -220,6 +220,14 @@ describe('Webhooks', () => {
         expect(mockClient.webhookSubscriptions.list).not.toHaveBeenCalled();
       });
 
+      it('throws a ValidationError when the list probe has no items', async () => {
+        mockClient.webhookSubscriptions.list.mockResolvedValue({ total_items: 0 });
+
+        await expect(webhooks.subscriptions.set({ webhookUrl })).rejects.toThrow(ValidationError);
+        expect(mockClient.webhookSubscriptions.create).not.toHaveBeenCalled();
+        expect(mockClient.webhookSubscriptions.update).not.toHaveBeenCalled();
+      });
+
       it('throws a ValidationError when the list probe is malformed', async () => {
         mockClient.webhookSubscriptions.list.mockResolvedValue({ items: [{ id: 42 }] });
 

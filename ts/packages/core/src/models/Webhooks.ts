@@ -56,10 +56,10 @@ import {
  */
 const FirstWebhookSubscriptionIdSchema = z
   .object({
-    items: z.array(z.object({ id: z.string().min(1) }).passthrough()).optional(),
+    items: z.array(z.object({ id: z.string().min(1) }).passthrough()),
   })
   .passthrough()
-  .transform(response => response.items?.[0]?.id);
+  .transform(response => response.items[0]?.id);
 
 /**
  * Create-or-update the project webhook subscription.
