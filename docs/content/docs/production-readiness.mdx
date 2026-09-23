@@ -34,7 +34,13 @@ Use separate Composio projects for development, staging, and production when tho
 
 Keep every project API key on the server. Store production keys in your deployment platform's secret manager, rotate them according to your security policy, and never expose them to browser or mobile clients.
 
-For user- or organization-scoped operations, pass `user_api_key` or `org_api_key` to the Python `Composio` constructor, or `userApiKey` or `orgApiKey` in TypeScript. You can also set `COMPOSIO_USER_API_KEY` and `COMPOSIO_ORG_API_KEY`. A project API key is still required. The client sends the scoped key only to operations that require it.
+For user- or organization-scoped operations, pass `user_api_key` or `org_api_key` to the Python `Composio` constructor, or `userApiKey` or `orgApiKey` in TypeScript. You can also set `COMPOSIO_USER_API_KEY` and `COMPOSIO_ORG_API_KEY`. To authenticate with a scoped key without a project API key, set `disable_api_key=True` in Python or `apiKey: null` in TypeScript.
+
+<Callout type="warn">
+In TypeScript, `apiKey: null` disables project-key fallbacks, including `COMPOSIO_API_KEY` and the CLI config. To keep those fallbacks, omit `apiKey` or pass `undefined`.
+</Callout>
+
+For consumer requests, set `org_id` and `project_id` in Python or `orgId` and `projectId` in TypeScript together. See [Run sessions in your organization's consumer project](/docs/consumer-agents#run-sessions-in-your-organizations-consumer-project) for an example.
 
 ## 3. Decide how customers authenticate
 
