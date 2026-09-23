@@ -10,6 +10,7 @@ import { Experimental } from './models/Experimental';
 import { MCP } from './models/MCP';
 import { Webhooks } from './models/Webhooks';
 import { Logs } from './models/Logs';
+import { SessionConfigs } from './models/SessionConfigs';
 import { Keyring } from './models/Keyring';
 import { telemetry } from './telemetry/Telemetry';
 import {
@@ -363,6 +364,12 @@ export class Composio<
    */
   sessions: Sessions<unknown, unknown, TProvider>;
   /**
+   * Read the project's saved Session configs. Apply one with
+   * `experimental.sessionConfigId` on `sessions.create()` or `session.update()`.
+   * @experimental Requires Session configs to be enabled for the project.
+   */
+  sessionConfigs: SessionConfigs;
+  /**
    * Legacy alias for `composio.sessions`.
    * @deprecated Use `composio.sessions` instead — `toolRouter` was renamed to `sessions` and is kept only for backwards compatibility. Prefer `composio.sessions`; do not generate new code against `composio.toolRouter`.
    */
@@ -549,6 +556,7 @@ export class Composio<
     this.experimental = new Experimental(this.client);
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
+    this.sessionConfigs = new SessionConfigs(this.client);
 
     /**
      * Initialize session aliases.
