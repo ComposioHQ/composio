@@ -327,7 +327,7 @@ export const transformToolRouterToolkitsParams = (
  * including `null` (remove the stored override) and empty collections (an
  * empty toolkit allowlist denies every app toolkit). The
  * `expectedConfigVersion` option is not a body field here: the session
- * resolves the precondition against its observed `configVersion`.
+ * adds it only when the caller explicitly supplies a numeric version.
  */
 export const transformToolRouterUpdateParams = (
   config: ParsedUpdateSessionConfig

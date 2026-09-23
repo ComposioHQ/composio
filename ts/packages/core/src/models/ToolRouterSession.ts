@@ -141,8 +141,8 @@ export class ToolRouterSession<
   public sandbox?: ToolRouterSessionWorkbenchConfig;
   /**
    * Version of the server-side configuration this object last observed.
-   * Refreshed in place by `update()`, which sends it as the
-   * `expected_config_version` precondition by default.
+   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion`
+   * to request a version precondition on a backend that supports it.
    */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
@@ -781,15 +781,13 @@ export class ToolRouterSession<
    * map entirely. `manageConnections.callbackUrl: null` removes only the
    * stored callback URL.
    *
-   * The request carries the `configVersion` this object last observed as the
-   * `expected_config_version` precondition, so a concurrent change surfaces as
-   * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
-   * overwritten. Pass `expectedConfigVersion` to send another version, or
-   * `expectedConfigVersion: false` to send no precondition (last writer
-   * wins). The PATCH is never retried by the transport, so a 409 is reported
-   * exactly once. On conflict this object is left unchanged: re-fetch the
-   * session with `sessions.use(sessionId)` and retry against the fresh
-   * `configVersion`.
+   * By default, the request sends no version precondition (last writer wins).
+   * On a backend that supports `expected_config_version`, pass a positive
+   * `expectedConfigVersion` to require that version. Omit it or pass `false`
+   * for backends that reject this field. The SDK never retries PATCH or drops
+   * an explicit precondition after an error. A 409 surfaces as
+   * {@link ComposioSessionConfigConflictError} and leaves this object unchanged.
+   * Re-fetch with `sessions.use(sessionId)` before retrying your change.
    *
    * `experimental.sessionConfigId` applies a saved Session config: it
    * replaces the session's toolkit, tool and tag access and cannot be combined
@@ -809,9 +807,7 @@ export class ToolRouterSession<
     const parsed = parseSessionConfigInput(ToolRouterUpdateSessionConfigSchema, config);
     const body = transformToolRouterUpdateParams(parsed);
     const expectedConfigVersion =
-      parsed.expectedConfigVersion === false
-        ? undefined
-        : (parsed.expectedConfigVersion ?? this.configVersion);
+      parsed.expectedConfigVersion === false ? undefined : parsed.expectedConfigVersion;
     if (expectedConfigVersion !== undefined) {
       body.expected_config_version = expectedConfigVersion;
     }

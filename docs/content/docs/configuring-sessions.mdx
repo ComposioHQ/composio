@@ -57,7 +57,7 @@ console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
 The backend resolves the config when it creates the session, so the session gets exactly the access the config grants. Later edits to the config in the Dashboard don't change sessions that already exist.
 
 <Callout type="info">
-Session configs are experimental and TypeScript-only for now. The `composio.sessionConfigs` reads need Session configs enabled for your project; otherwise they return `403`. With a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions#session-management), they need the **Session management** read permission.
+The top-level `composio.sessionConfigs` read methods are available in TypeScript. Applying a config and reading its source metadata use `experimental`. Reads require Session configs enabled for your project; otherwise they return `403`. With a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions#session-management), they need the **Session management** read permission.
 </Callout>
 
 ### Finding a config
@@ -1028,7 +1028,11 @@ await session.update({
 
 ### Concurrent updates
 
-Every session response carries a config version (`session.configVersion` in TypeScript, `session.config_version` in Python, `config_version` on the wire). `session.update()` sends the version the session object last observed as the `expected_config_version` precondition, and the API applies the update only when the stored version still matches. Otherwise it answers `409` and writes nothing: no config change, no history entry, no cache update. The SDK never retries that request, so a conflict is reported exactly once.
+`session.configVersion` (TypeScript) or `session.config_version` (Python) identifies the configuration the session object last observed. TypeScript sends no version precondition by default. On a backend that supports `expected_config_version`, pass that version explicitly to reject stale updates with `409`.
+
+<Callout type="warn">
+The hosted API currently rejects `expected_config_version`. Omit `expectedConfigVersion` in TypeScript. Python currently sends the observed version by default, so pass `expected_config_version=False` when updating through the hosted API. The version-checked examples below require a backend that supports this field.
+</Callout>
 
 The SDK raises `ComposioSessionConfigConflictError` (TypeScript) or `SessionConfigConflictError` (Python) and leaves the session object as it was. Re-read the session with `sessions.use()`, reapply your change on top of the fresh config, and retry:
 
@@ -1056,18 +1060,24 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 let session = await composio.sessions.use("session_id");
 
 try {
-  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+  await session.update({
+    toolkits: { enable: ["gmail", "github"] },
+    expectedConfigVersion: session.configVersion,
+  });
 } catch (error) {
   if (!(error instanceof ComposioSessionConfigConflictError)) throw error;
   // Another client changed the session first. Nothing was written.
   session = await composio.sessions.use("session_id");
-  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+  await session.update({
+    toolkits: { enable: ["gmail", "github"] },
+    expectedConfigVersion: session.configVersion,
+  });
 }
 ```
 </Tab>
 </Tabs>
 
-Pass `expectedConfigVersion` (`expected_config_version` in Python) to send a version you read elsewhere, for example one stored with a queued job. Pass `expectedConfigVersion: false` (`expected_config_version=False`) on a call that should apply regardless: the last writer then wins. The API still commits only a fully validated configuration, so a losing update never leaves a half-applied session behind.
+You can also pass a version stored with a queued job. Without a precondition, the last writer wins. The SDK never retries PATCH or removes an explicit precondition after an error.
 
 Raw HTTP callers set `expected_config_version` in the `PATCH` body themselves; without it the last writer wins.
 

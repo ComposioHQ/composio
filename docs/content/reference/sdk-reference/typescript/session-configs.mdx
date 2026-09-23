@@ -1,6 +1,6 @@
 ---
 title: "SessionConfigs"
-description: "`composio.sessionConfigs` — saved, reusable Session configs.  A Session config is a named access policy (`sc_…`) built in the Composio Dashboard under Sessions → Configs. Pass its id as `experimental.sessionConfigId` to `composio.sessions.create()` or `session.update()` to apply it.  These endpoints require Session configs to be enabled for the project; otherwise the backend returns 403.   The shape may change in future releases."
+description: "`composio.sessionConfigs` — saved, reusable Session configs.  A Session config is a named access policy (`sc_…`) built in the Composio Dashboard under Sessions → Configs. Pass its id as `experimental.sessionConfigId` to `composio.sessions.create()` or `session.update()` to apply it.  These endpoints require Session configs to be enabled for the project; otherwise the backend returns 403."
 ---
 
 ## Usage
@@ -19,7 +19,7 @@ const result = await composio.sessionConfigs.list();
 Retrieve one saved Session config with its description and access
 policy. A missing or cross-project id surfaces as the backend's 404.
 
- Requires Session configs to be enabled for the project.
+Requires Session configs to be enabled for the project.
 
 ```typescript
 async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ archived: boolean; config: { tags?: { disable?: ... | ... | ... | ...[]; enable?: ... | ... | ... | ...[] }; toolkits?: { enable: ...[] } | { disable: ...[] }; tools?: Record<string, { enable: ... } | { disable: ... } | { tags: ... }> }; createdAt: string; description: string | null; id: string; name: string; updatedAt: string }>
@@ -52,7 +52,7 @@ List the project's saved Session configs with cursor pagination.
 Omitting `archived` returns active configs; `archived: true` returns only
 archived ones. The backend defaults `limit` to 20 and caps it at 100.
 
- Requires Session configs to be enabled for the project.
+Requires Session configs to be enabled for the project.
 
 ```typescript
 async list(params?: { archived?: boolean; cursor?: string; limit?: number; search?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { archived: boolean; createdAt: string; id: string; name: string; updatedAt: string }[]; nextCursor: string | null }>

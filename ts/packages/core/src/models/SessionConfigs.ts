@@ -32,8 +32,6 @@ import {
  * These endpoints require Session configs to be enabled for the project;
  * otherwise the backend returns 403.
  *
- * @experimental The shape may change in future releases.
- *
  * @example
  * ```typescript
  * const { items } = await composio.sessionConfigs.list({ search: 'support' });
@@ -57,7 +55,7 @@ export class SessionConfigs {
    * Omitting `archived` returns active configs; `archived: true` returns only
    * archived ones. The backend defaults `limit` to 20 and caps it at 100.
    *
-   * @experimental Requires Session configs to be enabled for the project.
+   * Requires Session configs to be enabled for the project.
    *
    * @param {SessionConfigListParams} [params] - `search`, `archived`, `limit` and `cursor`
    * @returns {Promise<SessionConfigListResponse>} Config summaries and the next cursor
@@ -95,7 +93,7 @@ export class SessionConfigs {
    * Retrieve one saved Session config with its description and access
    * policy. A missing or cross-project id surfaces as the backend's 404.
    *
-   * @experimental Requires Session configs to be enabled for the project.
+   * Requires Session configs to be enabled for the project.
    *
    * @param {string} id - The `sc_…` id of the Session config
    * @returns {Promise<SessionConfig>} The config and its policy

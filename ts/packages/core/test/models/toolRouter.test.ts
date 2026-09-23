@@ -3973,7 +3973,7 @@ describe('ToolRouter', () => {
 
       expect(mockClient.toolRouter.session.patch).toHaveBeenCalledWith(
         sessionId,
-        expect.objectContaining({ toolkits: { enable: ['gmail'] }, expected_config_version: 7 }),
+        expect.objectContaining({ toolkits: { enable: ['gmail'] } }),
         { maxRetries: 0 }
       );
       expect(config).toEqual(patchedConfig);
@@ -4114,14 +4114,14 @@ describe('ToolRouter', () => {
         mockClient.toolRouter.session.patch.mockResolvedValue(patchResponse(8));
       });
 
-      it('sends the last observed config version as the precondition by default, without retries', async () => {
+      it('sends no precondition by default, without retries', async () => {
         const session = await toolRouter.use(sessionId);
         expect(session.configVersion).toBe(7);
 
         await session.update({ toolkits: ['gmail'] });
 
         const { body, options } = patchCall();
-        expect(body.expected_config_version).toBe(7);
+        expect(body).not.toHaveProperty('expected_config_version');
         expect(body).not.toHaveProperty('expectedConfigVersion');
         expect(body.toolkits).toEqual({ enable: ['gmail'] });
         expect(options).toEqual({ maxRetries: 0 });
@@ -4206,7 +4206,6 @@ describe('ToolRouter', () => {
           search: null,
           execute: null,
           experimental: null,
-          expected_config_version: 7,
         });
       });
 
@@ -4215,7 +4214,9 @@ describe('ToolRouter', () => {
         const preloadBefore = session.preload;
         mockClient.toolRouter.session.patch.mockRejectedValueOnce(conflict());
 
-        const failure = await session.update({ toolkits: ['gmail'] }).catch(e => e);
+        const failure = await session
+          .update({ toolkits: ['gmail'], expectedConfigVersion: session.configVersion })
+          .catch(e => e);
 
         expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
         expect(failure.message).toMatch(/re-fetch/i);
@@ -4250,14 +4251,14 @@ describe('ToolRouter', () => {
         expect(first.configVersion).toBe(7);
         expect(second.configVersion).toBe(7);
 
-        await first.update({ toolkits: ['gmail'] });
+        await first.update({ toolkits: ['gmail'], expectedConfigVersion: first.configVersion });
         expect(patchCall(0).body.expected_config_version).toBe(7);
         expect(first.configVersion).toBe(8);
 
         mockClient.toolRouter.session.patch.mockRejectedValueOnce(conflict());
-        await expect(second.update({ toolkits: ['slack'] })).rejects.toBeInstanceOf(
-          ComposioSessionConfigConflictError
-        );
+        await expect(
+          second.update({ toolkits: ['slack'], expectedConfigVersion: second.configVersion })
+        ).rejects.toBeInstanceOf(ComposioSessionConfigConflictError);
         expect(patchCall(1).body.expected_config_version).toBe(7);
         expect(second.configVersion).toBe(7);
         expect(second.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
@@ -4269,7 +4270,7 @@ describe('ToolRouter', () => {
         const reread = await toolRouter.use(sessionId);
         expect(reread.configVersion).toBe(8);
         mockClient.toolRouter.session.patch.mockResolvedValueOnce(patchResponse(9));
-        await reread.update({ toolkits: ['slack'] });
+        await reread.update({ toolkits: ['slack'], expectedConfigVersion: reread.configVersion });
         expect(patchCall(2).body.expected_config_version).toBe(8);
         expect(reread.configVersion).toBe(9);
       });
@@ -4333,7 +4334,6 @@ describe('ToolRouter', () => {
           auth_configs: { github: 'ac_1' },
           preload: null,
           experimental: { session_config_id: 'sc_1' },
-          expected_config_version: 7,
         });
       });
 
@@ -4519,8 +4519,8 @@ describe('ToolRouter', () => {
 
     describe('fail closed', () => {
       it.each([
-        ['with the default precondition', {}],
-        ['without a precondition', { expectedConfigVersion: false as const }],
+        ['with an explicit precondition', { expectedConfigVersion: 7 }],
+        ['without a precondition', {}],
       ])(
         'reports a 409 while applying a config in terms of the session and the config (%s)',
         async (_label, precondition) => {

@@ -366,7 +366,7 @@ export class Composio<
   /**
    * Read the project's saved Session configs. Apply one with
    * `experimental.sessionConfigId` on `sessions.create()` or `session.update()`.
-   * @experimental Requires Session configs to be enabled for the project.
+   * Requires Session configs to be enabled for the project.
    */
   sessionConfigs: SessionConfigs;
   /**

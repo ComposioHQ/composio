@@ -33,7 +33,7 @@ export class ComposioMCPDestinationError extends ComposioError {
 /**
  * Thrown when a session update is rejected with HTTP 409 because the session
  * configuration changed since it was last read: the `expected_config_version`
- * precondition (the session's last observed `configVersion` by default) is
+ * precondition, when explicitly requested by the caller, is
  * stale. The local session object is left as it was before the call.
  * Re-fetch the session with `sessions.use(sessionId)` and retry the update
  * against the fresh `configVersion`.
