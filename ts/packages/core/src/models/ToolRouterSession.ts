@@ -86,6 +86,7 @@ import {
 import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
@@ -796,7 +797,7 @@ export class ToolRouterSession<
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionConfig> {
-    const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
+    const parsed = parseSessionConfigInput(ToolRouterUpdateSessionConfigSchema, config);
     const body = transformToolRouterUpdateParams(parsed);
     const expectedConfigVersion =
       parsed.expectedConfigVersion === false

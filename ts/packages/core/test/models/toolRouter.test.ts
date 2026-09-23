@@ -4270,4 +4270,101 @@ describe('ToolRouter', () => {
       });
     });
   });
+
+  describe('saved Session configs on an existing session', () => {
+    const sessionId = 'session_123';
+
+    const patchResponse = (configVersion: number, experimental?: Record<string, unknown>) => ({
+      session_id: sessionId,
+      config: mockSessionRetrieveResponse.config,
+      config_version: configVersion,
+      warnings: [],
+      ...(experimental && { experimental }),
+    });
+
+    const patchBody = (callIndex = 0) =>
+      mockClient.toolRouter.session.patch.mock.calls[callIndex][1] as Record<string, unknown>;
+
+    // Plain JavaScript callers bypass the compile-time union.
+    type UpdateInput = Parameters<Session<unknown, unknown, MockProvider>['update']>[0];
+    const unchecked = (config: Record<string, unknown>) => config as unknown as UpdateInput;
+
+    beforeEach(() => {
+      mockClient.toolRouter.session.patch.mockResolvedValue(patchResponse(8));
+    });
+
+    describe('mixed-input rejection', () => {
+      it.each([
+        ['toolkits', { toolkits: ['gmail'] }],
+        ['toolkits', { toolkits: null }],
+        ['tools', { tools: { gmail: ['GMAIL_SEND_EMAIL'] } }],
+        ['tools', { tools: null }],
+        ['tags', { tags: ['readOnlyHint'] }],
+        ['tags', { tags: null }],
+      ])('rejects sessionConfigId combined with %s (%j) without a PATCH', async (field, inline) => {
+        const session = await toolRouter.use(sessionId);
+
+        const error = await session
+          .update(unchecked({ ...inline, experimental: { sessionConfigId: 'sc_1' } }))
+          .catch(e => e);
+
+        expect(error).toBeInstanceOf(ValidationError);
+        expect(error.message).toContain(
+          `experimental.sessionConfigId cannot be combined with ${field}`
+        );
+        expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
+      });
+
+      it('sends sessionConfigId next to per-session fields', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await session.update({
+          authConfigs: { github: 'ac_1' },
+          preload: null,
+          experimental: { sessionConfigId: 'sc_1' },
+        });
+
+        expect(patchBody()).toEqual({
+          auth_configs: { github: 'ac_1' },
+          preload: null,
+          experimental: { session_config_id: 'sc_1' },
+          expected_config_version: 7,
+        });
+      });
+
+      it('allows sessionConfigId with other experimental settings', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await session.update({ experimental: { sessionConfigId: 'sc_1', fastMode: true } });
+
+        expect(patchBody().experimental).toEqual({ session_config_id: 'sc_1', fast_mode: true });
+      });
+
+      it('treats an explicit undefined toolkits as absent', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await session.update({ toolkits: undefined, experimental: { sessionConfigId: 'sc_1' } });
+
+        expect(patchBody()).not.toHaveProperty('toolkits');
+        expect(patchBody().experimental).toEqual({ session_config_id: 'sc_1' });
+      });
+
+      it('rejects an empty sessionConfigId before any PATCH', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await expect(session.update({ experimental: { sessionConfigId: '' } })).rejects.toThrow();
+        expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
+      });
+
+      it('keeps throwing ZodError for unrelated invalid input', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        const error = await session.update({ expectedConfigVersion: 0 }).catch(e => e);
+
+        expect(error).toBeInstanceOf(z.ZodError);
+        expect(error).not.toBeInstanceOf(ValidationError);
+        expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
+      });
+    });
+  });
 });

@@ -164,9 +164,43 @@ async function createInline(): Promise<void> {
   await composio.create('u', { mcp: true, toolkits: { disable: ['gmail'] } });
 }
 
+// On update, a saved Session config replaces toolkits, tools and tags.
+// `null` counts as provided.
+async function updateRejectsMixedInputs(): Promise<void> {
+  const session = await composio.use('session_123');
+  const experimental = { sessionConfigId: 'sc_1' };
+
+  // @ts-expect-error toolkits cannot be combined with sessionConfigId
+  await session.update({ toolkits: ['gmail'], experimental });
+  // @ts-expect-error toolkits: null cannot be combined with sessionConfigId
+  await session.update({ toolkits: null, experimental });
+  // @ts-expect-error tools cannot be combined with sessionConfigId
+  await session.update({ tools: { gmail: ['GMAIL_SEND_EMAIL'] }, experimental });
+  // @ts-expect-error tools: null cannot be combined with sessionConfigId
+  await session.update({ tools: null, experimental });
+  // @ts-expect-error tags cannot be combined with sessionConfigId
+  await session.update({ tags: ['readOnlyHint'], experimental });
+  // @ts-expect-error tags: null cannot be combined with sessionConfigId
+  await session.update({ tags: null, experimental });
+}
+
+async function updateWithSavedConfig(): Promise<void> {
+  const session = await composio.use('session_123');
+  await session.update({
+    authConfigs: { github: 'ac_1' },
+    preload: null,
+    experimental: { sessionConfigId: 'sc_1', fastMode: true },
+  });
+  await session.update({ toolkits: undefined, experimental: { sessionConfigId: 'sc_1' } });
+  await session.update({ toolkits: ['gmail'], experimental: { fastMode: true } });
+  await session.update({ toolkits: null, experimental: null });
+}
+
 void reads;
 void policyMatchesClient;
 void summaryMatchesClient;
 void createRejectsMixedInputs;
 void createFromSavedConfig;
 void createInline;
+void updateRejectsMixedInputs;
+void updateWithSavedConfig;

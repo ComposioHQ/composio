@@ -796,8 +796,11 @@ export const ToolRouterUpdateExperimentalSchema = z
       ),
     sessionConfigId: z
       .string()
+      .min(1)
       .optional()
-      .describe('Apply the latest active Session config from this project to this session'),
+      .describe(
+        "Apply the latest active saved Session config (`sc_…`) from this project to this session. Replaces the session's toolkit, tool and tag access and cannot be combined with toolkits, tools or tags"
+      ),
   })
   .strict();
 export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdateExperimentalSchema>;
@@ -900,6 +903,17 @@ export const ToolRouterUpdateSessionConfigSchema = z
   })
   .partial()
   .superRefine((config, ctx) => {
+    // "Provided" means `!== undefined`, so `null` conflicts too.
+    if (config.experimental?.sessionConfigId !== undefined) {
+      addSessionConfigConflictIssue(
+        ctx,
+        [
+          config.toolkits !== undefined && 'toolkits',
+          config.tools !== undefined && 'tools',
+          config.tags !== undefined && 'tags',
+        ].filter((field): field is string => field !== false)
+      );
+    }
     if (config.sandbox !== undefined && config.workbench !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -910,7 +924,35 @@ export const ToolRouterUpdateSessionConfigSchema = z
     }
   });
 
-export type ToolRouterUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
+/**
+ * Options for `session.update()`. `experimental.sessionConfigId` applies a
+ * saved Session config and cannot be combined with `toolkits`, `tools` or
+ * `tags` (including `null`).
+ */
+export type ToolRouterUpdateSessionConfig =
+  InlineAccessUpdateSessionConfig | SavedConfigUpdateSessionConfig;
+
+type ParsedUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
+type ParsedUpdateSessionExperimental = NonNullable<ParsedUpdateSessionConfig['experimental']>;
+
+/** Update input that sets access inline and applies no saved Session config. */
+type InlineAccessUpdateSessionConfig = Omit<ParsedUpdateSessionConfig, 'experimental'> & {
+  experimental?:
+    (Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & { sessionConfigId?: never }) | null;
+};
+
+/** Update input that applies a saved Session config. */
+type SavedConfigUpdateSessionConfig = Omit<
+  ParsedUpdateSessionConfig,
+  'toolkits' | 'tools' | 'tags' | 'experimental'
+> & {
+  toolkits?: never;
+  tools?: never;
+  tags?: never;
+  experimental: Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & {
+    sessionConfigId: string;
+  };
+};
 
 export type ToolRouterSessionUpdateFn = (
   config: ToolRouterUpdateSessionConfig

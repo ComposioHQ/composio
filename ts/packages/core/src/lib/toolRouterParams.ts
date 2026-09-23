@@ -12,7 +12,7 @@ import {
   ToolRouterToolkitsParamSchema,
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
-  ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateSessionConfigSchema,
   ToolRouterUpdateManageConnectionsConfig,
   ToolRouterUpdateManageConnectionsSchema,
   ToolRouterUpdateExperimentalConfig,
@@ -24,6 +24,8 @@ import type { TypeOf } from 'zod/v3';
 
 /** Parsed create input; the public `ToolRouterCreateSessionConfig` is a union over it. */
 type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSchema>;
+/** Parsed update input; the public `ToolRouterUpdateSessionConfig` is a union over it. */
+type ParsedUpdateSessionConfig = TypeOf<typeof ToolRouterUpdateSessionConfigSchema>;
 
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
@@ -328,7 +330,7 @@ export const transformToolRouterToolkitsParams = (
  * resolves the precondition against its observed `configVersion`.
  */
 export const transformToolRouterUpdateParams = (
-  config: ToolRouterUpdateSessionConfig
+  config: ParsedUpdateSessionConfig
 ): SessionPatchBody => {
   const params: SessionPatchBody = {};
 
