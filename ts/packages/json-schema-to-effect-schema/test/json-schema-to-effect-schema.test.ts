@@ -120,6 +120,24 @@ describe('jsonSchemaToEffectSchema', () => {
     expect(effectAccepts(singleBranchCombiner, { code: 50 })).toBe(false);
   });
 
+  it.each([
+    { schema: { oneOf: [{ type: 'string' }, { type: 'string' }] }, input: 'active' },
+    { schema: { oneOf: [{ enum: ['a', 'b'] }, { enum: ['b', 'c'] }] }, input: 'b' },
+    { schema: { type: 'number', minimum: 0, anyOf: [{ minimum: 10 }] }, input: 5 },
+    { schema: { type: 'number', minimum: 0, oneOf: [{ minimum: 10 }] }, input: 5 },
+    { schema: { anyOf: [{ type: 'string', enum: ['active', null] }] }, input: null },
+    { schema: { anyOf: [false] }, input: 'anything' },
+    { schema: { oneOf: [false] }, input: 'anything' },
+  ])('preserves combiner rejection for $schema', ({ schema, input }) => {
+    expect(effectAccepts(schema, input)).toBe(false);
+  });
+
+  it('preserves accepted values when folding bare literals', () => {
+    const schema = { anyOf: [{ const: 'a' }, { enum: ['a', 'b'] }, { const: null }] };
+    for (const value of ['a', 'b', null]) expect(effectAccepts(schema, value)).toBe(true);
+    expect(effectAccepts(schema, 'c')).toBe(false);
+  });
+
   it('reports all failures with field paths and groups unknown keys', () => {
     const schema = {
       type: 'object',

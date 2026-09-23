@@ -119,8 +119,6 @@ const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
   const seen = new Set<string>();
   const deduplicated: Array<unknown> = [];
   const enumValues: Array<unknown> = [];
-  let enumHasNull = false;
-  let hasLiteralBranchesOnly = true;
 
   for (const branch of branches) {
     const key = canonicalizeSchemaNode(branch);
@@ -134,10 +132,7 @@ const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
         enumValues.push(branch.const);
         continue;
       }
-      if (
-        Array.isArray(branch.enum) &&
-        (Object.keys(branch).length === 1 || (Object.keys(branch).length === 2 && branch.type))
-      ) {
+      if (Array.isArray(branch.enum) && Object.keys(branch).length === 1) {
         for (const val of branch.enum) {
           enumValues.push(val);
         }
@@ -145,7 +140,6 @@ const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
       }
     }
 
-    hasLiteralBranchesOnly = false;
     deduplicated.push(branch);
   }
 
@@ -161,28 +155,9 @@ const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
 };
 
 const simplifyCombiners = (schema: JsonObject): void => {
-  const combiners = ['anyOf', 'oneOf'] as const;
-  for (const combiner of combiners) {
-    const branches = schema[combiner];
-    if (!Array.isArray(branches)) {
-      continue;
-    }
-
-    const simplified = foldCombinerBranches(branches);
-
-    if (simplified.length === 1) {
-      delete schema[combiner];
-      const single = simplified[0];
-      if (isJsonObject(single)) {
-        for (const [key, val] of Object.entries(single)) {
-          if (schema[key] === undefined) {
-            schema[key] = val;
-          }
-        }
-      }
-    } else {
-      schema[combiner] = simplified;
-    }
+  // Deduplication preserves anyOf, but changes how many oneOf branches match.
+  if (Array.isArray(schema.anyOf)) {
+    schema.anyOf = foldCombinerBranches(schema.anyOf);
   }
 };
 
