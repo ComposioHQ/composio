@@ -15,7 +15,7 @@ from composio.client.types import (
 from composio.core.models.base import Resource
 
 
-class AuthConfigUpdateResponse(te.TypedDict, total=False):
+class AuthConfigUpdateResponse(te.TypedDict):
     """
     Response from updating an authentication configuration.
 

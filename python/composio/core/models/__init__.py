@@ -1,4 +1,4 @@
-from .auth_configs import AuthConfigs
+from .auth_configs import AuthConfigUpdateResponse, AuthConfigs
 from .connected_accounts import ConnectedAccounts
 from .custom_tool import ExperimentalToolkit
 from .custom_tool_types import (
@@ -31,6 +31,7 @@ from .webhook_events import (
 )
 
 __all__ = [
+    "AuthConfigUpdateResponse",
     "AuthConfigs",
     "ConnectedAccounts",
     "ConnectionExpiredEvent",
