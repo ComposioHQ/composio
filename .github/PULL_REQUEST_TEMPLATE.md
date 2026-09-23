@@ -24,7 +24,7 @@ Describe the tests you ran and instructions so reviewers can reproduce. Include 
 ## Checklist
 - [ ] I have read the Code of Conduct and this PR adheres to it
 - [ ] I have read and understand every line of this diff, including any LLM-generated code
-- [ ] This PR doesn't add docs links to third-party projects (frontier model providers and Composio partners excepted)
+- [ ] This PR doesn't add docs links to third-party projects (frontier model providers, supported frameworks, and Composio partners excepted)
 - [ ] I ran linters/tests locally and they passed
 - [ ] I updated documentation as needed
 - [ ] I added tests or explain why not applicable

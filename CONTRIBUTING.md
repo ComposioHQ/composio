@@ -55,6 +55,7 @@ AI assistance is welcome. Unreviewed AI output is not.
 We normally don't accept docs changes that add links to, or promote, third-party projects. The exceptions are:
 
 - frontier model providers, such as OpenAI and Anthropic
+- frameworks and platforms that Composio provider packages support, such as LangChain, the Vercel AI SDK, and Google Vertex AI
 - partners that have an agreement with Composio
 
 ### Partnerships
