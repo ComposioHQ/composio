@@ -54,7 +54,7 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `premium_usage.toolkits` (or `premiumUsage.toolkits` in TypeScript) separately restricts which eligible tools can incur premium usage charges. Omitting the filter will mean no premium charge tools are availabile. An Instant toolkit can still contain tools that need a connected account; hosted account coverage is tool-specific.
+Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `premium_usage.toolkits` (or `premiumUsage.toolkits` in TypeScript) separately restricts which eligible tools can incur premium usage charges. Omitting `premium_usage.toolkits` does not restrict premium usage: eligible tools remain available when the project and Session permit them. `return_premium_charge` defaults to `false` and only controls whether the actual charge appears in the immediate tool response. An Instant toolkit can still contain tools that need a connected account; hosted account coverage is tool-specific.
 
 ## Find and run a tool
 
