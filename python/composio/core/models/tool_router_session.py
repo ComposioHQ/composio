@@ -111,6 +111,24 @@ ToolRouterSessionConfig = t.Union[
 ]
 
 
+class ToolRouterPremiumUsageEnable(te.TypedDict):
+    enable: t.List[str]
+
+
+class ToolRouterPremiumUsageDisable(te.TypedDict):
+    disable: t.List[str]
+
+
+class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
+    """Experimental Composio-billed access policy for a Session."""
+
+    toolkits: t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    tools: t.Dict[
+        str, t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    ]
+    return_premium_charge: bool
+
+
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
     """``manage_connections`` shape accepted by :meth:`ToolRouterSession.update`.
 
@@ -982,6 +1000,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self,
         *,
         toolkits: t.Union[t.Optional[session_patch_params.Toolkits], "Omit"] = omit,
+        premium_usage: t.Union[
+            t.Literal[False], ToolRouterPremiumUsageConfig, "Omit"
+        ] = omit,
         tools: t.Union[
             t.Optional[t.Dict[str, session_patch_params.Tools]], "Omit"
         ] = omit,
@@ -1067,11 +1088,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # The generated client has no typed parameter for the precondition, so
         # it travels as an extra root body field.
-        extra_body = (
-            None
-            if isinstance(precondition, Omit)
-            else {"expected_config_version": precondition}
-        )
+        extra_body: t.Dict[str, t.Any] = {}
+        if not isinstance(precondition, Omit):
+            extra_body["expected_config_version"] = precondition
+        if not isinstance(premium_usage, Omit):
+            extra_body["premium_usage"] = premium_usage
 
         # The generated client does not type ``None`` for every policy block
         # although the API accepts it (it removes the stored override), nor the
@@ -1105,7 +1126,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
                 ),
-                extra_body=extra_body,
+                extra_body=extra_body or None,
                 # A stale precondition is a deterministic 409: never retry it.
                 request_options={"max_retries": 0},
             )

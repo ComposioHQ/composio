@@ -200,6 +200,16 @@ describe('ToolRouter', () => {
   describe('create method', () => {
     const userId = 'user_123';
 
+    it('passes premium usage only when requested', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId, {
+        premiumUsage: { toolkits: { enable: ['exa'] }, returnPremiumCharge: true },
+      });
+      expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0]).toMatchObject({
+        premium_usage: { toolkits: { enable: ['exa'] }, return_premium_charge: true },
+      });
+    });
+
     describe('basic session creation', () => {
       it('should create a session with minimal configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
