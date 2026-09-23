@@ -185,6 +185,21 @@ export type Ask = (
   questions: Record<string, TypesafeQuestion>
 ) => Promise<AskResult>;
 
+const waitForRetry = (delayMs: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new TypesafeApiError('aborted'));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) onAbort();
+  });
+
 /** One validated round trip. Every failure leaves as a provider error with safe diagnostics. */
 export function createAsk(
   getClient: () => Promise<TypesafeClientLike>,
@@ -222,12 +237,11 @@ export function createAsk(
         onRequest?.(undefined);
         const providerError = toProviderError(error);
 
+        if (!(providerError instanceof TypesafeApiError)) throw providerError;
         const isRetryable =
-          providerError.reason === 'rate_limit' ||
-          providerError.reason === 'server_error' ||
-          providerError.reason === 'connection' ||
-          providerError.reason === 'timeout' ||
-          (providerError.status !== undefined && retryStatusCodes.has(providerError.status));
+          providerError.status !== undefined
+            ? retryStatusCodes.has(providerError.status)
+            : providerError.reason === 'connection' || providerError.reason === 'timeout';
 
         if (!isRetryable || attempt >= maxRetries || requestOptions.signal?.aborted) {
           throw providerError;
@@ -236,9 +250,15 @@ export function createAsk(
         attempt += 1;
         const baseDelay = Math.min(initialBackoff * Math.pow(2, attempt - 1), 5000);
         const jitter = 0.8 + 0.4 * Math.random();
-        const delayMs = Math.round(baseDelay * jitter);
+        const retryAfterMs = providerError.retryAfterMs;
+        const delayMs = Math.max(
+          Math.round(baseDelay * jitter),
+          retryAfterMs !== undefined && Number.isFinite(retryAfterMs) && retryAfterMs >= 0
+            ? retryAfterMs
+            : 0
+        );
 
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await waitForRetry(delayMs, requestOptions.signal);
       }
     }
   };

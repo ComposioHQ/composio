@@ -20,7 +20,7 @@ const sdkError = (name: string, fields: Record<string, unknown> = {}) =>
 
 const decideWith = (error: unknown): Promise<TypesafeApiError> => {
   const provider = new TypesafeProvider({ client: failingClient(error).client });
-  return provider.decide(provider.wrapTools([tickets]), STATE_SENTINEL).then(
+  return provider.decide(provider.wrapTools([tickets]), STATE_SENTINEL, { maxRetries: 0 }).then(
     () => {
       throw new Error('decide resolved, so a failure was reported as a decision');
     },
@@ -94,56 +94,88 @@ describe('SDK error mapping', () => {
     });
   });
 
-  it('retries on retryable status code (429) and succeeds on second attempt', async () => {
-    let callCount = 0;
-    const { client } = mockClient(async () => {
-      callCount += 1;
-      if (callCount === 1) {
-        throw sdkError('RateLimitError', { status: 429 });
-      }
-      return {
-        model: 'jev-1.13',
-        answers: {
-          route: {
-            type: 'choice',
-            choice: '__none__',
-            confidence: 0.9,
-            probabilities: { __none__: 0.9 },
-          },
-          gate_0: { type: 'noul', noul: 0.9 },
-          gate_1: { type: 'noul', noul: 0.9 },
-          gate_2: { type: 'noul', noul: 0.9 },
-        },
-      };
-    });
-
-    const provider = new TypesafeProvider({ client });
-    const decision = await provider.decide(
-      provider.wrapTools([corpusTool('no_input_parameters')]),
-      'some state',
-      { maxRetries: 2, backoffMs: 1 }
+  it('retries a failed request and returns the next valid decision', async () => {
+    const { client, systemOne } = mockClient(() => undefined);
+    systemOne.mockImplementationOnce(
+      failingClient(sdkError('RateLimitError', { status: 429 })).systemOne
     );
-
-    expect(callCount).toBe(2);
+    const provider = new TypesafeProvider({ client });
+    const decision = await provider.decide(provider.wrapTools([tickets]), 'some state', {
+      maxRetries: 2,
+      backoffMs: 0,
+    });
+    expect(systemOne).toHaveBeenCalledTimes(2);
     expect(decision.kind).toBe('abstain');
   });
 
-  it('exhausts retries and throws the provider error when failures persist', async () => {
-    let callCount = 0;
-    const { client } = mockClient(async () => {
-      callCount += 1;
-      throw sdkError('InternalServerError', { status: 503 });
-    });
-
+  it('exhausts retries and throws the provider error', async () => {
+    const { client, systemOne } = failingClient(sdkError('InternalServerError', { status: 503 }));
     const provider = new TypesafeProvider({ client });
     await expect(
-      provider.decide(provider.wrapTools([tickets]), 'open a ticket', {
+      provider.decide(provider.wrapTools([tickets]), 'some state', {
         maxRetries: 2,
-        backoffMs: 1,
+        backoffMs: 0,
       })
     ).rejects.toMatchObject({ reason: 'server_error', status: 503 });
+    expect(systemOne).toHaveBeenCalledTimes(3);
+  });
 
-    expect(callCount).toBe(3); // Initial attempt + 2 retries
+  it.each([
+    { status: 503, retryStatusCodes: [429] },
+    { status: 429, retryStatusCodes: [] },
+  ])('does not retry an excluded HTTP status: $status', async ({ status, retryStatusCodes }) => {
+    const { client, systemOne } = failingClient(sdkError('APIError', { status }));
+    const provider = new TypesafeProvider({ client });
+    await expect(
+      provider.decide(provider.wrapTools([tickets]), 'some state', {
+        retryStatusCodes,
+        backoffMs: 0,
+      })
+    ).rejects.toMatchObject({ status });
+    expect(systemOne).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('retry timing', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('waits for the server cooldown before retrying', async () => {
+    vi.useFakeTimers();
+    const { client, systemOne } = mockClient(() => undefined);
+    systemOne.mockImplementationOnce(
+      failingClient(
+        sdkError('RateLimitError', {
+          status: 429,
+          retryAfterMs: 1500,
+        })
+      ).systemOne
+    );
+    const provider = new TypesafeProvider({ client });
+    const result = provider.decide(provider.wrapTools([tickets]), 'some state', { backoffMs: 0 });
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(systemOne).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect((await result).kind).toBe('abstain');
+    expect(systemOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels backoff immediately and sends no further requests', async () => {
+    vi.useFakeTimers();
+    const { client, systemOne } = failingClient(sdkError('InternalServerError', { status: 503 }));
+    const provider = new TypesafeProvider({ client });
+    const controller = new AbortController();
+    const result = provider.decide(provider.wrapTools([tickets]), 'some state', {
+      signal: controller.signal,
+      backoffMs: 5000,
+    });
+    const rejected = expect(result).rejects.toMatchObject({ reason: 'aborted' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(systemOne).toHaveBeenCalledTimes(1);
+    controller.abort();
+    await rejected;
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.runAllTimersAsync();
+    expect(systemOne).toHaveBeenCalledTimes(1);
   });
 });
 

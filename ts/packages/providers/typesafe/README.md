@@ -111,6 +111,8 @@ An optional argument with a weak answer is dropped, listed in `decision.dropped`
 
 `abstain` means only that the model judged so. API failures, timeouts, rate limits, and malformed responses throw typed errors: `TypesafeApiError`, whose `reason` is one of `rate_limit` (with `retryAfterMs`), `timeout`, `connection`, `authentication`, `server_error`, `request_rejected`, `aborted`, or `unknown`, and `TypesafeMalformedResponseError`. They never come back as `abstain`. Error messages hold a status code and a request ID, and never your state, argument values, or response content.
 
+Inference requests retry up to three times after connection failures, timeouts, or HTTP 429, 500, 502, 503, and 504 responses. Pass `maxRetries: 0` in your decision options to disable retries. `retryStatusCodes` replaces the HTTP status list, and `backoffMs` sets the initial delay (200 ms by default). Retries use exponential backoff with jitter and wait at least the server's `retryAfterMs` when provided. Aborting `signal` also cancels a pending retry delay. Tool execution is never retried by this policy.
+
 ## Thresholds
 
 | Threshold  | Default | Applies to                                                        |
