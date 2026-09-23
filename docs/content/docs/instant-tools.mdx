@@ -104,7 +104,7 @@ Check the current [tool input schema](/reference/api-reference/tools/getToolsByT
 
 The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable premium usage for other eligible toolkits. Use `premium_usage.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
 
-The examples below use Python and REST field names. In TypeScript, use `premiumUsage` and `returnPremiumCharge`.
+The examples below use Python and REST field names. In TypeScript, use `premiumUsage` and `returnPremiumCharge`, and read the charge from `premiumCharge` on the tool result.
 
 | Session value | Effect |
 |---|---|
@@ -112,7 +112,7 @@ The examples below use Python and REST field names. In TypeScript, use `premiumU
 | `false` | Disables premium usage for that Session. Your own connected-account routes remain available. |
 | `{ "toolkits": { "enable": ["exa"] } }` | Permits premium usage only for listed toolkits. Use `disable` instead to exclude selected toolkits. |
 | `{ "tools": { "exa": { "enable": ["EXA_SEARCH"] } } }` | Narrows premium usage to selected tools within a toolkit. |
-| `{ "return_premium_charge": true }` | Requests the actual `premium_charge` in an eligible Session tool response. This changes charge visibility, not permission to spend. |
+| `{ "return_premium_charge": true }` | Requests the actual `premium_charge` in an eligible Session tool response. On create, this changes charge visibility, not permission to spend. On update, it also re-enables premium usage on a Session set to `false`, like any other object. |
 
 For example, keep Exa and Firecrawl available, but permit premium usage only for `EXA_SEARCH`:
 
@@ -159,7 +159,7 @@ await session.update({ premiumUsage: false });
 </Tab>
 </Tabs>
 
-On patch, omitted `premium_usage` fields keep their existing values. Supplying an object after `false` enables this Session policy again, provided the project allows it.
+On patch, omitted `premium_usage` fields keep their existing values. Supplying any object after `false`, even one that only sets `return_premium_charge`, enables this Session policy again, provided the project allows it.
 
 ## Know which account runs the tool
 
