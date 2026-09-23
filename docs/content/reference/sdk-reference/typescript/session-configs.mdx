@@ -1,0 +1,83 @@
+---
+title: "SessionConfigs"
+description: "`composio.sessionConfigs` — saved, reusable Session configs.  A Session config is a named access policy (`sc_…`) built in the Composio Dashboard under Sessions → Configs. Pass its id as `experimental.sessionConfigId` to `composio.sessions.create()` or `session.update()` to apply it.  These endpoints require Session configs to be enabled for the project; otherwise the backend returns 403.   The shape may change in future releases."
+---
+
+## Usage
+
+Access this class through the `composio.sessionConfigs` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.sessionConfigs.list();
+```
+
+## Methods
+
+### get()
+
+Retrieve one saved Session config with its description and access
+policy. A missing or cross-project id surfaces as the backend's 404.
+
+ Requires Session configs to be enabled for the project.
+
+```typescript
+async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ archived: boolean; config: { tags?: { disable?: ... | ... | ... | ...[]; enable?: ... | ... | ... | ...[] }; toolkits?: { enable: ...[] } | { disable: ...[] }; tools?: Record<string, { enable: ... } | { disable: ... } | { tags: ... }> }; createdAt: string; description: string | null; id: string; name: string; updatedAt: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The `sc_…` id of the Session config |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ archived: boolean; config: \{ tags?: \{ disable?: ... \| ... \| ... \| ...[]; enable?: ... \| ... \| ... \| ...[] \}; toolkits?: \{ enable: ...[] \} \| \{ disable: ...[] \}; tools?: Record<string, \{ enable: ... \} \| \{ disable: ... \} \| \{ tags: ... \}> \}; createdAt: string; description: string \| null; id: string; name: string; updatedAt: string \}>` — The config and its policy
+
+**Example**
+
+```typescript
+const sessionConfig = await composio.sessionConfigs.get('sc_abc123');
+console.log(sessionConfig.config.toolkits);
+```
+
+---
+
+### list()
+
+List the project's saved Session configs with cursor pagination.
+
+Omitting `archived` returns active configs; `archived: true` returns only
+archived ones. The backend defaults `limit` to 20 and caps it at 100.
+
+ Requires Session configs to be enabled for the project.
+
+```typescript
+async list(params?: { archived?: boolean; cursor?: string; limit?: number; search?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { archived: boolean; createdAt: string; id: string; name: string; updatedAt: string }[]; nextCursor: string | null }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params?` | `\{ archived?: boolean; cursor?: string; limit?: number; search?: string \}` | `search`, `archived`, `limit` and `cursor` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ items: \{ archived: boolean; createdAt: string; id: string; name: string; updatedAt: string \}[]; nextCursor: string \| null \}>` — Config summaries and the next cursor
+
+**Example**
+
+```typescript
+let cursor: string | undefined;
+do {
+  const page = await composio.sessionConfigs.list({ cursor });
+  for (const item of page.items) console.log(item.id, item.name);
+  cursor = page.nextCursor ?? undefined;
+} while (cursor);
+```
+
+---

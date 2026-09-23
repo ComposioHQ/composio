@@ -35,6 +35,82 @@ If you use a [scoped project API key](/reference/authenticating-to-composio/proj
 
 Enable both permissions if your application manages sessions and executes tools through them.
 
+## Using a saved Session config
+
+A **Session config** is a saved, named access policy (`sc_…`) that you build in the Composio Dashboard under Sessions → Configs. Start a session from one instead of repeating `toolkits`, `tools`, and `tags` in your code:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const { items } = await composio.sessionConfigs.list({ search: "support" });
+
+const session = await composio.sessions.create("user_123", {
+  authConfigs: { github: "ac_123" },
+  experimental: { sessionConfigId: items[0].id },
+});
+
+console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
+```
+
+The backend resolves the config when it creates the session, so the session gets exactly the access the config grants. Later edits to the config in the Dashboard don't change sessions that already exist.
+
+<Callout type="info">
+Session configs are experimental and TypeScript-only for now. The `composio.sessionConfigs` reads need Session configs enabled for your project; otherwise they return `403`. With a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions#session-management), they need the **Session management** read permission.
+</Callout>
+
+### Finding a config
+
+`composio.sessionConfigs.list()` returns summaries (`id`, `name`, `archived`, `createdAt`, `updatedAt`) and a `nextCursor`. It returns active configs unless you pass `archived: true`, which returns only archived ones. Pass `search` to match names and `limit` and `cursor` to page; the backend returns 20 per page by default and at most 100.
+
+`composio.sessionConfigs.get(id)` adds the `description` and the stored policy under `config`:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const sessionConfig = await composio.sessionConfigs.get("sc_123");
+
+console.log(sessionConfig.config);
+// { toolkits: { enable: ["github"] }, tags: { disable: ["destructiveHint"] } }
+```
+
+A saved policy uses `enable` and `disable`, the same shape you send on create. `session.config` is the server's snapshot of a live session and names the same lists `enabled` and `disabled`.
+
+### What you can combine with a config
+
+The config owns the session's toolkit, tool, and tag access. On `create()`, you can't pass `sessionConfigId` together with `toolkits`, `tools`, `tags`, `experimental.customTools`, or `experimental.customToolkits`. TypeScript reports the mix at compile time, and the SDK throws `ValidationError` before it sends a request. An empty list such as `toolkits: []` counts as set.
+
+Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
+
+### Applying a config to an existing session
+
+Pass `sessionConfigId` in the `experimental` block of `session.update()` to replace the session's toolkit, tool, and tag access with the config's policy. Other settings are preserved.
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.sessions.use("session_id");
+
+await session.update({ experimental: { sessionConfigId: "sc_123" } });
+```
+
+The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, or `tags`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
+
+A `409` while applying a config means the session or the config changed during the update. The SDK raises `ComposioSessionConfigConflictError`, and nothing was written: re-fetch the session with `sessions.use()` and retry.
+
+### Which config a session came from
+
+`session.experimental.sourceSessionConfig` holds `{ id }` of the last config applied to the session. The SDK sets it after `create()`, `sessions.use()`, and a successful `update()`. It stays set after later inline updates such as `update({ toolkits: [...] })`, and it's `undefined` when no config was applied. It reflects the last response this session object saw, so an update from another process leaves it stale until you call `sessions.use()` again.
+
+### When a config can't be used
+
+The SDK never retries without the config or falls back to an unrestricted session. A missing, archived, or cross-project config fails with the backend's `404`, and a project without Session configs fails with `403`. A failed `update()` leaves the session object unchanged.
+
 ## Reading and updating session configuration
 
 In TypeScript, `session.config` exposes the configuration returned by the server. Call `session.update()` to change selected fields. It preserves omitted fields, updates `session.config` in place, and returns the updated configuration. See [Updating a session](/docs/how-composio-works#how-sessions-behave) for an example.
@@ -917,7 +993,7 @@ await session.update({
 
 Both blocks are on by default. `search` controls the session's search helper, so disabling it leaves the agent with the tools you preloaded. `execute.enableMultiExecute` controls whether the agent can run several tool calls in one request. `manageConnections.enableConnectionRemoval` is update-only as well, and controls whether the session exposes the connection-removal tool.
 
-The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. It is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
+The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, or `tags`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
 
 ### Multi-account mode after an update
 

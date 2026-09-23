@@ -131,9 +131,9 @@ export class ToolRouterSession<
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   /**
-   * Server-side session configuration (toolkit/tool allowlists, tags, preload,
-   * sandbox, manage_connections) as returned by the API. Refreshed in place by
-   * `update()`.
+   * The session's current configuration (policy snapshot and runtime
+   * settings). Refreshed in place by `update()`. For saved, reusable Session
+   * configs, see `composio.sessionConfigs`.
    */
   public config: ToolRouterSessionConfig;
   public preload: ToolRouterSessionPreloadConfig;

@@ -7,7 +7,7 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `config` | `Config` | Server-side session configuration (toolkit/tool allowlists, tags, preload, sandbox, manage_connections) as returned by the API. Refreshed in place by `update()`. |
+| `config` | `Config` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
 | `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`, which sends it as the `expected_config_version` precondition by default. |
 | `experimental` | `SessionExperimental` |  |
 | `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
@@ -324,19 +324,26 @@ exactly once. On conflict this object is left unchanged: re-fetch the
 session with `sessions.use(sessionId)` and retry against the fresh
 `configVersion`.
 
-`config`, `configVersion`, `preload`, `sandbox` and `warnings` are
-refreshed in place only after a successful response, and the updated
-`config` is returned.
+`experimental.sessionConfigId` applies a saved Session config: it
+replaces the session's toolkit, tool and tag access and cannot be combined
+with `toolkits`, `tools` or `tags` (a `ValidationError` is thrown before
+any request). A 409 while applying it means the session or the config
+changed; re-fetch the session and retry. Backend 400, 403 and 404 errors,
+for example for an archived or missing config, surface unchanged.
+
+`config`, `configVersion`, `preload`, `sandbox`, `warnings` and
+`experimental.sourceSessionConfig` are refreshed in place only after a
+successful response, and the updated `config` is returned.
 
 ```typescript
-async update(config: { authConfigs?: Record<string, string> | null; connectedAccounts?: Record<string, string[]> | null; execute?: { enableMultiExecute?: boolean } | null; expectedConfigVersion?: number | false; experimental?: { fastMode?: boolean | null; linkUrlOverwrite?: string | null; permissions?: { default: ... | ... | ...; overrides?: Record<..., ...> } | null; sessionConfigId?: string; submitFeedback?: { enable: boolean } | null } | null; manageConnections?: boolean | { callbackUrl?: string | null; enable?: boolean; enableConnectionRemoval?: boolean | null; waitForConnections?: boolean } | null; multiAccount?: { enable?: boolean; maxAccountsPerToolkit?: number | null; requireExplicitSelection?: boolean } | null; preload?: { tools?: string[] | 'all' } | null; sandbox?: { autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } | null; search?: { enable?: boolean } | null; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[]; enable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] } | null; toolkits?: string[] | { disable: string[] } | { enable: string[] } | null; tools?: Record<string, string[] | { enable: ...[] } | { disable: ...[] } | { tags: ... | ... }> | null; workbench?: { autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } | null }, requestOptions?: ComposioRequestOptions): Promise<Config>
+async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<Config>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `config` | `\{ authConfigs?: Record<string, string> \| null; connectedAccounts?: Record<string, string[]> \| null; execute?: \{ enableMultiExecute?: boolean \} \| null; expectedConfigVersion?: number \| false; experimental?: \{ fastMode?: boolean \| null; linkUrlOverwrite?: string \| null; permissions?: \{ default: ... \| ... \| ...; overrides?: Record<..., ...> \} \| null; sessionConfigId?: string; submitFeedback?: \{ enable: boolean \} \| null \} \| null; manageConnections?: boolean \| \{ callbackUrl?: string \| null; enable?: boolean; enableConnectionRemoval?: boolean \| null; waitForConnections?: boolean \} \| null; multiAccount?: \{ enable?: boolean; maxAccountsPerToolkit?: number \| null; requireExplicitSelection?: boolean \} \| null; preload?: \{ tools?: string[] \| 'all' \} \| null; sandbox?: \{ autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \| null; search?: \{ enable?: boolean \} \| null; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \} \| null; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \} \| null; tools?: Record<string, string[] \| \{ enable: ...[] \} \| \{ disable: ...[] \} \| \{ tags: ... \| ... \}> \| null; workbench?: \{ autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \| null \}` |
+| `config` | `ToolRouterUpdateSessionConfig` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
