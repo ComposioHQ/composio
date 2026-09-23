@@ -37,6 +37,10 @@ export class ComposioMCPDestinationError extends ComposioError {
  * stale. The local session object is left as it was before the call.
  * Re-fetch the session with `sessions.use(sessionId)` and retry the update
  * against the fresh `configVersion`.
+ *
+ * Applying a saved Session config with `experimental.sessionConfigId` can
+ * also conflict when the session or the config changes while the update is
+ * applied; `meta.sessionConfigId` then names the config.
  */
 export class ComposioSessionConfigConflictError extends ComposioError {
   constructor(

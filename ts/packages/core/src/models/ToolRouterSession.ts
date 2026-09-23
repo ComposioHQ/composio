@@ -791,9 +791,16 @@ export class ToolRouterSession<
    * session with `sessions.use(sessionId)` and retry against the fresh
    * `configVersion`.
    *
-   * `config`, `configVersion`, `preload`, `sandbox` and `warnings` are
-   * refreshed in place only after a successful response, and the updated
-   * `config` is returned.
+   * `experimental.sessionConfigId` applies a saved Session config: it
+   * replaces the session's toolkit, tool and tag access and cannot be combined
+   * with `toolkits`, `tools` or `tags` (a `ValidationError` is thrown before
+   * any request). A 409 while applying it means the session or the config
+   * changed; re-fetch the session and retry. Backend 400, 403 and 404 errors,
+   * for example for an archived or missing config, surface unchanged.
+   *
+   * `config`, `configVersion`, `preload`, `sandbox`, `warnings` and
+   * `experimental.sourceSessionConfig` are refreshed in place only after a
+   * successful response, and the updated `config` is returned.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
@@ -824,6 +831,16 @@ export class ToolRouterSession<
       );
     } catch (error) {
       if (error instanceof ConflictError) {
+        const sessionConfigId = parsed.experimental?.sessionConfigId;
+        if (sessionConfigId !== undefined) {
+          throw new ComposioSessionConfigConflictError(
+            `Session ${this.sessionId} or Session config ${sessionConfigId} changed while the config was being applied; re-fetch the session and retry the update`,
+            {
+              cause: error,
+              meta: { sessionId: this.sessionId, sessionConfigId, expectedConfigVersion },
+            }
+          );
+        }
         throw new ComposioSessionConfigConflictError(
           expectedConfigVersion === undefined
             ? `Session ${this.sessionId} configuration changed while this update was in flight; re-fetch the session and retry the update`

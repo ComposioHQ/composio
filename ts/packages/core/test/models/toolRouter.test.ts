@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
-import ComposioClient, { ConflictError, NotFoundError } from '@composio/client';
+import ComposioClient, {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  PermissionDeniedError,
+} from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
@@ -4510,6 +4515,78 @@ describe('ToolRouter', () => {
         // The mock client has no `sessionConfigs`, so any lookup would throw.
         expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
       });
+    });
+
+    describe('fail closed', () => {
+      it.each([
+        ['with the default precondition', {}],
+        ['without a precondition', { expectedConfigVersion: false as const }],
+      ])(
+        'reports a 409 while applying a config in terms of the session and the config (%s)',
+        async (_label, precondition) => {
+          mockClient.toolRouter.session.patch.mockRejectedValueOnce(
+            new ConflictError(409, undefined, 'Conflict', {})
+          );
+          const session = await toolRouter.use(sessionId);
+
+          const failure = await session
+            .update({ experimental: { sessionConfigId: 'sc_1' }, ...precondition })
+            .catch(e => e);
+
+          expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
+          expect(failure.statusCode).toBe(409);
+          expect(failure.message).toContain(sessionId);
+          expect(failure.message).toContain('sc_1');
+          expect(failure.message).toMatch(/re-fetch/i);
+          expect(failure.message).toMatch(/retry/i);
+          expect(failure.message).not.toMatch(/no longer at version/);
+          expect(failure.meta).toMatchObject({ sessionId, sessionConfigId: 'sc_1' });
+        }
+      );
+
+      it.each([
+        ['400', () => new BadRequestError(400, undefined, 'Bad request', {})],
+        ['403', () => new PermissionDeniedError(403, undefined, 'Forbidden', {})],
+        ['404', () => new NotFoundError(404, undefined, 'Not found', {})],
+      ])('surfaces a %s from patch unchanged and keeps local state', async (_status, makeError) => {
+        const error = makeError();
+        mockClient.toolRouter.session.retrieve.mockResolvedValueOnce({
+          ...mockSessionRetrieveResponse,
+          experimental: { source_session_config: { id: 'sc_1' } },
+        });
+        mockClient.toolRouter.session.patch.mockRejectedValueOnce(error);
+        const session = await toolRouter.use(sessionId);
+        const configBefore = session.config;
+
+        await expect(
+          session.update({ experimental: { sessionConfigId: 'sc_archived' } })
+        ).rejects.toBe(error);
+
+        expect(mockClient.toolRouter.session.patch).toHaveBeenCalledTimes(1);
+        expect(session.config).toBe(configBefore);
+        expect(session.configVersion).toBe(7);
+        expect(session.experimental.sourceSessionConfig).toEqual({ id: 'sc_1' });
+      });
+
+      it.each([
+        ['403', () => new PermissionDeniedError(403, undefined, 'Forbidden', {})],
+        ['404', () => new NotFoundError(404, undefined, 'Not found', {})],
+      ])(
+        'surfaces a %s from create unchanged and never retries without the config',
+        async (_status, makeError) => {
+          const error = makeError();
+          mockClient.toolRouter.session.create.mockRejectedValueOnce(error);
+
+          await expect(
+            toolRouter.create('user_123', { experimental: { sessionConfigId: 'sc_archived' } })
+          ).rejects.toBe(error);
+
+          expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
+          expect(mockClient.toolRouter.session.create.mock.calls[0][0].experimental).toEqual({
+            session_config_id: 'sc_archived',
+          });
+        }
+      );
     });
   });
 });
