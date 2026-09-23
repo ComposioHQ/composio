@@ -23,10 +23,9 @@ import { NodeOs } from './node-os';
  * recorded here never stops being real.
  *
  * Custom toolkits are the exception: they belong to a project, can be deleted,
- * and this file is shared by every project on the machine. A stale one is
- * still harmless. Custom toolkit slugs all start with `custom_`, and no
- * Composio-managed toolkit is named `custom`, so a stale custom slug only ever
- * outranks the first-underscore guess `custom` — never a real toolkit.
+ * and this file is shared by every project on the machine. The resolver checks
+ * custom matches against the active project's catalog before accepting them.
+ * Learned custom slugs are only a best-effort fallback when that lookup fails.
  */
 
 export const KNOWN_TOOLKIT_SLUGS_FILE = 'known-toolkit-slugs.json';

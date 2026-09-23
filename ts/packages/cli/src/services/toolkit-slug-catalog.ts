@@ -35,29 +35,36 @@ const learnedSlugs = (learned: Option.Option<KnownToolkitSlugs>): ReadonlyArray<
  * Re-reads the catalog and records it, in the background. Failures are
  * swallowed: a refresh that does not happen costs a fetch later, nothing more.
  * The project's custom toolkits are optional to it — without them, a custom
- * toolkit costs one fetch on its next miss.
+ * toolkit still uses its learned slug if the scoped fetch also fails. Refresh
+ * and foreground discoveries merge through the same serialized writer.
  */
-const refreshKnownToolkitSlugs = Effect.gen(function* () {
-  const repository = yield* ComposioToolkitsRepository;
-  const [toolkits, projectToolkits] = yield* Effect.all(
-    [
-      repository.getToolkits(),
-      repository.getProjectToolkits().pipe(Effect.orElseSucceed(() => [])),
-    ],
-    { concurrency: 'unbounded' }
-  );
-  yield* writeKnownToolkitSlugs([
-    ...BAKED_TOOLKIT_SLUGS,
-    ...[...toolkits, ...projectToolkits].map(t => t.slug),
-  ]);
-}).pipe(Effect.timeout(REFRESH_TIMEOUT), Effect.ignore);
+const refreshKnownToolkitSlugs = (
+  remember: (slugs: ReadonlyArray<string>) => Effect.Effect<void>
+) =>
+  Effect.gen(function* () {
+    const repository = yield* ComposioToolkitsRepository;
+    const [toolkits, projectToolkits] = yield* Effect.all(
+      [
+        repository.getToolkits(),
+        repository.getProjectToolkits().pipe(Effect.orElseSucceed(() => [])),
+      ],
+      { concurrency: 'unbounded' }
+    );
+    yield* remember([
+      ...BAKED_TOOLKIT_SLUGS,
+      ...[...toolkits, ...projectToolkits].map(t => t.slug),
+    ]);
+  }).pipe(Effect.timeout(REFRESH_TIMEOUT), Effect.ignore);
 
 /**
  * Starts a refresh when the learned slugs are missing or older than
  * {@link REFRESH_AFTER}. A `refreshedAt` in the future (a clock that jumped)
  * counts as fresh — the point is to bound staleness, not to police clocks.
  */
-const refreshInBackgroundIfStale = (learned: Option.Option<KnownToolkitSlugs>) =>
+const refreshInBackgroundIfStale = (
+  learned: Option.Option<KnownToolkitSlugs>,
+  remember: (slugs: ReadonlyArray<string>) => Effect.Effect<void>
+) =>
   Effect.gen(function* () {
     const now = yield* DateTime.now;
     const isFresh = Option.match(learned, {
@@ -68,7 +75,7 @@ const refreshInBackgroundIfStale = (learned: Option.Option<KnownToolkitSlugs>) =
 
     if (isFresh) return;
 
-    yield* Effect.forkDetach(refreshKnownToolkitSlugs);
+    yield* Effect.forkDetach(refreshKnownToolkitSlugs(remember));
   });
 
 /**
@@ -85,15 +92,6 @@ export interface LocalToolkitSlugs {
   readonly longestPrefix: (toolSlug: string) => string | undefined;
 }
 
-const loadLocalToolkitSlugs = Effect.gen(function* () {
-  const learned = yield* readKnownToolkitSlugs;
-  const slugs = [...BAKED_TOOLKIT_SLUGS, ...learnedSlugs(learned)];
-
-  yield* refreshInBackgroundIfStale(learned);
-
-  return { slugs, longestPrefix: makeLongestPrefixMatcher(slugs) } satisfies LocalToolkitSlugs;
-});
-
 /**
  * Owns the local half of toolkit resolution, resolved once per process.
  *
@@ -109,7 +107,6 @@ const loadLocalToolkitSlugs = Effect.gen(function* () {
  * unmemoized read forked — and rewrote the file — once per resolution.
  */
 const makeToolkitSlugCatalog = Effect.gen(function* () {
-  const local = yield* Effect.cached(loadLocalToolkitSlugs);
   const recorded = yield* Ref.make<ReadonlySet<string>>(new Set());
   const writes = yield* Semaphore.make(1);
 
@@ -122,19 +119,29 @@ const makeToolkitSlugCatalog = Effect.gen(function* () {
    * must not be dropped. Writes are serialized and each writes everything
    * recorded so far, so a slow earlier write never lands over a later one.
    */
-  const remember = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
+  const remember = (slugs: ReadonlyArray<string>, refresh = false): Effect.Effect<void> =>
     Effect.gen(function* () {
       const learnedSomething = yield* Ref.modify(recorded, current => {
         const next = new Set([...current, ...slugs.map(slug => slug.toLowerCase())]);
         return [next.size > current.size, next] as const;
       });
-      if (!learnedSomething) return;
+      if (!learnedSomething && !refresh) return;
       yield* Effect.forkDetach(
         writes.withPermits(1)(
           Ref.get(recorded).pipe(Effect.flatMap(slugs => writeKnownToolkitSlugs([...slugs])))
         )
       );
     });
+
+  const local = yield* Effect.cached(
+    Effect.gen(function* () {
+      const learned = yield* readKnownToolkitSlugs;
+      const slugs = [...BAKED_TOOLKIT_SLUGS, ...learnedSlugs(learned)];
+      yield* Ref.update(recorded, current => new Set([...current, ...slugs]));
+      yield* refreshInBackgroundIfStale(learned, slugs => remember(slugs, true));
+      return { slugs, longestPrefix: makeLongestPrefixMatcher(slugs) } satisfies LocalToolkitSlugs;
+    })
+  );
 
   return { local, remember };
 });

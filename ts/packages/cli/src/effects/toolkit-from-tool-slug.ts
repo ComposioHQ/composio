@@ -1,9 +1,10 @@
-import { Array as Arr, Effect } from 'effect';
+import { Array as Arr, Effect, Option } from 'effect';
 import {
   ComposioToolkitsRepository,
   type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
+import { isRemoteCustomToolkitSlug } from 'src/utils/remote-custom-toolkit';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import {
   guessToolkitFromToolSlug,
@@ -21,7 +22,8 @@ import {
  * this machine has learned since, both local and memoized per run, so the
  * common case costs no network at all.
  *
- * Only a slug that matches nothing known falls through to the catalog, which
+ * Native matches resolve locally. Custom matches are checked against the
+ * active project; unknown slugs also fall through to the catalog, which
  * is what a toolkit released after this binary looks like — or a custom
  * toolkit registered in the current project. Everything else
  * degrades rather than fails: an unreachable catalog still yields the
@@ -48,7 +50,7 @@ export const toolkitFromToolSlug = (
     const local = yield* catalog.local;
 
     const match = local.longestPrefix(toolSlug);
-    if (match !== undefined) {
+    if (match !== undefined && !isRemoteCustomToolkitSlug(match)) {
       return toolkitFromMatchedPrefix(match);
     }
 
@@ -62,10 +64,16 @@ export const toolkitFromToolSlug = (
     );
     const fetched = Arr.getSomes(catalogs);
     if (!Arr.isReadonlyArrayNonEmpty(fetched)) {
-      return guessToolkitFromToolSlug(toolSlug);
+      return matchToolkitFromToolSlug(toolSlug, local.slugs);
     }
 
-    const allSlugs = [...local.slugs, ...fetched.flat().map(toolkit => toolkit.slug)];
+    // A successful project lookup is authoritative: machine-wide custom slugs
+    // may belong to another project, including longer or shorter prefixes.
+    // Retain learned slugs only as a best-effort fallback during an outage.
+    const localSlugs = Option.isSome(catalogs[1])
+      ? local.slugs.filter(slug => !isRemoteCustomToolkitSlug(slug))
+      : local.slugs;
+    const allSlugs = [...localSlugs, ...fetched.flat().map(toolkit => toolkit.slug)];
 
     yield* catalog.remember(allSlugs);
 

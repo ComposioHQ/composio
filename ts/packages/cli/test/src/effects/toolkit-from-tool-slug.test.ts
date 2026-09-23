@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { ConfigProvider, DateTime, Effect, FileSystem, Layer, Schedule } from 'effect';
+import { ConfigProvider, DateTime, Deferred, Effect, FileSystem, Layer, Schedule } from 'effect';
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
@@ -273,7 +273,7 @@ describe('toolkitFromToolSlug', () => {
           const learned = yield* waitForLearnedFile(content =>
             content.includes(UNRELEASED_TOOLKIT)
           );
-          expect(learned).not.toContain('stale_toolkit');
+          expect(learned).toContain('stale_toolkit');
         })
     )
   );
@@ -332,7 +332,7 @@ describe('toolkitFromToolSlug', () => {
       )
     );
 
-    it.live('resolves a remembered custom toolkit without touching the network', () =>
+    it.live('uses a remembered custom toolkit when the project catalog is unreachable', () =>
       withResolver(
         {
           getToolkits: failingFetch,
@@ -342,8 +342,82 @@ describe('toolkitFromToolSlug', () => {
         ({ calls, projectCalls }) =>
           Effect.gen(function* () {
             expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
-            expect(calls()).toBe(0);
-            expect(projectCalls()).toBe(0);
+            expect(calls()).toBe(1);
+            expect(projectCalls()).toBe(1);
+          })
+      )
+    );
+
+    for (const learned of ['custom_grain', 'custom_grain_search_persons']) {
+      it.live(`uses the active project's prefix instead of learned ${learned}`, () =>
+        withResolver(
+          {
+            seedLearnedFile: learnedFileContent([learned]),
+            getProjectToolkits: scope =>
+              Effect.succeed(
+                scope?.projectId === 'proj_b' ? [makeToolkitFixture('custom_grain_search')] : []
+              ),
+          },
+          () =>
+            Effect.gen(function* () {
+              expect(
+                yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS_LIST', {
+                  orgId: 'org_1',
+                  projectId: 'proj_b',
+                })
+              ).toBe('custom_grain_search');
+              expect(
+                yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS_LIST', {
+                  orgId: 'org_1',
+                  projectId: 'proj_empty',
+                })
+              ).toBe('custom');
+            })
+        )
+      );
+    }
+
+    it.live('keeps a scoped discovery when an older background fetch completes later', () =>
+      Effect.gen(function* () {
+        const releaseRefresh = yield* Deferred.make<void>();
+        yield* withResolver(
+          {
+            seedLearnedFile: learnedFileContent([], 8),
+            getToolkits: () =>
+              Deferred.await(releaseRefresh).pipe(
+                Effect.as([makeToolkitFixture(UNRELEASED_TOOLKIT)])
+              ),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+              const catalog = yield* ToolkitSlugCatalog;
+              yield* catalog.remember([CUSTOM_TOOLKIT]);
+              yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+              yield* Deferred.succeed(releaseRefresh, undefined);
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(UNRELEASED_TOOLKIT)
+              );
+              expect(learned).toContain(CUSTOM_TOOLKIT);
+            })
+        );
+      })
+    );
+
+    it.live('preserves learned custom slugs when an unscoped refresh cannot list them', () =>
+      withResolver(
+        {
+          seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT], 8),
+          getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          getProjectToolkits: failingFetch,
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+            const learned = yield* waitForLearnedFile(content =>
+              content.includes(UNRELEASED_TOOLKIT)
+            );
+            expect(learned).toContain(CUSTOM_TOOLKIT);
           })
       )
     );
