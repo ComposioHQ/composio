@@ -843,7 +843,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .union([z.number().int().positive(), z.literal(false)])
       .optional()
       .describe(
-        'Precondition sent as `expected_config_version`. Omitted: the session sends the configVersion it last observed, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten. A positive integer sends that version instead. `false` sends no precondition (last writer wins)'
+        'Precondition sent as `expected_config_version`. A positive integer (for example `session.configVersion`) makes the update conditional, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten; the API must support the field. Omitted or `false`: no precondition (last writer wins)'
       ),
   })
   .partial()
