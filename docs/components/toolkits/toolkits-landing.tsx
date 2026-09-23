@@ -10,6 +10,132 @@ import { PageActions } from '@/components/page-actions';
 
 const toolkits = toolkitsData as ToolkitSummary[];
 
+const CATEGORY_GROUPS = [
+  {
+    id: 'all',
+    label: 'All',
+    categories: null,
+  },
+  {
+    id: 'developer',
+    label: 'Developer',
+    categories: [
+      'developer tools',
+      'developer tools & devops',
+      'databases',
+      'server monitoring',
+      'security & identity tools',
+      'model context protocol',
+      'it operations',
+    ],
+  },
+  {
+    id: 'business',
+    label: 'Business',
+    categories: [
+      'accounting',
+      'crm',
+      'customer support',
+      'commerce',
+      'e-commerce',
+      'ecommerce',
+      'hr talent & recruitment',
+      'human resources',
+      'payment processing',
+      'proposal & invoice management',
+      'sales & crm',
+      'taxes',
+    ],
+  },
+  {
+    id: 'productivity',
+    label: 'Productivity',
+    categories: [
+      'communication',
+      'documents',
+      'email',
+      'file management & storage',
+      'notes',
+      'notifications',
+      'product management',
+      'productivity',
+      'productivity & project management',
+      'project management',
+      'scheduling & booking',
+      'spreadsheets',
+      'task management',
+      'team chat',
+      'team collaboration',
+      'time tracking software',
+      'video conferencing',
+    ],
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    categories: [
+      'ai agents',
+      'ai assistants',
+      'ai chatbots',
+      'ai content generation',
+      'ai document extraction',
+      'ai meeting assistants',
+      'ai models',
+      'ai safety compliance detection',
+      'ai sales tools',
+      'ai web scraping',
+      'artificial intelligence',
+      'transcription',
+    ],
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    categories: [
+      'ads & conversion',
+      'analytics',
+      'content & files',
+      'drip emails',
+      'email newsletters',
+      'forms & surveys',
+      'images & design',
+      'marketing',
+      'marketing automation',
+      'reviews',
+      'social media accounts',
+      'social media marketing',
+      'transactional email',
+      'url shortener',
+      'video & audio',
+      'webinars',
+      'website & app building',
+      'website builders',
+    ],
+  },
+] as const;
+
+type CategoryGroupId = (typeof CATEGORY_GROUPS)[number]['id'] | 'other';
+
+const groupedCategorySet = new Set(
+  CATEGORY_GROUPS.flatMap((group) => group.categories ?? [])
+);
+
+function normalizeCategory(category: string | null | undefined) {
+  return category?.trim().toLowerCase() || null;
+}
+
+function toolkitMatchesCategoryGroup(toolkit: ToolkitSummary, groupId: CategoryGroupId) {
+  if (groupId === 'all') return true;
+
+  const category = normalizeCategory(toolkit.category);
+  if (groupId === 'other') {
+    return category === null || !groupedCategorySet.has(category);
+  }
+
+  const group = CATEGORY_GROUPS.find((item) => item.id === groupId);
+  return category !== null && group?.categories?.some((item) => item === category) === true;
+}
+
 // Popular toolkit slugs (shown at top when no filters)
 const POPULAR_SLUGS = [
   'github',
@@ -98,6 +224,7 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
 
 export function ToolkitsLanding() {
   const [search, setSearch] = useState('');
+  const [categoryGroup, setCategoryGroup] = useState<CategoryGroupId>('all');
   const deferredSearch = useDeferredValue(search);
 
   // Get popular toolkits
@@ -108,15 +235,30 @@ export function ToolkitsLanding() {
   }, []);
 
   const filteredToolkits = useMemo(() => {
-    if (!deferredSearch) return toolkits;
-
     const searchLower = deferredSearch.toLowerCase();
-    return toolkits.filter(
-      (toolkit) =>
+    return toolkits.filter((toolkit) => {
+      if (!toolkitMatchesCategoryGroup(toolkit, categoryGroup)) return false;
+      if (!deferredSearch) return true;
+
+      return (
         toolkit.name.toLowerCase().includes(searchLower) ||
         toolkit.slug.toLowerCase().includes(searchLower)
-    );
-  }, [deferredSearch]);
+      );
+    });
+  }, [deferredSearch, categoryGroup]);
+
+  const categoryFilters = useMemo(() => {
+    const filters = CATEGORY_GROUPS.map((group) => ({
+      id: group.id,
+      label: group.label,
+      count: toolkits.filter((toolkit) => toolkitMatchesCategoryGroup(toolkit, group.id)).length,
+    }));
+    const otherCount = toolkits.filter((toolkit) => toolkitMatchesCategoryGroup(toolkit, 'other')).length;
+
+    return otherCount > 0
+      ? [...filters, { id: 'other' as const, label: 'Other', count: otherCount }]
+      : filters;
+  }, []);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
@@ -202,13 +344,42 @@ export function ToolkitsLanding() {
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-fd-muted-foreground">
-        {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
-        {deferredSearch && ` matching "${deferredSearch}"`}
-      </p>
+      <div className="space-y-3">
+        <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter toolkits by category">
+          {categoryFilters.map((filter) => {
+            const selected = categoryGroup === filter.id;
+
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setCategoryGroup(filter.id)}
+                className={
+                  'inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ' +
+                  (selected
+                    ? 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    : 'border-fd-border bg-fd-background text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground')
+                }
+              >
+                <span>{filter.label}</span>
+                <span className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-muted-foreground">
+                  {filter.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-sm text-fd-muted-foreground">
+          {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
+          {deferredSearch && ` matching "${deferredSearch}"`}
+          {categoryGroup !== 'all' &&
+            ` in ${categoryFilters.find((filter) => filter.id === categoryGroup)?.label ?? 'selected categories'}`}
+        </p>
+      </div>
 
       {/* Popular Toolkits - only show when no search */}
-      {!deferredSearch && popularToolkits.length > 0 && (
+      {!deferredSearch && categoryGroup === 'all' && popularToolkits.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
           <div className="divide-y divide-fd-border">
@@ -237,10 +408,14 @@ export function ToolkitsLanding() {
         <div className="py-12 text-center">
           <p className="text-fd-muted-foreground">No toolkits found.</p>
           <button
-            onClick={() => setSearch('')}
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setCategoryGroup('all');
+            }}
             className="mt-2 text-sm text-fd-primary hover:underline"
           >
-            Clear search
+            Clear filters
           </button>
         </div>
       )}
