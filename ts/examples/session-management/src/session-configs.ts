@@ -187,8 +187,8 @@ async function main(): Promise<void> {
     console.log('SKIP  list() without the feature (COMPOSIO_API_KEY_NO_FEATURE not set)');
   }
 
-  // OQ2: informational. Records whether the direct tools preset works with a
-  // saved config; the SDK surfaces a backend rejection unchanged either way.
+  // Informational: records whether the direct tools preset works with a saved
+  // config. The SDK surfaces a backend rejection unchanged either way.
   try {
     const session = await composio.sessions.create(userId, {
       sessionPreset: SessionPreset.DIRECT_TOOLS,
