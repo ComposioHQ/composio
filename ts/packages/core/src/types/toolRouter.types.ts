@@ -906,7 +906,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .union([z.number().int().positive(), z.literal(false)])
       .optional()
       .describe(
-        'Optional version precondition for backends that support `expected_config_version`. A positive integer requires that version. Omitted or `false` sends no precondition (last writer wins). Unsupported preconditions surface as API errors and are never silently removed'
+        'Precondition sent as `expected_config_version`. A positive integer (for example `session.configVersion`) makes the update conditional, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten; the API must support the field. Omitted or `false`: no precondition (last writer wins)'
       ),
   })
   .partial()

@@ -32,11 +32,11 @@ export class ComposioMCPDestinationError extends ComposioError {
 
 /**
  * Thrown when a session update is rejected with HTTP 409 because the session
- * configuration changed since it was last read: the `expected_config_version`
- * precondition, when explicitly requested by the caller, is
- * stale. The local session object is left as it was before the call.
- * Re-fetch the session with `sessions.use(sessionId)` and retry the update
- * against the fresh `configVersion`.
+ * configuration changed since it was last read, for example when an
+ * `expectedConfigVersion` precondition passed to `update()` is stale. The
+ * local session object is left as it was before the call. Re-fetch the session
+ * with `sessions.use(sessionId)` and retry the update against the fresh
+ * `configVersion`.
  *
  * Applying a saved Session config with `experimental.sessionConfigId` can
  * also conflict when the session or the config changes while the update is
@@ -53,7 +53,7 @@ export class ComposioSessionConfigConflictError extends ComposioError {
       statusCode: 409,
       possibleFixes: options.possibleFixes ?? [
         'Re-fetch the session with `composio.sessions.use(sessionId)` to observe the current configVersion, then retry the update',
-        'Pass `expectedConfigVersion: false` to apply the update regardless of concurrent changes (last writer wins)',
+        'Omit `expectedConfigVersion` to apply the update regardless of concurrent changes (last writer wins)',
       ],
     });
     this.name = 'ComposioSessionConfigConflictError';

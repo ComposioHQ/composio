@@ -2520,13 +2520,13 @@ class TestSessionUpdateContract:
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
-    def test_update_sends_the_observed_version_by_default_without_retries(
+    def test_update_sends_no_precondition_by_default_without_retries(
         self, session, mock_client
     ):
         session.update(toolkits={"enable": ["gmail"]})
 
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["extra_body"] == {"expected_config_version": 7}
+        assert kwargs["extra_body"] is None
         assert kwargs["request_options"] == {"max_retries": 0}
         assert session.config_version == 8
         assert session.preload.tools == ["SLACK_SEND_MESSAGE"]
@@ -2596,7 +2596,10 @@ class TestSessionUpdateContract:
         mock_client.tool_router.session.patch.side_effect = self._conflict()
 
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(toolkits={"enable": ["gmail"]})
+            session.update(
+                toolkits={"enable": ["gmail"]},
+                expected_config_version=session.config_version,
+            )
 
         assert "re-fetch" in str(excinfo.value).lower()
         assert "retry" in str(excinfo.value).lower()
@@ -2606,16 +2609,15 @@ class TestSessionUpdateContract:
         assert session.preload is preload_before
         assert session.config_version == 7
 
+    @pytest.mark.parametrize("opt_out", [{}, {"expected_config_version": False}])
     def test_update_conflict_without_precondition_reports_in_flight_change(
-        self, session, mock_client
+        self, session, mock_client, opt_out
     ):
         config_before = session.config
         mock_client.tool_router.session.patch.side_effect = self._conflict()
 
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(
-                toolkits={"enable": ["gmail"]}, expected_config_version=False
-            )
+            session.update(toolkits={"enable": ["gmail"]}, **opt_out)
 
         message = str(excinfo.value)
         assert "changed while this update was in flight" in message
@@ -2630,7 +2632,10 @@ class TestSessionUpdateContract:
         second = tool_router.use(session_id="session_123")
         assert first.config_version == second.config_version == 7
 
-        first.update(toolkits={"enable": ["gmail"]})
+        first.update(
+            toolkits={"enable": ["gmail"]},
+            expected_config_version=first.config_version,
+        )
         assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
             "expected_config_version": 7
         }
@@ -2638,7 +2643,10 @@ class TestSessionUpdateContract:
 
         mock_client.tool_router.session.patch.side_effect = self._conflict()
         with pytest.raises(SessionConfigConflictError):
-            second.update(toolkits={"enable": ["slack"]})
+            second.update(
+                toolkits={"enable": ["slack"]},
+                expected_config_version=second.config_version,
+            )
         assert second.config_version == 7
 
         mock_client.tool_router.session.patch.side_effect = None
@@ -2646,7 +2654,10 @@ class TestSessionUpdateContract:
         mock_client.tool_router.session.patch.return_value.config_version = 9
         reread = tool_router.use(session_id="session_123")
         assert reread.config_version == 8
-        reread.update(toolkits={"enable": ["slack"]})
+        reread.update(
+            toolkits={"enable": ["slack"]},
+            expected_config_version=reread.config_version,
+        )
         assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
             "expected_config_version": 8
         }

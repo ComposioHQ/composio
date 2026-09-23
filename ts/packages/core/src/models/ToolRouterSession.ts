@@ -141,8 +141,8 @@ export class ToolRouterSession<
   public sandbox?: ToolRouterSessionWorkbenchConfig;
   /**
    * Version of the server-side configuration this object last observed.
-   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion`
-   * to request a version precondition on a backend that supports it.
+   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to
+   * make an update conditional.
    */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
@@ -781,13 +781,17 @@ export class ToolRouterSession<
    * map entirely. `manageConnections.callbackUrl: null` removes only the
    * stored callback URL.
    *
-   * By default, the request sends no version precondition (last writer wins).
-   * On a backend that supports `expected_config_version`, pass a positive
-   * `expectedConfigVersion` to require that version. Omit it or pass `false`
-   * for backends that reject this field. The SDK never retries PATCH or drops
-   * an explicit precondition after an error. A 409 surfaces as
-   * {@link ComposioSessionConfigConflictError} and leaves this object unchanged.
-   * Re-fetch with `sessions.use(sessionId)` before retrying your change.
+   * By default the request carries no precondition: the last writer wins.
+   * Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+   * the update conditional: the API then applies it only when the stored
+   * version still matches, and a concurrent change surfaces as
+   * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
+   * overwritten. The API must support the `expected_config_version` field;
+   * otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+   * is the same as omitting it. The PATCH is never retried by the transport,
+   * so a 409 is reported exactly once. On conflict this object is left
+   * unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+   * against the fresh `configVersion`.
    *
    * `experimental.sessionConfigId` applies a saved Session config: it
    * replaces the session's toolkit, tool and tag access and cannot be combined
