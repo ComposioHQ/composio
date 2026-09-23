@@ -2714,6 +2714,21 @@ describe('ToolRouter', () => {
       expect(result.logId).toBe('log_abc');
     });
 
+    it('returns the premium charge when the API includes one', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        ...mockExecuteResponse,
+        premium_charge: { amount: '0.01', currency: 'USD' },
+      });
+
+      const session = await toolRouter.create(userId, {
+        premiumUsage: { returnPremiumCharge: true },
+      });
+      const result = await session.execute('GMAIL_SEND_EMAIL');
+
+      expect(result.premiumCharge).toEqual({ amount: '0.01', currency: 'USD' });
+    });
+
     it('should propagate execute API errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       mockClient.toolRouter.session.execute.mockRejectedValueOnce(new Error('Execute failed'));

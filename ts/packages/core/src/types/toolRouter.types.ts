@@ -107,7 +107,7 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
-/** Experimental Composio-billed access policy for a Session. */
+/** Experimental premium usage policy for a Session. */
 export const ToolRouterPremiumUsageSchema = z.union([
   z.literal(false),
   z
@@ -260,7 +260,7 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .describe('The toolkits to use in the tool router session'),
 
     premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental Composio-billed access policy. Omission permits eligible tools when the project allows premium usage; false disables it for this Session.'
+      'Experimental premium usage policy. Omission permits eligible tools when the project allows premium usage; false disables it for this Session.'
     ),
 
     authConfigs: z
@@ -400,7 +400,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
- * @param {ToolRouterPremiumUsage} [premiumUsage] - Experimental Composio-billed access policy. The project must allow premium usage.
+ * @param {ToolRouterPremiumUsage} [premiumUsage] - Experimental premium usage policy. The project must allow premium usage.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -571,6 +571,8 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
+  /** Actual premium usage charge when the Session opts into returning it. */
+  premiumCharge: z.unknown().optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -787,7 +789,7 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
     premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental Composio-billed access policy. False disables it; a supplied object re-enables it. Omitted subfields keep their stored values.'
+      'Experimental premium usage policy. False disables it; a supplied object re-enables it. Omitted subfields keep their stored values.'
     ),
     toolkits: z
       .union([

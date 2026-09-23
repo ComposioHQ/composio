@@ -120,7 +120,7 @@ class ToolRouterPremiumUsageDisable(te.TypedDict):
 
 
 class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
-    """Experimental Composio-billed access policy for a Session."""
+    """Experimental premium usage policy for a Session."""
 
     toolkits: t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
     tools: t.Dict[
