@@ -1,8 +1,8 @@
 # Change the Composio docs
 
-Use a pull request for a specific docs fix. Use a Developer Marketing issue in Linear with the Docs label when the work needs investigation, coordination, or a larger content plan. Link the issue and its source context in the PR so the reviewer can check the original problem.
+Use a pull request for a specific docs fix. For Composio team members, use a Developer Marketing issue in Linear with the Docs label when the work needs investigation, coordination, or a larger content plan. Link the issue and its source context in the PR so the reviewer can check the original problem.
 
-External contributors should open a GitHub issue first and open a PR only for an existing, open issue. Read the [Contribution Policy](../CONTRIBUTING.md#contribution-policy) before you start. We normally don't accept docs changes that link to or promote third-party projects, except frontier model providers, frameworks that Composio providers support, and partners with an agreement with Composio. For a partnership request, contact us through [composio.dev/contact](https://composio.dev/contact).
+Composio team members and designated maintainers can open PRs directly. External contributors need an existing, open GitHub issue. For large external changes, get maintainer agreement on the approach before implementation. Read the root [Contribution Policy](../CONTRIBUTING.md#contribution-policy), including the [third-party links policy](../CONTRIBUTING.md#third-party-links-in-docs). Authoritative technical references needed to use or contribute to Composio are allowed. For a partnership request, contact us through [composio.dev/contact](https://composio.dev/contact).
 
 For a runtime bug, include a reproducible example and involve the SDK or platform owner. A docs change cannot establish behavior that the product does not support.
 
@@ -60,6 +60,6 @@ The `Docs - Rebuild KB Semantic Artifact` workflow can rebuild it for eligible s
 
 Describe the reader's problem, the resulting behavior, and the checks you ran. Include screenshots for visual changes and list checks that failed or could not run. Link the Linear issue when one exists. Docs-only changes do not need a Changeset.
 
-Request review from someone who can verify the changed topic. Involve the product owner for behavior, security, tenancy, or contractual claims. Follow the repository's review and merge requirements; a passing build alone does not verify those claims.
+Request review from [@jkomyno](mailto:alberto@composio.dev), the designated PR reviewer, and involve someone who can verify the changed topic. Involve the product owner for behavior, security, tenancy, or contractual claims. Follow the repository's review and merge requirements; a passing build alone does not verify those claims.
 
 After merge, confirm the deployment succeeds and inspect the live page and `.md` representation. Check `Docs - Sync Algolia Search` for changes that affect retrieval. Update the linked issue with the published result once the change is verified. If the live result is wrong, report the affected URL and commit so the next fix starts from evidence.

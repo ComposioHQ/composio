@@ -24,10 +24,14 @@ This repository contains the Composio TypeScript SDK, Python SDK, CLI, docs site
 
 Issues are the preferred way to contribute. A clear bug report or feature request is often more useful to us than a pull request, and it avoids long review cycles for changes we might not accept.
 
-- **Composio employees** can open issues and pull requests directly.
-- **External contributors** should open an issue first. Open a pull request only for an existing, open issue, and link that issue in the pull request description. Wait for a maintainer to confirm the approach on the issue before you invest in a large change.
+- **Composio team members and designated maintainers** can open issues and pull requests directly.
+- **External contributors** should open an issue first. Open a pull request only for an existing, open issue, and link that issue in the pull request description. For large changes, wait for a maintainer to confirm the approach on the issue before you start implementation. Small fixes do not require prior maintainer approval.
 
 Use the [issue templates](https://github.com/ComposioHQ/composio/issues/new/choose) for bug reports, feature requests, and tool requests. For support questions, see [Questions and Support](#questions-and-support). For security issues, follow [`SECURITY.md`](.github/SECURITY.md) instead of opening a public issue.
+
+### PR reviewer
+
+[@jkomyno](mailto:alberto@composio.dev) is the designated reviewer for pull requests. Involve the relevant SDK, CLI, or docs owner when the change needs their expertise.
 
 ### Pull requests we may close
 
@@ -36,7 +40,7 @@ We reserve the right to close pull requests that don't make a meaningful contrib
 - have no linked issue, when opened by an external contributor
 - make cosmetic, speculative, or drive-by changes without a clear user benefit
 - are too broad to review, or mix unrelated changes
-- add links or content that promote a third-party project (see [Documentation Changes](#documentation-changes))
+- add third-party links or promotional content outside the [third-party links policy](#third-party-links-in-docs)
 - show that the author hasn't read or verified the submitted code
 
 ### Read the code you submit
@@ -52,7 +56,9 @@ AI assistance is welcome. Unreviewed AI output is not.
 
 ### Third-party links in docs
 
-We normally don't accept docs changes that add links to, or promote, third-party projects. The exceptions are:
+You can link to authoritative technical documentation needed to use or contribute to Composio, including toolkit setup instructions, OAuth documentation, and language or runtime references.
+
+Other third-party links and promotional content are limited to:
 
 - frontier model providers, such as OpenAI and Anthropic
 - frameworks and platforms that Composio provider packages support, such as LangChain, the Vercel AI SDK, and Google Vertex AI
@@ -206,7 +212,7 @@ Docs changes follow the [third-party links policy](#third-party-links-in-docs).
 
 ## Pull Request Process
 
-1. For external contributions, confirm that an open issue exists and that a maintainer agreed with the approach.
+1. For external contributions, confirm that an open issue exists. For large changes, get maintainer agreement on the approach before you start implementation.
 
 2. Branch from `next`, which is the base for most SDK and docs work:
 
@@ -230,11 +236,11 @@ Docs changes follow the [third-party links policy](#third-party-links-in-docs).
 
 6. Read your full diff and run the smallest meaningful checks locally.
 
-7. Open a pull request against `next`. Fill in the template, link the issue, and describe how you tested the change.
+7. Open a pull request against `next`. Fill in the template, link the issue for external contributions (or when one exists for team contributions), and describe how you tested the change. Request review from [@jkomyno](mailto:alberto@composio.dev).
 
 ## Creating New Providers
 
-Open an issue before you build a new provider. We may decline providers we can't maintain.
+For external contributions, open an issue before you build a new provider. Get maintainer agreement before implementing large changes. We may decline providers we can't maintain.
 
 ### TypeScript providers
 

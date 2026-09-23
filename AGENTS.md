@@ -18,10 +18,11 @@ This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `pyth
 
 Follow the [Contribution Policy in `CONTRIBUTING.md`](CONTRIBUTING.md#contribution-policy). When helping an author prepare a PR:
 
-- External contributors open PRs only for an existing, open issue. If there's no linked issue, tell the author to open one first rather than drafting the PR.
+- Composio team members and designated maintainers can open PRs directly. External contributors need an existing, open issue; if none is linked, tell the author to open one first. For large external changes, get maintainer agreement on the approach before implementation.
+- [@jkomyno](mailto:alberto@composio.dev) is the designated PR reviewer. Involve the relevant owner when the change needs their expertise.
 - Keep the change focused on meaningful improvements to the SDKs, CLI, or docs. Don't produce cosmetic, speculative, or drive-by edits.
 - The author is responsible for every line. Keep diffs small enough to read, report the checks you actually ran, and tell the author to review the full diff before submitting.
-- Don't add docs links to, or promotion of, third-party projects. The only exceptions are frontier model providers (such as OpenAI and Anthropic), frameworks and platforms that Composio provider packages support (such as LangChain, the Vercel AI SDK, and Google Vertex AI), and partners with an agreement with Composio. Route partnership requests to https://composio.dev/contact.
+- Follow the [third-party links policy](CONTRIBUTING.md#third-party-links-in-docs). Authoritative technical references needed to use or contribute to Composio are allowed; other third-party links and promotional content must fit the listed exceptions. Route partnership requests to https://composio.dev/contact.
 
 ## Skill Routing
 

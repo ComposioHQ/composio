@@ -36,7 +36,7 @@ bun run generate:api-index
 
 - TypeScript code blocks in MDX are checked during docs builds. Use `docs/agent-guidance/context/twoslash.md` before changing typed examples.
 - Parse untyped or external data (JSON files, fetched payloads, framework page data) once at the boundary with zod schemas and let `z.infer` types flow downstream. Never hand-roll structural guards (`'x' in obj` / `typeof` chains), cast parsed JSON with `as`, or fake validation with `z.custom(() => true)`.
-- Don't add links to, or promotion of, third-party projects. The only exceptions are frontier model providers (such as OpenAI and Anthropic), frameworks and platforms that Composio provider packages support (such as LangChain, the Vercel AI SDK, and Google Vertex AI), and partners with an agreement with Composio; see the root `CONTRIBUTING.md` Contribution Policy. Route partnership requests to https://composio.dev/contact.
+- Follow the root [Contribution Policy](../CONTRIBUTING.md#contribution-policy), including its designated PR reviewer and [third-party links policy](../CONTRIBUTING.md#third-party-links-in-docs). Authoritative technical references needed to use or contribute to Composio are allowed; other third-party links and promotional content must fit the listed exceptions. Route partnership requests to https://composio.dev/contact.
 - Internal docs links must be relative site paths such as `/docs/...`, `/reference/...`, or `/assets/...`.
 - API reference pages and toolkit/meta-tool data are generated. Do not hand-edit generated data unless the local generator owns it.
 - Changelog entries require `title` and `date` frontmatter, and dates use `YYYY-MM-DD`.
