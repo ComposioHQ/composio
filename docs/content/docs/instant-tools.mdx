@@ -1,7 +1,8 @@
 ---
-title: Instant Tools (Experimental)
+title: Instant Tools
 description: Use supported tools in a Session without asking every user to connect a provider account
 keywords: [Instant Tools, Sessions, premium usage, hosted account]
+experimental: true
 ---
 
 Instant Tools let your Session run supported tools without an end-user provider connection. A Composio hosted account provides access for eligible tools. Premium usage charges for those calls come from your organization's available balance.
@@ -14,7 +15,7 @@ Once the project setting is enabled, new Sessions can use eligible Instant Tools
 
 ## Find eligible tools
 
-Hosted account coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return hosted account availability or offer a hosted-account filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+Instant tool coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return instant tool availability or offer a instant tool filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
 
 ## Create a Session
 
@@ -53,7 +54,7 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `premium_usage.toolkits` (or `premiumUsage.toolkits` in TypeScript) separately restricts which eligible tools can incur premium usage charges. Omit that filter to permit all eligible toolkits. An Instant toolkit can still contain tools that need a connected account; hosted account coverage is tool-specific.
+Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `premium_usage.toolkits` (or `premiumUsage.toolkits` in TypeScript) separately restricts which eligible tools can incur premium usage charges. Omitting the filter will mean no premium charge tools are availabile. An Instant toolkit can still contain tools that need a connected account; hosted account coverage is tool-specific.
 
 ## Find and run a tool
 
