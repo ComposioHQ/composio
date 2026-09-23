@@ -1,6 +1,6 @@
 # Contributing to Composio
 
-This repository contains the Composio TypeScript SDK, Python SDK, CLI, docs site, examples, and release tooling. Read the contribution policy before you open an issue or a pull request.
+This repository contains the Composio TypeScript SDK, Python SDK, CLI, docs site, examples, and release tooling. Please read the contribution policy before you open an issue or a pull request. Thank you for your interest in contributing to Composio!
 
 ## Table of Contents
 
