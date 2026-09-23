@@ -103,17 +103,16 @@ const openAllOfBranches = (source: JsonObject, normalized: JsonObject): void => 
   normalized.additionalProperties = false;
 };
 
-const canonicalizeSchemaNode = (node: unknown): string => {
-  if (!isJsonObject(node)) {
-    return JSON.stringify(node);
-  }
-  const keys = Object.keys(node).sort();
-  const sortedObj: JsonObject = {};
-  for (const k of keys) {
-    sortedObj[k] = node[k];
-  }
-  return JSON.stringify(sortedObj);
-};
+const canonicalizeSchemaNode = (node: unknown): string =>
+  JSON.stringify(node, (_key, value: unknown) =>
+    isJsonObject(value)
+      ? Object.fromEntries(
+          Object.keys(value)
+            .sort()
+            .map(key => [key, value[key]])
+        )
+      : value
+  );
 
 const foldCombinerBranches = (branches: Array<unknown>): Array<unknown> => {
   const seen = new Set<string>();

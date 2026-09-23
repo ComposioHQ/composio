@@ -138,6 +138,51 @@ describe('jsonSchemaToEffectSchema', () => {
     expect(effectAccepts(schema, 'c')).toBe(false);
   });
 
+  it('reports a nested validation failure once for equivalent anyOf branches', () => {
+    const schema = {
+      anyOf: [
+        {
+          properties: {
+            profile: { properties: { name: { type: 'string' }, age: { type: 'number' } } },
+          },
+        },
+        {
+          properties: {
+            profile: { properties: { age: { type: 'number' }, name: { type: 'string' } } },
+          },
+        },
+      ],
+    };
+    let captured: ReadonlyArray<JsonSchemaValidationIssue> = [];
+    const codec = jsonSchemaToEffectSchema(schema, {
+      formatIssues: issues => {
+        captured = issues;
+        return issues.map(issue => issue.message);
+      },
+    });
+
+    expect(
+      Option.isNone(Schema.decodeUnknownOption(codec)({ profile: { name: 42, age: 30 } }))
+    ).toBe(true);
+    expect(captured.filter(issue => issue.code === 'type')).toEqual([
+      expect.objectContaining({ path: ['profile', 'name'] }),
+    ]);
+    expect(effectAccepts(schema, { profile: { name: 'Ada', age: 30 } })).toBe(true);
+  });
+
+  it('keeps tuple branches with different item orders distinct', () => {
+    const schema = {
+      type: 'array',
+      anyOf: [
+        { items: [{ type: 'string' }, { type: 'number' }] },
+        { items: [{ type: 'number' }, { type: 'string' }] },
+      ],
+    };
+    expect(effectAccepts(schema, ['Ada', 30])).toBe(true);
+    expect(effectAccepts(schema, [30, 'Ada'])).toBe(true);
+    expect(effectAccepts(schema, [true, true])).toBe(false);
+  });
+
   it('reports all failures with field paths and groups unknown keys', () => {
     const schema = {
       type: 'object',
