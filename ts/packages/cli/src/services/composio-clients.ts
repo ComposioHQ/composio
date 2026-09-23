@@ -593,6 +593,7 @@ const makeComposioClientSingleton = Effect.gen(function* () {
 
       const client = yield* Effect.try({
         try: () =>
+          // An empty environment prevents implicit env reads, including COMPOSIO_CUSTOM_HEADERS.
           _RawComposioClient.fromEnv(
             {},
             {

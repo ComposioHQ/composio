@@ -39,7 +39,7 @@ export const makeClientMetricsCollector = (): ClientMetricsCollector => {
     const contentLength = response.headers.get('content-length');
     if (contentLength !== null) {
       const parsed = Number.parseInt(contentLength, 10);
-      if (Number.isFinite(parsed) && parsed >= 0) {
+      if (parsed >= 0) {
         byteSize += parsed;
         return response;
       }
