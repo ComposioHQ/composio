@@ -15,6 +15,18 @@ from composio.client.types import (
 from composio.core.models.base import Resource
 
 
+class AuthConfigUpdateResponse(te.TypedDict, total=False):
+    """
+    Response from updating an authentication configuration.
+
+    The API returns at minimum an `id` and `status` field. Additional fields
+    may be present depending on the update type.
+    """
+
+    id: str
+    status: str
+
+
 class AuthConfigs(Resource):
     """
     Manage authentication configurations.
@@ -67,17 +79,16 @@ class AuthConfigs(Resource):
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant0
-    ) -> t.Dict: ...
+    ) -> AuthConfigUpdateResponse: ...
 
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant1
-    ) -> t.Dict: ...
+    ) -> AuthConfigUpdateResponse: ...
 
-    # FIXME: what type is this response, in ts, it's AuthConfigUpdateResponse
     def update(
         self, nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams
-    ) -> t.Dict:
+    ) -> AuthConfigUpdateResponse:
         """
         Updates an existing authentication configuration.
 
@@ -89,18 +100,15 @@ class AuthConfigs(Resource):
         :param options: The options to update the auth config with.
         :return: The updated auth config.
         """
-        return t.cast(
-            t.Dict,
-            self._client.auth_configs.update(
-                nanoid=nanoid,
-                type=options["type"],  # type: ignore
-                credentials=options.get("credentials", self._client.not_given),
-                is_enabled_for_tool_router=options.get(
-                    "is_enabled_for_tool_router", self._client.not_given
-                ),
-                tool_access_config=options.get(
-                    "tool_access_config", self._client.not_given
-                ),
+        return self._client.auth_configs.update(
+            nanoid=nanoid,
+            type=options["type"],  # type: ignore
+            credentials=options.get("credentials", self._client.not_given),
+            is_enabled_for_tool_router=options.get(
+                "is_enabled_for_tool_router", self._client.not_given
+            ),
+            tool_access_config=options.get(
+                "tool_access_config", self._client.not_given
             ),
         )
 
