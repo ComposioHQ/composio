@@ -10,11 +10,9 @@
   error messages now keep a server message even when it carries no suggested
   fix. Creating a project API key during `composio dev init` is never retried,
   so a timed-out request cannot mint a second key.
-- The CLI no longer sends your user API key to a plain-HTTP
-  `COMPOSIO_BASE_URL` other than localhost. Set `COMPOSIO_ALLOW_INSECURE_HTTP=1`
-  to opt in for that origin, for example a local backend reached through
-  `host.docker.internal`. Ambient `COMPOSIO_CUSTOM_HEADERS` and
-  `COMPOSIO_LOG_LEVEL` values no longer leak into CLI requests or output.
+- Ambient `COMPOSIO_CUSTOM_HEADERS` and `COMPOSIO_LOG_LEVEL` values no longer
+  leak into CLI requests or output. Custom HTTP base URLs remain supported
+  without an additional environment flag.
 - `composio run` now validates binary download URLs returned by the proxy API
   before fetching them. Private, loopback, link-local, and redirect-based SSRF
   targets are blocked, DNS resolutions are pinned to prevent rebinding, and the

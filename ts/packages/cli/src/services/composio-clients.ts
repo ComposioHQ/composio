@@ -33,7 +33,6 @@ import {
   type ToolkitVersionSpec,
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
-import { APP_CONFIG } from 'src/effects/app-config';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import * as constants from 'src/constants';
@@ -73,9 +72,7 @@ export class HttpServerError extends Data.TaggedError('services/HttpServerError'
 }> {}
 
 /**
- * Error thrown when a client cannot be constructed from the current
- * configuration, e.g. a credential paired with a plain-HTTP, non-loopback
- * `COMPOSIO_BASE_URL` without `COMPOSIO_ALLOW_INSECURE_HTTP=1`.
+ * Error thrown when a client cannot be constructed from the current configuration.
  */
 export class ComposioClientConfigurationError extends Data.TaggedError(
   'services/ComposioClientConfigurationError'
@@ -560,12 +557,11 @@ export interface ComposioClientSingletonShape {
  * a raw (uneffectful, Promise-based) Composio client instance.
  *
  * Clients are built with `Composio.fromEnv({}, ...)` so the ambient process
- * environment is never consulted: every credential, the base URL, and the
- * insecure-HTTP opt-in come from the CLI's own configuration. The user key is
+ * environment is never consulted: every credential and the base URL come from
+ * the CLI's own configuration. Custom HTTP base URLs remain supported. The user key is
  * placed in `defaultHeaders` as `x-user-api-key`, which keeps today's wire
- * bytes on every operation; it is also passed as `userApiKey` so the client's
- * construction-time insecure-origin check runs, while the caller-placed header
- * still wins at dispatch.
+ * bytes on every operation; it is also passed as `userApiKey`, while the
+ * caller-placed header still wins at dispatch.
  */
 const makeComposioClientSingleton = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
@@ -573,7 +569,6 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const os = yield* NodeOs;
-  const allowInsecureHTTP = yield* APP_CONFIG.ALLOW_INSECURE_HTTP;
   const metrics = makeClientMetricsCollector();
   const cache = new Map<string, _RawComposioClient>();
 
@@ -605,7 +600,8 @@ const makeComposioClientSingleton = Effect.gen(function* () {
               userApiKey: apiKey ?? null,
               orgApiKey: null,
               baseURL: ctx.data.baseURL,
-              allowInsecureHTTP,
+              // Preserve support for explicitly configured HTTP backends.
+              allowInsecureHTTP: true,
               logLevel: 'off',
               defaultHeaders: buildDefaultHeaders({
                 userApiKey: apiKey,

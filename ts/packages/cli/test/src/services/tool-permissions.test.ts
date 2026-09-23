@@ -91,7 +91,7 @@ const permissionsClientLayer = (responses: {
           responses.clientUnavailable === true
             ? Effect.fail(
                 new ComposioClientConfigurationError({
-                  message: 'refusing to send a credential over plain HTTP',
+                  message: 'invalid base URL',
                   cause: null,
                 })
               )
