@@ -55,6 +55,7 @@ import {
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -313,7 +314,7 @@ export class ToolRouter<
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp, routerConfig.mcp === true),
-      { assistivePrompt },
+      { assistivePrompt, sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata
@@ -424,7 +425,7 @@ export class ToolRouter<
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp, options?.mcp === true),
-      undefined,
+      { sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata

@@ -632,6 +632,14 @@ export interface SessionExperimental {
    * File mount operations (list, upload, download, delete) for the session's virtual filesystem.
    */
   files: ToolRouterSessionFilesMount;
+  /**
+   * The last saved Session config applied to this session, set from the
+   * create, `use()` and `update()` responses. Later inline access updates
+   * keep it. It reflects the last response this object saw: an update from
+   * another process leaves it stale until `sessions.use()`.
+   * @experimental
+   */
+  sourceSessionConfig?: { id: string };
 }
 
 export type ToolRouterSessionSearchFn = (params: {

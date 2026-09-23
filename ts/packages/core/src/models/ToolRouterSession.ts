@@ -87,6 +87,7 @@ import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
@@ -156,7 +157,7 @@ export class ToolRouterSession<
     private readonly sdkConfig: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
-    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
+    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt' | 'sourceSessionConfig'>,
     private readonly customToolsMap?: CustomToolsMap,
     private readonly userId?: string,
     metadata?: ToolRouterSessionMetadata
@@ -176,6 +177,7 @@ export class ToolRouterSession<
     this.experimental = {
       assistivePrompt: experimentalOverrides?.assistivePrompt,
       files: new ToolRouterSessionFilesMount(client, sessionId),
+      sourceSessionConfig: experimentalOverrides?.sourceSessionConfig,
     };
     this.config = config;
     this.preload = metadata?.preload ?? config.preload;
@@ -840,6 +842,7 @@ export class ToolRouterSession<
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
+    this.experimental.sourceSessionConfig = getSourceSessionConfig(response);
     return this.config;
   }
 
