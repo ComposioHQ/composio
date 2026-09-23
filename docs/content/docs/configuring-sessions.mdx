@@ -952,9 +952,13 @@ await session.update({
 
 ### Concurrent updates
 
-Every session response carries a config version (`session.configVersion` in TypeScript, `session.config_version` in Python, `config_version` on the wire). `session.update()` sends the version the session object last observed as the `expected_config_version` precondition, and the API applies the update only when the stored version still matches. Otherwise it answers `409` and writes nothing: no config change, no history entry, no cache update. The SDK never retries that request, so a conflict is reported exactly once.
+Every session response carries a config version (`session.configVersion` in TypeScript, `session.config_version` in Python, `config_version` on the wire). By default, `session.update()` sends no precondition, so the last writer wins. To make an update conditional, pass the version you read as `expectedConfigVersion` (`expected_config_version` in Python). The API then applies the update only when the stored version still matches. Otherwise it answers `409` and writes nothing: no config change, no history entry, no cache update. The SDK never retries that request, so a conflict is reported exactly once.
 
-The SDK raises `ComposioSessionConfigConflictError` (TypeScript) or `SessionConfigConflictError` (Python) and leaves the session object as it was. Re-read the session with `sessions.use()`, reapply your change on top of the fresh config, and retry:
+<Callout type="info">
+The API must support `expected_config_version`. If it doesn't, it rejects a conditional update with a `400`.
+</Callout>
+
+On a conflict, the SDK raises `ComposioSessionConfigConflictError` (TypeScript) or `SessionConfigConflictError` (Python) and leaves the session object as it was. Re-read the session with `sessions.use()`, reapply your change on top of the fresh config, and retry:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -964,11 +968,17 @@ from composio.exceptions import SessionConfigConflictError
 session = composio.sessions.use("session_id")
 
 try:
-    session.update(toolkits={"enable": ["gmail", "github"]})
+    session.update(
+        toolkits={"enable": ["gmail", "github"]},
+        expected_config_version=session.config_version,
+    )
 except SessionConfigConflictError:
     # Another client changed the session first. Nothing was written.
     session = composio.sessions.use("session_id")
-    session.update(toolkits={"enable": ["gmail", "github"]})
+    session.update(
+        toolkits={"enable": ["gmail", "github"]},
+        expected_config_version=session.config_version,
+    )
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -980,18 +990,24 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 let session = await composio.sessions.use("session_id");
 
 try {
-  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+  await session.update({
+    toolkits: { enable: ["gmail", "github"] },
+    expectedConfigVersion: session.configVersion,
+  });
 } catch (error) {
   if (!(error instanceof ComposioSessionConfigConflictError)) throw error;
   // Another client changed the session first. Nothing was written.
   session = await composio.sessions.use("session_id");
-  await session.update({ toolkits: { enable: ["gmail", "github"] } });
+  await session.update({
+    toolkits: { enable: ["gmail", "github"] },
+    expectedConfigVersion: session.configVersion,
+  });
 }
 ```
 </Tab>
 </Tabs>
 
-Pass `expectedConfigVersion` (`expected_config_version` in Python) to send a version you read elsewhere, for example one stored with a queued job. Pass `expectedConfigVersion: false` (`expected_config_version=False`) on a call that should apply regardless: the last writer then wins. The API still commits only a fully validated configuration, so a losing update never leaves a half-applied session behind.
+You can also pass a version you read elsewhere, for example one stored with a queued job. `expectedConfigVersion: false` (`expected_config_version=False`) is the same as omitting it. The API still commits only a fully validated configuration, so a losing update never leaves a half-applied session behind.
 
 Raw HTTP callers set `expected_config_version` in the `PATCH` body themselves; without it the last writer wins.
 
