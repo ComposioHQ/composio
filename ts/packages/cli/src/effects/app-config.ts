@@ -166,13 +166,9 @@ export const APP_CONFIG = {
   PROJECT_ID: Config.option(Config.String('PROJECT_ID')),
 
   // Allow credentials on a plain-HTTP, non-loopback COMPOSIO_BASE_URL.
-  // Read strictly rather than through `booleanFlag`: this flag is what stands
-  // between a user API key and the cleartext wire, so only the documented
-  // spellings enable it and anything else — a typo, a stale value, a word the
-  // tolerant reader would have accepted — leaves it off. Mirrors the client's
-  // own `COMPOSIO_ALLOW_INSECURE_HTTP === '1'` read.
-  ALLOW_INSECURE_HTTP: optionalTrimmedString('ALLOW_INSECURE_HTTP').pipe(
-    Config.map(value => value === '1' || value?.toLowerCase() === 'true')
+  // Require the exact raw value '1', matching the client's own environment read.
+  ALLOW_INSECURE_HTTP: optionalString('ALLOW_INSECURE_HTTP').pipe(
+    Config.map(value => value === '1')
   ),
 
   // Override the Composio agents service URL

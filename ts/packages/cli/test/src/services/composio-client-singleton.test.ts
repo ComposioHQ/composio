@@ -414,3 +414,63 @@ describe('ComposioClientSingleton headers', () => {
     );
   });
 });
+
+describe('ComposioClientSingleton insecure HTTP opt-in', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.effect.each([undefined, '', 'disabled', 'true', 'TRUE', ' 1', '1 ', '1\n', '01', '0'])(
+    'rejects credentialed HTTP before fetch when opt-in is %j',
+    value => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+      const configMap = new Map([
+        ['COMPOSIO_USER_API_KEY', 'uak_insecure'],
+        ['COMPOSIO_BASE_URL', 'http://host.docker.internal:9900'],
+      ]);
+      if (value !== undefined) configMap.set('COMPOSIO_ALLOW_INSECURE_HTTP', value);
+
+      return Effect.gen(function* () {
+        const singleton = yield* ComposioClientSingleton;
+        const error = yield* singleton.get().pipe(Effect.flip);
+
+        expect(error._tag).toBe('services/ComposioClientConfigurationError');
+        expect(fetchSpy).not.toHaveBeenCalled();
+      }).pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioClientSingleton.Default,
+            withConfigLayer(configMap, tempy.temporaryDirectory())
+          )
+        )
+      );
+    }
+  );
+
+  it.effect('sends the credential only with the exact opt-in 1', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_insecure'],
+      ['COMPOSIO_BASE_URL', 'http://host.docker.internal:9900'],
+      ['COMPOSIO_ALLOW_INSECURE_HTTP', '1'],
+    ]);
+
+    return Effect.gen(function* () {
+      const singleton = yield* ComposioClientSingleton;
+      const client = yield* singleton.get();
+      yield* Effect.promise(() => client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [input, init] = fetchSpy.mock.calls[0]!;
+      expect(String(input)).toContain('http://host.docker.internal:9900/');
+      expect(new Headers(init?.headers).get('x-user-api-key')).toBe('uak_insecure');
+    }).pipe(
+      Effect.provide(
+        Layer.provide(
+          ComposioClientSingleton.Default,
+          withConfigLayer(configMap, tempy.temporaryDirectory())
+        )
+      )
+    );
+  });
+});

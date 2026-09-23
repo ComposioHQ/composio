@@ -32,6 +32,29 @@ describe('Config', () => {
       );
 
     describe('APP_CONFIG', () => {
+      it.effect.each([
+        [undefined, false],
+        ['', false],
+        ['disabled', false],
+        ['true', false],
+        ['TRUE', false],
+        [' 1', false],
+        ['1 ', false],
+        ['1\n', false],
+        ['01', false],
+        ['0', false],
+        ['1', true],
+      ] as const)('insecure HTTP opt-in %j resolves to %s', ([value, expected]) =>
+        Effect.gen(function* () {
+          const map = new Map<string, string>();
+          if (value !== undefined) map.set('COMPOSIO_ALLOW_INSECURE_HTTP', value);
+
+          const actual = yield* withMapConfigProvider(map)(APP_CONFIG.ALLOW_INSECURE_HTTP);
+
+          expect(actual).toBe(expected);
+        })
+      );
+
       it.effect('[When] no map entry is set', () =>
         Effect.gen(function* () {
           const map = new Map([]) satisfies Map<string, string>;
