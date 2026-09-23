@@ -21,6 +21,7 @@ const rawToolkit = {
     updated_at: '2024-01-02T00:00:00Z',
     tools_count: 12,
     triggers_count: 3,
+    app_url: 'https://shopify.com',
   },
   is_local_toolkit: false,
   composio_managed_auth_schemes: ['OAUTH2'],
@@ -87,6 +88,10 @@ const rawToolkit = {
 /** Same shape, but the API omits every optional key. */
 const rawToolkitWithoutOptionalKeys = {
   ...rawToolkit,
+  meta: {
+    ...rawToolkit.meta,
+    app_url: undefined,
+  },
   auth_config_details: [
     {
       name: 'Bearer',
@@ -270,5 +275,26 @@ describe('transformToolkitRetrieveResponse', () => {
     const field = initiationRequired(rawToolkitWithoutOptionalKeys);
 
     expect({ default: 'caller fallback', ...field }.default).toBe('caller fallback');
+  });
+
+  describe('appUrl field in meta', () => {
+    it('maps response.meta.app_url to meta.appUrl when present', () => {
+      const transformed = transformToolkitRetrieveResponse(rawToolkit);
+      expect(transformed.meta.appUrl).toBe('https://shopify.com');
+    });
+
+    it('sets meta.appUrl to undefined when response.meta.app_url is absent', () => {
+      const transformed = transformToolkitRetrieveResponse(rawToolkitWithoutOptionalKeys);
+      expect(transformed.meta.appUrl).toBeUndefined();
+    });
+
+    it('sets meta.appUrl to undefined when response.meta.app_url is explicitly null', () => {
+      const rawWithNullAppUrl = {
+        ...rawToolkit,
+        meta: { ...rawToolkit.meta, app_url: null },
+      } as unknown as RawRetrieveResponse;
+      const transformed = transformToolkitRetrieveResponse(rawWithNullAppUrl);
+      expect(transformed.meta.appUrl).toBeUndefined();
+    });
   });
 });
