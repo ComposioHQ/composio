@@ -8,6 +8,7 @@
     "clean": "git clean -xdf node_modules",
     "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
+    "start:session-configs": "bun src/session-configs.ts",
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
