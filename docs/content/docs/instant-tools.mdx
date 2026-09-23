@@ -1,0 +1,106 @@
+---
+title: Instant Tools
+description: Use supported tools in a Session without asking every user to connect a provider account
+keywords: [Instant Tools, Sessions, premium usage, Composio-managed account]
+---
+
+Instant Tools let your Session run supported tools without an end-user provider connection. Composio supplies the provider account and charges eligible calls to your project's Composio balance.
+
+<Callout type="warning" title="Experimental access">
+  This feature requires a project setting that is not yet self-service. Email [support@composio.dev](mailto:support@composio.dev) to enable it for your project and confirm which tools and rates are available. Session configuration cannot override a project where the setting is off.
+</Callout>
+
+## Create a Session
+
+After your project is enabled, create a Session with an explicit `premium_usage` policy. This example makes Exa available to the Session and permits Composio-billed access for Exa:
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/tool_router/session \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "content-type: application/json" \
+  --data '{
+    "user_id": "user_123",
+    "toolkits": { "enable": ["exa"] },
+    "premium_usage": {
+      "toolkits": { "enable": ["exa"] },
+      "return_premium_charge": true
+    }
+  }'
+```
+
+The response includes a `session_id` and the effective `config`. Use the `session_id` for Session-scoped tool search and execution.
+
+The two toolkit lists control different things. Top-level `toolkits` controls which tools the Session can discover and run. `premium_usage.toolkits` controls which of those toolkits can use a Composio-billed route. A toolkit must pass *both* filters. An eligible toolkit can still contain tools that require a connected account.
+
+## Find and run a tool
+
+You can inspect a tool's input schema with the [get tool endpoint](/reference/v3/api-reference/tools/getToolsByToolSlug). For example:
+
+```bash
+curl --request GET \
+  --url https://backend.composio.dev/api/v3.1/tools/EXA_SEARCH \
+  --header "x-api-key: $COMPOSIO_API_KEY"
+```
+
+Then execute a tool through the Session using the [Session execute endpoint](/reference/v3/api-reference/tool-router/postToolRouterSessionBySessionIdExecute):
+
+```bash
+curl --request POST \
+  --url "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute" \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "content-type: application/json" \
+  --data '{
+    "tool_slug": "EXA_SEARCH",
+    "arguments": { "query": "Composio documentation" }
+  }'
+```
+
+Check the current tool schema before constructing `arguments`; fields can change with the tool version. The current tools API does *not* provide a structured Instant eligibility or price field. A tool appearing in a toolkit does not mean Composio-billed access is available for that tool. Confirm the supported tool list and rates during Experimental access.
+
+## Control billed access
+
+`premium_usage` is a Session policy. It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
+
+| Session value | Effect |
+|---|---|
+| Omitted or `{}` | Permits eligible Composio-billed tools, subject to the project setting and normal Session filters. The charge is not returned in tool responses by default. |
+| `false` | Disables Composio-billed access for that Session. Your own connected-account routes remain available. |
+| `{ "toolkits": { "enable": ["exa"] } }` | Permits billed access only for listed toolkits. Use `disable` instead to exclude selected toolkits. |
+| `{ "tools": { "exa": { "enable": ["EXA_SEARCH"] } } }` | Narrows billed access to selected tools within a toolkit. |
+| `{ "return_premium_charge": true }` | Requests the actual `premium_charge` in an eligible Session tool response. This changes charge visibility, not permission to spend. |
+
+For example, keep Exa and Firecrawl available, but permit billed access only for `EXA_SEARCH`:
+
+```json
+{
+  "user_id": "user_123",
+  "toolkits": { "enable": ["exa", "firecrawl"] },
+  "premium_usage": {
+    "toolkits": { "enable": ["exa"] },
+    "tools": { "exa": { "enable": ["EXA_SEARCH"] } }
+  }
+}
+```
+
+To stop Composio-billed access on an existing Session, use the [Session patch endpoint](/reference/v3/api-reference/tool-router/patchToolRouterSessionBySessionId):
+
+```bash
+curl --request PATCH \
+  --url "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID" \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "content-type: application/json" \
+  --data '{ "premium_usage": false }'
+```
+
+On patch, omitted `premium_usage` fields keep their existing values. Supplying an object after `false` enables this Session policy again, provided the project allows it.
+
+## Know which account runs the tool
+
+A Composio-managed account is a provider account held by Composio for specific tools. It is different from **Composio-managed auth**, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool Instant.
+
+If you select a connected account explicitly, that route wins and does not fall back to Composio's account on failure. Otherwise, available user, shared, or developer connections take priority over a Composio-managed account. If the chosen tool is not supported by a Composio-managed account, it follows the normal connection flow.
+
+Composio-managed accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
+
+See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/v3/api-reference/tool-router/postToolRouterSession) for the complete request schema.
