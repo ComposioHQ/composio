@@ -324,6 +324,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           .describe(
             'Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental.'
           ),
+        sessionConfigId: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
+          ),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
@@ -388,6 +395,8 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
+ * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 

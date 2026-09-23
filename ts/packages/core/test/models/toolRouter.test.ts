@@ -1806,6 +1806,91 @@ describe('ToolRouter', () => {
       });
     });
 
+    describe('session configs', () => {
+      const createPayload = () => mockClient.toolRouter.session.create.mock.calls[0][0];
+
+      it('sends sessionConfigId as experimental.session_config_id', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, { experimental: { sessionConfigId: 'sc_1' } });
+
+        expect(createPayload().experimental).toEqual({ session_config_id: 'sc_1' });
+      });
+
+      it('sends the same payload as before when no sessionConfigId is set', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+        await toolRouter.create(userId);
+        await toolRouter.create(userId, { toolkits: ['gmail'] });
+
+        const [[bare], [withToolkits]] = mockClient.toolRouter.session.create.mock.calls;
+        expect(bare.experimental).toBeUndefined();
+        expect(withToolkits.experimental).toBeUndefined();
+        expect(JSON.stringify(bare)).toBe(
+          JSON.stringify({ user_id: userId, manage_connections: { enable: true } })
+        );
+        expect(JSON.stringify(withToolkits)).toBe(
+          JSON.stringify({
+            user_id: userId,
+            toolkits: { enable: ['gmail'] },
+            manage_connections: { enable: true },
+          })
+        );
+      });
+
+      it('sends session_config_id together with assistive_prompt_config', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          experimental: {
+            sessionConfigId: 'sc_1',
+            assistivePrompt: { userTimezone: 'Europe/Rome' },
+          },
+        });
+
+        expect(createPayload().experimental).toEqual({
+          session_config_id: 'sc_1',
+          assistive_prompt_config: { user_timezone: 'Europe/Rome' },
+        });
+      });
+
+      it('sends every per-session field unchanged next to sessionConfigId', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          authConfigs: { github: 'ac_1' },
+          connectedAccounts: { github: 'ca_1' },
+          manageConnections: false,
+          sandbox: { enable: false },
+          multiAccount: { enable: true, maxAccountsPerToolkit: 3 },
+          preload: { tools: ['GITHUB_GET_REPO'] },
+          experimental: { sessionConfigId: 'sc_1' },
+        });
+
+        expect(createPayload()).toEqual({
+          user_id: userId,
+          auth_configs: { github: 'ac_1' },
+          connected_accounts: { github: ['ca_1'] },
+          manage_connections: { enable: false },
+          workbench: { enable: false },
+          multi_account: {
+            enable: true,
+            max_accounts_per_toolkit: 3,
+            require_explicit_selection: true,
+          },
+          preload: { tools: ['GITHUB_GET_REPO'] },
+          experimental: { session_config_id: 'sc_1' },
+        });
+      });
+
+      it('rejects an empty sessionConfigId before any client call', async () => {
+        await expect(
+          toolRouter.create(userId, { experimental: { sessionConfigId: '' } })
+        ).rejects.toThrow();
+        expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+      });
+    });
+
     describe('error handling', () => {
       it('should throw error if API call fails', async () => {
         const apiError = new Error('API error: Invalid session configuration');

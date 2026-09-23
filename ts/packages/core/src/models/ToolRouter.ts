@@ -189,6 +189,12 @@ export class ToolRouter<
    *     customToolkits: [myToolkit],
    *   },
    * });
+   *
+   * // Start from a saved Session config instead of inline access fields
+   * const configured = await composio.sessions.create('user_123', {
+   *   authConfigs: { github: 'ac_123' },
+   *   experimental: { sessionConfigId: 'sc_123' },
+   * });
    * ```
    */
   // Overloads: passing `{ mcp: true }` surfaces `session.mcp` in the returned
@@ -225,6 +231,10 @@ export class ToolRouter<
 
     // Build the typed experimental payload for the backend
     const experimentalPayload: SessionCreateParams['experimental'] = {};
+
+    if (routerConfig.experimental?.sessionConfigId !== undefined) {
+      experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
+    }
 
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
