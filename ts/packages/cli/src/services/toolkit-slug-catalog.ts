@@ -109,6 +109,7 @@ export interface LocalToolkitSlugs {
 const makeToolkitSlugCatalog = Effect.gen(function* () {
   const recorded = yield* Ref.make<ReadonlySet<string>>(new Set());
   const writes = yield* Semaphore.make(1);
+  const refreshedAt = yield* Ref.make(DateTime.makeUnsafe(0));
 
   /**
    * Records slugs learned from a catalog fetch, in the background, only when
@@ -126,9 +127,16 @@ const makeToolkitSlugCatalog = Effect.gen(function* () {
         return [next.size > current.size, next] as const;
       });
       if (!learnedSomething && !refresh) return;
+      // Partial foreground discoveries do not prove the native catalog is
+      // current. Only a successful background refresh advances freshness.
+      if (refresh) yield* Ref.set(refreshedAt, yield* DateTime.now);
       yield* Effect.forkDetach(
         writes.withPermits(1)(
-          Ref.get(recorded).pipe(Effect.flatMap(slugs => writeKnownToolkitSlugs([...slugs])))
+          Effect.gen(function* () {
+            const slugs = yield* Ref.get(recorded);
+            const lastRefresh = yield* Ref.get(refreshedAt);
+            yield* writeKnownToolkitSlugs([...slugs], lastRefresh);
+          })
         )
       );
     });
@@ -137,6 +145,7 @@ const makeToolkitSlugCatalog = Effect.gen(function* () {
     Effect.gen(function* () {
       const learned = yield* readKnownToolkitSlugs;
       const slugs = [...BAKED_TOOLKIT_SLUGS, ...learnedSlugs(learned)];
+      if (Option.isSome(learned)) yield* Ref.set(refreshedAt, learned.value.refreshedAt);
       yield* Ref.update(recorded, current => new Set([...current, ...slugs]));
       yield* refreshInBackgroundIfStale(learned, slugs => remember(slugs, true));
       return { slugs, longestPrefix: makeLongestPrefixMatcher(slugs) } satisfies LocalToolkitSlugs;

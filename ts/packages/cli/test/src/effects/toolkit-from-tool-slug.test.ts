@@ -404,6 +404,46 @@ describe('toolkitFromToolSlug', () => {
       })
     );
 
+    it.live('retries a stale native catalog after remembering a partial project result', () =>
+      Effect.gen(function* () {
+        const cacheDir = tempy.temporaryDirectory();
+        const seed = learnedFileContent([], 8);
+        yield* runInCacheDir(
+          cacheDir,
+          {
+            seedLearnedFile: seed,
+            getToolkits: failingFetch,
+            getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(
+                CUSTOM_TOOLKIT
+              );
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(CUSTOM_TOOLKIT)
+              );
+              expect(JSON.parse(learned).refreshedAt).toBe(JSON.parse(seed).refreshedAt);
+            })
+        );
+        yield* runInCacheDir(
+          cacheDir,
+          {
+            getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(UNRELEASED_TOOLKIT)
+              );
+              expect(learned).toContain(CUSTOM_TOOLKIT);
+              expect(JSON.parse(learned).refreshedAt).not.toBe(JSON.parse(seed).refreshedAt);
+            })
+        );
+      })
+    );
+
     it.live('preserves learned custom slugs when an unscoped refresh cannot list them', () =>
       withResolver(
         {

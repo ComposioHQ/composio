@@ -77,17 +77,19 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
 );
 
 /**
- * Records `slugs`, sorted and deduped, stamped with the current time.
+ * Records `slugs`, sorted and deduped, with the last full catalog refresh time.
  *
  * Never fails: this is an optimization, and a machine that cannot write to its
  * own cache directory should still be able to run tools. Concurrent CLI
  * processes are safe by construction — the write is atomic, and since slugs
  * are only ever added, whichever writer lands last leaves a usable file.
  */
-export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
+export const writeKnownToolkitSlugs = (
+  slugs: ReadonlyArray<string>,
+  refreshedAt: DateTime.Utc
+): Effect.Effect<void> =>
   Effect.gen(function* () {
     const filePath = yield* knownToolkitSlugsPath;
-    const refreshedAt = yield* DateTime.now;
 
     const content = yield* Schema.encodeEffect(KnownToolkitSlugsJSON)({
       slugs: [...new Set(slugs.map(slug => slug.toLowerCase()))].sort(),
