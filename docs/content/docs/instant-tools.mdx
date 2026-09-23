@@ -63,6 +63,7 @@ tools = session.tools()  # Pass these to your agent framework.
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const tools = await session.tools(); // Pass these to your agent framework.
 ```
 </Tab>
@@ -78,6 +79,7 @@ result = session.execute("EXA_SEARCH", arguments={"query": "Composio documentati
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const result = await session.execute("EXA_SEARCH", { query: "Composio documentation" });
 ```
 </Tab>
