@@ -5,7 +5,7 @@ import { NotFoundError, type Composio as RawComposioClient } from '@composio/cli
 import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -186,9 +186,10 @@ const resolveConnectedAccountIdForTrigger = (params: {
   slug: string;
   consumerUserId: string;
   account: Option.Option<string>;
+  projectScope: ToolkitProjectScope;
 }) =>
   Effect.gen(function* () {
-    const toolkitSlug = yield* toolkitFromToolSlug(params.slug);
+    const toolkitSlug = yield* toolkitFromToolSlug(params.slug, params.projectScope);
     if (!toolkitSlug) {
       return yield* Effect.fail(
         invalidOptionValue(
@@ -438,6 +439,10 @@ const resolveListenSetup = (params: {
           slug: params.slug,
           consumerUserId,
           account: params.account,
+          projectScope: {
+            orgId: params.resolvedProject.orgId,
+            projectId: params.resolvedProject.projectId,
+          },
         });
 
     const createParams: TriggerCreateParams | undefined = listeningToProjectEvent
