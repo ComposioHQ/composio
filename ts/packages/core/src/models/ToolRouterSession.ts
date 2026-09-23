@@ -139,8 +139,8 @@ export class ToolRouterSession<
   public sandbox?: ToolRouterSessionWorkbenchConfig;
   /**
    * Version of the server-side configuration this object last observed.
-   * Refreshed in place by `update()`, which sends it as the
-   * `expected_config_version` precondition by default.
+   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to
+   * make an update conditional.
    */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
@@ -778,15 +778,17 @@ export class ToolRouterSession<
    * map entirely. `manageConnections.callbackUrl: null` removes only the
    * stored callback URL.
    *
-   * The request carries the `configVersion` this object last observed as the
-   * `expected_config_version` precondition, so a concurrent change surfaces as
+   * By default the request carries no precondition: the last writer wins.
+   * Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+   * the update conditional: the API then applies it only when the stored
+   * version still matches, and a concurrent change surfaces as
    * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
-   * overwritten. Pass `expectedConfigVersion` to send another version, or
-   * `expectedConfigVersion: false` to send no precondition (last writer
-   * wins). The PATCH is never retried by the transport, so a 409 is reported
-   * exactly once. On conflict this object is left unchanged: re-fetch the
-   * session with `sessions.use(sessionId)` and retry against the fresh
-   * `configVersion`.
+   * overwritten. The API must support the `expected_config_version` field;
+   * otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+   * is the same as omitting it. The PATCH is never retried by the transport,
+   * so a 409 is reported exactly once. On conflict this object is left
+   * unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+   * against the fresh `configVersion`.
    *
    * `config`, `configVersion`, `preload`, `sandbox` and `warnings` are
    * refreshed in place only after a successful response, and the updated
@@ -799,9 +801,7 @@ export class ToolRouterSession<
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
     const body = transformToolRouterUpdateParams(parsed);
     const expectedConfigVersion =
-      parsed.expectedConfigVersion === false
-        ? undefined
-        : (parsed.expectedConfigVersion ?? this.configVersion);
+      parsed.expectedConfigVersion === false ? undefined : parsed.expectedConfigVersion;
     if (expectedConfigVersion !== undefined) {
       body.expected_config_version = expectedConfigVersion;
     }

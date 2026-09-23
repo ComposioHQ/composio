@@ -201,8 +201,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
     #: Version of the server-side configuration this object last observed.
-    #: Refreshed in place by :meth:`update`, which sends it as the
-    #: ``expected_config_version`` precondition by default.
+    #: Refreshed in place by :meth:`update`. Pass it as ``expected_config_version``
+    #: to make an update conditional.
     config_version: t.Optional[int]
 
     def __init__(
@@ -1047,15 +1047,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Any object, even one that only sets ``return_premium_charge``,
         re-enables premium usage on a Session set to ``False``.
 
-        The request carries the ``config_version`` this object last observed
-        as the ``expected_config_version`` precondition, so a concurrent change
-        raises :class:`~composio.exceptions.SessionConfigConflictError`
-        (HTTP 409) instead of being overwritten. Pass an ``int`` to send another
-        version, or ``expected_config_version=False`` to send no precondition
-        (last writer wins). The PATCH is never retried by the transport, so a
-        409 is reported exactly once. On conflict this object stays unchanged:
-        re-fetch the session with ``composio.sessions.use(session_id)`` and
-        retry against the fresh ``config_version``.
+        By default the request carries no precondition: the last writer wins.
+        Pass ``expected_config_version`` (for example this object's
+        ``config_version``) to make the update conditional: the API then
+        applies it only when the stored version still matches, and a concurrent
+        change raises :class:`~composio.exceptions.SessionConfigConflictError`
+        (HTTP 409) instead of being overwritten. The API must support the
+        ``expected_config_version`` field; otherwise it rejects the request with
+        a 400. ``expected_config_version=False`` is the same as omitting it.
+        The PATCH is never retried by the transport, so a 409 is reported
+        exactly once. On conflict this object stays unchanged: re-fetch the
+        session with ``composio.sessions.use(session_id)`` and retry against
+        the fresh ``config_version``.
 
         ``config``, ``config_version`` and ``preload`` are refreshed in place
         only after a successful response, and the updated ``config`` is
@@ -1081,10 +1084,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             )
 
         precondition: t.Union[int, "Omit"]
-        if expected_config_version is False:
+        if expected_config_version is None or expected_config_version is False:
             precondition = omit
-        elif expected_config_version is None:
-            precondition = omit if self.config_version is None else self.config_version
         elif isinstance(expected_config_version, bool) or expected_config_version < 1:
             raise exceptions.InvalidParams(
                 "`expected_config_version` must be a positive integer, or False to "

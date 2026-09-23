@@ -17,6 +17,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -95,8 +96,6 @@ const stripSearchResultMetadata = <
 };
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
-
-const isRemoteCustomToolSlug = (slug: string): boolean => slug.toUpperCase().startsWith('CUSTOM_');
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
