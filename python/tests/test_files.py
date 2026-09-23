@@ -6,6 +6,7 @@ that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 
 import asyncio
 import tempfile
+import threading
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
@@ -18,7 +19,6 @@ from composio.core.models._files import (
     FileHelper,
     FileUploadable,
     upload,
-    upload_async,
     read_file_chunks_async,
     _is_url,
     _get_extension_from_mimetype,
@@ -34,6 +34,7 @@ from composio.exceptions import (
     BlockedInternalUrlError,
     ErrorDownloadingFile,
     ErrorUploadingFile,
+    FileUploadPathNotAllowedError,
     ResponseTooLargeError,
     SensitiveFilePathBlockedError,
     UnsafePathComponentError,
@@ -3629,3 +3630,67 @@ class TestResponseDerivedUrlsAreGuarded:
             "https://s3.example.com/async-upload",
         )
 
+    @pytest.mark.parametrize("source_kind", ["path", "url"])
+    def test_async_upload_keeps_event_loop_responsive(self, tmp_path, source_kind):
+        source = tmp_path / "async.txt"
+        source.write_text("content")
+        expected = FileUploadable(name="async.txt", mimetype="text/plain", s3key="key")
+        client = Mock()
+
+        async def run():
+            loop = asyncio.get_running_loop()
+            entered = asyncio.Event()
+            release = threading.Event()
+
+            def block_network(*args, **kwargs):
+                loop.call_soon_threadsafe(entered.set)
+                assert release.wait(2), "Upload blocked the event loop"
+                return (
+                    expected
+                    if source_kind == "url"
+                    else Mock(
+                        new_presigned_url="https://s3.example.com/upload", key="key"
+                    )
+                )
+
+            client.post.side_effect = block_network
+            with (
+                patch.object(FileUploadable, "from_url", side_effect=block_network),
+                patch("composio.core.models._files.safe_request") as request,
+            ):
+                request.return_value.status_code = 200
+                task = asyncio.create_task(
+                    FileUploadable.from_path_async(
+                        client=client,
+                        file=source
+                        if source_kind == "path"
+                        else "https://example.com/file",
+                        tool="TEST",
+                        toolkit="test",
+                        sensitive_file_upload_protection=False,
+                    )
+                )
+                try:
+                    await asyncio.wait_for(entered.wait(), timeout=1)
+                finally:
+                    release.set()
+                assert (await task).s3key == "key"
+
+        asyncio.run(run())
+
+    def test_async_upload_checks_hook_rewrites_against_allowlist(self, tmp_path):
+        client = Mock()
+        source = tmp_path / "secret.txt"
+        source.write_text("secret")
+        with pytest.raises(FileUploadPathNotAllowedError):
+            asyncio.run(
+                FileUploadable.from_path_async(
+                    client=client,
+                    file="https://example.com/file",
+                    tool="TEST",
+                    toolkit="test",
+                    file_upload_allowlist=[],
+                    before_file_upload=lambda context: str(source),
+                )
+            )
+        client.post.assert_not_called()
