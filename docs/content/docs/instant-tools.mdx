@@ -12,6 +12,10 @@ Instant Tools let your Session run supported tools without an end-user provider 
 
 Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `premium_usage` is omitted. Set `premium_usage=False` in Python or `premiumUsage: false` in TypeScript when creating a Session that must not incur premium usage charges.
 
+## Find eligible tools
+
+Hosted account coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return hosted account availability or offer a hosted-account filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+
 ## Create a Session
 
 After your project is enabled, create a Session. This example makes Exa available and permits premium usage for its eligible tools:
@@ -63,7 +67,10 @@ tools = session.tools()  # Pass these to your agent framework.
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+const session = await composio.create("user_123");
+// ---cut---
 const tools = await session.tools(); // Pass these to your agent framework.
 ```
 </Tab>
@@ -79,7 +86,10 @@ result = session.execute("EXA_SEARCH", arguments={"query": "Composio documentati
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+const session = await composio.create("user_123");
+// ---cut---
 const result = await session.execute("EXA_SEARCH", { query: "Composio documentation" });
 ```
 </Tab>
