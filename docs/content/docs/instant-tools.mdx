@@ -34,6 +34,7 @@ session = composio.sessions.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -117,6 +118,7 @@ session = composio.sessions.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const session = await composio.create("user_123", {
   toolkits: ["exa", "firecrawl"],
   premiumUsage: {
@@ -138,6 +140,7 @@ session.update(premium_usage=False)
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 await session.update({ premiumUsage: false });
 ```
 </Tab>
