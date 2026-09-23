@@ -1,5 +1,16 @@
 # @e2e-tests/cf-workers-files
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [a4a40a1]
+- Updated dependencies [6c56b73]
+- Updated dependencies [6c56b73]
+- Updated dependencies [a4a40a1]
+- Updated dependencies [6c56b73]
+  - @composio/core@0.20.0
+
 ## 0.0.3
 
 ### Patch Changes
