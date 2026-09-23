@@ -165,7 +165,7 @@ On patch, omitted `premium_usage` fields keep their existing values. Supplying a
 
 A hosted account is a provider account held by Composio for specific tools. It is different from **Composio-managed auth**, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool Instant.
 
-If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Otherwise, available user, shared, or developer connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow.
+If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Otherwise, available user or shared connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow.
 
 Hosted accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
 
