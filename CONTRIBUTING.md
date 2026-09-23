@@ -1,43 +1,79 @@
-# Contributing to Composio SDK
+# Contributing to Composio
 
-Thank you for your interest in contributing to Composio. This guide covers the root SDK repository. The monorepo contains the TypeScript SDK, Python SDK, docs site, examples, and release tooling.
+This repository contains the Composio TypeScript SDK, Python SDK, CLI, docs site, examples, and release tooling. Read the contribution policy before you open an issue or a pull request.
 
 ## Table of Contents
 
+- [Contribution Policy](#contribution-policy)
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Development Commands](#development-commands)
 - [Working with AI Coding Agents](#working-with-ai-coding-agents)
 - [Coding Standards](#coding-standards)
-- [Documentation Requirements](#documentation-requirements)
+- [Documentation Changes](#documentation-changes)
 - [Pull Request Process](#pull-request-process)
 - [Creating New Providers](#creating-new-providers)
 - [Testing Guidelines](#testing-guidelines)
 - [Release Process](#release-process)
 - [Questions and Support](#questions-and-support)
+- [License](#license)
+
+## Contribution Policy
+
+### Open an issue first
+
+Issues are the preferred way to contribute. A clear bug report or feature request is often more useful to us than a pull request, and it avoids long review cycles for changes we might not accept.
+
+- **Composio employees** can open issues and pull requests directly.
+- **External contributors** should open an issue first. Open a pull request only for an existing, open issue, and link that issue in the pull request description. Wait for a maintainer to confirm the approach on the issue before you invest in a large change.
+
+Use the [issue templates](https://github.com/ComposioHQ/composio/issues/new/choose) for bug reports, feature requests, and tool requests. For support questions, see [Questions and Support](#questions-and-support). For security issues, follow [`SECURITY.md`](.github/SECURITY.md) instead of opening a public issue.
+
+### Pull requests we may close
+
+We reserve the right to close pull requests that don't make a meaningful contribution to Composio's SDKs, CLI, or docs. This includes pull requests that:
+
+- have no linked issue, when opened by an external contributor
+- make cosmetic, speculative, or drive-by changes without a clear user benefit
+- are too broad to review, or mix unrelated changes
+- add links or content that promote a third-party project (see [Documentation Changes](#documentation-changes))
+- show that the author hasn't read or verified the submitted code
+
+### Read the code you submit
+
+You are responsible for every line in your pull request, whether you wrote it yourself or with an LLM or coding agent. Before you open a pull request:
+
+- Read and understand the whole diff.
+- Run the relevant checks and describe what you ran.
+- Remove unrelated edits, generated noise, and speculative code.
+- Be ready to explain any change a reviewer asks about.
+
+AI assistance is welcome. Unreviewed AI output is not.
+
+### Third-party links in docs
+
+We normally don't accept docs changes that add links to, or promote, third-party projects. The exceptions are:
+
+- frontier model providers, such as OpenAI and Anthropic
+- partners that have an agreement with Composio
+
+### Partnerships
+
+To propose a partnership, including a docs listing or integration, contact us through [composio.dev/contact](https://composio.dev/contact). Don't open an issue or a pull request for a partnership request.
 
 ## Development Setup
 
 ### Prerequisites
 
-Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI:
-
-- Node.js 24.17.0
-- pnpm 11.8.0
-- Bun 1.3.10
-- Deno 2.6.7
-- Python 3.12
-- uv 0.8.19
-
-Use [mise](https://mise.jdx.dev) to install the toolchain:
+Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI. It pins Node.js, pnpm, Bun, Deno, Python, and uv. Install the toolchain with [mise](https://mise.jdx.dev):
 
 ```bash
 mise install
 ```
 
-mise installs pnpm through its npm backend. Do not rely on Corepack for this repository.
+mise installs pnpm through its npm backend. Don't rely on Corepack for this repository.
 
-### Getting Started
+### Getting started
 
 1. Fork and clone the repository:
 
@@ -46,27 +82,12 @@ mise installs pnpm through its npm backend. Do not rely on Corepack for this rep
    cd composio
    ```
 
-2. Install the pinned toolchain:
+2. Install the toolchain and dependencies, then build and test:
 
    ```bash
    mise install
-   ```
-
-3. Install dependencies:
-
-   ```bash
    pnpm install
-   ```
-
-4. Build the project:
-
-   ```bash
    pnpm build
-   ```
-
-5. Run tests:
-
-   ```bash
    pnpm test
    ```
 
@@ -97,64 +118,46 @@ composio/
 └── .github/                   # GitHub Actions and shared CI actions
 ```
 
+Don't hand-edit generated or vendored paths, such as `ts/vendor/**`, `ts/packages/core/generated/**`, and lockfiles. [`AGENTS.md`](AGENTS.md#generated-and-vendored-paths) has the full list.
+
 ## Development Commands
 
 ```bash
-# Build all packages
-pnpm build
+pnpm build              # Build all packages
+pnpm build:packages     # Build TypeScript packages only
+pnpm lint               # Lint TypeScript packages
+pnpm lint:fix           # Fix lint issues where possible
+pnpm format             # Format supported files
+pnpm typecheck          # Type-check TypeScript packages
+pnpm check:peer-deps    # Check peer dependencies
+pnpm update:peer-deps   # Update peer dependencies
 
-# Build TypeScript packages only
-pnpm build:packages
-
-# Lint TypeScript packages
-pnpm lint
-
-# Fix lint issues where possible
-pnpm lint:fix
-
-# Format supported files
-pnpm format
-
-# Create a new TypeScript provider
-pnpm create:provider <provider-name> [--agentic]
-
-# Create a new TypeScript example
-pnpm create:example <example-name>
-
-# Check peer dependencies
-pnpm check:peer-deps
-
-# Update peer dependencies
-pnpm update:peer-deps
+pnpm create:provider <provider-name> [--agentic]   # New TypeScript provider
+pnpm create:example <example-name>                 # New TypeScript example
 ```
 
 ### Dead code detection
 
-The `Dead Code` CI workflow reports likely-orphaned code on every PR (findings
-land in the run's Step Summary; it never fails the build). Run the same checks
-locally:
+The `Dead Code` CI workflow reports likely-orphaned code on every PR. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
 
 ```bash
-# TypeScript — unused files, exports, types and dependencies
+# TypeScript: unused files, exports, types, and dependencies
 pnpm dlx knip@5            # config in knip.json
 
-# Python — unused functions, classes and variables
+# Python: unused functions, classes, and variables
 cd python && make dead-code   # vulture; allowlist in python/config/vulture_allowlist.py
 
-# GitHub Actions — orphaned reusable workflows and composite actions
+# GitHub Actions: orphaned reusable workflows and composite actions
 bash .github/scripts/check-orphan-ci.sh
 ```
 
-These tools carry false positives (public API surface, dynamic imports,
-import-map targets), so treat their output as advisory: verify a finding is
-truly unreferenced before deleting, and suppress confirmed false positives via
-`knip.json` / `vulture_allowlist.py`.
+These tools report false positives for public API surface, dynamic imports, and import-map targets. Verify that a finding is unreferenced before you delete it, and suppress confirmed false positives in `knip.json` or `vulture_allowlist.py`.
 
 ## Working with AI Coding Agents
 
-This repository ships its own agent guidance, and CI keeps it honest. You get it for free — an agent that reads this repo inherits the layout, commands, and guardrails without setup.
+This repository ships its own agent guidance, and CI keeps it accurate. An agent that reads this repository inherits its layout, commands, and rules, including the [Contribution Policy](#contribution-policy).
 
-`AGENTS.md` files live at the root and inside each subtree (`ts/`, `python/`, `docs/`, and the packages). Coding agents read the nearest one automatically, so you usually do not need to do anything beyond keeping them accurate when you move code. The canonical skill tree is `.agents/skills/` (with `.claude/skills` as a compatibility symlink): focused, task-scoped skills that route an agent to the right workflow, from `bug-fixing` to `cli-release`.
+`AGENTS.md` files live at the root and inside each subtree (`ts/`, `python/`, `docs/`, and the packages). Coding agents read the nearest one automatically. Keep them accurate when you move code. The canonical skill tree is `.agents/skills/`, with `.claude/skills` as a compatibility symlink.
 
 Two deterministic checks guard this guidance:
 
@@ -163,65 +166,58 @@ pnpm validate:agent-skills    # frontmatter, reference links, stale guidance ref
 pnpm validate:skill-routing   # routing smoke test over skill descriptions
 ```
 
-`validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies every command mentioned in guidance actually exists — so guidance cannot recommend a command that was renamed away. Both checks run in CI via `.github/workflows/agent-substrate.yml` whenever agent guidance changes.
+`validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies that every command mentioned in guidance exists. Both checks run in CI through `.github/workflows/agent-substrate.yml`.
 
-If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs` so routing stays covered. To author or edit a skill, read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) first.
+If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
+
+Using an agent doesn't change your responsibility: [read the code you submit](#read-the-code-you-submit).
 
 ## Coding Standards
 
 ### TypeScript
 
-1. Follow the style of the package you are editing.
-2. Use TypeScript for new TypeScript SDK code.
-3. Use named exports for public APIs unless the local package pattern says otherwise.
-4. Keep public API changes typed and documented with TSDoc.
-5. Add focused tests for new behavior and bug fixes.
-6. Use Oxlint and Prettier through the repo scripts.
-7. Keep generated or vendored code out of manual edits unless the package explicitly owns that output.
+- Follow the style of the package you're editing.
+- Use named exports for public APIs unless the package uses another pattern.
+- Type public API changes and document them with TSDoc.
+- Add focused tests for new behavior and bug fixes.
+- Use Oxlint and Prettier through the repository scripts.
 
 ### Python
 
-1. Follow the existing Python SDK layout under `python/`.
-2. Use Ruff formatting and linting through the Python make targets.
-3. Keep provider-specific changes inside the relevant `python/providers/*` package.
-4. Add pytest coverage for behavior changes.
+- Follow the existing layout under `python/`.
+- Use Ruff formatting and linting through the Python make targets.
+- Keep provider-specific changes inside the relevant `python/providers/*` package.
+- Add pytest coverage for behavior changes.
 
-### Error Handling
+### Error handling
 
-1. Use the existing error classes and result shapes in the package you are editing.
-2. Include enough context in error messages to identify the failing operation.
-3. Avoid swallowing errors unless the caller has an explicit fallback path.
+- Use the existing error classes and result shapes in the package you're editing.
+- Include enough context in error messages to identify the failing operation.
+- Don't swallow errors unless the caller has an explicit fallback path.
 
-## Documentation Requirements
+## Documentation Changes
 
 Update docs when a change affects public behavior, install flows, examples, environment variables, release steps, or provider usage.
 
-For documentation-site work, read [`docs/CLAUDE.md`](docs/CLAUDE.md) first. It documents the docs app, MDX conventions, link checking, generated data, and docs branch workflow.
+For the documentation site, read [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) and [`docs/AGENTS.md`](docs/AGENTS.md). They cover the docs app, MDX conventions, link checks, generated data, and validation.
 
-Package documentation should generally include:
-
-1. A short package description.
-2. Installation instructions.
-3. Usage examples.
-4. Public API notes.
-5. Environment variables or authentication requirements when relevant.
-6. Provider limitations or streaming details when relevant.
+Docs changes follow the [third-party links policy](#third-party-links-in-docs).
 
 ## Pull Request Process
 
-1. Create a branch from the target base branch. Most active SDK and docs work targets `next`.
+1. For external contributions, confirm that an open issue exists and that a maintainer agreed with the approach.
+
+2. Branch from `next`, which is the base for most SDK and docs work:
 
    ```bash
    git checkout next
    git pull origin next
-   git checkout -b feature/your-feature-name
+   git checkout -b feat/your-change
    ```
 
-2. Make focused changes that match the issue or feature scope.
+3. Keep the change focused on the issue. Split unrelated changes into separate pull requests.
 
-3. Add or update tests for behavior changes.
-
-4. Update documentation when user-facing behavior changes.
+4. Add or update tests for behavior changes, and update docs for user-facing changes.
 
 5. Add a changeset for changes that affect published TypeScript packages:
 
@@ -229,43 +225,32 @@ Package documentation should generally include:
    pnpm changeset
    ```
 
-   Root-level documentation-only changes, such as edits to this file, do not need a changeset.
+   Documentation-only and agent-guidance-only changes don't need a changeset.
 
-6. Run the smallest meaningful verification command locally before opening the PR.
+6. Read your full diff and run the smallest meaningful checks locally.
 
-7. Push your branch and open a PR against the correct base branch.
+7. Open a pull request against `next`. Fill in the template, link the issue, and describe how you tested the change.
 
 ## Creating New Providers
 
-### TypeScript Providers
+Open an issue before you build a new provider. We may decline providers we can't maintain.
 
-Use the TypeScript provider creation script:
+### TypeScript providers
 
 ```bash
 pnpm create:provider my-provider [--agentic]
 ```
 
-Then:
+Implement the required provider methods, add tests under the provider package, and add docs or examples for user-facing setup.
 
-1. Implement the required provider methods.
-2. Add tests under the provider package.
-3. Add examples or docs when the provider has user-facing setup details.
-4. Run the package tests and relevant build checks.
+### Python providers
 
-### Python Providers
-
-Use the Python provider creation target from the `python/` directory:
+Run from the `python/` directory:
 
 ```bash
 cd python
 make create-provider name=my-provider
-```
-
-For agentic providers:
-
-```bash
-cd python
-make create-provider name=my-provider agentic=true
+make create-provider name=my-provider agentic=true   # agentic provider
 ```
 
 Then add provider tests and run the relevant Python checks.
@@ -274,61 +259,37 @@ Then add provider tests and run the relevant Python checks.
 
 ### TypeScript SDK
 
-Run the root TypeScript test suite:
-
 ```bash
-pnpm test
-```
-
-Run all TypeScript end-to-end tests:
-
-```bash
-pnpm test:e2e
-```
-
-Run runtime-specific end-to-end tests:
-
-```bash
-pnpm test:e2e:node
+pnpm test                   # Unit tests
+pnpm test:e2e               # All end-to-end tests
+pnpm test:e2e:node          # Runtime-specific end-to-end tests
 pnpm test:e2e:deno
 pnpm test:e2e:cli
 pnpm test:e2e:cloudflare
-```
-
-Open the Vitest UI:
-
-```bash
-pnpm test:ui
+pnpm test:ui                # Vitest UI
 ```
 
 ### Python SDK
-
-Set up the Python development environment:
 
 ```bash
 cd python
 make env
 source .venv/bin/activate
-```
-
-Run Python checks:
-
-```bash
 make fmt
 make chk
 make tst
 make snt
 ```
 
-You can also run a focused pytest command through uv:
+For a focused run, use pytest through uv:
 
 ```bash
 uv run pytest tests/test_sdk.py -v
 ```
 
-### Docs Site
+### Docs site
 
-For docs changes:
+Run from `docs/`:
 
 ```bash
 cd docs
@@ -337,28 +298,22 @@ bun run build
 bun run lint:links
 ```
 
-See [`docs/CLAUDE.md`](docs/CLAUDE.md) for the full docs workflow.
+[`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) lists the full set of docs checks.
 
 ## Release Process
 
 Only maintainers publish releases.
 
-For TypeScript package and CLI release details, use [`ts/docs/internal/release.md`](ts/docs/internal/release.md). The root scripts are:
-
-```bash
-pnpm changeset
-pnpm changeset:version
-pnpm changeset:release
-```
-
-For Python package release details, use [`python/docs/release.md`](python/docs/release.md). Python package versioning and release preparation are handled from the `python/` workspace.
+- TypeScript packages and the CLI: [`ts/docs/internal/release.md`](ts/docs/internal/release.md)
+- Python packages: [`python/docs/release.md`](python/docs/release.md)
 
 ## Questions and Support
 
-- Join our [Discord Community](https://discord.gg/composio)
-- Check our [Documentation](https://docs.composio.dev)
-- File issues on [GitHub](https://github.com/ComposioHQ/composio/issues)
+- [Documentation](https://docs.composio.dev)
+- [Discord community](https://discord.gg/composio)
+- [Support guide](.github/SUPPORT.md)
+- Partnerships: [composio.dev/contact](https://composio.dev/contact)
 
 ## License
 
-By contributing to Composio SDK, you agree that your contributions will be licensed under the ISC License.
+By contributing to Composio, you agree that your contributions are licensed under the [MIT License](LICENSE).

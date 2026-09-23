@@ -2,6 +2,8 @@
 
 Use a pull request for a specific docs fix. Use a Developer Marketing issue in Linear with the Docs label when the work needs investigation, coordination, or a larger content plan. Link the issue and its source context in the PR so the reviewer can check the original problem.
 
+External contributors should open a GitHub issue first and open a PR only for an existing, open issue. Read the [Contribution Policy](../CONTRIBUTING.md#contribution-policy) before you start. We normally don't accept docs changes that link to or promote third-party projects, except frontier model providers and partners with an agreement with Composio. For a partnership request, contact us through [composio.dev/contact](https://composio.dev/contact).
+
 For a runtime bug, include a reproducible example and involve the SDK or platform owner. A docs change cannot establish behavior that the product does not support.
 
 ## Choose the source

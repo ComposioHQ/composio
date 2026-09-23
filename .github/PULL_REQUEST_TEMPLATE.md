@@ -1,5 +1,7 @@
 ## Summary
-Explain the motivation and context for this change. Link to any related issues.
+Explain the motivation and context for this change.
+
+External contributors: link the open issue this PR addresses. PRs without a linked issue may be closed. See the [Contribution Policy](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md#contribution-policy).
 
 Fixes #
 
@@ -21,6 +23,8 @@ Describe the tests you ran and instructions so reviewers can reproduce. Include 
 
 ## Checklist
 - [ ] I have read the Code of Conduct and this PR adheres to it
+- [ ] I have read and understand every line of this diff, including any LLM-generated code
+- [ ] This PR doesn't add docs links to third-party projects (frontier model providers and Composio partners excepted)
 - [ ] I ran linters/tests locally and they passed
 - [ ] I updated documentation as needed
 - [ ] I added tests or explain why not applicable

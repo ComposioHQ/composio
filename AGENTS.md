@@ -14,6 +14,15 @@ This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `pyth
 4. Do not edit generated SDK surfaces or vendor trees — see [Generated And Vendored Paths](#generated-and-vendored-paths).
 5. Verify every command you write against the current `package.json`, `Makefile`, `noxfile.py`, or workflow file.
 
+## Contribution Policy
+
+Follow the [Contribution Policy in `CONTRIBUTING.md`](CONTRIBUTING.md#contribution-policy). When helping an author prepare a PR:
+
+- External contributors open PRs only for an existing, open issue. If there's no linked issue, tell the author to open one first rather than drafting the PR.
+- Keep the change focused on meaningful improvements to the SDKs, CLI, or docs. Don't produce cosmetic, speculative, or drive-by edits.
+- The author is responsible for every line. Keep diffs small enough to read, report the checks you actually ran, and tell the author to review the full diff before submitting.
+- Don't add docs links to, or promotion of, third-party projects. Frontier model providers (such as OpenAI and Anthropic) and partners with an agreement with Composio are the only exceptions. Route partnership requests to https://composio.dev/contact.
+
 ## Skill Routing
 
 Use the smallest relevant skill:
