@@ -1,5 +1,18 @@
 # typesafe-example
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [a4a40a1]
+- Updated dependencies [6c56b73]
+- Updated dependencies [6c56b73]
+- Updated dependencies [a4a40a1]
+- Updated dependencies [6c56b73]
+  - @composio/core@0.20.0
+  - @composio/openai@0.12.3
+  - @composio/typesafe@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes
