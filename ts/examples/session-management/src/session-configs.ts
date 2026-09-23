@@ -14,6 +14,7 @@
  *
  * Run: pnpm start:session-configs
  */
+import { APIError } from '@composio/client';
 import { Composio, SessionPreset, type SessionConfigPolicy } from '@composio/core';
 import 'dotenv/config';
 
@@ -51,8 +52,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 /** HTTP status of a client error, or undefined for anything else. */
 function statusOf(error: unknown): number | undefined {
-  const status = error instanceof Error ? Reflect.get(error, 'status') : undefined;
-  return typeof status === 'number' ? status : undefined;
+  return error instanceof APIError ? error.status : undefined;
 }
 
 async function expectStatus(status: number, run: () => Promise<unknown>): Promise<void> {

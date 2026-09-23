@@ -966,6 +966,9 @@ importers:
 
   ts/examples/session-management:
     dependencies:
+      '@composio/client':
+        specifier: 'catalog:'
+        version: 2.0.0-rc.8
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
