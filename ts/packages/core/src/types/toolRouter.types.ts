@@ -17,6 +17,7 @@ import type {
   RegisteredCustomToolkit,
 } from './customTool.types';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+import { addSessionConfigConflictIssue } from '../lib/sessionConfigConflict';
 
 export const SessionPreset = {
   DIRECT_TOOLS: 'direct_tools',
@@ -337,6 +338,19 @@ const ToolRouterCreateSessionConfigBaseSchema = z
   })
   .partial()
   .superRefine((config, ctx) => {
+    // "Provided" means `!== undefined`, so empty arrays conflict too.
+    if (config.experimental?.sessionConfigId !== undefined) {
+      addSessionConfigConflictIssue(
+        ctx,
+        [
+          config.toolkits !== undefined && 'toolkits',
+          config.tools !== undefined && 'tools',
+          config.tags !== undefined && 'tags',
+          config.experimental.customTools !== undefined && 'experimental.customTools',
+          config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
+        ].filter((field): field is string => field !== false)
+      );
+    }
     if (config.sandbox !== undefined && config.workbench !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -398,7 +412,36 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
  * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
-export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
+export type ToolRouterCreateSessionConfig =
+  InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
+
+type ParsedCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
+type ParsedCreateSessionExperimental = NonNullable<ParsedCreateSessionConfig['experimental']>;
+
+/** Create input that sets access inline and applies no saved Session config. */
+type InlineAccessCreateSessionConfig = Omit<ParsedCreateSessionConfig, 'experimental'> & {
+  experimental?: Omit<ParsedCreateSessionExperimental, 'sessionConfigId'> & {
+    sessionConfigId?: never;
+  };
+};
+
+/** Create input that takes its access policy from a saved Session config. */
+type SavedConfigCreateSessionConfig = Omit<
+  ParsedCreateSessionConfig,
+  'toolkits' | 'tools' | 'tags' | 'experimental'
+> & {
+  toolkits?: never;
+  tools?: never;
+  tags?: never;
+  experimental: Omit<
+    ParsedCreateSessionExperimental,
+    'sessionConfigId' | 'customTools' | 'customToolkits'
+  > & {
+    sessionConfigId: string;
+    customTools?: never;
+    customToolkits?: never;
+  };
+};
 
 export const ToolkitConnectionStateSchema = z
   .object({

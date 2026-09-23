@@ -8,7 +8,7 @@ import {
   ToolRouterConfigToolsSchema,
   ToolRouterToolsParam,
   ToolRouterConfigManageConnectionsSchema,
-  ToolRouterCreateSessionConfig,
+  ToolRouterCreateSessionConfigSchema,
   ToolRouterToolkitsParamSchema,
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
@@ -20,6 +20,10 @@ import {
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
+import type { TypeOf } from 'zod/v3';
+
+/** Parsed create input; the public `ToolRouterCreateSessionConfig` is a union over it. */
+type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSchema>;
 
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
@@ -120,8 +124,8 @@ export const transformToolRouterManageConnectionsParams = (
 };
 
 export const resolveToolRouterSandboxConfig = (
-  config: Pick<ToolRouterCreateSessionConfig, 'sandbox' | 'workbench'>
-): ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench'] => {
+  config: Pick<ParsedCreateSessionConfig, 'sandbox' | 'workbench'>
+): ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench'] => {
   if (config.sandbox !== undefined && config.workbench !== undefined) {
     throw new ValidationError(
       'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
@@ -131,7 +135,7 @@ export const resolveToolRouterSandboxConfig = (
 };
 
 export const transformToolRouterSandboxParams = (
-  params?: ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench']
+  params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
 ): SessionCreateParams.Workbench | undefined => {
   if (!params) {
     return undefined;
@@ -276,7 +280,7 @@ export const transformToolRouterUpdateSandboxParams = (
 export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdateSandboxParams;
 
 export const transformToolRouterMultiAccountParams = (
-  params?: ToolRouterCreateSessionConfig['multiAccount']
+  params?: ParsedCreateSessionConfig['multiAccount']
 ): SessionCreateParams.MultiAccount | undefined => {
   if (!params) {
     return undefined;
@@ -301,7 +305,7 @@ export const transformToolRouterMultiAccountParams = (
 };
 
 export const transformToolRouterToolkitsParams = (
-  params?: ToolRouterCreateSessionConfig['toolkits']
+  params?: ParsedCreateSessionConfig['toolkits']
 ): SessionCreateParams.Enable | SessionCreateParams.Disable | undefined => {
   if (!params) {
     return undefined;

@@ -54,6 +54,7 @@ import {
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -215,7 +216,7 @@ export class ToolRouter<
     config?: ToolRouterCreateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+    const routerConfig = parseSessionConfigInput(ToolRouterCreateSessionConfigSchema, config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
     // Extract custom tools/toolkits from experimental config

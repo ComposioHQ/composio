@@ -1889,6 +1889,88 @@ describe('ToolRouter', () => {
         ).rejects.toThrow();
         expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
       });
+
+      // Plain JavaScript callers bypass the compile-time union, so these go
+      // through `unknown`.
+      const createUnchecked = (config: Record<string, unknown>) =>
+        toolRouter.create(userId, config as unknown as ToolRouterCreateSessionConfig);
+      const customTool = { slug: 'MY_TOOL' };
+      const customToolkit = { slug: 'MY_TOOLKIT', tools: [] };
+
+      it.each([
+        ['toolkits', { toolkits: ['github'] }],
+        ['toolkits', { toolkits: { disable: ['x'] } }],
+        ['tools', { tools: { github: ['GITHUB_GET_REPO'] } }],
+        ['tags', { tags: ['readOnlyHint'] }],
+        ['experimental.customTools', { experimental: { customTools: [customTool] } }],
+        ['experimental.customToolkits', { experimental: { customToolkits: [customToolkit] } }],
+        ['toolkits', { toolkits: [] }],
+        ['experimental.customTools', { experimental: { customTools: [] } }],
+      ])(
+        'rejects sessionConfigId combined with %s (%j) without calling the API',
+        async (field, inline) => {
+          const inlineExperimental = (inline as { experimental?: object }).experimental;
+          const error = await createUnchecked({
+            ...inline,
+            experimental: { ...inlineExperimental, sessionConfigId: 'sc_1' },
+          }).catch(e => e);
+
+          expect(error).toBeInstanceOf(ValidationError);
+          expect(error.message).toContain(
+            `experimental.sessionConfigId cannot be combined with ${field}`
+          );
+          expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+        }
+      );
+
+      it('names every conflicting field in one error', async () => {
+        const error = await createUnchecked({
+          toolkits: ['github'],
+          tags: ['readOnlyHint'],
+          experimental: { sessionConfigId: 'sc_1', customTools: [customTool] },
+        }).catch(e => e);
+
+        expect(error).toBeInstanceOf(ValidationError);
+        expect(error.message).toContain(
+          'experimental.sessionConfigId cannot be combined with toolkits, tags, experimental.customTools'
+        );
+        expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+      });
+
+      it('treats an explicit undefined inline field as absent', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: undefined,
+          experimental: { sessionConfigId: 'sc_1' },
+        });
+
+        expect(createPayload().experimental).toEqual({ session_config_id: 'sc_1' });
+      });
+
+      it('keeps throwing ZodError for unrelated invalid input', async () => {
+        const error = await createUnchecked({
+          multiAccount: { maxAccountsPerToolkit: 1 },
+        }).catch(e => e);
+
+        expect(error).toBeInstanceOf(z.ZodError);
+        expect(error).not.toBeInstanceOf(ValidationError);
+        expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+      });
+
+      it('allows the direct tools preset with a saved config and sends preload all', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          sessionPreset: SessionPreset.DIRECT_TOOLS,
+          experimental: { sessionConfigId: 'sc_1' },
+        });
+
+        expect(createPayload()).toMatchObject({
+          preload: { tools: 'all' },
+          experimental: { session_config_id: 'sc_1' },
+        });
+      });
     });
 
     describe('error handling', () => {
