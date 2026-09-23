@@ -191,20 +191,13 @@ export type SessionPatchBody = Omit<
   >,
   'manage_connections' | 'multi_account' | 'experimental'
 > & {
-  premium_usage?: SessionPremiumUsageBody;
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
   expected_config_version?: number;
 };
 
-export type SessionPremiumUsageBody =
-  | false
-  | {
-      toolkits?: { enable: string[] } | { disable: string[] };
-      tools?: Record<string, { enable: string[] } | { disable: string[] }>;
-      return_premium_charge?: boolean;
-    };
+export type SessionPremiumUsageBody = NonNullable<SessionPatchParams['premium_usage']>;
 
 export const transformToolRouterPremiumUsageParams = (
   config: ToolRouterPremiumUsage

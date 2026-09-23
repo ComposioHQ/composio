@@ -175,20 +175,22 @@ class TestToolRouter:
     def test_create_with_premium_usage_policy(self, tool_router, mock_client):
         policy = {"toolkits": {"enable": ["exa"]}, "return_premium_charge": True}
         tool_router.create(user_id="user_123", premium_usage=policy)
-        assert mock_client.tool_router.session.create.call_args.kwargs[
-            "extra_body"
-        ] == {"premium_usage": policy}
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["premium_usage"] == policy
+        assert "extra_body" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
         tool_router.create(user_id="user_123")
         assert (
-            "extra_body" not in mock_client.tool_router.session.create.call_args.kwargs
+            "premium_usage"
+            not in mock_client.tool_router.session.create.call_args.kwargs
         )
 
         tool_router.create(user_id="user_123", premium_usage=False)
-        assert mock_client.tool_router.session.create.call_args.kwargs[
-            "extra_body"
-        ] == {"premium_usage": False}
+        assert (
+            mock_client.tool_router.session.create.call_args.kwargs["premium_usage"]
+            is False
+        )
 
     def test_create_session_default_returns_base_session(self, tool_router):
         """Default create() (mcp omitted) returns the base ToolRouterSession.
@@ -2545,22 +2547,24 @@ class TestSessionUpdateContract:
                 "return_premium_charge": True,
             }
         )
-        assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
-            "expected_config_version": 7,
-            "premium_usage": {
-                "toolkits": {"enable": ["exa"]},
-                "return_premium_charge": True,
-            },
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["premium_usage"] == {
+            "toolkits": {"enable": ["exa"]},
+            "return_premium_charge": True,
         }
+        assert kwargs["extra_body"] == {"expected_config_version": 7}
 
     def test_premium_usage_can_be_disabled(self, session, mock_client):
         session.update(premium_usage=False)
         assert (
-            mock_client.tool_router.session.patch.call_args.kwargs["extra_body"][
-                "premium_usage"
-            ]
+            mock_client.tool_router.session.patch.call_args.kwargs["premium_usage"]
             is False
         )
+
+    def test_premium_usage_rejects_none(self, session, mock_client):
+        with pytest.raises(InvalidParams, match="premium_usage"):
+            session.update(premium_usage=None)  # type: ignore[arg-type]
+        mock_client.tool_router.session.patch.assert_not_called()
 
     def test_update_sends_the_observed_version_by_default_without_retries(
         self, session, mock_client

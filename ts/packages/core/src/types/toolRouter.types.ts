@@ -124,6 +124,11 @@ export const ToolRouterPremiumUsageSchema = z.union([
           ])
         )
         .optional(),
+      /**
+       * Return the actual premium charge in Session tool responses. Controls
+       * visibility only; on update, any policy object still re-enables premium
+       * usage on a Session set to `false`.
+       */
       returnPremiumCharge: z.boolean().optional(),
     })
     .strict(),
@@ -789,7 +794,7 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
     premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental premium usage policy. False disables it; a supplied object re-enables it. Omitted subfields keep their stored values.'
+      'Experimental premium usage policy. False disables it. Any supplied object, even one that only sets returnPremiumCharge, re-enables it. Omitted subfields keep their stored values.'
     ),
     toolkits: z
       .union([

@@ -1044,6 +1044,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``callback_url=None`` removes only the stored callback URL.
         Experimental ``premium_usage`` accepts ``False`` to disable billed
         access or an object to set its filters; it does not accept ``None``.
+        Any object, even one that only sets ``return_premium_charge``,
+        re-enables premium usage on a Session set to ``False``.
 
         The request carries the ``config_version`` this object last observed
         as the ``expected_config_version`` precondition, so a concurrent change
@@ -1072,6 +1074,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
             )
+        if premium_usage is None:
+            raise exceptions.InvalidParams(
+                "`premium_usage` does not accept None; pass False to disable "
+                "premium usage, or omit it to keep the stored policy"
+            )
 
         precondition: t.Union[int, "Omit"]
         if expected_config_version is False:
@@ -1090,11 +1097,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # The generated client has no typed parameter for the precondition, so
         # it travels as an extra root body field.
-        extra_body: t.Dict[str, t.Any] = {}
-        if not isinstance(precondition, Omit):
-            extra_body["expected_config_version"] = precondition
-        if not isinstance(premium_usage, Omit):
-            extra_body["premium_usage"] = premium_usage
+        extra_body = (
+            None
+            if isinstance(precondition, Omit)
+            else {"expected_config_version": precondition}
+        )
 
         # The generated client does not type ``None`` for every policy block
         # although the API accepts it (it removes the stored override), nor the
@@ -1128,7 +1135,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
                 ),
-                extra_body=extra_body or None,
+                premium_usage=t.cast(
+                    t.Union[
+                        t.Literal[False],
+                        session_patch_params.CurrentPremiumUsageVariant1,
+                        "Omit",
+                    ],
+                    premium_usage,
+                ),
+                extra_body=extra_body,
                 # A stale precondition is a deterministic 409: never retry it.
                 request_options={"max_retries": 0},
             )

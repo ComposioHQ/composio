@@ -49,8 +49,8 @@ from composio.core.models.tool_router_constants import (
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
-    ToolRouterSession,
     ToolRouterPremiumUsageConfig,
+    ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
     ToolRouterUpdateExperimentalConfig,
@@ -1095,8 +1095,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             "user_id": user_id,
         }
         if premium_usage is not None:
-            # The pinned generated client does not type this new Session field yet.
-            create_params["extra_body"] = {"premium_usage": premium_usage}
+            create_params["premium_usage"] = premium_usage
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
