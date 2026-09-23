@@ -359,6 +359,21 @@ const permissionsClient = (params: {
       );
   });
 
+const fetchConsumerConfig = (client: RawComposioClient) =>
+  Effect.tryPromise({
+    try: () =>
+      requestJson(ConsumerConfigResponseSchema, {
+        client,
+        path: ORG_CONSUMER_CONFIG_PATH,
+      }),
+    catch: cause =>
+      new ToolPermissionsRequestError({
+        path: ORG_CONSUMER_CONFIG_PATH,
+        message: 'Failed to fetch the org consumer config.',
+        cause,
+      }),
+  });
+
 export const refreshConsumerPermissionSnapshot = (params: {
   readonly orgId: string;
   readonly projectId: string;
@@ -380,19 +395,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
       projectId: params.projectId,
       path: ORG_CONSUMER_CONFIG_PATH,
     });
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        requestJson(ConsumerConfigResponseSchema, {
-          client,
-          path: ORG_CONSUMER_CONFIG_PATH,
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: ORG_CONSUMER_CONFIG_PATH,
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
-    });
+    const config = yield* fetchConsumerConfig(client);
     const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
     const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
     if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
@@ -525,19 +528,7 @@ export const getOrgEnhancedControlsStatus = (params: {
       projectId: params.projectId,
       path: ORG_CONSUMER_CONFIG_PATH,
     });
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        requestJson(ConsumerConfigResponseSchema, {
-          client,
-          path: ORG_CONSUMER_CONFIG_PATH,
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: ORG_CONSUMER_CONFIG_PATH,
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
-    });
+    const config = yield* fetchConsumerConfig(client);
     const remoteEnabled = readEnhancedControlsFlag(config);
     const platformSupported = isEnhancedControlsPlatformSupported();
     return {
