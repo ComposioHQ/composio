@@ -47,6 +47,8 @@ pnpm start:session-configs
 
 `COMPOSIO_API_KEY` must belong to a project with Session configs enabled, with one active and one archived config. `COMPOSIO_API_KEY_NO_FEATURE` is optional and belongs to a project without the feature, for the `403` check. The script also records whether `sessionPreset: SessionPreset.DIRECT_TOOLS` works with a saved config.
 
+The checks follow every page of active and archived configs. Cleanup attempts every created Session and fails the run if any deletion fails. Run `pnpm test` to verify pagination and cleanup without an API key.
+
 ## Customization
 
 Edit `src/index.ts` to:

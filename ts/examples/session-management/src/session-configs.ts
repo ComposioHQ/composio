@@ -17,6 +17,7 @@
 import { APIError } from '@composio/client';
 import { Composio, SessionPreset, type SessionConfigPolicy } from '@composio/core';
 import 'dotenv/config';
+import { cleanupVerificationSessions, listAllSessionConfigs } from './session-config-verification';
 
 const required = ['COMPOSIO_API_KEY', 'SESSION_CONFIG_ID', 'ARCHIVED_SESSION_CONFIG_ID'] as const;
 const missing = required.filter(name => !process.env[name]);
@@ -82,15 +83,15 @@ async function main(): Promise<void> {
   let policy: SessionConfigPolicy | undefined;
 
   await check('list() returns the active config', async () => {
-    const { items } = await composio.sessionConfigs.list({ limit: 100 });
+    const items = await listAllSessionConfigs(composio.sessionConfigs);
     assert(
       items.some(item => item.id === sessionConfigId),
-      `${sessionConfigId} not in the first page`
+      `${sessionConfigId} missing from active configs`
     );
   });
 
   await check('list({ archived: true }) returns only archived configs', async () => {
-    const { items } = await composio.sessionConfigs.list({ archived: true, limit: 100 });
+    const items = await listAllSessionConfigs(composio.sessionConfigs, { archived: true });
     assert(
       items.some(item => item.id === archivedSessionConfigId),
       `${archivedSessionConfigId} missing`
@@ -211,11 +212,9 @@ main()
     console.error(error);
   })
   .finally(async () => {
-    for (const id of createdSessionIds) {
-      await composio.sessions.delete(id).catch(error => {
-        console.warn(`Could not delete session ${id}:`, error);
-      });
-    }
+    await check('delete all created Sessions', () =>
+      cleanupVerificationSessions(createdSessionIds, id => composio.sessions.delete(id))
+    );
     console.log(failures === 0 ? '\nAll checks passed' : `\n${failures} check(s) failed`);
     process.exitCode = failures === 0 ? 0 : 1;
   });
