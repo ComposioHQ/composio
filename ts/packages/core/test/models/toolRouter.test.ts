@@ -208,6 +208,18 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0]).toMatchObject({
         premium_usage: { toolkits: { enable: ['exa'] }, return_premium_charge: true },
       });
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId, { premiumUsage: false });
+      expect(mockClient.toolRouter.session.create.mock.calls[1]?.[0]).toMatchObject({
+        premium_usage: false,
+      });
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId);
+      expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty(
+        'premium_usage'
+      );
     });
 
     describe('basic session creation', () => {

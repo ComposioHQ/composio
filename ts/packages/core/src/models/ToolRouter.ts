@@ -255,6 +255,8 @@ export class ToolRouter<
             ])
           );
 
+    // The pinned generated client has not yet typed premium_usage. Keep the
+    // wrapper's explicit wire conversion until its schema catches up.
     const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,

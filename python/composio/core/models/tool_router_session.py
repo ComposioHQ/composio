@@ -1042,6 +1042,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         as-is). Supplied ``tools``, ``auth_configs`` and ``connected_accounts``
         maps replace the stored map entirely. Inside ``manage_connections``,
         ``callback_url=None`` removes only the stored callback URL.
+        Experimental ``premium_usage`` accepts ``False`` to disable billed
+        access or an object to set its filters; it does not accept ``None``.
 
         The request carries the ``config_version`` this object last observed
         as the ``expected_config_version`` precondition, so a concurrent change

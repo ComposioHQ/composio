@@ -185,6 +185,11 @@ class TestToolRouter:
             "extra_body" not in mock_client.tool_router.session.create.call_args.kwargs
         )
 
+        tool_router.create(user_id="user_123", premium_usage=False)
+        assert mock_client.tool_router.session.create.call_args.kwargs[
+            "extra_body"
+        ] == {"premium_usage": False}
+
     def test_create_session_default_returns_base_session(self, tool_router):
         """Default create() (mcp omitted) returns the base ToolRouterSession.
 
