@@ -4530,23 +4530,6 @@ describe('ToolRouter', () => {
         expect(session.experimental.sourceSessionConfig).toBeUndefined();
       });
 
-      it.each([
-        ['409', () => new ConflictError(409, undefined, 'Conflict', {})],
-        ['404', () => new NotFoundError(404, undefined, 'Not found', {})],
-      ])('is unchanged when the update fails with %s', async (_status, makeError) => {
-        mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(
-          withSource(mockSessionRetrieveResponse, 'sc_1')
-        );
-        mockClient.toolRouter.session.patch.mockRejectedValueOnce(makeError());
-        const session = await toolRouter.use(sessionId);
-
-        await expect(
-          session.update({ experimental: { sessionConfigId: 'sc_2' } })
-        ).rejects.toThrow();
-
-        expect(session.experimental.sourceSessionConfig).toEqual({ id: 'sc_1' });
-      });
-
       it('makes no extra lookups from tools(), search() or execute()', async () => {
         mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(
           withSource(mockSessionRetrieveResponse, 'sc_1')
@@ -4583,37 +4566,12 @@ describe('ToolRouter', () => {
 
     describe('fail closed', () => {
       it.each([
-        ['with an explicit precondition', { expectedConfigVersion: 7 }],
-        ['without a precondition', {}],
-      ])(
-        'reports a 409 while applying a config in terms of the session and the config (%s)',
-        async (_label, precondition) => {
-          mockClient.toolRouter.session.patch.mockRejectedValueOnce(
-            new ConflictError(409, undefined, 'Conflict', {})
-          );
-          const session = await toolRouter.use(sessionId);
-
-          const failure = await session
-            .update({ experimental: { sessionConfigId: 'sc_1' }, ...precondition })
-            .catch(e => e);
-
-          expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
-          expect(failure.statusCode).toBe(409);
-          expect(failure.message).toContain(sessionId);
-          expect(failure.message).toContain('sc_1');
-          expect(failure.message).toMatch(/re-fetch/i);
-          expect(failure.message).toMatch(/retry/i);
-          expect(failure.message).not.toMatch(/no longer at version/);
-          expect(failure.meta).toMatchObject({ sessionId, sessionConfigId: 'sc_1' });
-        }
-      );
-
-      it.each([
-        ['400', () => new BadRequestError(400, undefined, 'Bad request', {})],
-        ['403', () => new PermissionDeniedError(403, undefined, 'Forbidden', {})],
-        ['404', () => new NotFoundError(404, undefined, 'Not found', {})],
-      ])('surfaces a %s from patch unchanged and keeps local state', async (_status, makeError) => {
-        const error = makeError();
+        [new BadRequestError(400, undefined, 'Bad request', {}), {}],
+        [new PermissionDeniedError(403, undefined, 'Forbidden', {}), {}],
+        [new NotFoundError(404, undefined, 'Not found', {}), {}],
+        [new ConflictError(409, undefined, 'Conflict', {}), {}],
+        [new ConflictError(409, undefined, 'Conflict', {}), { expectedConfigVersion: 7 }],
+      ])('preserves state and does not retry after %s with %j', async (error, precondition) => {
         mockClient.toolRouter.session.retrieve.mockResolvedValueOnce({
           ...mockSessionRetrieveResponse,
           experimental: { source_session_config: { id: 'sc_1' } },
@@ -4622,10 +4580,22 @@ describe('ToolRouter', () => {
         const session = await toolRouter.use(sessionId);
         const configBefore = session.config;
 
-        await expect(
-          session.update({ experimental: { sessionConfigId: 'sc_archived' } })
-        ).rejects.toBe(error);
+        const failure = await session
+          .update({ experimental: { sessionConfigId: 'sc_2' }, ...precondition })
+          .catch(e => e);
 
+        if (error.status === 409) {
+          expect(failure).toBeInstanceOf(ComposioSessionConfigConflictError);
+          expect(failure.statusCode).toBe(409);
+          expect(failure.message).toContain(sessionId);
+          expect(failure.message).toContain('sc_2');
+          expect(failure.message).toMatch(/re-fetch/i);
+          expect(failure.message).toMatch(/retry/i);
+          expect(failure.message).not.toMatch(/no longer at version/);
+          expect(failure.meta).toMatchObject({ sessionId, sessionConfigId: 'sc_2' });
+        } else {
+          expect(failure).toBe(error);
+        }
         expect(mockClient.toolRouter.session.patch).toHaveBeenCalledTimes(1);
         expect(session.config).toBe(configBefore);
         expect(session.configVersion).toBe(7);

@@ -13,10 +13,11 @@ const patchSchema = z.union([
   z.object({ toolkits: z.object({ enable: z.array(z.string()) }).strict() }).strict(),
 ]);
 
-describe('Session config updates over HTTP', () => {
+describe('Session configs over HTTP', () => {
   let server: ServerType;
   let composio: Composio;
   let patchRequests: unknown[];
+  let listQueries: Record<string, string>[];
   let conflict: boolean;
   const originalConfig = {
     user_id: 'session-config-test',
@@ -31,8 +32,13 @@ describe('Session config updates over HTTP', () => {
 
   beforeEach(async () => {
     patchRequests = [];
+    listQueries = [];
     conflict = false;
     const app = new Hono();
+    app.get('/api/v3.1/session_configs', c => {
+      listQueries.push(c.req.query());
+      return c.json({ items: [], next_cursor: null });
+    });
     const sessionPath = '/api/v3.1/tool_router/session/trs_test';
     app.get(sessionPath, c =>
       c.json({
@@ -83,6 +89,17 @@ describe('Session config updates over HTTP', () => {
     await new Promise<void>((resolve, reject) =>
       server.close(error => (error ? reject(error) : resolve()))
     );
+  });
+
+  it('omits undefined list parameters while preserving false', async () => {
+    await composio.sessionConfigs.list({
+      search: undefined,
+      archived: false,
+      limit: undefined,
+      cursor: undefined,
+    });
+
+    expect(listQueries).toEqual([{ archived: 'false' }]);
   });
 
   it('applies the documented saved-config update without extra wire fields', async () => {

@@ -17,7 +17,6 @@ import { telemetry } from '../telemetry/Telemetry';
 import { withCancellation } from '../utils/cancellation';
 import {
   transformSessionConfig,
-  transformSessionConfigListParams,
   transformSessionConfigListResponse,
 } from '../utils/transformers/sessionConfigs';
 
@@ -81,9 +80,8 @@ export class SessionConfigs {
         cause: parsedParams.error,
       });
     }
-    const query = transformSessionConfigListParams(parsedParams.data);
     const result = await withCancellation(
-      () => this.client.sessionConfigs.list(query, requestOptions),
+      () => this.client.sessionConfigs.list(parsedParams.data, requestOptions),
       requestOptions?.signal
     );
     return transformSessionConfigListResponse(result);

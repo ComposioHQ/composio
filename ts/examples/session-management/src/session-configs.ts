@@ -15,7 +15,12 @@
  * Run: pnpm start:session-configs
  */
 import { APIError } from '@composio/client';
-import { Composio, SessionPreset, type SessionConfigPolicy } from '@composio/core';
+import {
+  Composio,
+  SessionPreset,
+  type SessionConfigPolicy,
+  type ToolRouterCreateSessionConfig,
+} from '@composio/core';
 import 'dotenv/config';
 import { cleanupVerificationSessions, listAllSessionConfigs } from './session-config-verification';
 
@@ -34,6 +39,12 @@ const userId = `session-configs-check-${Date.now()}`;
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 const createdSessionIds: string[] = [];
 let failures = 0;
+
+async function createTrackedSession(config: ToolRouterCreateSessionConfig) {
+  const session = await composio.sessions.create(userId, config);
+  createdSessionIds.push(session.sessionId);
+  return session;
+}
 
 async function check(label: string, run: () => Promise<void>): Promise<void> {
   try {
@@ -111,10 +122,9 @@ async function main(): Promise<void> {
   });
 
   await check('create() from the config sets sourceSessionConfig and its access', async () => {
-    const session = await composio.sessions.create(userId, {
+    const session = await createTrackedSession({
       experimental: { sessionConfigId },
     });
-    createdSessionIds.push(session.sessionId);
     assert(
       session.experimental.sourceSessionConfig?.id === sessionConfigId,
       `sourceSessionConfig is ${JSON.stringify(session.experimental.sourceSessionConfig)}`
@@ -130,10 +140,9 @@ async function main(): Promise<void> {
 
   let narrowedSessionId: string | undefined;
   await check('update() applies the config to a broad inline session', async () => {
-    const session = await composio.sessions.create(userId, {
+    const session = await createTrackedSession({
       toolkits: ['github', 'gmail', 'slack', 'googlecalendar'],
     });
-    createdSessionIds.push(session.sessionId);
     await session.update({ experimental: { sessionConfigId } });
     narrowedSessionId = session.sessionId;
     assert(
@@ -149,7 +158,7 @@ async function main(): Promise<void> {
 
   await check('create() with an archived config fails with 404', () =>
     expectStatus(404, () =>
-      composio.sessions.create(userId, {
+      createTrackedSession({
         experimental: { sessionConfigId: archivedSessionConfigId },
       })
     )
@@ -157,7 +166,7 @@ async function main(): Promise<void> {
 
   await check('create() with a missing config fails with 404', () =>
     expectStatus(404, () =>
-      composio.sessions.create(userId, {
+      createTrackedSession({
         experimental: { sessionConfigId: 'sc_doesnotexist' },
       })
     )
@@ -191,11 +200,10 @@ async function main(): Promise<void> {
   // Informational: records whether the direct tools preset works with a saved
   // config. The SDK surfaces a backend rejection unchanged either way.
   try {
-    const session = await composio.sessions.create(userId, {
+    await createTrackedSession({
       sessionPreset: SessionPreset.DIRECT_TOOLS,
       experimental: { sessionConfigId },
     });
-    createdSessionIds.push(session.sessionId);
     console.log('INFO  DIRECT_TOOLS with a saved config: accepted');
   } catch (error) {
     console.log(

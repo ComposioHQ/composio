@@ -1,11 +1,9 @@
 import type {
-  SessionConfigsListParams as RawSessionConfigListParams,
   SessionConfigsListResponse as RawSessionConfigListResponse,
   SessionConfigsRetrieveResponse as RawSessionConfig,
 } from '@composio/client/resources/session-configs';
 import {
   SessionConfig,
-  SessionConfigListParams,
   SessionConfigListResponse,
   SessionConfigListResponseSchema,
   SessionConfigSchema,
@@ -13,16 +11,6 @@ import {
   SessionConfigSummarySchema,
 } from '../../types/sessionConfigs.types';
 import { transform } from '../transform';
-
-/** Forwards only the keys the caller provided; the backend owns defaults and caps. */
-export const transformSessionConfigListParams = (
-  params: SessionConfigListParams
-): RawSessionConfigListParams => ({
-  ...(params.search !== undefined && { search: params.search }),
-  ...(params.archived !== undefined && { archived: params.archived }),
-  ...(params.limit !== undefined && { limit: params.limit }),
-  ...(params.cursor !== undefined && { cursor: params.cursor }),
-});
 
 export const transformSessionConfigSummary = (
   response: RawSessionConfigListResponse.Item
