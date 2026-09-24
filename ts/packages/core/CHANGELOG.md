@@ -1,5 +1,25 @@
 # @composio/core
 
+## 0.21.0
+
+### Minor Changes
+
+- 461c6c3: Add experimental `premiumUsage` support when creating and updating Tool Router Sessions.
+- 0833c1b: Expose `hostedAccount.allowedToolSlugs` on `session.search()` toolkit connection statuses for toolkits served by a Composio hosted account.
+- de5e3f6: Add experimental support for saved Session configs. `composio.sessionConfigs.list()` and `composio.sessionConfigs.get()` read the project's saved `sc_…` configs, and `experimental.sessionConfigId` on `composio.sessions.create()` starts a session from one. Combining `sessionConfigId` with inline access fields now fails before any request: on create with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`, and on `session.update()` with `toolkits`, `tools` or `tags` (including `null`). TypeScript reports the mix at compile time and the SDK throws `ValidationError` at runtime; other invalid inputs keep throwing `ZodError`. `session.experimental.sourceSessionConfig` exposes the last config applied to the session after `create()`, `sessions.use()` and `update()`. A 409 while `update()` applies a config now says that the session or the config changed and to re-fetch and retry, instead of reporting a stale version.
+
+### Patch Changes
+
+- 3721d04: Validate the server-supplied mount path before `RemoteFile.save()` turns it into a filename. A `mountRelativePath` of `""`, `"."`, `"sub/."`, `"foo/.."` or `".."` made the default save path equal the download directory or its parent, which surfaced as an unhandled `EISDIR` from `writeFileSync` after the directory had already been created. These now throw a `ValidationError` naming the offending mount path, before any `mkdir` or write. An explicit `path` passed by the caller is unaffected.
+
+  The new `safeBasename` helper applies the filename safety checks used by the Python SDK: both `/` and `\` count as separators, and NUL or control characters, Windows-reserved characters and device names, trailing spaces or dots, invalid Unicode and names over 128 UTF-8 bytes are rejected. `RemoteFile.filename` now also splits on both separators, so a Windows-style mount path reduces to the same display name on every platform.
+
+  Drive-relative paths such as `C:report.txt` reduce to `report.txt`. Whitespace stripping follows Python rules, preserving U+FEFF. Both SDKs also reject trailing dots exposed by stripping Unicode whitespace.
+
+- 5ec0bdf: Validate the default destination in `RemoteFile.save()` before downloading content. Invalid mount paths now raise `ValidationError` without a network request, even when the download would fail.
+- de5e3f6: Remove experimental annotations from the top-level Session config read methods. Applying a config and reading its source metadata remain under `experimental`.
+- 5d07582: `session.update()` no longer sends `expected_config_version` by default. Since 0.20.0 it sent the session's last observed `configVersion` on every call, and the API rejects that field with a 400 (`Unrecognized key(s) in object: 'expected_config_version'`), so every default `update()` failed. The default is now last writer wins. Pass `expectedConfigVersion` (for example `session.configVersion`) to make an update conditional where the API supports it; `expectedConfigVersion: false` is the same as omitting it.
+
 ## 0.20.0
 
 ### Minor Changes
