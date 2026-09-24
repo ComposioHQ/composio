@@ -137,7 +137,6 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
-      '/docs/security/data-retention',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
