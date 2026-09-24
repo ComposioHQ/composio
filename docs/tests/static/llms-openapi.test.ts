@@ -24,6 +24,8 @@ mock.module("@/lib/meta-tools-data", () => ({
   getAllMetaTools: async () => [],
   getMetaToolBySlug: async () => null,
 }));
+// Keep toolkit-schema real: module mocks persist across files in Bun and would
+// replace the transformations tested by toolkit-schema.test.ts when it runs later.
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;
 let degradedPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").degradedPageToMarkdown;
@@ -35,6 +37,15 @@ beforeAll(async () => {
 });
 
 describe("LLM OpenAPI markdown", () => {
+  test("preserves real toolkit schema helpers for subsequent suites", async () => {
+    const { processSchema, toolFromApi } = await import("../../lib/toolkit-schema");
+    expect(processSchema({
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    })?.query.required).toBe(true);
+    expect(toolFromApi({ slug: "TEST_TOOL" }).name).toBe("TEST_TOOL");
+  });
+
   test("continues to render API operations with endpoint and cURL details", async () => {
     bundledSpec = {
       paths: {

@@ -16,6 +16,8 @@ Authenticate with a [scoped project API key](/reference/authenticating-to-compos
 
 ## When to use it
 
+For a profile lookup during onboarding, use the proxy with the exact connected account ID you just created. See [Identify the connected account](/docs/authentication/manually-authenticating#identify-the-connected-account) and the [Gmail domain restriction example](/examples/restrict-gmail-domain) for this account-specific flow.
+
 - **Endpoints with no predefined tool.** You need a specific endpoint (an unusual GitHub, LinkedIn, or Notion route) that isn't exposed as a Composio tool. Send it through the proxy instead of extracting the raw token and calling the API yourself.
 - **Request shapes a tool can't express.** Custom query parameters, partial field masks, or advanced filters on Gmail, Drive, Sheets, and similar. The proxy gives you the full HTTP surface of the upstream API while Composio keeps managing auth.
 
