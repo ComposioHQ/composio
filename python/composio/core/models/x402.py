@@ -8,20 +8,28 @@ currently has no step to complete the handshake and retry -- it just fails.
 
 This module plugs that gap without touching the core execution path:
 
-* :func:`parse_x402_envelope` decodes a 402 response body (the x402 v2
-  ``payment-required`` shape and the inline ``accepts[]`` shape) into typed,
-  validated :class:`X402Envelope` objects.
+* :func:`parse_x402_envelope` decodes a payment envelope -- from the x402 v2
+  ``payment-required`` HTTP header **or** the inline ``accepts[]`` body shape --
+  into typed, validated :class:`X402Envelope` objects.
 * :func:`x402_after_execute` builds a Composio ``after_execute`` modifier.  When
-  the tool response carries a valid envelope and a ``payer`` is configured, it
-  asks the payer to settle the quoted amount and marks the response for a retry.
-  When no payer applies, or the envelope is malformed, it surfaces a clear
-  ``payment_required`` signal instead of a generic failure -- **no money moves
-  automatically**.
+  the tool response signals a payment is owed and a matching ``payer`` is
+  configured, it asks the payer to settle the quoted amount and marks the
+  response for a retry.  When no payer applies, or the envelope is malformed,
+  it surfaces a clear ``payment_required`` signal instead of a generic failure
+  -- **no money moves automatically**.
 
 The design deliberately keeps the payment primitive out of the model's hands:
 ``payer`` is an ordinary callback ``(envelope) -> PaymentAction`` that the
 application supplies (a wallet SDK, a hardware signer, a Nano seed, ...).  The
 modifier never fabricates a payment and never guesses at a destination.
+
+Contract note (why this is a *signal*, not a self-retrying loop): a Composio
+``after_execute`` modifier runs once, after the tool has already executed, and
+has no handle to re-invoke the tool (``tools.execute`` applies the modifier to
+the finished result and returns it -- see ``tools.py``).  So on settlement this
+modifier annotates the response with ``retry_required: true`` and a
+``payment_ref``; the caller/agent performs the retry with the proof attached.
+It never claims to have re-run the tool it cannot re-run.
 
 Example (Nano/XNO payer via any wallet SDK that returns a block/hash):
 
@@ -38,13 +46,18 @@ Example (Nano/XNO payer via any wallet SDK that returns a block/hash):
 
 from __future__ import annotations
 
+import base64
 import dataclasses
 import json
+import functools
 import typing as t
 
+from ._modifiers import after_execute
+
 if t.TYPE_CHECKING:
-    from ._modifiers import AfterExecute
     from .tools import ToolExecutionResponse
+
+from ._modifiers import AfterExecute
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Envelope model
@@ -58,8 +71,8 @@ class X402Accept:
     scheme: str
     network: str
     asset: str
-    amount: t.Optional[str] = None
-    pay_to: t.Optional[str] = None
+    amount: str
+    pay_to: str
 
     @property
     def key(self) -> str:
@@ -74,10 +87,12 @@ class X402Envelope:
     accepts: t.Tuple[X402Accept, ...]
     price: t.Optional[str] = None
     pay_to: t.Optional[str] = None
-    # Raw body that produced the envelope (for debugging / re-negotiation).
+    # Raw body or header that produced the envelope (for debugging).
     raw: t.Optional[str] = None
 
-    def offers(self, scheme: str, network: t.Optional[str] = None, asset: t.Optional[str] = None) -> t.Optional[X402Accept]:
+    def offers(
+        self, scheme: str, network: t.Optional[str] = None, asset: t.Optional[str] = None
+    ) -> t.Optional[X402Accept]:
         """Return the first accept matching the given scheme/network/asset, if any."""
         for acc in self.accepts:
             if acc.scheme != scheme:
@@ -91,7 +106,7 @@ class X402Envelope:
 
 
 class X402ParseError(ValueError):
-    """Raised when a 402 response body is not a valid x402 envelope."""
+    """Raised when a 402 payload is not a valid, quoteable x402 envelope."""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +114,10 @@ class X402ParseError(ValueError):
 # ─────────────────────────────────────────────────────────────────────────────
 
 _KNOWN_SCHEMES = ("exact",)
+
+# Header names used by x402 v2 to carry the payment envelope out of band from
+# the body (the ``payment-required`` response header).
+_PAYMENT_REQUIRED_HEADERS = ("payment-required", "Payment-Required", "payment_required")
 
 
 def _required_str(obj: t.Any, key: str, where: str) -> str:
@@ -108,71 +127,126 @@ def _required_str(obj: t.Any, key: str, where: str) -> str:
     return val
 
 
+def _optional_str(obj: t.Any, *keys: str) -> t.Optional[str]:
+    for key in keys:
+        val = obj.get(key) if isinstance(obj, dict) else None
+        if isinstance(val, str) and val:
+            return val
+    return None
+
+
 def _parse_accept(item: t.Any, where: str) -> X402Accept:
+    """Parse and strictly validate one ``accepts[]`` entry.
+
+    A quoteable offer must carry an ``amount`` and a ``payTo`` destination; an
+    accept missing either cannot produce a real payment and is rejected here so
+    a malformed offer never reaches a payer (no money moves on bad data).
+    """
     if not isinstance(item, dict):
         raise X402ParseError(f"{where}: accepts[] entry is not an object")
     scheme = _required_str(item, "scheme", where)
     network = _required_str(item, "network", where)
     asset = _required_str(item, "asset", where)
-    amount = item.get("amount")
-    pay_to = item.get("payTo") or item.get("pay_to")
+    amount = _required_str(item, "amount", where)
+    pay_to = _optional_str(item, "payTo", "pay_to")
+    if not pay_to:
+        raise X402ParseError(f"{where}: accept for {scheme}:{network}:{asset} carries no payTo")
     return X402Accept(
         scheme=scheme,
         network=network,
         asset=asset,
-        amount=amount if isinstance(amount, str) and amount else None,
-        pay_to=pay_to if isinstance(pay_to, str) and pay_to else None,
+        amount=amount,
+        pay_to=pay_to,
     )
 
 
-def parse_x402_envelope(body: t.Union[str, t.Dict[str, t.Any], bytes]) -> X402Envelope:
-    """Parse an x402 payment envelope from a 402 response body.
+def _decode_payment_required_header(value: str) -> t.Dict[str, t.Any]:
+    """Decode an x402 v2 ``payment-required`` header into a JSON object.
 
-    Accepts the raw JSON string, bytes, or an already-decoded dict.  Two shapes
-    are supported:
-
-    * x402 v2 ``payment-required``: ``{"x402Version": 2, "accepts": [...],
-      "price_xno": "...", "pay_to": "..."}`` (and the generic ``price`` /
-      ``payTo`` spellings).
-    * inline ``accepts[]``: ``{"accepts": [...]}``.
-
-    Raises :class:`X402ParseError` for anything that is not a well-formed
-    envelope, so callers can fail cleanly (no payment) on malformed responses.
+    The header value is a base64url-encoded JSON envelope per the x402 spec;
+    a plain-JSON value is accepted too so implementations that send it raw work.
     """
-    if isinstance(body, bytes):
-        body = body.decode("utf-8", errors="replace")
-    if isinstance(body, str):
-        stripped = body.strip()
-        if not stripped:
-            raise X402ParseError("empty 402 body")
+    stripped = value.strip()
+    if not stripped:
+        raise X402ParseError("payment-required header is empty")
+    data: t.Optional[t.Any] = None
+    candidates = [stripped]
+    try:
+        # base64url (padded or not) is the spec form.
+        decoded = base64.urlsafe_b64decode(stripped + "=" * (-len(stripped) % 4))
+        candidates.append(decoded.decode("utf-8", errors="replace"))
+    except Exception:
+        pass
+    for cand in candidates:
         try:
-            obj = json.loads(stripped)
-        except json.JSONDecodeError as exc:
-            raise X402ParseError(f"402 body is not valid JSON: {exc}") from exc
-    elif isinstance(body, dict):
-        obj = body
+            parsed = json.loads(cand)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            data = parsed
+            break
+    if data is None:
+        raise X402ParseError("payment-required header is not a JSON envelope")
+    return t.cast(t.Dict[str, t.Any], data)
+
+
+def parse_x402_envelope(
+    body: t.Union[str, t.Dict[str, t.Any], bytes, None],
+    *,
+    payment_required_header: t.Optional[str] = None,
+) -> X402Envelope:
+    """Parse an x402 payment envelope from a 402 response.
+
+    Accepts the raw JSON string, bytes, or an already-decoded dict for the
+    *body*, plus an optional x402 v2 ``payment-required`` header value.  The
+    header (base64url JSON) takes precedence when present; otherwise the body's
+    inline ``accepts[]`` shape is used.
+
+    Raises :class:`X402ParseError` for anything that is not a well-formed,
+    quoteable envelope, so callers can fail cleanly (no payment) on malformed
+    responses.
+    """
+    source: t.Optional[t.Any] = None
+    raw: t.Optional[str] = None
+
+    if payment_required_header:
+        obj = _decode_payment_required_header(payment_required_header)
+        source = obj
+        raw = payment_required_header
     else:
-        raise X402ParseError("402 body must be str, bytes or dict")
+        if isinstance(body, bytes):
+            body = body.decode("utf-8", errors="replace")
+        if isinstance(body, str):
+            stripped = body.strip()
+            if not stripped:
+                raise X402ParseError("empty 402 body")
+            try:
+                obj = json.loads(stripped)
+            except json.JSONDecodeError as exc:
+                raise X402ParseError(f"402 body is not valid JSON: {exc}") from exc
+            source = obj
+            raw = stripped
+        elif isinstance(body, dict):
+            source = body
+            raw = json.dumps(body)
+        elif body is None:
+            raise X402ParseError("no payment envelope in 402 response")
+        else:
+            raise X402ParseError("402 body must be str, bytes, dict or None")
 
-    if not isinstance(obj, dict):
-        raise X402ParseError("402 body is not a JSON object")
+    if not isinstance(source, dict):
+        raise X402ParseError("payment envelope is not a JSON object")
 
-    accepts_raw = obj.get("accepts") or obj.get("accepts[]")
+    accepts_raw = source.get("accepts") or source.get("accepts[]")
     if not isinstance(accepts_raw, list) or not accepts_raw:
-        raise X402ParseError("402 body carries no accepts[] envelope")
+        raise X402ParseError("envelope carries no accepts[] array")
     if not all(isinstance(a, dict) for a in accepts_raw):
         raise X402ParseError("accepts[] contains a non-object entry")
 
     accepts = tuple(_parse_accept(a, "accepts") for a in accepts_raw)
-
-    price = obj.get("price_xno") or obj.get("price") or obj.get("amount")
-    pay_to = obj.get("pay_to") or obj.get("payTo")
-    return X402Envelope(
-        accepts=accepts,
-        price=price if isinstance(price, str) and price else None,
-        pay_to=pay_to if isinstance(pay_to, str) and pay_to else None,
-        raw=body if isinstance(body, str) else json.dumps(obj),
-    )
+    price = _optional_str(source, "price_xno", "price", "amount")
+    pay_to = _optional_str(source, "pay_to", "payTo")
+    return X402Envelope(accepts=accepts, price=price, pay_to=pay_to, raw=raw)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -192,61 +266,134 @@ class PaymentAction:
 Payer = t.Callable[[X402Envelope], PaymentAction]
 
 
-def _is_x402_response(response: "ToolExecutionResponse") -> t.Tuple[bool, t.Optional[t.Any]]:
-    """Return (True, body) when the tool response signals a 402 payment is owed."""
+def _extract_body_and_header(
+    response: "ToolExecutionResponse",
+) -> t.Tuple[bool, t.Any, t.Optional[str]]:
+    """Return (is_payment, body, payment_required_header).
+
+    A response is treated as a payment request **only** on an explicit signal:
+    an HTTP ``402`` status, an x402 ``payment-required`` header, or a body that
+    carries an ``accepts`` envelope together with a version/price/payment
+    marker.  A successful response that merely contains an ``accepts`` key in
+    its payload never counts as a payment request -- that would risk moving
+    money on data that happens to share a field name.
+    """
     data = response.get("data") or {}
-    # Composio may surface the HTTP status in data or the 402 body itself.
-    if isinstance(data, dict):
-        body = data.get("body", data)
-        status = data.get("status") or data.get("status_code")
-        if status in (402, "402"):
-            return True, body
-    # Direct body shape (HTTP tools that return the raw response).
-    if isinstance(data, dict) and ("accepts" in data or "accepts[]" in data):
-        return True, data
-    return False, None
+    if not isinstance(data, dict):
+        return False, None, None
+
+    status = data.get("status") or data.get("status_code")
+    status_is_402 = status in (402, "402")
+
+    headers = data.get("headers")
+    header_offer: t.Optional[str] = None
+    if isinstance(headers, dict):
+        for name in _PAYMENT_REQUIRED_HEADERS:
+            val = headers.get(name)
+            if isinstance(val, str) and val.strip():
+                header_offer = val
+                break
+
+    body = data.get("body")
+    body_dict: t.Optional[t.Dict[str, t.Any]] = None
+    if isinstance(body, dict):
+        body_dict = body
+    elif isinstance(data, dict) and (
+        "accepts" in data or "accepts[]" in data or "x402Version" in data
+    ):
+        body_dict = data
+        body = data
+
+    if status_is_402 or header_offer is not None:
+        return True, body, header_offer
+
+    # Inline body shape: only when an accepts envelope is accompanied by a real
+    # payment marker (x402 version, a price, or an explicit payment_required
+    # flag).  Naked accepts on a successful response is not a payment request.
+    if isinstance(body_dict, dict):
+        has_accepts = "accepts" in body_dict or "accepts[]" in body_dict
+        has_payment_marker = any(
+            key in body_dict for key in ("x402Version", "price", "price_xno", "amount", "payment_required")
+        )
+        if has_accepts and has_payment_marker:
+            return True, body, header_offer
+
+    return False, None, None
+
+
+_Unspecified = object()
 
 
 def x402_after_execute(
-    payer: t.Optional[Payer] = None,
+    payer: t.Union[Payer, object] = _Unspecified,
     *,
     tools: t.Optional[t.List[str]] = None,
     toolkits: t.Optional[t.List[str]] = None,
 ) -> "AfterExecute | t.Callable[[Payer], AfterExecute]":
     """Build a Composio ``after_execute`` modifier for x402 pay-per-call tools.
 
-    Given a ``payer`` callback ``(X402Envelope) -> PaymentAction``, returns a
-    modifier to pass via ``tools.get(..., modifiers=[...])`` /
-    ``tools.execute(..., modifiers=[...])``.  Behaviour:
+    Use it with a concrete ``payer`` to settle (returns the modifier directly):
 
-    * If the tool response does **not** signal 402, it is returned untouched.
+        mod = x402_after_execute(my_payer, toolkits=["http"])
+
+    Or scope-only, applied later as a decorator (the composio ``after_execute``
+    shape), which also lets a no-payer modifier be built that merely *signals*
+    ``payment_required`` without settling:
+
+        x402_after_execute(toolkits=["http"])(my_payer)
+        x402_after_execute(payer=None, toolkits=["http"])   # signals only
+
+    Behaviour of the resulting modifier:
+
+    * If the tool response does **not** signal a payment, it is returned
+      untouched.
     * If it does and the envelope parses cleanly and a payer settles it, the
-      response gains a ``payment_ref`` and ``_retry`` is set so the caller (or
-      the agent) can retry the tool call.
-    * If the envelope is malformed, or no payer is configured, or the payer
-      refuses, the response is returned with a clear ``payment_required``
-      marker -- **no money moves**.
-
-    Called with no ``payer`` (or only ``tools``/``toolkits``), it returns a
-    partial usable as a decorator: ``x402_after_execute(toolkits=["http"])(fn)``.
+      response gains a ``payment_ref`` and ``retry_required: true`` -- the
+      caller retries the tool with the proof attached (see the module contract
+      note: an ``after_execute`` modifier cannot re-invoke the tool itself).
+    * If the envelope is malformed, incomplete, or no payer settles it, the
+      response is returned with a clear ``payment_required`` marker -- **no
+      money moves**.
     """
-    if payer is None and tools is None and toolkits is None:
-        raise ValueError("provide a payer, or tools/toolkits to scope the modifier")
+    if payer is _Unspecified:
+        if tools is None and toolkits is None:
+            raise ValueError("provide a payer, or tools/toolkits to scope the modifier")
+        # Scope-only: return a composio-style decorator that takes the payer.
+        return t.cast(
+            t.Callable[[Payer], AfterExecute],
+            functools.partial(_build_modifier, tools=tools, toolkits=toolkits),
+        )
+    payer_fn = t.cast(t.Optional[Payer], payer) if payer is not None else None
+    return _build_modifier(payer_fn, tools=tools, toolkits=toolkits)
 
-    import functools
 
-    if payer is None:
-        return functools.partial(x402_after_execute, tools=tools, toolkits=toolkits)
+def _build_modifier(
+    payer: t.Optional[Payer],
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> "AfterExecute":
+    """Wrap the inner modifier function as a Composio ``after_execute`` modifier."""
+    return t.cast(
+        "AfterExecute",
+        after_execute(_modifier(payer), tools=tools, toolkits=toolkits),
+    )
 
-    def _modifier(tool: str, toolkit: str, response: "ToolExecutionResponse") -> "ToolExecutionResponse":
-        is_402, body = _is_x402_response(response)
+
+def _modifier(payer: t.Optional[Payer]) -> t.Callable[[str, str, "ToolExecutionResponse"], "ToolExecutionResponse"]:
+    def _apply(
+        tool: str, toolkit: str, response: "ToolExecutionResponse"
+    ) -> "ToolExecutionResponse":
+        is_402, body, header_offer = _extract_body_and_header(response)
         if not is_402:
             return response
 
         try:
-            envelope = parse_x402_envelope(body)
+            envelope = parse_x402_envelope(
+                body, payment_required_header=header_offer
+            )
         except X402ParseError as exc:
-            # Malformed envelope -> clear signal, no payment.
+            # Malformed/incomplete envelope -> clear signal, no payment.
             return {
                 **response,
                 "data": {
@@ -257,6 +404,7 @@ def x402_after_execute(
             }
 
         if payer is None:
+            # No payer configured: report the debt, move no money.
             return {
                 **response,
                 "data": {
@@ -276,16 +424,9 @@ def x402_after_execute(
         if action.message:
             outcome["payment_message"] = action.message
         if action.settled:
-            outcome["_retry"] = True
+            # after_execute cannot re-invoke the tool; it signals the caller to
+            # retry with the proof attached. See the module contract note.
+            outcome["retry_required"] = True
         return {**response, "data": outcome}
 
-    # Match the SDK's modifier factory shape: return a callable the caller can
-    # pass through `after_execute(...)`.
-    try:
-        from ._modifiers import after_execute as _after_execute
-
-        return t.cast("AfterExecute", _after_execute(_modifier, tools=tools, toolkits=toolkits))
-    except Exception:
-        # Fallback: return the raw callable so the module stays importable
-        # even if the local import path changes.
-        return t.cast("AfterExecute", _modifier)
+    return _apply
