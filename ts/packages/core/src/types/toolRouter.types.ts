@@ -556,6 +556,8 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   statusMessage: z.string(),
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
+  /** Present when the toolkit runs on a Composio hosted account; only these tools run on it. */
+  hostedAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
