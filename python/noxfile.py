@@ -109,8 +109,21 @@ def tst(session: Session):
     session.install("./providers/crewai")
     session.install("./providers/langchain")
     session.install("./providers/langgraph")
-    test_paths = session.posargs or ["tests/"]
-    session.run("pytest", *test_paths, "-v", "--tb=short")
+    session.install("./providers/gemini")
+    session.install("./providers/google")
+    session.install("./providers/openai_agents")
+    session.install("./providers/claude_agent_sdk")
+    if session.posargs:
+        session.run("pytest", *session.posargs, "-v", "--tb=short")
+        return
+    # Separate runs: the provider packages' `test_provider.py` files share a
+    # basename with tests/, which pytest cannot collect in a single session.
+    for test_path in (
+        "tests/",
+        "providers/openai_agents/tests",
+        "providers/claude_agent_sdk/tests",
+    ):
+        session.run("pytest", test_path, "-v", "--tb=short")
 
 
 @nox.session
