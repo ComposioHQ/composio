@@ -1118,6 +1118,9 @@ export class ToolRouterSession<
           : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
+      ...(remoteResult?.premiumCharge !== undefined && {
+        premiumCharge: remoteResult.premiumCharge,
+      }),
     };
   }
 }

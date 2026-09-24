@@ -50,6 +50,7 @@ import {
   transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
+  transformToolRouterPremiumUsageParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
@@ -271,6 +272,9 @@ export class ToolRouter<
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
+      ...(routerConfig.premiumUsage !== undefined && {
+        premium_usage: transformToolRouterPremiumUsageParams(routerConfig.premiumUsage),
+      }),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),
       manage_connections: transformToolRouterManageConnectionsParams(

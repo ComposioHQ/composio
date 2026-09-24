@@ -17,6 +17,7 @@ import {
   ToolRouterUpdateManageConnectionsSchema,
   ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
+  ToolRouterPremiumUsage,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -202,6 +203,21 @@ export type SessionPatchBody = Omit<
   expected_config_version?: number;
 };
 
+export type SessionPremiumUsageBody = NonNullable<SessionPatchParams['premium_usage']>;
+
+export const transformToolRouterPremiumUsageParams = (
+  config: ToolRouterPremiumUsage
+): SessionPremiumUsageBody => {
+  if (config === false) return false;
+  return {
+    ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
+    ...(config.tools !== undefined && { tools: config.tools }),
+    ...(config.returnPremiumCharge !== undefined && {
+      return_premium_charge: config.returnPremiumCharge,
+    }),
+  };
+};
+
 export const transformToolRouterUpdateManageConnectionsParams = (
   params: boolean | ToolRouterUpdateManageConnectionsConfig
 ): SessionPatchManageConnectionsBody => {
@@ -337,6 +353,9 @@ export const transformToolRouterUpdateParams = (
   if (config.toolkits !== undefined) {
     params.toolkits =
       config.toolkits === null ? null : transformToolRouterToolkitsParams(config.toolkits);
+  }
+  if (config.premiumUsage !== undefined) {
+    params.premium_usage = transformToolRouterPremiumUsageParams(config.premiumUsage);
   }
   if (config.tools !== undefined) {
     params.tools = config.tools === null ? null : transformToolRouterToolsParams(config.tools);

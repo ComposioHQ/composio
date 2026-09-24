@@ -160,5 +160,19 @@ describe('toolRouterResponseTransform', () => {
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
     });
+
+    it('preserves the optional premium charge without inventing one', () => {
+      expect(
+        transformExecuteResponse({
+          data: {},
+          error: null,
+          log_id: 'log_paid',
+          premium_charge: { amount: '0.01', currency: 'USD' },
+        }).premiumCharge
+      ).toEqual({ amount: '0.01', currency: 'USD' });
+      expect(
+        transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
+      ).not.toHaveProperty('premiumCharge');
+    });
   });
 });

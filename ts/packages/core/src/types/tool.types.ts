@@ -407,6 +407,8 @@ export const ToolExecuteResponseSchema = z.object({
   successful: z.boolean(),
   logId: z.string().optional(),
   sessionInfo: z.unknown().optional(),
+  /** Actual premium usage charge when the Session opts into returning it. */
+  premiumCharge: z.unknown().optional(),
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;
 
