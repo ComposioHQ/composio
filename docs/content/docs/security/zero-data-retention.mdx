@@ -47,8 +47,6 @@ In a ZDR project, ZDR covers these calls:
 ZDR covers calls through Composio Managed apps only on the Enterprise plan.
 </Callout>
 
-Trigger event logs in a ZDR project also omit payloads, but ZDR does not cover triggers.
-
 ## What ZDR does not cover
 
 ZDR does not cover the following, even in a ZDR project. For how long Composio keeps logs, files, and sandbox data, see [Data retention](/docs/security/data-retention).
@@ -56,7 +54,7 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 | Feature | Details | What to do |
 | --- | --- | --- |
 | Composio Managed apps, except on the Enterprise plan | Calls through auth configs that use Composio's own OAuth app are covered only on the Enterprise plan. | [Create an auth config with your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config) for each toolkit that needs ZDR. Connections made through the managed app keep using it, so each user connects again through the new auth config. You can also [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-zero-data-retention) about the Enterprise plan. |
-| Triggers | Composio receives, processes, and delivers trigger events through systems that ZDR does not cover. | Do not use triggers for data that needs ZDR. |
+| Triggers | With ZDR on, trigger logs leave out event payloads, but Composio still stores the events to process and deliver them. | Do not use triggers for data that needs ZDR. |
 | Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
 | Files | Files that tools upload or download, including binary responses from Proxy Execute, are staged in temporary storage behind signed links. A link expires after 1 hour by default, and you can set the expiry per project from 1 second to 24 hours. Composio cleans up staged files after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
 | Requests with the `x-debug: true` header | Composio archives these requests for debugging. | Do not send this header from ZDR projects. |
