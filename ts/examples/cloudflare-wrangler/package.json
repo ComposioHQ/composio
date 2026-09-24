@@ -1,6 +1,6 @@
 {
 	"name": "cloudflare-wrangler-example",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
