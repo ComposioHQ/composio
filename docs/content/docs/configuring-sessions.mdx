@@ -85,6 +85,10 @@ The config owns the session's toolkit, tool, and tag access. On `create()`, you 
 
 Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
 
+`SessionPreset.DIRECT_TOOLS` defaults to `preload: { tools: "all" }` when you omit `preload`. With a saved config, the backend resolves its policy before validating that preload. The policy must select toolkits with `enable`, enable specific tools, or enable tags within a named toolkit's tool rule. An unrestricted policy, a denylist-only policy, or top-level tags alone returns `400`. The resolved tool set must also contain at most 1,000 tools.
+
+Live verification accepted `DIRECT_TOOLS` with a saved config that provided a positive toolkit/tool scope. The no-positive-scope case was not exercised in that run; its `400` behavior is enforced by the API's preload validation. The SDK passes these API errors through unchanged.
+
 ### Applying a config to an existing session
 
 Pass `sessionConfigId` in the `experimental` block of `session.update()` to replace the session's toolkit, tool, and tag access with the config's policy. Other settings are preserved.
