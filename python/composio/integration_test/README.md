@@ -28,6 +28,7 @@ uv run pytest composio/integration_test/ -v
 
 - **`test_mcp.py`** - MCP (Model Context Protocol) functionality tests
 - **`test_tool_router.py`** - ToolRouter experimental feature tests
+- **`test_tool_router_session_update.py`** - `session.update()` with default options against the live API
 
 ## Requirements
 

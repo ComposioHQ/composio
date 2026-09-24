@@ -119,8 +119,10 @@
   ],
   "license": "ISC",
   "devDependencies": {
+    "@hono/node-server": "^2.1.1",
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.8.0",
+    "hono": "catalog:",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",

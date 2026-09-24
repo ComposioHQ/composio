@@ -2,14 +2,19 @@
 
 from unittest.mock import Mock
 
+import httpx
 import pytest
-
+from composio.client import HttpClient
 from composio.client.types import (
     auth_config_create_response,
+    auth_config_delete_response,
     auth_config_list_response,
     auth_config_retrieve_response,
+    auth_config_update_response,
+    auth_config_update_status_response,
 )
 from composio.core.models.auth_configs import AuthConfigs
+from pydantic import BaseModel
 
 
 class TestAuthConfigs:
@@ -266,7 +271,9 @@ class TestAuthConfigs:
         self, auth_configs, mock_client
     ):
         """Test updating custom auth config with credentials."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -288,7 +295,9 @@ class TestAuthConfigs:
 
     def test_update_default_auth_config_with_scopes(self, auth_configs, mock_client):
         """Test updating default auth config with scopes."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -307,7 +316,9 @@ class TestAuthConfigs:
 
     def test_update_with_is_enabled_for_tool_router(self, auth_configs, mock_client):
         """Test updating auth config with isEnabledForToolRouter."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -324,7 +335,9 @@ class TestAuthConfigs:
 
     def test_update_with_tool_access_config(self, auth_configs, mock_client):
         """Test updating auth config with tool access configuration."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -343,7 +356,9 @@ class TestAuthConfigs:
 
     def test_update_with_large_credential_object(self, auth_configs, mock_client):
         """Test updating auth config with large credential object."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         large_credentials = {
@@ -383,7 +398,9 @@ class TestAuthConfigs:
     # Delete tests
     def test_delete_auth_config_by_id(self, auth_configs, mock_client):
         """Test deleting auth config by ID."""
-        mock_response = {"id": "auth_12345", "status": "deleted"}
+        mock_response = auth_config_delete_response.AuthConfigDeleteResponse(
+            success=True, message="Successfully deleted auth config"
+        )
         mock_client.auth_configs.delete.return_value = mock_response
 
         result = auth_configs.delete("auth_12345")
@@ -403,7 +420,11 @@ class TestAuthConfigs:
     # Enable/Disable tests
     def test_enable_auth_config(self, auth_configs, mock_client):
         """Test enabling auth config."""
-        mock_response = {"id": "auth_12345", "status": "ENABLED"}
+        mock_response = (
+            auth_config_update_status_response.AuthConfigUpdateStatusResponse(
+                success=True, message="Successfully updated auth config status"
+            )
+        )
         mock_client.auth_configs.update_status.return_value = mock_response
 
         result = auth_configs.enable("auth_12345")
@@ -415,7 +436,11 @@ class TestAuthConfigs:
 
     def test_disable_auth_config(self, auth_configs, mock_client):
         """Test disabling auth config."""
-        mock_response = {"id": "auth_12345", "status": "DISABLED"}
+        mock_response = (
+            auth_config_update_status_response.AuthConfigUpdateStatusResponse(
+                success=True, message="Successfully updated auth config status"
+            )
+        )
         mock_client.auth_configs.update_status.return_value = mock_response
 
         result = auth_configs.disable("auth_12345")
@@ -446,7 +471,9 @@ class TestAuthConfigs:
     # Edge cases
     def test_update_with_missing_optional_fields(self, auth_configs, mock_client):
         """Test update works with only required fields."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -565,7 +592,9 @@ class TestAuthConfigsOverloads:
 
     def test_update_overload_custom_type(self, auth_configs, mock_client):
         """Test update with custom type."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -578,7 +607,9 @@ class TestAuthConfigsOverloads:
 
     def test_update_overload_default_type(self, auth_configs, mock_client):
         """Test update with default type."""
-        mock_response = {"id": "auth_12345", "status": "success"}
+        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
+            success=True, message="Successfully updated auth config"
+        )
         mock_client.auth_configs.update.return_value = mock_response
 
         options = {
@@ -588,3 +619,81 @@ class TestAuthConfigsOverloads:
         result = auth_configs.update("auth_12345", options=options)
 
         assert result == mock_response
+
+
+@pytest.mark.parametrize(
+    ("operation", "method", "path", "response_type"),
+    [
+        (
+            "update_custom",
+            "PATCH",
+            "/api/v3.1/auth_configs/ac_test",
+            auth_config_update_response.AuthConfigUpdateResponse,
+        ),
+        (
+            "update_default",
+            "PATCH",
+            "/api/v3.1/auth_configs/ac_test",
+            auth_config_update_response.AuthConfigUpdateResponse,
+        ),
+        (
+            "delete",
+            "DELETE",
+            "/api/v3.1/auth_configs/ac_test",
+            auth_config_delete_response.AuthConfigDeleteResponse,
+        ),
+        (
+            "enable",
+            "PATCH",
+            "/api/v3.1/auth_configs/ac_test/ENABLED",
+            auth_config_update_status_response.AuthConfigUpdateStatusResponse,
+        ),
+        (
+            "disable",
+            "PATCH",
+            "/api/v3.1/auth_configs/ac_test/DISABLED",
+            auth_config_update_status_response.AuthConfigUpdateStatusResponse,
+        ),
+    ],
+)
+def test_mutation_response_through_generated_client(
+    operation, method, path, response_type
+):
+    """Parse HTTP through the real client instead of mocking its return value."""
+    payload = {"success": True, "message": "Successfully updated auth config"}
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=payload)
+
+    with HttpClient(
+        provider="test",
+        api_key="test",
+        _environment_variables={},
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    ) as client:
+        auth_configs = AuthConfigs(client)
+        calls = {
+            "update_custom": lambda: auth_configs.update(
+                "ac_test",
+                options={"type": "custom", "credentials": {"scopes": "read:user"}},
+            ),
+            "update_default": lambda: auth_configs.update(
+                "ac_test",
+                options={"type": "default", "is_enabled_for_tool_router": True},
+            ),
+            "delete": lambda: auth_configs.delete("ac_test"),
+            "enable": lambda: auth_configs.enable("ac_test"),
+            "disable": lambda: auth_configs.disable("ac_test"),
+        }
+        result = calls[operation]()
+
+    assert len(requests) == 1
+    assert requests[0].method == method
+    assert requests[0].url.path == path
+    assert isinstance(result, response_type)
+    assert isinstance(result, BaseModel)
+    assert result.success is True
+    assert result.message == payload["message"]
+    assert result.model_dump(exclude_unset=True) == payload

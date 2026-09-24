@@ -62,6 +62,7 @@ import {
 import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
@@ -1257,12 +1258,13 @@ export class Tools<
       requestOptions?.signal
     );
 
-    // Prepare the result
+    const { data, error, logId, premiumCharge } = transformExecuteResponse(response);
     let result: ToolExecuteResponse = {
-      data: response.data,
-      error: response.error,
-      successful: !response.error,
-      logId: response.log_id,
+      data,
+      error,
+      successful: !error,
+      logId,
+      ...(premiumCharge !== undefined && { premiumCharge }),
     };
 
     // Apply afterExecute modifier if provided

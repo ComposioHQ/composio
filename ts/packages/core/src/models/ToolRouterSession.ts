@@ -86,6 +86,8 @@ import {
 import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
@@ -129,9 +131,9 @@ export class ToolRouterSession<
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   /**
-   * Server-side session configuration (toolkit/tool allowlists, tags, preload,
-   * sandbox, manage_connections) as returned by the API. Refreshed in place by
-   * `update()`.
+   * The session's current configuration (policy snapshot and runtime
+   * settings). Refreshed in place by `update()`. For saved, reusable Session
+   * configs, see `composio.sessionConfigs`.
    */
   public config: ToolRouterSessionConfig;
   public preload: ToolRouterSessionPreloadConfig;
@@ -139,8 +141,8 @@ export class ToolRouterSession<
   public sandbox?: ToolRouterSessionWorkbenchConfig;
   /**
    * Version of the server-side configuration this object last observed.
-   * Refreshed in place by `update()`, which sends it as the
-   * `expected_config_version` precondition by default.
+   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to
+   * make an update conditional.
    */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
@@ -155,7 +157,7 @@ export class ToolRouterSession<
     private readonly sdkConfig: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
-    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
+    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt' | 'sourceSessionConfig'>,
     private readonly customToolsMap?: CustomToolsMap,
     private readonly userId?: string,
     metadata?: ToolRouterSessionMetadata
@@ -175,6 +177,7 @@ export class ToolRouterSession<
     this.experimental = {
       assistivePrompt: experimentalOverrides?.assistivePrompt,
       files: new ToolRouterSessionFilesMount(client, sessionId),
+      sourceSessionConfig: experimentalOverrides?.sourceSessionConfig,
     };
     this.config = config;
     this.preload = metadata?.preload ?? config.preload;
@@ -778,30 +781,37 @@ export class ToolRouterSession<
    * map entirely. `manageConnections.callbackUrl: null` removes only the
    * stored callback URL.
    *
-   * The request carries the `configVersion` this object last observed as the
-   * `expected_config_version` precondition, so a concurrent change surfaces as
+   * By default the request carries no precondition: the last writer wins.
+   * Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+   * the update conditional: the API then applies it only when the stored
+   * version still matches, and a concurrent change surfaces as
    * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
-   * overwritten. Pass `expectedConfigVersion` to send another version, or
-   * `expectedConfigVersion: false` to send no precondition (last writer
-   * wins). The PATCH is never retried by the transport, so a 409 is reported
-   * exactly once. On conflict this object is left unchanged: re-fetch the
-   * session with `sessions.use(sessionId)` and retry against the fresh
-   * `configVersion`.
+   * overwritten. The API must support the `expected_config_version` field;
+   * otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+   * is the same as omitting it. The PATCH is never retried by the transport,
+   * so a 409 is reported exactly once. On conflict this object is left
+   * unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+   * against the fresh `configVersion`.
    *
-   * `config`, `configVersion`, `preload`, `sandbox` and `warnings` are
-   * refreshed in place only after a successful response, and the updated
-   * `config` is returned.
+   * `experimental.sessionConfigId` applies a saved Session config: it
+   * replaces the session's toolkit, tool and tag access and cannot be combined
+   * with `toolkits`, `tools` or `tags` (a `ValidationError` is thrown before
+   * any request). A 409 while applying it means the session or the config
+   * changed; re-fetch the session and retry. Backend 400, 403 and 404 errors,
+   * for example for an archived or missing config, surface unchanged.
+   *
+   * `config`, `configVersion`, `preload`, `sandbox`, `warnings` and
+   * `experimental.sourceSessionConfig` are refreshed in place only after a
+   * successful response, and the updated `config` is returned.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionConfig> {
-    const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
+    const parsed = parseSessionConfigInput(ToolRouterUpdateSessionConfigSchema, config);
     const body = transformToolRouterUpdateParams(parsed);
     const expectedConfigVersion =
-      parsed.expectedConfigVersion === false
-        ? undefined
-        : (parsed.expectedConfigVersion ?? this.configVersion);
+      parsed.expectedConfigVersion === false ? undefined : parsed.expectedConfigVersion;
     if (expectedConfigVersion !== undefined) {
       body.expected_config_version = expectedConfigVersion;
     }
@@ -821,6 +831,16 @@ export class ToolRouterSession<
       );
     } catch (error) {
       if (error instanceof ConflictError) {
+        const sessionConfigId = parsed.experimental?.sessionConfigId;
+        if (sessionConfigId !== undefined) {
+          throw new ComposioSessionConfigConflictError(
+            `Session ${this.sessionId} or Session config ${sessionConfigId} changed while the config was being applied; re-fetch the session and retry the update`,
+            {
+              cause: error,
+              meta: { sessionId: this.sessionId, sessionConfigId, expectedConfigVersion },
+            }
+          );
+        }
         throw new ComposioSessionConfigConflictError(
           expectedConfigVersion === undefined
             ? `Session ${this.sessionId} configuration changed while this update was in flight; re-fetch the session and retry the update`
@@ -839,6 +859,7 @@ export class ToolRouterSession<
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
+    this.experimental.sourceSessionConfig = getSourceSessionConfig(response);
     return this.config;
   }
 
@@ -1097,6 +1118,9 @@ export class ToolRouterSession<
           : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
+      ...(remoteResult?.premiumCharge !== undefined && {
+        premiumCharge: remoteResult.premiumCharge,
+      }),
     };
   }
 }

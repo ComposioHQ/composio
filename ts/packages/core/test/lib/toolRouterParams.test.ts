@@ -183,6 +183,17 @@ describe('transformToolRouterTagsParams', () => {
 });
 
 describe('transformToolRouterUpdateParams', () => {
+  it('maps the experimental premium usage policy without changing other session settings', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        premiumUsage: { toolkits: { disable: ['exa'] }, returnPremiumCharge: true },
+      })
+    ).toEqual({ premium_usage: { toolkits: { disable: ['exa'] }, return_premium_charge: true } });
+    expect(transformToolRouterUpdateParams({ premiumUsage: false })).toEqual({
+      premium_usage: false,
+    });
+  });
+
   it('keeps an empty toolkit allowlist in the request', () => {
     expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
       toolkits: { enable: [] },

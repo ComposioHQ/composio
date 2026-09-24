@@ -140,6 +140,39 @@ class TestIsInsideDir:
 
 class TestSafeBasename:
     @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("report.pdf", "report.pdf"),
+            ("output/report.pdf", "report.pdf"),
+            ("archive.tar.gz", "archive.tar.gz"),
+            (".gitignore", ".gitignore"),
+            ("..\\..\\evil", "evil"),
+            (" report.pdf", "report.pdf"),
+            ("café.txt", "café.txt"),
+            ("C:report.txt", "report.txt"),
+            ("\ufeffreport.txt", "\ufeffreport.txt"),
+            ("\u0085report.txt\u0085", "report.txt"),
+        ],
+    )
+    def test_reduces_to_the_basename(self, value, expected):
+        assert safe_basename(value) == expected
+
+    @pytest.mark.parametrize("value", ["", ".", "..", "...", "foo/..", "/", "   "])
+    def test_rejects_names_with_no_usable_basename(self, value):
+        with pytest.raises(UnsafePathComponentError, match="no usable basename"):
+            safe_basename(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        ["\u00a0.\u00a0", ".\u00a0", "\u00a0.", "\u2007..\u2007", "\u2028.\u2029"],
+    )
+    def test_rejects_whitespace_wrapped_dot_runs(self, value):
+        """``str.strip`` removes Unicode whitespace, so these are written as
+        ``.`` or ``..``: the usability check must see the stripped value."""
+        with pytest.raises(UnsafePathComponentError, match="no usable basename"):
+            safe_basename(value)
+
+    @pytest.mark.parametrize(
         "value",
         ["NUL.tar.gz", "COM1.log.bak", "COM¹.txt", "LPT³.data"],
     )
@@ -149,7 +182,14 @@ class TestSafeBasename:
 
     @pytest.mark.parametrize(
         "value",
-        ["report?.txt", "report.txt:payload", "report.txt.", "report.txt "],
+        [
+            "report?.txt",
+            "report.txt:payload",
+            "report.txt.",
+            "report.txt ",
+            "report.\u00a0",
+            "report.\u0085",
+        ],
     )
     def test_rejects_windows_invalid_names_on_every_platform(self, value):
         with pytest.raises(UnsafePathComponentError):
