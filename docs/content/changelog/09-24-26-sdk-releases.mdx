@@ -1,0 +1,33 @@
+---
+title: 'Python SDK 0.24.0 and TypeScript SDK 0.21.0 add Session policies and fixes'
+description: 'Control premium usage in both SDKs, use saved Session configs in TypeScript, and get fixes for Session updates and file downloads.'
+date: '2026-09-24'
+---
+
+Both SDKs add experimental premium usage policies and fix default Session updates. TypeScript also adds saved Session configs and hosted-account details in search results.
+
+### Release versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`           | `0.24.0` |
+| TypeScript `@composio/core` | `0.21.0` |
+| TypeScript `@composio/slim` | `0.21.0` |
+
+### Premium usage policies
+
+Set `premiumUsage` in TypeScript or `premium_usage` in Python when creating or updating a Session to control billed tool execution. Pass `false` (`False` in Python) to disable it, or a policy object to restrict eligible toolkits and tools. Your project must allow premium usage. Passing a policy object re-enables premium usage on a Session where it was disabled.
+
+### Saved Session configs in TypeScript
+
+- Read saved configs with `composio.sessionConfigs.list()` and `composio.sessionConfigs.get()`.
+- Apply a saved config through `experimental.sessionConfigId` when creating or updating a Session. Read its source metadata through `session.experimental.sourceSessionConfig`.
+- Config IDs cannot be combined with inline access fields: `toolkits`, `tools`, or `tags`, plus `experimental.customTools` and `experimental.customToolkits` on create. Invalid combinations fail before a request is sent.
+- Search results expose `hostedAccount.allowedToolSlugs` on toolkit connection statuses for Composio hosted accounts.
+
+### Fixes
+
+- **Session updates in both SDKs:** `session.update()` no longer sends `expected_config_version` by default, fixing the API's rejection of ordinary updates. Updates use last writer wins. To request a conditional update where the API supports it, pass `expectedConfigVersion` in TypeScript or `expected_config_version` in Python explicitly.
+- **File saves in both SDKs:** unsafe server-supplied mount paths now raise validation errors before creating directories or writing files. This includes paths that resolve to a directory or its parent and filenames with trailing dots exposed by stripping Unicode whitespace.
+- **TypeScript downloads:** `RemoteFile.save()` validates its default destination before downloading content, so an invalid mount path fails without a network request.
+- **Python auth configs:** update, delete, enable, and disable methods now declare the client's concrete response types, including their `success` and `message` fields.
