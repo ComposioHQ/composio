@@ -17,6 +17,7 @@
     "[TypeSafe tool selection](/examples/typesafe-tool-selection)",
     "[CrewAI and LangChain over MCP](/examples/python-mcp-agents)",
     "[Multiple accounts](/examples/multiple-accounts)",
+    "[Restrict Gmail by domain](/examples/restrict-gmail-domain)",
     "[Custom tools with Composio](/examples/custom-tools)",
     "---Deployment---",
     "[Cloudflare Workers](/examples/cloudflare-workers)"

@@ -3381,7 +3381,7 @@
                         "format": "connectedAccountId"
                       }
                     ],
-                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio managed account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
+                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio hosted account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
                     "example": "ca_1a2b3c4d5e6f"
                   },
                   "entity_id": {
@@ -11316,7 +11316,7 @@
                             ],
                             "description": "When \"required\", the agent must specify which account to use. Present only when multiple accounts exist."
                           },
-                          "composio_managed": {
+                          "hosted_account": {
                             "type": "object",
                             "properties": {
                               "allowed_tool_slugs": {
@@ -11324,13 +11324,13 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Tools of this toolkit that run on the Composio managed account"
+                                "description": "Tools of this toolkit that run on the Composio hosted account"
                               }
                             },
                             "required": [
                               "allowed_tool_slugs"
                             ],
-                            "description": "Present when the toolkit is connected through the Composio managed account rather than a connected account of the user."
+                            "description": "Present when the toolkit is connected through the Composio hosted account rather than a connected account of the user."
                           },
                           "status_message": {
                             "type": "string",

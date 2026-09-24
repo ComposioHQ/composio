@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Composio } from '../../src/composio';
+import { SessionConfigs } from '../../src/models/SessionConfigs';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { OpenAIProvider } from '../../src/provider/OpenAIProvider';
 import { getDefaultHeaders, getSessionHeaders } from '../../src/utils/session';
@@ -152,6 +153,12 @@ describe('Composio Session Management', () => {
     );
     expect(sessionFromCanonicalApi.sessionId).toBe('session_123');
     expect(sessionFromAlias.sessionId).toBe('session_123');
+  });
+
+  it('should expose sessionConfigs as a SessionConfigs instance', () => {
+    const composio = new Composio(baseConfig);
+
+    expect(composio.sessionConfigs).toBeInstanceOf(SessionConfigs);
   });
 });
 

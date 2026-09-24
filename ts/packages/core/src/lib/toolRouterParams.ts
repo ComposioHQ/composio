@@ -8,18 +8,25 @@ import {
   ToolRouterConfigToolsSchema,
   ToolRouterToolsParam,
   ToolRouterConfigManageConnectionsSchema,
-  ToolRouterCreateSessionConfig,
+  ToolRouterCreateSessionConfigSchema,
   ToolRouterToolkitsParamSchema,
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
-  ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateSessionConfigSchema,
   ToolRouterUpdateManageConnectionsConfig,
   ToolRouterUpdateManageConnectionsSchema,
   ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
+  ToolRouterPremiumUsage,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
+import type { TypeOf } from 'zod/v3';
+
+/** Parsed create input; the public `ToolRouterCreateSessionConfig` is a union over it. */
+type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSchema>;
+/** Parsed update input; the public `ToolRouterUpdateSessionConfig` is a union over it. */
+type ParsedUpdateSessionConfig = TypeOf<typeof ToolRouterUpdateSessionConfigSchema>;
 
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
@@ -120,8 +127,8 @@ export const transformToolRouterManageConnectionsParams = (
 };
 
 export const resolveToolRouterSandboxConfig = (
-  config: Pick<ToolRouterCreateSessionConfig, 'sandbox' | 'workbench'>
-): ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench'] => {
+  config: Pick<ParsedCreateSessionConfig, 'sandbox' | 'workbench'>
+): ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench'] => {
   if (config.sandbox !== undefined && config.workbench !== undefined) {
     throw new ValidationError(
       'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
@@ -131,7 +138,7 @@ export const resolveToolRouterSandboxConfig = (
 };
 
 export const transformToolRouterSandboxParams = (
-  params?: ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench']
+  params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
 ): SessionCreateParams.Workbench | undefined => {
   if (!params) {
     return undefined;
@@ -194,6 +201,21 @@ export type SessionPatchBody = Omit<
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
   expected_config_version?: number;
+};
+
+export type SessionPremiumUsageBody = NonNullable<SessionPatchParams['premium_usage']>;
+
+export const transformToolRouterPremiumUsageParams = (
+  config: ToolRouterPremiumUsage
+): SessionPremiumUsageBody => {
+  if (config === false) return false;
+  return {
+    ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
+    ...(config.tools !== undefined && { tools: config.tools }),
+    ...(config.returnPremiumCharge !== undefined && {
+      return_premium_charge: config.returnPremiumCharge,
+    }),
+  };
 };
 
 export const transformToolRouterUpdateManageConnectionsParams = (
@@ -276,7 +298,7 @@ export const transformToolRouterUpdateSandboxParams = (
 export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdateSandboxParams;
 
 export const transformToolRouterMultiAccountParams = (
-  params?: ToolRouterCreateSessionConfig['multiAccount']
+  params?: ParsedCreateSessionConfig['multiAccount']
 ): SessionCreateParams.MultiAccount | undefined => {
   if (!params) {
     return undefined;
@@ -301,7 +323,7 @@ export const transformToolRouterMultiAccountParams = (
 };
 
 export const transformToolRouterToolkitsParams = (
-  params?: ToolRouterCreateSessionConfig['toolkits']
+  params?: ParsedCreateSessionConfig['toolkits']
 ): SessionCreateParams.Enable | SessionCreateParams.Disable | undefined => {
   if (!params) {
     return undefined;
@@ -321,16 +343,19 @@ export const transformToolRouterToolkitsParams = (
  * including `null` (remove the stored override) and empty collections (an
  * empty toolkit allowlist denies every app toolkit). The
  * `expectedConfigVersion` option is not a body field here: the session
- * resolves the precondition against its observed `configVersion`.
+ * adds it only when the caller explicitly supplies a numeric version.
  */
 export const transformToolRouterUpdateParams = (
-  config: ToolRouterUpdateSessionConfig
+  config: ParsedUpdateSessionConfig
 ): SessionPatchBody => {
   const params: SessionPatchBody = {};
 
   if (config.toolkits !== undefined) {
     params.toolkits =
       config.toolkits === null ? null : transformToolRouterToolkitsParams(config.toolkits);
+  }
+  if (config.premiumUsage !== undefined) {
+    params.premium_usage = transformToolRouterPremiumUsageParams(config.premiumUsage);
   }
   if (config.tools !== undefined) {
     params.tools = config.tools === null ? null : transformToolRouterToolsParams(config.tools);
