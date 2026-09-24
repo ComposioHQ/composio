@@ -3369,8 +3369,19 @@
                 "type": "object",
                 "properties": {
                   "connected_account_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the connected account to use for authentication",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "hosted_account"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "format": "connectedAccountId"
+                      }
+                    ],
+                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio managed account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
                     "example": "ca_1a2b3c4d5e6f"
                   },
                   "entity_id": {
@@ -3801,6 +3812,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required - Wallet balance is exhausted; add credits to resume premium tool calls or connect your account",
             "content": {
               "application/json": {
                 "schema": {
@@ -5485,6 +5506,17 @@
                   "tools"
                 ],
                 "x-experimental": true
+              },
+              "examples": {
+                "googlecalendar": {
+                  "summary": "Google Calendar: list and create events",
+                  "value": {
+                    "tools": [
+                      "GOOGLECALENDAR_EVENTS_LIST",
+                      "GOOGLECALENDAR_CREATE_EVENT"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -5579,6 +5611,41 @@
                     "scopes"
                   ],
                   "x-experimental": true
+                },
+                "examples": {
+                  "googlecalendar": {
+                    "summary": "Google Calendar: list and create events",
+                    "value": {
+                      "auth_scheme": "OAUTH2",
+                      "toolkit_version": "20260915_00",
+                      "grant_context": {},
+                      "scopes": {
+                        "least_privilege": [
+                          "https://www.googleapis.com/auth/calendar.calendars.readonly",
+                          "https://www.googleapis.com/auth/calendar.events"
+                        ],
+                        "fewest": [
+                          "https://www.googleapis.com/auth/calendar"
+                        ],
+                        "conditional": [
+                          {
+                            "scope": "https://www.googleapis.com/auth/calendar.calendars.readonly",
+                            "when": {
+                              "param.eventType": [
+                                "default"
+                              ],
+                              "param.exclude_organizer": [
+                                "falsy"
+                              ]
+                            },
+                            "for": [
+                              "GOOGLECALENDAR_CREATE_EVENT"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -5650,7 +5717,7 @@
     "/api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context": {
       "get": {
         "summary": "List grant contexts",
-        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nList of contexts in which you want to grant scopes to your user. Pass a dimension and its selected value in the `grant_context` field of the [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) request to tailor the scope recommendation.",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nList of contexts in which you want to grant scopes to your user. Pass a dimension and its selected value in the `grant_context` field of the [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) request to tailor the scope recommendation.\n\nIn the Jira example, `default_grant_context` is `{\"scope_family\": \"classic\"}`, so a recommendation with no `grant_context` uses classic scopes. Pass `{\"scope_family\": \"granular\"}` to get granular scopes instead.",
         "tags": [
           "Toolkits"
         ],
@@ -5773,6 +5840,28 @@
                     "default_grant_context"
                   ],
                   "x-experimental": true
+                },
+                "examples": {
+                  "jira": {
+                    "summary": "Jira: classic or granular scopes",
+                    "value": {
+                      "auth_scheme": "OAUTH2",
+                      "toolkit_version": "20260917_00",
+                      "grant_context_dimensions": [
+                        {
+                          "dimension": "scope_family",
+                          "description": "Which Atlassian OAuth scope catalog to draw from: classic scopes cover broad product areas, granular scopes name individual operations. Defaults to classic, matching the scopes our Jira OAuth app requests today.",
+                          "values": [
+                            "classic",
+                            "granular"
+                          ]
+                        }
+                      ],
+                      "default_grant_context": {
+                        "scope_family": "classic"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -11421,6 +11510,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -11854,6 +11953,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -11895,6 +12024,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -12229,6 +12368,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -12270,6 +12439,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -12445,12 +12624,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -12640,6 +12824,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "premium_usage_charge": {
+                      "type": "string",
+                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
+                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -12654,12 +12842,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -12669,6 +12862,7 @@
                     "unit",
                     "total_quantity",
                     "event_count",
+                    "premium_usage_charge",
                     "groups"
                   ]
                 }
@@ -12813,12 +13007,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -12999,6 +13198,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "premium_usage_charge": {
+                      "type": "string",
+                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
+                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -13013,12 +13216,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -13028,6 +13236,7 @@
                     "unit",
                     "total_quantity",
                     "event_count",
+                    "premium_usage_charge",
                     "groups"
                   ]
                 }
@@ -27456,6 +27665,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {

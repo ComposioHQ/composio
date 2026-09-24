@@ -10773,8 +10773,19 @@
                 "type": "object",
                 "properties": {
                   "connected_account_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the connected account to use for authentication",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "hosted_account"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "format": "connectedAccountId"
+                      }
+                    ],
+                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio managed account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
                     "example": "ca_1a2b3c4d5e6f"
                   },
                   "entity_id": {
@@ -11205,6 +11216,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required - Wallet balance is exhausted; add credits to resume premium tool calls or connect your account",
             "content": {
               "application/json": {
                 "schema": {
@@ -18403,6 +18424,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -18444,6 +18495,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -18602,6 +18663,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -18643,6 +18734,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -21438,6 +21539,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -21733,6 +21844,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -22306,6 +22427,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
