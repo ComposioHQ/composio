@@ -153,11 +153,11 @@ const toHttpServerError = (cause: unknown): HttpServerError => {
  */
 const request = <A, E>(
   client: Effect.Effect<_RawComposioClient, E>,
-  call: (client: _RawComposioClient) => PromiseLike<A>
+  call: (client: _RawComposioClient, signal: AbortSignal) => PromiseLike<A>
 ): Effect.Effect<A, E | HttpServerError> =>
   client.pipe(
     Effect.flatMap(resolved =>
-      Effect.tryPromise({ try: () => call(resolved), catch: toHttpServerError })
+      Effect.tryPromise({ try: signal => call(resolved, signal), catch: toHttpServerError })
     )
   );
 
@@ -169,11 +169,14 @@ const requestAll = <Page extends CursorPage<unknown>, E>(
   client: Effect.Effect<_RawComposioClient, E>,
   fetchPage: (
     client: _RawComposioClient,
-    page: { readonly cursor: string | undefined; readonly limit: number }
+    page: { readonly cursor: string | undefined; readonly limit: number },
+    signal: AbortSignal
   ) => PromiseLike<Page>
 ) =>
-  request(client, resolved =>
-    paginate<Page>(({ cursor }) => fetchPage(resolved, { cursor, limit: MAX_PAGE_SIZE })).toArray()
+  request(client, (resolved, signal) =>
+    paginate<Page>(({ cursor }) =>
+      fetchPage(resolved, { cursor, limit: MAX_PAGE_SIZE }, signal)
+    ).toArray()
   );
 
 /**
@@ -1120,13 +1123,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
   const client = clientSingleton.get();
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
-    requestAll(
-      scope ? clientSingleton.getFor(scope) : client,
-      (c, { cursor, limit }) => c.toolkits.list({ cursor, limit, managed_by: managedBy })
-    ).pipe(
-      Effect.flatMap(decode(Toolkits)),
-      Effect.map(sortBySlug)
-    );
+    requestAll(scope ? clientSingleton.getFor(scope) : client, (c, { cursor, limit }, signal) =>
+      c.toolkits.list({ cursor, limit, managed_by: managedBy }, { signal })
+    ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
   const getToolkitDetailed = (slug: string) =>
     request(client, c => c.toolkits.retrieve(slug)).pipe(Effect.flatMap(decode(ToolkitDetailed)));
@@ -1164,9 +1163,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ).pipe(Effect.map(sortBySlug));
 
   const listTools = (query: { toolkit_slug?: string; toolkit_versions: string }) =>
-    requestAll(client, (c, { cursor, limit }) => c.tools.list({ ...query, cursor, limit })).pipe(
-      Effect.flatMap(decode(Tools))
-    );
+    requestAll(client, (c, { cursor, limit }, signal) =>
+      c.tools.list({ ...query, cursor, limit }, { signal })
+    ).pipe(Effect.flatMap(decode(Tools)));
 
   return {
     getToolkits,
@@ -1221,12 +1220,15 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      * @param toolkitSlugs - Optional array of toolkit slugs to filter by
      */
     getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
-      requestAll(client, (c, { cursor, limit }) =>
-        c.triggersTypes.list({
-          cursor,
-          limit,
-          toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
-        })
+      requestAll(client, (c, { cursor, limit }, signal) =>
+        c.triggersTypes.list(
+          {
+            cursor,
+            limit,
+            toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+          },
+          { signal }
+        )
       ).pipe(Effect.flatMap(decode(TriggerTypes)), Effect.map(sortBySlug)),
     /**
      * Validates that the given toolkit slugs are valid by comparing them against the list

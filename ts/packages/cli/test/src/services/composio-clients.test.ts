@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from '@effect/vitest';
 import { vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Fiber, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
   AmbiguousDeveloperProjectNameError,
@@ -36,9 +36,9 @@ vi.mock('@composio/cli-keyring/effect', async importOriginal => {
       Layer.succeed(actual.KeyringService, {
         getPassword: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
         getSecret: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
-        setPassword: () => Effect.dieMessage('Unexpected credential write'),
-        setSecret: () => Effect.dieMessage('Unexpected credential write'),
-        deleteCredential: () => Effect.dieMessage('Unexpected credential deletion'),
+        setPassword: () => Effect.die(new Error('Unexpected credential write')),
+        setSecret: () => Effect.die(new Error('Unexpected credential write')),
+        deleteCredential: () => Effect.die(new Error('Unexpected credential deletion')),
         isAvailable: Effect.succeed(true),
       }),
   };
@@ -315,6 +315,34 @@ describe('composio-clients', () => {
   });
 
   describe('repository request core', () => {
+    for (const method of ['getToolkits', 'getTools', 'getTriggerTypes'] as const) {
+      it.effect(`${method} aborts an in-flight pagination request when interrupted`, () =>
+        Effect.gen(function* () {
+          const started = Promise.withResolvers<AbortSignal>();
+          const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(
+              jsonResponse({ items: [], next_cursor: 'page_2', total_pages: 2 })
+            )
+            .mockImplementationOnce((_input, init) => {
+              const signal = init!.signal!;
+              started.resolve(signal);
+              return new Promise<Response>((_resolve, reject) => {
+                signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+              });
+            });
+          const repository = yield* ComposioToolkitsRepository;
+          const fiber = yield* Effect.forkChild(repository[method]());
+          const requestSignal = yield* Effect.promise(() => started.promise);
+
+          yield* Fiber.interrupt(fiber);
+
+          expect(requestSignal.aborted).toBe(true);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+        }).pipe(Effect.provide(withRepository))
+      );
+    }
+
     it.effect('fetches every toolkit page, sorted by slug, and counts each request', () =>
       Effect.gen(function* () {
         const fetchSpy = vi

@@ -22,9 +22,9 @@ vi.mock('@composio/cli-keyring/effect', async importOriginal => {
       Layer.succeed(actual.KeyringService, {
         getPassword: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
         getSecret: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
-        setPassword: () => Effect.dieMessage('Unexpected credential write'),
-        setSecret: () => Effect.dieMessage('Unexpected credential write'),
-        deleteCredential: () => Effect.dieMessage('Unexpected credential deletion'),
+        setPassword: () => Effect.die(new Error('Unexpected credential write')),
+        setSecret: () => Effect.die(new Error('Unexpected credential write')),
+        deleteCredential: () => Effect.die(new Error('Unexpected credential deletion')),
         isAvailable: Effect.succeed(true),
       }),
   };
