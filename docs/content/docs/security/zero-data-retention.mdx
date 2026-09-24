@@ -7,7 +7,7 @@ keywords: [zero data retention, ZDR, data retention, payloads, privacy, complian
 Zero Data Retention (ZDR) stops Composio from storing the payloads of covered calls. In a project with ZDR on, Composio runs each covered tool call and Proxy Execute request and returns the result without writing the request arguments, response data, or error text to its execution logs. The log for each call keeps metadata only, such as IDs, the tool, timing, and the HTTP status code.
 
 <Callout type="info">
-ZDR is an organization-level add-on. It is not available on the free plan. Paid plans can add it for a usage-based price (see [pricing](https://composio.dev/pricing)), and the Enterprise plan includes it. An organization admin turns it on in **Organization Settings > Billing > Add-ons**. On paid plans, ZDR does not cover calls through Composio Managed apps. See [What ZDR does not cover](#what-zdr-does-not-cover).
+ZDR is an organization-level add-on. It is not available on the free plan. Paid plans can add it for a usage-based price (see [pricing](https://composio.dev/pricing)), and the Enterprise plan includes it. An organization admin turns it on in **Organization Settings > Billing > Add-ons**. ZDR covers calls through Composio Managed apps only on the Enterprise plan. See [What ZDR does not cover](#what-zdr-does-not-cover).
 </Callout>
 
 ## How ZDR works
@@ -45,7 +45,7 @@ In a ZDR project, ZDR covers these calls:
 
 If Composio cannot read the project's setting when it logs a Proxy Execute request, it does not store the request or response payload.
 
-On the Enterprise plan, ZDR also covers calls through Composio Managed apps. On paid plans, it does not.
+ZDR covers calls through Composio Managed apps only on the Enterprise plan.
 
 Trigger event logs in a ZDR project also omit payloads, but ZDR does not cover triggers.
 
@@ -55,7 +55,7 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 
 | Feature | Details | What to do |
 | --- | --- | --- |
-| Composio Managed apps on paid plans | Calls through auth configs that use Composio's own OAuth app are covered only on the Enterprise plan. | [Create an auth config with your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config) for each toolkit that needs ZDR. Connections made through the managed app keep using it, so each user connects again through the new auth config. You can also [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-zero-data-retention) about the Enterprise plan. |
+| Composio Managed apps, except on the Enterprise plan | Calls through auth configs that use Composio's own OAuth app are covered only on the Enterprise plan. | [Create an auth config with your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config) for each toolkit that needs ZDR. Connections made through the managed app keep using it, so each user connects again through the new auth config. You can also [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-zero-data-retention) about the Enterprise plan. |
 | Triggers | Composio receives, processes, and delivers trigger events through systems that ZDR does not cover. | Do not use triggers for data that needs ZDR. |
 | Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
 | Files | Files that tools upload or download, including binary responses from Proxy Execute, are staged in temporary storage behind signed links. A link expires after 1 hour by default, and you can set the expiry per project from 1 second to 24 hours. Composio cleans up staged files after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
