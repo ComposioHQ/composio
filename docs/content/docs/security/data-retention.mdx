@@ -37,11 +37,7 @@ Workbench storage has two separate lifecycles:
 
 ## Zero Data Retention
 
-By default, a project stores the full request and response payloads in each execution log. In a project with Zero Data Retention (ZDR) on, Composio does not store the request arguments, response data, or error text for tool calls and [Proxy Execute](/docs/extending-sessions/proxy-execute) requests. It keeps the metadata for each call, such as IDs, timing, and the HTTP status code. ZDR does not cover triggers, the sandbox, or files that tools upload or download. It covers calls through Composio Managed apps only on the Enterprise plan.
-
-ZDR is not available on the free plan. Paid plans can add it for a usage-based price, and the Enterprise plan includes it. ZDR is the setting formerly called **Don't store data** under **Log storage**, and every project kept its setting. Turning on ZDR does not delete payloads that were already stored. They age out under the one-year retention window.
-
-See [Zero Data Retention](/docs/security/zero-data-retention) for what ZDR covers, what it does not cover, and how to turn it on.
+In a project with Zero Data Retention (ZDR) on, Composio does not store payloads for tool calls and [Proxy Execute](/docs/extending-sessions/proxy-execute) requests, and keeps only metadata such as IDs and timing. See [Zero Data Retention](/docs/security/zero-data-retention) for what it covers, what it does not, and how to turn it on.
 
 ## Where your data goes
 
