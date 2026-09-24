@@ -2842,6 +2842,29 @@ describe('ToolRouter', () => {
       );
     });
 
+    it('should return the hosted account allowlist on toolkit connection statuses', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.search.mockResolvedValueOnce({
+        ...mockSearchResponse,
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            hosted_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+            status_message: 'Connected via the Composio hosted account.',
+          },
+        ],
+      });
+
+      const session = await toolRouter.create(userId);
+      const result = await session.search({ query: 'search the web' });
+
+      expect(result.toolkitConnectionStatuses[0].hostedAccount).toEqual({
+        allowedToolSlugs: ['EXA_SEARCH'],
+      });
+    });
+
     it('should propagate search API errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       mockClient.toolRouter.session.search.mockRejectedValueOnce(new Error('Search failed'));

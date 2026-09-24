@@ -167,6 +167,8 @@ A hosted account is a provider account held by Composio for specific tools. It i
 
 If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Otherwise, available user, shared, or developer connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow.
 
+Session search tells you when a hosted account serves a toolkit. The toolkit's connection status includes `hosted_account.allowed_tool_slugs` (`hostedAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
+
 Hosted accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
 
 See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.

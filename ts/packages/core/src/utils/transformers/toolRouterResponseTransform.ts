@@ -51,6 +51,7 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
+  hosted_account?: { allowed_tool_slugs: string[] };
 }
 
 interface RawSearchResponse {
@@ -115,6 +116,9 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     statusMessage: raw.status_message,
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
+    ...(raw.hosted_account !== undefined && {
+      hostedAccount: { allowedToolSlugs: raw.hosted_account.allowed_tool_slugs },
+    }),
   };
 }
 
