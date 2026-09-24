@@ -18,6 +18,8 @@ Both SDKs add experimental premium usage policies and fix default Session update
 
 Set `premiumUsage` in TypeScript or `premium_usage` in Python when creating or updating a Session to control billed tool execution. Pass `false` (`False` in Python) to disable it, or a policy object to restrict eligible toolkits and tools. Your project must allow premium usage. Passing a policy object re-enables premium usage on a Session where it was disabled.
 
+In Python, set `premium_usage.return_premium_charge` to receive charge details when available. `session.execute()` exposes them through the typed `premium_charge` field on `ToolRouterSessionExecuteResponse`. Provider integrations and mixed local/remote multi-tool execution preserve these details. The exported `PremiumCharge` type includes `amount`, `currency`, and `charged_by`.
+
 ### Saved Session configs in TypeScript
 
 - Read saved configs with `composio.sessionConfigs.list()` and `composio.sessionConfigs.get()`.
