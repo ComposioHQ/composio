@@ -10,10 +10,6 @@ Zero Data Retention (ZDR) stops Composio from storing the payloads of covered ca
 ZDR is an organization-level add-on. It is not available on the free plan. Paid plans can add it for a usage-based price (see [pricing](https://composio.dev/pricing)), and the Enterprise plan includes it. An organization admin turns it on in **Organization Settings > Billing > Add-ons**.
 </Callout>
 
-<Callout type="warn">
-ZDR covers calls through Composio Managed apps only on the Enterprise plan. See [What ZDR does not cover](#what-zdr-does-not-cover).
-</Callout>
-
 ## How ZDR works
 
 For each covered call, Composio writes a log that holds metadata only:
@@ -46,6 +42,10 @@ In a ZDR project, ZDR covers these calls:
 
 - Tool execution, both direct execution and tool calls inside sessions.
 - [Proxy Execute](/docs/extending-sessions/proxy-execute) requests.
+
+<Callout>
+ZDR covers calls through Composio Managed apps only on the Enterprise plan.
+</Callout>
 
 Trigger event logs in a ZDR project also omit payloads, but ZDR does not cover triggers.
 
