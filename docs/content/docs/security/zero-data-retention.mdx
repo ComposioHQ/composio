@@ -7,7 +7,11 @@ keywords: [zero data retention, ZDR, data retention, payloads, privacy, complian
 Zero Data Retention (ZDR) stops Composio from storing the payloads of covered calls. In a project with ZDR on, Composio runs each covered tool call and Proxy Execute request and returns the result without writing the request arguments, response data, or error text to its execution logs. The log for each call keeps metadata only, such as IDs, the tool, timing, and the HTTP status code.
 
 <Callout type="info">
-ZDR is an organization-level add-on. It is not available on the free plan. Paid plans can add it for a usage-based price (see [pricing](https://composio.dev/pricing)), and the Enterprise plan includes it. An organization admin turns it on in **Organization Settings > Billing > Add-ons**. ZDR covers calls through Composio Managed apps only on the Enterprise plan. See [What ZDR does not cover](#what-zdr-does-not-cover).
+ZDR is an organization-level add-on. It is not available on the free plan. Paid plans can add it for a usage-based price (see [pricing](https://composio.dev/pricing)), and the Enterprise plan includes it. An organization admin turns it on in **Organization Settings > Billing > Add-ons**.
+</Callout>
+
+<Callout type="warn">
+ZDR covers calls through Composio Managed apps only on the Enterprise plan. See [What ZDR does not cover](#what-zdr-does-not-cover).
 </Callout>
 
 ## How ZDR works
@@ -42,10 +46,6 @@ In a ZDR project, ZDR covers these calls:
 
 - Tool execution, both direct execution and tool calls inside sessions.
 - [Proxy Execute](/docs/extending-sessions/proxy-execute) requests.
-
-If Composio cannot read the project's setting when it logs a Proxy Execute request, it does not store the request or response payload.
-
-ZDR covers calls through Composio Managed apps only on the Enterprise plan.
 
 Trigger event logs in a ZDR project also omit payloads, but ZDR does not cover triggers.
 
@@ -132,17 +132,9 @@ ZDR is the setting formerly called **Don't store data** under **Log storage** in
 
 ## Projects created through the API
 
-Projects created through the API do not inherit your organization's ZDR choice. They start with ZDR off unless the create request sets `config.log_visibility_setting` to `dont_store_data`. You can also turn ZDR on for them in the dashboard.
+Projects created through the API start with ZDR off, even when ZDR is on for all projects. To create one with ZDR on, set `config.log_visibility_setting` to `dont_store_data` in the create request, or turn ZDR on for it in the dashboard afterward.
 
-Any project with ZDR off, including one created through the API, stops new dashboard projects from starting with ZDR on, because ZDR is no longer on for every project.
-
-## Verify ZDR
-
-1. Send a test call from a ZDR project, such as a tool call made with that project's API key.
-2. Open the call's log in the dashboard.
-3. Check that the log shows metadata only, with no request arguments, response data, or error text.
-
-If a new log from a ZDR project shows request or response content, email [support@composio.dev](mailto:support@composio.dev) with the log ID and timestamp.
+A project with ZDR off, including one created through the API, stops new dashboard projects from starting with ZDR on, because ZDR is no longer on for every project.
 
 ## Related
 
