@@ -200,6 +200,28 @@ describe('ToolRouter', () => {
   describe('create method', () => {
     const userId = 'user_123';
 
+    it('passes premium usage only when requested', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId, {
+        premiumUsage: { toolkits: { enable: ['exa'] }, returnPremiumCharge: true },
+      });
+      expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0]).toMatchObject({
+        premium_usage: { toolkits: { enable: ['exa'] }, return_premium_charge: true },
+      });
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId, { premiumUsage: false });
+      expect(mockClient.toolRouter.session.create.mock.calls[1]?.[0]).toMatchObject({
+        premium_usage: false,
+      });
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      await toolRouter.create(userId);
+      expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty(
+        'premium_usage'
+      );
+    });
+
     describe('basic session creation', () => {
       it('should create a session with minimal configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
@@ -2690,6 +2712,21 @@ describe('ToolRouter', () => {
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
       expect(result.logId).toBe('log_abc');
+    });
+
+    it('returns the premium charge when the API includes one', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        ...mockExecuteResponse,
+        premium_charge: { amount: '0.01', currency: 'USD' },
+      });
+
+      const session = await toolRouter.create(userId, {
+        premiumUsage: { returnPremiumCharge: true },
+      });
+      const result = await session.execute('GMAIL_SEND_EMAIL');
+
+      expect(result.premiumCharge).toEqual({ amount: '0.01', currency: 'USD' });
     });
 
     it('should propagate execute API errors', async () => {

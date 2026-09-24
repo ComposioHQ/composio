@@ -111,6 +111,24 @@ ToolRouterSessionConfig = t.Union[
 ]
 
 
+class ToolRouterPremiumUsageEnable(te.TypedDict):
+    enable: t.List[str]
+
+
+class ToolRouterPremiumUsageDisable(te.TypedDict):
+    disable: t.List[str]
+
+
+class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
+    """Experimental premium usage policy for a Session."""
+
+    toolkits: t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    tools: t.Dict[
+        str, t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    ]
+    return_premium_charge: bool
+
+
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
     """``manage_connections`` shape accepted by :meth:`ToolRouterSession.update`.
 
@@ -982,6 +1000,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self,
         *,
         toolkits: t.Union[t.Optional[session_patch_params.Toolkits], "Omit"] = omit,
+        premium_usage: t.Union[
+            t.Literal[False], ToolRouterPremiumUsageConfig, "Omit"
+        ] = omit,
         tools: t.Union[
             t.Optional[t.Dict[str, session_patch_params.Tools]], "Omit"
         ] = omit,
@@ -1021,6 +1042,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         as-is). Supplied ``tools``, ``auth_configs`` and ``connected_accounts``
         maps replace the stored map entirely. Inside ``manage_connections``,
         ``callback_url=None`` removes only the stored callback URL.
+        Experimental ``premium_usage`` accepts ``False`` to disable billed
+        access or an object to set its filters; it does not accept ``None``.
+        Any object, even one that only sets ``return_premium_charge``,
+        re-enables premium usage on a Session set to ``False``.
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1051,6 +1076,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             raise exceptions.InvalidParams(
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
+            )
+        if premium_usage is None:
+            raise exceptions.InvalidParams(
+                "`premium_usage` does not accept None; pass False to disable "
+                "premium usage, or omit it to keep the stored policy"
             )
 
         precondition: t.Union[int, "Omit"]
@@ -1105,6 +1135,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 experimental=t.cast(
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
+                ),
+                premium_usage=t.cast(
+                    t.Union[
+                        t.Literal[False],
+                        session_patch_params.CurrentPremiumUsageVariant1,
+                        "Omit",
+                    ],
+                    premium_usage,
                 ),
                 extra_body=extra_body,
                 # A stale precondition is a deterministic 409: never retry it.

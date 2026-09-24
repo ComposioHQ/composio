@@ -107,6 +107,34 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
+/** Experimental premium usage policy for a Session. */
+export const ToolRouterPremiumUsageSchema = z.union([
+  z.literal(false),
+  z
+    .object({
+      toolkits: z
+        .union([ToolRouterToolkitsEnabledConfigSchema, ToolRouterToolkitsDisabledConfigSchema])
+        .optional(),
+      tools: z
+        .record(
+          z.string(),
+          z.union([
+            z.object({ enable: z.array(z.string()) }).strict(),
+            z.object({ disable: z.array(z.string()) }).strict(),
+          ])
+        )
+        .optional(),
+      /**
+       * Return the actual premium charge in Session tool responses. Controls
+       * visibility only; on update, any policy object still re-enables premium
+       * usage on a Session set to `false`.
+       */
+      returnPremiumCharge: z.boolean().optional(),
+    })
+    .strict(),
+]);
+export type ToolRouterPremiumUsage = z.infer<typeof ToolRouterPremiumUsageSchema>;
+
 export const ToolRouterManageConnectionsConfigSchema = z.object({
   enable: z
     .boolean()
@@ -235,6 +263,10 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       ])
       .optional()
       .describe('The toolkits to use in the tool router session'),
+
+    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
+      'Experimental premium usage policy. Omission permits eligible tools when the project allows premium usage; false disables it for this Session.'
+    ),
 
     authConfigs: z
       .record(z.string(), z.string())
@@ -373,6 +405,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
+ * @param {ToolRouterPremiumUsage} [premiumUsage] - Experimental premium usage policy. The project must allow premium usage.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -543,6 +576,8 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
+  /** Actual premium usage charge when the Session opts into returning it. */
+  premiumCharge: z.unknown().optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -758,6 +793,9 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
  */
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
+    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
+      'Experimental premium usage policy. False disables it. Any supplied object, even one that only sets returnPremiumCharge, re-enables it. Omitted subfields keep their stored values.'
+    ),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,

@@ -68,6 +68,7 @@ interface RawExecuteResponse {
   data: Record<string, unknown>;
   error: string | null;
   log_id: string;
+  premium_charge?: unknown;
 }
 
 function transformSearchResult(raw: RawSearchResult) {
@@ -156,5 +157,6 @@ export function transformExecuteResponse(raw: RawExecuteResponse) {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
+    ...(raw.premium_charge !== undefined && { premiumCharge: raw.premium_charge }),
   };
 }
