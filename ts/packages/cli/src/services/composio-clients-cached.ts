@@ -5,7 +5,11 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
-import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
+import {
+  ComposioToolkitsRepository,
+  InvalidToolkitsError,
+  type ToolkitProjectScope,
+} from './composio-clients';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
@@ -187,11 +191,39 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       )
     );
 
+    // Project toolkits are never written to `toolkits.json`: that file holds
+    // the Composio-managed catalog, and its readers assume nothing else is in
+    // it. They are still memoized, because every toolkit resolution that
+    // misses locally asks for them. Under `FORCE_USE_CACHE` replay the fetch
+    // still reaches the API, and a failure only costs toolkit resolution its
+    // fallback guess.
+    //
+    // The list depends on the project it is asked for, so each scope gets its
+    // own memo (the unscoped call is one more key), with the same
+    // failure-is-final semantics as `cachedGetToolkits`. The memo is created
+    // synchronously so that concurrent first callers share it.
+    const projectToolkitsByScope = new Map<
+      string,
+      ReturnType<typeof underlyingRepository.getProjectToolkits>
+    >();
+    const cachedGetProjectToolkits = (scope?: ToolkitProjectScope) =>
+      Effect.suspend(() => {
+        const key = scope ? JSON.stringify([scope.orgId, scope.projectId]) : '';
+        const memo =
+          projectToolkitsByScope.get(key) ??
+          Effect.runSync(Effect.cached(underlyingRepository.getProjectToolkits(scope)));
+        projectToolkitsByScope.set(key, memo);
+        return memo;
+      });
+
+    // Create the cached implementation that wraps the original implementation
     return ComposioToolkitsRepository.of({
       ...underlyingRepository,
       // Memoized per layer instance; `getToolkitsBySlugs` stays unmemoized
       // because its result depends on the requested slugs.
       getToolkits: () => cachedGetToolkits,
+
+      getProjectToolkits: cachedGetProjectToolkits,
 
       getToolkitsBySlugs: slugs => {
         const cacheFilter = (data: Toolkits) => {

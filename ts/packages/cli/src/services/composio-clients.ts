@@ -651,6 +651,14 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   } satisfies ComposioClientSingletonShape;
 });
 
+/**
+ * The org/project a project-scoped request is made for, as a command resolved it.
+ */
+export interface ToolkitProjectScope {
+  readonly orgId: string;
+  readonly projectId: string;
+}
+
 export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
@@ -1111,8 +1119,11 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
   const client = clientSingleton.get();
 
-  const getToolkits = () =>
-    requestAll(client, (c, { cursor, limit }) => c.toolkits.list({ cursor, limit })).pipe(
+  const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
+    requestAll(
+      scope ? clientSingleton.getFor(scope) : client,
+      (c, { cursor, limit }) => c.toolkits.list({ cursor, limit, managed_by: managedBy })
+    ).pipe(
       Effect.flatMap(decode(Toolkits)),
       Effect.map(sortBySlug)
     );
@@ -1129,6 +1140,17 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
         auth_schemes: [],
       }))
     );
+
+  const getToolkits = () => listToolkits();
+
+  /**
+   * Fetches the custom toolkits registered in the current project. They are
+   * project-scoped, so they are absent from the build-time catalog and from
+   * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
+   * @param scope - The org/project the command resolved; without it, the
+   *   project context decides, which is no project at all in consumer mode
+   */
+  const getProjectToolkits = (scope?: ToolkitProjectScope) => listToolkits('project', scope);
 
   /**
    * Fetches specific toolkits by their slugs.
@@ -1148,6 +1170,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
 
   return {
     getToolkits,
+    getProjectToolkits,
     getToolkitsBySlugs,
     getMetrics: () => clientSingleton.getMetrics(),
     /**

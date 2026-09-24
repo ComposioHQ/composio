@@ -159,6 +159,12 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
     both basename to ``""``, which makes an output path equal to its own
     directory and surfaces as ``IsADirectoryError`` at write time.
 
+    The usability check runs on the *stripped* basename, because that is the
+    value that gets written: ``str.strip`` removes Unicode whitespace, so
+    ``"\\u00a0.\\u00a0"`` would otherwise pass a check on the raw segment and
+    then be written as ``"."``. The hazard checks that follow stay on the raw
+    segment so that a trailing ASCII space or dot is refused, not trimmed away.
+
     :raises UnsafePathComponentError: when ``name`` yields no usable basename or
         is unsafe to write.
     """
@@ -168,7 +174,8 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
         )
 
     raw_basename = PureWindowsPath(name).name
-    if not raw_basename or not raw_basename.strip() or set(raw_basename) == {"."}:
+    basename = raw_basename.strip()
+    if not basename or set(basename) == {"."}:
         raise UnsafePathComponentError(
             f"Path traversal detected: {label} {name!r} leaves no usable "
             "basename to write to."
@@ -182,12 +189,12 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
             f"Refusing to write {label} containing characters reserved by "
             f"Windows: {name!r}"
         )
-    if raw_basename.endswith((" ", ".")):
+    # Stripping Unicode whitespace can expose a trailing dot on the written name.
+    if raw_basename.endswith((" ", ".")) or basename.endswith("."):
         raise UnsafePathComponentError(
             f"Refusing to write {label} ending in a space or dot: {name!r}"
         )
 
-    basename = raw_basename.strip()
     try:
         encoded_length = len(os.fsencode(basename))
     except UnicodeEncodeError as e:

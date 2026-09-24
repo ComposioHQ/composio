@@ -16,6 +16,7 @@
     "session-files",
     "tools",
     "triggers",
+    "session-configs",
     "usage",
     "webhook-endpoints",
     "webhooks",

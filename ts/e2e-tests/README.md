@@ -37,6 +37,7 @@ ts/e2e-tests/
     │   ├── openai-zod4-compat/              # OpenAI + Zod v4 compatibility tests
     │   ├── tool-router-files/              # Tool Router session files (list, upload, download, delete)
     │   ├── tool-router-pagination/          # Tool Router session.toolkits() cursor pagination
+    │   ├── tool-router-session-update/      # Tool Router session.update() with default options (live API)
     │   └── typescript-mjs-import-nodenext/  # TypeScript moduleResolution: nodenext tests
     ├── deno/                                # Deno runtime tests
     │   └── esm-basic/                       # ESM compatibility tests via npm: specifier

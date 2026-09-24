@@ -6,7 +6,6 @@ keywords: [tutorial, setup, first agent, sessions, tool router]
 
 Build an agent that chooses Composio tools at runtime. Type a task, connect an app if needed, and continue in the same conversation.
 
-
 <div className="not-prose my-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
   <div>
     <p className="mb-6">
@@ -482,7 +481,7 @@ Ask for any task that needs an app tool: `Summarize my unread emails from today`
 `user_123` is only for this local example. Replace it with a stable ID from your database. Each ID gets separate connections and tool calls.
 </Callout>
 
-You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
+Note: Sessions are recommended for new integrations. If you maintain a legacy direct-execution integration, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions). You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
 
 ## Adapt the example
 

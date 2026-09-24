@@ -3,6 +3,8 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
+import { commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolkitSlug } from 'src/utils/remote-custom-toolkit';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatToolsTable, formatToolsJson } from '../format';
 
@@ -59,7 +61,9 @@ export const toolsCmd$List = Command.make(
 
       if (result.items.length === 0) {
         yield* ui.log.warn(
-          `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`
+          isRemoteCustomToolkitSlug(toolkit)
+            ? `No tools found in toolkit "${toolkit}". Custom toolkit tools are served by the Tool Router. ${commandHintStep('Discover them with', 'root.search', { toolkits: toolkit })}`
+            : `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`
         );
         return;
       }
