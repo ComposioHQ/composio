@@ -337,13 +337,16 @@ describe('RemoteFile', () => {
       // parent), which previously surfaced as an unhandled `EISDIR` from
       // `writeFileSync` after the directory had already been created.
       it.each(['', '.', 'sub/.', 'foo/..', '..', '\u00a0.\u00a0', '\u2007..\u2007'])(
-        'should reject mountRelativePath %j with a ValidationError',
+        'should reject mountRelativePath %j before downloading',
         async mountRelativePath => {
           const { platform } = await import('../../src/platform/node');
           const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
+          const fetchMock = vi.fn().mockRejectedValue(new Error('Download unavailable'));
+          globalThis.fetch = fetchMock;
 
           await expect(file.save()).rejects.toThrow(ValidationError);
           await expect(file.save()).rejects.toThrow(/leaves no usable basename/);
+          expect(fetchMock).not.toHaveBeenCalled();
           expect(platform.existsSync(composioDir)).toBe(false);
         }
       );

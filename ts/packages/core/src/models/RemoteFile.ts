@@ -185,7 +185,6 @@ export class RemoteFile {
       );
     }
 
-    const content = await this.buffer();
     const homeDir = platform.homedir();
     if (!homeDir) {
       throw new Error('Cannot determine save location: home directory is not available');
@@ -199,6 +198,8 @@ export class RemoteFile {
     const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
     const savePath =
       path ?? platform.joinPath(defaultDir, safeBasename(this.mountRelativePath, 'mount path'));
+
+    const content = await this.buffer();
 
     const dir = path != null ? getParentDir(savePath) : defaultDir;
     if (dir && !platform.existsSync(dir)) {
