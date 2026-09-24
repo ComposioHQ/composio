@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_typesafe",
-    version="0.23.0",
+    version="0.24.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio tools with TypeSafe's Jev model: a tool call, a partial call, or an abstention, each with a confidence score.",

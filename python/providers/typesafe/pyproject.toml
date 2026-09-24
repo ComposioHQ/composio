@@ -1,6 +1,6 @@
 [project]
 name = "composio-typesafe"
-version = "0.23.0"
+version = "0.24.0"
 description = "Use Composio tools with TypeSafe's Jev model: a tool call, a partial call, or an abstention, each with a confidence score."
 readme = "README.md"
 requires-python = ">=3.10,<4"
