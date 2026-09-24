@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { z } from 'zod';
 
 // Exercise the published snippet itself without opening OAuth or making API calls.
@@ -11,10 +12,6 @@ const source = page.match(/```typescript title="restrict-gmail.ts"\n([\s\S]*?)\n
 if (!source) throw new Error('Missing runnable TypeScript example');
 const compiled = new Bun.Transpiler({ loader: 'ts' }).transformSync(
   source.replace(/^import .*;\n/gm, ''),
-);
-const runExample = new Function(
-  'Composio', 'z', 'process', 'console',
-  `return (async () => { ${compiled} })();`,
 );
 
 const cases = [
@@ -108,14 +105,32 @@ async function checkExample(
       };
     }
   }
-  const result = runExample(Composio, z, { env: { COMPOSIO_USER_ID: 'demo' } }, { log() {} });
-  if (approved) {
-    await result;
-    expect(events).toEqual(['onboarding', 'wait', 'profile', 'agent-session', 'tools']);
-  } else {
-    await expect(result).rejects.toThrow(failure === 'disable' ? 'disable failed' : 'Connection disabled');
-    expect(events.at(-1)).toBe('disable');
-    expect(events).not.toContain('agent-session');
-    expect(events).not.toContain('tools');
+  const userId = process.env.COMPOSIO_USER_ID;
+  process.env.COMPOSIO_USER_ID = 'demo';
+  const fixturePath = `${import.meta.dir}/.gmail-domain-example-${crypto.randomUUID()}.mjs`;
+  Object.assign(globalThis, { __gmailDomainExample: { Composio, z } });
+  await Bun.write(
+    fixturePath,
+    `const { Composio, z } = globalThis.__gmailDomainExample;\nconst console = { log() {} };\n${compiled}`,
+  );
+  try {
+    const result = import(fixturePath);
+    if (approved) {
+      await result;
+      expect(events).toEqual(['onboarding', 'wait', 'profile', 'agent-session', 'tools']);
+    } else {
+      await expect(result).rejects.toThrow(failure === 'disable' ? 'disable failed' : 'Connection disabled');
+      expect(events.at(-1)).toBe('disable');
+      expect(events).not.toContain('agent-session');
+      expect(events).not.toContain('tools');
+    }
+  } finally {
+    await rm(fixturePath, { force: true });
+    delete (globalThis as { __gmailDomainExample?: unknown }).__gmailDomainExample;
+    if (userId === undefined) {
+      delete process.env.COMPOSIO_USER_ID;
+    } else {
+      process.env.COMPOSIO_USER_ID = userId;
+    }
   }
 }
