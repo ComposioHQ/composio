@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { serve, type ServerType } from '@hono/node-server';
+import { Hono } from 'hono';
 import { z } from 'zod/v3';
 import { BadRequestError } from '@composio/client';
 import { Composio } from '../../src/composio';
@@ -14,7 +14,7 @@ const patchSchema = z.union([
 ]);
 
 describe('Session config updates over HTTP', () => {
-  let server: Server;
+  let server: ServerType;
   let composio: Composio;
   let patchRequests: unknown[];
   let conflict: boolean;
@@ -32,57 +32,48 @@ describe('Session config updates over HTTP', () => {
   beforeEach(async () => {
     patchRequests = [];
     conflict = false;
-    server = createServer(async (request, response) => {
-      response.setHeader('content-type', 'application/json');
-      if (request.method === 'GET' && request.url === '/api/v3.1/tool_router/session/trs_test') {
-        response.end(
-          JSON.stringify({
-            session_id: 'trs_test',
-            config_version: 7,
-            config: originalConfig,
-            tool_router_tools: [],
-            mcp: { type: 'http', url: `http://${request.headers.host}/mcp` },
-          })
+    const app = new Hono();
+    const sessionPath = '/api/v3.1/tool_router/session/trs_test';
+    app.get(sessionPath, c =>
+      c.json({
+        session_id: 'trs_test',
+        config_version: 7,
+        config: originalConfig,
+        tool_router_tools: [],
+        mcp: { type: 'http', url: new URL('/mcp', c.req.url).href },
+      })
+    );
+    app.patch(sessionPath, async c => {
+      const payload: unknown = await c.req.json();
+      patchRequests.push(payload);
+      const parsed = patchSchema.safeParse(payload);
+      if (!parsed.success || conflict) {
+        return c.json(
+          { error: { message: conflict ? 'Config changed' : 'Unrecognized PATCH field' } },
+          conflict ? 409 : 400
         );
-        return;
       }
-      if (request.method === 'PATCH' && request.url === '/api/v3.1/tool_router/session/trs_test') {
-        let body = '';
-        for await (const chunk of request) body += chunk;
-        const payload: unknown = JSON.parse(body);
-        patchRequests.push(payload);
-        const parsed = patchSchema.safeParse(payload);
-        if (!parsed.success || conflict) {
-          response.statusCode = conflict ? 409 : 400;
-          response.end(
-            JSON.stringify({
-              error: { message: conflict ? 'Config changed' : 'Unrecognized PATCH field' },
-            })
-          );
-          return;
-        }
-        response.end(
-          JSON.stringify({
-            session_id: 'trs_test',
-            config_version: 8,
-            config: updatedConfig,
-            warnings: [],
-            ...('experimental' in parsed.data && {
-              experimental: {
-                source_session_config: { id: parsed.data.experimental.session_config_id },
-              },
-            }),
-          })
-        );
-        return;
-      }
-      response.statusCode = 404;
-      response.end(JSON.stringify({ error: { message: 'Unexpected endpoint' } }));
+      return c.json({
+        session_id: 'trs_test',
+        config_version: 8,
+        config: updatedConfig,
+        warnings: [],
+        ...('experimental' in parsed.data && {
+          experimental: {
+            source_session_config: { id: parsed.data.experimental.session_config_id },
+          },
+        }),
+      });
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    app.notFound(c => c.json({ error: { message: 'Unexpected endpoint' } }, 404));
+    const baseURL = await new Promise<string>(resolve => {
+      server = serve({ fetch: app.fetch, port: 0, hostname: '127.0.0.1' }, address =>
+        resolve(`http://127.0.0.1:${address.port}`)
+      );
+    });
     composio = new Composio({
       apiKey: 'test-key',
-      baseURL: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      baseURL,
       allowTracking: false,
       allowTracing: false,
     });
