@@ -1,15 +1,34 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, describe, expect, it } from '@effect/vitest';
+import { vi } from 'vitest';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
+
+// Exercise real user-context/config resolution without opening the OS credential store.
+vi.mock('@composio/cli-keyring/effect', async importOriginal => {
+  const actual = await importOriginal<typeof import('@composio/cli-keyring/effect')>();
+  const { Effect, Layer } = await import('effect');
+  const { KeyringError } = await import('@composio/cli-keyring');
+  return {
+    ...actual,
+    KeyringLiveWithBackend: () =>
+      Layer.succeed(actual.KeyringService, {
+        getPassword: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        getSecret: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        setPassword: () => Effect.dieMessage('Unexpected credential write'),
+        setSecret: () => Effect.dieMessage('Unexpected credential write'),
+        deleteCredential: () => Effect.dieMessage('Unexpected credential deletion'),
+        isAvailable: Effect.succeed(true),
+      }),
+  };
+});
 
 const withConfigLayer = (map: Map<string, string>, homedir: string) =>
   Layer.mergeAll(
@@ -61,22 +80,6 @@ const writeCliSessionCache = (
   });
 
 describe('ComposioClientSingleton headers', () => {
-  // Delete any real keychain entry so the subprocess keyring read
-  // inside ComposioUserContextLive (baked into
-  // ComposioClientSingleton.Default's dependencies) finds nothing
-  // and apiKey resolves to Option.none(). Without this, the test
-  // picks up real credentials and assertions on x-user-api-key fail.
-  beforeAll(() => {
-    try {
-      execSync(
-        '/usr/bin/security delete-generic-password -s com.composio.cli -a default 2>/dev/null',
-        { stdio: 'ignore' }
-      );
-    } catch {
-      // Entry may not exist — fine.
-    }
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();

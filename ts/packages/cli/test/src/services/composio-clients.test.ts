@@ -1,8 +1,8 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, describe, expect, it } from '@effect/vitest';
+import { vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import {
   AmbiguousDeveloperProjectNameError,
@@ -24,6 +24,25 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+
+// Exercise real user-context/config resolution without opening the OS credential store.
+vi.mock('@composio/cli-keyring/effect', async importOriginal => {
+  const actual = await importOriginal<typeof import('@composio/cli-keyring/effect')>();
+  const { Effect, Layer } = await import('effect');
+  const { KeyringError } = await import('@composio/cli-keyring');
+  return {
+    ...actual,
+    KeyringLiveWithBackend: () =>
+      Layer.succeed(actual.KeyringService, {
+        getPassword: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        getSecret: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        setPassword: () => Effect.dieMessage('Unexpected credential write'),
+        setSecret: () => Effect.dieMessage('Unexpected credential write'),
+        deleteCredential: () => Effect.dieMessage('Unexpected credential deletion'),
+        isAvailable: Effect.succeed(true),
+      }),
+  };
+});
 
 const BASE_URL = 'https://backend.composio.dev';
 
@@ -79,19 +98,6 @@ const toolkitListItem = (slug: string) => ({
 });
 
 describe('composio-clients', () => {
-  // Keep a real keychain entry from supplying the user key; the config
-  // provider above is the only source these scenarios should see.
-  beforeAll(() => {
-    try {
-      execSync(
-        '/usr/bin/security delete-generic-password -s com.composio.cli -a default 2>/dev/null',
-        { stdio: 'ignore' }
-      );
-    } catch {
-      // Entry may not exist — fine.
-    }
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
