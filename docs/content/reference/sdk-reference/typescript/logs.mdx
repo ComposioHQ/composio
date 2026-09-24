@@ -1,0 +1,78 @@
+---
+title: "Logs"
+description: "`composio.logs` — tool-execution logs."
+---
+
+## Usage
+
+Access this class through the `composio.logs` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.logs.list();
+```
+
+## Methods
+
+### get()
+
+Retrieve one tool-execution log with its full detail (timings, context,
+source and raw `data`).
+
+```typescript
+async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ context: { requestId?: string; sessionId?: string; traceId?: string }; data: Record<string, unknown>; id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: { logId: string; toolSlug: string } | null; source: { framework?: string; host?: string; language?: string }; status: 'success' | 'failed'; timestamp: string; timings?: { endTime: number; startTime: number }; type: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | The log id |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ context: \{ requestId?: string; sessionId?: string; traceId?: string \}; data: Record<string, unknown>; id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: \{ logId: string; toolSlug: string \} \| null; source: \{ framework?: string; host?: string; language?: string \}; status: 'success' \| 'failed'; timestamp: string; timings?: \{ endTime: number; startTime: number \}; type: string \}>` — The log detail
+
+**Example**
+
+```typescript
+const log = await composio.logs.get('log_abc123');
+console.log(log.status, log.timings?.endTime);
+```
+
+---
+
+### search()
+
+Search tool-execution logs with filters, a time range and cursor
+pagination.
+
+```typescript
+async search(params?: { cursor?: string | null; filters?: { field: 'status' | 'tool_slug' | 'toolkit_slug' | 'connected_account_id' | 'auth_config_id' | 'user_id' | 'session_id' | 'sandbox_id' | 'request_id' | 'log_id'; operator: '==' | '!=' | 'contains' | 'not_contains'; value: string }[]; limit?: number; timeRange?: { from: number; to: number } }, requestOptions?: ComposioRequestOptions): Promise<{ logs: { id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: { logId: ...; toolSlug: ... } | null; status: 'success' | 'failed'; timestamp: string; type: string }[]; nextCursor: string | null }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params?` | `\{ cursor?: string \| null; filters?: \{ field: 'status' \| 'tool_slug' \| 'toolkit_slug' \| 'connected_account_id' \| 'auth_config_id' \| 'user_id' \| 'session_id' \| 'sandbox_id' \| 'request_id' \| 'log_id'; operator: '==' \| '!=' \| 'contains' \| 'not_contains'; value: string \}[]; limit?: number; timeRange?: \{ from: number; to: number \} \}` | Filters, `timeRange`, `limit` and `cursor` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ logs: \{ id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: \{ logId: ...; toolSlug: ... \} \| null; status: 'success' \| 'failed'; timestamp: string; type: string \}[]; nextCursor: string \| null \}>` — Matching logs and the next cursor
+
+**Example**
+
+```typescript
+const { logs } = await composio.logs.search({
+  filters: [
+    { field: 'status', operator: '==', value: 'failed' },
+    { field: 'user_id', operator: '==', value: 'user_123' },
+  ],
+  timeRange: { from: Date.now() - 24 * 60 * 60 * 1000, to: Date.now() },
+});
+```
+
+---

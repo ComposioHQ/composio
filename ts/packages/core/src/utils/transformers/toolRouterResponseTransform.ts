@@ -51,6 +51,7 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
+  hosted_account?: { allowed_tool_slugs: string[] };
 }
 
 interface RawSearchResponse {
@@ -68,6 +69,7 @@ interface RawExecuteResponse {
   data: Record<string, unknown>;
   error: string | null;
   log_id: string;
+  premium_charge?: unknown;
 }
 
 function transformSearchResult(raw: RawSearchResult) {
@@ -114,6 +116,9 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     statusMessage: raw.status_message,
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
+    ...(raw.hosted_account !== undefined && {
+      hostedAccount: { allowedToolSlugs: raw.hosted_account.allowed_tool_slugs },
+    }),
   };
 }
 
@@ -156,5 +161,6 @@ export function transformExecuteResponse(raw: RawExecuteResponse) {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
+    ...(raw.premium_charge !== undefined && { premiumCharge: raw.premium_charge }),
   };
 }

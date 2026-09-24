@@ -849,7 +849,7 @@ const invokeAcpSubAgentEffect = ({
     // platform Command executor inherits the parent environment, so the
     // variable cannot be dropped; mask it with an empty string instead —
     // falsy and distinct from the guarded "1" — only when the parent has it set.
-    const claudeCode = yield* Config.option(Config.string('CLAUDECODE'));
+    const claudeCode = yield* Config.option(Config.String('CLAUDECODE'));
     const childEnv: Record<string, string> = {
       ...(Option.isSome(claudeCode) ? { CLAUDECODE: '' } : {}),
       ...(resolved.env ?? {}),

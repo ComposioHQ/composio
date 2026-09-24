@@ -152,7 +152,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'github',
           limit: 10,
-          search: 'test',
+          query: 'test',
           toolkit_versions: 'latest',
         },
         undefined
@@ -202,7 +202,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'todoist',
           limit: 10,
-          search: 'add task',
+          query: 'add task',
           scopes: ['task:add'],
           toolkit_versions: 'latest',
         },
@@ -1365,6 +1365,22 @@ describe('Tools', () => {
         });
       });
 
+      it('returns the premium charge for provider-wrapped session tools', async () => {
+        mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          data: {},
+          error: null,
+          log_id: '123',
+          premium_charge: { amount: '0.01', currency: 'USD' },
+        });
+
+        const result = await context.tools.executeSessionTool('EXA_SEARCH', {
+          sessionId,
+          arguments: {},
+        });
+
+        expect(result.premiumCharge).toEqual({ amount: '0.01', currency: 'USD' });
+      });
+
       it('should pass inline custom tools to tool router session execute', async () => {
         const toolSlug = 'COMPOSIO_TOOL';
         const body = {
@@ -1838,7 +1854,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith(
           {
-            search: 'create issue',
+            query: 'create issue',
             toolkit_versions: 'latest',
           },
           undefined

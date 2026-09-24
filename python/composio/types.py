@@ -2,6 +2,7 @@ from composio.client.types import Tool
 from composio.core.models.connected_accounts import auth_scheme
 from composio.core.models.tools import (
     Modifiers,
+    PremiumCharge,
     ToolExecuteParams,
     ToolExecutionResponse,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "Tool",
     "TTool",
     "TToolCollection",
+    "PremiumCharge",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "TriggerEvent",

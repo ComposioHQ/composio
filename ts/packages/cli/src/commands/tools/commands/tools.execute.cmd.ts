@@ -24,7 +24,10 @@ import {
   detectInBandWarning,
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
@@ -65,20 +68,20 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Flag.string('data').pipe(
+const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
   Flag.optional
 );
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
   Flag.optional
 );
-const accountOption = Flag.string('account').pipe(
+const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
@@ -94,33 +97,33 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Flag.boolean('get-schema').pipe(
+const getSchema = Flag.Boolean('get-schema').pipe(
   Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Flag.withDefault(false)
 );
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Validate and preview the tool call without executing'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
@@ -451,9 +454,10 @@ const emitExecuteFailureTelemetry = (params: {
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
   readonly logId?: string;
   readonly mappedError?: ReturnType<typeof mapComposioError>;
+  readonly projectScope?: ToolkitProjectScope;
 }) =>
   Effect.gen(function* () {
-    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
+    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug, params.projectScope);
     const { invocationOrigin } = yield* cliInvocationContext;
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
@@ -705,10 +709,11 @@ const handleExecutionError = (
     projectMode: 'consumer' | 'developer';
     stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
     logId?: string;
+    projectScope?: ToolkitProjectScope;
   }
 ) =>
   Effect.gen(function* () {
-    const toolkit = yield* toolkitFromToolSlug(context.toolSlug);
+    const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
     const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
@@ -720,6 +725,7 @@ const handleExecutionError = (
         projectMode: context.projectMode,
         stage: context.stage,
         logId: context.logId,
+        projectScope: context.projectScope,
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -742,6 +748,7 @@ const handleExecutionError = (
       projectMode: context.projectMode,
       stage: context.stage,
       logId: context.logId,
+      projectScope: context.projectScope,
       mappedError: mapped,
     });
 
@@ -973,6 +980,15 @@ type ResolvedExecuteContext = {
   readonly executeOutputDir?: string;
 };
 
+/**
+ * The resolved project as toolkit resolution needs it: custom toolkits are
+ * listed per project, and it has to be the project execute runs against.
+ */
+const toolkitProjectScope = (resolvedProject: ToolkitProjectScope): ToolkitProjectScope => ({
+  orgId: resolvedProject.orgId,
+  projectId: resolvedProject.projectId,
+});
+
 type ResolvedSchemaContext = {
   readonly ui: TerminalUI;
   readonly resolvedProject: {
@@ -1097,7 +1113,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     });
     const toolkitSlug = isLocalToolSlug(params.slug)
       ? undefined
-      : yield* toolkitFromToolSlug(params.slug);
+      : yield* toolkitFromToolSlug(params.slug, toolkitProjectScope(resolvedProject));
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
@@ -1227,7 +1243,10 @@ const runConnectedToolkitFailFast = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1349,6 +1368,7 @@ const runExecuteWithSpinner = (params: {
                     surface: params.surface,
                     projectMode: params.projectMode,
                     stage: 'dry_run',
+                    projectScope: toolkitProjectScope(params.resolvedProject),
                   })
                 )
               )));
@@ -1366,6 +1386,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'dry_run',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 })
               )
             );
@@ -1419,6 +1440,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'execution',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 });
                 yield* writeExecuteStdout(
                   params.ui,
@@ -1474,6 +1496,7 @@ const runExecuteWithSpinner = (params: {
             projectMode: params.projectMode,
             stage: 'execution',
             logId: result.logId,
+            projectScope: toolkitProjectScope(params.resolvedProject),
           });
           yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* new ReportedToolExecutionError({
@@ -1559,6 +1582,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'schema_fetch',
+            projectScope: toolkitProjectScope(context.resolvedProject),
           })
         )
       );
@@ -1827,7 +1851,10 @@ const checkConnectedToolkitOrFail = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1889,7 +1916,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           >;
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {
@@ -2041,7 +2068,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           };
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {

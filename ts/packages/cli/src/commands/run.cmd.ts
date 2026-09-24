@@ -34,33 +34,33 @@ import { loadHostConfig } from 'src/services/config';
 import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withAlias('f'),
   Flag.withDescription('Run a TS/JS file instead of inline code'),
   Flag.optional
 );
 
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Preview execute() calls without running them'),
   Flag.withDefault(false)
 );
-const debug = Flag.boolean('debug').pipe(
+const debug = Flag.Boolean('debug').pipe(
   Flag.withDescription('Log helper steps while the script runs'),
   Flag.withDefault(false)
 );
-const logsOff = Flag.boolean('logs-off').pipe(
+const logsOff = Flag.Boolean('logs-off').pipe(
   Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
@@ -84,7 +84,7 @@ export const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
 ]);
 export const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
 
-const args = Argument.string('arg').pipe(
+const args = Argument.String('arg').pipe(
   Argument.variadic(),
   Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );

@@ -1,6 +1,6 @@
 {
 	"name": "cloudflare-wrangler-example",
-	"version": "0.0.1",
+	"version": "0.0.4",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
@@ -12,9 +12,9 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "catalog:",
-		"@types/node": "^26.4.1",
+		"@types/node": "^26.6.0",
 		"typescript": "catalog:",
-		"vitest": "catalog:",
+		"vitest": "catalog:vitest4",
 		"wrangler": "catalog:"
 	},
 	"dependencies": {

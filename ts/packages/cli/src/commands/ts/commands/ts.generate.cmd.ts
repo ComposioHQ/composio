@@ -57,29 +57,29 @@ export class TypeScriptGenerationInputError extends Data.TaggedError(
 
 const invalidGenerateValue = (message: string) => new TypeScriptGenerationInputError({ message });
 
-export const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
   Flag.withDescription('Output directory for the generated TypeScript type stubs.')
 );
 
-export const compact = Flag.boolean('compact').pipe(
+export const compact = Flag.Boolean('compact').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Emit a single TypeScript file')
 );
 
-export const transpiled = Flag.boolean('transpiled').pipe(
+export const transpiled = Flag.Boolean('transpiled').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
 );
 
-export const typeTools = Flag.boolean('type-tools').pipe(
+export const typeTools = Flag.Boolean('type-tools').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
   )
 );
 
-export const toolkitsOpt = Flag.string('toolkits').pipe(
+export const toolkitsOpt = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'

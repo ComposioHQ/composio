@@ -2,7 +2,7 @@ name: Build Typescript SDK
 
 on:
   push:
-    branches: [next]
+    branches: [next, main]
     paths:
       - 'ts/**'
       - '.oxlintrc.json'

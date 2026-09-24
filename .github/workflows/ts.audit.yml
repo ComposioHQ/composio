@@ -2,7 +2,7 @@ name: Audit Typescript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
@@ -13,7 +13,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'

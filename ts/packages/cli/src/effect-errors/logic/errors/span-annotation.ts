@@ -8,7 +8,7 @@ import type { ErrorSpan } from 'effect-errors/types';
 // symbol. v4 dropped that mechanism entirely (confirmed against
 // `ts/vendor/effect` — no such symbol, and no per-reason span stamped directly
 // onto the raised error value anywhere in the v4 source or the installed
-// `effect@4.0.0-rc.112` dist).
+// `effect@4.0.0-rc.115` dist).
 //
 // The analogous v4 mechanism lives one level up, on the `Cause` `Reason`
 // rather than the bare error value: `Effect.withSpan` pushes a span-named

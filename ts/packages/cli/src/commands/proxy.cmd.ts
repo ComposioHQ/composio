@@ -24,41 +24,41 @@ import {
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
-const endpoint = Argument.string('url').pipe(
+const endpoint = Argument.String('url').pipe(
   Argument.withDescription('Absolute or relative API endpoint to call through proxy execute.')
 );
 
-const toolkit = Flag.string('toolkit').pipe(
+const toolkit = Flag.String('toolkit').pipe(
   Flag.withAlias('t'),
   Flag.withDescription('Toolkit slug whose connected account should be used')
 );
 
-const account = Flag.string('account').pipe(
+const account = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
   ),
   Flag.optional
 );
 
-const method = Flag.string('method').pipe(
+const method = Flag.String('method').pipe(
   Flag.withAlias('X'),
   Flag.withDefault('GET'),
   Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
 );
 
-const headers = Flag.string('header').pipe(
+const headers = Flag.String('header').pipe(
   Flag.withAlias('H'),
   Flag.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
   Flag.atLeast(0)
 );
 
-const data = Flag.string('data').pipe(
+const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
   Flag.optional
 );
 
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Skip the short-lived connected-account fail-fast check if you just connected an account'

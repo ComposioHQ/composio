@@ -1,0 +1,205 @@
+---
+title: Build a Python research agent with MCP
+description: Read a public Hacker News profile with CrewAI or LangChain through a Composio session's MCP endpoint.
+keywords: [python, mcp, crewai, langchain, hackernews, research agent]
+gallery:
+  categories: [General agents]
+  logos: [hackernews]
+  featured: true
+  order: 7
+---
+
+Build an agent that reads a Hacker News profile and reports its current karma and bio. Choose CrewAI or LangChain below. Both agents use a Composio session that exposes one public, read-only tool over MCP, so you don't need to connect a Hacker News account.
+
+The session supplies the MCP URL and authentication headers. Your framework handles tool discovery and execution through that endpoint.
+
+## Set up your environment
+
+Use Python 3.12 and create a virtual environment:
+
+```bash
+mkdir python-mcp-agent
+cd python-mcp-agent
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+Set your [Composio project API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-python-mcp-agents) and [OpenAI API key](https://platform.openai.com/api-keys) in this shell:
+
+```bash
+export COMPOSIO_API_KEY="your-composio-api-key"
+export OPENAI_API_KEY="your-openai-api-key"
+export COMPOSIO_EXAMPLES_USER_ID="mcp-research-demo"
+```
+
+`COMPOSIO_EXAMPLES_USER_ID` identifies this demo's Composio user. In your application, use your signed-in user's ID.
+
+## Run the agent
+
+Choose one framework and install its dependencies. Each script creates the session, runs the lookup, and deletes the session when the run finishes or raises an error.
+
+<Tabs items={['CrewAI', 'LangChain']}>
+<Tab value="CrewAI">
+
+Install Composio, CrewAI, and its MCP dependency:
+
+```bash
+python -m pip install "composio>=0.17.1" crewai mcp
+```
+
+Save this as `crewai_agent.py`. CrewAI's [`MCPServerHTTP`](https://docs.crewai.com/en/mcp/overview) accepts the session's URL and headers through the agent's `mcps` list.
+
+```python title="crewai_agent.py"
+import os
+
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from crewai import Agent, Crew, Task
+from crewai.mcp import MCPServerHTTP
+
+composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+session = composio.create(
+	user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
+	toolkits=["hackernews"],
+	tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+	session_preset=SESSION_PRESET_DIRECT_TOOLS,
+	mcp=True,
+)
+
+try:
+	agent = Agent(
+		role="Hacker News researcher",
+		goal="Report public profile information from live tool results.",
+		backstory="You check the source before writing a short profile.",
+		llm="gpt-5.2",
+		mcps=[
+			MCPServerHTTP(
+				url=session.mcp.url,
+				headers=session.mcp.headers,
+				streamable=True,
+			)
+		],
+	)
+	task = Task(
+		description=(
+			"Look up the Hacker News user pg with the available tool. "
+			"Report their current karma and summarize their bio if present. "
+			"Include https://news.ycombinator.com/user?id=pg as the source. "
+			"If the lookup fails, report the error instead of guessing."
+		),
+		expected_output="A short profile with username, karma, bio, and source URL.",
+		agent=agent,
+	)
+	result = Crew(agents=[agent], tasks=[task]).kickoff()
+	print(result.raw)
+finally:
+	session.delete()
+```
+
+Run it:
+
+```bash
+python crewai_agent.py
+```
+
+The repository's [CrewAI MCP example](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/crewai_agent.py) uses the same connection pattern to summarize Gmail. That variant needs a connected Gmail account.
+
+</Tab>
+<Tab value="LangChain">
+
+Install Composio, LangChain's MCP extra, and the OpenAI integration:
+
+```bash
+python -m pip install "composio>=0.17.1" "langchain[mcp]>=1.4,<2" langchain-openai
+```
+
+<Callout type="info">
+LangChain's [`MCPAdapter`](https://docs.langchain.com/oss/python/langchain/mcp) requires `langchain[mcp]>=1.4.0` and is in beta. It replaces the archived `langchain-mcp-adapters` package. For an existing `MultiServerMCPClient` integration, follow LangChain's [migration guide](https://docs.langchain.com/oss/python/migrate/langchain-mcp-adapters).
+</Callout>
+
+Save this as `langchain_agent.py`. [`StreamableHttpTransport`](https://gofastmcp.com/clients/transports#http-transport) passes the session's authentication headers to the MCP endpoint.
+
+```python title="langchain_agent.py"
+import asyncio
+import os
+
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from fastmcp.client.transports import StreamableHttpTransport
+from langchain.agents import create_agent
+from langchain.mcp import MCPAdapter
+from langchain_openai import ChatOpenAI
+
+
+async def main():
+	composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+	session = composio.create(
+		user_id=os.environ["COMPOSIO_EXAMPLES_USER_ID"],
+		toolkits=["hackernews"],
+		tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+		session_preset=SESSION_PRESET_DIRECT_TOOLS,
+		mcp=True,
+	)
+	try:
+		transport = StreamableHttpTransport(
+			url=session.mcp.url,
+			headers=session.mcp.headers,
+		)
+		async with MCPAdapter(transport) as adapter:
+			tools = await adapter.list_tools()
+			agent = create_agent(
+				model=ChatOpenAI(model="gpt-5.2"),
+				tools=tools,
+			)
+			result = await agent.ainvoke(
+				{
+					"messages": [
+						{
+							"role": "user",
+							"content": (
+								"Look up the Hacker News user pg with the available tool. "
+								"Report their current karma and summarize their bio if present. "
+								"Include https://news.ycombinator.com/user?id=pg as the source. "
+								"If the lookup fails, report the error instead of guessing."
+							),
+						}
+					]
+				}
+			)
+			print(result["messages"][-1].content)
+	finally:
+		session.delete()
+
+
+if __name__ == "__main__":
+	asyncio.run(main())
+```
+
+Run it:
+
+```bash
+python langchain_agent.py
+```
+
+The `async with` block closes the MCP connection before `finally` deletes the Composio session.
+
+The same script is in [`python/examples/tool_router/langchain_agent.py`](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/langchain_agent.py). From a repository checkout, run it with [uv](https://docs.astral.sh/uv/guides/scripts/) to install its declared dependencies in an isolated environment:
+
+```bash
+uv run --script python/examples/tool_router/langchain_agent.py
+```
+
+</Tab>
+</Tabs>
+
+## Check the result
+
+The agent prints `pg`'s current karma, a short bio when the profile contains one, and the Hacker News profile URL. Values and wording vary between runs. Check that the response cites `https://news.ycombinator.com/user?id=pg` and uses the tool's result.
+
+The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) exposes `HACKERNEWS_GET_USER` directly. The agent doesn't need to search for tools or start an authentication flow. To research another Hacker News user, change `pg` in the prompt and source URL.
+
+If the MCP connection returns an authentication error, check `COMPOSIO_API_KEY` and pass both `session.mcp.url` and `session.mcp.headers`. Re-run the script to create a fresh session; the previous run's session was deleted.
+
+## Use the same pattern in your application
+
+Keep the [session](/docs/how-composio-works) for as long as the conversation needs it, then delete it. To use a toolkit that needs an account, [authorize that toolkit](/docs/authentication/manually-authenticating) before running the agent.
+
+For SDK modifiers or custom tools that run in your process, use the [CrewAI provider](/docs/providers/crewai) or [LangChain provider](/docs/providers/langchain). Those features don't run through a hosted [MCP session](/docs/sessions-via-mcp#trade-offs).

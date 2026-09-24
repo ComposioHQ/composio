@@ -7,9 +7,11 @@ for creating isolated MCP sessions with provider-wrapped tools.
 
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass
 from enum import Enum
+from urllib.parse import urlsplit
 
 import typing_extensions as te
 from composio_client import omit
@@ -22,7 +24,7 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
-from composio.core.models.base import Resource
+from composio.core.models.base import Resource, credential_headers, header_value
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
     assert_no_custom_tool_slugs_in_preload,
@@ -41,13 +43,19 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_attach_experimental,
 )
 from composio.core.models.tool_router_constants import (
+    ORG_ID_HEADER,
     PRELOAD_TOOLS_ALL,
+    PROJECT_ID_HEADER,
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
+    ToolRouterPremiumUsageConfig,
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
+    ToolRouterUpdateExperimentalConfig,
+    ToolRouterUpdateManageConnectionsConfig,
+    ToolRouterUpdateMultiAccountConfig,
 )
 from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
@@ -56,7 +64,53 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.exceptions import InvalidParams
+from composio.exceptions import InvalidParams, MCPDestinationError
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+# Schemes whose URLs have a tuple origin (``scheme://host[:port]``) under the
+# WHATWG URL standard. Every other scheme (``data:``, ``file:``, ``blob:``
+# without a base, ...) has an opaque origin that serializes as ``null``, so two
+# such URLs would compare equal; they are rejected before any comparison.
+_TUPLE_ORIGIN_SCHEMES = frozenset({"ftp", "http", "https", "ws", "wss"})
+
+
+def _origin(url: str, role: str) -> str:
+    """Return the origin of an absolute URL.
+
+    The origin is ``scheme://host[:port]`` in lowercase with the scheme's
+    default port dropped, matching the WHATWG ``URL.origin`` used by the
+    TypeScript SDK. ``role`` names the URL in the error; the URL itself is
+    never echoed, since it may carry a query token.
+    """
+    parts = urlsplit(url)
+    try:
+        port = parts.port
+    except ValueError as exc:
+        raise MCPDestinationError(
+            f"The {role} is not a valid absolute URL", mcp_origin="", api_origin=""
+        ) from exc
+    if not parts.scheme:
+        raise MCPDestinationError(
+            f"The {role} is not a valid absolute URL", mcp_origin="", api_origin=""
+        )
+    if parts.scheme.lower() not in _TUPLE_ORIGIN_SCHEMES:
+        raise MCPDestinationError(
+            f"The {role} has an opaque origin", mcp_origin="", api_origin=""
+        )
+    if not parts.hostname:
+        raise MCPDestinationError(
+            f"The {role} is not a valid absolute URL", mcp_origin="", api_origin=""
+        )
+    scheme = parts.scheme.lower()
+    hostname = parts.hostname.lower()
+    host = f"[{hostname}]" if ":" in hostname else hostname
+    if port is not None and port != _DEFAULT_PORTS.get(scheme):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}"
+
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -534,25 +588,77 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             dangerously_allow_auto_upload_download_files
         )
 
+    def _mcp_destination_rejection(self, url: str) -> t.Optional[MCPDestinationError]:
+        """The error describing why ``url`` must not receive the session
+        credential, or ``None`` when it shares the client's API origin."""
+        try:
+            api_origin = _origin(str(self._client.base_url), "API base URL")
+            mcp_origin = _origin(url, "MCP URL")
+        except MCPDestinationError as exc:
+            return exc
+        if mcp_origin == api_origin:
+            return None
+        return MCPDestinationError(
+            f"The session MCP endpoint origin {mcp_origin} does not match the "
+            f"API origin {api_origin}; the session credential was not attached",
+            mcp_origin=mcp_origin,
+            api_origin=api_origin,
+        )
+
     def _create_mcp_server_config(
         self,
         mcp_type: ToolRouterMCPServerType,
         url: str,
+        mcp_requested: bool,
     ) -> ToolRouterMCPServerConfig:
         """
         Create an MCP server config object with authentication headers.
 
+        The headers mirror the effective auth of the underlying client: the
+        ``x-user-api-key`` default header when one is placed (the client sends
+        it and suppresses the configured keys), otherwise its project key as
+        ``x-api-key``, otherwise the resolved ``user_api_key`` option as
+        ``x-user-api-key``, plus ``x-org-id`` / ``x-project-id`` when the
+        client carries an explicit scope. No other default header is copied
+        and the environment is never re-read.
+
+        The headers are only attached when the MCP URL has the same origin as
+        the client's API base URL, whatever scheme is configured: that origin
+        already receives them on every SDK request. Any other destination (a
+        different origin, an opaque origin, or a URL that does not parse)
+        never receives them. When the caller asked for MCP
+        (``mcp_requested``), that raises
+        :class:`~composio.exceptions.MCPDestinationError` naming both origins;
+        otherwise the config is returned with empty headers and a warning
+        naming both origins is logged, so callers who only use the native
+        tools are not blocked by an endpoint they never consume. The SDK
+        itself never connects to the MCP URL and does not follow redirects for
+        it; an MCP client consuming this config must not forward these headers
+        to a different origin.
+
         :param mcp_type: The type of MCP server (HTTP or SSE)
         :param url: The URL of the MCP server
+        :param mcp_requested: Whether the caller passed ``mcp=True``
         :return: MCP server config with headers
         """
-        return ToolRouterMCPServerConfig(
-            type=mcp_type,
-            url=url,
-            headers={
-                "x-api-key": self._client.api_key,
-            },
-        )
+        rejection = self._mcp_destination_rejection(url)
+        if rejection is not None:
+            if mcp_requested:
+                raise rejection
+            logger.warning(
+                "%s. session.mcp.headers was left empty; pass mcp=True to make "
+                "this an error",
+                rejection,
+            )
+            return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers={})
+
+        default_headers: t.Mapping[str, t.Any] = self._client.default_headers
+        headers: t.Dict[str, t.Optional[str]] = dict(credential_headers(self._client))
+        for scope_header in (ORG_ID_HEADER, PROJECT_ID_HEADER):
+            scope_value = header_value(default_headers, scope_header)
+            if scope_value:
+                headers[scope_header] = scope_value
+        return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
     def _transform_tags_params(
         self, tags: t.Optional[ToolRouterConfigTags]
@@ -621,6 +727,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        premium_usage: t.Optional[
+            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
+        ] = None,
         mcp: t.Literal[True],
     ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
 
@@ -649,6 +758,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        premium_usage: t.Optional[
+            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
+        ] = None,
         mcp: t.Literal[False] = False,
     ) -> ToolRouterSession[TTool, TToolCollection]: ...
 
@@ -676,6 +788,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        premium_usage: t.Optional[
+            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
+        ] = None,
         mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -783,13 +898,25 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param premium_usage: Experimental premium usage policy. The project
+                              must allow premium usage. ``False`` disables it for this
+                              Session; a policy can restrict eligible toolkits and tools.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint
                     exists on every session at runtime regardless of this flag;
                     native tools (``session.tools()``) are unaffected.
+                    The session credential is exported in ``session.mcp.headers``
+                    only when the MCP URL shares the origin of the configured
+                    API base URL. When it does not, ``mcp=True`` raises
+                    :class:`~composio.exceptions.MCPDestinationError` (naming
+                    both origins, never a key); otherwise the session is
+                    returned with empty ``session.mcp.headers`` and a warning
+                    naming both origins is logged.
                     See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
+        :raises MCPDestinationError: When ``mcp=True`` and the MCP URL is not
+                    on the API origin.
 
         Example:
             ```python
@@ -967,6 +1094,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         create_params: t.Dict[str, t.Any] = {
             "user_id": user_id,
         }
+        if premium_usage is not None:
+            create_params["premium_usage"] = premium_usage
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
@@ -1119,9 +1248,11 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             config=session.config,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
+                mcp_requested=mcp,
             ),
             experimental=experimental_response,
             custom_tools_map=custom_tools_map,
@@ -1177,8 +1308,17 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param custom_toolkits: Optional custom toolkits to bind to the session.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint in the type (returns ToolRouterSessionWithMcp).
+                    The session credential is exported in ``session.mcp.headers``
+                    only when the MCP URL shares the origin of the configured
+                    API base URL. When it does not, ``mcp=True`` raises
+                    :class:`~composio.exceptions.MCPDestinationError` (naming
+                    both origins, never a key); otherwise the session is
+                    returned with empty ``session.mcp.headers`` and a warning
+                    naming both origins is logged.
                     See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
+        :raises MCPDestinationError: When ``mcp=True`` and the MCP URL is not
+                    on the API origin.
 
         Example:
             ```python
@@ -1268,9 +1408,11 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             config=session.config,
+            config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
+                mcp_requested=mcp,
             ),
             experimental=experimental_response,
             custom_tools_map=custom_tools_map,
@@ -1306,6 +1448,9 @@ __all__ = [
     "ToolRouterTagsEnableDisableConfig",
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
+    "ToolRouterUpdateManageConnectionsConfig",
+    "ToolRouterUpdateMultiAccountConfig",
+    "ToolRouterUpdateExperimentalConfig",
     "ToolRouterSandboxConfig",
     "ToolRouterWorkbenchConfig",
     "SandboxSize",

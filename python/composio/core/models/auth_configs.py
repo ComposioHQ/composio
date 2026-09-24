@@ -7,10 +7,13 @@ import typing_extensions as te
 from composio.client.types import (
     auth_config_create_params,
     auth_config_create_response,
+    auth_config_delete_response,
     auth_config_list_params,
     auth_config_list_response,
     auth_config_retrieve_response,
     auth_config_update_params,
+    auth_config_update_response,
+    auth_config_update_status_response,
 )
 from composio.core.models.base import Resource
 
@@ -67,17 +70,16 @@ class AuthConfigs(Resource):
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant0
-    ) -> t.Dict: ...
+    ) -> auth_config_update_response.AuthConfigUpdateResponse: ...
 
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant1
-    ) -> t.Dict: ...
+    ) -> auth_config_update_response.AuthConfigUpdateResponse: ...
 
-    # FIXME: what type is this response, in ts, it's AuthConfigUpdateResponse
     def update(
         self, nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams
-    ) -> t.Dict:
+    ) -> auth_config_update_response.AuthConfigUpdateResponse:
         """
         Updates an existing authentication configuration.
 
@@ -87,59 +89,56 @@ class AuthConfigs(Resource):
 
         :param nanoid: The ID of the auth config to update.
         :param options: The options to update the auth config with.
-        :return: The updated auth config.
+        :return: The update result with success and message fields.
         """
-        return t.cast(
-            t.Dict,
-            self._client.auth_configs.update(
-                nanoid=nanoid,
-                type=options["type"],  # type: ignore
-                credentials=options.get("credentials", self._client.not_given),
-                is_enabled_for_tool_router=options.get(
-                    "is_enabled_for_tool_router", self._client.not_given
-                ),
-                tool_access_config=options.get(
-                    "tool_access_config", self._client.not_given
-                ),
+        return self._client.auth_configs.update(
+            nanoid=nanoid,
+            type=options["type"],  # type: ignore
+            credentials=options.get("credentials", self._client.not_given),
+            is_enabled_for_tool_router=options.get(
+                "is_enabled_for_tool_router", self._client.not_given
+            ),
+            tool_access_config=options.get(
+                "tool_access_config", self._client.not_given
             ),
         )
 
-    def delete(self, nanoid: str) -> t.Dict:
+    def delete(
+        self, nanoid: str
+    ) -> auth_config_delete_response.AuthConfigDeleteResponse:
         """
         Deletes an existing authentication configuration.
 
         :param nanoid: The ID of the auth config to delete.
-        :return: The deleted auth config.
+        :return: The deletion result with success and message fields.
         """
-        return t.cast(t.Dict, self._client.auth_configs.delete(nanoid))
+        return self._client.auth_configs.delete(nanoid)
 
     def __update_status(
         self,
         nanoid: str,
         status: t.Literal["ENABLED", "DISABLED"],
-    ) -> t.Dict:
-        return t.cast(
-            t.Dict,
-            self._client.auth_configs.update_status(
-                status,
-                nanoid=nanoid,
-            ),
-        )
+    ) -> auth_config_update_status_response.AuthConfigUpdateStatusResponse:
+        return self._client.auth_configs.update_status(status, nanoid=nanoid)
 
-    def enable(self, nanoid: str) -> t.Dict:
+    def enable(
+        self, nanoid: str
+    ) -> auth_config_update_status_response.AuthConfigUpdateStatusResponse:
         """
         Enables an existing authentication configuration.
 
         :param nanoid: The ID of the auth config to enable.
-        :return: The enabled auth config.
+        :return: The status update result with success and message fields.
         """
         return self.__update_status(nanoid, "ENABLED")
 
-    def disable(self, nanoid: str) -> t.Dict:
+    def disable(
+        self, nanoid: str
+    ) -> auth_config_update_status_response.AuthConfigUpdateStatusResponse:
         """
         Disables an existing authentication configuration.
 
         :param nanoid: The ID of the auth config to disable.
-        :return: The disabled auth config.
+        :return: The status update result with success and message fields.
         """
         return self.__update_status(nanoid, "DISABLED")

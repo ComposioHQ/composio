@@ -13,7 +13,7 @@ Removes the file or directory from the virtual filesystem. Use with caution:
 deletion is typically irreversible. Ensure the path exists and is intended for removal.
 
 ```typescript
-async delete(remotePath: string, options?: ToolRouterSessionFilesMountDeleteOptions): Promise<FileDeleteResponse>
+async delete(remotePath: string, options?: { mountId?: string }): Promise<{ mountRelativePath: string; sandboxMountPrefix: string }>
 ```
 
 **Parameters**
@@ -21,11 +21,11 @@ async delete(remotePath: string, options?: ToolRouterSessionFilesMountDeleteOpti
 | Name | Type | Description |
 |------|------|-------------|
 | `remotePath` | `string` | The path of the file or directory to delete on the mount. |
-| `options?` | `ToolRouterSessionFilesMountDeleteOptions` | Optional configuration for the delete operation. |
+| `options?` | `\{ mountId?: string \}` | Optional configuration for the delete operation. |
 
 **Returns**
 
-`Promise<FileDeleteResponse>` — Confirmation of deletion (implementation-specific).
+`Promise<\{ mountRelativePath: string; sandboxMountPrefix: string \}>` — Confirmation of deletion (implementation-specific).
 
 **Example**
 
@@ -51,7 +51,7 @@ Retrieves a file stored in the session's virtual filesystem (e.g., one produced
 by a tool or previously uploaded) and saves it to the specified local path.
 
 ```typescript
-async download(filePath: string, options?: ToolRouterSessionFilesMountDownloadOptions): Promise<RemoteFile>
+async download(filePath: string, options?: { mountId?: string }): Promise<RemoteFile>
 ```
 
 **Parameters**
@@ -59,7 +59,7 @@ async download(filePath: string, options?: ToolRouterSessionFilesMountDownloadOp
 | Name | Type | Description |
 |------|------|-------------|
 | `filePath` | `string` | The path of the file on the mount to download, or the local path where the file should be saved (implementation-specific). |
-| `options?` | `ToolRouterSessionFilesMountDownloadOptions` | Optional configuration for the download. |
+| `options?` | `\{ mountId?: string \}` | Optional configuration for the download. |
 
 **Returns**
 
@@ -90,18 +90,18 @@ The path is relative to the mount root (e.g., `"/"` for root, `"/documents"` for
 Supports cursor-based pagination via `cursor` and `limit` options.
 
 ```typescript
-async list(options?: ToolRouterSessionFilesMountListOptions): Promise<FileListResponse>
+async list(options?: { cursor?: string; limit?: number; mountId?: string; path?: string }): Promise<{ items: { lastModified: string; mountRelativePath: string; sandboxMountPrefix: string; size: number }[]; nextCursor: string | undefined }>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `options?` | `ToolRouterSessionFilesMountListOptions` | Optional configuration for the list operation. |
+| `options?` | `\{ cursor?: string; limit?: number; mountId?: string; path?: string \}` | Optional configuration for the list operation. |
 
 **Returns**
 
-`Promise<FileListResponse>` — List of files with nextCursor for pagination.
+`Promise<\{ items: \{ lastModified: string; mountRelativePath: string; sandboxMountPrefix: string; size: number \}[]; nextCursor: string \| undefined \}>` — List of files with nextCursor for pagination.
 
 **Example**
 
@@ -130,7 +130,7 @@ URL inputs require a Node.js or Bun runtime so the destination can be DNS-valida
 edge runtimes must fetch the file themselves and pass a File or ArrayBuffer.
 
 ```typescript
-async upload(input: string | File | ArrayBuffer | Uint8Array, options?: ToolRouterSessionFilesMountUploadOptions): Promise<RemoteFile>
+async upload(input: string | File | ArrayBuffer | Uint8Array, options?: { mimetype?: string; mountId?: string; remotePath?: string }): Promise<RemoteFile>
 ```
 
 **Parameters**
@@ -138,7 +138,7 @@ async upload(input: string | File | ArrayBuffer | Uint8Array, options?: ToolRout
 | Name | Type | Description |
 |------|------|-------------|
 | `input` | `string \| File \| ArrayBuffer \| Uint8Array` | File path (string), native File, or raw buffer (ArrayBuffer \| Uint8Array). |
-| `options?` | `ToolRouterSessionFilesMountUploadOptions` | Optional configuration. When passing a buffer, remotePath is required. |
+| `options?` | `\{ mimetype?: string; mountId?: string; remotePath?: string \}` | Optional configuration. When passing a buffer, remotePath is required. |
 
 **Returns**
 

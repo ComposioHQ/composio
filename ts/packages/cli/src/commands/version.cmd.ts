@@ -5,7 +5,7 @@ import { getUpdateStatus } from 'src/services/update-check';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, cyanBright } from 'src/ui/colors';
 
-const check = Flag.boolean('check').pipe(
+const check = Flag.Boolean('check').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Check for a newer stable release and print a machine-readable JSON status ' +

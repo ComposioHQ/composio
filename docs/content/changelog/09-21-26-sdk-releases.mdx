@@ -1,0 +1,46 @@
+---
+title: 'Python SDK 0.22.0 and TypeScript SDK 0.19.0 add safer TypeSafe and session workflows'
+description: 'TypeSafe support for Python, TypeSafe fixes for TypeScript, session connection helpers, clearer SDK errors, and stricter network safeguards are now available.'
+date: '2026-09-21'
+---
+
+Python SDK `0.22.0` adds a TypeSafe provider. TypeScript SDK `0.19.0` improves session and connection workflows, returns clearer errors, and strengthens network safeguards. The accompanying `@composio/typesafe` `0.1.1` release updates the package first published as `0.1.0` on September 17.
+
+### Release versions
+
+| SDK                                 | Version  |
+| ----------------------------------- | -------- |
+| Python `composio`                   | `0.22.0` |
+| Python `composio-typesafe`          | `0.22.0` |
+| TypeScript `@composio/core`         | `0.19.0` |
+| TypeScript `@composio/slim`         | `0.19.0` |
+| TypeScript `@composio/typesafe`     | `0.1.1`  |
+| TypeScript `@composio/experimental` | `0.2.5`  |
+
+### TypeSafe support turns Jev decisions into Composio calls
+
+The new `composio-typesafe` package and the existing `@composio/typesafe` package integrate Composio tools with TypeSafe's Jev model. They compile tools into typed questions, return a complete call, partial call, or abstention with a confidence score, and require explicit confirmation before destructive tool execution.
+
+You can also shortlist tools before a decision and apply a confidence gate when a workflow needs a minimum judgement score.
+
+TypeScript `0.1.1` rejects root schema composition that can hide required arguments, requires explicit values for prototype-named arguments, and preserves `__proto__` as caller data during execution.
+
+### Sessions expose more state and avoid duplicate authorization
+
+TypeScript sessions now expose the server-returned configuration through `session.config`. `session.update()` returns the updated configuration, and `session.ensureConnected()` reuses an active connection before starting a new authorization flow.
+
+Python and TypeScript MCP updates now preserve tool-only allowlists, auth config selections, and manual connection-management intent. Python mixed local and remote multi-tool execution also preserves request order and retains completed local results when the remote request fails.
+
+<Callout>
+  If you implement the TypeScript `Session` interface yourself, add the required `config` member. Sessions created by the SDK already provide it.
+</Callout>
+
+### Errors are easier to handle
+
+Tool lookup failures now distinguish a missing tool from authentication, server, and network failures. Trigger subscription setup errors can be handled through a callback instead of escaping asynchronously, and HTTP status errors in Python remain catchable as `ComposioError`.
+
+### Network safeguards cover redirects and transition ranges
+
+Both SDKs now apply standard redirect method and body rules, remove credentials on cross-origin redirects, and reject additional IPv4, IPv6, and transition-network ranges. TypeScript also offers a strict SSRF mode for callers that require the connection to stay pinned to the validated address.
+
+The TypeScript JSON Schema converter rejects invalid or oversized regular-expression patterns with a path-aware error. Provider dependency ranges have also moved to the upstream versions used by the release test matrix.

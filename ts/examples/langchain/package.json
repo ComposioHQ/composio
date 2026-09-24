@@ -1,7 +1,7 @@
 {
   "name": "langchain-example",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.14",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -16,11 +16,11 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/langchain": "workspace:*",
-    "@langchain/core": "^1.2.9",
-    "@langchain/langgraph": "^1.4.14",
-    "@langchain/openai": "^1.5.11",
+    "@langchain/core": "^1.2.11",
+    "@langchain/langgraph": "^1.4.15",
+    "@langchain/openai": "^1.5.13",
     "dotenv": "catalog:",
-    "langchain": "^1.5.10",
+    "langchain": "^1.5.11",
     "openai": "catalog:"
   },
   "devDependencies": {

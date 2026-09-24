@@ -116,26 +116,18 @@ class TestTriggers:
             "version": "V3",
             "enabled_events": ["composio.trigger.message"],
         }
-        mock_client.get.return_value = {"items": []}
-        mock_client.post.return_value = raw_subscription
+        mock_client.webhook_subscriptions.list.return_value = Mock(items=[])
+        mock_client.webhook_subscriptions.create.return_value = raw_subscription
 
         result = triggers.set_webhook_subscription(webhook_url=webhook_url)
 
-        mock_client.get.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions",
-            cast_to=object,
-            options={"params": {"limit": 1}},
+        mock_client.webhook_subscriptions.list.assert_called_once_with(limit=1)
+        mock_client.webhook_subscriptions.create.assert_called_once_with(
+            webhook_url=webhook_url,
+            enabled_events=["composio.trigger.message"],
+            version="V3",
         )
-        mock_client.post.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions",
-            cast_to=object,
-            body={
-                "webhook_url": webhook_url,
-                "enabled_events": ["composio.trigger.message"],
-                "version": "V3",
-            },
-        )
-        mock_client.patch.assert_not_called()
+        mock_client.webhook_subscriptions.update.assert_not_called()
         assert result == raw_subscription
 
     def test_set_webhook_subscription_updates_first_existing(
@@ -152,8 +144,10 @@ class TestTriggers:
                 "composio.connected_account.expired",
             ],
         }
-        mock_client.get.return_value = {"items": [{"id": "sub_123"}]}
-        mock_client.patch.return_value = raw_subscription
+        mock_client.webhook_subscriptions.list.return_value = Mock(
+            items=[Mock(id="sub_123")]
+        )
+        mock_client.webhook_subscriptions.update.return_value = raw_subscription
 
         result = triggers.set_webhook_subscription(
             webhook_url=webhook_url,
@@ -164,19 +158,17 @@ class TestTriggers:
             version="V3",
         )
 
-        mock_client.patch.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions/sub_123",
-            cast_to=object,
-            body={
-                "webhook_url": webhook_url,
-                "enabled_events": [
-                    "composio.trigger.message",
-                    "composio.connected_account.expired",
-                ],
-                "version": "V3",
-            },
+        mock_client.webhook_subscriptions.list.assert_called_once_with(limit=1)
+        mock_client.webhook_subscriptions.update.assert_called_once_with(
+            "sub_123",
+            webhook_url=webhook_url,
+            enabled_events=[
+                "composio.trigger.message",
+                "composio.connected_account.expired",
+            ],
+            version="V3",
         )
-        mock_client.post.assert_not_called()
+        mock_client.webhook_subscriptions.create.assert_not_called()
         assert result == raw_subscription
 
     def test_set_webhook_subscription_rejects_empty_events(self, triggers):
@@ -2081,6 +2073,36 @@ class TestPusherClusterValidation:
         assert isinstance(pusher, triggers_module._ComposioPusher)
         assert pusher.host == f"ws-{cluster}.pusher.com"
         assert pusher.auth_endpoint_headers["x-api-key"] == "sk-secret-value"
+
+    def test_user_only_client_authorizes_the_channel_with_the_user_key(self):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = None
+        client.user_api_key = "uak_user_key"
+        client.default_headers = {}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_user_key"
+
+    def test_user_key_default_header_authorizes_the_channel_over_the_project_key(
+        self,
+    ):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = "sk-secret-value"
+        client.user_api_key = None
+        client.default_headers = {"X-User-Api-Key": "uak_header_key"}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_header_key"
 
     @pytest.mark.parametrize(
         ("cluster", "reason"),

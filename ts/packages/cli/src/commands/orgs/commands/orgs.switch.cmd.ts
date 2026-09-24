@@ -6,12 +6,12 @@ import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
-const orgId = Flag.string('org-id').pipe(
+const orgId = Flag.String('org-id').pipe(
   Flag.optional,
   Flag.withDescription('Organization ID to use as global default')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(50),
   Flag.withDescription('Max orgs to fetch from API (default: 50)')
 );

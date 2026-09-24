@@ -6,17 +6,17 @@ keywords: [tutorial, setup, first agent, sessions, tool router]
 
 Build an agent that chooses Composio tools at runtime. Type a task, connect an app if needed, and continue in the same conversation.
 
-Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [1000+ apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
-
-<AgentSetupActions className="not-prose my-6" />
-
-<Callout type="info" title="Running as an unattended coding agent?">
-If no human is available to log in, use `composio login --agent` to obtain a Composio credential. Follow [Authenticate an unattended agent](/docs/agent-setup/unattended-authentication) to configure `COMPOSIO_API_KEY` and verify a live tool call.
-</Callout>
-
-<Callout type="info">
-The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `import` syntax rather than CommonJS `require()`.
-</Callout>
+<div className="not-prose my-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+  <div>
+    <p className="mb-6">
+      Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [1000+ apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
+    </p>
+    <AgentSetupActions />
+  </div>
+  <Callout className="my-0" type="info" title="Running as an unattended coding agent?">
+    If no human is available to log in, use `composio login --agent` to obtain a Composio credential. Follow [Authenticate an unattended agent](/docs/agent-setup/unattended-authentication) to configure `COMPOSIO_API_KEY` and verify a live tool call.
+  </Callout>
+</div>
 
 <QuickstartFlow>
 
@@ -37,6 +37,8 @@ The current Python package is `composio`. The package `composio-core` is the leg
 </Callout>
 </Tab>
 <Tab value="TypeScript">
+The TypeScript SDK is ESM-only and requires **Node.js 22.22.3 or newer**. Use `import` syntax rather than CommonJS `require()`.
+
 <PackageInstall
   packages="@composio/core @composio/openai-agents @openai/agents"
   comment={[
@@ -471,7 +473,7 @@ Ask for any task that needs an app tool: `Summarize my unread emails from today`
 ## What just happened?
 
 - The provider you picked formats Composio tools for your framework and wires in execution.
-- `composio.sessions.create()` creates a Composio session for `user_123`. The session scopes connections and tool calls to that ID.
+- `composio.sessions.create()` creates a [Composio session](/docs/how-composio-works) for `user_123`. The session scopes connections and tool calls to that ID.
 - Composio sessions persist. In an application, store the session ID (`session.session_id` in Python, `session.sessionId` in TypeScript) and restore it with `composio.use(session_id)` instead of creating a new session for every turn. See [Reusing a session](/docs/how-composio-works#how-sessions-behave).
 - `session.tools()` gives the agent a small set of meta tools for finding, connecting, and running app tools. It does not load thousands of tool schemas into the model context.
 
@@ -479,7 +481,7 @@ Ask for any task that needs an app tool: `Summarize my unread emails from today`
 `user_123` is only for this local example. Replace it with a stable ID from your database. Each ID gets separate connections and tool calls.
 </Callout>
 
-You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
+Note: Sessions are recommended for new integrations. If you maintain a legacy direct-execution integration, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions). You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
 
 ## Adapt the example
 
@@ -488,6 +490,7 @@ You can inspect the selected tools, inputs, responses, and timing with the [Logs
   <Card title="Configure the session" href="/docs/configuring-sessions" description="Restrict toolkits, preload tools, or select connected accounts." />
   <Card title="Design authentication" href="/docs/authentication" description="Add Connect Links and per-user connections to your application." />
   <Card title="Expose an MCP endpoint" href="/docs/sessions-via-mcp" description="Use the same Composio session from an MCP-compatible application." />
+  <Card title="Browse SDK examples" href="/examples/sdk-examples" description="Find TypeScript and Python source code, deploy a Worker, or try TypeSafe and Python MCP integrations." />
 </Cards>
 
 ## Plan your application
