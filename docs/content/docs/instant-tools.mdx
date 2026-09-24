@@ -98,6 +98,18 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 
 Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and rates during Experimental access.
 
+### Read charge details in Python
+
+With `premium_usage.return_premium_charge` enabled, `session.execute()` returns charge details when available in the typed `premium_charge` field on `ToolRouterSessionExecuteResponse`. Read it from the result above:
+
+```python
+charge = result.premium_charge
+if charge is not None:
+    print(charge["amount"], charge["currency"], charge["charged_by"])
+```
+
+The `PremiumCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
+
 ## Control premium usage
 
 `premium_usage` is a Session policy (`premiumUsage` in TypeScript). It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
