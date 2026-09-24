@@ -2040,6 +2040,41 @@ class TestToolRouterExecution:
         assert result["data"] == {"result": "success"}
         assert result["error"] is None
         assert result["successful"] is True
+        assert "premium_charge" not in result
+
+    def test_execute_endpoint_preserves_premium_charge(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Provider-wrapped session tools keep the reported premium charge."""
+        from composio_client.types.tool_router.session_execute_response import (
+            SessionExecuteResponse,
+        )
+
+        from composio.core.models.tools import Tools as RealTools
+
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "data": {"result": "success"},
+                    "error": None,
+                    "log_id": "log_123",
+                    "premium_charge": charge,
+                }
+            )
+        )
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        assert result["premium_charge"] == charge
 
     def test_execute_endpoint_passes_inline_custom_tools(
         self, tool_router, mock_client, mock_provider
