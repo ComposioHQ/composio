@@ -41,7 +41,10 @@ from composio.core.models.custom_tool_execution import (
 )
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
-from composio.core.models.tool_router_session import ToolRouterSession
+from composio.core.models.tool_router_session import (
+    ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+)
 from composio.exceptions import ValidationError
 
 # ────────────────────────────────────────────────────────────────
@@ -996,6 +999,7 @@ class TestToolRouterSessionCustomTools:
 
         result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
 
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
         assert isinstance(result, SessionExecuteResponse)
         assert result.premium_charge == charge
         assert result.data == {"sent": True}

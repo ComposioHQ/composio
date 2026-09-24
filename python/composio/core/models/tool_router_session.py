@@ -29,7 +29,7 @@ from composio_client.types.tool_router import (
     session_retrieve_response,
 )
 from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse as _ClientSessionExecuteResponse,
+    SessionExecuteResponse,
 )
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
@@ -133,7 +133,7 @@ class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
     return_premium_charge: bool
 
 
-class SessionExecuteResponse(_ClientSessionExecuteResponse):
+class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
     """Result of :meth:`ToolRouterSession.execute`."""
 
     premium_charge: t.Optional[PremiumCharge] = None
@@ -864,7 +864,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
         account: t.Optional[str] = None,
-    ) -> SessionExecuteResponse:
+    ) -> ToolRouterSessionExecuteResponse:
         """
         Execute a tool within the session.
 
@@ -877,14 +877,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             multi-account sessions. Helper/meta tools either ignore this
             top-level field or define their own account-selection fields.
 
-        Both paths return a ``SessionExecuteResponse`` with ``data``,
+        Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
         ``error``, ``log_id``, and ``premium_charge`` attributes.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
         if entry and self._session_context:
             result = execute_custom_tool(entry, arguments or {}, self._session_context)
-            return SessionExecuteResponse(
+            return ToolRouterSessionExecuteResponse(
                 data=result["data"],
                 error=result["error"],
                 log_id="",
@@ -904,7 +904,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         # The client already validated data/error/log_id and kept the
         # undeclared premium_charge as an extra. Construct without
         # revalidating so a malformed charge can't fail an executed call.
-        return SessionExecuteResponse.model_construct(**dict(response))
+        return ToolRouterSessionExecuteResponse.model_construct(**dict(response))
 
     def custom_tools(
         self, *, toolkit: t.Optional[str] = None
