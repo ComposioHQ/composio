@@ -29,7 +29,7 @@ from composio_client.types.tool_router import (
     session_retrieve_response,
 )
 from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
+    SessionExecuteResponse as _ClientSessionExecuteResponse,
 )
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
@@ -74,7 +74,11 @@ from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
     delete_tool_router_session,
 )
-from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
+from composio.core.models.tools import (
+    PremiumCharge,
+    ToolExecuteParams,
+    ToolExecutionResponse,
+)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
@@ -127,6 +131,14 @@ class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
         str, t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
     ]
     return_premium_charge: bool
+
+
+class SessionExecuteResponse(_ClientSessionExecuteResponse):
+    """Result of :meth:`ToolRouterSession.execute`."""
+
+    premium_charge: t.Optional[PremiumCharge] = None
+    """Present only when the Session sets
+    ``premium_usage.return_premium_charge`` and a charge is available."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -690,11 +702,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 else f"{failed} out of {len(all_results)} tools failed"
             )
 
-        return {
+        merged: t.Dict[str, t.Any] = {
             "data": merged_data,
             "error": error_message,
             "successful": not has_any_error,
         }
+        if remote_result and remote_result.get("premium_charge") is not None:
+            merged["premium_charge"] = remote_result["premium_charge"]
+        return merged
 
     def authorize(
         self,
@@ -863,12 +878,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             top-level field or define their own account-selection fields.
 
         Both paths return a ``SessionExecuteResponse`` with ``data``,
-        ``error``, and ``log_id`` attributes.
+        ``error``, ``log_id``, and ``premium_charge`` attributes.
         """
-        from composio_client.types.tool_router.session_execute_response import (
-            SessionExecuteResponse,
-        )
-
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
         if entry and self._session_context:
@@ -881,7 +892,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
-        return self._client.tool_router.session.execute(
+        response = self._client.tool_router.session.execute(
             session_id=self.session_id,
             tool_slug=tool_slug,
             arguments=arguments if arguments is not None else omit,
@@ -890,6 +901,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 self._inline_custom_tools_payload
             ),
         )
+        # The client already validated data/error/log_id and kept the
+        # undeclared premium_charge as an extra. Construct without
+        # revalidating so a malformed charge can't fail an executed call.
+        return SessionExecuteResponse.model_construct(**dict(response))
 
     def custom_tools(
         self, *, toolkit: t.Optional[str] = None
