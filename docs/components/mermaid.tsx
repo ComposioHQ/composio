@@ -5,6 +5,13 @@ import mermaid from 'mermaid';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+mermaid.registerIconPacks([
+  {
+    name: 'lucide',
+    loader: () => import('@iconify-json/lucide').then((module) => module.icons),
+  },
+]);
+
 const MOBILE_BREAKPOINT = 768;
 
 function useIsMobile() {

@@ -40,7 +40,7 @@ pnpm --filter @composio/<provider> typecheck
 
 ## CLI Effect v4 tests
 
-`ts/packages/cli` tests run on `effect@4.0.0-rc.112` and a matching `@effect/vitest` (both pinned
+`ts/packages/cli` tests run on `effect@4.0.0-rc.115` and a matching `@effect/vitest` (both pinned
 exactly in `pnpm-workspace.yaml`). Read [effect-v4-cli.md](effect-v4-cli.md) before writing or
 porting a CLI test — it covers `it.effect`/`layer(...)` usage, explicit per-service test layers
 (v4's `Context.Service` has no auto-generated `.Default` the way v3's `Effect.Service` did), and

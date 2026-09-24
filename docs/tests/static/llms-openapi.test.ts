@@ -17,17 +17,12 @@ mock.module("next/navigation", () => ({
 }));
 mock.module("@/lib/toolkit-data", () => ({
   getAllToolkits: async () => [],
+  getAllToolkitsSync: () => [],
   getToolkitBySlug: async () => null,
 }));
 mock.module("@/lib/meta-tools-data", () => ({
   getAllMetaTools: async () => [],
   getMetaToolBySlug: async () => null,
-}));
-mock.module("@/lib/toolkit-schema", () => ({
-  apiToolListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
-  apiTriggerListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
-  processSchema: (schema: unknown) => schema,
-  toolFromApi: (tool: unknown) => tool,
 }));
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;

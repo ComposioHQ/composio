@@ -524,9 +524,9 @@ describe('resolveRunCompanionAssetPath', () => {
 
 describe('loadInstalledCompanionModule', () => {
   layer(BunServices.layer)(it => {
-    it('registers the in-process companions alongside the run preload set', () => {
+    it('registers the in-process companion alongside the run preload set', () => {
       expect(RUN_COMPANION_MODULE_BASENAMES).toEqual(
-        expect.arrayContaining(['generation-runtime', 'execute-output-encoder-runtime'])
+        expect.arrayContaining(['generation-runtime'])
       );
     });
 
@@ -536,14 +536,11 @@ describe('loadInstalledCompanionModule', () => {
     // is covered by the Docker E2E suite, which runs the real binary.
     it.effect('[Given] a source checkout [Then] it loads the module from its .ts source', () =>
       Effect.gen(function* () {
-        const encoder = yield* loadInstalledCompanionModule<
-          typeof import('src/services/execute-output-encoder-runtime')
-        >('execute-output-encoder-runtime', ['countOutputTokens']);
+        const generation = yield* loadInstalledCompanionModule<
+          typeof import('src/services/generation-runtime')
+        >('generation-runtime', ['wrapInlineCodeForRun']);
 
-        expect(encoder.countOutputTokens('hello world')).toBe(2);
-        // A special-token literal counts as its one special token rather than
-        // being rejected.
-        expect(encoder.countOutputTokens('<|endoftext|>')).toBe(1);
+        expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
       })
     );
 
@@ -563,14 +560,12 @@ describe('loadInstalledCompanionModule', () => {
       () =>
         Effect.gen(function* () {
           const error = yield* loadInstalledCompanionModule<{
-            readonly countOutputTokens: unknown;
+            readonly wrapInlineCodeForRun: unknown;
             readonly retiredExport: unknown;
-          }>('execute-output-encoder-runtime', ['countOutputTokens', 'retiredExport']).pipe(
-            Effect.flip
-          );
+          }>('generation-runtime', ['wrapInlineCodeForRun', 'retiredExport']).pipe(Effect.flip);
 
           expect(error._tag).toBe('services/RunCompanionRepairError');
-          expect(error.message).toContain('execute-output-encoder-runtime');
+          expect(error.message).toContain('generation-runtime');
           expect(error.message).toContain('missing retiredExport');
         })
     );

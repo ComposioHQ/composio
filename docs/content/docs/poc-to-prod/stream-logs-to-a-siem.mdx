@@ -34,6 +34,12 @@ To fetch the next page, pass `next_cursor` as `cursor` in the request body. Keep
 
 The API accepts up to 100 records per page, and time ranges use epoch milliseconds. For targeted investigations, add [filters](/reference/api-reference/logs#filter-fields) such as `user_id`, `tool_slug`, or `status`. Leave filters unset when collecting all tool execution events.
 
+### Fetch logs with the SDK
+
+Both SDKs expose `composio.logs.search()` for read-only searches with filters, a time range, and cursor pagination. Python accepts keyword arguments such as `limit=100` and `time_range={"from": from_ms, "to": to_ms}`; TypeScript accepts an options object with `limit` and `timeRange`. Read the returned `logs` and pass `next_cursor` (Python) or `nextCursor` (TypeScript) as the next request's `cursor`.
+
+Retrieve the full entry for one execution with `composio.logs.get("log_123")` in Python or `await composio.logs.get('log_123')` in TypeScript.
+
 ## Schedule collection without losing your place
 
 Run a collector for each project, with its own API key and durable checkpoint. A scheduled job or your platform's HTTP poller can perform these steps. If you use a poller, verify that it supports POST bodies, cursor pagination, and saved state.

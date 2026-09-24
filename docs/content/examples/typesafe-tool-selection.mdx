@@ -1,0 +1,225 @@
+---
+title: Choose and run tools with TypeSafe
+description: Use Jev to select a Hacker News tool, complete a partial call with a known username, and execute it through Composio.
+keywords: [typesafe, jev, tool selection, partial calls, hacker news, shortlist]
+llmGuardrails: direct-execution
+full: true
+gallery:
+  categories: [General agents]
+  logos: []
+  featured: true
+  order: 6
+---
+
+Build a script that turns "Look up the Hacker News user 'pg'" into a tool call. TypeSafe's Jev selects the tool. Your code supplies the username, then Composio runs the call.
+
+This example uses public Hacker News data, so you need no connected account. It follows the runnable [TypeScript examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/typesafe) and [Python demo](https://github.com/ComposioHQ/composio/blob/next/python/providers/typesafe/typesafe_demo.py).
+
+## Set up the script
+
+Install the [TypeSafe provider](/docs/providers/typesafe#install), then export `COMPOSIO_API_KEY` and `TYPESAFE_API_KEY` in your shell. The TypeScript version requires Node.js 24.17 or newer.
+
+## Choose, complete, and execute
+
+Save the following script. `username` represents a value supplied by your application or a user form. The request asks Jev to choose among three tools, and `knownArguments` supplies values only for the tool they belong to.
+
+<Tabs items={['Python', 'TypeScript']}>
+<Tab value="Python">
+
+```python title="select-tool.py"
+import json
+
+from composio import Composio
+from composio_typesafe import TypesafeProvider
+
+provider = TypesafeProvider()
+composio = Composio(provider=provider)
+user_id = "example-user"
+username = "pg"
+request = f"Look up the Hacker News user '{username}'"
+known_arguments = {"HACKERNEWS_GET_USER": {"username": username}}
+
+
+def main():
+    tool_set = composio.tools.get(
+        user_id=user_id,
+        tools=[
+            "HACKERNEWS_GET_USER",
+            "HACKERNEWS_GET_TOP_STORIES",
+            "HACKERNEWS_SEARCH_POSTS",
+        ],
+    )
+    decision = provider.decide(tool_set, request)
+    print(json.dumps(decision, indent=2))
+
+    if decision["kind"] == "abstain":
+        print(f"No tool call: {decision['reason']}")
+        return
+
+    if decision["risk"] != "read_only":
+        print(f"This example does not execute {decision['risk']} tools.")
+        return
+
+    if decision["kind"] == "partial":
+        print("Arguments to supply:", decision["missing"])
+
+    result = provider.execute(
+        user_id,
+        decision,
+        arguments=known_arguments.get(decision["tool"], {}),
+    )
+    print(result["data"])
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Run the script in the environment where you installed the packages:
+
+```bash
+python select-tool.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```typescript title="select-tool.ts"
+import { Composio } from '@composio/core';
+import { TypesafeProvider } from '@composio/typesafe';
+
+const provider = new TypesafeProvider();
+const composio = new Composio({ provider });
+const userId = 'example-user';
+const username = 'pg';
+const request = `Look up the Hacker News user '${username}'`;
+const knownArguments: Record<string, Record<string, unknown>> = {
+  HACKERNEWS_GET_USER: { username },
+};
+
+async function main() {
+  const toolSet = await composio.tools.get(userId, {
+    tools: [
+      'HACKERNEWS_GET_USER',
+      'HACKERNEWS_GET_TOP_STORIES',
+      'HACKERNEWS_SEARCH_POSTS',
+    ],
+  });
+  const decision = await provider.decide(toolSet, request);
+  console.log(JSON.stringify(decision, null, 2));
+
+  if (decision.kind === 'abstain') {
+    console.log(`No tool call: ${decision.reason}`);
+    return;
+  }
+
+  if (decision.risk !== 'read_only') {
+    console.log(`This example does not execute ${decision.risk} tools.`);
+    return;
+  }
+
+  if (decision.kind === 'partial') {
+    console.log('Arguments to supply:', decision.missing);
+  }
+
+  const result = await provider.execute(userId, decision, {
+    arguments: knownArguments[decision.tool] ?? {},
+  });
+  console.log(result.data);
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Run the script with Node.js:
+
+```bash
+node select-tool.ts
+```
+
+</Tab>
+</Tabs>
+
+The script prints the decision, the missing argument paths, and the Hacker News profile. A decision for this request typically has `kind: 'partial'`, `tool: 'HACKERNEWS_GET_USER'`, and `missing: [['username']]`. Confidence scores depend on the request and model version.
+
+The partial call is expected: Jev can select the tool but does not generate the username. `execute` combines the arguments from Jev with the values your code supplies. Caller values take precedence. If a required value is still missing, execution raises `TypesafeIncompleteDecisionError` before calling the tool.
+
+When you adapt this script, collect missing values from your application or ask the user for them. The `suggestions` field can contain uncertain model answers; treat those as candidates to review, not confirmed input.
+
+## Try an abstention
+
+Change `request` to `Explain what Hacker News is without using any tools`, then run the script again. If Jev returns `abstain`, the script prints its reason and exits without executing. The model may also abstain when no tool fits or confidence is too low.
+
+Keep API failures separate from abstentions. A timeout or invalid TypeSafe key raises an error, so it appears as a failed run instead of "No tool call."
+
+## Shortlist tools for another provider
+
+If you already use an LLM to choose arguments, ask Jev to narrow its tool list first. This separate script ranks up to 50 Hacker News tools, keeps three, and converts them to OpenAI's tool format. It does not call OpenAI or execute a tool.
+
+Install the OpenAI provider alongside the packages above:
+
+<Tabs items={['Python', 'TypeScript']}>
+<Tab value="Python">
+
+<PackageInstall packages="composio-openai" ecosystem="python" />
+
+```python title="shortlist-tools.py"
+from composio import Composio
+from composio_openai import OpenAIProvider
+from composio_typesafe import TypesafeProvider
+
+typesafe = TypesafeProvider()
+composio = Composio(provider=OpenAIProvider())
+request = "What are the top stories on Hacker News right now?"
+
+raw = composio.tools.get_raw_composio_tools(toolkits=["hackernews"], limit=50)
+shortlist = typesafe.shortlist_tools(raw, request, k=3)
+tools = composio.tools.get(
+    user_id="example-user",
+    tools=[tool.slug for tool in shortlist["tools"]],
+)
+print(shortlist["scores"])
+print(f"Prepared {len(tools)} tools for OpenAI")
+```
+
+```bash
+python shortlist-tools.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+<PackageInstall packages="@composio/openai" />
+
+```typescript title="shortlist-tools.ts"
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+import { TypesafeProvider } from '@composio/typesafe';
+
+const typesafe = new TypesafeProvider();
+const composio = new Composio({ provider: new OpenAIProvider() });
+const request = 'What are the top stories on Hacker News right now?';
+
+const raw = await composio.tools.getRawComposioTools({
+  toolkits: ['hackernews'],
+  limit: 50,
+});
+const shortlist = await typesafe.shortlistTools(raw, request, { k: 3 });
+const tools = await composio.tools.get('example-user', {
+  tools: shortlist.tools.map(tool => tool.slug),
+});
+console.log(shortlist.scores);
+console.log(`Prepared ${tools.length} tools for OpenAI`);
+```
+
+```bash
+node shortlist-tools.ts
+```
+
+</Tab>
+</Tabs>
+
+Pass the resulting `tools` to your [OpenAI agent](/docs/providers/openai). Shortlisting selects candidates; your agent still chooses which candidate to call and supplies its arguments.

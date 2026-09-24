@@ -1,10 +1,11 @@
 import logging
 import time
+import typing as t
 import warnings
 from unittest.mock import Mock, patch
 
 import pytest
-from composio_client import omit
+from composio_client import BadRequestError, ConflictError, omit
 
 from composio import exceptions
 from composio.core.models.connected_accounts import (
@@ -300,7 +301,96 @@ class TestConnectedAccounts:
             connected_accounts.update_status
             is mock_client.connected_accounts.update_status
         )
-        assert connected_accounts.refresh is mock_client.connected_accounts.refresh
+
+    def test_refresh_is_deprecated_and_delegates(self, connected_accounts, mock_client):
+        mock_client.connected_accounts.refresh.return_value = {"status": "ok"}
+
+        with pytest.warns(
+            exceptions.ComposioDeprecationWarning, match="refresh\\(\\) is deprecated"
+        ):
+            result = connected_accounts.refresh(
+                "conn-1", query_redirect_url="https://example.com/callback"
+            )
+
+        assert result == {"status": "ok"}
+        mock_client.connected_accounts.refresh.assert_called_once_with(
+            "conn-1", query_redirect_url="https://example.com/callback"
+        )
+
+    def test_refresh_forwards_request_options(self, connected_accounts, mock_client):
+        with pytest.warns(exceptions.ComposioDeprecationWarning):
+            connected_accounts.refresh("conn-1", timeout=3)  # type: ignore[call-arg]
+
+        mock_client.connected_accounts.refresh.assert_called_once_with(
+            "conn-1", timeout=3
+        )
+
+    def test_refresh_ignores_removed_validate_credentials(
+        self, connected_accounts, mock_client
+    ):
+        with pytest.warns(exceptions.ComposioDeprecationWarning) as record:
+            connected_accounts.refresh("conn-1", validate_credentials=True)
+
+        assert any("validate_credentials" in str(w.message) for w in record)
+        mock_client.connected_accounts.refresh.assert_called_once_with("conn-1")
+
+    def test_revoke_delegates_to_client(self, connected_accounts, mock_client):
+        mock_client.connected_accounts.revoke.return_value = {"revoked_tokens": []}
+
+        result = connected_accounts.revoke("conn-1")
+
+        assert result == {"revoked_tokens": []}
+        mock_client.connected_accounts.revoke.assert_called_once_with("conn-1")
+
+    def test_revoke_maps_400_to_not_supported(self, connected_accounts, mock_client):
+        mock_client.connected_accounts.revoke.side_effect = _make_status_error(
+            BadRequestError, "toolkit does not support revocation"
+        )
+
+        with pytest.raises(
+            exceptions.ComposioConnectedAccountRevocationNotSupportedError
+        ) as info:
+            connected_accounts.revoke("conn-1")
+
+        assert "conn-1" in str(info.value)
+        assert "toolkit does not support revocation" in str(info.value)
+        assert isinstance(info.value.__cause__, BadRequestError)
+
+    def test_revoke_maps_409_to_not_revokable(self, connected_accounts, mock_client):
+        mock_client.connected_accounts.revoke.side_effect = _make_status_error(
+            ConflictError, "connection is not ACTIVE"
+        )
+
+        with pytest.raises(
+            exceptions.ComposioConnectedAccountNotRevokableError
+        ) as info:
+            connected_accounts.revoke("conn-1")
+
+        assert "not in a revokable state" in str(info.value)
+        assert isinstance(info.value.__cause__, ConflictError)
+
+    def test_revoke_does_not_swallow_other_errors(
+        self, connected_accounts, mock_client
+    ):
+        mock_client.connected_accounts.revoke.side_effect = RuntimeError("boom")
+
+        with pytest.raises(RuntimeError):
+            connected_accounts.revoke("conn-1")
+
+    def test_complete_auth_delegates_to_client(self, connected_accounts, mock_client):
+        mock_client.connected_accounts.complete_auth.return_value = {
+            "connected_account_id": "ca_1",
+            "toolkit_slug": "github",
+        }
+
+        result = connected_accounts.complete_auth(
+            user_id="user-1", session_uri="session-abc"
+        )
+
+        assert result == {"connected_account_id": "ca_1", "toolkit_slug": "github"}
+        mock_client.connected_accounts.complete_auth.assert_called_once_with(
+            user_id="user-1", session_uri="session-abc"
+        )
 
     def test_enable_and_disable_partials(self, connected_accounts, mock_client):
         connected_accounts.enable("conn-1")
@@ -526,20 +616,25 @@ class TestConnectedAccounts:
         assert result == "connected"
 
 
-def _make_bad_request_error(message: str):
-    """Build a BadRequestError instance for testing the error mapper.
+def _make_status_error(error_type: t.Type[Exception], message: str):
+    """Build an ``APIStatusError`` subclass instance for testing error mappers.
 
-    The composio_client BadRequestError constructor signature is internal —
-    rather than depend on it, we stub a minimal object that ``str(error)``
-    surfaces the message and which is recognized as the BadRequestError type
-    by ``isinstance``. This mirrors how production responses arrive: the
-    error class with a message body.
+    The composio_client error constructor signatures are internal — rather
+    than depend on them, we stub a minimal object that ``str(error)``
+    surfaces the message and which is recognized as the given type by
+    ``isinstance``. This mirrors how production responses arrive: the error
+    class with a message body.
     """
-    from composio_client import BadRequestError
-
-    error = BadRequestError.__new__(BadRequestError)
+    error = error_type.__new__(error_type)
     Exception.__init__(error, message)
     return error
+
+
+def _make_bad_request_error(message: str):
+    """Build a BadRequestError instance for testing the error mapper."""
+    from composio_client import BadRequestError
+
+    return _make_status_error(BadRequestError, message)
 
 
 class TestConnectedAccountsAcl:
@@ -749,7 +844,7 @@ class TestConnectedAccountsAcl:
         )
 
 
-# SEC-339: initiate() must gate its DeprecationWarning on the response
+# SEC-339: initiate() must gate its ComposioDeprecationWarning on the response
 # `Deprecation` HTTP header (RFC 9745) that apollo emits only on the
 # retiring branch (Composio-managed + redirectable OAuth). These tests pin
 # that contract so the previous false-positive behavior — warning purely
@@ -788,7 +883,7 @@ class TestInitiateDeprecationHeaderGate:
 
     def test_warns_once_when_response_carries_deprecation_header(self, mock_client):
         """Managed + redirectable-OAuth path: apollo sets `Deprecation`,
-        SDK emits a `DeprecationWarning` pointing callers at link()."""
+        SDK emits a `ComposioDeprecationWarning` pointing callers at link()."""
         self._no_existing_accounts(mock_client)
         body = self._make_response()
         _set_initiate_response(
@@ -810,7 +905,11 @@ class TestInitiateDeprecationHeaderGate:
             req = connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
 
         assert isinstance(req, ConnectionRequest)
-        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        deprecations = [
+            w
+            for w in caught
+            if issubclass(w.category, exceptions.ComposioDeprecationWarning)
+        ]
         assert len(deprecations) == 1
         message = str(deprecations[0].message)
         assert "composio.connected_accounts.link()" in message
@@ -828,7 +927,11 @@ class TestInitiateDeprecationHeaderGate:
             warnings.simplefilter("always")
             connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
 
-        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        deprecations = [
+            w
+            for w in caught
+            if issubclass(w.category, exceptions.ComposioDeprecationWarning)
+        ]
         assert deprecations == []
 
     def test_warns_at_most_once_per_process_across_calls(self, mock_client):
@@ -852,5 +955,9 @@ class TestInitiateDeprecationHeaderGate:
             mock_client.connected_accounts.list.return_value = empty
             connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
 
-        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        deprecations = [
+            w
+            for w in caught
+            if issubclass(w.category, exceptions.ComposioDeprecationWarning)
+        ]
         assert len(deprecations) == 1

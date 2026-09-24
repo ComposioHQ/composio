@@ -13,7 +13,11 @@ import {
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
   ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateManageConnectionsConfig,
+  ToolRouterUpdateManageConnectionsSchema,
+  ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
+  ToolRouterPremiumUsage,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -149,14 +153,73 @@ export const transformToolRouterWorkbenchParams = transformToolRouterSandboxPara
  * PATCH-safe variant of transformToolRouterManageConnectionsParams.
  * Does NOT apply defaults — only includes fields explicitly present in the input.
  */
+/** Widens the listed keys of a generated request type so `null` can travel on the wire. */
+type WithNull<T, K extends keyof T> = Omit<T, K> & { [P in K]?: NonNullable<T[P]> | null };
+
+/**
+ * `manage_connections` as sent by `session.update()`. Only the supplied
+ * subfields travel; `callback_url: null` removes the stored callback, which
+ * the generated client types as string-only.
+ */
+export type SessionPatchManageConnectionsBody = WithNull<
+  SessionPatchParams.ManageConnections,
+  'callback_url'
+>;
+
+/** `multi_account` as sent by `session.update()`; `null` removes the stored maximum. */
+export type SessionPatchMultiAccountBody = WithNull<
+  SessionPatchParams.MultiAccount,
+  'max_accounts_per_toolkit'
+>;
+
+/** `experimental` as sent by `session.update()`; `null` removes a stored leaf. */
+export type SessionPatchExperimentalBody = WithNull<
+  SessionPatchParams.Experimental,
+  'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
+>;
+
+/**
+ * Request body of `session.update()`. Extends the generated `SessionPatchParams`
+ * with the nullable policy blocks (`null` removes the stored override) and the
+ * `expected_config_version` root precondition, none of which the generated
+ * client types yet.
+ */
+export type SessionPatchBody = Omit<
+  WithNull<
+    SessionPatchParams,
+    'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
+  >,
+  'manage_connections' | 'multi_account' | 'experimental'
+> & {
+  manage_connections?: SessionPatchManageConnectionsBody | null;
+  multi_account?: SessionPatchMultiAccountBody | null;
+  experimental?: SessionPatchExperimentalBody | null;
+  expected_config_version?: number;
+};
+
+export type SessionPremiumUsageBody = NonNullable<SessionPatchParams['premium_usage']>;
+
+export const transformToolRouterPremiumUsageParams = (
+  config: ToolRouterPremiumUsage
+): SessionPremiumUsageBody => {
+  if (config === false) return false;
+  return {
+    ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
+    ...(config.tools !== undefined && { tools: config.tools }),
+    ...(config.returnPremiumCharge !== undefined && {
+      return_premium_charge: config.returnPremiumCharge,
+    }),
+  };
+};
+
 export const transformToolRouterUpdateManageConnectionsParams = (
-  params: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionPatchParams.ManageConnections => {
+  params: boolean | ToolRouterUpdateManageConnectionsConfig
+): SessionPatchManageConnectionsBody => {
   if (typeof params === 'boolean') {
     return { enable: params };
   }
 
-  const parsedResult = ToolRouterConfigManageConnectionsSchema.safeParse(params);
+  const parsedResult = ToolRouterUpdateManageConnectionsSchema.safeParse(params);
   if (!parsedResult.success) {
     throw new ValidationError('Failed to parse manage connections config', {
       cause: parsedResult.error,
@@ -164,7 +227,7 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   }
 
   const config = parsedResult.data;
-  const result: Record<string, unknown> = {};
+  const result: SessionPatchManageConnectionsBody = {};
   if (config.enable !== undefined) {
     result.enable = config.enable;
   }
@@ -174,7 +237,32 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   if (config.waitForConnections !== undefined) {
     result.enable_wait_for_connections = config.waitForConnections;
   }
-  return result as SessionPatchParams.ManageConnections;
+  if (config.enableConnectionRemoval !== undefined) {
+    result.enable_connection_removal = config.enableConnectionRemoval;
+  }
+  return result;
+};
+
+const transformToolRouterUpdateExperimentalParams = (
+  config: ToolRouterUpdateExperimentalConfig
+): SessionPatchExperimentalBody => {
+  const result: SessionPatchExperimentalBody = {};
+  if (config.permissions !== undefined) {
+    result.permissions = config.permissions;
+  }
+  if (config.linkUrlOverwrite !== undefined) {
+    result.link_url_overwrite = config.linkUrlOverwrite;
+  }
+  if (config.fastMode !== undefined) {
+    result.fast_mode = config.fastMode;
+  }
+  if (config.submitFeedback !== undefined) {
+    result.submit_feedback = config.submitFeedback;
+  }
+  if (config.sessionConfigId !== undefined) {
+    result.session_config_id = config.sessionConfigId;
+  }
+  return result;
 };
 
 /**
@@ -244,62 +332,80 @@ export const transformToolRouterToolkitsParams = (
   return params as SessionCreateParams.Enable | SessionCreateParams.Disable;
 };
 
+/**
+ * Request body of `session.update()`. Every key present in `config` is sent,
+ * including `null` (remove the stored override) and empty collections (an
+ * empty toolkit allowlist denies every app toolkit). The
+ * `expectedConfigVersion` option is not a body field here: the session
+ * resolves the precondition against its observed `configVersion`.
+ */
 export const transformToolRouterUpdateParams = (
   config: ToolRouterUpdateSessionConfig
-): SessionPatchParams => {
-  const params: SessionPatchParams = {};
+): SessionPatchBody => {
+  const params: SessionPatchBody = {};
 
   if (config.toolkits !== undefined) {
-    params.toolkits = transformToolRouterToolkitsParams(config.toolkits);
+    params.toolkits =
+      config.toolkits === null ? null : transformToolRouterToolkitsParams(config.toolkits);
+  }
+  if (config.premiumUsage !== undefined) {
+    params.premium_usage = transformToolRouterPremiumUsageParams(config.premiumUsage);
   }
   if (config.tools !== undefined) {
-    params.tools = transformToolRouterToolsParams(config.tools);
+    params.tools = config.tools === null ? null : transformToolRouterToolsParams(config.tools);
   }
   if (config.tags !== undefined) {
-    params.tags = transformToolRouterTagsParams(config.tags);
+    params.tags = config.tags === null ? null : transformToolRouterTagsParams(config.tags);
   }
   if (config.authConfigs !== undefined) {
     params.auth_configs = config.authConfigs;
   }
   if (config.connectedAccounts !== undefined) {
-    const coerced: Record<string, string[]> = {};
-    for (const [k, v] of Object.entries(config.connectedAccounts)) {
-      coerced[k] = typeof v === 'string' ? [v] : v;
-    }
-    params.connected_accounts = coerced;
+    params.connected_accounts = config.connectedAccounts;
   }
   if (config.manageConnections !== undefined) {
-    if (config.manageConnections === null) {
-      params.manage_connections = null;
-    } else {
-      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(
-        config.manageConnections
-      );
-    }
+    params.manage_connections =
+      config.manageConnections === null
+        ? null
+        : transformToolRouterUpdateManageConnectionsParams(config.manageConnections);
   }
   const sandboxConfig = config.sandbox !== undefined ? config.sandbox : config.workbench;
   if (sandboxConfig !== undefined) {
-    if (sandboxConfig === null) {
-      params.workbench = null;
-    } else {
-      params.workbench = transformToolRouterUpdateSandboxParams(sandboxConfig);
-    }
+    params.workbench =
+      sandboxConfig === null ? null : transformToolRouterUpdateSandboxParams(sandboxConfig);
   }
   if (config.multiAccount !== undefined) {
     if (config.multiAccount === null) {
       params.multi_account = null;
     } else {
-      const ma: Record<string, unknown> = {};
+      const ma: SessionPatchMultiAccountBody = {};
       if (config.multiAccount.enable !== undefined) ma.enable = config.multiAccount.enable;
       if (config.multiAccount.maxAccountsPerToolkit !== undefined)
         ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
       if (config.multiAccount.requireExplicitSelection !== undefined)
         ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
-      params.multi_account = ma as SessionPatchParams.MultiAccount;
+      params.multi_account = ma;
     }
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;
+  }
+  if (config.search !== undefined) {
+    params.search = config.search;
+  }
+  if (config.execute !== undefined) {
+    params.execute =
+      config.execute === null
+        ? null
+        : config.execute.enableMultiExecute === undefined
+          ? {}
+          : { enable_multi_execute: config.execute.enableMultiExecute };
+  }
+  if (config.experimental !== undefined) {
+    params.experimental =
+      config.experimental === null
+        ? null
+        : transformToolRouterUpdateExperimentalParams(config.experimental);
   }
 
   return params;

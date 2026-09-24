@@ -36,12 +36,12 @@ class GenerateInputError extends Data.TaggedError('commands/GenerateInputError')
 
 const invalidGenerateValue = (message: string) => new GenerateInputError({ message });
 
-export const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
   Flag.withDescription('Output directory for the generated Python type stubs')
 );
 
-export const toolkitsOpt = Flag.string('toolkits').pipe(
+export const toolkitsOpt = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'

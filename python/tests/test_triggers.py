@@ -116,26 +116,18 @@ class TestTriggers:
             "version": "V3",
             "enabled_events": ["composio.trigger.message"],
         }
-        mock_client.get.return_value = {"items": []}
-        mock_client.post.return_value = raw_subscription
+        mock_client.webhook_subscriptions.list.return_value = Mock(items=[])
+        mock_client.webhook_subscriptions.create.return_value = raw_subscription
 
         result = triggers.set_webhook_subscription(webhook_url=webhook_url)
 
-        mock_client.get.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions",
-            cast_to=object,
-            options={"params": {"limit": 1}},
+        mock_client.webhook_subscriptions.list.assert_called_once_with(limit=1)
+        mock_client.webhook_subscriptions.create.assert_called_once_with(
+            webhook_url=webhook_url,
+            enabled_events=["composio.trigger.message"],
+            version="V3",
         )
-        mock_client.post.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions",
-            cast_to=object,
-            body={
-                "webhook_url": webhook_url,
-                "enabled_events": ["composio.trigger.message"],
-                "version": "V3",
-            },
-        )
-        mock_client.patch.assert_not_called()
+        mock_client.webhook_subscriptions.update.assert_not_called()
         assert result == raw_subscription
 
     def test_set_webhook_subscription_updates_first_existing(
@@ -152,8 +144,10 @@ class TestTriggers:
                 "composio.connected_account.expired",
             ],
         }
-        mock_client.get.return_value = {"items": [{"id": "sub_123"}]}
-        mock_client.patch.return_value = raw_subscription
+        mock_client.webhook_subscriptions.list.return_value = Mock(
+            items=[Mock(id="sub_123")]
+        )
+        mock_client.webhook_subscriptions.update.return_value = raw_subscription
 
         result = triggers.set_webhook_subscription(
             webhook_url=webhook_url,
@@ -164,19 +158,17 @@ class TestTriggers:
             version="V3",
         )
 
-        mock_client.patch.assert_called_once_with(
-            "/api/v3.1/webhook_subscriptions/sub_123",
-            cast_to=object,
-            body={
-                "webhook_url": webhook_url,
-                "enabled_events": [
-                    "composio.trigger.message",
-                    "composio.connected_account.expired",
-                ],
-                "version": "V3",
-            },
+        mock_client.webhook_subscriptions.list.assert_called_once_with(limit=1)
+        mock_client.webhook_subscriptions.update.assert_called_once_with(
+            "sub_123",
+            webhook_url=webhook_url,
+            enabled_events=[
+                "composio.trigger.message",
+                "composio.connected_account.expired",
+            ],
+            version="V3",
         )
-        mock_client.post.assert_not_called()
+        mock_client.webhook_subscriptions.create.assert_not_called()
         assert result == raw_subscription
 
     def test_set_webhook_subscription_rejects_empty_events(self, triggers):
@@ -496,7 +488,9 @@ class TestTriggers:
             result = triggers.subscribe(timeout=20.0)
 
             mock_builder_class.assert_called_once_with(client=mock_client)
-            mock_builder.connect.assert_called_once_with(timeout=20.0)
+            mock_builder.connect.assert_called_once_with(
+                timeout=20.0, on_subscription_error=None
+            )
             assert result == mock_subscription
 
     def test_subscribe_with_default_timeout(self, triggers, mock_client):
@@ -511,7 +505,29 @@ class TestTriggers:
 
             result = triggers.subscribe()
 
-            mock_builder.connect.assert_called_once_with(timeout=15.0)
+            mock_builder.connect.assert_called_once_with(
+                timeout=15.0, on_subscription_error=None
+            )
+            assert result == mock_subscription
+
+    def test_subscribe_passes_subscription_error_callback(self, triggers, mock_client):
+        """The optional on_subscription_error callback reaches the builder."""
+        with patch(
+            "composio.core.models.triggers._SubcriptionBuilder"
+        ) as mock_builder_class:
+            mock_builder = Mock()
+            mock_subscription = Mock()
+            mock_builder.connect.return_value = mock_subscription
+            mock_builder_class.return_value = mock_builder
+            on_subscription_error = Mock()
+
+            result = triggers.subscribe(
+                timeout=5.0, on_subscription_error=on_subscription_error
+            )
+
+            mock_builder.connect.assert_called_once_with(
+                timeout=5.0, on_subscription_error=on_subscription_error
+            )
             assert result == mock_subscription
 
 
@@ -1794,6 +1810,161 @@ class TestSubscriptionBuilderConnectTimeout:
         assert result is builder.subscription
         pusher.disconnect.assert_not_called()
 
+    def test_connect_raises_recorded_failure_fast(self):
+        """An establish-time failure raises promptly instead of timing out.
+
+        The connection handler records the failure (for example a channel-auth
+        rejection raised inside ``pusher.subscribe()``); the wait loop must
+        surface it on its next poll and tear down the pusher, not spin until
+        the deadline and report a generic timeout.
+        """
+        pusher = Mock()
+        builder = self._make_builder(pusher)
+        failure = RuntimeError("auth rejected")
+        # The connection handler records the failure; on the mocked
+        # subscription this is the wait loop's re-raise hook.
+        builder.subscription._raise_on_connection_error.side_effect = failure
+        builder._get_connection_handler = Mock(  # type: ignore[method-assign]
+            return_value=lambda *a, **k: None
+        )
+
+        started = time.monotonic()
+        with (
+            patch.object(
+                _SubcriptionBuilder, "_get_pusher_instance", return_value=pusher
+            ),
+            pytest.raises(RuntimeError, match="auth rejected"),
+        ):
+            builder.connect(timeout=15.0)
+
+        assert time.monotonic() - started < 5.0
+        pusher.disconnect.assert_called_once()
+
+
+class TestSubscriptionErrorHandler:
+    """Tests for TriggerSubscription._handle_subscription_error."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_invokes_callback_with_parsed_payload(self, subscription):
+        """The callback receives the subscription error payload as a dict."""
+        callback = Mock()
+        subscription._on_subscription_error = callback
+
+        subscription._handle_subscription_error('{"type": "AuthError", "status": 401}')
+
+        callback.assert_called_once_with({"type": "AuthError", "status": 401})
+
+    def test_malformed_frame_reaches_callback_as_raw(self, subscription):
+        """A non-JSON frame is logged, not raised, and passed as ``{'raw': ...}``."""
+        callback = Mock()
+        subscription._on_subscription_error = callback
+
+        subscription._handle_subscription_error("not valid json {")
+
+        callback.assert_called_once_with({"raw": "not valid json {"})
+
+    def test_callback_exception_is_contained(self, subscription):
+        """A faulty handler is logged, never rethrown into pysher's thread."""
+        subscription._on_subscription_error = Mock(side_effect=RuntimeError("boom"))
+
+        subscription._handle_subscription_error('{"error": "auth failed"}')
+
+    def test_no_callback_is_a_no_op(self, subscription):
+        """Without a registered callback the frame is only logged."""
+        subscription._handle_subscription_error('{"error": "auth failed"}')
+
+    def test_fail_subscription_invokes_callback_and_records_error(self, subscription):
+        """Establish-time failures reach the callback as ``{'error': ...}``."""
+        callback = Mock()
+        subscription._on_subscription_error = callback
+
+        subscription._fail_subscription(RuntimeError("auth rejected"))
+
+        callback.assert_called_once_with({"error": "auth rejected"})
+        assert subscription._connection_error is not None
+
+    def test_fail_subscription_without_callback_only_records(self, subscription):
+        """The failure is recorded even when no callback is registered."""
+        subscription._fail_subscription(RuntimeError("auth rejected"))
+
+        assert subscription._connection_error is not None
+
+    def test_fail_subscription_contains_callback_exception(self, subscription):
+        """A faulty callback cannot break the failure path."""
+        subscription._on_subscription_error = Mock(side_effect=RuntimeError("boom"))
+
+        subscription._fail_subscription(RuntimeError("auth rejected"))
+
+        assert subscription._connection_error is not None
+
+    def test_raise_on_connection_error_raises_recorded_error(self, subscription):
+        """The wait loop re-raises the recorded failure."""
+        subscription._fail_subscription(RuntimeError("auth rejected"))
+
+        with pytest.raises(RuntimeError, match="auth rejected"):
+            subscription._raise_on_connection_error()
+
+    def test_raise_on_connection_error_is_noop_when_healthy(self, subscription):
+        """No recorded failure means the wait loop proceeds normally."""
+        subscription._raise_on_connection_error()
+
+    def test_connection_handler_binds_subscription_error(self):
+        """The builder binds ``pusher:subscription_error`` to the handler."""
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        builder = _SubcriptionBuilder(client=client)
+        channel = Mock()
+        pusher = Mock()
+        pusher.subscribe.return_value = channel
+
+        handler = builder._get_connection_handler(
+            project_id="p", pusher=pusher, subscription=builder.subscription
+        )
+        handler("connection-payload")
+
+        bound = {
+            call.kwargs["event_name"]: call.kwargs["callback"]
+            for call in channel.bind.call_args_list
+        }
+        assert (
+            bound["pusher:subscription_error"]
+            == builder.subscription._handle_subscription_error
+        )
+        assert bound["trigger_to_client"] == builder.subscription._handle_event
+        assert (
+            bound["chunked-trigger_to_client"]
+            == builder.subscription._handle_chunked_events
+        )
+
+    def test_connection_handler_routes_subscribe_failure_to_error_path(self):
+        """Auth failures inside ``pusher.subscribe()`` reach the error path.
+
+        pysher performs the channel-auth request synchronously inside
+        ``subscribe()``; without this routing the callback is skipped and the
+        caller waits out the connect timeout for a generic error.
+        """
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        builder = _SubcriptionBuilder(client=client)
+        callback = Mock()
+        builder.subscription._on_subscription_error = callback
+        pusher = Mock()
+        pusher.subscribe.side_effect = exceptions.TriggerSubscriptionAuthError(
+            "auth failed"
+        )
+
+        handler = builder._get_connection_handler(
+            project_id="p", pusher=pusher, subscription=builder.subscription
+        )
+        handler("connection-payload")  # must not raise
+
+        callback.assert_called_once_with({"error": "auth failed"})
+        assert builder.subscription.is_alive() is False
+
 
 class TestPusherChannelAuth:
     """Tests for the hardened pysher channel-auth request."""
@@ -1902,6 +2073,36 @@ class TestPusherClusterValidation:
         assert isinstance(pusher, triggers_module._ComposioPusher)
         assert pusher.host == f"ws-{cluster}.pusher.com"
         assert pusher.auth_endpoint_headers["x-api-key"] == "sk-secret-value"
+
+    def test_user_only_client_authorizes_the_channel_with_the_user_key(self):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = None
+        client.user_api_key = "uak_user_key"
+        client.default_headers = {}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_user_key"
+
+    def test_user_key_default_header_authorizes_the_channel_over_the_project_key(
+        self,
+    ):
+        client = Mock()
+        client.base_url = "https://api.example.com"
+        client.api_key = "sk-secret-value"
+        client.user_api_key = None
+        client.default_headers = {"X-User-Api-Key": "uak_header_key"}
+
+        pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
+            key="app-key", cluster="mt1"
+        )
+
+        assert "x-api-key" not in pusher.auth_endpoint_headers
+        assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_header_key"
 
     @pytest.mark.parametrize(
         ("cluster", "reason"),

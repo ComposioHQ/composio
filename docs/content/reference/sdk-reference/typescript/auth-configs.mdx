@@ -19,7 +19,7 @@ const result = await composio.authConfigs.list();
 Create a new auth config
 
 ```typescript
-async create(toolkit: string, options: CreateAuthConfigParams, requestOptions?: ComposioRequestOptions): Promise<CreateAuthConfigResponse>
+async create(toolkit: string, options?: { authScheme: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; credentials: Record<string, string | number | boolean>; isEnabledForToolRouter?: boolean; name?: string; proxyConfig?: { proxyAuthKey?: string; proxyUrl: string }; toolAccessConfig?: { toolsForConnectedAccountCreation?: string[] }; type: 'use_custom_auth' } | { credentials?: objectOutputType<{ scopes: ZodOptional<ZodUnion<...>>; user_scopes: ZodOptional<ZodUnion<...>> }, ZodTypeAny, 'passthrough'>; isEnabledForToolRouter?: boolean; name?: string; toolAccessConfig?: { toolsForConnectedAccountCreation?: string[] }; type: 'use_composio_managed_auth' }, requestOptions?: ComposioRequestOptions): Promise<{ authScheme: string; id: string; isComposioManaged: boolean; toolkit: string }>
 ```
 
 **Parameters**
@@ -27,12 +27,12 @@ async create(toolkit: string, options: CreateAuthConfigParams, requestOptions?: 
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `string` | Unique identifier of the toolkit |
-| `options` | `CreateAuthConfigParams` | Options for creating a new auth config |
+| `options?` | `\{ authScheme: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; credentials: Record<string, string \| number \| boolean>; isEnabledForToolRouter?: boolean; name?: string; proxyConfig?: \{ proxyAuthKey?: string; proxyUrl: string \}; toolAccessConfig?: \{ toolsForConnectedAccountCreation?: string[] \}; type: 'use_custom_auth' \} \| \{ credentials?: objectOutputType<\{ scopes: ZodOptional<ZodUnion<...>>; user_scopes: ZodOptional<ZodUnion<...>> \}, ZodTypeAny, 'passthrough'>; isEnabledForToolRouter?: boolean; name?: string; toolAccessConfig?: \{ toolsForConnectedAccountCreation?: string[] \}; type: 'use_composio_managed_auth' \}` | Options for creating a new auth config |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<CreateAuthConfigResponse>` — Created auth config
+`Promise<...>` — Created auth config
 
 **Example**
 
@@ -153,7 +153,7 @@ This method fetches detailed information about a single auth config
 and transforms the response to the SDK's standardized format.
 
 ```typescript
-async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigRetrieveResponse>
+async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<{ authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; createdAt?: string; createdBy?: string; credentials?: Record<string, unknown>; expectedInputFields?: unknown[]; id: string; isComposioManaged?: boolean; isEnabledForToolRouter?: boolean; lastUpdatedAt?: string; name: string; noOfConnections: number; restrictToFollowingTools?: string[]; status: 'ENABLED' | 'DISABLED'; toolAccessConfig?: { toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] }; toolkit: { logo: string; slug: string } }>
 ```
 
 **Parameters**
@@ -165,7 +165,7 @@ async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<Auth
 
 **Returns**
 
-`Promise<AuthConfigRetrieveResponse>` — The auth config details
+`Promise<\{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; createdAt?: string; createdBy?: string; credentials?: Record<string, unknown>; expectedInputFields?: unknown[]; id: string; isComposioManaged?: boolean; isEnabledForToolRouter?: boolean; lastUpdatedAt?: string; name: string; noOfConnections: number; restrictToFollowingTools?: string[]; status: 'ENABLED' \| 'DISABLED'; toolAccessConfig?: \{ toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] \}; toolkit: \{ logo: string; slug: string \} \}>` — The auth config details
 
 **Example**
 
@@ -186,19 +186,19 @@ This method retrieves auth configs from the Composio API, transforms them to the
 and supports filtering by various parameters.
 
 ```typescript
-async list(query?: AuthConfigListParams, requestOptions?: ComposioRequestOptions): Promise<AuthConfigListResponse>
+async list(query?: { cursor?: string; isComposioManaged?: boolean; limit?: number; search?: string; showDisabled?: boolean; toolkit?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; createdAt?: string; createdBy?: string; credentials?: Record<string, unknown>; expectedInputFields?: unknown[]; id: string; isComposioManaged?: boolean; isEnabledForToolRouter?: boolean; lastUpdatedAt?: string; name: string; noOfConnections: number; restrictToFollowingTools?: string[]; status: 'ENABLED' | 'DISABLED'; toolAccessConfig?: { toolsAvailableForExecution?: ...[]; toolsForConnectedAccountCreation?: ...[] }; toolkit: { logo: string; slug: string } }[]; nextCursor: string | null; totalPages: number }>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `AuthConfigListParams` | Optional query parameters for filtering auth configs |
+| `query?` | `\{ cursor?: string; isComposioManaged?: boolean; limit?: number; search?: string; showDisabled?: boolean; toolkit?: string \}` | Optional query parameters for filtering auth configs |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<AuthConfigListResponse>` — A paginated list of auth configurations
+`Promise<\{ items: \{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; createdAt?: string; createdBy?: string; credentials?: Record<string, unknown>; expectedInputFields?: unknown[]; id: string; isComposioManaged?: boolean; isEnabledForToolRouter?: boolean; lastUpdatedAt?: string; name: string; noOfConnections: number; restrictToFollowingTools?: string[]; status: 'ENABLED' \| 'DISABLED'; toolAccessConfig?: \{ toolsAvailableForExecution?: ...[]; toolsForConnectedAccountCreation?: ...[] \}; toolkit: \{ logo: string; slug: string \} \}[]; nextCursor: string \| null; totalPages: number \}>` — A paginated list of auth configurations
 
 **Example**
 
@@ -234,7 +234,7 @@ scopes, or tool restrictions. The update type (custom or default) determines whi
 fields can be updated.
 
 ```typescript
-async update(nanoid: string, data: AuthConfigUpdateParams, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateResponse>
+async update(nanoid: string, data: { credentials?: objectOutputType<{ scopes: ZodOptional<ZodUnion<...>>; user_scopes: ZodOptional<ZodUnion<...>> }, ZodTypeAny, 'passthrough'>; isEnabledForToolRouter?: boolean; restrictToFollowingTools?: string[]; toolAccessConfig?: { toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] }; type: 'custom' } | { isEnabledForToolRouter?: boolean; restrictToFollowingTools?: string[]; scopes?: string; toolAccessConfig?: { toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] }; type: 'default' }, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateResponse>
 ```
 
 **Parameters**
@@ -242,7 +242,7 @@ async update(nanoid: string, data: AuthConfigUpdateParams, requestOptions?: Comp
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to update |
-| `data` | `AuthConfigUpdateParams` | The data to update, which can be either custom or default type |
+| `data` | `\{ credentials?: objectOutputType<\{ scopes: ZodOptional<ZodUnion<...>>; user_scopes: ZodOptional<ZodUnion<...>> \}, ZodTypeAny, 'passthrough'>; isEnabledForToolRouter?: boolean; restrictToFollowingTools?: string[]; toolAccessConfig?: \{ toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] \}; type: 'custom' \} \| \{ isEnabledForToolRouter?: boolean; restrictToFollowingTools?: string[]; scopes?: string; toolAccessConfig?: \{ toolsAvailableForExecution?: string[]; toolsForConnectedAccountCreation?: string[] \}; type: 'default' \}` | The data to update, which can be either custom or default type |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

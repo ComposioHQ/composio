@@ -12,14 +12,22 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from composio_client import BadRequestError, Omit, omit
+import typing_extensions as te
+from composio_client import BadRequestError, ConflictError, Omit, omit
 from composio_client._types import SequenceNotStr
 from composio_client.types.tool_list_response import (
     ItemDeprecated,
     ItemDeprecatedToolkit,
     ItemToolkit,
 )
-from composio_client.types.tool_router import session_link_params, session_patch_params
+from composio_client.types.tool_router import (
+    session_attach_response,
+    session_create_response,
+    session_link_params,
+    session_patch_params,
+    session_patch_response,
+    session_retrieve_response,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -29,7 +37,11 @@ from composio_client.types.tool_router.session_search_response import (
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import Tool
+from composio.client.types import (
+    Tool,
+    session_config_history_params,
+    session_config_history_response,
+)
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import (
@@ -87,6 +99,76 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
+#: Server-side session configuration as returned by the API: toolkit and tool
+#: allowlists, tags, auth configs, connected accounts, ``manage_connections``,
+#: preload, sandbox (``workbench``), search and execute settings. The four
+#: generated response models carry the same fields.
+ToolRouterSessionConfig = t.Union[
+    session_create_response.Config,
+    session_retrieve_response.Config,
+    session_attach_response.Config,
+    session_patch_response.Config,
+]
+
+
+class ToolRouterPremiumUsageEnable(te.TypedDict):
+    enable: t.List[str]
+
+
+class ToolRouterPremiumUsageDisable(te.TypedDict):
+    disable: t.List[str]
+
+
+class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
+    """Experimental premium usage policy for a Session."""
+
+    toolkits: t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    tools: t.Dict[
+        str, t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
+    ]
+    return_premium_charge: bool
+
+
+class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
+    """``manage_connections`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    Only the supplied subfields travel. Unlike the create-time config,
+    ``callback_url=None`` removes the stored callback URL while leaving the
+    sibling connection settings untouched.
+    """
+
+    enable: t.Optional[bool]
+    callback_url: t.Optional[str]
+    enable_connection_removal: t.Optional[bool]
+    enable_wait_for_connections: t.Optional[bool]
+
+
+class ToolRouterUpdateMultiAccountConfig(te.TypedDict, total=False):
+    """``multi_account`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    ``max_accounts_per_toolkit=None`` removes the stored maximum so the
+    default applies again.
+    """
+
+    enable: bool
+    max_accounts_per_toolkit: t.Optional[int]
+    require_explicit_selection: bool
+
+
+class ToolRouterUpdateExperimentalConfig(te.TypedDict, total=False):
+    """``experimental`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    Each leaf follows the PATCH contract: omit to keep the stored value,
+    ``None`` to remove it, a value to replace it.
+    """
+
+    permissions: t.Optional[t.Dict[str, t.Any]]
+    link_url_overwrite: t.Optional[str]
+    fast_mode: t.Optional[bool]
+    submit_feedback: t.Optional[t.Dict[str, bool]]
+    session_config_id: str
+
+
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
@@ -105,13 +187,23 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
     Attributes:
         session_id: Unique session identifier
+        config: Server-side session configuration as returned by the API,
+                refreshed in place by :meth:`update`
         experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     #: Unique session identifier.
     session_id: str
+    #: Server-side session configuration (toolkit/tool allowlists, tags,
+    #: preload, sandbox, manage_connections) as returned by the API. Refreshed
+    #: in place by :meth:`update`.
+    config: ToolRouterSessionConfig
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
+    #: Version of the server-side configuration this object last observed.
+    #: Refreshed in place by :meth:`update`. Pass it as ``expected_config_version``
+    #: to make an update conditional.
+    config_version: t.Optional[int]
 
     def __init__(
         self,
@@ -125,6 +217,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
+        config: t.Optional[ToolRouterSessionConfig] = None,
+        config_version: t.Optional[int] = None,
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
@@ -138,13 +232,25 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
+        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
+        # Sessions built from an API response always carry their config; the
+        # fallback only covers direct construction without one (tests).
+        self.config = config or session_create_response.Config(
+            user_id=user_id or "",
+            execute=session_create_response.ConfigExecute(),
+            search=session_create_response.ConfigSearch(),
+            preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+            premium_usage=False,
+        )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
         # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
         # not surface `mcp` on the base class — MCP is an explicit opt-in.
         setattr(self, "mcp", mcp)
         self.experimental = experimental
-        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
+        self.config_version = (
+            config_version if isinstance(config_version, int) else None
+        )
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
         self._preloaded_custom_tool_slugs = preloaded_custom_tool_slugs or []
@@ -893,35 +999,75 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     def update(
         self,
         *,
-        toolkits: t.Union[session_patch_params.Toolkits, "Omit"] = omit,
-        tools: t.Union[t.Dict[str, session_patch_params.Tools], "Omit"] = omit,
-        tags: t.Union[session_patch_params.Tags, "Omit"] = omit,
-        auth_configs: t.Union[t.Dict[str, str], "Omit"] = omit,
+        toolkits: t.Union[t.Optional[session_patch_params.Toolkits], "Omit"] = omit,
+        premium_usage: t.Union[
+            t.Literal[False], ToolRouterPremiumUsageConfig, "Omit"
+        ] = omit,
+        tools: t.Union[
+            t.Optional[t.Dict[str, session_patch_params.Tools]], "Omit"
+        ] = omit,
+        tags: t.Union[t.Optional[session_patch_params.Tags], "Omit"] = omit,
+        auth_configs: t.Union[t.Optional[t.Dict[str, str]], "Omit"] = omit,
         connected_accounts: t.Union[
             t.Optional[t.Dict[str, SequenceNotStr[str]]], "Omit"
         ] = omit,
         manage_connections: t.Union[
-            t.Optional[session_patch_params.ManageConnections], "Omit"
+            t.Optional[session_patch_params.ManageConnections],
+            t.Optional[ToolRouterUpdateManageConnectionsConfig],
+            "Omit",
         ] = omit,
         sandbox: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         multi_account: t.Union[
-            t.Optional[session_patch_params.MultiAccount], "Omit"
+            t.Optional[session_patch_params.MultiAccount],
+            t.Optional[ToolRouterUpdateMultiAccountConfig],
+            "Omit",
         ] = omit,
-        preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
-    ) -> None:
+        preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
+        search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
+        execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
+        experimental: t.Union[
+            t.Optional[session_patch_params.Experimental],
+            t.Optional[ToolRouterUpdateExperimentalConfig],
+            "Omit",
+        ] = omit,
+        expected_config_version: t.Union[int, None, t.Literal[False]] = None,
+    ) -> ToolRouterSessionConfig:
         """Partially update the session configuration.
 
-        Only the fields provided will be changed; omitted fields are preserved.
-        Mutates this session's ``preload`` in-place.
+        Only the fields provided are changed; omitted fields are preserved.
+        For each policy block ``None`` removes the stored override (which can
+        increase access: ``toolkits=None`` restores the unrestricted default,
+        while ``toolkits={"enable": []}`` denies every app toolkit and is sent
+        as-is). Supplied ``tools``, ``auth_configs`` and ``connected_accounts``
+        maps replace the stored map entirely. Inside ``manage_connections``,
+        ``callback_url=None`` removes only the stored callback URL.
+        Experimental ``premium_usage`` accepts ``False`` to disable billed
+        access or an object to set its filters; it does not accept ``None``.
+        Any object, even one that only sets ``return_premium_charge``,
+        re-enables premium usage on a Session set to ``False``.
 
-        Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
-        ``multi_account`` to clear the stored value.
+        By default the request carries no precondition: the last writer wins.
+        Pass ``expected_config_version`` (for example this object's
+        ``config_version``) to make the update conditional: the API then
+        applies it only when the stored version still matches, and a concurrent
+        change raises :class:`~composio.exceptions.SessionConfigConflictError`
+        (HTTP 409) instead of being overwritten. The API must support the
+        ``expected_config_version`` field; otherwise it rejects the request with
+        a 400. ``expected_config_version=False`` is the same as omitting it.
+        The PATCH is never retried by the transport, so a 409 is reported
+        exactly once. On conflict this object stays unchanged: re-fetch the
+        session with ``composio.sessions.use(session_id)`` and retry against
+        the fresh ``config_version``.
+
+        ``config``, ``config_version`` and ``preload`` are refreshed in place
+        only after a successful response, and the updated ``config`` is
+        returned.
 
         ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer
         ``sandbox`` in new code.
 
-        All parameters use the same types as the Stainless-generated
+        All other parameters use the same types as the generated
         ``client.tool_router.session.patch()`` method.
         """
         from composio.core.models.tool_router import _session_preload_config
@@ -931,22 +1077,123 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
             )
+        if premium_usage is None:
+            raise exceptions.InvalidParams(
+                "`premium_usage` does not accept None; pass False to disable "
+                "premium usage, or omit it to keep the stored policy"
+            )
+
+        precondition: t.Union[int, "Omit"]
+        if expected_config_version is None or expected_config_version is False:
+            precondition = omit
+        elif isinstance(expected_config_version, bool) or expected_config_version < 1:
+            raise exceptions.InvalidParams(
+                "`expected_config_version` must be a positive integer, or False to "
+                "send no precondition"
+            )
+        else:
+            precondition = expected_config_version
 
         workbench_payload = sandbox if sandbox is not omit else workbench
 
-        response = self._client.tool_router.session.patch(
-            session_id=self.session_id,
-            toolkits=toolkits,
-            tools=tools,
-            tags=tags,
-            auth_configs=auth_configs,
-            connected_accounts=connected_accounts,
-            manage_connections=manage_connections,
-            workbench=workbench_payload,
-            multi_account=multi_account,
-            preload=preload,
+        # The generated client has no typed parameter for the precondition, so
+        # it travels as an extra root body field.
+        extra_body = (
+            None
+            if isinstance(precondition, Omit)
+            else {"expected_config_version": precondition}
         )
+
+        # The generated client does not type ``None`` for every policy block
+        # although the API accepts it (it removes the stored override), nor the
+        # subfield removals inside ``manage_connections``, ``multi_account`` and
+        # ``experimental``; the values are serialized as-is.
+        try:
+            response = self._client.tool_router.session.patch(
+                session_id=self.session_id,
+                toolkits=t.cast(
+                    t.Union[session_patch_params.Toolkits, "Omit"], toolkits
+                ),
+                tools=t.cast(
+                    t.Union[t.Dict[str, session_patch_params.Tools], "Omit"], tools
+                ),
+                tags=t.cast(t.Union[session_patch_params.Tags, "Omit"], tags),
+                auth_configs=t.cast(t.Union[t.Dict[str, str], "Omit"], auth_configs),
+                connected_accounts=connected_accounts,
+                manage_connections=t.cast(
+                    t.Union[t.Optional[session_patch_params.ManageConnections], "Omit"],
+                    manage_connections,
+                ),
+                workbench=workbench_payload,
+                multi_account=t.cast(
+                    t.Union[t.Optional[session_patch_params.MultiAccount], "Omit"],
+                    multi_account,
+                ),
+                preload=t.cast(t.Union[session_patch_params.Preload, "Omit"], preload),
+                search=t.cast(t.Union[session_patch_params.Search, "Omit"], search),
+                execute=t.cast(t.Union[session_patch_params.Execute, "Omit"], execute),
+                experimental=t.cast(
+                    t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
+                    experimental,
+                ),
+                premium_usage=t.cast(
+                    t.Union[
+                        t.Literal[False],
+                        session_patch_params.CurrentPremiumUsageVariant1,
+                        "Omit",
+                    ],
+                    premium_usage,
+                ),
+                extra_body=extra_body,
+                # A stale precondition is a deterministic 409: never retry it.
+                request_options={"max_retries": 0},
+            )
+        except ConflictError as exc:
+            if precondition is omit:
+                message = (
+                    f"Session {self.session_id} configuration changed while this "
+                    "update was in flight; re-fetch the session and retry the update"
+                )
+            else:
+                message = (
+                    f"Session {self.session_id} configuration is no longer at "
+                    f"version {precondition}; re-fetch the session and retry the update"
+                )
+            raise exceptions.SessionConfigConflictError(
+                message,
+                session_id=self.session_id,
+                expected_config_version=(
+                    None if isinstance(precondition, Omit) else precondition
+                ),
+            ) from exc
+        self.config = response.config
+        self.config_version = response.config_version
         self.preload = _session_preload_config(response.config.preload)
+        return self.config
+
+    def list_config_history(
+        self,
+        **query: te.Unpack[session_config_history_params.SessionConfigHistoryParams],
+    ) -> session_config_history_response.SessionConfigHistoryResponse:
+        """
+        List the configuration history of this session, newest first.
+
+        Every ``update()`` records a new config version; this returns those
+        versions with cursor-based pagination.
+
+        :param cursor: Pagination cursor from a previous response.
+        :param limit: Number of items per page (max 100).
+        :return: The config versions under ``.items`` plus pagination fields.
+
+        Example:
+            history = session.list_config_history(limit=10)
+            for entry in history.items:
+                print(entry.version, entry.is_current)
+        """
+        return self._client.tool_router.session.config_history(
+            session_id=self.session_id,
+            **query,
+        )
 
     def delete(self) -> ToolRouterSessionDeleteResponse:
         """

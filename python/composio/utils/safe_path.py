@@ -189,7 +189,8 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
             f"Refusing to write {label} containing characters reserved by "
             f"Windows: {name!r}"
         )
-    if raw_basename.endswith((" ", ".")):
+    # Stripping Unicode whitespace can expose a trailing dot on the written name.
+    if raw_basename.endswith((" ", ".")) or basename.endswith("."):
         raise UnsafePathComponentError(
             f"Refusing to write {label} ending in a space or dot: {name!r}"
         )

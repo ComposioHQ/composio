@@ -1,6 +1,6 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import { Composio as RawComposioClient } from '@composio/client';
+import { Composio as RawComposioClient, NotFoundError } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -35,6 +35,7 @@ import {
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
   type InvalidVersionDetail,
+  type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
@@ -111,6 +112,21 @@ export interface TestLiveInput {
    */
   toolkitsData?: {
     toolkits?: Toolkits;
+    /**
+     * Custom toolkits registered in the test project. Kept apart from
+     * `toolkits`, the Composio-managed catalog, as the API keeps them apart.
+     */
+    projectToolkits?: Toolkits;
+    /**
+     * The project `projectToolkits` belong to. When set, a project-toolkit
+     * lookup for any other scope, or for none, finds nothing, as the API
+     * would answer for another project.
+     */
+    projectToolkitsScope?: ToolkitProjectScope;
+    /**
+     * Called with the scope of every project-toolkit lookup.
+     */
+    onGetProjectToolkits?: (scope: ToolkitProjectScope | undefined) => void;
     detailedToolkits?: ToolkitDetailed[];
     tools?: Tools;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
@@ -141,6 +157,11 @@ export interface TestLiveInput {
    */
   triggersData?: {
     items?: TriggerInstanceItem[];
+    /**
+     * Make `triggerInstances.upsert` reject slugs missing from `toolkitsData.triggerTypes`,
+     * as the API does for an unknown trigger type.
+     */
+    rejectUnknownTriggerSlugs?: boolean;
   };
 
   /**
@@ -300,6 +321,7 @@ export const TestLayer = (input?: TestLiveInput) =>
   Effect.gen(function* () {
     const defaultAppClientData = {
       toolkits: [] as Toolkits,
+      projectToolkits: [] as Toolkits,
       detailedToolkits: [] as ToolkitDetailed[],
       tools: [] as Tools,
       triggerTypesAsEnums: [] as TriggerTypesAsEnums,
@@ -354,6 +376,15 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       ComposioToolkitsRepository.of({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getProjectToolkits: scope =>
+          Effect.sync(() => {
+            toolkitsData.onGetProjectToolkits?.(scope);
+            const owner = toolkitsData.projectToolkitsScope;
+            const inScope =
+              owner === undefined ||
+              (scope?.orgId === owner.orgId && scope.projectId === owner.projectId);
+            return inScope ? toolkitsData.projectToolkits : [];
+          }),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
           const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
           const found = toolkitsData.toolkits.filter(t =>
@@ -1099,6 +1130,22 @@ export const TestLayer = (input?: TestLiveInput) =>
           return {};
         },
       },
+      triggersTypes: {
+        retrieve: async (slug: string) => {
+          const found = toolkitsData.triggerTypes.find(
+            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
+          );
+          if (!found) {
+            throw new NotFoundError(
+              404,
+              { error: { message: `Trigger type "${slug}" not found` } },
+              `Trigger type "${slug}" not found`,
+              new Headers()
+            );
+          }
+          return found;
+        },
+      },
       triggerInstances: {
         upsert: async (
           triggerSlug: string,
@@ -1106,9 +1153,19 @@ export const TestLayer = (input?: TestLiveInput) =>
             connected_account_id?: string;
             trigger_config?: Record<string, unknown>;
           }
-        ) => ({
-          trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-        }),
+        ) => {
+          if (
+            input?.triggersData?.rejectUnknownTriggerSlugs &&
+            !toolkitsData.triggerTypes.some(
+              trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+            )
+          ) {
+            throw new Error(`Trigger type "${triggerSlug}" not found`);
+          }
+          return {
+            trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+          };
+        },
         manage: {
           update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
             trigger_id: triggerId,

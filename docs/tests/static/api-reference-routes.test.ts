@@ -30,6 +30,7 @@ import { z } from 'zod';
 import { openapi, openapiV3 } from '../../lib/openapi';
 import { apiEndpointsSchema } from '../../lib/api-endpoints-table-schema';
 import { HIDDEN_API_TAGS } from '../../lib/filter-api-version';
+import { getReferenceSource } from '../../lib/source';
 
 const DOCS_DIR = join(import.meta.dir, '../..');
 
@@ -134,6 +135,27 @@ async function generatedReferenceUrls(): Promise<Set<string>> {
 const generatedUrlsPromise = generatedReferenceUrls();
 
 describe('API reference route completeness', () => {
+  test('sidebar operations follow read, create, update, delete order', async () => {
+    const source = await getReferenceSource();
+    const operationIds = source.pageTree.children
+      .flatMap(function pages(node): string[] {
+        if (node.type === 'page') return [node.url];
+        if (node.type === 'folder') return node.children.flatMap(pages);
+        return [];
+      })
+      .filter(url => url.startsWith('/reference/api-reference/auth-configs/'))
+      .map(url => url.slice(url.lastIndexOf('/') + 1));
+
+    expect(operationIds).toEqual([
+      'getAuthConfigs',
+      'getAuthConfigsByNanoid',
+      'postAuthConfigs',
+      'patchAuthConfigsByNanoid',
+      'patchAuthConfigsByNanoidByStatus',
+      'deleteAuthConfigsByNanoid',
+    ]);
+  });
+
   test('every visible operation declares a tag and an operationId', () => {
     const violations: string[] = [];
     for (const fileName of ['openapi.json', 'openapi-v3.json', 'openapi-webhooks.json']) {

@@ -15,11 +15,11 @@ class TriggersListOptionError extends Data.TaggedError('commands/TriggersListOpt
   readonly message: string;
 }> {}
 
-const toolkit = Argument.string('toolkit').pipe(
+const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list trigger types for (e.g. "gmail")')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Maximum number of trigger types to show (1-1000)')
 );

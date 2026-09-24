@@ -5,6 +5,91 @@ description: "Manage connected accounts.  This class is used to manage connected
 
 ## Methods
 
+### refresh()
+
+Refresh the credentials of a connected account.
+
+```python
+def refresh(nanoid: str, params: connected_account_refresh_params.ConnectedAccountRefreshParams = ...) -> connected_account_refresh_response.ConnectedAccountRefres...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `params?` | `connected_account_refresh_params.ConnectedAccountRefreshParams` |
+
+**Returns**
+
+`connected_account_refresh_response.ConnectedAccountRefres...` — The refresh response.
+
+**Example**
+
+```python
+composio.connected_accounts.refresh("ca_abc123")
+```
+
+---
+
+### revoke()
+
+Revoke a connected account's upstream tokens (best effort) and mark the connection `REVOKED`.  Raises `composio.exceptions.ComposioConnectedAccountRevocationNotSupportedError` when the toolkit does not support programmatic revocation (API 400) and `composio.exceptions.ComposioConnectedAccountNotRevokableError` when the connection is not in a revokable state (API 409).
+
+```python
+def revoke(nanoid: str) -> connected_account_revoke_response.ConnectedAccountRevokeR...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`connected_account_revoke_response.ConnectedAccountRevokeR...` — The revoked tokens and the updated connected account.
+
+**Example**
+
+```python
+result = composio.connected_accounts.revoke("ca_abc123")
+print(result.connected_account.status)  # "REVOKED"
+```
+
+---
+
+### complete_auth()
+
+Complete a deferred OAuth connection once you have verified the user's identity.  When your project has an OAuth callback verifier configured, Composio does not activate a new OAuth connection by itself: it redirects to your verifier with a single-use session URI. After confirming who the user is, redeem it here; Composio checks that your project owns the pending connection and that `user_id` is its owner, completes the token exchange, and the connection becomes `ACTIVE`. Redeeming a session twice, or after it expires, fails with a 404 from the API.
+
+```python
+def complete_auth(user_id: str, session_uri: str) -> connected_account_complete_auth_response.ConnectedAccount...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `session_uri` | `str` |
+
+**Returns**
+
+`connected_account_complete_auth_response.ConnectedAccount...` — The completed `connected_account_id` and its `toolkit_slug`.
+
+**Example**
+
+```python
+result = composio.connected_accounts.complete_auth(
+    user_id="user_123",
+    session_uri=session_uri,  # from the verifier redirect
+)
+print(result.connected_account_id)
+```
+
+---
+
 ### update()
 
 Update a connected account's alias and/or credentials.
@@ -23,7 +108,7 @@ def update(nanoid: str, alias: str | None = ..., connection: connected_account_p
 
 **Returns**
 
-`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with ``id``, ``status``, and ``success``.
+`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with `id`, `status`, and `success`.
 
 **Example**
 
@@ -39,7 +124,7 @@ composio.connected_accounts.update('ca_abc123', alias='')
 
 ### update_acl()
 
-Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.  Only valid on SHARED connections; raises ``ComposioAclOnlyForSharedError`` on a PRIVATE connection. Omit a parameter to leave it unchanged; pass an empty list to clear an allow/deny list. At least one parameter must be provided.
+Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.  Only valid on SHARED connections; raises `ComposioAclOnlyForSharedError` on a PRIVATE connection. Omit a parameter to leave it unchanged; pass an empty list to clear an allow/deny list. At least one parameter must be provided.
 
 ```python
 def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids: List[str | None] = ..., not_allowed_user_ids: List[str | None] = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
@@ -56,7 +141,7 @@ def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids
 
 **Returns**
 
-`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with ``id``, ``status``, and ``success``.
+`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with `id`, `status`, and `success`.
 
 **Example**
 
@@ -72,7 +157,7 @@ composio.connected_accounts.update_acl(
 
 ### initiate()
 
-Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the ``wait_for_connection`` method.
+Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the `wait_for_connection` method.
 
 ```python
 def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> ConnectionRequest
@@ -177,4 +262,4 @@ def wait_for_connection(id: str, timeout: float | None = ...) -> connected_accou
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L340)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L355)

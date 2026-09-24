@@ -28,42 +28,46 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.45
-  '@ai-sdk/openai': ^4.0.59
+  '@ai-sdk/mcp': ^2.0.49
+  '@ai-sdk/openai': ^4.0.66
   '@arethetypeswrong/cli': ^0.18.5
-  '@clack/core': '^1.4.3'
-  '@clack/prompts': '^1.7.0'
+  '@clack/core': '^1.5.1'
+  '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.22.0
-  '@cloudflare/workers-types': ^5.20260905.1
-  '@composio/client': 0.1.0-alpha.76
+  '@cloudflare/workers-types': ^5.20260915.1
+  '@composio/client': 2.0.0-rc.8
   '@effect/language-service': ^0.87.2
-  '@effect/platform-bun': 4.0.0-rc.112
-  '@effect/vitest': 4.0.0-rc.112
+  '@effect/platform-bun': 4.0.0-rc.115
+  '@effect/vitest': 4.0.0-rc.115
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.30.0
-  '@types/bun': ^1.4.1
-  ai: ^7.0.93
+  '@types/bun': ^1.4.2
+  ai: ^7.0.101
   dotenv: ^17.4.2
-  effect: 4.0.0-rc.112
+  effect: 4.0.0-rc.115
   hono: ^4.13.7
-  openai: ^7.10.0
+  openai: ^7.15.0
   picocolors: ^1.1.1
-  pnpm: ^11.24.0
   publint: ^0.3.24
   tsdown: ^0.23.0
   tsx: ^4.23.13
   typescript: ^7.0.2
-  '@vitest/ui': ^4.1.11
-  vitest: ^4.1.11
-  wrangler: ^4.129.0
+  '@vitest/ui': ^5.0.1
+  vitest: ^5.0.1
+  wrangler: ^4.131.2
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
 catalogs:
+  # @cloudflare/vitest-pool-workers 0.22 only supports Vitest 4. Keep the
+  # Workers test projects on the latest compatible v4 while the rest of the
+  # workspace, including @effect/vitest, runs on Vitest 5.
+  vitest4:
+    vitest: ^4.1.11
   # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
   # `typescript` rebinds the compiler-API import for @composio/cli's generate
   # pipeline and @composio/core's typedoc docgen (their typechecks still run the
@@ -82,6 +86,11 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
+  # temporary: 0.6.0 (2026-09-15) is the first release with the API that
+  # @composio/typesafe targets. Publisher, provenance, and the absence of install
+  # scripts were checked by hand for this exact version only, so later releases
+  # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
+  - '@typesafe-ai/sdk@0.6.0'
 
 peerDependencyRules:
   allowedVersions:
@@ -92,7 +101,6 @@ peerDependencyRules:
     # 7.x line is what openai actually supports; core is pinned to it on purpose
     # (see pinnedDispatcher.node.ts -- Node's fetch rejects undici 8 dispatchers).
     undici: ^7.29.0
-    vitest: ^4.0.0
     zod: ^4.0.0
 
 overrides:

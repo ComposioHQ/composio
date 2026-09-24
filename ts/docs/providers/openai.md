@@ -8,8 +8,7 @@ The OpenAI Provider allows you to:
 
 1. Format Composio tools as OpenAI function tools
 2. Handle tool calls from OpenAI chat completions
-3. Handle tool calls from OpenAI assistants
-4. Process streaming responses from OpenAI with tool calls
+3. Handle tool calls from the OpenAI Responses API through `OpenAIResponsesProvider`
 
 ## Basic Usage
 
@@ -132,133 +131,46 @@ if (completion.choices[0].message.tool_calls) {
 }
 ```
 
-## Working with OpenAI Assistants
+## Working with OpenAI Responses
 
-The OpenAI Provider includes helper methods for working with OpenAI Assistants:
+Use `OpenAIResponsesProvider` for new agentic flows. It formats Composio tools for the Responses API and returns `function_call_output` items that you can pass back with `previous_response_id`.
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai';
+import { OpenAIResponsesProvider } from '@composio/openai';
 import OpenAI from 'openai';
 
 const composio = new Composio({
   apiKey: 'your-composio-api-key',
+  provider: new OpenAIResponsesProvider(),
 });
 
 const openai = new OpenAI({
   apiKey: 'your-openai-api-key',
 });
 
-// Get the OpenAI Provider
-const openaiProvider = composio.provider as OpenAIProvider;
-
 // Get GitHub tools
 const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
-// Create an assistant with Composio tools
-const assistant = await openai.beta.assistants.create({
-  name: 'GitHub Assistant',
-  instructions: 'You are a helpful assistant with GitHub tools.',
-  model: 'gpt-4',
+let response = await openai.responses.create({
+  model: 'gpt-5',
   tools,
+  input: 'Find information about the Composio SDK repository',
 });
 
-// Create a thread
-const thread = await openai.beta.threads.create();
-
-// Add a message to the thread
-await openai.beta.threads.messages.create(thread.id, {
-  role: 'user',
-  content: 'Find information about the Composio SDK repository',
-});
-
-// Run the assistant
-const run = await openai.beta.threads.runs.create(thread.id, {
-  assistant_id: assistant.id,
-});
-
-// Wait for the run to complete and handle any tool calls
-const finalRun = await openaiProvider.waitAndHandleAssistantToolCalls(
-  'default', // userId
-  openai,
-  run,
-  thread,
-  { connectedAccountId: 'connected_account_123' } // Optional
-);
-
-// Get the assistant's response
-const messages = await openai.beta.threads.messages.list(thread.id);
-console.log(messages.data[0].content);
-```
-
-## Handling Streaming Responses with Tool Calls
-
-The OpenAI Provider can also handle streaming responses with tool calls:
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai';
-import OpenAI from 'openai';
-
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-});
-
-const openai = new OpenAI({
-  apiKey: 'your-openai-api-key',
-});
-
-// Get the OpenAI Provider
-const openaiProvider = composio.provider as OpenAIProvider;
-
-// Get GitHub tools
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-});
-
-// Create an assistant with Composio tools
-const assistant = await openai.beta.assistants.create({
-  name: 'GitHub Assistant',
-  instructions: 'You are a helpful assistant with GitHub tools.',
-  model: 'gpt-4',
-  tools,
-});
-
-// Create a thread
-const thread = await openai.beta.threads.create();
-
-// Add a message to the thread
-await openai.beta.threads.messages.create(thread.id, {
-  role: 'user',
-  content: 'Find information about the Composio SDK repository',
-});
-
-// Run the assistant with streaming
-const runStream = await openai.beta.threads.runs.createAndStream(thread.id, {
-  assistant_id: assistant.id,
-});
-
-// Process the stream and handle tool calls
-for await (const event of openaiProvider.waitAndHandleAssistantStreamToolCalls(
-  'default', // userId
-  openai,
-  runStream,
-  thread,
-  { connectedAccountId: 'connected_account_123' } // Optional
-)) {
-  // Process different event types
-  if (event.event === 'thread.message.created') {
-    console.log('New message created');
-  } else if (event.event === 'thread.message.delta') {
-    console.log('Message update:', event.data.delta.content);
-  } else if (event.event === 'thread.run.requires_action') {
-    console.log('Run requires action (tools being executed)');
-  } else if (event.event === 'thread.run.completed') {
-    console.log('Run completed');
-  }
+while (response.output.some(item => item.type === 'function_call')) {
+  const toolOutputs = await composio.provider.handleToolCalls('default', response.output);
+  response = await openai.responses.create({
+    model: 'gpt-5',
+    tools,
+    previous_response_id: response.id,
+    input: toolOutputs,
+  });
 }
+
+console.log(response.output_text);
 ```
 
 ## Modifiers with OpenAI Provider
@@ -344,30 +256,48 @@ class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAi
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
+}
 
-  handleAssistantMessage(
+// The tool type for the Responses API
+// (the Responses provider's OpenAiTool is OpenAI.Responses.FunctionTool)
+type ResponsesTool = OpenAI.Responses.FunctionTool;
+
+// The provider class for the Responses API
+// (OpenAIResponsesProvider re-exports from '@composio/openai')
+class OpenAIResponsesProvider extends BaseNonAgenticProvider<
+  ResponsesTool[],
+  ResponsesTool
+> {
+  readonly name = 'openai';
+
+  wrapTool(tool: Tool): ResponsesTool;
+  wrapTools(tools: Tool[]): ResponsesTool[];
+
+  executeToolCall(
     userId: string,
-    run: OpenAI.Beta.Threads.Run,
+    tool: OpenAI.Responses.ResponseFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ): Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>;
+  ): Promise<string>;
 
-  waitAndHandleAssistantStreamToolCalls(
+  handleToolCalls(
     userId: string,
-    client: OpenAI,
-    runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
-    thread: OpenAI.Beta.Threads.Thread,
+    toolCalls: OpenAI.Responses.ResponseOutputItem[],
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ): AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>;
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
 
-  waitAndHandleAssistantToolCalls(
+  handleResponse(
     userId: string,
-    client: OpenAI,
-    run: OpenAI.Beta.Threads.Run,
-    thread: OpenAI.Beta.Threads.Thread,
+    response: OpenAI.Responses.Response,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ): Promise<OpenAI.Beta.Threads.Run>;
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
 }
 ```
+
+Like the chat completions provider, the Responses provider also accepts a
+`ToolCallSession` as the execution target, and it can wrap MCP servers for the
+Responses API via `wrapMcpServerResponse`. See
+`ts/packages/providers/openai/src/OpenAIResponsesProvider.ts` for the full
+surface.

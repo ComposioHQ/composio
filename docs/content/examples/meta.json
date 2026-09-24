@@ -2,10 +2,23 @@
   "title": "Examples",
   "root": true,
   "pages": [
-    "index",
-    "general-agent-with-pi",
-    "standup-slackbot",
-    "local-sandbox-pr-reviewer",
-    "imessage-agent"
+    "[Overview](/examples)",
+    "---SDK examples---",
+    "[TypeScript and Python](/examples/sdk-examples)",
+    "---Complete agents---",
+    "[Slack agent with Pi](/examples/general-agent-with-pi)",
+    "[Daily standup bot](/examples/standup-slackbot)",
+    "[PR reviewer](/examples/local-sandbox-pr-reviewer)",
+    "[iMessage agent](/examples/imessage-agent)",
+    "[CSV report agent](/examples/csv-report-agent)",
+    "[Email-triggered agent](/examples/email-triggered-agent)",
+    "---Integration patterns---",
+    "[Bring your own agent harness](/examples/harness-integration)",
+    "[TypeSafe tool selection](/examples/typesafe-tool-selection)",
+    "[CrewAI and LangChain over MCP](/examples/python-mcp-agents)",
+    "[Multiple accounts](/examples/multiple-accounts)",
+    "[Custom tools with Composio](/examples/custom-tools)",
+    "---Deployment---",
+    "[Cloudflare Workers](/examples/cloudflare-workers)"
   ]
 }

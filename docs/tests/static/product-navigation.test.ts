@@ -38,7 +38,11 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/composio-connect')).toBe('for-you');
     expect(classifyDocsProduct('/docs/providers/openai')).toBe('platform');
     expect(classifyDocsProduct('/docs/authentication/controlling-scopes')).toBe('platform');
+    expect(classifyDocsProduct('/docs/consumer-agents')).toBe('platform');
+    expect(classifyDocsProduct('/docs/b2b-agents')).toBe('platform');
+    expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
+    expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
   });
@@ -123,11 +127,25 @@ describe('Docs product navigation', () => {
       '/docs/authentication',
       '/docs/skills',
       '/docs/triggers',
+      '/docs/consumer-agents',
+      '/docs/b2b-agents',
+      '/docs/production-readiness',
     ]) {
       expect(platformUrls).toContain(url);
     }
     expect(platformUrls).not.toContain('/docs/agent-plugins');
     expect(platformUrls).toContain('/docs/agent-setup');
+
+    const agentGuides = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Guides & Examples',
+    );
+    expect(agentGuides?.type).toBe('folder');
+    if (agentGuides?.type !== 'folder') throw new Error('Guides & Examples group is missing');
+    expect(agentGuides.index?.url).toBe('/docs/consumer-agents');
+    expect(agentGuides.children.map(node => node.type === 'page' ? node.url : null)).toEqual(
+      ['/docs/consumer-agents', '/docs/b2b-agents', '/examples'],
+    );
+    expect(platformUrls.filter(url => url === '/docs/consumer-agents')).toHaveLength(1);
 
     const agentSetup = platformTree.children.find(
       node => node.type === 'folder' && node.$ref?.folder === 'agent-setup',
@@ -146,7 +164,10 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).not.toContain('/docs');
     expect(platformUrls).not.toContain('/docs');
 
-    for (const sharedUrl of ['/docs/security/overview']) {
+    for (const sharedUrl of [
+      '/docs/using-composio-skill',
+      '/docs/security/overview',
+    ]) {
       expect(forYouUrls).toContain(sharedUrl);
       expect(platformUrls).toContain(sharedUrl);
     }

@@ -1,4 +1,4 @@
-.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference dead-code bump build format check sanity test
+.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference dead-code bump build build-core format check sanity test
 
 PROVIDER_DIRS := $(patsubst %/,%,$(sort $(dir $(wildcard providers/*/pyproject.toml))))
 
@@ -76,8 +76,10 @@ test: tst
 bump: clean-build
 	@uv run python scripts/bump.py
 
-build: clean-build
+build-core: clean-build
 	@./.venv/bin/python -m build
+
+build: build-core
 	@set -e; for provider in $(PROVIDER_DIRS); do\
 		./.venv/bin/python -m build $$provider;\
 		cp $$provider/dist/* dist/;\

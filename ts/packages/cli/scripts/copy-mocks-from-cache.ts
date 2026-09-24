@@ -22,7 +22,7 @@ export function copyMocksFromCache() {
 
     const cacheDir = yield* setupCacheDir;
 
-    const mocksDir = yield* Config.string('COMPOSIO_MOCKS_DIR').pipe(
+    const mocksDir = yield* Config.String('COMPOSIO_MOCKS_DIR').pipe(
       Config.withDefault(defaultMocksDir)
     );
 
@@ -51,7 +51,7 @@ export function copyMocksFromCache() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
+  const logLevel = yield* Config.LogLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
   return Layer.succeed(References.MinimumLogLevel, logLevel);
 }).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));

@@ -16,12 +16,11 @@ import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
 
 // Modules the binary build bundles separately (`dist/<name>.mjs` next to the
 // executable) instead of into the executable itself. The first five are what
-// `composio run` preloads into the script it spawns. The last two are loaded
-// into the CLI's own process, on demand, through `loadInstalledCompanionModule`:
-// they carry the TypeScript compiler and the tokenizer rank table, which
-// together were ~70% of the executable's JavaScript and cost every command
-// parse time even though only `generate`, `run`, and large `execute` responses
-// ever reach them.
+// `composio run` preloads into the script it spawns. The last one is loaded into
+// the CLI's own process, on demand, through `loadInstalledCompanionModule`: it
+// carries the TypeScript compiler, which was 44% of the executable's JavaScript
+// and cost every command parse time even though only `generate` and `run`
+// reach it.
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
   'run-subagent-shared',
@@ -29,7 +28,6 @@ export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-subagent-legacy',
   'run-subagent-output-mcp',
   'generation-runtime',
-  'execute-output-encoder-runtime',
 ];
 
 export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map(
@@ -621,7 +619,7 @@ const resolveRepairReleaseTag = ({
   Effect.gen(function* () {
     // GITHUB_TAG pins the release used for self-repair (set by the binary build workflow).
     const pinnedTag = yield* Effect.orDie(
-      Config.option(Config.string('GITHUB_TAG')).pipe(
+      Config.option(Config.String('GITHUB_TAG')).pipe(
         Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
       )
     ).pipe(
@@ -638,7 +636,7 @@ const resolveRepairReleaseTag = ({
   });
 
 const nonEmptyConfigWithFallback = (name: string, fallback: string) =>
-  Config.string(name).pipe(
+  Config.String(name).pipe(
     Config.map(value => value || fallback),
     Config.withDefault(fallback)
   );
@@ -649,7 +647,7 @@ const githubRepairConfig = Effect.orDie(
     apiBaseUrl: nonEmptyConfigWithFallback('GITHUB_API_BASE_URL', DEFAULT_GITHUB_CONFIG.apiBaseUrl),
     owner: nonEmptyConfigWithFallback('GITHUB_OWNER', DEFAULT_GITHUB_CONFIG.owner),
     repo: nonEmptyConfigWithFallback('GITHUB_REPO', DEFAULT_GITHUB_CONFIG.repo),
-    accessToken: Config.option(Config.string('GITHUB_ACCESS_TOKEN')).pipe(
+    accessToken: Config.option(Config.String('GITHUB_ACCESS_TOKEN')).pipe(
       Config.map(Option.getOrUndefined)
     ),
   })

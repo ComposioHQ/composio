@@ -8,7 +8,9 @@ description: "A Composio session \u2014 the object returned by `composio.create(
 | Name | Type |
 |------|------|
 | `session_id` | `str` |
+| `config` | `ToolRouterSessionConfig` |
 | `experimental` | `'ToolRouterSessionExperimental'` |
+| `config_version` | `int | None` |
 | `preload` | `Any` |
 
 ## Methods
@@ -183,26 +185,63 @@ def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'P
 
 ### update()
 
-Partially update the session configuration.  Only the fields provided will be changed; omitted fields are preserved. Mutates this session's ``preload`` in-place.  Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or ``multi_account`` to clear the stored value.  ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer ``sandbox`` in new code.  All parameters use the same types as the Stainless-generated ``client.tool_router.session.patch()`` method.
+Partially update the session configuration.  Only the fields provided are changed; omitted fields are preserved. For each policy block `None` removes the stored override (which can increase access: `toolkits=None` restores the unrestricted default, while `toolkits={"enable": []}` denies every app toolkit and is sent as-is). Supplied `tools`, `auth_configs` and `connected_accounts` maps replace the stored map entirely. Inside `manage_connections`, `callback_url=None` removes only the stored callback URL. Experimental `premium_usage` accepts `False` to disable billed access or an object to set its filters; it does not accept `None`. Any object, even one that only sets `return_premium_charge`, re-enables premium usage on a Session set to `False`.  By default the request carries no precondition: the last writer wins. Pass `expected_config_version` (for example this object's `config_version`) to make the update conditional: the API then applies it only when the stored version still matches, and a concurrent change raises `SessionConfigConflictError` (HTTP 409) instead of being overwritten. The API must support the `expected_config_version` field; otherwise it rejects the request with a 400. `expected_config_version=False` is the same as omitting it. The PATCH is never retried by the transport, so a 409 is reported exactly once. On conflict this object stays unchanged: re-fetch the session with `composio.sessions.use(session_id)` and retry against the fresh `config_version`.  `config`, `config_version` and `preload` are refreshed in place only after a successful response, and the updated `config` is returned.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All other parameters use the same types as the generated `client.tool_router.session.patch()` method.
 
 ```python
-def update(toolkits: Union[session_patch_params.Toolkits, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools], 'Omit'] = ..., tags: Union[session_patch_params.Tags, 'Omit'] = ..., auth_configs: Union[Dict[str, str], 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str | None]], 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload, 'Omit'] = ...) -> None
+def update(toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., premium_usage: Union[Literal[False], ToolRouterPremiumUsageConfig, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools | None], 'Omit'] = ..., tags: Union[session_patch_params.Tags | None, 'Omit'] = ..., auth_configs: Union[Dict[str, str | None], 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str | None]], 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, ToolRouterUpdateManageConnectionsConfig | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, ToolRouterUpdateMultiAccountConfig | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload | None, 'Omit'] = ..., search: Union[session_patch_params.Search | None, 'Omit'] = ..., execute: Union[session_patch_params.Execute | None, 'Omit'] = ..., experimental: Union[session_patch_params.Experimental | None, ToolRouterUpdateExperimentalConfig | None, 'Omit'] = ..., expected_config_version: Union[int, None, Literal[False]] = ...) -> ToolRouterSessionConfig
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `toolkits?` | `Union[session_patch_params.Toolkits, 'Omit']` |
-| `tools?` | `Union[Dict[str, session_patch_params.Tools], 'Omit']` |
-| `tags?` | `Union[session_patch_params.Tags, 'Omit']` |
-| `auth_configs?` | `Union[Dict[str, str], 'Omit']` |
+| `toolkits?` | `Union[session_patch_params.Toolkits \| None, 'Omit']` |
+| `premium_usage?` | `Union[Literal[False], ToolRouterPremiumUsageConfig, 'Omit']` |
+| `tools?` | `Union[Dict[str, session_patch_params.Tools \| None], 'Omit']` |
+| `tags?` | `Union[session_patch_params.Tags \| None, 'Omit']` |
+| `auth_configs?` | `Union[Dict[str, str \| None], 'Omit']` |
 | `connected_accounts?` | `Union[Dict[str, SequenceNotStr[str \| None]], 'Omit']` |
-| `manage_connections?` | `Union[session_patch_params.ManageConnections \| None, 'Omit']` |
+| `manage_connections?` | `Union[session_patch_params.ManageConnections \| None, ToolRouterUpdateManageConnectionsConfig \| None, 'Omit']` |
 | `sandbox?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
 | `workbench?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
-| `multi_account?` | `Union[session_patch_params.MultiAccount \| None, 'Omit']` |
-| `preload?` | `Union[session_patch_params.Preload, 'Omit']` |
+| `multi_account?` | `Union[session_patch_params.MultiAccount \| None, ToolRouterUpdateMultiAccountConfig \| None, 'Omit']` |
+| `preload?` | `Union[session_patch_params.Preload \| None, 'Omit']` |
+| `search?` | `Union[session_patch_params.Search \| None, 'Omit']` |
+| `execute?` | `Union[session_patch_params.Execute \| None, 'Omit']` |
+| `experimental?` | `Union[session_patch_params.Experimental \| None, ToolRouterUpdateExperimentalConfig \| None, 'Omit']` |
+| `expected_config_version?` | `Union[int, None, Literal[False]]` |
+
+**Returns**
+
+`ToolRouterSessionConfig`
+
+---
+
+### list_config_history()
+
+List the configuration history of this session, newest first.  Every `update()` records a new config version; this returns those versions with cursor-based pagination.
+
+```python
+def list_config_history(query: session_config_history_params.SessionConfigHistoryParams = ...) -> session_config_history_response.SessionConfigHistoryResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `query?` | `session_config_history_params.SessionConfigHistoryParams` |
+
+**Returns**
+
+`session_config_history_response.SessionConfigHistoryResponse` — The config versions under `.items` plus pagination fields.
+
+**Example**
+
+```python
+history = session.list_config_history(limit=10)
+for entry in history.items:
+    print(entry.version, entry.is_current)
+```
 
 ---
 
@@ -220,4 +259,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L90)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L172)

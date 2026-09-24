@@ -118,6 +118,10 @@
       "description": "Dashboard playground chat"
     },
     {
+      "name": "Arena",
+      "description": "Arena conversations, messages and terms"
+    },
+    {
       "name": "Invite Codes"
     },
     {
@@ -596,6 +600,103 @@
                       },
                       "description": "Auth config overrides per toolkit"
                     },
+                    "premium_usage": {
+                      "anyOf": [
+                        {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "toolkits": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disabled": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "disabled"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                            },
+                            "tools": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "enabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "enabled"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "disabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "disabled"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                            },
+                            "return_premium_charge": {
+                              "type": "boolean",
+                              "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                            }
+                          },
+                          "required": [
+                            "return_premium_charge"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                    },
                     "manage_connections": {
                       "type": "object",
                       "properties": {
@@ -739,6 +840,10 @@
                           "type": "boolean",
                           "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                         },
+                        "tool_execution_enabled": {
+                          "type": "boolean",
+                          "description": "Whether tool execution is enabled in the workbench"
+                        },
                         "proxy_execution_enabled": {
                           "type": "boolean",
                           "description": "Whether proxy execution is enabled in the workbench"
@@ -846,6 +951,7 @@
                   },
                   "required": [
                     "user_id",
+                    "premium_usage",
                     "preload",
                     "search",
                     "execute"
@@ -1163,7 +1269,7 @@
               "minLength": 1,
               "maxLength": 16384
             },
-            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials. Rotates the stored client_secret without Apollo ever holding it.",
+            "description": "[EXPERIMENTAL] Client-sealed secret fields to redeem through the organization keyring instance (GET /api/v3.1/keyring/transfer_keys). The plaintext must not also appear in credentials. Rotates the stored client_secret without Composio ever holding it.",
             "x-experimental": true
           },
           "proxy_config": {
@@ -1626,6 +1732,462 @@
     "parameters": {}
   },
   "paths": {
+    "/api/v3.1/session_configs": {
+      "get": {
+        "summary": "List Session configs",
+        "description": "List Session configs in your project, newest updated first. Returns active configs by default; set archived=true to list archived configs. Retrieve a config by ID for its description and toolkit, tool, and tag policy. Experimental: available only to projects enabled for Session configs. Create and manage configs in Dashboard.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "getSessionConfigs",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque cursor from the previous page."
+            },
+            "required": false,
+            "description": "Opaque cursor from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 100,
+              "default": 20,
+              "description": "Maximum number of configs to return, from 1 to 100."
+            },
+            "required": false,
+            "description": "Maximum number of configs to return, from 1 to 100.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "Case-insensitive substring match against the config name."
+            },
+            "required": false,
+            "description": "Case-insensitive substring match against the config name.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "Return archived configs when true. Defaults to active configs only."
+            },
+            "required": false,
+            "description": "Return archived configs when true. Defaults to active configs only.",
+            "name": "archived",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session configs listed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "sessionConfigId",
+                            "description": "Stable public identifier of the Session config."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Project-unique display name."
+                          },
+                          "archived": {
+                            "type": "boolean",
+                            "description": "Whether the config is archived."
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Creation time in ISO 8601."
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last update time in ISO 8601."
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "archived",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      },
+                      "description": "Config summaries. Retrieve a config by ID for its description and access policy."
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Opaque cursor for the next page, or null when there are no more results."
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or pagination cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session configs or read access not enabled for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/session_configs/{session_config_id}": {
+      "get": {
+        "summary": "Retrieve a Session config",
+        "description": "Retrieve a saved access policy in your project. config.toolkits.enable selects toolkit slugs; config.toolkits.disable excludes them; an omitted config.toolkits allows all toolkits. Tool and tag rules further restrict access. This returns the saved policy, not an expanded catalog or an existing Session snapshot. Archived configs remain readable but cannot create new Sessions. Experimental: available only to projects enabled for Session configs. Create and manage configs in Dashboard.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "getSessionConfigsBySessionConfigId",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "sessionConfigId",
+              "description": "The Session config ID returned by the list endpoint or Dashboard.",
+              "example": "sc_123456789012"
+            },
+            "required": true,
+            "name": "session_config_id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session config retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "sessionConfigId",
+                      "description": "Stable public identifier of the Session config."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Project-unique display name."
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Optional description of when the config should be used."
+                    },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether the config is archived."
+                    },
+                    "config": {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "enable": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "enable"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "disable": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "disable"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "tools": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tags": {
+                                    "type": "object",
+                                    "properties": {
+                                      "enable": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        }
+                                      },
+                                      "disable": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "tags"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "tags": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              }
+                            },
+                            "disable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "Stored Session access policy using the same enable/disable wire shape accepted on create and update."
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Creation time in ISO 8601."
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Last update time in ISO 8601."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "archived",
+                    "config",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "x-experimental": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Session config ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Session configs or read access not enabled for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session config not found in this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
     "/api/v3.1/keyring/transfer_keys": {
       "get": {
         "summary": "Get the organization's active keyring transfer keys",
@@ -2807,8 +3369,19 @@
                 "type": "object",
                 "properties": {
                   "connected_account_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the connected account to use for authentication",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "hosted_account"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "format": "connectedAccountId"
+                      }
+                    ],
+                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio hosted account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
                     "example": "ca_1a2b3c4d5e6f"
                   },
                   "entity_id": {
@@ -2985,6 +3558,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -3236,6 +3812,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required - Wallet balance is exhausted; add credits to resume premium tool calls or connect your account",
             "content": {
               "application/json": {
                 "schema": {
@@ -3737,6 +4323,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -4917,6 +5506,17 @@
                   "tools"
                 ],
                 "x-experimental": true
+              },
+              "examples": {
+                "googlecalendar": {
+                  "summary": "Google Calendar: list and create events",
+                  "value": {
+                    "tools": [
+                      "GOOGLECALENDAR_EVENTS_LIST",
+                      "GOOGLECALENDAR_CREATE_EVENT"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -5011,6 +5611,41 @@
                     "scopes"
                   ],
                   "x-experimental": true
+                },
+                "examples": {
+                  "googlecalendar": {
+                    "summary": "Google Calendar: list and create events",
+                    "value": {
+                      "auth_scheme": "OAUTH2",
+                      "toolkit_version": "20260915_00",
+                      "grant_context": {},
+                      "scopes": {
+                        "least_privilege": [
+                          "https://www.googleapis.com/auth/calendar.calendars.readonly",
+                          "https://www.googleapis.com/auth/calendar.events"
+                        ],
+                        "fewest": [
+                          "https://www.googleapis.com/auth/calendar"
+                        ],
+                        "conditional": [
+                          {
+                            "scope": "https://www.googleapis.com/auth/calendar.calendars.readonly",
+                            "when": {
+                              "param.eventType": [
+                                "default"
+                              ],
+                              "param.exclude_organizer": [
+                                "falsy"
+                              ]
+                            },
+                            "for": [
+                              "GOOGLECALENDAR_CREATE_EVENT"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -5082,7 +5717,7 @@
     "/api/v3.1/toolkits/{toolkit_slug}/scopes/grant_context": {
       "get": {
         "summary": "List grant contexts",
-        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nList of contexts in which you want to grant scopes to your user. Pass a dimension and its selected value in the `grant_context` field of the [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) request to tailor the scope recommendation.",
+        "description": "Experimental: this endpoint is in beta and its contract may change.\n\nList of contexts in which you want to grant scopes to your user. Pass a dimension and its selected value in the `grant_context` field of the [Get required scopes](https://docs.composio.dev/reference/api-reference/toolkits/recommendToolkitScopes) request to tailor the scope recommendation.\n\nIn the Jira example, `default_grant_context` is `{\"scope_family\": \"classic\"}`, so a recommendation with no `grant_context` uses classic scopes. Pass `{\"scope_family\": \"granular\"}` to get granular scopes instead.",
         "tags": [
           "Toolkits"
         ],
@@ -5205,6 +5840,28 @@
                     "default_grant_context"
                   ],
                   "x-experimental": true
+                },
+                "examples": {
+                  "jira": {
+                    "summary": "Jira: classic or granular scopes",
+                    "value": {
+                      "auth_scheme": "OAUTH2",
+                      "toolkit_version": "20260917_00",
+                      "grant_context_dimensions": [
+                        {
+                          "dimension": "scope_family",
+                          "description": "Which Atlassian OAuth scope catalog to draw from: classic scopes cover broad product areas, granular scopes name individual operations. Defaults to classic, matching the scopes our Jira OAuth app requests today.",
+                          "values": [
+                            "classic",
+                            "granular"
+                          ]
+                        }
+                      ],
+                      "default_grant_context": {
+                        "scope_family": "classic"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -5349,6 +6006,122 @@
                       "minItems": 1
                     },
                     "description": "The connected accounts to use for the session, as an array of nano-IDs per toolkit. This overrides the default behaviour and pins specific connected accounts when toolkits are executed. Each account must exist (not deleted or disabled) and belong to the same `user_id` as the session. Multi-account sessions can pin multiple; non-multi-account sessions are capped at length 1."
+                  },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
                   },
                   "manage_connections": {
                     "type": "object",
@@ -5583,6 +6356,11 @@
                         "default": true,
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
+                      },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials."
                       },
                       "enable_proxy_execution": {
                         "type": "boolean",
@@ -6225,6 +7003,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -6368,6 +7243,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -6475,6 +7354,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -6632,7 +7512,7 @@
                           "required": [
                             "id"
                           ],
-                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "description": "Experimental provenance for the reusable Session config most recently applied to this Session.",
                           "x-experimental": true
                         }
                       },
@@ -6878,6 +7758,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -7021,6 +7998,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -7128,6 +8109,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -7285,7 +8267,7 @@
                           "required": [
                             "id"
                           ],
-                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "description": "Experimental provenance for the reusable Session config most recently applied to this Session.",
                           "x-experimental": true
                         }
                       },
@@ -7382,7 +8364,7 @@
       },
       "patch": {
         "summary": "Patch a tool router session config (v3.1)",
-        "description": "Partially updates the configuration of an existing tool router session. Only the fields provided in the request body will be updated. Uses optimistic concurrency control to prevent lost updates. The previous config is stored in config history.",
+        "description": "Partially updates an existing tool router session. Inline fields update only the supplied settings. Alternatively, experimental.session_config_id applies the latest active saved config from this project, replacing toolkit, tool, and tag access while preserving other settings. Later saved-config edits do not sync automatically. Uses optimistic concurrency control and retains the previous policy in config history.",
         "tags": [
           "Tool Router"
         ],
@@ -7484,6 +8466,122 @@
                       "minItems": 1
                     },
                     "description": "The connected accounts to use for the session, as an array of nano-IDs per toolkit. This overrides the default behaviour and pins specific connected accounts when toolkits are executed. Each account must exist (not deleted or disabled) and belong to the same `user_id` as the session. Multi-account sessions can pin multiple; non-multi-account sessions are capped at length 1."
+                  },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
                   },
                   "manage_connections": {
                     "type": "object",
@@ -7711,6 +8809,10 @@
                         "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
                         "example": true
                       },
+                      "enable_tool_execution": {
+                        "type": "boolean",
+                        "description": "Whether Composio tool execution is enabled inside the workbench. Defaults to true. When false, run_composio_tool, invoke_llm, and web_search are unavailable; Python analysis and file helpers remain available. Proxy execution defaults to true and still permits authenticated connected-app HTTP requests. Set enable_proxy_execution to false as well to block both Composio tool and proxy access through Workbench credentials. These flags do not restrict network access or independently supplied credentials. Changing this flag recreates the sandbox: notebook state and local files are lost, but /mnt/files/ persists. Tool descriptions and search guidance reflect the updated flag, but assistive_prompt is returned only at session creation and is not regenerated by PATCH; callers must update any previously retained prompt guidance."
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "description": "Whether proxy execution is enabled. When enabled, workbench can call URLs and APIs directly.",
@@ -7863,6 +8965,12 @@
                         "additionalProperties": false,
                         "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Replaces the stored block when provided; `enable` is required when the block is sent.",
                         "x-experimental": true
+                      },
+                      "session_config_id": {
+                        "type": "string",
+                        "format": "sessionConfigId",
+                        "description": "Apply the latest active Session config from this project to this Session. Replaces toolkit, tool, and tag access; preserves other settings. Cannot be combined with inline toolkits, tools, or tags. Later config edits do not update this Session automatically.",
+                        "x-experimental": true
                       }
                     },
                     "additionalProperties": false,
@@ -7966,6 +9074,103 @@
                             "format": "authConfigId"
                           },
                           "description": "Auth config overrides per toolkit"
+                        },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
                         },
                         "manage_connections": {
                           "type": "object",
@@ -8110,6 +9315,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -8217,6 +9426,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -8374,7 +9584,7 @@
                           "required": [
                             "id"
                           ],
-                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "description": "Experimental provenance for the reusable Session config most recently applied to this Session.",
                           "x-experimental": true
                         }
                       },
@@ -8446,8 +9656,18 @@
               }
             }
           },
+          "403": {
+            "description": "Session configs are not enabled for this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "Session not found.",
+            "description": "Session or active Session config not found in this project.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8468,6 +9688,16 @@
           },
           "409": {
             "description": "Config version conflict. Re-fetch the session and retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded while validating the patch.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8898,6 +10128,103 @@
                           },
                           "description": "Auth config overrides per toolkit"
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -9041,6 +10368,10 @@
                               "type": "boolean",
                               "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
                             },
+                            "tool_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether tool execution is enabled in the workbench"
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -9148,6 +10479,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload",
                         "search",
                         "execute"
@@ -9305,7 +10637,7 @@
                           "required": [
                             "id"
                           ],
-                          "description": "Experimental provenance for the reusable Session config resolved at creation.",
+                          "description": "Experimental provenance for the reusable Session config most recently applied to this Session.",
                           "x-experimental": true
                         }
                       },
@@ -9864,6 +11196,10 @@
                             "type": "string",
                             "description": "ID of cached plan if available"
                           },
+                          "cached_plan_usecase": {
+                            "type": "string",
+                            "description": "Use case the cached plan was originally built for, if a cached plan is available. May differ from `use_case` when the cached plan was matched from a similar query."
+                          },
                           "error": {
                             "type": "string",
                             "nullable": true,
@@ -9979,6 +11315,22 @@
                               "required"
                             ],
                             "description": "When \"required\", the agent must specify which account to use. Present only when multiple accounts exist."
+                          },
+                          "hosted_account": {
+                            "type": "object",
+                            "properties": {
+                              "allowed_tool_slugs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Tools of this toolkit that run on the Composio hosted account"
+                              }
+                            },
+                            "required": [
+                              "allowed_tool_slugs"
+                            ],
+                            "description": "Present when the toolkit is connected through the Composio hosted account rather than a connected account of the user."
                           },
                           "status_message": {
                             "type": "string",
@@ -10158,6 +11510,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -10170,6 +11532,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10581,6 +11953,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -10630,6 +12032,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -10642,6 +12054,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10946,6 +12368,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -10995,6 +12447,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -11007,6 +12469,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -11152,12 +12624,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -11347,6 +12824,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "premium_usage_charge": {
+                      "type": "string",
+                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
+                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -11361,12 +12842,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -11376,6 +12862,7 @@
                     "unit",
                     "total_quantity",
                     "event_count",
+                    "premium_usage_charge",
                     "groups"
                   ]
                 }
@@ -11520,12 +13007,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -11706,6 +13198,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "premium_usage_charge": {
+                      "type": "string",
+                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
+                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -11720,12 +13216,17 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "premium_usage_charge": {
+                            "type": "string",
+                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count"
+                          "event_count",
+                          "premium_usage_charge"
                         ]
                       }
                     }
@@ -11735,6 +13236,7 @@
                     "unit",
                     "total_quantity",
                     "event_count",
+                    "premium_usage_charge",
                     "groups"
                   ]
                 }
@@ -12443,7 +13945,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 50",
+            "description": "Number of items per page, max allowed is 200",
             "name": "limit",
             "in": "query"
           },
@@ -13871,6 +15373,9 @@
                                   "base_url": {
                                     "type": "string"
                                   },
+                                  "displayName": {
+                                    "type": "string"
+                                  },
                                   "status": {
                                     "type": "string",
                                     "enum": [
@@ -14169,6 +15674,9 @@
                               "base_url": {
                                 "type": "string"
                               },
+                              "displayName": {
+                                "type": "string"
+                              },
                               "status": {
                                 "type": "string",
                                 "enum": [
@@ -14420,6 +15928,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -14922,6 +16433,9 @@
                               "type": "string"
                             },
                             "base_url": {
+                              "type": "string"
+                            },
+                            "displayName": {
                               "type": "string"
                             },
                             "status": {
@@ -15797,6 +17311,9 @@
                       "base_url": {
                         "type": "string"
                       },
+                      "displayName": {
+                        "type": "string"
+                      },
                       "oauth_token": {
                         "type": "string"
                       },
@@ -16625,7 +18142,7 @@
                       "theme": {
                         "type": "object",
                         "additionalProperties": {},
-                        "description": "Link-auth theme for the hosted connect page. Opaque to Apollo; the dashboard owns the token vocabulary and all value validation."
+                        "description": "Link-auth theme for the hosted connect page. Opaque to the API; the dashboard owns the token vocabulary and all value validation."
                       }
                     },
                     "required": [
@@ -19646,6 +21163,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many requests - The upstream service is rate limiting the request; retry after a short backoff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error - Failed to sync toolkit",
             "content": {
@@ -20816,6 +22343,13 @@
                     "type": "string",
                     "description": "The user id (entity id) that owns the connection. When connected_account_id is omitted, the first active connection for this user and the trigger's toolkit is auto-resolved (same as tool execution). When connected_account_id is also provided and the project has 2FA enabled, user_id is validated against the owner of that connection."
                   },
+                  "egress_url": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "description": "Overrides the delivery URL for this trigger instance only: its events are sent to this HTTPS URL instead of the project webhook URL. Your project webhook subscription is still required and still controls signing (the webhook secret), the payload version and which events are enabled; only the destination changes for this instance. Omit to leave the current value unchanged; pass null to remove the override and deliver to the project webhook URL again."
+                  },
                   "trigger_config": {
                     "type": "object",
                     "additionalProperties": {},
@@ -21290,6 +22824,11 @@
                             "additionalProperties": {},
                             "description": "Configuration for the trigger"
                           },
+                          "egress_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Delivery URL override for this trigger instance: its events are sent here instead of the project webhook URL, while signing, the payload version and enabled events still come from the project webhook subscription. Null means no override."
+                          },
                           "state": {
                             "type": "object",
                             "nullable": true,
@@ -21355,6 +22894,7 @@
                           "user_id",
                           "version",
                           "trigger_config",
+                          "egress_url",
                           "state",
                           "updated_at",
                           "disabled_at",
@@ -21538,8 +23078,8 @@
         "x-api-version": "3.1"
       },
       "patch": {
-        "summary": "Enable or disable a trigger",
-        "description": "Updates the status of a trigger instance to enable or disable it. Disabling a trigger pauses event listening without deleting the trigger configuration. Re-enabling restores the trigger to its active state. Use this for temporary maintenance or to control trigger execution.",
+        "summary": "Update a trigger",
+        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
         "tags": [
           "Triggers"
         ],
@@ -21566,6 +23106,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -21576,12 +23117,22 @@
                     "enum": [
                       "enable",
                       "disable"
-                    ]
+                    ],
+                    "description": "Enable or disable the trigger instance."
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The user id that owns the connected account behind this trigger. Optional: when sent on a project with 2FA enabled it must be the owner of a private connection or allowed on a shared one, whatever is being updated. Required to set egress_url when 2FA is enabled. Ignored when 2FA is disabled."
+                  },
+                  "egress_url": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "description": "Overrides the delivery URL for this trigger instance only: its events are sent to this HTTPS URL instead of the project webhook URL. Your project webhook subscription is still required and still controls signing (the webhook secret), the payload version and which events are enabled; only the destination changes for this instance. Omit to leave the current value unchanged; pass null to remove the override and deliver to the project webhook URL again."
                   }
-                },
-                "required": [
-                  "status"
-                ]
+                }
               }
             }
           }
@@ -21621,6 +23172,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -25765,6 +27326,7 @@
                     ]
                   },
                   "custom_connection_data": {
+                    "deprecated": true,
                     "type": "object",
                     "properties": {
                       "authScheme": {
@@ -25853,6 +27415,9 @@
                             "type": "string"
                           },
                           "base_url": {
+                            "type": "string"
+                          },
+                          "displayName": {
                             "type": "string"
                           },
                           "state_prefix": {
@@ -26108,6 +27673,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -26120,6 +27695,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -26776,7 +28361,7 @@
     "/api/v3.1/tool_router/session/{session_id}/mounts/{mount_id}/delete": {
       "post": {
         "summary": "Delete a file from a session mount",
-        "description": "Deletes a file from a workbench session storage mount. S3 delete is idempotent — deleting a non-existent file succeeds silently.",
+        "description": "Deletes a file from a workbench session storage mount. Deleting a non-existent file succeeds silently (idempotent).",
         "tags": [
           "Tool Router"
         ],

@@ -1,0 +1,13 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src", "test"]
+}

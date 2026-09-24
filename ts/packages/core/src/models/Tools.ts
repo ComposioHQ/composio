@@ -62,6 +62,7 @@ import {
 import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
@@ -541,7 +542,9 @@ export class Tools<
       ...(limit ? { limit } : {}),
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
-      ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      // `search` is the SDK's public option; the API deprecated the `search`
+      // wire param in favour of `query`, so send the replacement.
+      ...('search' in queryParams.data ? { query: queryParams.data.search } : {}),
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
@@ -1255,12 +1258,13 @@ export class Tools<
       requestOptions?.signal
     );
 
-    // Prepare the result
+    const { data, error, logId, premiumCharge } = transformExecuteResponse(response);
     let result: ToolExecuteResponse = {
-      data: response.data,
-      error: response.error,
-      successful: !response.error,
-      logId: response.log_id,
+      data,
+      error,
+      successful: !error,
+      logId,
+      ...(premiumCharge !== undefined && { premiumCharge }),
     };
 
     // Apply afterExecute modifier if provided

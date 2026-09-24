@@ -314,16 +314,24 @@ describe('RemoteFile', () => {
         rmSync(homeDir, { recursive: true, force: true });
       });
 
-      it('should save under ~/.composio/files using the mount path filename', async () => {
-        const { platform } = await import('../../src/platform/node');
-        const { join } = await import('node:path');
-        const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath: 'out/report.pdf' });
+      it.each([
+        ['out/report.pdf', 'report.pdf'],
+        ['C:report.txt', 'report.txt'],
+        ['\ufeffreport.txt', '\ufeffreport.txt'],
+        ['\u0085report.txt\u0085', 'report.txt'],
+      ])(
+        'should save %j under the default directory as %j',
+        async (mountRelativePath, expectedName) => {
+          const { platform } = await import('../../src/platform/node');
+          const { join } = await import('node:path');
+          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
 
-        const result = await file.save();
+          const result = await file.save();
 
-        expect(result).toBe(join(composioDir, 'files', 'report.pdf'));
-        expect(new Uint8Array(platform.readFileSync(result) as Uint8Array)).toEqual(content);
-      });
+          expect(result).toBe(join(composioDir, 'files', expectedName));
+          expect(new Uint8Array(platform.readFileSync(result) as Uint8Array)).toEqual(content);
+        }
+      );
 
       // Each of these would make the save path equal its own directory (or the
       // parent), which previously surfaced as an unhandled `EISDIR` from
@@ -336,6 +344,16 @@ describe('RemoteFile', () => {
 
           await expect(file.save()).rejects.toThrow(ValidationError);
           await expect(file.save()).rejects.toThrow(/leaves no usable basename/);
+          expect(platform.existsSync(composioDir)).toBe(false);
+        }
+      );
+
+      it.each(['report.\u00a0', 'report.\u0085'])(
+        'should reject a trailing dot exposed by stripping %j before creating directories',
+        async mountRelativePath => {
+          const { platform } = await import('../../src/platform/node');
+          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
+          await expect(file.save()).rejects.toThrow(/ending in a space or dot/);
           expect(platform.existsSync(composioDir)).toBe(false);
         }
       );

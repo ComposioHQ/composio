@@ -7,13 +7,14 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `configVersion` | `number` |  |
+| `config` | `Config` | Server-side session configuration (toolkit/tool allowlists, tags, preload, sandbox, manage_connections) as returned by the API. Refreshed in place by `update()`. |
+| `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
 | `experimental` | `SessionExperimental` |  |
 | `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
-| `preload` | `Preload` |  |
-| `sandbox` | `Workbench` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
+| `preload` | `\{ tools: string[] \| 'all' \}` |  |
+| `sandbox` | `\{ auto_offload_threshold?: number; enable?: boolean; proxy_execution_enabled?: boolean; sandbox_size?: 'standard' \| 'medium' \| 'large' \| 'xlarge'; tool_execution_enabled?: boolean \}` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
 | `sessionId` | `string` |  |
-| `warnings` | `Warning[]` |  |
+| `warnings` | `\{ code: 'PRELOAD_TOOLS_HIGH_CONTEXT_USAGE'; message: string \}[]` |  |
 
 ## Methods
 
@@ -34,7 +35,7 @@ Experimental — shape may change in future releases.
 at the SDK boundary.
 
 ```typescript
-async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; }; }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
+async authorize(toolkit: string, options?: { alias?: string; callbackUrl?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] } } }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -42,7 +43,7 @@ async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: strin
 | Name | Type |
 |------|------|
 | `toolkit` | `string` |
-| `options?` | `\{ callbackUrl?: string; alias?: string; experimental?: \{ accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; \}; \}` |
+| `options?` | `\{ alias?: string; callbackUrl?: string; experimental?: \{ accountType?: ConnectedAccountType; aclConfigForShared?: \{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \} \} \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
@@ -95,7 +96,7 @@ Deleted sessions immediately stop being retrievable or executable. Deleting
 an already-deleted session surfaces the backend 404.
 
 ```typescript
-async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+async delete(requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; sessionId: string }>
 ```
 
 **Parameters**
@@ -106,7 +107,48 @@ async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSession
 
 **Returns**
 
-`Promise<ToolRouterSessionDeleteResponse>`
+`Promise<\{ deleted: true; sessionId: string \}>`
+
+---
+
+### ensureConnected()
+
+Ensure a toolkit has an active connection in this session, reconciling
+`authorize()`/`session.link` with the session's active connection state.
+
+If the session already resolves an ACTIVE connection (or the toolkit is
+no-auth), this returns immediately without creating a link — unlike
+`authorize()`, which always starts a new link flow, even when one is
+already connected. Otherwise it starts the authorization flow and waits
+for the new connection to become ACTIVE.
+
+For interactive flows that should surface the redirect URL instead of
+blocking, use `authorize()` and its `waitForConnection()` directly.
+
+```typescript
+async ensureConnected(toolkit: string, options?: { alias?: string; callbackUrl?: string; experimental?: { accountType?: 'PRIVATE' | 'SHARED'; aclConfigForShared?: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] } }; timeout?: number }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionEnsureConnectedResult>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `string` | The toolkit slug to ensure a connection for (e.g. 'github') |
+| `options?` | `\{ alias?: string; callbackUrl?: string; experimental?: \{ accountType?: 'PRIVATE' \| 'SHARED'; aclConfigForShared?: \{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \} \}; timeout?: number \}` | Optional authorization options plus `timeout` (ms to wait for a newly-initiated connection, default 60000) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionEnsureConnectedResult>` — The toolkit's canonical slug, whether it was already connected,
+  and the active connected account (omitted for no-auth toolkits)
+
+**Example**
+
+```typescript
+const session = await composio.sessions.create({ toolkits: ['github'] });
+const { wasConnected, connectedAccount } = await session.ensureConnected('github');
+if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
+```
 
 ---
 
@@ -120,7 +162,7 @@ the session's custom tools and toolkits. Custom tools are executed
 in-process; remote tools are sent to the Composio backend.
 
 ```typescript
-async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -134,7 +176,38 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: 
 
 **Returns**
 
-`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result
+`Promise<...>` — The tool execution result
+
+---
+
+### listConfigHistory()
+
+Page through this session's configuration history, newest first. The
+first page starts with the live config (`isCurrent: true`); every
+`session.update()` archives the previous version as a history row.
+
+```typescript
+async listConfigHistory(options?: { cursor?: string; limit?: number }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionListConfigHistoryResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `options?` | `\{ cursor?: string; limit?: number \}` | Optional `cursor` and `limit` (max 100) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionListConfigHistoryResponse>` — The config versions on this page plus pagination info
+
+**Example**
+
+```typescript
+const { items, nextCursor } = await session.listConfigHistory({ limit: 10 });
+console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
+console.log(items[1].config.toolkits);
+```
 
 ---
 
@@ -144,14 +217,14 @@ Proxy an API call through Composio's auth layer using the session's connected ac
 The backend resolves the connected account from the toolkit within the session.
 
 ```typescript
-async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
+async proxyExecute(params: { body?: unknown; endpoint: string; method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; parameters?: { in: 'query' | 'header'; name: string; value: string | number }[]; toolkit: string }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params` | `SessionProxyExecuteParams` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
+| `params` | `\{ body?: unknown; endpoint: string; method: 'GET' \| 'POST' \| 'PUT' \| 'DELETE' \| 'PATCH'; parameters?: \{ in: 'query' \| 'header'; name: string; value: string \| number \}[]; toolkit: string \}` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -166,19 +239,19 @@ Search for tools by semantic use case.
 Returns relevant tools for the given query with schemas and guidance.
 
 ```typescript
-async search(params: { query: string; toolkits?: string[]; }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionSearchResponse>
+async search(params: { query: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ error: string | null; nextStepsGuidance: string[]; results: { difficulty?: string; error?: string | null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: { code: ...; description: ... }[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string }[]; session: { generateId: boolean; id: string; instructions: string }; success: boolean; timeInfo: { currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string }; toolkitConnectionStatuses: { connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; hostedAccount?: { allowedToolSlugs: ...[] }; statusMessage: string; toolkit: string }[]; toolSchemas: Record<string, { description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: { args: { toolSlugs: ... }; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' }; toolkit: string; toolSlug: string }> }>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `params` | `\{ query: string; toolkits?: string[]; \}` |
+| `params` | `\{ query: string; toolkits?: string[] \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
-`Promise<ToolRouterSessionSearchResponse>`
+`Promise<\{ error: string \| null; nextStepsGuidance: string[]; results: \{ difficulty?: string; error?: string \| null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: \{ code: ...; description: ... \}[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string \}[]; session: \{ generateId: boolean; id: string; instructions: string \}; success: boolean; timeInfo: \{ currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string \}; toolkitConnectionStatuses: \{ connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; hostedAccount?: \{ allowedToolSlugs: ...[] \}; statusMessage: string; toolkit: string \}[]; toolSchemas: Record<string, \{ description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: \{ args: \{ toolSlugs: ... \}; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' \}; toolkit: string; toolSlug: string \}> \}>`
 
 ---
 
@@ -188,14 +261,14 @@ Query the connection state of toolkits in the session.
 Supports pagination and filtering by toolkit slugs.
 
 ```typescript
-async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
+async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `options?` | `ToolRouterToolkitsOptions` |
+| `options?` | `\{ cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
@@ -213,7 +286,7 @@ When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_
 is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
 ```typescript
-async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType<TProvider['wrapTools']>>
+async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType>
 ```
 
 **Parameters**
@@ -225,29 +298,51 @@ async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequest
 
 **Returns**
 
-`Promise<ReturnType<TProvider['wrapTools']>>`
+`Promise<ReturnType>`
 
 ---
 
 ### update()
 
 Partially update the session configuration.
-Only the fields provided will be changed; omitted fields are preserved.
-Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
+
+Only the fields provided are changed; omitted fields are preserved. For
+each policy block `null` removes the stored override (which can increase
+access: `toolkits: null` restores the unrestricted default, while
+`toolkits: []` denies every app toolkit and is sent as-is). Supplied
+`tools`, `authConfigs` and `connectedAccounts` maps replace the stored
+map entirely. `manageConnections.callbackUrl: null` removes only the
+stored callback URL.
+
+By default the request carries no precondition: the last writer wins.
+Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+the update conditional: the API then applies it only when the stored
+version still matches, and a concurrent change surfaces as
+ComposioSessionConfigConflictError (HTTP 409) instead of being
+overwritten. The API must support the `expected_config_version` field;
+otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+is the same as omitting it. The PATCH is never retried by the transport,
+so a 409 is reported exactly once. On conflict this object is left
+unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+against the fresh `configVersion`.
+
+`config`, `configVersion`, `preload`, `sandbox` and `warnings` are
+refreshed in place only after a successful response, and the updated
+`config` is returned.
 
 ```typescript
-async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<void>
+async update(config: { authConfigs?: Record<string, string> | null; connectedAccounts?: Record<string, string[]> | null; execute?: { enableMultiExecute?: boolean } | null; expectedConfigVersion?: number | false; experimental?: { fastMode?: boolean | null; linkUrlOverwrite?: string | null; permissions?: { default: ... | ... | ...; overrides?: Record<..., ...> } | null; sessionConfigId?: string; submitFeedback?: { enable: boolean } | null } | null; manageConnections?: boolean | { callbackUrl?: string | null; enable?: boolean; enableConnectionRemoval?: boolean | null; waitForConnections?: boolean } | null; multiAccount?: { enable?: boolean; maxAccountsPerToolkit?: number | null; requireExplicitSelection?: boolean } | null; preload?: { tools?: string[] | 'all' } | null; premiumUsage?: false | { returnPremiumCharge?: boolean; toolkits?: { disable: ...[] } | { enable: ...[] }; tools?: Record<string, { enable: ... } | { disable: ... }> }; sandbox?: { autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } | null; search?: { enable?: boolean } | null; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[]; enable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] } | null; toolkits?: string[] | { disable: string[] } | { enable: string[] } | null; tools?: Record<string, string[] | { enable: ...[] } | { disable: ...[] } | { tags: ... | ... }> | null; workbench?: { autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } | null }, requestOptions?: ComposioRequestOptions): Promise<Config>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `config` | `ToolRouterUpdateSessionConfig` |
+| `config` | `\{ authConfigs?: Record<string, string> \| null; connectedAccounts?: Record<string, string[]> \| null; execute?: \{ enableMultiExecute?: boolean \} \| null; expectedConfigVersion?: number \| false; experimental?: \{ fastMode?: boolean \| null; linkUrlOverwrite?: string \| null; permissions?: \{ default: ... \| ... \| ...; overrides?: Record<..., ...> \} \| null; sessionConfigId?: string; submitFeedback?: \{ enable: boolean \} \| null \} \| null; manageConnections?: boolean \| \{ callbackUrl?: string \| null; enable?: boolean; enableConnectionRemoval?: boolean \| null; waitForConnections?: boolean \} \| null; multiAccount?: \{ enable?: boolean; maxAccountsPerToolkit?: number \| null; requireExplicitSelection?: boolean \} \| null; preload?: \{ tools?: string[] \| 'all' \} \| null; premiumUsage?: false \| \{ returnPremiumCharge?: boolean; toolkits?: \{ disable: ...[] \} \| \{ enable: ...[] \}; tools?: Record<string, \{ enable: ... \} \| \{ disable: ... \}> \}; sandbox?: \{ autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \| null; search?: \{ enable?: boolean \} \| null; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \} \| null; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \} \| null; tools?: Record<string, string[] \| \{ enable: ...[] \} \| \{ disable: ...[] \} \| \{ tags: ... \| ... \}> \| null; workbench?: \{ autoOffloadThreshold?: number; enable?: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \| null \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
-`Promise<void>`
+`Promise<Config>`
 
 ---

@@ -5,6 +5,8 @@ Composio exceptions.
 import difflib
 import typing as t
 
+from composio_client import ComposioDeprecationWarning as ComposioDeprecationWarning
+
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 
 
@@ -325,6 +327,61 @@ class ApiKeyNotProvidedError(ApiKeyError, NotFoundError):
         )
 
 
+class UserApiKeyNotProvidedError(ApiKeyError):
+    """Raised when the project key is disabled and no user API key is available."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message=(
+                "`disable_api_key=True` turns off the project API key, but no user "
+                "API key was provided: pass `user_api_key` or export it as "
+                "`COMPOSIO_USER_API_KEY`"
+            )
+        )
+
+
+class MCPDestinationError(ComposioClientError):
+    """Raised when a session's hosted MCP endpoint is not a destination the
+    SDK will hand the session headers to.
+
+    The credential and scope headers are only attached when the MCP URL shares
+    the origin of the API base URL the session was created against. The error
+    is raised only when the caller asked for the endpoint with ``mcp=True``;
+    otherwise the session is returned with empty ``mcp.headers`` and a warning
+    is logged instead. The message names both origins and never includes a
+    credential value.
+    """
+
+    def __init__(self, message: str, *, mcp_origin: str, api_origin: str) -> None:
+        super().__init__(message)
+        self.mcp_origin = mcp_origin
+        self.api_origin = api_origin
+
+
+class SessionConfigConflictError(ComposioClientError):
+    """Raised when a session update is rejected with HTTP 409 because the
+    session configuration changed since it was last read, for example when an
+    ``expected_config_version`` precondition passed to ``update()`` is stale.
+
+    The local session object is left as it was before the call. Re-fetch the
+    session with ``composio.sessions.use(session_id)`` and retry the update
+    against the fresh ``config_version``.
+    """
+
+    status_code = 409
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        session_id: str,
+        expected_config_version: t.Optional[int] = None,
+    ) -> None:
+        super().__init__(message)
+        self.session_id = session_id
+        self.expected_config_version = expected_config_version
+
+
 class ResourceError(ComposioClientError):
     pass
 
@@ -384,6 +441,27 @@ class ComposioLegacyConnectedAccountsEndpointRetiredError(ConnectedAccountError)
     config is Composio-managed or custom.
 
     See: https://docs.composio.dev/docs/changelog/2026/04/24
+    """
+
+    pass
+
+
+class ComposioConnectedAccountRevocationNotSupportedError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the toolkit
+    behind the connected account does not support programmatic token
+    revocation (API ``400``).
+
+    Fix: delete or disable the connected account instead, and revoke the
+    grant from the provider's own settings page.
+    """
+
+    pass
+
+
+class ComposioConnectedAccountNotRevokableError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the connected
+    account is not in a state that can be revoked (API ``409``), for
+    example because it was already revoked or never became ``ACTIVE``.
     """
 
     pass

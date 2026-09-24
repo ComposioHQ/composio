@@ -1,8 +1,8 @@
 /**
  * Tests for the filename containment primitive in `src/utils/safePath.ts`.
  *
- * Mirrors `TestSafeBasename` in `python/tests/test_safe_path.py`: the two SDKs
- * must reject the same malformed server-supplied filenames.
+ * Covers the filename safety policy shared with `TestSafeBasename` in
+ * `python/tests/test_safe_path.py`.
  */
 import { describe, it, expect } from 'vitest';
 import { MAX_FILENAME_BYTES, safeBasename, untrustedBasename } from '../../src/utils/safePath';
@@ -11,6 +11,9 @@ import { ValidationError } from '../../src/errors';
 describe('untrustedBasename', () => {
   it.each([
     ['report.pdf', 'report.pdf'],
+    ['C:report.txt', 'report.txt'],
+    ['c:report.txt', 'report.txt'],
+    ['C:', ''],
     ['output/report.pdf', 'report.pdf'],
     ['output/report.pdf/', 'report.pdf'],
     ['..\\..\\evil', 'evil'],
@@ -28,6 +31,11 @@ describe('safeBasename', () => {
   describe('accepts legitimate filenames', () => {
     it.each([
       ['report.pdf', 'report.pdf'],
+      ['C:report.txt', 'report.txt'],
+      ['c:report.txt', 'report.txt'],
+      ['\ufeffreport.txt', '\ufeffreport.txt'],
+      ['report.txt\ufeff', 'report.txt\ufeff'],
+      ['\u0085report.txt\u0085', 'report.txt'],
       ['output/report.pdf', 'report.pdf'],
       ['output/subdir/data.json', 'data.json'],
       ['/absolute/report.pdf', 'report.pdf'],
@@ -51,7 +59,7 @@ describe('safeBasename', () => {
   describe('rejects names that leave no usable basename', () => {
     // Each of these would make the save path equal its own directory or the
     // parent, surfacing as a raw EISDIR at write time.
-    it.each(['', '.', '..', '...', 'sub/.', 'foo/..', './', '/', '//', '   '])(
+    it.each(['', '.', '..', '...', 'sub/.', 'foo/..', './', '/', '//', '   ', 'C:'])(
       'rejects %j',
       input => {
         expect(() => safeBasename(input)).toThrow(ValidationError);
@@ -59,14 +67,19 @@ describe('safeBasename', () => {
       }
     );
 
-    // `trim()` strips Unicode whitespace, so these are written as `.` or `..`:
+    // Python-compatible whitespace stripping would write these as `.` or `..`:
     // the usability check has to see the trimmed value, not the raw segment.
-    it.each(['\u00a0.\u00a0', '.\u00a0', '\u00a0.', '\u2007..\u2007', '\u2028.\u2029', '\ufeff..'])(
-      'rejects whitespace-wrapped %j, which trims to a dot run',
-      input => {
-        expect(() => safeBasename(input)).toThrow(/leaves no usable basename/);
-      }
-    );
+    it.each([
+      '\u00a0.\u00a0',
+      '.\u00a0',
+      '\u00a0.',
+      '\u2007..\u2007',
+      '\u2028.\u2029',
+      '\u0085..\u0085',
+      '\u001c..\u001f',
+    ])('rejects whitespace-wrapped %j, which trims to a dot run', input => {
+      expect(() => safeBasename(input)).toThrow(/leaves no usable basename/);
+    });
   });
 
   describe('rejects unsafe names', () => {
@@ -74,16 +87,24 @@ describe('safeBasename', () => {
       expect(() => safeBasename(input)).toThrow(/NUL byte/);
     });
 
-    it.each(['report?.txt', 'report.txt:payload', 'report<1>.txt', 'a|b.txt', 'tab\there.txt'])(
-      'rejects Windows-reserved characters in %j on every platform',
+    it.each([
+      'report?.txt',
+      'report.txt:payload',
+      'report<1>.txt',
+      'a|b.txt',
+      'tab\there.txt',
+      '\u001creport.txt\u001f',
+      'output/C:report.txt',
+    ])('rejects Windows-reserved characters in %j on every platform', input => {
+      expect(() => safeBasename(input)).toThrow(/reserved by Windows/);
+    });
+
+    it.each(['report.txt.', 'report.txt ', '\ufeff..', 'report.\u00a0', 'report.\u0085'])(
+      'rejects trailing space or dot in %j',
       input => {
-        expect(() => safeBasename(input)).toThrow(/reserved by Windows/);
+        expect(() => safeBasename(input)).toThrow(/ending in a space or dot/);
       }
     );
-
-    it.each(['report.txt.', 'report.txt '])('rejects trailing space or dot in %j', input => {
-      expect(() => safeBasename(input)).toThrow(/ending in a space or dot/);
-    });
 
     it.each(['NUL', 'nul', 'NUL.tar.gz', 'COM1.log.bak', 'COM¹.txt', 'LPT³.data', 'aux.txt'])(
       'rejects reserved device name %j with any extension',
@@ -97,8 +118,9 @@ describe('safeBasename', () => {
     });
 
     it('measures the limit in bytes, not code units', () => {
-      // 128 emoji are 256 UTF-16 code units but 512 UTF-8 bytes.
-      expect(() => safeBasename('😀'.repeat(128))).toThrow(/longer than/);
+      // Each emoji is two UTF-16 code units but four UTF-8 bytes.
+      expect(safeBasename('😀'.repeat(32))).toBe('😀'.repeat(32));
+      expect(() => safeBasename('😀'.repeat(33))).toThrow(/longer than/);
     });
 
     it('rejects a lone surrogate, which cannot be encoded as UTF-8', () => {

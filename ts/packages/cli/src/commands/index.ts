@@ -227,13 +227,18 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
     return argv;
   }
 
+  // `--stream` is documented as taking an optional value, but @effect/cli text options always
+  // require one. A bare `--stream` therefore has to be rewritten. `--stream=` cannot be used for
+  // that: @effect/cli only recognizes `--flag=value` when the value is non-empty, so `--stream=`
+  // surfaces as "Received unknown argument". Passing an explicit empty string as the next token
+  // parses cleanly and the listen command treats an empty path as "stream the whole payload".
   return Arr.appendAll(
     head,
-    Arr.map(args, (token, index) => {
+    Arr.flatMap(args, (token, index) => {
       const next = args[index + 1];
       return token === '--stream' && (next === undefined || next.startsWith('-'))
-        ? '--stream='
-        : token;
+        ? ['--stream', '']
+        : [token];
     })
   );
 };
@@ -562,6 +567,35 @@ export const runWithConfig = Effect.gen(function* () {
     const args = normalizedArgv.slice(2);
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
+    }
+    // `composio help [command] [level]` — the framework has no builtin help command, so
+    // route it through the same curated pages as `composio <command> --help`.
+    if (args[0] === 'help') {
+      // `help` already asks for help, so a redundant `--help`/`-h` (`composio help --help`,
+      // `composio help orgs full --help`) must not reach the framework parser.
+      const rest = args.slice(1).filter(arg => !EXPLICIT_STDOUT_FLAGS.has(arg));
+      const last = rest[rest.length - 1];
+      const helpLevel = parseHelpLevel(last) ?? 'default';
+      const cmdParts = parseHelpLevel(last) !== undefined ? rest.slice(0, -1) : rest;
+      if (cmdParts.length === 0) {
+        return printRootHelp(visibility, helpLevel);
+      }
+      // Resolve with the same longest-prefix scan the `--help` spelling uses, so
+      // `composio help dev toolkits` renders the curated dev page instead of an
+      // unknown-command line for a path that exists. `matchSubcommandHelp` reads a
+      // full argv with a trailing --help token, hence the synthetic prefix.
+      const subHelp = matchSubcommandHelp(
+        ['composio', 'composio', ...cmdParts, '--help'],
+        visibility
+      );
+      if (subHelp) {
+        return printSubcommandHelp(subHelp, visibility, helpLevel);
+      }
+      // Unknown target: fall through to the framework parser so the failure
+      // matches every other unknown command (stderr rendering, "Did you mean?",
+      // exit 1) instead of an exit-0 stdout line scripts would read as success. The
+      // `help` token is dropped so the error and suggestion name the mistyped command.
+      return runCli(cmdParts);
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {

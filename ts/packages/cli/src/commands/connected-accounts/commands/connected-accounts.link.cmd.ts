@@ -74,44 +74,44 @@ class LinkInputError extends Data.TaggedError('commands/LinkInputError')<{
 
 const invalidOptionValue = (message: string) => new LinkInputError({ message });
 
-const toolkit = Argument.string('toolkit').pipe(
+const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
   Argument.optional
 );
 
-const authConfig = Flag.string('auth-config').pipe(
+const authConfig = Flag.String('auth-config').pipe(
   Flag.withDescription('Auth config ID (e.g. "ac_..."). Uses legacy flow (no Tool Router).'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Developer-project user ID override'),
   Flag.optional
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const noWait = Flag.boolean('no-wait').pipe(
+const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Do not wait for authorization; only print link info')
 );
 
-const noBrowser = Flag.boolean('no-browser').pipe(
+const noBrowser = Flag.Boolean('no-browser').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Do not open the browser automatically; print the URL to open manually')
 );
 
-const alias = Flag.string('alias').pipe(
+const alias = Flag.String('alias').pipe(
   Flag.withDescription(
     'Alias to assign to the connected account. Required when creating an additional account for the same toolkit/auth config.'
   ),
   Flag.optional
 );
 
-const list = Flag.boolean('list').pipe(
+const list = Flag.Boolean('list').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'List existing connected accounts for the toolkit instead of creating a new link'

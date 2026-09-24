@@ -48,7 +48,7 @@
   "author": "Composio",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.0",
     "bun-types": "^1.4.2",
     "effect": "catalog:",
     "tsdown": "catalog:",
@@ -56,7 +56,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "effect": "4.0.0-rc.112"
+    "effect": "4.0.0-rc.115"
   },
   "peerDependenciesMeta": {
     "effect": {

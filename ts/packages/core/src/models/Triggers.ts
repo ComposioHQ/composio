@@ -33,11 +33,10 @@ import {
   WebhookTriggerPayloadV3Schema,
   WebhookVersion,
   WebhookVersions,
-  DefaultWebhookSubscriptionEvents,
   SetWebhookSubscriptionParams,
-  SetWebhookSubscriptionParamsSchema,
   WebhookSubscription,
 } from '../types/triggers.types';
+import { upsertWebhookSubscription } from './Webhooks';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
 import { ValidationError } from '../errors';
@@ -73,63 +72,6 @@ const toStringOrDefault = (value: unknown, defaultValue: string): string => {
   }
   const str = String(value);
   return str.length > 0 ? str : defaultValue;
-};
-
-const WEBHOOK_SUBSCRIPTIONS_PATH = '/api/v3.1/webhook_subscriptions';
-
-type RawWebhookSubscription = Record<string, unknown> & {
-  id?: unknown;
-  webhook_url?: unknown;
-  webhookUrl?: unknown;
-  version?: unknown;
-  enabled_events?: unknown;
-  enabledEvents?: unknown;
-  secret?: unknown;
-  created_at?: unknown;
-  createdAt?: unknown;
-  updated_at?: unknown;
-  updatedAt?: unknown;
-};
-
-type RawWebhookSubscriptionListResponse = Record<string, unknown> & {
-  items?: unknown;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-
-const firstString = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.length > 0 ? value : undefined;
-
-const stringArray = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-
-const transformWebhookSubscription = (subscription: unknown): WebhookSubscription => {
-  const raw = asRecord(subscription) as RawWebhookSubscription;
-
-  // Map to camelCase explicitly — do NOT spread `...raw`, or the response's
-  // snake_case keys (webhook_url, enabled_events, created_at, ...) leak into the
-  // public object alongside their camelCase counterparts.
-  return {
-    id: firstString(raw.id) ?? '',
-    webhookUrl: firstString(raw.webhook_url) ?? firstString(raw.webhookUrl) ?? '',
-    version: (firstString(raw.version) ?? WebhookVersions.V3) as WebhookVersion,
-    enabledEvents: stringArray(raw.enabled_events).length
-      ? stringArray(raw.enabled_events)
-      : stringArray(raw.enabledEvents),
-    secret: firstString(raw.secret),
-    createdAt: firstString(raw.created_at) ?? firstString(raw.createdAt),
-    updatedAt: firstString(raw.updated_at) ?? firstString(raw.updatedAt),
-  };
-};
-
-const firstWebhookSubscriptionId = (
-  response: RawWebhookSubscriptionListResponse
-): string | undefined => {
-  const firstItem = Array.isArray(response.items) ? response.items[0] : undefined;
-  return firstString(asRecord(firstItem).id);
 };
 
 /**
@@ -215,7 +157,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     this.client = client;
-    this.pusherService = new PusherService(client);
+    this.pusherService = new PusherService(client, { defaultHeaders: config?.defaultHeaders });
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     telemetry.instrument(this, 'Triggers');
   }
@@ -234,34 +176,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * ```
    */
   async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<WebhookSubscription> {
-    const parsedParams = SetWebhookSubscriptionParamsSchema.safeParse(params);
-
-    if (!parsedParams.success) {
-      throw new ValidationError(`Invalid parameters passed to set webhook subscription`, {
-        cause: parsedParams.error,
-      });
-    }
-
-    const body = {
-      webhook_url: parsedParams.data.webhookUrl,
-      enabled_events: parsedParams.data.enabledEvents ?? [...DefaultWebhookSubscriptionEvents],
-      version: parsedParams.data.version ?? WebhookVersions.V3,
-    };
-
-    const existing = await this.client.get<RawWebhookSubscriptionListResponse>(
-      WEBHOOK_SUBSCRIPTIONS_PATH,
-      { query: { limit: 1 } }
-    );
-    const subscriptionId = firstWebhookSubscriptionId(existing);
-
-    const subscription = subscriptionId
-      ? await this.client.patch<RawWebhookSubscription>(
-          `${WEBHOOK_SUBSCRIPTIONS_PATH}/${encodeURIComponent(subscriptionId)}`,
-          { body }
-        )
-      : await this.client.post<RawWebhookSubscription>(WEBHOOK_SUBSCRIPTIONS_PATH, { body });
-
-    return transformWebhookSubscription(subscription);
+    return upsertWebhookSubscription(this.client, params);
   }
 
   /**
@@ -612,6 +527,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @param fn - The function to call when a trigger is received
    * @param filters - The filters to apply to the triggers
+   * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
+   * the underlying subscription fails (for example on auth or permission rejection). The
+   * subscribe promise still resolves; this is the only programmatic signal of the failure.
+   * Errors thrown from — or promises rejected by — the callback are contained and logged.
    *
    * @example
    * ```ts
@@ -623,7 +542,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async subscribe(
     fn: (_data: IncomingTriggerPayload) => void,
-    filters: TriggerSubscribeParams = {}
+    filters: TriggerSubscribeParams = {},
+    onSubscriptionError?: (data: Record<string, unknown>) => void
   ) {
     if (!fn) throw new Error('Function is required for trigger subscription');
 
@@ -651,7 +571,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
-    });
+    }, onSubscriptionError);
   }
 
   /**

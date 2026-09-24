@@ -7,8 +7,8 @@
  * value leaves nothing behind on disk.
  *
  * TypeScript counterpart of `safe_basename` in `python/composio/utils/safe_path.py`.
- * The two apply the same checks in the same order, so a malformed response is
- * rejected identically by both SDKs.
+ * The two use the same validation order and whitespace rules. Path extraction
+ * is intentionally limited here; see `untrustedBasename`.
  *
  * Pure string logic with no filesystem access: no static `node:*` imports, so
  * it is usable from edge/workerd builds.
@@ -41,19 +41,28 @@ const WINDOWS_RESERVED_NAMES: ReadonlySet<string> = new Set([
 const WINDOWS_INVALID_CHARS = /[\u0000-\u001f<>:"|?*]/;
 
 /**
+ * Python str.strip() whitespace: Unicode White_Space plus U+001C–U+001F.
+ * Unlike JavaScript trim(), this includes U+0085 and preserves U+FEFF.
+ */
+const PYTHON_WHITESPACE =
+  '[\\u0009-\\u000d\\u001c-\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]';
+const SURROUNDING_WHITESPACE = new RegExp(`^${PYTHON_WHITESPACE}+|${PYTHON_WHITESPACE}+$`, 'g');
+
+/**
  * Returns the last path segment of `value`, treating both `/` and `\` as
  * separators, or `''` when there is none.
  *
  * `path.basename()` on POSIX only splits on `/`, so a name crafted for a
  * Windows target (`..\..\evil`) comes back intact on macOS and Linux. Splitting
- * on both mirrors Python's `PureWindowsPath(name).name`, which is what the
- * Python SDK uses for the same value.
+ * on both and removing an initial drive prefix also handles `C:report.txt`.
+ * This is not a full `PureWindowsPath` parser: dot components stay literal,
+ * and UNC anchors are not interpreted.
  *
  * Never throws: this is a display value as well as the input to
  * {@link safeBasename}, and it is read while constructing download errors.
  */
 export function untrustedBasename(value: string): string {
-  const segments = value.split(/[/\\]+/);
+  const segments = value.replace(/^[a-z]:/i, '').split(/[/\\]+/);
   // Trailing separators name the same file: `a/b/` and `a/b` both basename to `b`.
   while (segments.length > 0 && segments[segments.length - 1] === '') {
     segments.pop();
@@ -91,7 +100,8 @@ function hasLoneSurrogate(value: string): boolean {
  * surrounding whitespace is stripped), NUL bytes, control and Windows-reserved
  * characters, trailing space or dot, invalid Unicode, a byte-length bound, and
  * reserved device names. This is the order `safe_basename` uses in the Python
- * SDK, so both reject the same input with the same class of error.
+ * SDK. This implementation rejects lone surrogates rather than relying on
+ * Python filesystem encoding behavior.
  *
  * Names that leave no usable basename are refused rather than replaced with a
  * generated one: a response that cannot name its own file is malformed or
@@ -100,10 +110,11 @@ function hasLoneSurrogate(value: string): boolean {
  * raw `EISDIR` at write time instead of a validation error.
  *
  * The usability check runs on the *trimmed* basename because that is what gets
- * written: `trim()` strips Unicode whitespace, so `"\u00a0.\u00a0"` would
+ * written: Python-compatible stripping removes whitespace, so `"\u00a0.\u00a0"` would
  * otherwise pass a check on the raw segment and then be written as `"."`. The
  * hazard checks that follow run on the raw segment so a trailing ASCII space or
- * dot is refused, not trimmed away.
+ * dot is refused, not trimmed away. Check the stripped value for trailing dots
+ * too, since stripping whitespace can expose one.
  *
  * @param name - The untrusted filename or relative path to reduce.
  * @param label - How the value is described in error messages.
@@ -112,7 +123,7 @@ function hasLoneSurrogate(value: string): boolean {
  */
 export function safeBasename(name: string, label: string = 'filename'): string {
   const rawBasename = untrustedBasename(name);
-  const basename = rawBasename.trim();
+  const basename = rawBasename.replace(SURROUNDING_WHITESPACE, '');
 
   if (!basename || /^\.+$/.test(basename)) {
     throw new ValidationError(
@@ -129,7 +140,7 @@ export function safeBasename(name: string, label: string = 'filename'): string {
       `Refusing to write ${label} containing characters reserved by Windows: ${JSON.stringify(name)}`
     );
   }
-  if (rawBasename.endsWith(' ') || rawBasename.endsWith('.')) {
+  if (rawBasename.endsWith(' ') || rawBasename.endsWith('.') || basename.endsWith('.')) {
     throw new ValidationError(
       `Refusing to write ${label} ending in a space or dot: ${JSON.stringify(name)}`
     );

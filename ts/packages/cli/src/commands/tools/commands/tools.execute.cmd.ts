@@ -18,14 +18,16 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
-import { loadInstalledCompanionModule } from 'src/services/run-companion-modules';
 import {
   LocalToolsDisabledError,
   ToolsExecutor,
   detectInBandWarning,
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
@@ -66,20 +68,20 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Flag.string('data').pipe(
+const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
   Flag.optional
 );
-const file = Flag.string('file').pipe(
+const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
   Flag.optional
 );
-const accountOption = Flag.string('account').pipe(
+const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
@@ -95,33 +97,33 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Flag.boolean('get-schema').pipe(
+const getSchema = Flag.Boolean('get-schema').pipe(
   Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Flag.withDefault(false)
 );
-const dryRun = Flag.boolean('dry-run').pipe(
+const dryRun = Flag.Boolean('dry-run').pipe(
   Flag.withDescription('Validate and preview the tool call without executing'),
   Flag.withDefault(false)
 );
-const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean('skip-checks').pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
@@ -321,50 +323,23 @@ const redactRequestId = (value: object): object => {
   };
 };
 
-const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
+// Responses larger than this are stored in a session file instead of printed,
+// so a caller such as an agent does not take a huge payload into its context.
+// Measured in UTF-8 bytes: about 10,000 tokens of JSON at the estimate below.
+const EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD = 40_000;
 
-// The tokenizer lives in the `execute-output-encoder-runtime` companion module
-// next to the executable, loaded from disk on first use: its rank table is
-// 2.3MB that no other command, and no small response, has any use for. A
-// missing companion in a packaged install goes through the same self-repair as
-// `composio run`'s modules.
-const loadExecuteOutputEncoder = loadInstalledCompanionModule<
-  typeof import('src/services/execute-output-encoder-runtime')
->('execute-output-encoder-runtime', ['countOutputTokens']);
-
-// JSON averages roughly four bytes per o200k token.
+// JSON averages roughly four bytes per token. The `tokenCount` of a stored
+// response is this estimate rather than a tokenizer count, since the real count
+// depends on the model that reads the file.
 const ESTIMATED_BYTES_PER_OUTPUT_TOKEN = 4;
 
-// The tool call has already succeeded by the time its output is measured, so an
-// encoder that cannot be loaded (a damaged install, or a repair download that
-// fails offline) must not fail the command, so it falls back to an estimate from
-// the byte length. The estimate is not exact: a response averaging fewer bytes
-// per token can exceed the threshold while its estimate does not, so only an
-// exact count keeps a response that passed the byte pre-filter inline.
-const countOutputTokens = (json: string) =>
-  loadExecuteOutputEncoder.pipe(
-    Effect.map(encoder => ({ tokenCount: encoder.countOutputTokens(json), exact: true })),
-    Effect.catch(error =>
-      Effect.logDebug(
-        `[execute] tokenizer unavailable, estimating the output token count: ${error.message}`
-      ).pipe(
-        Effect.as({
-          tokenCount: Math.ceil(
-            new TextEncoder().encode(json).length / ESTIMATED_BYTES_PER_OUTPUT_TOKEN
-          ),
-          exact: false,
-        })
-      )
-    )
-  );
-
-// A BPE token always covers at least one UTF-8 byte, so a payload of at most
-// THRESHOLD bytes can never exceed THRESHOLD tokens. Checking the byte length
-// first keeps the common (small) response off the tokenizer entirely: building
-// the o200k rank table measured ~390ms in a compiled binary, against ~4ms to
-// encode a 7.5KB payload once it exists, and microseconds to measure the bytes.
-const mayExceedInlineOutputThreshold = (json: string): boolean =>
-  new TextEncoder().encode(json).length > EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD;
+const describeStoredOutputSize = ({
+  sizeBytes,
+  tokenCount,
+}: {
+  readonly sizeBytes: number;
+  readonly tokenCount: number;
+}): string => `${Math.ceil(sizeBytes / 1024)} KB, ~${tokenCount} tokens`;
 
 const shouldStoreLargeExecuteOutput = APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(
   Effect.orDie,
@@ -377,6 +352,7 @@ type StoredExecuteOutputSummary = {
   readonly logId: string;
   readonly storedInFile: true;
   readonly tokenCount: number;
+  readonly sizeBytes: number;
   readonly outputFilePath: string;
 };
 
@@ -416,7 +392,7 @@ const executionSuccessSuffix = (result: {
 const persistLargeExecuteOutput = (
   toolSlug: string,
   json: string,
-  tokenCount: number,
+  sizeBytes: number,
   sharedDirectory?: string
 ) =>
   Effect.gen(function* () {
@@ -433,7 +409,8 @@ const persistLargeExecuteOutput = (
       error: null,
       logId: '',
       storedInFile: true,
-      tokenCount,
+      tokenCount: Math.ceil(sizeBytes / ESTIMATED_BYTES_PER_OUTPUT_TOKEN),
+      sizeBytes,
       outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
@@ -447,17 +424,12 @@ const prepareExecuteOutput = (
 ) =>
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
-    // `composio run` always prints inline, so its origin is checked before the
-    // tokenizer is built: the count would be thrown away.
-    if (!mayExceedInlineOutputThreshold(json) || !(yield* shouldStoreLargeExecuteOutput)) {
-      return {
-        kind: 'inline',
-        json,
-      } satisfies PreparedExecuteOutput;
-    }
-
-    const { tokenCount, exact } = yield* countOutputTokens(json);
-    if (exact && tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
+    const sizeBytes = new TextEncoder().encode(json).length;
+    // `composio run` always prints inline.
+    if (
+      sizeBytes <= EXECUTE_INLINE_OUTPUT_BYTE_THRESHOLD ||
+      !(yield* shouldStoreLargeExecuteOutput)
+    ) {
       return {
         kind: 'inline',
         json,
@@ -467,7 +439,7 @@ const prepareExecuteOutput = (
     return {
       kind: 'file',
       summary: {
-        ...(yield* persistLargeExecuteOutput(toolSlug, json, tokenCount, sharedDirectory)),
+        ...(yield* persistLargeExecuteOutput(toolSlug, json, sizeBytes, sharedDirectory)),
         logId: result.logId,
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
@@ -482,9 +454,10 @@ const emitExecuteFailureTelemetry = (params: {
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
   readonly logId?: string;
   readonly mappedError?: ReturnType<typeof mapComposioError>;
+  readonly projectScope?: ToolkitProjectScope;
 }) =>
   Effect.gen(function* () {
-    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
+    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug, params.projectScope);
     const { invocationOrigin } = yield* cliInvocationContext;
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
@@ -736,10 +709,11 @@ const handleExecutionError = (
     projectMode: 'consumer' | 'developer';
     stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
     logId?: string;
+    projectScope?: ToolkitProjectScope;
   }
 ) =>
   Effect.gen(function* () {
-    const toolkit = yield* toolkitFromToolSlug(context.toolSlug);
+    const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
     const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
@@ -751,6 +725,7 @@ const handleExecutionError = (
         projectMode: context.projectMode,
         stage: context.stage,
         logId: context.logId,
+        projectScope: context.projectScope,
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -773,6 +748,7 @@ const handleExecutionError = (
       projectMode: context.projectMode,
       stage: context.stage,
       logId: context.logId,
+      projectScope: context.projectScope,
       mappedError: mapped,
     });
 
@@ -1004,6 +980,15 @@ type ResolvedExecuteContext = {
   readonly executeOutputDir?: string;
 };
 
+/**
+ * The resolved project as toolkit resolution needs it: custom toolkits are
+ * listed per project, and it has to be the project execute runs against.
+ */
+const toolkitProjectScope = (resolvedProject: ToolkitProjectScope): ToolkitProjectScope => ({
+  orgId: resolvedProject.orgId,
+  projectId: resolvedProject.projectId,
+});
+
 type ResolvedSchemaContext = {
   readonly ui: TerminalUI;
   readonly resolvedProject: {
@@ -1128,7 +1113,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     });
     const toolkitSlug = isLocalToolSlug(params.slug)
       ? undefined
-      : yield* toolkitFromToolSlug(params.slug);
+      : yield* toolkitFromToolSlug(params.slug, toolkitProjectScope(resolvedProject));
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
@@ -1258,7 +1243,10 @@ const runConnectedToolkitFailFast = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1380,6 +1368,7 @@ const runExecuteWithSpinner = (params: {
                     surface: params.surface,
                     projectMode: params.projectMode,
                     stage: 'dry_run',
+                    projectScope: toolkitProjectScope(params.resolvedProject),
                   })
                 )
               )));
@@ -1397,6 +1386,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'dry_run',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 })
               )
             );
@@ -1450,6 +1440,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'execution',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 });
                 yield* writeExecuteStdout(
                   params.ui,
@@ -1505,6 +1496,7 @@ const runExecuteWithSpinner = (params: {
             projectMode: params.projectMode,
             stage: 'execution',
             logId: result.logId,
+            projectScope: toolkitProjectScope(params.resolvedProject),
           });
           yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* new ReportedToolExecutionError({
@@ -1524,7 +1516,7 @@ const runExecuteWithSpinner = (params: {
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
         if (output.kind === 'file') {
           yield* params.ui.log.message(
-            `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
+            `Response stored in ${output.summary.outputFilePath} (${describeStoredOutputSize(output.summary)})`
           );
           yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
@@ -1537,6 +1529,7 @@ const runExecuteWithSpinner = (params: {
               storedInFile: true,
               outputFilePath: output.summary.outputFilePath,
               tokenCount: output.summary.tokenCount,
+              sizeBytes: output.summary.sizeBytes,
               logId: result.logId,
             },
           }).pipe(Effect.catch(() => Effect.void));
@@ -1589,6 +1582,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'schema_fetch',
+            projectScope: toolkitProjectScope(context.resolvedProject),
           })
         )
       );
@@ -1857,7 +1851,10 @@ const checkConnectedToolkitOrFail = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1919,7 +1916,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           >;
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {
@@ -2071,7 +2068,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           };
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {
@@ -2109,7 +2106,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
         if ('storedInFile' in result && result.storedInFile) {
           yield* ui.log.step(
-            `[${result.slug}] Response stored in ${result.outputFilePath} (${result.tokenCount} tokens)`
+            `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
           );
           continue;
         }

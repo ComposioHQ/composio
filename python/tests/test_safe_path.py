@@ -149,6 +149,9 @@ class TestSafeBasename:
             ("..\\..\\evil", "evil"),
             (" report.pdf", "report.pdf"),
             ("café.txt", "café.txt"),
+            ("C:report.txt", "report.txt"),
+            ("\ufeffreport.txt", "\ufeffreport.txt"),
+            ("\u0085report.txt\u0085", "report.txt"),
         ],
     )
     def test_reduces_to_the_basename(self, value, expected):
@@ -179,7 +182,14 @@ class TestSafeBasename:
 
     @pytest.mark.parametrize(
         "value",
-        ["report?.txt", "report.txt:payload", "report.txt.", "report.txt "],
+        [
+            "report?.txt",
+            "report.txt:payload",
+            "report.txt.",
+            "report.txt ",
+            "report.\u00a0",
+            "report.\u0085",
+        ],
     )
     def test_rejects_windows_invalid_names_on_every_platform(self, value):
         with pytest.raises(UnsafePathComponentError):

@@ -143,8 +143,13 @@ def get_source_link(obj: griffe_t.Object) -> str | None:
     return f"{GITHUB_BASE}/{rel_path}#L{line}"
 
 
-def format_type(annotation: Any) -> str:
-    """Format a type annotation to readable string."""
+def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
+    """Format a type annotation to readable string.
+
+    Types longer than ``max_length`` are elided; pass ``None`` to keep the
+    full type, which parameter signatures need so quoted forward references
+    such as ``'Omit'`` are never cut mid-token.
+    """
     if annotation is None:
         return "Any"
 
@@ -159,9 +164,34 @@ def format_type(annotation: Any) -> str:
     type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
 
     # Truncate very long types
-    if len(type_str) > 60:
-        return type_str[:57] + "..."
+    if max_length is not None and len(type_str) > max_length:
+        return type_str[: max_length - 3] + "..."
     return type_str
+
+
+def _render_rst_role(match: re.Match[str]) -> str:
+    """Render an reST role match as inline code, honoring ``~`` short names."""
+    target = match.group(1)
+    if target.startswith("~"):
+        target = target.rsplit(".", 1)[-1]
+    return f"`{target}`"
+
+
+def normalize_inline_rst(text: str) -> str:
+    """Normalize inline reStructuredText markup to MDX-friendly markdown.
+
+    Converts reST roles such as ``:class:`Foo` `` into plain inline code and
+    reST double-backtick literals (``name``) into single-backtick inline code
+    so generated prose renders correctly on the docs site. A ``~`` role prefix
+    (``:class:`~mod.Foo` ``) renders as the short target name, matching Sphinx.
+    """
+    if not text:
+        return text
+    # ReST roles: :class:`X`, :func:`mod.func`, :meth:`X.y`, :mod:`~pkg.mod`,
+    # ... A leading ``~`` requests the short target name, so drop the path.
+    normalized = re.sub(r":[a-zA-Z]+:`([^`]+)`", _render_rst_role, text)
+    # ReST double-backtick literals: ``name`` -> `name`
+    return re.sub(r"``([^`]+)``", r"`\1`", normalized)
 
 
 def parse_docstring(docstring: str | None) -> dict[str, Any]:
@@ -172,6 +202,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             "params": {},
             "returns": None,
             "examples": [],
+            "raises": [],
             "deprecated": None,
         }
 
@@ -180,10 +211,12 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
     params: dict[str, str] = {}
     returns = None
     examples: list[str] = []
+    raises: list[dict[str, str]] = []
     deprecated_lines: list[str] = []
 
     section = "description"
     current_param = None
+    current_raise: dict[str, str] | None = None
     example_lines: list[str] = []
 
     for line in lines:
@@ -212,6 +245,19 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             returns = return_match.group(1)
             continue
 
+        # Check for :raises Exc: description (plus common Sphinx synonyms).
+        raise_match = re.match(
+            r":(?:raises?|except|throws?)\s+([\w.]+):\s*(.*)", stripped
+        )
+        if raise_match:
+            section = "raises"
+            current_raise = {
+                "exception": raise_match.group(1),
+                "description": raise_match.group(2).strip(),
+            }
+            raises.append(current_raise)
+            continue
+
         # Check for Example section
         if stripped.lower().startswith("example"):
             section = "examples"
@@ -224,6 +270,10 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             params[current_param] += " " + stripped
         elif section == "returns" and returns and stripped:
             returns += " " + stripped
+        elif section == "raises" and current_raise is not None and stripped:
+            current_raise["description"] = (
+                current_raise["description"] + " " + stripped
+            ).strip()
         elif section == "examples":
             example_lines.append(line)
         elif section == "deprecated" and stripped:
@@ -233,11 +283,22 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
         examples.append(normalize_example("\n".join(example_lines)))
 
     return {
-        "description": " ".join(description_lines).strip(),
-        "params": params,
-        "returns": returns,
+        "description": normalize_inline_rst(" ".join(description_lines).strip()),
+        "params": {name: normalize_inline_rst(desc) for name, desc in params.items()},
+        "returns": normalize_inline_rst(returns) if returns else None,
         "examples": examples,
-        "deprecated": " ".join(deprecated_lines).strip() if deprecated_lines else None,
+        "raises": [
+            {
+                "exception": entry["exception"],
+                "description": normalize_inline_rst(entry["description"]),
+            }
+            for entry in raises
+        ],
+        "deprecated": (
+            normalize_inline_rst(" ".join(deprecated_lines).strip())
+            if deprecated_lines
+            else None
+        ),
     }
 
 
@@ -281,7 +342,9 @@ def extract_class_info(
                 {
                     "name": name,
                     "type": format_type(member.annotation),
-                    "description": attr_doc.strip() if attr_doc else "",
+                    "description": (
+                        normalize_inline_rst(attr_doc.strip()) if attr_doc else ""
+                    ),
                 }
             )
 
@@ -301,7 +364,7 @@ def extract_class_info(
                 params.append(
                     {
                         "name": p.name,
-                        "type": format_type(p.annotation),
+                        "type": format_type(p.annotation, max_length=None),
                         "optional": p.default is not None,
                         "description": method_doc["params"].get(p.name, ""),
                     }
@@ -315,6 +378,7 @@ def extract_class_info(
                     "parameters": params,
                     "return_type": format_type(member.returns),
                     "return_description": method_doc["returns"],
+                    "raises": method_doc["raises"],
                     "examples": method_doc["examples"],
                 }
             )
@@ -334,9 +398,6 @@ def generate_class_mdx(
         if info["description"]
         else f"{info['name']} class"
     )
-    # Normalize reStructuredText ``double backticks`` to single backticks so the
-    # frontmatter description reads cleanly.
-    desc = re.sub(r"``([^`]+)``", r"`\1`", desc)
     if len(desc) > 150:
         desc = desc[:147] + "..."
 
@@ -349,9 +410,6 @@ def generate_class_mdx(
     # Class-level deprecation callout (rendered as a fumadocs warning callout).
     deprecated_note = info.get("deprecated")
     if deprecated_note:
-        # Normalize reStructuredText ``double backticks`` to MDX `single` so
-        # inline code renders correctly.
-        deprecated_note = re.sub(r"``([^`]+)``", r"`\1`", deprecated_note)
         lines.append('<Callout type="warn" title="Deprecated">')
         lines.append(deprecated_note)
         lines.append("</Callout>")
@@ -454,6 +512,19 @@ def generate_class_mdx(
                     lines.append(f"`{method['return_type']}` — {ret_desc}")
                 else:
                     lines.append(f"`{method['return_type']}`")
+                lines.append("")
+
+            # Raises
+            raises = method.get("raises") or []
+            if raises:
+                lines.append("**Raises**")
+                lines.append("")
+                for entry in raises:
+                    exc_desc = entry["description"]
+                    if exc_desc:
+                        lines.append(f"- `{entry['exception']}` — {exc_desc}")
+                    else:
+                        lines.append(f"- `{entry['exception']}`")
                 lines.append("")
 
             # Examples
@@ -676,7 +747,7 @@ def main():
                     params.append(
                         {
                             "name": p.name,
-                            "type": format_type(p.annotation),
+                            "type": format_type(p.annotation, max_length=None),
                             "optional": p.default is not None,
                             "description": doc["params"].get(p.name, ""),
                         }

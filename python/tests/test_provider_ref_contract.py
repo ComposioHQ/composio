@@ -106,6 +106,12 @@ PROVIDER_PACKAGES: t.Final[dict[str, Classification]] = {
         "passthrough",
         "forwards the whole schema; OpenAI resolves $defs/$ref natively",
     ),
+    "typesafe": Classification(
+        "resolves-refs",
+        "compiles each property into questions, so an enum behind a ref must be "
+        "materialized to be asked",
+        via="dereference_json_schema",
+    ),
 }
 
 # Sources outside ``python/providers`` that hand schemas to a vendor.

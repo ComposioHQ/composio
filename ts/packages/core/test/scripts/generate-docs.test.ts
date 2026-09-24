@@ -4,13 +4,36 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   discoverModelFiles,
+  escapeTableTextForMdx,
   escapeTextForMdx,
   escapeTypeForMdx,
+  generateClassMdx,
+  isParameterRequired,
   parseSourceSignatureTypesAtLine,
   runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
+
+describe('generate-docs usage examples', () => {
+  it('uses the public get method in the Toolkits usage block', () => {
+    const mdx = generateClassMdx({
+      name: 'Toolkits',
+      description: 'Toolkits API',
+      constructor: undefined,
+      methods: [],
+      properties: [],
+    });
+
+    expect(mdx).toContain(
+      '```typescript\n' +
+        "const composio = new Composio({ apiKey: 'your-api-key' });\n" +
+        'const result = await composio.toolkits.get({});\n' +
+        '```'
+    );
+    expect(mdx).not.toContain('composio.toolkits.list()');
+  });
+});
 
 describe('generate-docs type rendering', () => {
   it('preserves inline object shapes in signatures', () => {
@@ -47,6 +70,16 @@ describe('generate-docs type rendering', () => {
     expect(escapeTextForMdx(String.raw`Use \{value\}, \|, or <literal>`)).toBe(
       String.raw`Use \\\{value\\\}, \\\|, or &lt;literal&gt;`
     );
+  });
+
+  it('keeps multiline descriptions in one table cell', () => {
+    expect(escapeTableTextForMdx('First line\n  second line')).toBe('First line second line');
+  });
+
+  it('treats optional and default-valued parameters as optional', () => {
+    expect(isParameterRequired({ flags: { isOptional: true } })).toBe(false);
+    expect(isParameterRequired({ defaultValue: '{}' })).toBe(false);
+    expect(isParameterRequired({})).toBe(true);
   });
 
   it('reads named parameter and return types from source signatures', () => {

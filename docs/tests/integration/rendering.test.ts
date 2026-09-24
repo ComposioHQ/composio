@@ -66,8 +66,8 @@ describe("Page rendering - content markers", () => {
     expect(html).toContain('<title>Build and operate AI agents | Composio Documentation</title>');
     expect(html).toContain('<meta property="og:site_name" content="Composio Docs"');
     expect(html).toContain('<meta property="og:title" content="Build and operate AI agents"');
-    expect(html).toContain('<meta property="og:image" content="https://docs.composio.dev/api/og?variant=home"');
-    expect(html).toContain('<meta name="twitter:image" content="https://docs.composio.dev/api/og?variant=home"');
+    expect(html).toContain('<meta property="og:image" content="https://docs.composio.dev/api/og?section=home&amp;description=');
+    expect(html).toContain('<meta name="twitter:image" content="https://docs.composio.dev/api/og?section=home&amp;description=');
     const description = html.match(/<meta property="og:description" content="([^"]+)"/)?.[1];
     expect(description).toBe('Give your agents tools, managed authentication, and secure execution. Get started with the SDK, CLI, or MCP.');
     expect(description!.length).toBeLessThanOrEqual(125);
