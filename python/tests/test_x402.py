@@ -142,6 +142,7 @@ class TestX402AfterExecute:
         # header.  The body is controlled by the remote server; only a real
         # transport signal (402 status / payment-required header) may cause
         # settlement (parameterai P1, cursor "Generic keys trigger payment").
+        mod = x402_after_execute(lambda env: PaymentAction(settled=True), toolkits=["http"])
         for body in (
             {"accepts": [{"scheme": "exact"}], "x402Version": 2},
             {"accepts": [{"scheme": "exact"}], "price": "0.0001"},
