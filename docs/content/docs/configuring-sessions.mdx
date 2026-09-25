@@ -569,6 +569,47 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+### How tag filters combine with other restrictions
+
+Tag filters apply everywhere a session exposes tools: search, `session.tools()`, the MCP tool list, direct execution and the sandbox. Restrictions are checked in this order:
+
+1. **Toolkit lists.** A toolkit outside `toolkits.enable` or inside `toolkits.disable` is blocked before any tool-level check.
+2. **Explicit tool lists.** If `tools[toolkit]` is an `enable` or `disable` list, that list is the whole rule for the toolkit; tag filters are skipped for it.
+3. **Preloaded tools.** A tool named in `preload.tools` bypasses tag filters, but not toolkit lists or `disable` lists.
+4. **Toolkit-level tags.** A `tags` rule in `tools[toolkit]` replaces the global `tags` for that toolkit.
+5. **Global tags.** Everything else uses the session-level `tags`.
+
+Within a tag rule, `disable` wins over `enable`: a tool passes when it has none of the disabled tags and, if `enable` is set, at least one of the enabled tags.
+
+So "read everything, plus a few specific actions" is a single config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Read-only everywhere, except the agent may send email
+session = composio.sessions.create(
+    user_id="user_123",
+    tags=["readOnlyHint"],
+    preload={"tools": ["GMAIL_SEND_EMAIL"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Read-only everywhere, except the agent may send email
+const session = await composio.create("user_123", {
+  tags: ["readOnlyHint"],
+  preload: { tools: ["GMAIL_SEND_EMAIL"] }
+});
+```
+</Tab>
+</Tabs>
+
+`GMAIL_SEND_EMAIL` is listed in `session.tools()` and the agent can call it; `GMAIL_DELETE_MESSAGE` stays hidden. A preloaded tool that fails a toolkit list or `disable` list is rejected at session creation with a `400` naming the blocked slugs.
+
 ## Preloading tools
 
 Return a known set of tools directly from `session.tools()` and the session MCP tool list, without the agent searching for them first.
