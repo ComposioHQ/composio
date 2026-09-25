@@ -30,11 +30,11 @@ Current sessions include:
 - `chk`: Ruff check and mypy.
 - `fix`: Ruff automatic fixes.
 - `type_inference`: provider return-type inference checks.
-- `tst`: pytest test suite.
+- `tst`: pytest test suite, plus the `openai_agents` and `claude_agent_sdk` provider package tests.
 - `tst_autogen`: Autogen regressions in an isolated protobuf-compatible environment.
 - `snt`: sanity tests.
 
-When adding or renaming provider packages, inspect the `type_inference` session's explicit provider install list and checked test-file list.
+When adding or renaming provider packages, inspect the explicit provider install lists in the `tst` and `type_inference` sessions (and `.github/workflows/py.test.yml`), and the `type_inference` checked test-file list.
 
 ## Test Placement
 
