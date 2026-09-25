@@ -232,11 +232,3 @@ The `PremiumCharge` type is exported from `composio.types` and includes `amount`
 When the Balance is exhausted, paid calls fail with a `402` error: "Payment required - Wallet balance is exhausted; add credits to resume premium tool calls or connect your account".
 
 See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.
-
-## Build consumer-facing products
-
-Instant Tools separate three audiences. Keep their language separate:
-
-- **Developer surfaces** (your dashboard, billing views, internal logs) can talk money: Balance, charge, per-call price.
-- **Consumer surfaces** (anything your end users see) carry zero money words. No "balance", "charge", "price", or "premium" in end-user UI. Show the feature, not the meter: "Search the web", never "Premium search, $0.01 per call".
-- **Agent-facing strings** (tool names, descriptions, and error messages your agent reads) stay purely functional: what the tool does, what it needs, what happened. No Composio, no account vocabulary, no pricing or marketing language, so the agent picks a tool because it fits the task, not because of what it costs.
