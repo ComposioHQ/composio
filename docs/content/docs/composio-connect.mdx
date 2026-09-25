@@ -1,7 +1,7 @@
 ---
 title: Composio Connect
 description: Connect Composio to an existing MCP client without using the SDK
-keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent]
+keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent, atomic bot]
 ---
 
 Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
@@ -166,6 +166,25 @@ Composio tools are registered at startup and appear as `mcp.composio.*`. Ask the
 ```
 Install the Composio CLI: curl -fsSL https://composio.dev/install | sh, then run composio login.
 ```
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="atomic-bot" name="Atomic Bot" description="Cloud instances for OpenClaw, Hermes and Codex" icon="/images/clients/atomic-bot.png" category="other">
+
+<Steps>
+<Step>
+<StepTitle>Open Connectors for your agent</StepTitle>
+
+In [Atomic Bot](https://atomicbot.ai/cloud?utm_source=composio&utm_medium=docs&utm_campaign=composio_connect), open the agent you want to connect and go to **Connectors**. No instance yet? Pick an agent and it is running in about a minute.
+
+</Step>
+<Step>
+<StepTitle>Connect the apps it needs</StepTitle>
+
+Find the app and press **Connect**. Composio runs the authorization, and the connected account belongs to that agent. Its tools are available in the chat right away.
 
 </Step>
 </Steps>
