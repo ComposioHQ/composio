@@ -38,7 +38,7 @@ catalog:
   '@composio/client': 2.0.0-rc.8
   '@effect/language-service': ^0.87.2
   '@effect/platform-bun': 4.0.0-rc.115
-  '@effect/vitest': 4.0.0-rc.115
+  '@effect/vitest': 4.0.0-rc.117
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
