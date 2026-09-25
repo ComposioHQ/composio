@@ -4,7 +4,7 @@ description: What Zero Data Retention covers, what Composio still stores, what i
 keywords: [zero data retention, ZDR, data retention, payloads, privacy, compliance, dont store data, log storage]
 ---
 
-Zero Data Retention (ZDR) stops Composio from storing the payloads of covered calls. With ZDR on, Composio runs each covered tool call and Proxy Execute request and returns the result without writing the request arguments, response data, or error text to its execution logs. The log for each call keeps metadata only, such as IDs, the tool, timing, and the HTTP status code.
+When Zero Data Retention (ZDR) is on, Composio does not store the payloads of covered calls. It runs each covered tool call and Proxy Execute request and returns the result without writing the request arguments, response data, or error text to its execution logs. The log for each call keeps metadata only, such as IDs, the tool, timing, and the HTTP status code.
 
 <Callout type="info">
 ZDR is available on paid plans for a [usage-based price](https://composio.dev/pricing) and included on Enterprise. An organization admin turns it on in **Organization Settings > Billing > Add-ons**.
@@ -49,6 +49,7 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 | Feature | Details | What to do |
 | --- | --- | --- |
 | Composio Managed apps, except on the Enterprise plan | Auth configs that use Composio's own OAuth app. | Use [your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config) for toolkits that need ZDR. Existing users reconnect through the new auth config. You can also [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-zero-data-retention) about Enterprise. |
+| Instant Tools | Composio does not store their payloads, but the third-party provider behind each [hosted account](/docs/instant-tools#know-which-account-runs-the-tool) may keep data under its own policy. | Turn off `premium_usage` when you create Sessions that handle data that needs ZDR. |
 | Triggers | With ZDR on, trigger logs leave out event payloads, but Composio still stores the events to process and deliver them. | Do not use triggers for data that needs ZDR. |
 | Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
 | Files | Composio stages files that tools upload or download, including Proxy Execute binary responses, and cleans them up after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
