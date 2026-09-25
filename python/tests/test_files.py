@@ -4,6 +4,7 @@ These tests ensure that the FileHelper class correctly handles JSON schemas
 that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 """
 
+import asyncio
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
@@ -17,6 +18,8 @@ from composio.core.models._files import (
     FileHelper,
     FileUploadable,
     upload,
+    upload_async,
+    read_file_chunks_async,
     _is_url,
     _get_extension_from_mimetype,
     _generate_timestamped_filename,
@@ -3581,3 +3584,48 @@ class TestResponseDerivedUrlsAreGuarded:
                     upload(url="http://127.0.0.1:9000/upload", file=source)
 
         mock_request.assert_not_called()
+
+    def test_read_file_chunks_async(self, tmp_path):
+        source = tmp_path / "stream_data.bin"
+        source.write_bytes(b"A" * 2048)
+
+        async def _run():
+            chunks = []
+            async for chunk in read_file_chunks_async(source, chunk_size=512):
+                chunks.append(chunk)
+            return chunks
+
+        chunks = asyncio.run(_run())
+        assert len(chunks) == 4
+        assert b"".join(chunks) == b"A" * 2048
+
+    def test_file_uploadable_from_path_async(self, tmp_path):
+        source = tmp_path / "async_doc.pdf"
+        source.write_bytes(b"%PDF-async-test")
+
+        client = Mock()
+        s3meta = Mock()
+        s3meta.new_presigned_url = "https://s3.example.com/async-upload"
+        s3meta.key = "keys/async_doc.pdf"
+        client.post.return_value = s3meta
+
+        async def _run():
+            with patch("composio.core.models._files.safe_request") as mock_safe_request:
+                mock_safe_request.return_value.status_code = 200
+                file_uploadable = await FileUploadable.from_path_async(
+                    client=client,
+                    file=source,
+                    tool="TEST_TOOL",
+                    toolkit="test_toolkit",
+                    sensitive_file_upload_protection=False,
+                )
+                return file_uploadable, mock_safe_request
+
+        file_uploadable, mock_safe_request = asyncio.run(_run())
+        assert file_uploadable.name == "async_doc.pdf"
+        assert file_uploadable.s3key == "keys/async_doc.pdf"
+        assert mock_safe_request.call_args.args == (
+            "PUT",
+            "https://s3.example.com/async-upload",
+        )
+
