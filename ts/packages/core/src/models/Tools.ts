@@ -1254,7 +1254,9 @@ export class Tools<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
+      // Disable retries: tool router session execution is a non-idempotent write,
+      // and a silent retry after a read timeout can duplicate the side effect.
+      () => this.clientWithoutRetries.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
       requestOptions?.signal
     );
 
