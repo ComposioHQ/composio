@@ -10,9 +10,10 @@
 import {
   BaseNonAgenticProvider,
   Tool,
-  ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
@@ -209,10 +210,13 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * This method processes a function call from Google's GenAI API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools, or the Tool Router session
+   *   that produced session tools
    * @param tool - The Google GenAI function call to execute
-   * @param options - Optional execution options like connected account ID
-   * @param modifiers - Optional execution modifiers for tool behavior
+   * @param options - Optional execution options like connected account ID. Only valid
+   *   with a user ID target; passing these alongside a session throws.
+   * @param modifiers - Optional execution modifiers for tool behavior. Only valid
+   *   with a user ID target; passing these alongside a session throws.
    * @returns The result of the tool execution as a JSON string
    *
    * @example
@@ -245,24 +249,34 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    *     { role: 'model', parts: [{ functionResponse: { name: 'SEARCH_TOOL', response: result } }] }
    *   ]
    * });
+   *
+   * // Or, when the tool came from a Tool Router session:
+   * const sessionResult = await provider.executeToolCall(session, functionCall);
    * ```
    */
+  async executeToolCall(session: ToolCallSession, tool: GoogleGenAIFunctionCall): Promise<string>;
   async executeToolCall(
     userId: string,
     tool: GoogleGenAIFunctionCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: GoogleGenAIFunctionCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const payload: ToolExecuteParams = {
-      // Models occasionally emit tool args as a JSON string rather than an object (issue #2406).
-      arguments: normalizeToolArguments(tool.args, tool.name),
-      connectedAccountId: options?.connectedAccountId,
-      customAuthParams: options?.customAuthParams,
-      customConnectionData: options?.customConnectionData,
-      userId: userId,
-    };
+    // Models occasionally emit tool args as a JSON string rather than an object (issue #2406).
+    const toolArguments = normalizeToolArguments(tool.args, tool.name);
 
-    const result = await this.executeTool(tool.name, payload, modifiers);
+    const result = await this.executeToolForTarget(
+      executionTarget,
+      tool.name,
+      toolArguments,
+      options,
+      modifiers
+    );
     return JSON.stringify(result);
   }
 }
