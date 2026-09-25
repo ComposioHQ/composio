@@ -3,7 +3,8 @@
   "pages": [
     "../authentication/custom-app-vs-managed-app",
     "[Rate limits](/reference/rate-limits)",
-    "[Data retention](/docs/security/data-retention)",
+    "../security/data-retention",
+    "../security/zero-data-retention",
     "stream-logs-to-a-siem"
   ]
 }

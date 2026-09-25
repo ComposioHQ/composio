@@ -44,8 +44,8 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs')).toBeNull();
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
-    expect(classifyDocsProduct('/docs/security/data-retention')).toBeNull();
-    expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBeNull();
+    expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
+    expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
 
   test('uses route inference before persistence and the documented default last', () => {
@@ -85,10 +85,13 @@ describe('Docs product navigation', () => {
       '/docs/security/data-retention',
     );
     expect(docsProductDestination('/docs/security/data-retention', 'for-you')).toBe(
-      '/docs/security/data-retention',
+      '/docs/agent-plugins',
+    );
+    expect(docsProductDestination('/docs/security/zero-data-retention', 'platform')).toBe(
+      '/docs/security/zero-data-retention',
     );
     expect(docsProductDestination('/docs/security/zero-data-retention', 'for-you')).toBe(
-      '/docs/security/zero-data-retention',
+      '/docs/agent-plugins',
     );
   });
 
@@ -171,8 +174,6 @@ describe('Docs product navigation', () => {
     for (const sharedUrl of [
       '/docs/using-composio-skill',
       '/docs/security/overview',
-      '/docs/security/data-retention',
-      '/docs/security/zero-data-retention',
     ]) {
       expect(forYouUrls).toContain(sharedUrl);
       expect(platformUrls).toContain(sharedUrl);
@@ -188,17 +189,10 @@ describe('Docs product navigation', () => {
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
       '/docs/security/data-retention',
+      '/docs/security/zero-data-retention',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
-    // Data retention is the shared policy for every plan, so the Security folder
-    // lists it in both products while Production readiness keeps it as a launch step.
-    const sharedSecurityReadinessUrls = new Set(['/docs/security/data-retention']);
     for (const url of readinessUrls) {
-      if (sharedSecurityReadinessUrls.has(url)) {
-        expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(2);
-        expect(forYouUrls.filter(candidate => candidate === url)).toHaveLength(1);
-        continue;
-      }
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
     }
