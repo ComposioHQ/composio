@@ -116,7 +116,7 @@ The `PremiumCharge` type is exported from `composio.types` and includes `amount`
 
 The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable premium usage for other eligible toolkits. Use `premium_usage.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
 
-The examples below use Python and REST field names. In TypeScript, use `premiumUsage` and `returnPremiumCharge`, and read the charge from `premiumCharge` on the tool result.
+The examples below use Python and REST field names. In TypeScript, use `premiumUsage` and `returnPremiumCharge`. See [Read the charge](#read-the-charge) for where the charge appears on a tool result.
 
 | Session value | Effect |
 |---|---|
@@ -172,6 +172,20 @@ await session.update({ premiumUsage: false });
 </Tabs>
 
 On patch, omitted `premium_usage` fields keep their existing values. Supplying any object after `false`, even one that only sets `return_premium_charge`, enables this Session policy again, provided the project allows it.
+
+## Read the charge
+
+When the Session sets `return_premium_charge`, an eligible tool result carries the charge alongside `data` and `error`. In Python, read `result.premium_charge` on the value returned by `session.execute`; it is `None` or a mapping with the fields below. In TypeScript, read `result.premiumCharge`. When Session tools run through an agent framework instead, the same charge arrives on the tool result under `premium_charge` in Python and `premiumCharge` in TypeScript.
+
+The charge keeps its API field names in both SDKs:
+
+| Field | Value |
+|---|---|
+| `amount` | Charge in USD as an exact non-negative decimal string, such as `"0.01"`, with up to 12 fractional digits. |
+| `currency` | Always `USD`. |
+| `charged_by` | Always `composio`. |
+
+The charge is absent when the Session does not opt in, when no premium charge applies to the call, or when that tool call failed. A multi-tool execution reports a single aggregate charge covering the eligible calls that succeeded, even if another call in the same request fails. Locally defined custom tools never carry a charge.
 
 ## Know which account runs the tool
 
