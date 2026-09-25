@@ -116,8 +116,10 @@ class X402ParseError(ValueError):
 _KNOWN_SCHEMES = ("exact",)
 
 # Header names used by x402 v2 to carry the payment envelope out of band from
-# the body (the ``payment-required`` response header).
-_PAYMENT_REQUIRED_HEADERS = ("payment-required", "Payment-Required", "payment_required")
+# the body (the ``payment-required`` response header).  Matched case-insensitively:
+# the spec sends it as ``PAYMENT-REQUIRED``, while tool responses may preserve a
+# server's original casing after JSON serialization.
+_PAYMENT_REQUIRED_HEADERS = ("payment-required", "payment_required")
 
 
 def _required_str(obj: t.Any, key: str, where: str) -> str:
@@ -271,12 +273,16 @@ def _extract_body_and_header(
 ) -> t.Tuple[bool, t.Any, t.Optional[str]]:
     """Return (is_payment, body, payment_required_header).
 
-    A response is treated as a payment request **only** on an explicit signal:
-    an HTTP ``402`` status, an x402 ``payment-required`` header, or a body that
-    carries an ``accepts`` envelope together with a version/price/payment
-    marker.  A successful response that merely contains an ``accepts`` key in
-    its payload never counts as a payment request -- that would risk moving
-    money on data that happens to share a field name.
+    A response is treated as a payment request **only** on a transport-level
+    signal the server actually sent: an HTTP ``402`` status or an x402
+    ``payment-required`` header (matched case-insensitively, since the spec
+    sends ``PAYMENT-REQUIRED``).  Body content alone -- however much it looks
+    like an ``accepts`` envelope -- never counts as a payment request, because
+    the body is fully controlled by the remote server we are calling: a
+    malicious or compromised endpoint could answer a normal ``200 OK`` with
+    ``{"accepts": [...], "x402Version": 2}`` and otherwise trip the payer into
+    an unsolicited payment to an attacker-chosen destination.  The envelope is
+    read from the body only after a real 402/header already signalled payment.
     """
     data = response.get("data") or {}
     if not isinstance(data, dict):
@@ -288,37 +294,29 @@ def _extract_body_and_header(
     headers = data.get("headers")
     header_offer: t.Optional[str] = None
     if isinstance(headers, dict):
-        for name in _PAYMENT_REQUIRED_HEADERS:
-            val = headers.get(name)
-            if isinstance(val, str) and val.strip():
-                header_offer = val
+        for key, val in headers.items():
+            if not isinstance(key, str):
+                continue
+            if key.strip().lower() in _PAYMENT_REQUIRED_HEADERS:
+                if isinstance(val, str) and val.strip():
+                    header_offer = val
                 break
 
     body = data.get("body")
-    body_dict: t.Optional[t.Dict[str, t.Any]] = None
-    if isinstance(body, dict):
-        body_dict = body
-    elif isinstance(data, dict) and (
-        "accepts" in data or "accepts[]" in data or "x402Version" in data
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="replace")
+    elif (
+        isinstance(data, dict)
+        and not isinstance(body, (str, dict))
+        and ("accepts" in data or "accepts[]" in data or "x402Version" in data)
     ):
-        body_dict = data
         body = data
 
-    if status_is_402 or header_offer is not None:
-        return True, body, header_offer
+    # Transport must have signalled payment.  Body content is never the trigger.
+    if not (status_is_402 or header_offer is not None):
+        return False, None, None
 
-    # Inline body shape: only when an accepts envelope is accompanied by a real
-    # payment marker (x402 version, a price, or an explicit payment_required
-    # flag).  Naked accepts on a successful response is not a payment request.
-    if isinstance(body_dict, dict):
-        has_accepts = "accepts" in body_dict or "accepts[]" in body_dict
-        has_payment_marker = any(
-            key in body_dict for key in ("x402Version", "price", "price_xno", "amount", "payment_required")
-        )
-        if has_accepts and has_payment_marker:
-            return True, body, header_offer
-
-    return False, None, None
+    return True, body, header_offer
 
 
 _Unspecified = object()

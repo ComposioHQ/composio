@@ -135,6 +135,39 @@ class TestX402AfterExecute:
         resp = {"data": {"status": 200, "accepts": ["some", "data"]}, "error": None, "successful": True}
         assert self._apply(mod, "HTTPS_REQUEST", "http", resp) is resp
 
+    def test_successful_response_with_accepts_and_marker_does_not_pay(self):
+        # Even a body that pairs `accepts[]` with attacker-controlled marker keys
+        # (x402Version/price/amount/payment_required) must NOT trigger a payment
+        # when the transport did not signal 402 nor send a payment-required
+        # header.  The body is controlled by the remote server; only a real
+        # transport signal (402 status / payment-required header) may cause
+        # settlement (parameterai P1, cursor "Generic keys trigger payment").
+        for body in (
+            {"accepts": [{"scheme": "exact"}], "x402Version": 2},
+            {"accepts": [{"scheme": "exact"}], "price": "0.0001"},
+            {"accepts": [{"scheme": "exact"}], "amount": "1"},
+            {"accepts": [{"scheme": "exact"}], "payment_required": True},
+        ):
+            resp = {"data": {"status": 200, "body": body}, "error": None, "successful": True}
+            assert self._apply(mod, "HTTPS_REQUEST", "http", resp) is resp
+
+    def test_payment_required_header_upper_case_is_recognized(self):
+        # x402 v2 ships the envelope in the uppercase `PAYMENT-REQUIRED` header;
+        # tool responses may preserve that casing.  Matching is case-insensitive,
+        # so the offer must reach the payer (cursor "Spec header name not
+        # recognized").
+        def payer(env):
+            return PaymentAction(settled=True, payment_ref="HUP")
+
+        mod = x402_after_execute(payer, toolkits=["http"])
+        header = base64.urlsafe_b64encode(
+            json.dumps({"x402Version": 2, "accepts": [_accept()]}).encode("utf-8")
+        ).decode("ascii")
+        resp = {"data": {"status": 402, "headers": {"PAYMENT-REQUIRED": header}}, "error": None, "successful": False}
+        out = self._apply(mod, "HTTPS_REQUEST", "http", resp)
+        assert out["data"]["payment_ref"] == "HUP"
+        assert out["data"]["retry_required"] is True
+
     def test_payer_settles_sets_retry_and_ref(self):
         def payer(env):
             return PaymentAction(settled=True, payment_ref="BLOCK123", message="paid")
