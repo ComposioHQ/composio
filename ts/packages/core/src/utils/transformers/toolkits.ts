@@ -158,7 +158,7 @@ export const transformToolkitRetrieveResponse = (
           name: category.name,
         })),
         availableVersions: response.meta.available_versions,
-        // appUrl: response.meta.app_url, @TODO Update the client type to include this
+        appUrl: response.meta.app_url ?? undefined,
       },
       isLocalToolkit: response.is_local_toolkit,
       composioManagedAuthSchemes: response.composio_managed_auth_schemes,
