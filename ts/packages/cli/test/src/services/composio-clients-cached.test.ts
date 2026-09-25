@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@effect/vitest';
+import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
@@ -16,6 +16,7 @@ import { toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  makeToolkitsRepositoryStub,
   type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
@@ -225,5 +226,52 @@ describe('ComposioToolkitsRepositoryCached', () => {
       [],
       scope => Effect.succeed([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
     )
+  );
+
+  it.effect('passes an uncached method straight through to the underlying repository', () =>
+    Effect.gen(function* () {
+      const searchTools = vi.fn(() =>
+        Effect.succeed({
+          items: [],
+          total_items: 0,
+          total_pages: 0,
+          current_page: 1,
+          next_cursor: null,
+        })
+      );
+      const underlying = makeToolkitsRepositoryStub({ searchTools });
+      const params = { search: 'gmail', limit: 3 };
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+      yield* repository.searchTools(params);
+
+      expect(searchTools).toHaveBeenCalledOnce();
+      expect(searchTools).toHaveBeenCalledWith(params);
+    })
+  );
+
+  it.effect('exposes an underlying method it does not know about', () =>
+    Effect.gen(function* () {
+      const addedLater = () => Effect.succeed('added later');
+      const underlying = Object.assign(makeToolkitsRepositoryStub({}), { addedLater });
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+
+      expect((repository as typeof underlying).addedLater).toBe(addedLater);
+    })
   );
 });

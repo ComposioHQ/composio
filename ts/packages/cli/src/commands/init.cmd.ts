@@ -10,6 +10,8 @@ import {
   createProjectApiKey,
   getSessionInfo,
   listOrgProjects,
+  sessionProjectApiKeyOf,
+  sessionUserIdOf,
   type OrgProject,
 } from 'src/services/composio-clients';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
@@ -105,7 +107,6 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const ctx = yield* ComposioUserContext;
 
     const envPath = path.join(cwd, '.env.local');
     const envExists = yield* fs.exists(envPath);
@@ -120,18 +121,16 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     }
 
     const sessionInfo = yield* getSessionInfo({
-      baseURL: ctx.data.baseURL,
       apiKey: uakApiKey,
       orgId: selected.orgId,
       projectId: selected.projectId,
     });
     yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, uakApiKey);
 
-    let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
+    let projectApiKey = sessionProjectApiKeyOf(sessionInfo);
     if (!projectApiKey && !hasProjectApiKey) {
       const dateSuffix = new Date().toISOString().slice(0, 10);
       projectApiKey = yield* createProjectApiKey({
-        baseURL: ctx.data.baseURL,
         apiKey: uakApiKey,
         orgId: selected.orgId,
         projectId: selected.projectId,
@@ -139,7 +138,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       });
     }
 
-    const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
+    const sessionUserId = sessionUserIdOf(sessionInfo);
     const composioTestUserId = `pg-test-${sessionUserId}`;
     const composioDir = path.join(cwd, constants.PROJECT_COMPOSIO_DIR);
 
@@ -169,7 +168,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
 
 const logEnvCreationHttpError =
   (ui: TerminalUI) =>
-  (e: { status?: number; details?: { message: string; suggestedFix: string }; cause?: unknown }) =>
+  (e: { status?: number; details?: { message: string; suggestedFix?: string }; cause?: unknown }) =>
     Effect.gen(function* () {
       yield* ui.log.warn('Could not create .env.local from session info.');
       if (e.status) {
@@ -177,7 +176,9 @@ const logEnvCreationHttpError =
       }
       if (e.details) {
         yield* ui.log.error(e.details.message);
-        yield* ui.log.step(e.details.suggestedFix);
+        if (e.details.suggestedFix !== undefined) {
+          yield* ui.log.step(e.details.suggestedFix);
+        }
       } else if (e.cause) {
         yield* ui.log.error(String(e.cause));
       }
@@ -271,7 +272,6 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     }
 
     const orgProjects = yield* listOrgProjects({
-      baseURL: ctx.data.baseURL,
       apiKey: globalApiKey,
       orgId: orgIdValue,
     }).pipe(
@@ -286,9 +286,11 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           return yield* Effect.fail(e);
         })
       ),
-      Effect.catchTag('services/HttpDecodingError', e =>
+      // Every other failure to reach the API gets the same guidance; only the
+      // wording differs by how far the request got.
+      Effect.catch(e =>
         Effect.gen(function* () {
-          yield* Effect.logDebug('Failed to decode org projects response:', e);
+          yield* Effect.logDebug('Failed to fetch org projects:', e);
           yield* ui.log.warn('Unexpected response from the server.');
           yield* ui.log.info(
             'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
@@ -342,9 +344,11 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* logEnvCreationHttpError(ui)(e);
         })
       ),
-      Effect.catchTag('services/HttpDecodingError', e =>
+      // The project is already written; a key the CLI could not resolve is a
+      // warning with manual instructions, never a failed init.
+      Effect.catch(e =>
         Effect.gen(function* () {
-          yield* Effect.logDebug('Failed to decode API key response:', e);
+          yield* Effect.logDebug('Failed to resolve the project API key:', e);
           yield* logEnvCreationDecodingError(ui)(e);
         })
       )

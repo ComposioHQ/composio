@@ -3,6 +3,8 @@ import { ConfigProvider, Effect } from 'effect';
 import { afterEach, vi } from 'vitest';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive } from 'test/__utils__';
+import { makeSessionInfo } from 'test/__utils__/models/account';
+import type { MockRequestScope } from 'test/__utils__/services/test-layer';
 
 const analyticsMocks = vi.hoisted(() => ({
   linkCalls: [] as string[],
@@ -31,40 +33,27 @@ describe('CLI: composio orgs switch', () => {
     COMPOSIO_USER_API_KEY: 'uak_switch_test',
   }).pipe(extendConfigProvider);
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
+  const sessionInfoScopes: MockRequestScope[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      accountData: {
+        sessionInfo: scope => {
+          sessionInfoScopes.push(scope);
+          return makeSessionInfo({
+            orgId: 'org_selected',
+            orgName: 'Selected Org',
+            orgMemberId: 'member_selected',
+          });
+        },
+      },
+    })
+  )(it => {
     it.effect('[Then] links analytics to the selected org membership', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockImplementation(
-          async (_requestInput: RequestInfo | URL, init?: RequestInit) => {
-            expect(new Headers(init?.headers).get('x-org-id')).toBe('org_selected');
-            return new Response(
-              JSON.stringify({
-                project: {
-                  name: 'Selected Project',
-                  id: 'project_selected',
-                  org_id: 'org_selected',
-                  nano_id: 'project_selected',
-                  email: 'project@example.com',
-                  created_at: '2026-01-01T00:00:00.000Z',
-                  updated_at: '2026-01-01T00:00:00.000Z',
-                  org: { id: 'org_selected', name: 'Selected Org', plan: 'enterprise' },
-                },
-                org_member: {
-                  id: 'member_selected',
-                  user_id: 'user_123',
-                  email: 'cli@example.com',
-                  name: 'CLI User',
-                  role: 'admin',
-                },
-                api_key: null,
-              }),
-              { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-          }
-        );
-
         yield* cli(['orgs', 'switch', '--org-id', 'org_selected']);
 
+        expect(sessionInfoScopes.map(scope => scope.orgId)).toEqual(['org_selected']);
         expect(analyticsMocks.linkCalls).toEqual(['member_selected']);
       })
     );

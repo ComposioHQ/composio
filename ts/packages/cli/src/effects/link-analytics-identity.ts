@@ -12,7 +12,6 @@ type KnownOrgIdentity = {
 
 export const linkAnalyticsIdentityForOrg = (params: {
   readonly apiKey: string;
-  readonly baseURL: string;
   readonly orgId: string;
   readonly knownIdentity?: KnownOrgIdentity;
 }) =>
@@ -25,7 +24,6 @@ export const linkAnalyticsIdentityForOrg = (params: {
     const orgMemberId = knownIdentity
       ? knownIdentity.orgMemberId
       : yield* getSessionInfoByUserApiKey({
-          baseURL: params.baseURL,
           userApiKey: params.apiKey,
           orgId: params.orgId,
         }).pipe(

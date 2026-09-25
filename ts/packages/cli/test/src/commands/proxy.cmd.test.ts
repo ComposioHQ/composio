@@ -1,3 +1,4 @@
+import { APIError } from '@composio/client';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
@@ -253,14 +254,19 @@ describe('CLI: composio proxy', () => {
             fixture: 'global-test-user-id',
             toolRouter: {
               proxyExecute: async () => {
-                throw {
-                  message: 'raw backend error',
-                  details: {
-                    code: 4302,
-                    slug: 'ToolRouterV2_NoActiveConnection',
-                    message: 'No active connection',
+                throw APIError.generate(
+                  400,
+                  {
+                    error: {
+                      code: 4302,
+                      slug: 'ToolRouterV2_NoActiveConnection',
+                      message: 'No active connection',
+                      status: 400,
+                    },
                   },
-                };
+                  undefined,
+                  new Headers()
+                );
               },
             },
           });

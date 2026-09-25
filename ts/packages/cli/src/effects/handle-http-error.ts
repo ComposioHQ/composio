@@ -63,7 +63,9 @@ export const handleHttpServerError =
 
       if (e.details) {
         yield* ui.log.error(e.details.message);
-        yield* ui.log.step(e.details.suggestedFix);
+        if (e.details.suggestedFix !== undefined) {
+          yield* ui.log.step(e.details.suggestedFix);
+        }
       } else {
         yield* ui.log.error(opts.fallbackMessage);
       }
