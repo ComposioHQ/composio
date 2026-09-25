@@ -1,82 +1,58 @@
 ---
-title: Data retention
-description: What Composio stores from tool calls, how long logs and files are retained, how to stop storing payloads, and where your data flows.
-keywords: [data retention, log storage, privacy, dont store data, sub-processors, data flow, file ttl]
+title: Zero Data Retention
+description: Enable ZDR for end-user execution payloads, check coverage, and configure your workflow to avoid excluded features.
+keywords: [zero data retention, ZDR, security, privacy, file expiry]
 ---
 
-Composio stores audit logs for tool executions so you can observe and debug your agents. You control whether the request and response payloads for each call are stored.
+Zero Data Retention (ZDR) prevents retention of your application's end-user request and response content on covered execution paths. Composio processes that content to execute the request and return the result. Your own account, billing, support, and configuration data are outside this scope.
 
-## Customer data vs. your end users' data
+See [pricing](https://composio.dev/pricing) for eligible plans, rates, and billing units. Enterprise availability follows your contract.
 
-Throughout this guide, *you* are the Composio customer. *Your end users* are the people your agent acts on behalf of. Each end user is identified by the `user_id` you provide. Composio stores this value as supplied and uses it to associate connected accounts, sessions, and execution logs.
+## Enable ZDR
 
-Tool requests and responses may contain additional end-user data. The **Log storage** setting controls whether these payloads are retained; it does not remove the `user_id` or other audit metadata.
+1. As an organization admin, open **Organization Settings → Billing → Zero Data Retention**.
+2. Review the scope, exclusions, and displayed rate, then select **Enable Zero Data Retention**.
+3. For an existing project, open **Project Settings → General → Zero Data Retention (ZDR)**. Configure your workflow using the table below, then enable ZDR.
+4. Confirm the active status and effective time. Use that project's API key for covered requests.
 
-## What Composio stores
+Existing projects require individual activation. New projects default to ZDR on after organization activation, including API-created projects. An admin can explicitly opt out during project creation when the contract permits it; the confirmation explains that standard payload logging will apply. API-created projects can opt out with `zdr_opt_out_acknowledged: true`. Members can view status but cannot change it. Enterprise setting changes go through your account team. DPA and BAA have separate activation flows.
 
-Composio creates logs for tool executions and trigger events. These logs contain:
+## Coverage and required configuration
 
-- For tool executions, the toolkit and action, execution status, connection and auth-config IDs, supplied `user_id`, timing, and runtime/source.
-- By default, the **request arguments** and **response data** for each tool execution.
-- For trigger events, similar audit metadata and, by default, the trigger payloads.
+Project ZDR does not automatically disable excluded features. Configure your workflow before sending data that requires ZDR.
 
-## How long logs are retained
+| Path or feature | Coverage and action |
+| --- | --- |
+| Direct tool execution and Proxy Execute | Covered on eligible routes in a ZDR-enabled project, subject to the exclusions below. |
+| Sandbox, Workbench, and remote Bash | Not covered. Set `sandbox.enable` to `false`. See [Disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox). |
+| Triggers, including polling and webhooks | Not covered. [Disable active triggers](/docs/setting-up-triggers/managing-triggers) for the protected workflow. Stopping your listener alone does not stop trigger processing. Check pending deliveries separately. |
+| No-auth tools and Composio-managed accounts or connections | Not covered. Restrict your application to eligible tools and connection paths using [toolkit filters](/docs/configuring-sessions#disabling-toolkits) and [individual-tool filters](/docs/configuring-sessions#enabling-or-disabling-specific-tools). The Premium tools section on [pricing](https://composio.dev/pricing) lists tools using Composio-hosted provider credentials; it is not an exhaustive coverage list. |
+| Hosted files and generated artifacts | Files use temporary storage with the lifecycle below. Signed-link expiry does not provide zero retention of the file. Avoid these paths when your requirements prohibit temporary file storage. |
 
-Tool execution logs and trigger event logs are retained for up to **one year**, after which they are automatically deleted.
+Your application, destination providers, model providers, and external MCP servers have their own data policies. Composio ZDR does not change them.
 
-## How long files are available
+## What remains stored
 
-When a tool uses or returns a file (an attachment, image, document, export, and so on), Composio stages it in temporary object storage and shares it through a presigned URL. The URL is valid for **1 hour by default**. You can configure this URL TTL per project in **Project Settings**, up to 24 hours.
+Composio retains account and project configuration, provider credentials, billing records, and operational metadata such as tool name, status, timing, execution IDs, and the supplied `user_id`. A log can record that an execution happened without its request or response content. Use opaque identifiers instead of personal information in metadata. See [token custody](/docs/security/token-custody) for credential handling.
 
-Presigned URL expiry and file deletion are separate. When the URL expires, the link stops resolving, but that does not delete the underlying object. Files staged for tool execution are automatically deleted from temporary object storage after **24 hours**.
+### How long logs are retained
 
-Workbench storage has two separate lifecycles:
+Tool execution and trigger event logs are retained for up to **one year**, then automatically deleted. ZDR omits covered payloads from new execution records; it does not remove their operational metadata.
 
-- Files written to `/mnt/files` are backed by temporary object storage and are automatically deleted after **24 hours**.
-- Other sandbox files, variables, and runtime state are temporary and may be cleared after approximately **12 hours** of inactivity.
+### Files and download links
 
-## Choose what we store: the Log storage setting
+Tools can stage files in temporary object storage and return signed download links. Staged files are cleaned up after **24 hours**. Links expire after **one hour** by default.
 
-You control whether call payloads are stored for each project in **Settings → General → Log storage**:
+In **Project Settings → General → Configuration → File download link expiry**, an admin can set the link lifetime from **1 second to 24 hours**. This changes access through the link, not the file's cleanup schedule. An expired link cannot be used to download the file; rerun the tool if you need a fresh result and link.
 
-- **Store all logs** (default) — Composio stores the full request and response payloads in the execution log.
-- **Don't store data** — Composio does not store the request arguments or response data from your tool calls. It keeps only the audit record: which tool ran, when it ran, whether it succeeded, the relevant IDs, and timing information.
+## Existing data and later changes
 
-With **Don't store data**, Composio keeps an audit trail but does not retain your tool-call payloads (including your end users' data) in its logs. This setting also applies to [Proxy Execute](/docs/extending-sessions/proxy-execute). If Composio cannot retrieve your project's log-storage setting, Proxy Execute does not store the request or response payload.
+ZDR applies from the project's effective activation time. It does not delete earlier logs or files, or recall data already sent to providers. Contact support if you need historical deletion before sending protected traffic.
 
-![Log storage set to "Don't store data" in Project Settings, General](/images/log-storage-dont-store-data.png)
+Turning ZDR off removes coverage for future executions. The confirmation explains whether payload logging resumes or stays off. Before a downgrade to Hobby, Billing explains that organization and project ZDR will turn off while payload storage stays off. Confirm the effective date in the billing portal. Previously omitted payloads cannot be recovered.
 
-<Callout type="info">
-To stop storing payloads, open the Dashboard, choose your project, go to **Settings → General → Log storage**, and select **Don't store data**.
-</Callout>
+## Verify your setup
 
-### Changing the setting affects new calls
+Send non-sensitive test data through a covered path using the protected project's API key. Confirm that the project shows active ZDR and that execution records omit request and response content. Empty logs alone do not establish coverage.
 
-You can switch between the two log-storage options at any time. Each change applies only to new calls:
-
-- Selecting **Don't store data** stops Composio from storing payloads for new calls. It does **not** delete payloads that were already stored: existing logs stay available until they age out under the one-year retention window.
-- Selecting **Store all logs** again resumes storing payloads for new calls. It does **not** backfill the period while payload storage was disabled.
-
-Payloads for calls made while storage was disabled were never stored and cannot be recovered later.
-
-## Where your data goes
-
-Choosing **Don't store data** stops Composio from persisting your payloads, but data may still pass through the following locations during execution:
-
-- The **destination provider** that receives the tool call.
-- **Composio's execution infrastructure** while the call runs.
-- **Temporary object storage** for files used or returned by tool calls. Presigned URL expiry is configurable per project, while the underlying staged file is deleted after 24 hours. See [How long files are available](#how-long-files-are-available).
-- Your configured **trigger destinations**, which receive trigger events in real time.
-- An isolated third-party **code sandbox**, if you use Workbench or remote code execution. Ordinary Python or shell execution does not inherently send code or sandbox files to an LLM provider. Model-provider processing occurs only in the cases described below.
-
-### When Workbench uses an LLM
-
-When a task requires advanced processing, the agent or MCP client may use Workbench and call `invoke_llm` from the submitted code—for example, to summarize, analyze, extract, or generate content. Only the information passed to `invoke_llm` is sent to the model provider; sandbox files and previous results are not sent unless the submitted code includes them.
-
-There is one separate case: if submitted Python contains a syntax error and automatic repair is enabled, Composio may send the code and error details to the configured model provider to fix it before execution. Valid Python and ordinary shell commands do not trigger this repair.
-
-So "Don't store data" controls what Composio retains, not whether data is processed during execution. For the current list of our sub-processors and our data-handling terms, see the [Composio Trust Center](https://trust.composio.dev/subprocessors).
-
-## Stronger guarantees
-
-If your organization needs a contractual zero-data-retention arrangement or shorter retention windows, [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-data-retention). For our data-handling policies and sub-processor list, see the [Composio Trust Center](https://trust.composio.dev).
+For unexpected payloads or coverage questions, contact [support](mailto:support@composio.dev) with the project ID, execution reference, and timestamp, without sensitive payloads.
