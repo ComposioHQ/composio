@@ -301,6 +301,57 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
+// `/consumer/permissions/resolve` has been observed returning override keys
+// built from a tool slug that repeats its leading word twice (e.g.
+// `OUTLOOK_OUTLOOK_SEARCH_MESSAGES` instead of `OUTLOOK_SEARCH_MESSAGES`) —
+// a stale artifact of an earlier server-side slug-generation scheme. This
+// isn't limited to the one or two tools first reported: the CLI's own
+// historical Outlook fixtures show the identical doubling across two dozen
+// different tool slugs, all of which resolve to a bare (non-doubled) slug
+// in the current toolkit catalog. That's a fix owned by the backend's
+// `/consumer/permissions/resolve` endpoint (closed-source, out of scope
+// here) — this strips the doubled leading word client-side, before any
+// permissionField() lookup happens, so a current slug still inherits the
+// policy the server filed under its stale doubled-prefix key.
+const stripDoubledLeadingWord = (toolSlug: string): string => {
+  const words = toolSlug.split('_');
+  return words.length >= 3 && words[0] === words[1]
+    ? [words[0], ...words.slice(2)].join('_')
+    : toolSlug;
+};
+
+// A canonical key already present in the map wins over its doubled-prefix
+// counterpart — the override map should never let a stale key clobber a
+// value the server filed correctly.
+export const normalizeLegacyOverrideKeys = (
+  overrides: Readonly<Record<string, PermissionOverrideState>> | undefined
+): Readonly<Record<string, PermissionOverrideState>> | undefined => {
+  if (!overrides) return overrides;
+  let normalized: Record<string, PermissionOverrideState> | undefined;
+  for (const [field, value] of Object.entries(overrides)) {
+    const separatorIndex = field.lastIndexOf(':');
+    if (separatorIndex === -1) continue;
+    const toolSlug = field.slice(0, separatorIndex);
+    const canonicalSlug = stripDoubledLeadingWord(toolSlug);
+    if (canonicalSlug === toolSlug) continue;
+    const canonicalField = `${canonicalSlug}${field.slice(separatorIndex)}`;
+    if (canonicalField in overrides) continue;
+    normalized ??= { ...overrides };
+    normalized[canonicalField] = value;
+  }
+  return normalized ?? overrides;
+};
+
+const normalizePermissionsOverrides = (
+  permissions: ToolRouterPermissionsConfig | undefined
+): ToolRouterPermissionsConfig | undefined => {
+  if (!permissions) return permissions;
+  const normalizedOverrides = normalizeLegacyOverrideKeys(permissions.overrides);
+  return normalizedOverrides === permissions.overrides
+    ? permissions
+    : { ...permissions, overrides: normalizedOverrides };
+};
+
 const fetchJson = async <S extends Schema.ConstraintDecoder<unknown>>(
   responseSchema: S,
   {
@@ -430,7 +481,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
       projectId: params.projectId,
       consumerUserId: params.consumerUserId,
       enhancedControlsEnabled,
-      permissions: resolved.permissions,
+      permissions: normalizePermissionsOverrides(resolved.permissions),
       connectedAccountIds,
       fetchedAt: Date.now(),
     };

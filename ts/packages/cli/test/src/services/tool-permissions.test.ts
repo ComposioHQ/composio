@@ -8,6 +8,7 @@ import {
   decodeCacheFileTolerant,
   decodeToolRouterPermissionsConfig,
   gateToolExecution,
+  normalizeLegacyOverrideKeys,
   resolveGateState,
   ToolPermissionDeniedError,
   type ConsumerPermissionSnapshot,
@@ -125,6 +126,64 @@ describe('tool permissions', () => {
         snapshot: snapshotFixture({ permissions: { default: 'ask_every_call' } }),
       })
     ).toBe('ask_every_call');
+  });
+
+  it('normalizes a doubled-leading-word override key to its bare slug', () => {
+    // Shape reported in issue #4327: the server's `/consumer/permissions/resolve`
+    // response files the `always_allow` policy under the stale
+    // `OUTLOOK_OUTLOOK_*` slug instead of the current `OUTLOOK_*` one.
+    const overrides = {
+      'OUTLOOK_OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'always_allow',
+      'OUTLOOK_OUTLOOK_GET_MESSAGE:ca_outlook_1': 'always_allow',
+      'GMAIL_SEND_EMAIL:__none__': 'always_deny',
+    } as const;
+
+    expect(normalizeLegacyOverrideKeys(overrides)).toStrictEqual({
+      ...overrides,
+      'OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'always_allow',
+      'OUTLOOK_GET_MESSAGE:ca_outlook_1': 'always_allow',
+    });
+  });
+
+  it('does not let a doubled-prefix key clobber an existing canonical override', () => {
+    const overrides = {
+      'OUTLOOK_OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'always_allow',
+      'OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'ask_always',
+    } as const;
+
+    expect(normalizeLegacyOverrideKeys(overrides)).toStrictEqual(overrides);
+  });
+
+  it('leaves override keys without a doubled leading word untouched', () => {
+    const overrides = { 'GMAIL_SEND_EMAIL:__none__': 'always_deny' } as const;
+
+    expect(normalizeLegacyOverrideKeys(overrides)).toBe(overrides);
+    expect(normalizeLegacyOverrideKeys(undefined)).toBeUndefined();
+  });
+
+  it('inherits always_allow for a current Outlook slug when the server only returns the legacy doubled-prefix key', () => {
+    const overrides = normalizeLegacyOverrideKeys({
+      'OUTLOOK_OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'always_allow',
+      'OUTLOOK_OUTLOOK_GET_MESSAGE:ca_outlook_1': 'always_allow',
+    });
+    const snapshot = snapshotFixture({
+      permissions: { default: 'ask_every_call', overrides },
+    });
+
+    expect(
+      resolveGateState({
+        toolSlug: 'OUTLOOK_SEARCH_MESSAGES',
+        connectedAccountId: 'ca_outlook_1',
+        snapshot,
+      })
+    ).toBe('always_allow');
+    expect(
+      resolveGateState({
+        toolSlug: 'OUTLOOK_GET_MESSAGE',
+        connectedAccountId: 'ca_outlook_1',
+        snapshot,
+      })
+    ).toBe('always_allow');
   });
 
   it('resolves overrides ahead of the default mode', () => {
