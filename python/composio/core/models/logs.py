@@ -34,7 +34,9 @@ class Logs(Resource):
         :param cursor: Pagination cursor from a previous response.
         :param filters: Filter clauses to narrow the search.
         :param time_range: Time window to search within.
-        :return: Matching logs plus a ``next_cursor`` for pagination.
+        :return: Matching logs plus a ``next_cursor`` for pagination. A charged
+            tool log has an exact USD string at
+            ``log.metadata["premium_usage_charge"]``.
 
         Example:
             page = composio.logs.search(
@@ -55,7 +57,8 @@ class Logs(Resource):
         Retrieve a single tool execution log by id.
 
         :param id: The log id.
-        :return: The full log entry.
+        :return: The full log entry. For charged calls,
+            ``log.metadata["premium_usage_charge"]`` is the exact USD amount.
 
         Example:
             log = composio.logs.get("log_123")

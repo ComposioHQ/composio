@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from composio import exceptions
+from composio.client.types import usage_retrieve_summary_response
 from composio.core.models.experimental import ExperimentalAPI, ExperimentalUsage
 
 
@@ -29,7 +30,11 @@ class TestExperimentalUsage:
         assert experimental.usage._client is mock_client
 
     def test_summary_passes_params_through(self, usage, mock_client):
-        mock_client.project.usage.retrieve_summary.return_value = "summary"
+        mock_client.project.usage.retrieve_summary.return_value = (
+            usage_retrieve_summary_response.UsageRetrieveSummaryResponse.model_validate(
+                {"entities": {}, "premium_usage_charge": "0.025"}
+            )
+        )
 
         result = usage.summary(
             from_=1.0,
@@ -38,7 +43,8 @@ class TestExperimentalUsage:
             filters={"toolkit_slug": "github"},
         )
 
-        assert result == "summary"
+        assert result.entities == {}
+        assert result.premium_usage_charge == "0.025"
         mock_client.project.usage.retrieve_summary.assert_called_once_with(
             from_=1.0,
             to=2.0,
@@ -47,9 +53,16 @@ class TestExperimentalUsage:
         )
 
     def test_summary_without_params(self, usage, mock_client):
-        usage.summary()
+        mock_client.project.usage.retrieve_summary.return_value = (
+            usage_retrieve_summary_response.UsageRetrieveSummaryResponse.model_validate(
+                {"entities": {}, "premium_usage_charge": "0"}
+            )
+        )
+
+        result = usage.summary()
 
         mock_client.project.usage.retrieve_summary.assert_called_once_with()
+        assert result.premium_usage_charge == "0"
 
     def test_breakdown_passes_entity_type_and_params(self, usage, mock_client):
         mock_client.project.usage.retrieve.return_value = "breakdown"

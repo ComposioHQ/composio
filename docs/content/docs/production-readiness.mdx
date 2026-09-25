@@ -86,6 +86,8 @@ In Python, pass a standard `logging.Logger` as `logger` and a `composio.utils.lo
 
 Use `composio.experimental.usage.summary()` for totals by entity type and `composio.experimental.usage.breakdown()` for grouped usage of one entity type, such as `tool_calls` or `sessions`. Both SDKs scope these queries to the project associated with your API key.
 
+The summary also returns the total premium usage charge for the window as an exact USD string: `premiumUsageCharge` in TypeScript and `premium_usage_charge` in Python. It returns `"0"` when no usage was charged. Breakdowns contain usage quantities and event counts, not charges.
+
 <Callout>
 Usage metering is experimental, and its response shape may change.
 </Callout>

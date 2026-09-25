@@ -46,7 +46,7 @@ export class Logs {
    * pagination.
    *
    * @param {LogSearchParams} [params] - Filters, `timeRange`, `limit` and `cursor`
-   * @returns {Promise<LogSearchResponse>} Matching logs and the next cursor
+   * @returns {Promise<LogSearchResponse>} Matching logs and the next cursor. Charged calls include `metadata.premium_usage_charge` as an exact USD string.
    * @throws {ValidationError} If the params fail validation
    *
    * @example
@@ -83,7 +83,7 @@ export class Logs {
    * source and raw `data`).
    *
    * @param {string} id - The log id
-   * @returns {Promise<ToolExecutionLogDetail>} The log detail
+   * @returns {Promise<ToolExecutionLogDetail>} The log detail, with an optional exact USD charge in `metadata.premium_usage_charge`
    *
    * @example
    * ```typescript
