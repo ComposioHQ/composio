@@ -5,13 +5,13 @@ keywords: [Instant Tools, Sessions, premium usage, hosted account]
 experimental: true
 ---
 
-Instant Tools let your Session run supported tools without an end-user provider connection. A Composio hosted account provides access for eligible tools. Premium usage charges for those calls come from your organization's available balance.
+Instant Tools let your Session run supported tools without an end-user provider connection. A hosted account provides access for eligible tools. These calls can incur a premium usage charge against your organization's balance.
 
 <Callout type="warning" title="Experimental access">
-  This feature requires a project setting that is not yet self-service. Email [support@composio.dev](mailto:support@composio.dev) to enable it for your project and confirm which tools and rates are available. Session configuration cannot override a project where the setting is off.
+  Instant Tools are in limited availability. Ask [support@composio.dev](mailto:support@composio.dev) to enable access for your organization and confirm supported tools and rates. An organization admin can then turn on **Premium usage** in the project's settings. Session configuration cannot override a project where this setting is off.
 </Callout>
 
-Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `premium_usage` is omitted. Set `premium_usage=False` in Python or `premiumUsage: false` in TypeScript when creating a Session that must not incur premium usage charges.
+Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `premium_usage` is omitted. Set `premium_usage=False` in Python or `premiumUsage: false` in TypeScript when creating a Session that must not incur premium usage charges. `premium_usage` is the wider Session billing policy; Instant Tools are one capability it controls.
 
 ## Find eligible tools
 
