@@ -112,9 +112,14 @@ def _origin(url: str, role: str) -> str:
     return f"{scheme}://{host}"
 
 
-# Type alias for MCP tag literals
+# Type alias for tool behavior tag literals
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "destructiveHint",
+    "createHint",
+    "updateHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -675,29 +680,22 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if tags is None:
             return None
 
+        payload: t.Dict[str, t.Any] = {}
         if isinstance(tags, list):
             # List shorthand means enable these tags
-            # Return value structure matches TagsUnionMember1: {"enable": [...]}
-            return {"enable": tags}
+            payload["enable"] = tags
         elif isinstance(tags, dict):
-            # Object format with enable/disable
-            # Only include keys that are present and not None
-            # Return value structure matches TagsUnionMember1
-            enable_value = tags.get("enable")
-            disable_value = tags.get("disable")
+            # Object format with enable/disable; only include keys that are set
+            if tags.get("enable") is not None:
+                payload["enable"] = tags["enable"]
+            if tags.get("disable") is not None:
+                payload["disable"] = tags["disable"]
 
-            # Build result dict only with non-None values
-            if enable_value is not None and disable_value is not None:
-                return {
-                    "enable": enable_value,
-                    "disable": disable_value,
-                }
-            elif enable_value is not None:
-                return {"enable": enable_value}
-            elif disable_value is not None:
-                return {"disable": disable_value}
-            else:
-                return None
+        if not payload:
+            return None
+        # The generated client still narrows tags to the four MCP hints. The API
+        # also accepts createHint and updateHint, so cast until it is regenerated.
+        return t.cast(session_create_params.TagsUnionMember1, payload)
 
     # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
     # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
@@ -829,7 +827,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
                     Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    'createHint', 'updateHint', 'idempotentHint', 'openWorldHint'.
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
