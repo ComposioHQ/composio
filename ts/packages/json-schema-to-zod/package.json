@@ -47,9 +47,9 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.6.0",
+    "@types/node": "^26.6.2",
     "ajv": "^8.20.0",
-    "fast-check": "^4.10.0",
+    "fast-check": "^4.10.2",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
