@@ -55,8 +55,8 @@ catalogs:
       specifier: ^7.0.101
       version: 7.0.101
     dotenv:
-      specifier: ^17.4.2
-      version: 17.4.2
+      specifier: ^18.0.2
+      version: 18.0.2
     effect:
       specifier: 4.0.0-rc.115
       version: 4.0.0-rc.115
@@ -293,7 +293,7 @@ importers:
         version: 5.20260915.1
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -321,7 +321,7 @@ importers:
         version: 5.20260915.1
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -361,7 +361,7 @@ importers:
         version: 5.20260915.1
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -635,7 +635,7 @@ importers:
         version: 6.0.283(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -701,7 +701,7 @@ importers:
         version: link:../../packages/core
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -717,7 +717,7 @@ importers:
         version: link:../../packages/core
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -739,10 +739,10 @@ importers:
         version: 2.22.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -761,7 +761,7 @@ importers:
         version: link:../../packages/providers/vercel
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@4.5.4)
@@ -792,7 +792,7 @@ importers:
         version: 1.5.13(@aws-sdk/credential-provider-node@3.972.78)(@langchain/core@1.2.11(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       langchain:
         specifier: ^1.5.11
         version: 1.5.11(@langchain/core@1.2.11(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
@@ -823,7 +823,7 @@ importers:
         version: 1.1.25(@llamaindex/core@0.6.23)(@llamaindex/env@0.1.31)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(hono@4.13.7)(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       llamaindex:
         specifier: ^0.12.1
         version: 0.12.1(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(hono@4.13.7)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.5.4)
@@ -854,7 +854,7 @@ importers:
         version: 6.0.283(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -891,13 +891,13 @@ importers:
         version: link:../../packages/providers/vercel
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       ai:
         specifier: 'catalog:'
         version: 7.0.101(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -944,13 +944,13 @@ importers:
         version: link:../../packages/providers/openai-agents
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@openai/agents':
         specifier: ^0.18.0
         version: 0.18.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(supports-color@10.2.2)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       openai:
         specifier: 'catalog:'
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
@@ -984,7 +984,7 @@ importers:
         version: link:../../packages/core
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1033,7 +1033,7 @@ importers:
         version: 7.0.101(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       langchain:
         specifier: ^1.5.11
         version: 1.5.11(@langchain/core@1.2.11(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
@@ -1095,7 +1095,7 @@ importers:
         version: 7.0.101(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       openai:
         specifier: 'catalog:'
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4)
@@ -1120,7 +1120,7 @@ importers:
         version: link:../../packages/core
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1145,7 +1145,7 @@ importers:
         version: 0.6.0
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -1173,13 +1173,13 @@ importers:
         version: link:../../packages/providers/vercel
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       ai:
         specifier: 'catalog:'
         version: 7.0.101(zod@4.5.4)
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -1204,7 +1204,7 @@ importers:
         version: link:../../packages/core
       dotenv:
         specifier: 'catalog:'
-        version: 17.4.2
+        version: 18.0.2
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1250,7 +1250,7 @@ importers:
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@zed-industries/claude-code-acp':
         specifier: ^0.16.2
         version: 0.16.2(@cfworker/json-schema@4.1.1)(zod@4.5.4)
@@ -1353,7 +1353,7 @@ importers:
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       extract-zip:
         specifier: ^2.0.1
         version: 2.0.1(supports-color@10.2.2)
@@ -1572,7 +1572,7 @@ importers:
         version: link:../../core
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.13)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -4660,6 +4660,11 @@ packages:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
+  dotenv@18.0.2:
+    resolution: {integrity: sha512-wl0U3CxC0iobaryqEKpFJxzyp4AxQFYAKj/WWszXZr87vVHLi2yJv2syax5Vxt+u02xqNgE277rsc3lOKg9sPg==}
+    engines: {node: '>=12'}
+    hasBin: true
+
   dts-resolver@3.0.0:
     resolution: {integrity: sha512-1T1f+z+4tl9XD+m+0HBgWoL/nm0bOIffyWaUuUSBlFg/86IWvfx+wjNaO/ybU0AJzG9/Mi5hBUgGV6zCmWEN7Q==}
     engines: {node: ^22.18.0 || >=24.0.0}
@@ -6857,7 +6862,7 @@ snapshots:
   '@anthropic-ai/claude-agent-sdk@0.3.272(@anthropic-ai/sdk@0.125.0(zod@4.5.4))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)':
     dependencies:
       '@anthropic-ai/sdk': 0.125.0(zod@4.5.4)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       zod: 4.5.4
     optionalDependencies:
       '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.272
@@ -7556,7 +7561,7 @@ snapshots:
       protobufjs: 7.6.5
       ws: 8.21.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -7569,7 +7574,7 @@ snapshots:
       protobufjs: 7.6.5
       ws: 8.21.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -7832,7 +7837,7 @@ snapshots:
     dependencies:
       '@langchain/core': 1.2.11(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3)
       '@langchain/langgraph': 1.4.15(@langchain/core@1.2.11(@opentelemetry/api@1.9.1)(openai@7.15.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(undici@6.28.0)(ws@8.21.3)(zod@4.5.4))(ws@8.21.3))(zod@4.5.4)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       debug: 4.4.3(supports-color@10.2.2)
       zod: 4.5.4
     optionalDependencies:
@@ -7909,7 +7914,7 @@ snapshots:
 
   '@llamaindex/workflow-core@1.3.4(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(hono@4.13.7)(zod@4.5.4)':
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       hono: 4.13.7
       zod: 4.5.4
 
@@ -8067,7 +8072,7 @@ snapshots:
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@4.5.4)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
@@ -8128,7 +8133,7 @@ snapshots:
       '@modelcontextprotocol/core': 2.0.0
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
       '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.13.7)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@modelcontextprotocol/server': 2.0.0
       '@modelcontextprotocol/server-legacy': 2.0.0(express@5.2.1)
       exit-hook: 5.1.0
@@ -8186,7 +8191,7 @@ snapshots:
 
   '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
       '@standard-schema/spec': 1.1.0
       zod: 4.5.4
 
@@ -8208,31 +8213,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
-      hono: 4.13.7
-      jose: 6.2.9
-      json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
-      raw-body: 3.0.2
-      zod: 4.5.4
-      zod-to-json-schema: 3.25.2(zod@4.5.4)
-    optionalDependencies:
-      '@cfworker/json-schema': 4.1.1
-    transitivePeerDependencies:
-      - supports-color
-
-  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)':
-    dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.7)
-      ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
-      content-type: 1.0.5
-      cors: 2.8.6
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.1.1
-      express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
+      express-rate-limit: 8.6.2(express@5.2.1)
       hono: 4.13.7
       jose: 6.2.9
       json-schema-typed: 8.0.2
@@ -8256,7 +8237,7 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
+      express-rate-limit: 8.6.2(express@5.2.1)
       hono: 4.13.7
       jose: 6.2.9
       json-schema-typed: 8.0.2
@@ -8269,12 +8250,36 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.7)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1
+      express-rate-limit: 8.6.2(express@5.2.1)
+      hono: 4.13.7
+      jose: 6.2.9
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.5.4
+      zod-to-json-schema: 3.25.2(zod@4.5.4)
+    optionalDependencies:
+      '@cfworker/json-schema': 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+
   '@modelcontextprotocol/server-legacy@2.0.0(express@5.2.1)':
     dependencies:
       '@modelcontextprotocol/core': 2.0.0
       content-type: 1.0.5
       cors: 2.8.6
-      express-rate-limit: 8.6.2(express@5.2.1)(supports-color@10.2.2)
+      express-rate-limit: 8.6.2(express@5.2.1)
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 4.5.4
@@ -9434,6 +9439,8 @@ snapshots:
 
   dotenv@17.4.2: {}
 
+  dotenv@18.0.2: {}
+
   dts-resolver@3.0.0: {}
 
   dunder-proto@1.0.1:
@@ -9565,7 +9572,7 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.6.2(express@5.2.1)(supports-color@10.2.2):
+  express-rate-limit@8.6.2(express@5.2.1):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       express: 5.2.1
