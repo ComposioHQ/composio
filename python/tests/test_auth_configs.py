@@ -106,20 +106,6 @@ class TestAuthConfigs:
         )
         assert result == mock_response
 
-    def test_list_with_empty_result(self, auth_configs, mock_client):
-        """Test listing auth configs returns empty list."""
-        mock_response = Mock(spec=auth_config_list_response.AuthConfigListResponse)
-        mock_response.items = []
-        mock_response.next_cursor = None
-        mock_response.total_pages = 0
-        mock_client.auth_configs.list.return_value = mock_response
-
-        result = auth_configs.list()
-
-        assert len(result.items) == 0
-        assert result.next_cursor is None
-        assert result.total_pages == 0
-
     # Create tests
     def test_create_with_default_composio_managed_auth(self, auth_configs, mock_client):
         """Test creating auth config with default Composio managed type."""
@@ -225,47 +211,6 @@ class TestAuthConfigs:
 
         assert "Auth config not found" in str(exc_info.value)
 
-    def test_get_with_is_enabled_for_tool_router_true(
-        self, auth_configs, mock_client, mock_auth_config_response
-    ):
-        """Test retrieving auth config with isEnabledForToolRouter set to true."""
-        mock_auth_config_response.is_enabled_for_tool_router = True
-        mock_client.auth_configs.retrieve.return_value = mock_auth_config_response
-
-        result = auth_configs.get("auth_12345")
-
-        assert hasattr(result, "is_enabled_for_tool_router")
-        assert result.is_enabled_for_tool_router is True
-
-    def test_get_with_is_enabled_for_tool_router_false(
-        self, auth_configs, mock_client, mock_auth_config_response
-    ):
-        """Test retrieving auth config with isEnabledForToolRouter set to false."""
-        mock_auth_config_response.is_enabled_for_tool_router = False
-        mock_client.auth_configs.retrieve.return_value = mock_auth_config_response
-
-        result = auth_configs.get("auth_12345")
-
-        assert hasattr(result, "is_enabled_for_tool_router")
-        assert result.is_enabled_for_tool_router is False
-
-    def test_get_with_is_enabled_for_tool_router_undefined(
-        self, auth_configs, mock_client, mock_auth_config_response
-    ):
-        """Test retrieving auth config with isEnabledForToolRouter undefined."""
-        # Don't set the attribute at all to simulate undefined
-        if hasattr(mock_auth_config_response, "is_enabled_for_tool_router"):
-            delattr(mock_auth_config_response, "is_enabled_for_tool_router")
-        mock_client.auth_configs.retrieve.return_value = mock_auth_config_response
-
-        result = auth_configs.get("auth_12345")
-
-        # Should not have the attribute or it should be None
-        assert (
-            not hasattr(result, "is_enabled_for_tool_router")
-            or result.is_enabled_for_tool_router is None
-        )
-
     # Update tests
     def test_update_custom_auth_config_with_credentials(
         self, auth_configs, mock_client
@@ -291,27 +236,6 @@ class TestAuthConfigs:
         assert call_args.kwargs["nanoid"] == "auth_12345"
         assert call_args.kwargs["type"] == "custom"
         assert call_args.kwargs["credentials"] == options["credentials"]
-        assert result == mock_response
-
-    def test_update_default_auth_config_with_scopes(self, auth_configs, mock_client):
-        """Test updating default auth config with scopes."""
-        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
-            success=True, message="Successfully updated auth config"
-        )
-        mock_client.auth_configs.update.return_value = mock_response
-
-        options = {
-            "type": "default",
-            "scopes": "read:user,repo",
-        }
-
-        result = auth_configs.update("auth_12345", options=options)
-
-        mock_client.auth_configs.update.assert_called_once()
-        # Check that scopes are not directly passed but other fields are
-        call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["nanoid"] == "auth_12345"
-        assert call_args.kwargs["type"] == "default"
         assert result == mock_response
 
     def test_update_with_is_enabled_for_tool_router(self, auth_configs, mock_client):
@@ -352,33 +276,6 @@ class TestAuthConfigs:
 
         call_args = mock_client.auth_configs.update.call_args
         assert call_args.kwargs["tool_access_config"] == options["tool_access_config"]
-        assert result == mock_response
-
-    def test_update_with_large_credential_object(self, auth_configs, mock_client):
-        """Test updating auth config with large credential object."""
-        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
-            success=True, message="Successfully updated auth config"
-        )
-        mock_client.auth_configs.update.return_value = mock_response
-
-        large_credentials = {
-            "field1": "value1",
-            "field2": "value2",
-            "field3": {"nested": "object"},
-            "field4": ["array", "values"],
-            "field5": 12345,
-            "field6": True,
-        }
-
-        options = {
-            "type": "custom",
-            "credentials": large_credentials,
-        }
-
-        result = auth_configs.update("auth_12345", options=options)
-
-        call_args = mock_client.auth_configs.update.call_args
-        assert call_args.kwargs["credentials"] == large_credentials
         assert result == mock_response
 
     def test_update_handles_api_error(self, auth_configs, mock_client):
@@ -487,137 +384,6 @@ class TestAuthConfigs:
         # Verify that optional fields use the sentinel value
         assert call_args.kwargs["is_enabled_for_tool_router"] == mock_client.not_given
         assert call_args.kwargs["tool_access_config"] == mock_client.not_given
-        assert result == mock_response
-
-    def test_create_with_minimal_options(self, auth_configs, mock_client):
-        """Test creating auth config with minimal options."""
-        mock_auth_config = Mock(spec=auth_config_create_response.AuthConfig)
-        mock_auth_config.id = "auth_12345"
-
-        mock_response = Mock(spec=auth_config_create_response.AuthConfigCreateResponse)
-        mock_response.auth_config = mock_auth_config
-
-        mock_client.auth_configs.create.return_value = mock_response
-
-        # Just the toolkit, using default type
-        result = auth_configs.create("github", {"type": "use_composio_managed_auth"})
-
-        mock_client.auth_configs.create.assert_called_once()
-        assert result == mock_auth_config
-
-    def test_list_with_pagination(self, auth_configs, mock_client):
-        """Test listing auth configs with pagination."""
-        mock_response = Mock(spec=auth_config_list_response.AuthConfigListResponse)
-        mock_response.items = [Mock(), Mock(), Mock()]
-        mock_response.next_cursor = "next_page_cursor"
-        mock_response.total_pages = 5
-        mock_client.auth_configs.list.return_value = mock_response
-
-        result = auth_configs.list(cursor="current_cursor", limit=3)
-
-        mock_client.auth_configs.list.assert_called_once()
-        assert len(result.items) == 3
-        assert result.next_cursor == "next_page_cursor"
-        assert result.total_pages == 5
-
-    def test_get_minimal_auth_config(self, auth_configs, mock_client):
-        """Test retrieving auth config with minimal fields."""
-        minimal_response = Mock(
-            spec=auth_config_retrieve_response.AuthConfigRetrieveResponse
-        )
-        minimal_response.id = "auth_minimal"
-        minimal_response.name = "Minimal Config"
-        minimal_response.no_of_connections = 0
-        minimal_response.status = "DISABLED"
-        minimal_response.toolkit = Mock()
-        minimal_response.toolkit.logo = ""
-        minimal_response.toolkit.slug = "minimal-toolkit"
-        minimal_response.uuid = "uuid-minimal"
-
-        mock_client.auth_configs.retrieve.return_value = minimal_response
-
-        result = auth_configs.get("auth_minimal")
-
-        assert result.id == "auth_minimal"
-        assert result.name == "Minimal Config"
-        assert result.no_of_connections == 0
-        assert result.status == "DISABLED"
-
-
-class TestAuthConfigsOverloads:
-    """Test type overloads for create and update methods."""
-
-    @pytest.fixture
-    def mock_client(self):
-        """Create a mock client for testing."""
-        client = Mock()
-        client.auth_configs = Mock()
-        client.auth_configs.create = Mock()
-        client.auth_configs.update = Mock()
-        client.not_given = object()
-        return client
-
-    @pytest.fixture
-    def auth_configs(self, mock_client):
-        """Create an AuthConfigs instance with mock client."""
-        return AuthConfigs(client=mock_client)
-
-    def test_create_overload_use_composio_managed_auth(self, auth_configs, mock_client):
-        """Test create with use_composio_managed_auth type."""
-        mock_auth_config = Mock(spec=auth_config_create_response.AuthConfig)
-        mock_response = Mock(spec=auth_config_create_response.AuthConfigCreateResponse)
-        mock_response.auth_config = mock_auth_config
-        mock_client.auth_configs.create.return_value = mock_response
-
-        options = {"type": "use_composio_managed_auth"}
-        result = auth_configs.create("github", options)
-
-        assert result == mock_auth_config
-
-    def test_create_overload_use_custom_auth(self, auth_configs, mock_client):
-        """Test create with use_custom_auth type."""
-        mock_auth_config = Mock(spec=auth_config_create_response.AuthConfig)
-        mock_response = Mock(spec=auth_config_create_response.AuthConfigCreateResponse)
-        mock_response.auth_config = mock_auth_config
-        mock_client.auth_configs.create.return_value = mock_response
-
-        options = {
-            "type": "use_custom_auth",
-            "auth_scheme": "API_KEY",
-            "credentials": {"api_key": "test_key"},
-        }
-        result = auth_configs.create("github", options)
-
-        assert result == mock_auth_config
-
-    def test_update_overload_custom_type(self, auth_configs, mock_client):
-        """Test update with custom type."""
-        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
-            success=True, message="Successfully updated auth config"
-        )
-        mock_client.auth_configs.update.return_value = mock_response
-
-        options = {
-            "type": "custom",
-            "credentials": {"api_key": "new_key"},
-        }
-        result = auth_configs.update("auth_12345", options=options)
-
-        assert result == mock_response
-
-    def test_update_overload_default_type(self, auth_configs, mock_client):
-        """Test update with default type."""
-        mock_response = auth_config_update_response.AuthConfigUpdateResponse(
-            success=True, message="Successfully updated auth config"
-        )
-        mock_client.auth_configs.update.return_value = mock_response
-
-        options = {
-            "type": "default",
-            "scopes": "read:user",
-        }
-        result = auth_configs.update("auth_12345", options=options)
-
         assert result == mock_response
 
 

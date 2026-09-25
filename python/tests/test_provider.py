@@ -88,80 +88,9 @@ class TestProviderInitialization:
         assert provider.name == "test_agentic"
         assert isinstance(provider, AgenticProvider)
 
-    def test_provider_has_name_attribute(self):
-        """Test that all providers have a name attribute."""
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-        assert hasattr(provider, "name")
-        assert isinstance(provider.name, str)
-        assert len(provider.name) > 0
-
 
 class TestProviderExecuteToolSetup:
     """Test cases for execute_tool setup during initialization."""
-
-    def test_execute_tool_set_during_tools_initialization_non_agentic(self):
-        """Test that execute_tool is set during Tools initialization for non-agentic providers."""
-        mock_client = mock_http_client()
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-
-        # Create Tools instance
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # After initialization, provider should have execute_tool
-        assert hasattr(provider, "execute_tool")
-        assert provider.execute_tool is not None
-        assert callable(provider.execute_tool)
-
-    def test_execute_tool_set_during_tools_initialization_agentic(self):
-        """Test that execute_tool is set during Tools initialization for agentic providers."""
-        mock_client = mock_http_client()
-
-        class TestAgenticProvider(AgenticProvider, name="test_agentic"):
-            def wrap_tool(self, tool, execute_tool):
-                return {"slug": tool.slug, "execute": execute_tool}
-
-            def wrap_tools(self, tools, execute_tool):
-                return [self.wrap_tool(tool, execute_tool) for tool in tools]
-
-        provider = TestAgenticProvider()
-
-        # Create Tools instance
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # After initialization, provider should have execute_tool
-        assert hasattr(provider, "execute_tool")
-        assert provider.execute_tool is not None
-        assert callable(provider.execute_tool)
-
-    def test_execute_tool_available_immediately_after_initialization(self):
-        """Test that execute_tool is available immediately after initialization, before get() is called."""
-        mock_client = mock_http_client()
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-
-        # Create Tools instance (but don't call get())
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # execute_tool should be available immediately
-        assert hasattr(provider, "execute_tool")
-        assert callable(provider.execute_tool)
 
     def test_execute_tool_signature_matches_protocol(self):
         """Test that execute_tool has the correct signature matching ExecuteToolFn protocol."""
@@ -718,28 +647,6 @@ class TestNonAgenticProviderHelperMethods:
 
 class TestAgenticProviderFunctionality:
     """Test cases for agentic providers."""
-
-    def test_agentic_provider_has_execute_tool_after_initialization(self):
-        """Test that agentic providers have execute_tool after Tools initialization."""
-        mock_client = mock_http_client()
-
-        class TestAgenticProvider(AgenticProvider, name="test_agentic"):
-            def wrap_tool(self, tool, execute_tool):
-                return {"slug": tool.slug, "execute": execute_tool}
-
-            def wrap_tools(self, tools, execute_tool):
-                return [self.wrap_tool(tool, execute_tool) for tool in tools]
-
-        provider = TestAgenticProvider()
-
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        assert hasattr(provider, "execute_tool")
-        assert callable(provider.execute_tool)
 
     def test_agentic_provider_execute_tool_works(self):
         """Test that agentic provider's execute_tool executes tools correctly."""

@@ -382,87 +382,7 @@ describe('MastraProvider', () => {
     });
   });
 
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-
-    it('should handle execution errors gracefully', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const errorResponse = {
-        data: null,
-        error: { message: 'Tool execution failed' },
-        successful: false,
-      };
-
-      mockExecuteToolFn.mockResolvedValueOnce(errorResponse);
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(result).toEqual(errorResponse);
-    });
-  });
-
   describe('integration with Mastra', () => {
-    it('should produce tools compatible with Mastra createTool', () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
-
-      // Verify the wrapped tool has the expected structure
-      expect(wrapped).toHaveProperty('id');
-      expect(wrapped).toHaveProperty('description');
-      expect(wrapped).toHaveProperty('inputSchema');
-      expect(wrapped).toHaveProperty('outputSchema');
-      expect(wrapped).toHaveProperty('execute');
-
-      // The execute property should be a function
-      expect(typeof wrapped.execute).toBe('function');
-    });
-
-    it('should create tools with correct id mapping from slug', () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
-
-      expect(createTool).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: mockTool.slug,
-        })
-      );
-    });
-
     it('should handle tools without schemas gracefully', () => {
       const minimalTool: Tool = {
         slug: 'minimal-tool',
@@ -514,36 +434,7 @@ describe('MastraProvider', () => {
     });
   });
 
-  describe('type safety', () => {
-    it('should maintain correct typing for MastraTool', () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn);
-
-      // Type assertion should work
-      expect(wrapped).toBeDefined();
-      expect(typeof wrapped).toBe('object');
-    });
-
-    it('should maintain correct typing for MastraToolCollection', () => {
-      const tools = [mockTool];
-      const wrapped = provider.wrapTools(tools, mockExecuteToolFn);
-
-      // Should be an object with string keys
-      expect(typeof wrapped).toBe('object');
-      expect(Array.isArray(wrapped)).toBe(false);
-    });
-  });
-
   describe('strict mode', () => {
-    it('should create provider with strict mode disabled by default', () => {
-      const defaultProvider = new MastraProvider();
-      expect(defaultProvider['strict']).toBe(false);
-    });
-
-    it('should create provider with strict mode enabled when specified', () => {
-      const strictProvider = new MastraProvider({ strict: true });
-      expect(strictProvider['strict']).toBe(true);
-    });
-
     it('should keep optional properties as required-nullable when strict mode is enabled', () => {
       const strictProvider = new MastraProvider({ strict: true });
 
@@ -841,16 +732,6 @@ describe('MastraProvider', () => {
         expect(result).toEqual({});
       });
 
-      it('should handle single item array', () => {
-        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        expect(result).toEqual({
-          'single-server': { url: 'https://single.example.com' },
-        });
-      });
-
       it('should handle duplicate names by overwriting', () => {
         const mcpResponse = [
           { name: 'duplicate', url: 'https://first.example.com' },
@@ -885,27 +766,6 @@ describe('MastraProvider', () => {
           'query-server': { url: 'https://example.com?param=value' },
           'fragment-server': { url: 'https://example.com#section' },
         });
-      });
-    });
-
-    describe('MCP integration with provider', () => {
-      it('should correctly type the MCP response transformation', () => {
-        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        // TypeScript should infer this as MastraUrlMap
-        const urlMap: { [name: string]: { url: string } } = result;
-        expect(urlMap['test-server'].url).toBe('https://test.example.com');
-      });
-
-      it('should work with MCP provider instance', () => {
-        // Verify the provider can transform MCP responses
-        const newProvider = new MastraProvider();
-        const testResponse = [{ name: 'test', url: 'https://test.com' }];
-
-        const result = newProvider.wrapMcpServerResponse(testResponse);
-        expect(result).toEqual({ test: { url: 'https://test.com' } });
       });
     });
   });

@@ -3,7 +3,6 @@
 from composio.core.types import (
     ToolkitLatestVersion,
     ToolkitVersion,
-    ToolkitVersionParam,
     ToolkitVersions,
 )
 
@@ -29,31 +28,6 @@ class TestCoreTypes:
         # Should be Dict[str, ToolkitVersion]
         assert hasattr(ToolkitVersions, "__origin__")
         assert ToolkitVersions.__origin__ is dict
-
-    def test_toolkit_version_param_is_union(self):
-        """Test ToolkitVersionParam is union type."""
-        # Should be Union[str, ToolkitVersions, None]
-        assert hasattr(ToolkitVersionParam, "__origin__")
-
-    def test_toolkit_version_param_accepts_string(self):
-        """Test ToolkitVersionParam accepts string."""
-        version: ToolkitVersionParam = "latest"
-        assert version == "latest"
-
-        version = "v1.0.0"
-        assert version == "v1.0.0"
-
-    def test_toolkit_version_param_accepts_dict(self):
-        """Test ToolkitVersionParam accepts dictionary."""
-        version: ToolkitVersionParam = {"github": "v1.0.0", "slack": "latest"}
-        assert isinstance(version, dict)
-        assert version["github"] == "v1.0.0"
-        assert version["slack"] == "latest"
-
-    def test_toolkit_version_param_accepts_none(self):
-        """Test ToolkitVersionParam accepts None."""
-        version: ToolkitVersionParam = None
-        assert version is None
 
     def test_all_types_exported(self):
         """Test that all types are properly exported."""

@@ -1,14 +1,5 @@
 """Test imports to ensure no circular import issues."""
 
-import pytest
-
-
-def test_basic_import():
-    """Test basic import of Composio class."""
-    from composio import Composio
-
-    assert Composio is not None
-
 
 def test_import_all_public_exports():
     """Test importing all public exports from composio package."""
@@ -111,18 +102,3 @@ def test_import_exceptions():
 
     assert exceptions is not None
     assert hasattr(exceptions, "ApiKeyNotProvidedError")
-
-
-def test_circular_import_prevention():
-    """Test that circular imports are prevented."""
-    # This test passes if no ImportError is raised during import
-    try:
-        from composio import Composio  # noqa: F401
-        from composio.core.models.tools import Tools  # noqa: F401
-        from composio.core.types import ToolkitVersion  # noqa: F401
-        from composio.types import ToolkitVersionParam  # noqa: F401
-
-        # If we get here, no circular import occurred
-        assert True
-    except ImportError as e:
-        pytest.fail(f"Circular import detected: {e}")

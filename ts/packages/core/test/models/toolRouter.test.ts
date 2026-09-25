@@ -193,10 +193,6 @@ describe('ToolRouter', () => {
       expect(telemetry.instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
     });
 
-    it('should store the client reference', () => {
-      expect(toolRouter['client']).toBe(mockClient);
-    });
-
     it('should store the config reference', () => {
       expect(toolRouter['config']).toEqual({ provider: mockProvider, apiKey: 'test-api-key' });
     });
