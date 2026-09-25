@@ -29,7 +29,7 @@ Each Instant Tool has its own per-call price. There are no tiers and no bundles:
 | Charge | The amount deducted from the Balance for one paid tool call |
 | Tool call | One execution of a tool |
 
-> **Early access:** Instant Tools are enabled per organization. Reach out to [support@composio.dev](mailto:support@composio.dev) to get access and to confirm which tools are eligible and their current per-tool prices.
+> **Early access:** Instant Tools are enabled per organization. Reach out to [support@composio.dev](mailto:support@composio.dev) to get access and to confirm current per-tool prices.
 
 > **Zero data retention (ZDR) is not enabled for Instant Tools.** Calls that run on Composio's hosted account are not covered by ZDR. If a workload requires ZDR, run the same tool on the user's own key instead, where retention follows the provider's own terms and can offer ZDR. Using your own key changes which account runs the call; it does not by itself guarantee zero data retention. Contractual ZDR requires its own arrangement with the provider, or Composio's Enterprise track.
 
@@ -47,7 +47,9 @@ Once the project setting is enabled, new Sessions can use eligible Instant Tools
 
 ## Find eligible tools [#find-eligible-tools]
 
-Instant coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return Instant eligibility or per-tool prices, and it offers no Instant filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During early access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and their prices before allowing them in a production Session.
+Instant coverage is per tool, not per toolkit. Neither the [toolkit listing API](/reference/api-reference/toolkits/getToolkits) nor the tools listing API returns Instant eligibility, hosted-account availability, or per-tool prices, and neither offers an Instant filter. Their `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes.
+
+The discovery surface is Session search: `POST /api/v3/tool_router/session/{session_id}/search` (see the [tool router API reference](/reference/api-reference/tool-router)) returns `toolkit_connection_statuses[].hosted_account.allowed_tool_slugs` (`hostedAccount.allowedToolSlugs` in TypeScript), which lists the tools of that toolkit that run on the Composio hosted account. Any other tool in the toolkit needs the user's own connection. During early access, confirm current per-tool prices with [support@composio.dev](mailto:support@composio.dev) before allowing paid Instant Tools in a production Session.
 
 ## Create a Session [#create-a-session]
 
@@ -131,7 +133,7 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 
 ```
 
-Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and prices during early access.
+Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Use Session search to confirm which tools run on the hosted account, and confirm per-tool prices with support during early access.
 
 ### Read charge details in Python [#read-charge-details-in-python]
 
@@ -217,7 +219,7 @@ An Instant Tool can run on either account: the hosted account, or the user's own
 
 A hosted account is a provider account held by Composio for specific tools. It is different from Composio-managed auth, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool Instant.
 
-If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Otherwise, available user or shared connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow. Bring-your-own-key calls are billed by the provider to the key's owner; they do not touch your Balance and follow the provider's own data terms.
+If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Passing `connected_account_id="hosted_account"` on execute selects the hosted account explicitly; the call fails rather than falling back when the hosted account cannot serve that tool. Otherwise, available user or shared connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow. Bring-your-own-key calls are billed by the provider to the key's owner; they do not touch your Balance and follow the provider's own data terms.
 
 Session search tells you when a hosted account serves a toolkit. The toolkit's connection status includes `hosted_account.allowed_tool_slugs` (`hostedAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
 
