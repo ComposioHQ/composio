@@ -1,0 +1,158 @@
+---
+title: Three agents, one board
+description: Three agents run on Atomic Bot and share one Linear board and nothing else. Each owns a single status, hands work over in a comment, and never talks to the other two.
+keywords: [background agents, multi agent, linear, connected accounts, tool discovery, atomic bot, no code, handover, board as state]
+full: true
+gallery:
+  categories: [Background agents]
+  logos: [linear]
+  featured: true
+  order: 12
+---
+
+We built a small support pipeline out of three agents, so that nothing closes until a second agent has checked it against what was asked.
+
+Intake turns a two line request into an issue with a clear ask and a definition of done. Builder picks that issue up and writes the answer. Reviewer checks the answer against the definition of done and closes the issue, or sends it back with what is missing.
+
+All three run on Atomic Bot and share one <AppLogo slug="linear" /> Linear board. The board is the only thing they have in common: no shared memory, no messages between them, no orchestrator. Each agent owns exactly one status, and a handover is a comment plus a status change.
+
+There is no code in this example. Three agents, three prompts, one connected toolkit each.
+
+They run in the cloud on Atomic Bot: no terminal, no Docker, and nothing on your side that has to stay awake for a scheduled pass to fire.
+
+<Figure src="/images/three-agents-one-board/issue-thread.png" alt="A Linear issue showing the intake comment followed by the builder comment" caption="One issue, three agents, and every handover written down" size="full" />
+
+<Callout type="warn" title="Is this the right example for you?">
+It is a reference for four things: background agents that never stop for auth, a toolkit as the coordination layer, roles that live in prompts instead of code, and per-agent connections. It is not a multi agent framework: no orchestrator, no queue, no shared state, no agent-to-agent protocol.
+</Callout>
+
+## Setup
+
+You need an [Atomic Bot](https://atomicbot.ai/cloud?utm_source=composio&utm_medium=docs&utm_campaign=three_agents_one_board) account, a Linear workspace you can create a team in, and about fifteen minutes. No API keys and nothing to deploy.
+
+### Make the board
+
+Create a separate team in Linear rather than reusing one your colleagues work in. We called ours `Agents Sandbox`, key `AGE`. Use five statuses and nothing clever: Backlog, Todo, In Progress, In Review, Done. Each status belongs to exactly one agent, which is the whole coordination mechanism.
+
+Clicking through Linear is one way. Asking an agent is another: creating a team is one of the tools it has, though Linear's free plan caps you at two teams. Adding the In Review status is a click in the team's settings either way.
+
+### Start three agents
+
+In Atomic Bot, add three agents from the agent list. Ours were Hermes, Codex and OpenClaw, all on Claude Opus 5.
+
+<Figure src="/images/three-agents-one-board/agents.png" alt="Three agents listed in one Atomic Bot account" caption="Three agents in one account, each an instance of its own" size="lg" />
+
+Hermes on intake, because sorting a vague request and spotting a duplicate is the part that needs judgement. Codex on the work itself. OpenClaw on review, where the criteria are already written down and the job is to check them. Roles are prompts, so three copies of the same agent work too.
+
+### Connect Linear to each agent
+
+Open Connectors for the first agent and connect Linear. Composio runs the authorization, and the connected account belongs to that agent, not to the whole account. Repeat it for the other two.
+
+<Figure src="/images/three-agents-one-board/connectors.png" alt="The Connectors screen with Linear connected" caption="Connections are per agent, so an agent can only reach what you connected for it" size="lg" />
+
+Nothing else needs connecting for this example. Add Gmail to intake if you want requests to arrive from a mailbox instead of by hand.
+
+## Give each agent its role
+
+Paste one prompt into each agent's chat. Every prompt starts with the same fence: the team it may touch, and what it may never do.
+
+<Steps>
+<Step>
+**Intake.**
+
+```
+Work only in the Agents Sandbox team in Linear, team key AGE. Never touch issues in
+another team, never delete or archive anything, never assign or mention a person.
+
+List the issues in Backlog. For each one, check that it has a clear ask, a source,
+and something you could call done, and add what is missing to the description if the
+text lets you. Leave a comment starting with "intake:" naming the area it touches,
+then move the issue to Todo.
+
+If two issues describe the same thing, comment "intake: duplicate of AGE-N" on the
+newer one and mark it as a duplicate of the older one.
+```
+</Step>
+
+<Step>
+**Builder.**
+
+```
+Work only in the Agents Sandbox team in Linear, team key AGE. Never touch issues in
+another team, never delete or archive anything, never assign or mention a person.
+
+Take the oldest issue in Todo and move it to In Progress. Do what the issue asks,
+following its Done when section. Post the result as a comment starting with
+"builder:", in full, not a summary. Then move the issue to In Review.
+
+If you cannot finish it, comment why, starting with "builder:", and move it back
+to Todo.
+```
+</Step>
+
+<Step>
+**Reviewer.**
+
+```
+Work only in the Agents Sandbox team in Linear, team key AGE. Never touch issues in
+another team, never delete or archive anything, never assign or mention a person.
+
+Take the oldest issue in In Review. Read the comment starting with "builder:" and
+check it against the Done when section of the issue.
+
+If it holds, comment "reviewer: approved" with one line on what you checked, and
+move the issue to Done. If it does not, comment "reviewer:" with exactly what is
+missing and move it back to Todo.
+```
+</Step>
+</Steps>
+
+The first line of each prompt is the fence. These agents run unattended against a live workspace, so each one is told the single team it writes to and the actions it never takes.
+
+## Put them on a schedule
+
+Each agent runs its own pass on its own timer. Add a job under Cron Jobs for every agent, fifteen minutes apart, with the same text you pasted into the chat.
+
+<Figure src="/images/three-agents-one-board/cron.png" alt="A scheduled job for one of the agents" caption="Three timers, one per agent, and nothing that coordinates them" size="lg" />
+
+Nothing synchronises the three timers, and nothing needs to. An agent that wakes up to an empty column does nothing and goes back to sleep.
+
+## How an agent finds Linear
+
+None of the three prompts names a tool, an endpoint or a slug, and none of the agents was built with Linear in mind. On its first pass an agent searches the Composio catalogue for what it needs, pulls the schemas for the tools it picked, and executes them in one batch: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MULTI_EXECUTE_TOOL`.
+
+That is also why swapping the board is a prompt edit. Name Jira, Notion or Trello instead of Linear and the same three agents find the right tools for it.
+
+## One pass, start to finish
+
+Three issues landed in Backlog. Two were real requests, and the third was the first one asked again in different words.
+
+**Intake** read the backlog and rewrote each issue into something workable, adding an `Ask`, a `Source` and a `Done when` with three conditions. It commented what area the request touched, moved both real issues to Todo, and marked the third as a duplicate of the first without being told the two were related.
+
+<Figure src="/images/three-agents-one-board/issue-intake.png" alt="A Linear issue with an Ask, a Source and a Done when section added by the intake agent" caption="The request arrived as two lines. This is what Intake left behind." size="lg" />
+
+<Figure src="/images/three-agents-one-board/board.png" alt="The Linear board with issues in different statuses" caption="The board carries the state: one issue moving, one waiting its turn, one closed as a duplicate" size="lg" />
+
+**Builder** took the older of the two, moved it to In Progress, wrote the answer the issue asked for, and checked every claim in it against the official documentation before posting the result in full as a comment. What the documentation did not cover it kept out of the answer and listed at the bottom as an open item. Then In Review.
+
+**Reviewer** read that comment against the three conditions in `Done when`, said in one line which of them it had checked, and closed the issue.
+
+<Figure src="/images/three-agents-one-board/review-approved.png" alt="The reviewer comment approving the work, followed by the status change to Done" caption="The last two events on the issue: the check, then Done" size="lg" />
+
+Total human involvement after setup: none. The person who opens the board sees the request, what was made of it, what was produced, and what was verified, in one thread, in order.
+
+## The board is the protocol
+
+**One status per agent.** Intake only touches Backlog, Builder only takes Todo, Reviewer only takes In Review. No agent ever looks at a column that belongs to another one, so two agents cannot pick up the same issue.
+
+**A handover carries everything the next agent needs.** Intake's `Done when` is what Builder works from, and Builder's comment is what Reviewer checks. Neither one has to reconstruct intent from the original request.
+
+**Every comment says who wrote it.** The three agents in this build write through one Linear account, so the board shows a single author and the `intake:` / `builder:` / `reviewer:` prefixes are what tell the steps apart. Keep them, whatever you name your roles.
+
+## Use whatever tracker you have
+
+The board is an interface, not a requirement. Anything with statuses, comments and a way to fetch the oldest item in a column will do: Jira, Notion, Trello, Asana, GitHub Issues. Swap the name in the three prompts and keep the rest.
+
+<Callout type="info">
+This example was written by the team at [Atomic Bot](https://atomicbot.ai/cloud?utm_source=composio&utm_medium=docs&utm_campaign=three_agents_one_board), which is the platform the three agents run on.
+</Callout>
