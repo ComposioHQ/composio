@@ -565,7 +565,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Serialize any Pydantic model instances before sending to the API
             processed_arguments = _serialize_arguments(processed_arguments)
 
-            response = self._client.tool_router.session.execute(
+            response = self._client.without_retries.tool_router.session.execute(
                 session_id=session_id,
                 tool_slug=slug,
                 arguments=processed_arguments,
