@@ -197,6 +197,7 @@ def type_inference(session: Session):
         "tests/test_type_inference_langgraph.py",
         "tests/test_type_inference_llamaindex.py",
         "tests/test_type_inference_openai_agents.py",
+        "tests/test_type_inference_openai.py",
         "tests/test_type_inference_typesafe.py",
     )
 
