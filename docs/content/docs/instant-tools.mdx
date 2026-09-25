@@ -8,7 +8,7 @@ experimental: true
 
 An Instant Tool is a specific tool inside a toolkit that works with zero setup: your end user connects nothing, and the call either runs on a Composio hosted account or is free. Tool calls to paid Instant Tools are charged to your organization's Balance at that tool's per-call price.
 
-Instant describes availability, not exclusivity. One tool, two ways to run it: the same Instant Tool runs on the hosted account out of the box, or on your end user's own key when they want their own quota and terms, or need zero data retention (ZDR), which the hosted account does not cover.
+Instant describes availability, not exclusivity. One tool, two ways to run it: the same Instant Tool runs on the hosted account out of the box, or on your end user's own key when they want their own quota and terms, or need data-handling terms the hosted account does not cover, such as a zero data retention (ZDR) arrangement with the provider.
 
 ## The model
 
@@ -29,9 +29,9 @@ Each Instant Tool has its own per-call price. There are no tiers and no bundles:
 | Charge | The amount deducted from the Balance for one paid tool call |
 | Tool call | One execution of a tool |
 
-> **Early access:** Instant Tools are enabled per organization. Reach out to support@composio.dev to get access and to confirm which tools are eligible and their current per-tool prices.
+> **Early access:** Instant Tools are enabled per organization. Reach out to [support@composio.dev](mailto:support@composio.dev) to get access and to confirm which tools are eligible and their current per-tool prices.
 
-> **Zero data retention (ZDR) is not enabled for Instant Tools.** Calls that run on Composio's hosted account are not covered by ZDR. If a workload requires ZDR, run the same tool on the user's own key instead.
+> **Zero data retention (ZDR) is not enabled for Instant Tools.** Calls that run on Composio's hosted account are not covered by ZDR. If a workload requires ZDR, run the same tool on the user's own key instead, where retention follows the provider's own terms and can offer ZDR. Using your own key changes which account runs the call; it does not by itself guarantee zero data retention. Contractual ZDR requires its own arrangement with the provider, or Composio's Enterprise track.
 
 ## Enable Instant Tools [#enable-instant-tools]
 
@@ -47,7 +47,7 @@ Once the project setting is enabled, new Sessions can use eligible Instant Tools
 
 ## Find eligible tools [#find-eligible-tools]
 
-Instant coverage is per tool, not per toolkit. The current toolkit listing API does not return Instant eligibility or per-tool prices, and it offers no Instant filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During early access, ask support@composio.dev for the supported tools and their prices before allowing them in a production Session.
+Instant coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return Instant eligibility or per-tool prices, and it offers no Instant filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During early access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and their prices before allowing them in a production Session.
 
 ## Create a Session [#create-a-session]
 
@@ -73,6 +73,7 @@ session = composio.sessions.create(
 TypeScript:
 
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -90,7 +91,7 @@ Top-level `toolkits` controls which tools the Session can discover and run. Omit
 
 ## Find and run a tool [#find-and-run-a-tool]
 
-Pass `session.tools()` to your agent as in the Quickstart, so it can discover and run eligible tools. If your agent uses MCP, expose the same Session through `session.mcp` as described in Using sessions via MCP. The charge policy applies to that Session in either path; your agent does not need a separate setting.
+Pass `session.tools()` to your agent as in the [Quickstart](/docs/quickstart), so it can discover and run eligible tools. If your agent uses MCP, expose the same Session through `session.mcp` as described in [Using sessions via MCP](/docs/sessions-via-mcp). The charge policy applies to that Session in either path; your agent does not need a separate setting.
 
 Python:
 
@@ -105,6 +106,7 @@ TypeScript:
 import { Composio } from "@composio/core";
 const composio = new Composio();
 const session = await composio.create("user_123");
+// ---cut---
 const tools = await session.tools(); // Pass these to your agent framework.
 
 ```
@@ -124,11 +126,12 @@ TypeScript:
 import { Composio } from "@composio/core";
 const composio = new Composio();
 const session = await composio.create("user_123");
+// ---cut---
 const result = await session.execute("EXA_SEARCH", { query: "Composio documentation" });
 
 ```
 
-Check the current tool input schema before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and prices during early access.
+Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and prices during early access.
 
 ### Read charge details in Python [#read-charge-details-in-python]
 
@@ -178,6 +181,7 @@ session = composio.sessions.create(
 TypeScript:
 
 ```typescript
+// @noErrors
 const session = await composio.create("user_123", {
   toolkits: ["exa", "firecrawl"],
   premiumUsage: {
@@ -200,6 +204,7 @@ session.update(premium_usage=False)
 TypeScript:
 
 ```typescript
+// @noErrors
 await session.update({ premiumUsage: false });
 
 ```
@@ -218,7 +223,7 @@ Session search tells you when a hosted account serves a toolkit. The toolkit's c
 
 Hosted accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
 
-See Configuring Sessions for general toolkit and tool filters and the create Session API reference for the complete request schema.
+See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.
 
 ## Build consumer-facing products [#build-consumer-facing-products]
 
