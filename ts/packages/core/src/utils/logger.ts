@@ -23,20 +23,52 @@ export const getLogLevel = (): LogLevel => {
   return envLevel && envLevel in LOG_LEVELS ? (envLevel as LogLevel) : 'info';
 };
 
+/**
+ * Destination for SDK log output. Each method receives the already
+ * formatted and redacted message as its single argument. `console` satisfies
+ * this interface, and so do most structured loggers (pino, winston, ...).
+ */
+export interface ComposioLogger {
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  debug: (...args: unknown[]) => void;
+}
+
 interface LoggerOptions {
   level?: LogLevel;
   includeTimestamp?: boolean;
+  /** Where formatted output is written. Defaults to `console`. */
+  sink?: ComposioLogger;
+}
+
+export interface LoggerConfigureOptions {
+  level?: LogLevel;
+  sink?: ComposioLogger;
 }
 
 export class Logger {
-  private readonly level: LogLevel;
+  private level: LogLevel;
   private readonly includeTimestamp: boolean;
-  private readonly console: Console;
+  private sink: ComposioLogger;
 
   constructor(options: LoggerOptions = {}) {
     this.level = options.level ?? getLogLevel();
     this.includeTimestamp = options.includeTimestamp ?? true;
-    this.console = console;
+    this.sink = options.sink ?? console;
+  }
+
+  /**
+   * Reconfigure the level and/or sink in place. Omitted fields are left
+   * unchanged, so `configure({ level: 'debug' })` keeps the current sink.
+   */
+  configure(options: LoggerConfigureOptions): void {
+    if (options.level !== undefined) this.level = options.level;
+    if (options.sink !== undefined) this.sink = options.sink;
+  }
+
+  getLevel(): LogLevel {
+    return this.level;
   }
 
   private formatMessage(args: unknown[]): string {
@@ -71,25 +103,25 @@ export class Logger {
 
   error(...args: unknown[]): void {
     if (this.shouldLog('error')) {
-      this.console.error(this.formatMessage(args));
+      this.sink.error(this.formatMessage(args));
     }
   }
 
   warn(...args: unknown[]): void {
     if (this.shouldLog('warn')) {
-      this.console.warn(this.formatMessage(args));
+      this.sink.warn(this.formatMessage(args));
     }
   }
 
   info(...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      this.console.info(this.formatMessage(args));
+      this.sink.info(this.formatMessage(args));
     }
   }
 
   debug(...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      this.console.debug(this.formatMessage(args));
+      this.sink.debug(this.formatMessage(args));
     }
   }
 }

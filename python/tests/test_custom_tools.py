@@ -41,7 +41,10 @@ from composio.core.models.custom_tool_execution import (
 )
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
-from composio.core.models.tool_router_session import ToolRouterSession
+from composio.core.models.tool_router_session import (
+    ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+)
 from composio.exceptions import ValidationError
 
 # ────────────────────────────────────────────────────────────────
@@ -978,6 +981,42 @@ class TestToolRouterSessionCustomTools:
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
+    def test_execute_remote_exposes_premium_charge(self, mock_session_deps):
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        mock_session_deps[
+            "client"
+        ].tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "data": {"sent": True},
+                    "error": None,
+                    "log_id": "log_123",
+                    "premium_charge": charge,
+                }
+            )
+        )
+        s = _session(mock_session_deps)
+
+        result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert isinstance(result, SessionExecuteResponse)
+        assert result.premium_charge == charge
+        assert result.data == {"sent": True}
+        assert result.log_id == "log_123"
+
+    def test_execute_remote_without_premium_charge(self, mock_session_deps):
+        mock_session_deps[
+            "client"
+        ].tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"sent": True}, error=None, log_id="log_123"
+        )
+        s = _session(mock_session_deps)
+
+        result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
+
+        assert result.premium_charge is None
+
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
             data={"sent": True}, error=None, log_id="log_123"
@@ -1302,6 +1341,34 @@ class TestMultiExecuteRouting:
         assert result["data"]["total_count"] == 2
         assert result["data"]["success_count"] == 2
         assert result["data"]["error_count"] == 0
+        assert "premium_charge" not in result
+
+    def test_mixed_preserves_remote_premium_charge(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        remote = {
+            "data": {
+                "results": [
+                    {"tool_slug": "R", "response": {"successful": True, "data": {}}},
+                ],
+            },
+            "error": None,
+            "successful": True,
+            "premium_charge": charge,
+        }
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+
+        assert result["premium_charge"] == charge
 
     def test_failure_propagated(self):
         @exp.tool()

@@ -1918,7 +1918,7 @@
               "nullable": true
             },
             "required": false,
-            "description": "Number of items per page, max allowed is 50",
+            "description": "Number of items per page, max allowed is 200",
             "name": "limit",
             "in": "query"
           },
@@ -10773,8 +10773,19 @@
                 "type": "object",
                 "properties": {
                   "connected_account_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the connected account to use for authentication",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "hosted_account"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "format": "connectedAccountId"
+                      }
+                    ],
+                    "description": "Unique identifier for the connected account to use for authentication. Pass `hosted_account` to run the tool on the Composio hosted account for its toolkit, even when the user has connected the toolkit themselves; the request fails rather than falling back to another credential.",
                     "example": "ca_1a2b3c4d5e6f"
                   },
                   "entity_id": {
@@ -11205,6 +11216,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required - Wallet balance is exhausted; add credits to resume premium tool calls or connect your account",
             "content": {
               "application/json": {
                 "schema": {
@@ -16763,6 +16784,122 @@
                       "github": "ca_3m4n5o6p7q8r"
                     }
                   },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
+                  },
                   "manage_connections": {
                     "type": "object",
                     "properties": {
@@ -17628,6 +17765,103 @@
                           },
                           "description": "Full per-toolkit connected account overrides as arrays. Populated whenever `connected_accounts` is non-empty; carries the complete list when multi-account is enabled."
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -17840,6 +18074,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload"
                       ],
                       "description": "The session configuration including user, toolkits, and overrides"
@@ -18189,6 +18424,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -18230,6 +18495,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -18388,6 +18663,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "premium_charge": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                          "description": "Premium charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ],
+                          "description": "Currency of the premium charge. Always USD."
+                        },
+                        "charged_by": {
+                          "type": "string",
+                          "enum": [
+                            "composio"
+                          ],
+                          "description": "Entity charging for premium usage. Always composio."
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency",
+                        "charged_by"
+                      ],
+                      "description": "Returned only when the session enables premium_usage.return_premium_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                    },
                     "data": {
                       "type": "object",
                       "additionalProperties": {},
@@ -18429,6 +18734,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -18651,6 +18966,103 @@
                           },
                           "description": "Full per-toolkit connected account overrides as arrays. Populated whenever `connected_accounts` is non-empty; carries the complete list when multi-account is enabled."
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -18863,6 +19275,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload"
                       ],
                       "description": "The session configuration including user, toolkits, and overrides"
@@ -19201,6 +19614,122 @@
                     "example": {
                       "github": "ca_3m4n5o6p7q8r"
                     }
+                  },
+                  "premium_usage": {
+                    "anyOf": [
+                      {
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "toolkits": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Only these specific toolkits will be enabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack",
+                                      "github"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "enable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Enable only specific toolkits (allowlist)"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disable": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "These specific toolkits will be disabled",
+                                    "example": [
+                                      "gmail",
+                                      "slack"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "disable"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Disable specific toolkits (denylist)"
+                              }
+                            ],
+                            "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                          },
+                          "tools": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Only these specific tools will be available for this toolkit",
+                                      "example": [
+                                        "GMAIL_SEND_EMAIL",
+                                        "GMAIL_FETCH_EMAILS"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "enable"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "These specific tools will be disabled for this toolkit",
+                                      "example": [
+                                        "SLACK_ADD_EMOJI"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "disable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "description": "Per-toolkit enable or disable lists that restrict premium usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them."
+                          },
+                          "return_premium_charge": {
+                            "type": "boolean",
+                            "description": "Return the top-level premium_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable premium usage."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Controls premium usage, subject to project permission and session toolkit and tool restrictions. False disables premium usage. Omission on create or an empty object enables it with charges hidden. On PATCH, omitted fields are preserved; an object re-enables a disabled setting."
                   },
                   "manage_connections": {
                     "type": "object",
@@ -19684,6 +20213,103 @@
                           },
                           "description": "Full per-toolkit connected account overrides as arrays. Populated whenever `connected_accounts` is non-empty; carries the complete list when multi-account is enabled."
                         },
+                        "premium_usage": {
+                          "anyOf": [
+                            {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "toolkits": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "enabled"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "disabled"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "Toolkits eligible for premium usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies."
+                                },
+                                "tools": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "enabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "enabled"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "disabled": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "disabled"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "description": "Per-toolkit enabled or disabled lists that restrict premium usage. Toolkits absent from this map have no additional tool restriction."
+                                },
+                                "return_premium_charge": {
+                                  "type": "boolean",
+                                  "description": "Whether session tool responses return a top-level premium_charge when a charge is available. Defaults to false; controls response visibility only."
+                                }
+                              },
+                              "required": [
+                                "return_premium_charge"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Premium usage settings. False disables premium usage; an object permits it subject to project permission and session toolkit and tool restrictions."
+                        },
                         "manage_connections": {
                           "type": "object",
                           "properties": {
@@ -19896,6 +20522,7 @@
                       },
                       "required": [
                         "user_id",
+                        "premium_usage",
                         "preload"
                       ],
                       "description": "The session configuration including user, toolkits, and overrides"
@@ -20912,6 +21539,16 @@
               }
             }
           },
+          "402": {
+            "description": "Payment required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -21207,6 +21844,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -21594,7 +22241,7 @@
                             ],
                             "description": "When \"required\", the agent must specify which account to use. Present only when multiple accounts exist."
                           },
-                          "composio_managed": {
+                          "hosted_account": {
                             "type": "object",
                             "properties": {
                               "allowed_tool_slugs": {
@@ -21602,13 +22249,13 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Tools of this toolkit that run on the Composio managed account"
+                                "description": "Tools of this toolkit that run on the Composio hosted account"
                               }
                             },
                             "required": [
                               "allowed_tool_slugs"
                             ],
-                            "description": "Present when the toolkit is connected through the Composio managed account rather than a connected account of the user."
+                            "description": "Present when the toolkit is connected through the Composio hosted account rather than a connected account of the user."
                           },
                           "status_message": {
                             "type": "string",
@@ -21780,6 +22427,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required",
             "content": {
               "application/json": {
                 "schema": {

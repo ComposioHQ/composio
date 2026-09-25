@@ -31,6 +31,8 @@ Every inbound event is signature-checked at ingress before any trigger fires:
 **Sharing one OAuth app across projects?** Consolidate to a single project or register separate OAuth apps per project before continuing.
 </Callout>
 
+You can also manage ingress endpoints through `composio.webhooks.endpoints` in either SDK. Use `list()` and `get()` to inspect endpoints, `create()` to register one, and `replace()` or `update()` to change its configuration.
+
 The walkthrough below uses Slack as the example and the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
 
 ## Step 1: Discover what credentials the endpoint needs

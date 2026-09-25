@@ -8,6 +8,8 @@ Users can connect multiple accounts for the same toolkit (e.g., personal and wor
 
 ## Multi-account mode
 
+For a runnable agent with work and personal Gmail accounts, follow the [multiple accounts walkthrough](/examples/multiple-accounts).
+
 By default, each session uses **one account per toolkit**. Enable multi-account mode to let users connect and use multiple accounts for the same toolkit within a single session.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -102,6 +104,8 @@ Aliases are human-readable labels for connected accounts (e.g., `"work-gmail"`, 
 - Can be set during connection or updated after
 
 To identify an account by its provider-side identity (e.g. the Gmail address or GitHub username) rather than a label you set, read the read-only `displayName` that Composio auto-populates on the connected account at `state.val.displayName` once the connection is active.
+
+See [Identify the connected account](/docs/authentication/manually-authenticating#identify-the-connected-account) to display that identity or retrieve the provider's profile. To accept only certain email domains, follow [Restrict Gmail connections to an email domain](/examples/restrict-gmail-domain).
 
 ### Setting an alias during connection
 

@@ -9,11 +9,17 @@ from .custom_tool_types import (
     SessionContext,
     ToolRouterSessionProxyExecuteResponse,
 )
-from .experimental import ExperimentalAPI
+from .experimental import (
+    ExperimentalAPI,
+    ExperimentalCustomToolkits,
+    ExperimentalUsage,
+)
+from .keyring import Keyring
+from .logs import Logs
 from .mcp import MCP
 from .tool_router import ToolRouter
 from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
-from .tool_router_session import ToolRouterSession
+from .tool_router_session import ToolRouterSession, ToolRouterSessionExecuteResponse
 from .tool_router_session_delete import ToolRouterSessionDeleteResponse
 from .tool_router_session_files import RemoteFile, ToolRouterSessionFilesMount
 from .toolkits import Toolkits
@@ -29,6 +35,13 @@ from .webhook_events import (
     WebhookEventType,
     is_connection_expired_event,
 )
+from .webhooks import (
+    WebhookEndpoints,
+    Webhooks,
+    WebhookSubscription,
+    WebhookSubscriptions,
+    WebhookVersion,
+)
 
 __all__ = [
     "AuthConfigs",
@@ -38,7 +51,11 @@ __all__ = [
     "ConnectionStatusEnum",
     "CustomTool",
     "ExperimentalAPI",
+    "ExperimentalCustomToolkits",
     "ExperimentalToolkit",
+    "ExperimentalUsage",
+    "Keyring",
+    "Logs",
     "MCP",
     "ProxyExecuteBinaryData",
     "RegisteredCustomTool",
@@ -50,13 +67,19 @@ __all__ = [
     "ToolRouter",
     "ToolRouterSession",
     "ToolRouterSessionDeleteResponse",
+    "ToolRouterSessionExecuteResponse",
     "ToolRouterSessionFilesMount",
     "ToolRouterSessionProxyExecuteResponse",
     "Toolkits",
     "Tools",
     "Triggers",
     "WebhookConnectionMetadata",
+    "WebhookEndpoints",
     "WebhookEvent",
     "WebhookEventType",
+    "WebhookSubscription",
+    "WebhookSubscriptions",
+    "WebhookVersion",
+    "Webhooks",
     "is_connection_expired_event",
 ]

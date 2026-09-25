@@ -33,6 +33,22 @@ pnpm dev
 - Fetches available tools
 - Demonstrates basic usage patterns
 
+## Verifying saved Session configs
+
+`src/session-configs.ts` checks saved Session configs against a real project. It creates sessions, prints `PASS` or `FAIL` for each check, deletes the sessions it created, and exits non-zero on any failure. It never runs as part of `pnpm start`.
+
+```bash
+COMPOSIO_API_KEY=... \
+SESSION_CONFIG_ID=sc_... \
+ARCHIVED_SESSION_CONFIG_ID=sc_... \
+COMPOSIO_API_KEY_NO_FEATURE=... \
+pnpm start:session-configs
+```
+
+`COMPOSIO_API_KEY` must belong to a project with Session configs enabled, with one active and one archived config. `COMPOSIO_API_KEY_NO_FEATURE` is optional and belongs to a project without the feature, for the `403` check. The script also records whether `sessionPreset: SessionPreset.DIRECT_TOOLS` works with a saved config.
+
+The checks follow every page of active and archived configs. Cleanup attempts every created Session and fails the run if any deletion fails. Run `pnpm test` to verify pagination and cleanup without an API key.
+
 ## Customization
 
 Edit `src/index.ts` to:

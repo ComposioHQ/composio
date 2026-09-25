@@ -114,10 +114,22 @@ def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return {k: _serialize_value(v) for k, v in arguments.items()}
 
 
+class PremiumCharge(te.TypedDict):
+    """Premium usage charge reported for a Session tool execution."""
+
+    amount: str
+    """Exact non-negative USD decimal string, e.g. ``"0.01"``."""
+    currency: str
+    charged_by: str
+
+
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
+    premium_charge: te.NotRequired[PremiumCharge]
+    """Present only when the Session sets
+    ``premium_usage.return_premium_charge`` and a charge is available."""
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -250,7 +262,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tools_list.extend(
                 self._client.tools.list(
                     toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
-                    search=none_to_omit(search),
+                    query=none_to_omit(search),
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
@@ -571,6 +583,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 "error": response.error if hasattr(response, "error") else None,
                 "successful": not (hasattr(response, "error") and response.error),
             }
+            premium_charge = getattr(response, "premium_charge", None)
+            if isinstance(premium_charge, dict):
+                result["premium_charge"] = t.cast(PremiumCharge, premium_charge)
 
             # Apply after_execute modifiers
             if modifiers is not None:
@@ -801,6 +816,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
 __all__ = [
     "Tools",
+    "PremiumCharge",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "Modifiers",

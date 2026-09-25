@@ -131,6 +131,45 @@ describe('toolRouterResponseTransform', () => {
         tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
       });
     });
+
+    it('maps the hosted account allowlist only when the API sends one', () => {
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            status_message: 'Connected via the Composio hosted account.',
+            hosted_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+          },
+          {
+            toolkit: 'gmail',
+            description: 'Gmail',
+            has_active_connection: false,
+            status_message: 'No connection',
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_1',
+          generate_id: false,
+          instructions: 'Use session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const [hosted, notHosted] = transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(hosted.hostedAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(notHosted).not.toHaveProperty('hostedAccount');
+    });
   });
 
   describe('transformExecuteResponse', () => {
@@ -159,6 +198,20 @@ describe('toolRouterResponseTransform', () => {
 
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
+    });
+
+    it('preserves the optional premium charge without inventing one', () => {
+      expect(
+        transformExecuteResponse({
+          data: {},
+          error: null,
+          log_id: 'log_paid',
+          premium_charge: { amount: '0.01', currency: 'USD' },
+        }).premiumCharge
+      ).toEqual({ amount: '0.01', currency: 'USD' });
+      expect(
+        transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
+      ).not.toHaveProperty('premiumCharge');
     });
   });
 });

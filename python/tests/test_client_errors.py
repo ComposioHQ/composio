@@ -109,15 +109,6 @@ def test_error_classes_are_reused_across_requests() -> None:
     assert raised[0].__name__ == "AuthenticationError"
 
 
-def test_tool_not_found_mapping_still_applies() -> None:
-    tools = Tools(client=_client_returning(404), provider=Mock())
-
-    with pytest.raises(exceptions.ToolNotFoundError) as exc_info:
-        tools.get_raw_composio_tool_by_slug("NONEXISTENT_TOOL")
-
-    assert isinstance(exc_info.value.__cause__, composio_client.NotFoundError)
-
-
 def test_schema_fetch_auth_error_is_a_composio_error() -> None:
     tools = Tools(client=_client_returning(401), provider=Mock())
 

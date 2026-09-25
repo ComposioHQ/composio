@@ -182,4 +182,39 @@ describe('CLI: composio tools list', () => {
       );
     }
   );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] custom toolkit "custom_grain" with no tools [Then] points at composio search',
+    it => {
+      it.effect('suggests searching the custom toolkit through the Tool Router', () =>
+        Effect.gen(function* () {
+          yield* cli(['tools', 'list', 'custom_grain']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('No tools found');
+          expect(output).toContain('composio search "<query>" --toolkits custom_grain');
+          expect(output).not.toContain('composio dev toolkits list');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+    '[Given] native toolkit "gmail" with no tools [Then] keeps the toolkit slug hint',
+    it => {
+      it.effect('suggests verifying the toolkit slug', () =>
+        Effect.gen(function* () {
+          yield* cli(['tools', 'list', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain(
+            'No tools found in toolkit "gmail". Verify the toolkit slug with:\n> composio dev toolkits list'
+          );
+          expect(output).not.toContain('composio search');
+        })
+      );
+    }
+  );
 });

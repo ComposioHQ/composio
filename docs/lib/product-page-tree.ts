@@ -28,6 +28,20 @@ function findFolder(nodes: Node[], path: string): Folder | null {
 }
 
 function resolveSidebarItem(tree: Root, item: ProductSidebarItem): Node {
+  if (item.type === 'link') {
+    return { type: 'page', name: item.label, url: item.url, external: item.external };
+  }
+
+  if (item.type === 'group') {
+    if (item.links.length === 0) throw new Error(`Product sidebar group is empty: ${item.label}`);
+    const children = item.links.map(link => resolveSidebarItem(tree, { type: 'page', ...link }));
+    const first = children[0];
+    if (first.type !== 'page') {
+      throw new Error(`Product sidebar group has no first page: ${item.label}`);
+    }
+    return { type: 'folder', name: item.label, index: first, children };
+  }
+
   const sourceNode =
     item.type === 'page'
       ? findPage(tree.children, item.url)
@@ -60,7 +74,12 @@ export function pageTreeUrls(tree: Root): string[] {
       if (node.type === 'page') {
         urls.push(node.url);
       } else if (node.type === 'folder') {
-        if (node.index) urls.push(node.index.url);
+        if (
+          node.index &&
+          !node.children.some(child => child.type === 'page' && child.url === node.index?.url)
+        ) {
+          urls.push(node.index.url);
+        }
         visit(node.children);
       }
     }
