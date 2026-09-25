@@ -48,7 +48,7 @@ catalog:
   '@types/bun': ^1.4.2
   ai: ^7.0.101
   dotenv: ^17.4.2
-  effect: 4.0.0-rc.115
+  effect: 4.0.0-rc.117
   hono: ^4.13.7
   openai: ^7.15.0
   picocolors: ^1.1.1
