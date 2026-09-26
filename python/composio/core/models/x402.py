@@ -23,6 +23,16 @@ The design deliberately keeps the payment primitive out of the model's hands:
 application supplies (a wallet SDK, a hardware signer, a Nano seed, ...).  The
 modifier never fabricates a payment and never guesses at a destination.
 
+Spend limits are the payer's job, not this module's: the ``amount`` and
+``payTo`` in every offered ``accepts[]`` entry come from the remote server that
+answered 402, and this module passes them to the ``payer`` unmodified.  It never
+caps a quoted amount itself, so spend-cap policy (per-call maxima, daily
+budgets, allow-listed destinations) must live in each ``payer`` implementation.
+Integrators should assume the module guards *which responses may settle* (only
+a real transport-level 402 / ``payment-required`` header triggers payment, and
+malformed or incomplete offers never reach the payer) -- not that it bounds
+what a configured payer may spend.
+
 Contract note (why this is a *signal*, not a self-retrying loop): a Composio
 ``after_execute`` modifier runs once, after the tool has already executed, and
 has no handle to re-invoke the tool (``tools.execute`` applies the modifier to
