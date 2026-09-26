@@ -1,0 +1,127 @@
+---
+title: Zero Data Retention
+description: What Zero Data Retention covers, what Composio still stores, what it does not cover, and how organization admins turn it on.
+keywords: [zero data retention, ZDR, data retention, payloads, privacy, compliance, dont store data, log storage]
+---
+
+When Zero Data Retention (ZDR) is on, Composio does not store the payloads of covered calls. It runs each covered tool call and Proxy Execute request and returns the result without writing the request arguments, response data, or error text to its execution logs. The log for each call keeps metadata only, such as IDs, the tool, timing, and the HTTP status code.
+
+<Callout type="info">
+ZDR is available on paid plans for a [usage-based price](https://composio.dev/pricing) and included on Enterprise. An organization admin turns it on in **Organization Settings > Billing > Add-ons**.
+</Callout>
+
+## How ZDR works
+
+For each covered call, Composio writes a log that holds metadata only:
+
+| Data | Fields |
+| --- | --- |
+| Stored | IDs for the log, project, connected account, auth config, API key, session, sandbox, and request. The user ID you pass. The toolkit, tool, and tool version. The SDK source, runtime, and framework. Timing, the HTTP status code, and whether the call errored. |
+| Not stored | Request arguments, response data, and error text. |
+
+Composio stores the user ID you pass, so use opaque IDs, such as a database key, rather than emails or names.
+
+## Scope
+
+ZDR applies per project. It covers requests that use a ZDR project's API key, session, or MCP URL.
+
+On the Enterprise plan, new projects start with ZDR on, whether you create them in the dashboard or through the API. On other paid plans, new projects start with ZDR off, even when ZDR is on for all projects. Turn it on for each new project in the dashboard.
+
+<Callout type="warn">
+Projects without ZDR keep storing payloads. Send requests that need ZDR only to projects that have it on.
+</Callout>
+
+## What ZDR covers
+
+In a ZDR project, Composio does not store payloads for:
+
+- Tool calls, whether you execute a tool directly or through a session.
+- [Proxy Execute](/docs/extending-sessions/proxy-execute) requests.
+
+**ZDR covers calls through Composio Managed apps only on the Enterprise plan.**
+
+<ZdrLogVisual />
+
+## What ZDR does not cover
+
+ZDR does not cover the following, even in a ZDR project. For how long Composio keeps logs, files, and sandbox data, see [Data retention](/docs/security/data-retention).
+
+| Feature | Details | What to do |
+| --- | --- | --- |
+| Composio Managed apps, except on the Enterprise plan | Auth configs that use Composio's own OAuth app. | Use [your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config) for toolkits that need ZDR. Existing users reconnect through the new auth config. You can also [contact sales](https://composio.dev/contact?utm_source=docs&cta_placement=docs-zero-data-retention) about Enterprise. |
+| Instant Tools | Composio does not store their payloads, but the third-party provider behind each [hosted account](/docs/instant-tools#know-which-account-runs-the-tool) may keep data under its own policy. | Turn off `premium_usage` when you create Sessions that handle data that needs ZDR. |
+| Triggers | With ZDR on, trigger logs leave out event payloads, but Composio still stores the events to process and deliver them. | Do not use triggers for data that needs ZDR. |
+| Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
+| Files | Composio stages files that tools upload or download, including Proxy Execute binary responses, and cleans them up after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
+| Requests with the `x-debug: true` header | Composio archives these requests for debugging. | Do not send this header from ZDR projects. |
+| Tool search in sessions | Composio can cache search queries to improve results. | Keep sensitive data out of search queries, or use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to turn off tool search. |
+| Third parties | The destination apps you connect, your model provider, external MCP servers, and your own logs keep their own data policies. | Review each provider's data policy, and set retention for your own logs. |
+
+### Disable the sandbox in sessions
+
+Turn off the sandbox when you create a session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+session = composio.sessions.create(
+    user_id="user_123",
+    sandbox={"enable": False},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  sandbox: { enable: false },
+});
+```
+</Tab>
+</Tabs>
+
+See [Disabling the sandbox](/docs/configuring-sessions#disabling-the-sandbox) for what changes in the session.
+
+## Always stored
+
+Composio stores audit logs and telemetry on every plan, and ZDR does not change them:
+
+- **Audit logs** record who did what and when, including the metadata row for each tool call.
+- **Telemetry** is the metrics, traces, application logs, error reports, and usage metering that Composio uses to run and bill the service. Telemetry can include error messages returned by providers.
+
+## Existing data
+
+ZDR applies only to new calls. Logs written before you turned it on keep their payloads for up to one year under the [standard retention policy](/docs/security/data-retention#how-long-logs-are-retained). To delete them sooner, email [support@composio.dev](mailto:support@composio.dev) with the project ID. If you turn ZDR off, new calls store payloads again.
+
+## Turn ZDR on or off
+
+Only organization admins can turn ZDR on or off. Other members can see its status but cannot change it.
+
+1. In the dashboard, open [**Organization Settings > Billing**](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=docs-zero-data-retention).
+2. Under **Add-ons**, turn on **Zero Data Retention**.
+3. Review the price and what ZDR does not cover, then confirm. ZDR turns on for every current project.
+
+To turn ZDR on or off for one project, open [**Project Settings > General**](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=docs-zero-data-retention) and use the **Zero Data Retention** setting. To turn it off for every project, turn off **Zero Data Retention** in Billing.
+
+### Hobby plan
+
+ZDR is not available on the Hobby plan. Projects that already had **Don't store data** on keep ZDR on, and an admin can turn it off. Turning it back on requires a paid plan.
+
+### Projects that used Don't store data
+
+ZDR replaces the **Don't store data** option under **Log storage**. Projects that had it on now have ZDR on, and the rest have it off.
+
+## Related
+
+- [Data retention](/docs/security/data-retention): the standard retention policy for every plan.
+- [Token custody architecture](/docs/security/token-custody): where credentials live and how Composio uses them.
+- [Composio Trust Center](https://trust.composio.dev): compliance reports and the sub-processor list.
+- [Data Processing Addendum](https://composio.dev/legal/dpa) and [Business Associate Agreement](https://composio.dev/legal/baa).
+- [Pricing](https://composio.dev/pricing).

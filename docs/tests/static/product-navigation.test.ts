@@ -45,6 +45,7 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
+    expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
 
   test('uses route inference before persistence and the documented default last', () => {
@@ -84,6 +85,12 @@ describe('Docs product navigation', () => {
       '/docs/security/data-retention',
     );
     expect(docsProductDestination('/docs/security/data-retention', 'for-you')).toBe(
+      '/docs/agent-plugins',
+    );
+    expect(docsProductDestination('/docs/security/zero-data-retention', 'platform')).toBe(
+      '/docs/security/zero-data-retention',
+    );
+    expect(docsProductDestination('/docs/security/zero-data-retention', 'for-you')).toBe(
       '/docs/agent-plugins',
     );
   });
@@ -182,6 +189,7 @@ describe('Docs product navigation', () => {
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
       '/docs/security/data-retention',
+      '/docs/security/zero-data-retention',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
     for (const url of readinessUrls) {

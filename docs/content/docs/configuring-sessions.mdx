@@ -764,6 +764,8 @@ When disabled:
 - Sandbox-related system prompt lines are stripped
 - Direct sandbox calls are rejected with a 400 error
 
+[Zero Data Retention](/docs/security/zero-data-retention) does not cover the sandbox, so disable it in sessions that handle data that needs ZDR.
+
 To keep the sandbox but block raw HTTP calls from it, set `enable_proxy_execution` (Python) or `enableProxyExecution` (TypeScript) to `false`. See [Proxy execute](/docs/extending-sessions/proxy-execute#session-restrictions) for how session restrictions apply to proxy calls.
 
 <Callout>
