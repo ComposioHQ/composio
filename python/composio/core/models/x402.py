@@ -41,6 +41,16 @@ modifier annotates the response with ``retry_required: true`` and a
 ``payment_ref``; the caller/agent performs the retry with the proof attached.
 It never claims to have re-run the tool it cannot re-run.
 
+Transport-signal boundary: the ``402`` status and ``payment-required`` header
+this module gates on are read from the tool result's ``data`` dict, i.e. they
+are whatever the underlying executor populated there. An ``after_execute``
+modifier has no handle to the raw HTTP response, so it cannot re-verify that
+those fields truly came from the transport layer rather than from a payload a
+toolkit echoed into ``data``. Callers that need that guarantee enforce it where
+the executor fills ``data`` (confirming the fields are real HTTP metadata before
+they reach this modifier); this module trusts the reported fields and never
+derives a payment trigger from body content alone.
+
 Example (Nano/XNO payer via any wallet SDK that returns a block/hash):
 
     from composio.core.models.x402 import x402_after_execute, parse_x402_envelope
