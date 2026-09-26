@@ -688,5 +688,29 @@ describe('OpenAIResponsesProvider', () => {
       expect(handleToolCallsSpy).toHaveBeenCalledWith(userId, [], undefined, undefined);
       expect(results).toEqual([]);
     });
+
+    it('should forward a session to handleToolCalls', async () => {
+      const session = { execute: vi.fn() };
+      const response = { output: [] } as unknown as OpenAI.Responses.Response;
+
+      const handleToolCallsSpy = vi.spyOn(provider, 'handleToolCalls');
+      handleToolCallsSpy.mockResolvedValue([]);
+
+      await provider.handleResponse(session, response);
+
+      expect(handleToolCallsSpy).toHaveBeenCalledWith(session, []);
+    });
+
+    it('should reject direct execution options with a session', async () => {
+      const session = { execute: vi.fn() };
+      const response = { output: [] } as unknown as OpenAI.Responses.Response;
+
+      await expect(
+        // @ts-expect-error direct execution options are not accepted with a session
+        provider.handleResponse(session, response, { connectedAccountId: 'conn-123' })
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+    });
   });
 });
