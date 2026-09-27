@@ -5,7 +5,7 @@ import { compilePattern } from '../utils/compile-pattern';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 
 const RFC3339_TIME =
-  /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?([Zz]|[+-]([01]\d|2[0-3]):[0-5]\d)?$/;
+  /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?([Zz]|[+-]([01]\d|2[0-3]):[0-5]\d)?)?$/;
 
 export const parseString = (
   jsonSchema: JsonSchemaObject & { type: 'string' },
