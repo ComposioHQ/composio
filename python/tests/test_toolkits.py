@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from composio_client import omit
+from composio_client.types.toolkit_list_response import Item
 
 from composio.core.models.toolkits import Toolkits
 from tests.conftest import mock_http_client
@@ -14,6 +15,7 @@ def mock_client() -> Mock:
     client = mock_http_client()
     client.toolkits = Mock()
     client.connected_accounts = Mock()
+    client.toolkits.retrieve_multi.return_value.items = []
     return client
 
 
@@ -24,11 +26,16 @@ def toolkits(mock_client: Mock) -> Toolkits:
 
 class TestToolkitsGetMany:
     def test_get_many_by_slugs(self, toolkits, mock_client):
-        mock_client.toolkits.retrieve_multi.return_value = Mock(items=["gh", "sl"])
+        mock_client.toolkits.retrieve_multi.return_value = Mock(
+            items=[
+                Item.model_construct(slug="github", name="GitHub"),
+                Item.model_construct(slug="slack", name="Slack"),
+            ]
+        )
 
         result = toolkits.get_many(("github", "slack"))
 
-        assert result == ["gh", "sl"]
+        assert [item.slug for item in result] == ["github", "slack"]
         mock_client.toolkits.retrieve_multi.assert_called_once_with(
             toolkits=["github", "slack"],
             category=omit,

@@ -108,8 +108,8 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
-/** Experimental premium usage policy for a Session. */
-export const ToolRouterPremiumUsageSchema = z.union([
+/** Instant access policy for a Session. */
+export const ToolRouterInstantSchema = z.union([
   z.literal(false),
   z
     .object({
@@ -125,16 +125,12 @@ export const ToolRouterPremiumUsageSchema = z.union([
           ])
         )
         .optional(),
-      /**
-       * Return the actual premium charge in Session tool responses. Controls
-       * visibility only; on update, any policy object still re-enables premium
-       * usage on a Session set to `false`.
-       */
-      returnPremiumCharge: z.boolean().optional(),
+      /** Include the Instant charge in execution responses. Defaults to false. */
+      returnCharge: z.boolean().optional(),
     })
     .strict(),
 ]);
-export type ToolRouterPremiumUsage = z.infer<typeof ToolRouterPremiumUsageSchema>;
+export type ToolRouterInstant = z.infer<typeof ToolRouterInstantSchema>;
 
 export const ToolRouterManageConnectionsConfigSchema = z.object({
   enable: z
@@ -265,9 +261,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .optional()
       .describe('The toolkits to use in the tool router session'),
 
-    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental premium usage policy. Omission permits eligible tools when the project allows premium usage; false disables it for this Session.'
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Instant access policy. Omission follows the project setting; false disables Instant for this Session.'
     ),
+    connectedAccountUsage: z
+      .boolean()
+      .optional()
+      .describe('Whether this Session can execute with connected accounts. Defaults to true.'),
 
     authConfigs: z
       .record(z.string(), z.string())
@@ -426,7 +426,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
- * @param {ToolRouterPremiumUsage} [premiumUsage] - Experimental premium usage policy. The project must allow premium usage.
+ * @param {ToolRouterInstant} [instant] - Instant access policy. The project must allow Instant Tools.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -594,6 +594,7 @@ const ToolRouterSessionSearchToolSchemasSchemaRefSchema = z.object({
 const ToolRouterSessionSearchToolSchemaSchema = z.object({
   toolSlug: z.string(),
   toolkit: z.string(),
+  instant: z.object({ supported: z.literal(true), available: z.boolean() }).optional(),
   description: z.string().optional(),
   hasFullSchema: z.boolean().optional(),
   inputSchema: z.record(z.string(), z.unknown()).optional(),
@@ -605,11 +606,17 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   toolkit: z.string(),
   description: z.string(),
   hasActiveConnection: z.boolean(),
+  isReady: z.boolean().optional(),
+  instant: z
+    .object({
+      supported: z.literal(true),
+      available: z.boolean(),
+      allowedToolSlugs: z.array(z.string()),
+    })
+    .optional(),
   statusMessage: z.string(),
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
-  /** Present when the toolkit runs on a Composio hosted account; only these tools run on it. */
-  hostedAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -630,8 +637,17 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
-  /** Actual premium usage charge when the Session opts into returning it. */
-  premiumCharge: z.unknown().optional(),
+  instant: z
+    .object({
+      charge: z
+        .object({
+          amount: z.string(),
+          currency: z.literal('USD'),
+          chargedBy: z.literal('composio'),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -713,7 +729,16 @@ export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
  * allowlists, tags, auth configs, connected accounts, manage_connections,
  * preload, sandbox (`workbench`), search and execute settings.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+export type ToolRouterSessionConfig = Omit<SessionCreateResponse.Config, 'premium_usage'> & {
+  instant?:
+    | false
+    | {
+        toolkits?: { enable: string[] } | { disable: string[] };
+        tools?: Record<string, { enable: string[] } | { disable: string[] }>;
+        return_charge?: boolean;
+      };
+  connected_account_usage?: boolean;
+};
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -858,9 +883,15 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
  */
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
-    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental premium usage policy. False disables it. Any supplied object, even one that only sets returnPremiumCharge, re-enables it. Omitted subfields keep their stored values.'
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Instant access policy. False disables it. A supplied object enables it; omitted subfields preserve their stored values.'
     ),
+    connectedAccountUsage: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether this Session can execute with connected accounts. Omission preserves the stored value.'
+      ),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,

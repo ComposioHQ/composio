@@ -12,6 +12,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from composio.client import HttpClient
 from composio.client.types import (
     Tool,
+    ToolInstant,
     ToolkitMinimal,
     tool_execute_params,
     tool_proxy_params,
@@ -53,11 +54,11 @@ TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500
 
 def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
     """Normalize generated-client responses to the SDK's tool model shape."""
-    normalized: PydanticBaseModel
-    if isinstance(tool, Mapping):
-        normalized = Tool.model_construct(_fields_set=set(tool), **dict(tool))
-    else:
-        normalized = tool
+    fields = dict(tool) if isinstance(tool, Mapping) else tool.model_dump()
+    raw_instant = fields.pop("instant", None)
+    normalized = Tool.model_construct(_fields_set=set(fields), **fields)
+    if raw_instant is not None:
+        normalized.instant = ToolInstant.model_validate(raw_instant)
 
     toolkit = getattr(normalized, "toolkit", None)
     if isinstance(toolkit, Mapping):
@@ -66,7 +67,7 @@ def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
         )
         normalized = normalized.model_copy(update={"toolkit": normalized_toolkit})
 
-    return t.cast(Tool, normalized)
+    return normalized
 
 
 def _toolkit_slug(tool: Tool, fallback: str) -> str:
@@ -114,8 +115,8 @@ def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return {k: _serialize_value(v) for k, v in arguments.items()}
 
 
-class PremiumCharge(te.TypedDict):
-    """Premium usage charge reported for a Session tool execution."""
+class InstantCharge(te.TypedDict):
+    """Instant charge reported for a Session tool execution."""
 
     amount: str
     """Exact non-negative USD decimal string, e.g. ``"0.01"``."""
@@ -123,13 +124,17 @@ class PremiumCharge(te.TypedDict):
     charged_by: str
 
 
+class InstantExecution(te.TypedDict, total=False):
+    charge: InstantCharge
+
+
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
-    premium_charge: te.NotRequired[PremiumCharge]
-    """Present only when the Session sets
-    ``premium_usage.return_premium_charge`` and a charge is available."""
+    instant: te.NotRequired[InstantExecution]
+    """Present for an Instant call when the Session sets
+    ``instant.return_charge``; ``charge`` is absent if its amount is unknown."""
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -583,9 +588,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 "error": response.error if hasattr(response, "error") else None,
                 "successful": not (hasattr(response, "error") and response.error),
             }
-            premium_charge = getattr(response, "premium_charge", None)
-            if isinstance(premium_charge, dict):
-                result["premium_charge"] = t.cast(PremiumCharge, premium_charge)
+            instant = getattr(response, "instant", None)
+            if isinstance(instant, dict):
+                result["instant"] = t.cast(InstantExecution, instant)
 
             # Apply after_execute modifiers
             if modifiers is not None:
@@ -816,7 +821,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
 __all__ = [
     "Tools",
-    "PremiumCharge",
+    "InstantCharge",
+    "InstantExecution",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "Modifiers",

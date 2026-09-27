@@ -4,6 +4,13 @@ import {
   ToolkitRetrieveCategoriesResponse as RawToolkitRetrieveCategoriesResponse,
   type Toolkits as ClientToolkits,
 } from '@composio/client/resources/toolkits';
+import { z } from 'zod/v3';
+
+const ToolkitInstantWireSchema = z.object({
+  instant: z.object({ supported: z.literal(true) }).optional(),
+});
+
+const toolkitInstant = (value: unknown) => ToolkitInstantWireSchema.parse(value).instant;
 
 // The `/toolkits/multi` and `/toolkits/changelog` response types are only
 // reachable through the resource class namespace on the published subpath.
@@ -135,6 +142,7 @@ export const transformToolkitListResponse = (
         authSchemes: item.auth_schemes,
         composioManagedAuthSchemes: item.composio_managed_auth_schemes,
         noAuth: item.no_auth,
+        instant: toolkitInstant(item),
       }))
     );
 };
@@ -161,6 +169,7 @@ export const transformToolkitRetrieveResponse = (
         // appUrl: response.meta.app_url, @TODO Update the client type to include this
       },
       isLocalToolkit: response.is_local_toolkit,
+      instant: toolkitInstant(response),
       composioManagedAuthSchemes: response.composio_managed_auth_schemes,
       authConfigDetails: response.auth_config_details?.map(authConfig => ({
         name: authConfig.name,

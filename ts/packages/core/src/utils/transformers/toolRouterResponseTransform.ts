@@ -1,6 +1,7 @@
 /**
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
+import { z } from 'zod';
 
 interface RawSearchResult {
   index: number;
@@ -33,6 +34,7 @@ interface RawSearchTimeInfo {
 interface RawToolSchema {
   tool_slug: string;
   toolkit: string;
+  instant?: { supported: true; available: boolean };
   description?: string;
   hasFullSchema?: boolean;
   input_schema?: Record<string, unknown>;
@@ -48,10 +50,11 @@ interface RawToolkitConnectionStatus {
   toolkit: string;
   description: string;
   has_active_connection: boolean;
+  is_ready?: boolean;
+  instant?: { supported: true; available: boolean; allowed_tool_slugs: string[] };
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
-  hosted_account?: { allowed_tool_slugs: string[] };
 }
 
 interface RawSearchResponse {
@@ -69,8 +72,18 @@ interface RawExecuteResponse {
   data: Record<string, unknown>;
   error: string | null;
   log_id: string;
-  premium_charge?: unknown;
+  instant?: unknown;
 }
+
+const InstantWireSchema = z.object({
+  charge: z
+    .object({
+      amount: z.string(),
+      currency: z.literal('USD'),
+      charged_by: z.literal('composio'),
+    })
+    .optional(),
+});
 
 function transformSearchResult(raw: RawSearchResult) {
   return {
@@ -94,6 +107,7 @@ function transformToolSchema(raw: RawToolSchema) {
   return {
     toolSlug: raw.tool_slug,
     toolkit: raw.toolkit,
+    instant: raw.instant,
     description: raw.description,
     hasFullSchema: raw.hasFullSchema,
     inputSchema: raw.input_schema,
@@ -113,12 +127,18 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     toolkit: raw.toolkit,
     description: raw.description,
     hasActiveConnection: raw.has_active_connection,
+    isReady: raw.is_ready,
+    instant:
+      raw.instant === undefined
+        ? undefined
+        : {
+            supported: raw.instant.supported,
+            available: raw.instant.available,
+            allowedToolSlugs: raw.instant.allowed_tool_slugs,
+          },
     statusMessage: raw.status_message,
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
-    ...(raw.hosted_account !== undefined && {
-      hostedAccount: { allowedToolSlugs: raw.hosted_account.allowed_tool_slugs },
-    }),
   };
 }
 
@@ -157,10 +177,22 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  */
 export function transformExecuteResponse(raw: RawExecuteResponse) {
+  const instant = raw.instant === undefined ? undefined : InstantWireSchema.parse(raw.instant);
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
-    ...(raw.premium_charge !== undefined && { premiumCharge: raw.premium_charge }),
+    ...(instant !== undefined && {
+      instant:
+        instant.charge === undefined
+          ? {}
+          : {
+              charge: {
+                amount: instant.charge.amount,
+                currency: instant.charge.currency,
+                chargedBy: instant.charge.charged_by,
+              },
+            },
+    }),
   };
 }
