@@ -15,7 +15,30 @@ Once the project setting is enabled, new Sessions can use eligible Instant Tools
 
 ## Find eligible tools
 
-Instant tool coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return instant tool availability or offer an instant tool filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+Use `hosted_account_available` in the public catalog to find Instant Tools. For example, list Exa's tools and read the boolean on each item:
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=exa&limit=100' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+The field is available on toolkit list, multi-fetch, and detail responses, and tool list and detail responses, through both `/api/v3` and `/api/v3.1`.
+
+| Catalog item | Meaning of `hosted_account_available: true` |
+|---|---|
+| Toolkit | At least one tool in this toolkit supports a hosted account. Check the individual tools before selecting one. |
+| Tool | This tool supports a hosted account, including supported aliases. |
+
+Follow `next_cursor` to read subsequent pages. To check a specific tool, use the [tool detail API](/reference/api-reference/tools/getToolsByToolSlug):
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/tools/EXA_SEARCH' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+Catalog support is independent of your project's Premium usage setting and Session policy. A value of `true` does not enable execution or authorize charges. Custom toolkits and tools return `false`, even if they share a slug with a supported native resource. If availability metadata cannot be read, the catalog still returns its items with `hosted_account_available: false`.
+
+The catalog has no Instant-only filter. Use the boolean to identify supported items in your results. `no_auth` and `composio_managed_auth_schemes` describe different authentication properties and do not indicate Instant Tools support. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) to enable your project and confirm current rates before allowing premium usage in a production Session.
 
 ## Create a Session
 
@@ -96,7 +119,7 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 </Tab>
 </Tabs>
 
-Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and rates during Experimental access.
+Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. Check `hosted_account_available` on the individual tool; support on its parent toolkit does not imply support for every tool. Confirm current rates during Experimental access.
 
 ### Read charge details in Python
 
