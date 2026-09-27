@@ -31,22 +31,24 @@ TOOL = {
     },
 }
 
+TOOLKIT_META = {
+    "categories": [],
+    "created_at": "2026-09-27T00:00:00Z",
+    "updated_at": "2026-09-27T00:00:00Z",
+    "description": "Search",
+    "logo": "https://example.com/exa.svg",
+    "tools_count": 1,
+    "triggers_count": 0,
+    "version": "20260927_00",
+}
+
 TOOLKIT = {
     "slug": "exa",
     "name": "Exa",
     "type": "native",
     "is_local_toolkit": False,
     "deprecated": {"toolkitId": "exa"},
-    "meta": {
-        "categories": [],
-        "created_at": "2026-09-27T00:00:00Z",
-        "updated_at": "2026-09-27T00:00:00Z",
-        "description": "Search",
-        "logo": "https://example.com/exa.svg",
-        "tools_count": 1,
-        "triggers_count": 0,
-        "version": "20260927_00",
-    },
+    "meta": TOOLKIT_META,
     "instant": {"supported": True},
 }
 
@@ -85,7 +87,7 @@ def test_catalog_instant_types_over_http():
                         "toolkit_id": "exa",
                         "raw_proxy_info_by_auth_schemes": [],
                     },
-                    "meta": {**TOOLKIT["meta"], "available_versions": ["20260927_00"]},
+                    "meta": {**TOOLKIT_META, "available_versions": ["20260927_00"]},
                     "composio_managed_auth": [],
                     "enabled": True,
                 },
