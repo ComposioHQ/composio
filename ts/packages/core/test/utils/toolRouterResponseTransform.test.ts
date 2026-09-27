@@ -227,5 +227,16 @@ describe('toolRouterResponseTransform', () => {
           .instant
       ).toEqual({});
     });
+
+    it('keeps a successful tool result when charge metadata is malformed', () => {
+      expect(
+        transformExecuteResponse({
+          data: { id: 'result_1' },
+          error: null,
+          log_id: 'log_malformed_charge',
+          instant: { charge: { amount: '0.01', currency: 'EUR', charged_by: 'composio' } },
+        })
+      ).toEqual({ data: { id: 'result_1' }, error: null, logId: 'log_malformed_charge' });
+    });
   });
 });

@@ -177,7 +177,9 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  */
 export function transformExecuteResponse(raw: RawExecuteResponse) {
-  const instant = raw.instant === undefined ? undefined : InstantWireSchema.parse(raw.instant);
+  const parsedInstant =
+    raw.instant === undefined ? undefined : InstantWireSchema.safeParse(raw.instant);
+  const instant = parsedInstant?.success ? parsedInstant.data : undefined;
   return {
     data: raw.data,
     error: raw.error,

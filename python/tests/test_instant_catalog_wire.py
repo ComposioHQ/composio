@@ -116,6 +116,9 @@ def test_catalog_instant_types_over_http():
     assert tool.instant.price is not None
     assert tool.instant.price.description == "$0.01 per search"
     assert tool.instant.price.discount == 10
+    assert tool.deprecated is not None
+    assert tool.deprecated.is_deprecated is False
+    assert tool.toolkit.slug == "exa"
     assert (
         composio.tools.get_raw_composio_tools(tools=["EXA_SEARCH"])[0].instant
         == tool.instant

@@ -54,7 +54,7 @@ TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500
 
 def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
     """Normalize generated-client responses to the SDK's tool model shape."""
-    fields = dict(tool) if isinstance(tool, Mapping) else tool.model_dump()
+    fields = dict(tool)
     raw_instant = fields.pop("instant", None)
     normalized = Tool.model_construct(_fields_set=set(fields), **fields)
     if raw_instant is not None:
