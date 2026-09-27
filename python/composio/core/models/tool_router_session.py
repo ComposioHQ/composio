@@ -32,10 +32,10 @@ from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
 from composio_client.types.tool_router.session_search_response import (
-    SessionSearchResponse,
     ToolSchemas,
     ToolkitConnectionStatus,
 )
+from composio_client.types.tool_router import session_search_response
 from pydantic import BaseModel, ConfigDict
 
 from composio import exceptions
@@ -199,7 +199,13 @@ class ToolRouterSearchToolkitStatus(ToolkitConnectionStatus):
     instant: t.Optional[ToolRouterSearchToolkitInstant] = None
 
 
-class ToolRouterSessionSearchResponse(SessionSearchResponse):
+class ToolRouterSessionSearchResponse(BaseModel):
+    error: t.Optional[str] = None
+    next_steps_guidance: t.List[str]
+    results: t.List[session_search_response.Result]
+    session: session_search_response.Session
+    success: bool
+    time_info: session_search_response.TimeInfo
     tool_schemas: t.Dict[str, ToolRouterSearchToolSchema]
     toolkit_connection_statuses: t.List[ToolRouterSearchToolkitStatus]
 
@@ -292,7 +298,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
-        config: t.Optional[ToolRouterSessionConfig] = None,
+        config: t.Optional[
+            t.Union[
+                ToolRouterSessionConfig,
+                session_create_response.Config,
+                session_retrieve_response.Config,
+                session_attach_response.Config,
+                session_patch_response.Config,
+            ]
+        ] = None,
         config_version: t.Optional[int] = None,
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,

@@ -43,8 +43,12 @@ class ToolkitCatalogDetail(toolkit_retrieve_response.ToolkitRetrieveResponse):
     instant: t.Optional[ToolkitInstant] = None
 
 
-class ToolkitCatalogListResponse(toolkit_list_response.ToolkitListResponse):
+class ToolkitCatalogListResponse(BaseModel):
+    current_page: float
     items: t.List[ToolkitCatalogItem]
+    next_cursor: t.Optional[str] = None
+    total_items: float
+    total_pages: float
 
 
 CatalogToolkitT = t.TypeVar("CatalogToolkitT", ToolkitCatalogItem, ToolkitCatalogDetail)
