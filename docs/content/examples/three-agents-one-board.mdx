@@ -81,12 +81,13 @@ newer one and mark it as a duplicate of the older one.
 Work only in the Agents Sandbox team in Linear, team key AGE. Never touch issues in
 another team, never delete or archive anything, never assign or mention a person.
 
-Take the oldest issue in Todo and move it to In Progress. Do what the issue asks,
-following its Done when section. Post the result as a comment starting with
+Take the oldest issue in Todo that does not already carry a "builder:" comment
+saying you could not finish it, and move it to In Progress. Do what the issue
+asks, following its Done when section. Post the result as a comment starting with
 "builder:", in full, not a summary. Then move the issue to In Review.
 
 If you cannot finish it, comment why, starting with "builder:", and move it back
-to Todo.
+to Todo. Later passes will step over it until a person picks it up.
 ```
 </Step>
 
@@ -151,7 +152,9 @@ Total human involvement after setup: none. The person who opens the board sees t
 
 ## Use whatever tracker you have
 
-The board is an interface, not a requirement. Anything with statuses, comments and a way to fetch the oldest item in a column will do: Jira, Notion, Trello, Asana, GitHub Issues. Swap the name in the three prompts and keep the rest.
+The board is an interface, not a requirement. Anything with statuses, comments and a way to fetch the oldest item in a column will do: Jira, Notion, Trello, Asana, GitHub Issues.
+
+Recreate three things in the tracker you pick: a project the agents are fenced to, an identifier you can name in the prompts the way `AGE` is named here, and the five states. Then swap those names in the three prompts and keep the rest.
 
 <Callout type="info">
 This example was written by the team at [Atomic Bot](https://atomicbot.ai/cloud?utm_source=composio&utm_medium=docs&utm_campaign=three_agents_one_board), which is the platform the three agents run on.
