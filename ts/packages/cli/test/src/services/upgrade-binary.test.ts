@@ -451,43 +451,23 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.effect('copies local-tool bundled binary assets during local-target upgrades', () => {
+  it.effect('replaces the binary during local-target upgrades', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const installDir = yield* fs.makeTempDirectoryScoped({
-        prefix: 'composio-local-tool-upgrade-target-',
+        prefix: 'composio-local-upgrade-target-',
       });
       const sourceDir = yield* fs.makeTempDirectoryScoped({
-        prefix: 'composio-local-tool-upgrade-source-',
+        prefix: 'composio-local-upgrade-source-',
       });
       const fakeExecPath = path.join(installDir, 'composio');
       const sourceBinaryPath = path.join(sourceDir, 'composio');
-      const sourceLocalToolPath = path.join(
-        sourceDir,
-        'local-tools-binaries',
-        'beeper-imessage',
-        'darwin-arm64',
-        'imessage-cli'
-      );
-      const installedLocalToolPath = path.join(
-        installDir,
-        'local-tools-binaries',
-        'beeper-imessage',
-        'darwin-arm64',
-        'imessage-cli'
-      );
-      const staleLocalToolPath = path.join(installDir, 'local-tools-binaries', 'stale-tool');
 
       yield* fs.writeFileString(fakeExecPath, 'old-binary');
       yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
-      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(sourceLocalToolPath, 'imessage-sidecar');
-      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(installedLocalToolPath, 'old-imessage-sidecar');
-      yield* fs.writeFileString(staleLocalToolPath, 'stale');
       const originalBinaryInfo = yield* fs.stat(fakeExecPath);
 
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
@@ -512,9 +492,6 @@ describe('UpgradeBinary', () => {
         Option.getOrThrow(originalBinaryInfo.ino)
       );
       expect(replacedBinaryInfo.mode & 0o777).toBe(0o755);
-      expect(yield* fs.exists(installedLocalToolPath)).toBe(true);
-      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('imessage-sidecar');
-      expect(yield* fs.exists(staleLocalToolPath)).toBe(false);
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
@@ -610,12 +587,6 @@ describe('UpgradeBinary', () => {
       yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
       yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
 
-      const sourceLocalToolPath = path.join(sourceDir, 'local-tools-binaries', 'test-tool');
-      const installedLocalToolPath = path.join(installDir, 'local-tools-binaries', 'test-tool');
-      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(sourceLocalToolPath, 'new-local-tool');
-      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(installedLocalToolPath, 'old-local-tool');
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
       const error = yield* runUpgrade([['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]], {
@@ -630,7 +601,6 @@ describe('UpgradeBinary', () => {
       expect(String(error.cause)).toContain(missingRelativePath);
       expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
       expect(yield* fs.readFileString(observedCompanionPath)).toBe('old-support-file');
-      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('old-local-tool');
       expect(yield* fs.readFileString(releaseTagPath)).toBe('@composio/cli@0.2.31\n');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });

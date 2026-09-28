@@ -97,10 +97,10 @@ while (($# > 0)); do
 done
 
 bundle="$dest/composio-$TEST_TARGET"
-mkdir -p "$bundle/services" "$bundle/local-tools-binaries"
+mkdir -p "$bundle/services" "$bundle/acp-adapters"
 printf '%s\n' 'new-support' >"$bundle/run-bun.mjs"
 printf '%s\n' 'new-service' >"$bundle/services/example.txt"
-printf '%s\n' 'new-local-tool' >"$bundle/local-tools-binaries/current.txt"
+printf '%s\n' 'new-adapter' >"$bundle/acp-adapters/current.txt"
 
 if [[ ${TEST_ARCHIVE_MODE:-complete} == missing-binary ]]; then
   exit 0
@@ -125,7 +125,7 @@ set -euo pipefail
 if [[ ${TEST_FAIL_ASIDE_CLEANUP:-} == 1 ]]; then
   for arg in "$@"; do
     case $arg in
-    */.composio-aside.local-tools-binaries) exit 23 ;;
+    */.composio-aside.acp-adapters) exit 23 ;;
     esac
   done
 fi
@@ -171,8 +171,8 @@ for interpreter in "${interpreters[@]}"; do
   [[ -x "$install_dir/composio" ]] || fail "$interpreter_name empty install executable"
   [[ -f "$install_dir/run-bun.mjs" ]] || fail "$interpreter_name empty install support file"
   [[ -f "$install_dir/services/example.txt" ]] || fail "$interpreter_name empty install service"
-  [[ -f "$install_dir/local-tools-binaries/current.txt" ]] ||
-    fail "$interpreter_name empty install local tool"
+  [[ -f "$install_dir/acp-adapters/current.txt" ]] ||
+    fail "$interpreter_name empty install adapter"
   [[ $(<"$install_dir/release-tag.txt") == "$version" ]] ||
     fail "$interpreter_name empty install metadata"
   assert_no_residue "$install_dir"
@@ -188,7 +188,7 @@ done
 printf '%s\n' old-process >"$marker.result"
 EOF
   chmod +x "$install_dir/composio"
-  printf '%s\n' stale >"$install_dir/local-tools-binaries/stale.txt"
+  printf '%s\n' stale >"$install_dir/acp-adapters/stale.txt"
   old_inode=$(stat_inode "$install_dir/composio")
   "$install_dir/composio" "$marker" &
   survivor_pid=$!
@@ -203,7 +203,7 @@ EOF
   [[ $new_inode != "$old_inode" ]] || fail "$interpreter_name reinstall kept the binary inode"
   grep -Fq 'new-binary-marker' "$install_dir/composio" ||
     fail "$interpreter_name reinstall binary contents"
-  [[ ! -e "$install_dir/local-tools-binaries/stale.txt" ]] ||
+  [[ ! -e "$install_dir/acp-adapters/stale.txt" ]] ||
     fail "$interpreter_name reinstall retained stale directory contents"
   : >"$marker.release"
   wait "$survivor_pid"
@@ -227,7 +227,7 @@ EOF
     fail "$interpreter_name missing binary changed metadata"
   assert_no_residue "$install_dir"
 
-  printf '%s\n' old-aside >"$install_dir/local-tools-binaries/recoverable.txt"
+  printf '%s\n' old-aside >"$install_dir/acp-adapters/recoverable.txt"
   if ! aside_cleanup_output=$(run_installer complete 1 2>&1); then
     fail "$interpreter_name aside cleanup failure aborted published install"
   fi
@@ -239,7 +239,7 @@ EOF
     fail "$interpreter_name aside cleanup did not publish executable"
   retained_stage=$(find "$install_dir" -maxdepth 1 -type d -name '.composio-install.*' -print -quit)
   [[ -n $retained_stage ]] || fail "$interpreter_name missing retained recovery staging directory"
-  [[ $(<"$retained_stage/.composio-aside.local-tools-binaries/recoverable.txt") == old-aside ]] ||
+  [[ $(<"$retained_stage/.composio-aside.acp-adapters/recoverable.txt") == old-aside ]] ||
     fail "$interpreter_name retained aside is not recoverable"
 
   printf 'install.sh atomic replacement passed under %s\n' "$interpreter_name"

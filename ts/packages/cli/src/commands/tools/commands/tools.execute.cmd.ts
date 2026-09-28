@@ -1,5 +1,4 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
-import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
@@ -18,11 +17,7 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
-import {
-  LocalToolsDisabledError,
-  ToolsExecutor,
-  detectInBandWarning,
-} from 'src/services/tools-executor';
+import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import {
   ComposioToolkitsRepository,
@@ -64,8 +59,6 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
 const slug = Argument.String('slug').pipe(
@@ -154,7 +147,6 @@ type ToolExecutionErrorFields = {
     | 'file_input'
     | 'connected_account'
     | 'missing_user_id'
-    | 'unsupported_local_file'
     | 'connection_check'
     | 'execution_failed'
     | 'parallel_failed';
@@ -1034,46 +1026,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const executor = yield* ToolsExecutor;
     const input = (yield* resolveInput(params.data)) ?? '{}';
     const parsedArgs = yield* parseArguments(input);
-    const cliConfig = yield* ComposioCliUserConfig;
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
-
-    if (
-      isLocalToolSlug(params.slug) &&
-      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
-    ) {
-      return yield* new LocalToolsDisabledError({
-        toolSlug: params.slug,
-        feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
-        message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`,
-      });
-    }
-
-    if (isLocalToolSlug(params.slug)) {
-      if (Option.isSome(params.file)) {
-        return yield* new ToolExecutionError({
-          reason: 'unsupported_local_file',
-          toolSlug: params.slug,
-          message: '--file is not supported for local tools yet.',
-        });
-      }
-      return {
-        ui,
-        executor,
-        resolvedProject: {
-          orgId: 'local',
-          projectId: 'local',
-          projectType: 'DEVELOPER',
-        },
-        args: parsedArgs,
-        resolvedUserId: 'local',
-        selectedConnectedAccountId: undefined,
-        executeOutputDir: runOutputDirectory,
-        executeParams: {
-          userId: 'local',
-          arguments: parsedArgs,
-        },
-      } satisfies ResolvedExecuteContext;
-    }
 
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
@@ -1111,9 +1064,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const toolkitSlug = isLocalToolSlug(params.slug)
-      ? undefined
-      : yield* toolkitFromToolSlug(params.slug, toolkitProjectScope(resolvedProject));
+    const toolkitSlug = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(resolvedProject)
+    );
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
@@ -1212,7 +1166,6 @@ const runConnectedToolkitFailFast = (params: {
       return;
     }
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
-    if (isLocalToolSlug(params.slug)) return;
 
     yield* perfDebugLog('execute.connected_toolkits.refresh_start', {
       slug: params.slug,
@@ -1323,8 +1276,7 @@ const runExecuteWithSpinner = (params: {
   readonly skipChecks: boolean;
 }) =>
   Effect.gen(function* () {
-    const verificationDisabled =
-      params.skipChecks || params.skipToolParamsCheck || isLocalToolSlug(params.slug);
+    const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
     const cachedDefinition = verificationDisabled
       ? null
       : yield* getCachedToolInputDefinition(params.slug);
@@ -1554,19 +1506,7 @@ const runExecuteWithSpinner = (params: {
 
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!isLocalToolSlug(params.slug) && !(yield* requireAuth)) return;
-
-    const cliConfig = yield* ComposioCliUserConfig;
-    if (
-      isLocalToolSlug(params.slug) &&
-      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
-    ) {
-      return yield* new LocalToolsDisabledError({
-        toolSlug: params.slug,
-        feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
-        message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`,
-      });
-    }
+    if (!(yield* requireAuth)) return;
 
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
@@ -1840,7 +1780,6 @@ const checkConnectedToolkitOrFail = (params: {
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) return;
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
-    if (isLocalToolSlug(params.slug)) return;
 
     yield* refreshConsumerConnectedToolkitsCache({
       orgId: params.resolvedProject.orgId,

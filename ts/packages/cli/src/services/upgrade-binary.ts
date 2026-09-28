@@ -21,11 +21,7 @@ import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
-import {
-  atomicReplaceDirectory,
-  atomicReplaceFile,
-  type AtomicReplaceError,
-} from 'src/utils/atomic-replace';
+import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-replace';
 
 // Note: `node:zlib` does not support Github's zip files
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
@@ -47,7 +43,6 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
-const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -554,12 +549,6 @@ const replaceBinary = (
       });
     }
 
-    const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-    const localToolsAssetExists = yield* fs
-      .exists(localToolsAssetSource)
-      .pipe(Effect.catch(() => Effect.succeed(false)));
-    const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-
     const releaseTag = options.releaseTag;
     const stagedReleaseTagPath = path.join(sourceDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
     if (releaseTag) {
@@ -598,16 +587,6 @@ const replaceBinary = (
           mapAtomicReplaceError(`Failed to replace companion module: ${relativePath}`)
         )
       );
-    }
-
-    if (localToolsAssetExists) {
-      yield* provideFsAndPath(
-        ctx,
-        atomicReplaceDirectory({
-          sourcePath: localToolsAssetSource,
-          targetPath: localToolsAssetTarget,
-        })
-      ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to replace local-tool binary assets')));
     }
 
     if (releaseTag) {

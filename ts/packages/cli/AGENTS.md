@@ -51,7 +51,6 @@ Each command uses `effect/unstable/cli`'s `Command.make()` pattern. Top-level co
 | `connections` | Alias / helper for connected-account flows |
 | `orgs` | Manage organizations |
 | `projects` | Manage projects |
-| `local-tools` | Manage local toolkits (via `@composio/cli-local-tools`) |
 | `logs` | View tool-execution logs (`logs-cmd/`) |
 | `config` | Read/write CLI config |
 | `listen` | Listen for events |
@@ -108,7 +107,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Key Dependencies
 
-`effect` (pinned `4.0.0-rc.115`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/unstable/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned `4.0.0-rc.115`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/unstable/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 
@@ -238,7 +237,7 @@ Use the repo-local `cli-release` skill before building or publishing first-party
 
 - A push to `next` touching CLI paths publishes a rolling beta automatically.
 - The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
-- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never add a changeset targeting either package; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
+- `@composio/cli` is ignored by Changesets. Never add a changeset targeting it; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
 - `package.json` uses a private development sentinel and is never a
   binary-release authority. For an intentional minor or major release,
   dispatch `build-beta` with its optional version input, verify that beta, then

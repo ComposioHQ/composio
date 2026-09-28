@@ -95,8 +95,7 @@ jobs:
             "$HOME/.composio/execute-output-encoder-runtime.mjs"
           rm -rf \
             "$HOME/.composio/services" \
-            "$HOME/.composio/acp-adapters" \
-            "$HOME/.composio/local-tools-binaries"
+            "$HOME/.composio/acp-adapters"
           # Torn down separately, and deliberately not part of the block above:
           # test/release-workflow.test.ts pins that block against INSTALL.md's
           # documented uninstall, and the canary bin dir is this workflow's own

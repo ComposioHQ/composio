@@ -107,7 +107,6 @@ composio/
 │   │   ├── core/              # Core SDK package (@composio/core)
 │   │   ├── cli/               # CLI binary and command implementations
 │   │   ├── cli-keyring/       # Keyring helper for the CLI
-│   │   ├── cli-local-tools/   # Local tools support for the CLI
 │   │   ├── providers/         # AI framework provider adapters
 │   │   ├── json-schema-to-zod/ # Schema conversion utility
 │   │   └── ts-builders/       # TypeScript build helpers

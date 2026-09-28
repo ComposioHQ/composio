@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- Remove the experimental local-tools stack: the `local-tools` command group,
+  the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
+  and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
+  Release archives no longer ship `local-tools-binaries/`, and CI no longer
+  installs Swift. Permission prompts always use the browser approval page. A
+  stored `local_tools` setting is now listed as an unknown feature and has no
+  effect.
 - `composio run` now validates binary download URLs returned by the proxy API
   before fetching them. Private, loopback, link-local, and redirect-based SSRF
   targets are blocked, DNS resolutions are pinned to prevent rebinding, and the
