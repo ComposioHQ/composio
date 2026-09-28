@@ -181,8 +181,8 @@ export function ToolkitsLanding() {
 
       {/* Cards */}
       <Cards>
-        <Card icon={<ShieldCheck />} title="Managed OAuth apps" href="/toolkits/managed-auth" description="Check which toolkits have managed OAuth" />
-        <Card icon={<Sparkles />} title="Premium Tools" href="/toolkits/pro-tools" description="Learn about pricing and limits" />
+        <Card icon={<ShieldCheck />} title="Composio-managed apps" href="/toolkits/managed-auth" description="Use Composio's OAuth app while users connect their accounts" />
+        <Card icon={<Sparkles />} title="Instant Tools" href="/docs/instant-tools" description="Run eligible tools without a user connection" />
         <Card icon={<Wrench />} title="Meta Tools" href="/toolkits/meta-tools" description="The system tools every session gives your agent" />
       </Cards>
 
