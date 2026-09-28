@@ -26,7 +26,7 @@ const rawLog = {
   status: 'success',
   level: 'info',
   message: 'ok',
-  metadata: { tool_slug: 'GITHUB_GET_REPO' },
+  metadata: { tool_slug: 'GITHUB_GET_REPO', premium_usage_charge: '0.012' },
   metrics: { duration_ms: 12 },
   parent: { log_id: 'log_0', tool_slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' },
 };
@@ -37,7 +37,7 @@ const transformedLog = {
   status: 'success',
   level: 'info',
   message: 'ok',
-  metadata: { tool_slug: 'GITHUB_GET_REPO' },
+  metadata: { tool_slug: 'GITHUB_GET_REPO', premium_usage_charge: '0.012' },
   metrics: { duration_ms: 12 },
   parent: { logId: 'log_0', toolSlug: 'COMPOSIO_MULTI_EXECUTE_TOOL' },
 };
@@ -102,6 +102,7 @@ describe('Logs', () => {
         ],
         nextCursor: 'cursor_2',
       });
+      expect(result.logs[0]?.metadata.premium_usage_charge).toBe('0.012');
     });
 
     it('throws a ValidationError for an unknown filter field', async () => {
@@ -111,6 +112,15 @@ describe('Logs', () => {
         })
       ).rejects.toThrow(ValidationError);
       expect(mockClient.logs.createToolExecution).not.toHaveBeenCalled();
+    });
+
+    it('rejects a non-string premium charge in log metadata', async () => {
+      mockClient.logs.createToolExecution.mockResolvedValue({
+        logs: [{ ...rawLog, metadata: { premium_usage_charge: 0.012 } }],
+        next_cursor: null,
+      });
+
+      await expect(logs.search()).rejects.toThrow();
     });
   });
 
@@ -148,6 +158,20 @@ describe('Logs', () => {
 
       expect(result.timings).toBeUndefined();
       expect(result.context).toEqual({});
+    });
+
+    it('leaves the premium charge absent for an uncharged call', async () => {
+      mockClient.logs.retrieveToolExecution.mockResolvedValue({
+        ...rawLog,
+        metadata: { tool_slug: 'GITHUB_GET_REPO' },
+        context: {},
+        source: {},
+        data: {},
+      });
+
+      const result = await logs.get('log_1');
+
+      expect(result.metadata.premium_usage_charge).toBeUndefined();
     });
   });
 });

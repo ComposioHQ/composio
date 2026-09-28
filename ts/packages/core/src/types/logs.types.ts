@@ -56,6 +56,14 @@ export const ToolExecutionLogParentSchema = z
   })
   .nullable();
 
+/** Tool log metadata, including the optional exact USD premium charge. */
+export const ToolExecutionLogMetadataSchema = z
+  .object({
+    premium_usage_charge: z.string().optional(),
+  })
+  .catchall(z.unknown());
+export type ToolExecutionLogMetadata = z.infer<typeof ToolExecutionLogMetadataSchema>;
+
 /**
  * A tool-execution log entry as returned by `composio.logs.search()`.
  */
@@ -68,7 +76,7 @@ export const ToolExecutionLogSchema = z.object({
   status: ToolExecutionLogStatusSchema,
   level: ToolExecutionLogLevelSchema,
   message: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()),
+  metadata: ToolExecutionLogMetadataSchema,
   metrics: z.record(z.string(), z.unknown()),
   parent: ToolExecutionLogParentSchema,
 });

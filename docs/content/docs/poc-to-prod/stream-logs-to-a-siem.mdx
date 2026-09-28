@@ -40,6 +40,8 @@ Both SDKs expose `composio.logs.search()` for read-only searches with filters, a
 
 Retrieve the full entry for one execution with `composio.logs.get("log_123")` in Python or `await composio.logs.get('log_123')` in TypeScript.
 
+For a charged hosted-account call, both the search result and the full entry include `metadata.premium_usage_charge` as an exact USD string. The field is absent when the call has no premium charge.
+
 ## Schedule collection without losing your place
 
 Run a collector for each project, with its own API key and durable checkpoint. A scheduled job or your platform's HTTP poller can perform these steps. If you use a poller, verify that it supports POST bodies, cursor pagination, and saved state.

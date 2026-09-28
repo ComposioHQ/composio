@@ -49,6 +49,14 @@ from .custom_tool import (
 ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT = "acl_config_for_shared is only valid on SHARED"
 
 
+class UsageSummaryResponse(
+    usage_retrieve_summary_response.UsageRetrieveSummaryResponse
+):
+    """Project usage summary with the exact USD premium charge for the window."""
+
+    premium_usage_charge: str
+
+
 class ExperimentalUsage:
     """Project usage metering, accessed via ``composio.experimental.usage``.
 
@@ -72,7 +80,7 @@ class ExperimentalUsage:
     def summary(
         self,
         **params: te.Unpack[usage_retrieve_summary_params.UsageRetrieveSummaryParams],
-    ) -> usage_retrieve_summary_response.UsageRetrieveSummaryResponse:
+    ) -> UsageSummaryResponse:
         """
         Fetch a usage summary for the project. Experimental — shape may change.
 
@@ -80,14 +88,17 @@ class ExperimentalUsage:
         :param to: End of the window (Unix epoch milliseconds).
         :param entity_types: Restrict the summary to these entity types.
         :param filters: Additional server-side filters.
-        :return: Usage totals keyed by entity type under ``.entities``.
+        :return: Usage totals under ``.entities`` and the exact USD amount in
+            ``.premium_usage_charge`` (``"0"`` when nothing was charged).
 
         Example:
             summary = composio.experimental.usage.summary(
                 entity_types=["tool_calls"],
             )
         """
-        return self._require_client().project.usage.retrieve_summary(**params)
+        response = self._require_client().project.usage.retrieve_summary(**params)
+        # The pinned generated client retains new response fields as Pydantic extras.
+        return UsageSummaryResponse.model_validate(response.model_dump())
 
     def breakdown(
         self,
