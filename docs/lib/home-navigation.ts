@@ -45,7 +45,6 @@ interface DocsProductConfig {
 
 const SHARED_SIDEBAR_ITEMS = [
   { type: 'page', url: '/docs/using-composio-skill' },
-  { type: 'folder', path: 'security', label: 'Security and data' },
 ] as const satisfies readonly ProductSidebarItem[];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
@@ -137,8 +136,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
-      '/docs/security/data-retention',
-      '/docs/security/zero-data-retention',
+      '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
@@ -217,6 +215,7 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
+          { type: 'folder', path: 'security', label: 'Security and data' },
         ],
       },
       {

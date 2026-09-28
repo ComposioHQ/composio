@@ -43,15 +43,17 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
-    expect(classifyDocsProduct('/docs/security/overview')).toBeNull();
+    expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
+    expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
 
   test('uses route inference before persistence and the documented default last', () => {
     expect(resolveDocsProduct('/docs/quickstart', 'for-you')).toBe('platform');
-    expect(resolveDocsProduct('/docs/security/overview', 'for-you')).toBe('for-you');
-    expect(resolveDocsProduct('/docs/security/overview', 'platform')).toBe('platform');
+    expect(resolveDocsProduct('/docs/using-composio-skill', 'for-you')).toBe('for-you');
+    expect(resolveDocsProduct('/docs/using-composio-skill', 'platform')).toBe('platform');
+    expect(resolveDocsProduct('/docs/security/overview', 'for-you')).toBe('platform');
     expect(resolveDocsProduct('/docs', 'invalid')).toBe('platform');
     expect(parseDocsProduct('for-you')).toBe('for-you');
     expect(parseDocsProduct('anything-else')).toBeNull();
@@ -78,17 +80,14 @@ describe('Docs product navigation', () => {
       '/docs/agent-plugins',
     );
     expect(docsProductDestination('/docs/cli', 'platform')).toBe('/docs/quickstart');
-    expect(docsProductDestination('/docs/security/overview', 'for-you')).toBe(
-      '/docs/security/overview',
+    expect(docsProductDestination('/docs/using-composio-skill', 'for-you')).toBe(
+      '/docs/using-composio-skill',
     );
-    expect(docsProductDestination('/docs/security/data-retention', 'platform')).toBe(
-      '/docs/security/data-retention',
+    expect(docsProductDestination('/docs/security/overview', 'for-you')).toBe(
+      '/docs/agent-plugins',
     );
     expect(docsProductDestination('/docs/security/data-retention', 'for-you')).toBe(
       '/docs/agent-plugins',
-    );
-    expect(docsProductDestination('/docs/security/zero-data-retention', 'platform')).toBe(
-      '/docs/security/zero-data-retention',
     );
     expect(docsProductDestination('/docs/security/zero-data-retention', 'for-you')).toBe(
       '/docs/agent-plugins',
@@ -171,12 +170,26 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).not.toContain('/docs');
     expect(platformUrls).not.toContain('/docs');
 
-    for (const sharedUrl of [
-      '/docs/using-composio-skill',
+    expect(forYouUrls).toContain('/docs/using-composio-skill');
+    expect(platformUrls).toContain('/docs/using-composio-skill');
+
+    const securityUrls = [
       '/docs/security/overview',
-    ]) {
-      expect(forYouUrls).toContain(sharedUrl);
-      expect(platformUrls).toContain(sharedUrl);
+      '/docs/security/token-custody',
+      '/docs/security/data-retention',
+      '/docs/security/zero-data-retention',
+    ];
+    const security = platformTree.children.flatMap(node =>
+      node.type === 'folder' ? [node, ...node.children] : [node],
+    ).find(node => node.type === 'folder' && node.name === 'Security and data');
+    expect(security?.type).toBe('folder');
+    if (security?.type !== 'folder') throw new Error('Security and data folder missing');
+    expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
+      securityUrls,
+    );
+    for (const url of securityUrls) {
+      expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
+      expect(forYouUrls).not.toContain(url);
     }
 
     const readiness = platformTree.children.flatMap(node =>
@@ -188,8 +201,6 @@ describe('Docs product navigation', () => {
     expect(readinessUrls).toEqual([
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
-      '/docs/security/data-retention',
-      '/docs/security/zero-data-retention',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
     for (const url of readinessUrls) {
