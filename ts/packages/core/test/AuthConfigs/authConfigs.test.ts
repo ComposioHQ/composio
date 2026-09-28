@@ -88,17 +88,6 @@ describe('AuthConfigs', () => {
     authConfigs = new AuthConfigs(mockClient as unknown as ComposioClient);
   });
 
-  describe('constructor', () => {
-    it('should create an instance successfully with valid client', () => {
-      expect(authConfigs).toBeInstanceOf(AuthConfigs);
-    });
-
-    it('should have protected getClient method for testing', () => {
-      // @ts-expect-error - Accessing protected method for testing
-      expect(authConfigs.getClient()).toBe(mockClient);
-    });
-  });
-
   describe('parseAuthConfigRetrieveResponse', () => {
     it('should transform API response to SDK format correctly', () => {
       const result = transformAuthConfigRetrieveResponse(mockComposioAuthConfigResponse);

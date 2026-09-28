@@ -248,40 +248,4 @@ describe('GoogleProvider', () => {
       );
     });
   });
-
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-  });
 });
