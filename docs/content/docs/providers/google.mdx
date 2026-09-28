@@ -73,7 +73,9 @@ print(response.text)
 ```
 </Tab>
 <Tab value="TypeScript">
+{/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/google >= 0.12.0 (session-aware executeToolCall). The pin needs a manual range bump — ^0.11.1 does not admit this minor release. */}
 ```typescript
+// @errors: 2345
 import { Composio } from '@composio/core';
 import { GoogleProvider } from '@composio/google';
 import { GoogleGenAI, type Part } from '@google/genai';
