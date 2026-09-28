@@ -1,6 +1,7 @@
 import http from 'node:http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
+import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import {
@@ -22,6 +23,7 @@ import {
   requestNativeUiPermissionDecision,
   type NativeUiCallerAgent,
 } from 'src/services/native-ui-sidecar';
+import { ComposioClientSingleton, type ClientError } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const ENHANCED_CONTROLS_UNSUPPORTED_PLATFORMS: ReadonlySet<string> = new Set(['darwin-x64']);
@@ -33,6 +35,11 @@ export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhance
 
 const CACHE_FILE_NAME = 'tool-permissions-cache.json';
 const PERMISSION_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Each path is passed once for the request and once for the error payload, so
+// they live in constants to keep those uses in sync.
+const ORG_CONSUMER_CONFIG_PATH = '/api/v3.1/org/consumer/config';
+const CONSUMER_PERMISSIONS_RESOLVE_PATH = '/api/v3.1/consumer/permissions/resolve';
 const ALLOW_FOR_DURATION_LABEL = '1 hr';
 const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
@@ -185,7 +192,6 @@ const cachePath = (path: Path.Path, cacheDirectory: string) =>
   path.join(cacheDirectory, CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
   [params.orgId, params.projectId, params.consumerUserId].join(':');
-const normalizeBaseUrl = (baseURL: string) => baseURL.replace(/\/$/, '');
 
 const uniq = (values: ReadonlyArray<string | undefined>) => [
   ...new Set(values.filter((value): value is string => Boolean(value))),
@@ -301,45 +307,72 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
-const fetchJson = async <S extends Schema.ConstraintDecoder<unknown>>(
+// These two consumer endpoints are absent from the v3.1 spec, so they go
+// through the client's generic escape hatch rather than a typed resource. The
+// client still supplies credentials, retries, and redirect handling.
+const requestJson = async <S extends Schema.ConstraintDecoder<unknown>>(
   responseSchema: S,
   {
-    baseURL,
-    apiKey,
-    orgId,
-    projectId,
+    client,
     path,
     method = 'GET',
     body,
   }: {
-    readonly baseURL: string;
-    readonly apiKey: string;
-    readonly orgId: string;
-    readonly projectId: string;
+    readonly client: RawComposioClient;
     readonly path: string;
     readonly method?: 'GET' | 'POST';
     readonly body?: unknown;
   }
 ): Promise<S['Type']> => {
-  const response = await fetch(`${normalizeBaseUrl(baseURL)}${path}`, {
-    method,
-    redirect: 'error',
-    headers: {
-      'x-user-api-key': apiKey,
-      'x-org-id': orgId,
-      'x-project-id': projectId,
-      'User-Agent': '@composio/cli',
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ${response.statusText}`);
-  }
-  const responseBody: unknown = await response.json();
+  const responseBody: unknown =
+    method === 'GET' ? await client.get(path) : await client.post(path, { body });
   return Schema.decodeUnknownPromise(responseSchema)(responseBody);
 };
+
+/**
+ * The client for the caller's org and project, with a failure the permission
+ * paths already recover from.
+ */
+const permissionsClient = (params: {
+  readonly apiKey: string;
+  readonly orgId: string;
+  readonly projectId: string;
+  readonly path: string;
+}): Effect.Effect<RawComposioClient, ToolPermissionsRequestError, ComposioClientSingleton> =>
+  Effect.gen(function* () {
+    const clientSingleton = yield* ComposioClientSingleton;
+    return yield* clientSingleton
+      .getFor({
+        userApiKey: params.apiKey,
+        orgId: params.orgId,
+        projectId: params.projectId,
+      })
+      .pipe(
+        Effect.mapError(
+          (cause: ClientError) =>
+            new ToolPermissionsRequestError({
+              path: params.path,
+              message: 'Failed to build a Composio client for the consumer permission request.',
+              cause,
+            })
+        )
+      );
+  });
+
+const fetchConsumerConfig = (client: RawComposioClient) =>
+  Effect.tryPromise({
+    try: () =>
+      requestJson(ConsumerConfigResponseSchema, {
+        client,
+        path: ORG_CONSUMER_CONFIG_PATH,
+      }),
+    catch: cause =>
+      new ToolPermissionsRequestError({
+        path: ORG_CONSUMER_CONFIG_PATH,
+        message: 'Failed to fetch the org consumer config.',
+        cause,
+      }),
+  });
 
 export const refreshConsumerPermissionSnapshot = (params: {
   readonly orgId: string;
@@ -356,22 +389,13 @@ export const refreshConsumerPermissionSnapshot = (params: {
     if (!apiKey) return undefined;
 
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        fetchJson(ConsumerConfigResponseSchema, {
-          baseURL: userContext.data.baseURL,
-          apiKey,
-          orgId: params.orgId,
-          projectId: params.projectId,
-          path: '/api/v3.1/org/consumer/config',
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
+    const client = yield* permissionsClient({
+      apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
+    const config = yield* fetchConsumerConfig(client);
     const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
     const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
     if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
@@ -385,12 +409,9 @@ export const refreshConsumerPermissionSnapshot = (params: {
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise({
             try: () =>
-              fetchJson(PermissionResolveResponseSchema, {
-                baseURL: userContext.data.baseURL,
-                apiKey,
-                orgId: params.orgId,
-                projectId: params.projectId,
-                path: '/api/v3.1/consumer/permissions/resolve',
+              requestJson(PermissionResolveResponseSchema, {
+                client,
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 method: 'POST',
                 body: {
                   connected_account_ids: connectedAccountIds,
@@ -399,7 +420,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
               }),
             catch: cause =>
               new ToolPermissionsRequestError({
-                path: '/api/v3.1/consumer/permissions/resolve',
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 message: 'Failed to resolve consumer permissions.',
                 cause,
               }),
@@ -501,22 +522,13 @@ export const getOrgEnhancedControlsStatus = (params: {
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
 
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        fetchJson(ConsumerConfigResponseSchema, {
-          baseURL: userContext.data.baseURL,
-          apiKey,
-          orgId: params.orgId,
-          projectId: params.projectId,
-          path: '/api/v3.1/org/consumer/config',
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
+    const client = yield* permissionsClient({
+      apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
+    const config = yield* fetchConsumerConfig(client);
     const remoteEnabled = readEnhancedControlsFlag(config);
     const platformSupported = isEnhancedControlsPlatformSupported();
     return {

@@ -30,7 +30,6 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onSome: apiKey =>
             Effect.gen(function* () {
               const sessionInfo = yield* getSessionInfoByUserApiKey({
-                baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
                 // Reflect the org selected via `composio orgs switch`, not the key's home org.
                 orgId: Option.getOrUndefined(ctx.data.orgId),

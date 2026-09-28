@@ -197,9 +197,7 @@ const fetchLatestToolVersionOnce = memoizeInProcess({
   }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
   make: ({ slug, apiKey, params }) =>
     Effect.gen(function* () {
-      const userContext = yield* ComposioUserContext;
       const latest = yield* getLatestToolVersion({
-        baseURL: userContext.data.baseURL,
         apiKey,
         toolSlug: slug,
         orgId: params?.orgId,
