@@ -319,10 +319,11 @@ install_bundle() {
     rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
     stage=
 
-    # Older releases shipped macOS local-tool sidecars here. Current archives
-    # omit the directory, so remove what a previous install left behind.
-    rm -rf "$resolved_install_dir/local-tools-binaries" ||
-        warn "Could not remove obsolete $resolved_install_dir/local-tools-binaries"
+    # Remove legacy sidecars only when the selected release omits them.
+    if [ ! -d "$install_bundle_dir/local-tools-binaries" ]; then
+        rm -rf "$resolved_install_dir/local-tools-binaries" ||
+            warn "Could not remove obsolete $resolved_install_dir/local-tools-binaries"
+    fi
 }
 
 install_entry_point() {

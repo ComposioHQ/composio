@@ -102,6 +102,11 @@ printf '%s\n' 'new-support' >"$bundle/run-bun.mjs"
 printf '%s\n' 'new-service' >"$bundle/services/example.txt"
 printf '%s\n' 'new-adapter' >"$bundle/acp-adapters/current.txt"
 
+if [[ ${TEST_ARCHIVE_MODE:-complete} == with-sidecars ]]; then
+  mkdir -p "$bundle/local-tools-binaries/peekaboo"
+  printf '%s\n' bundled-sidecar >"$bundle/local-tools-binaries/peekaboo/peekaboo"
+fi
+
 if [[ ${TEST_ARCHIVE_MODE:-complete} == missing-binary ]]; then
   exit 0
 fi
@@ -175,6 +180,19 @@ for interpreter in "${interpreters[@]}"; do
     fail "$interpreter_name empty install adapter"
   [[ $(<"$install_dir/release-tag.txt") == "$version" ]] ||
     fail "$interpreter_name empty install metadata"
+  assert_no_residue "$install_dir"
+
+  run_installer with-sidecars >/dev/null 2>&1
+  sidecar="$install_dir/local-tools-binaries/peekaboo/peekaboo"
+  [[ -f "$sidecar" ]] || fail "$interpreter_name install removed bundled sidecar"
+  [[ $(<"$sidecar") == bundled-sidecar ]] || fail "$interpreter_name installed sidecar contents"
+  printf '%s\n' outdated >"$sidecar"
+  printf '%s\n' stale >"$install_dir/local-tools-binaries/stale.txt"
+  run_installer with-sidecars >/dev/null 2>&1
+  [[ -f "$sidecar" ]] || fail "$interpreter_name reinstall removed bundled sidecar"
+  [[ $(<"$sidecar") == bundled-sidecar ]] || fail "$interpreter_name reinstall sidecar contents"
+  [[ ! -e "$install_dir/local-tools-binaries/stale.txt" ]] ||
+    fail "$interpreter_name reinstall retained stale sidecar contents"
   assert_no_residue "$install_dir"
 
   marker="$case_root/old-process"
