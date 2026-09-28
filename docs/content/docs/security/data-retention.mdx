@@ -4,13 +4,11 @@ description: The standard retention policy for every plan. What Composio stores 
 keywords: [data retention, retention policy, log retention, privacy, zero data retention, sub-processors, data flow, file ttl]
 ---
 
-Composio stores logs for tool executions so you can observe and debug your agents. This retention policy applies on every plan. To stop storing request and response payloads, use [Zero Data Retention](/docs/security/zero-data-retention).
+Composio stores logs for tool executions so you can observe and debug your agents. This retention policy applies on every plan.
 
 ## Customer data vs. your end users' data
 
 Throughout this guide, *you* are the Composio customer. *Your end users* are the people your agent acts on behalf of. Each end user is identified by the `user_id` you provide. Composio stores this value as supplied and uses it to associate connected accounts, sessions, and execution logs.
-
-Tool requests and responses may contain additional end-user data. [Zero Data Retention](/docs/security/zero-data-retention) controls whether Composio stores these payloads. It does not remove the `user_id` or other audit metadata.
 
 ## What Composio stores
 
@@ -35,17 +33,21 @@ Workbench storage has two separate lifecycles:
 - Files written to `/mnt/files` are backed by temporary object storage and are automatically deleted after **24 hours**.
 - Other sandbox files, variables, and runtime state are temporary and may be cleared after approximately **12 hours** of inactivity.
 
-## Zero Data Retention
+## Stop storing payloads with Zero Data Retention
 
-In a project with Zero Data Retention (ZDR) on, Composio does not store payloads for tool calls and [Proxy Execute](/docs/extending-sessions/proxy-execute) requests, and keeps only metadata such as IDs and timing. See [Zero Data Retention](/docs/security/zero-data-retention) for what it covers, what it does not, and how to turn it on.
+To stop storing request and response payloads for a project, turn on [Zero Data Retention](/docs/security/zero-data-retention) (ZDR) in **Project Settings > General**. Organization admins can also turn it on for every project in **Organization Settings > Billing**. With ZDR on, the log for each covered call keeps metadata only.
+
+![Zero Data Retention turned on in Project Settings, General](/images/zdr-project-setting.png)
+
+ZDR covers tool calls and [Proxy Execute](/docs/extending-sessions/proxy-execute) requests. See [what ZDR does not cover](/docs/security/zero-data-retention#what-zdr-does-not-cover).
 
 ## Where your data goes
 
-With ZDR on, Composio does not store call payloads in its execution logs, but data may still pass through the following locations during execution:
+Whether or not ZDR is on, data can pass through the following locations during execution:
 
 - The **destination provider** that receives the tool call.
 - **Composio's execution infrastructure** while the call runs.
-- **Temporary object storage** for files used or returned by tool calls. Presigned URL expiry is configurable per project, while the underlying staged file is deleted after 24 hours. See [How long files are available](#how-long-files-are-available).
+- **Temporary object storage** for files used or returned by tool calls. See [How long files are available](#how-long-files-are-available).
 - Your configured **trigger destinations**, which receive trigger events in real time.
 - An isolated third-party **code sandbox**, if you use Workbench or remote code execution. Ordinary Python or shell execution does not inherently send code or sandbox files to an LLM provider. Model-provider processing occurs only in the cases described below.
 
