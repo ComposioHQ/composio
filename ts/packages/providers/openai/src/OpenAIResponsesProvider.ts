@@ -400,7 +400,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @param {OpenAI.Responses.Response} response - The Responses request object containing tool calls
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
-   * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} Array of tool outputs for submission
+   * @returns {Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>} Tool outputs to send back as Responses input items
    *
    * @example
    * ```typescript
