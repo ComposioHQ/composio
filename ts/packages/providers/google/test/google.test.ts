@@ -248,4 +248,74 @@ describe('GoogleProvider', () => {
       );
     });
   });
+
+  describe('executeToolCall with a Tool Router session', () => {
+    it('keeps user ID calls working on @composio/core releases without session helpers', async () => {
+      // The peer range admits cores that predate executeToolForTarget.
+      Object.defineProperty(provider, 'executeToolForTarget', { value: undefined });
+
+      await provider.executeToolCall('test-user', { name: 'test-tool', args: {} });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ userId: 'test-user' }),
+        undefined
+      );
+    });
+
+    it('executes through the session instead of the direct tools API', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { result: 'session-success' },
+          error: null,
+          logId: 'log-session',
+        }),
+      };
+
+      const result = await provider.executeToolCall(session, {
+        name: 'COMPOSIO_SEARCH_TOOLS',
+        args: { query: 'send an email' },
+      });
+
+      expect(session.execute).toHaveBeenCalledWith('COMPOSIO_SEARCH_TOOLS', {
+        query: 'send an email',
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(JSON.parse(result)).toEqual({
+        data: { result: 'session-success' },
+        error: null,
+        logId: 'log-session',
+        successful: true,
+      });
+    });
+
+    it('reports a failed session execution in the result', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({ data: {}, error: 'Tool failed', logId: 'log-fail' }),
+      };
+
+      const result = await provider.executeToolCall(session, {
+        name: 'COMPOSIO_SEARCH_TOOLS',
+        args: {},
+      });
+
+      expect(JSON.parse(result)).toMatchObject({ error: 'Tool failed', successful: false });
+    });
+
+    it('rejects direct execution options with a session', async () => {
+      const session = { execute: vi.fn() };
+
+      await expect(
+        provider.executeToolCall(
+          // @ts-expect-error direct execution options are not accepted with a session
+          session,
+          { name: 'COMPOSIO_SEARCH_TOOLS', args: {} },
+          { connectedAccountId: 'conn-123' }
+        )
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+      expect(session.execute).not.toHaveBeenCalled();
+    });
+  });
 });
