@@ -38,7 +38,7 @@ curl 'https://backend.composio.dev/api/v3.1/tools/EXA_SEARCH' \
 
 Catalog support is independent of your project's Premium usage setting and Session policy. A value of `true` does not enable execution or authorize charges. Custom toolkits and tools return `false`, even if they share a slug with a supported native resource.
 
-Tool list and detail responses fall back to `hosted_account_available: false` if availability metadata cannot be read. Toolkit catalog responses return an error if their `meta.instant_tools_count` lookup fails.
+Tool list and detail responses fall back to `hosted_account_available: false` if availability metadata cannot be read. Toolkit catalog responses stay available when their `meta.instant_tools_count` lookup fails, with `null` meaning the count is unknown. A count of `0` means no eligible tools were found.
 
 The catalog has no Instant-only filter. Use the boolean to identify supported items in your results. `no_auth` and `composio_managed_auth_schemes` describe different authentication properties and do not indicate Instant Tools support. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) to enable your project and confirm current rates before allowing premium usage in a production Session.
 
