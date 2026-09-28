@@ -43,9 +43,12 @@ interface DocsProductConfig {
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS = [
+/** A sidebar entry that both products list: one page or one content folder. */
+type SharedSidebarItem = Extract<ProductSidebarItem, { type: 'page' | 'folder' }>;
+
+const SHARED_SIDEBAR_ITEMS: readonly SharedSidebarItem[] = [
   { type: 'page', url: '/docs/using-composio-skill' },
-] as const satisfies readonly ProductSidebarItem[];
+];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
   item.type === 'page' ? item.url : `/docs/${item.path}`
