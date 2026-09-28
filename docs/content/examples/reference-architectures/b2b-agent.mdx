@@ -9,240 +9,124 @@ gallery:
   order: 0
 ---
 
-A B2B agent acts for a person inside a customer organization. Your application establishes that identity, decides which connections the agent can use, and records the work. Composio handles authentication to connected apps and tool execution.
-
-This architecture describes a workplace assistant embedded in your SaaS product. An employee asks:
+Your customers want an assistant that can work across their apps. This architecture shows how to add one to your SaaS product, using a meeting brief as the example:
 
 > Prepare me for tomorrow's meeting with Acme using our CRM and my email. Draft a follow-up for me to review.
 
-The assistant reads the organization's shared HubSpot connection and the employee's private Gmail connection. It saves a brief and a proposed email in your application. Sending the email requires the employee's approval. A schedule can prepare the same brief without an open browser.
+The assistant reads shared HubSpot data and the employee's private Gmail, then saves a brief and an email draft. The employee approves the email before it is sent. A schedule can prepare the same brief each morning.
 
-<Callout title="Architecture first">
-This page describes a proposed application design. The runnable companion project is planned and is not available yet. Shared connections use an experimental Composio API.
+<Callout title="Proposed architecture">
+The companion app is planned but not built yet. Shared connections use an experimental Composio API.
 </Callout>
 
-## Application architecture
+## The application
 
-The web application and the background worker use the same identity checks, connection selection, and execution policy. The browser submits work and displays progress. The worker runs the agent and persists its results.
+Start with one web app, one worker, and a database. The worker runs the agent outside the browser request, so closing the page doesn't stop the task.
 
 ```mermaid
 flowchart TB
-  accTitle: B2B agent application architecture
-  accDescr: Browser requests and schedules reach application workers. Workers persist state in Postgres, call a model, and use Composio sessions to execute tools against personal Gmail and shared HubSpot connections.
-  browser["Employee browser<br/>Chat, connections, approvals"]
-  subgraph app["Your application"]
-    api["Web API<br/>Authentication and membership checks"]
-    jobs["Durable jobs<br/>Requests and schedules"]
-    worker["Agent worker<br/>Read, draft, request approval"]
-    executor["Approved action worker<br/>Recheck access and execute"]
-    db[("Postgres<br/>Memberships, runs, drafts, approvals")]
-    api -->|"Persist run and dispatch record"| db
-    db -->|"Dispatch pending work"| jobs
-    jobs --> worker
-    jobs --> executor
-    worker <-->|"Checkpoint and results"| db
-    executor <-->|"Approval and action status"| db
-  end
-  model["Model provider"]
-  subgraph composio["Composio"]
-    sessions["Scoped sessions<br/>Tool policies and account selection"]
-    connections["Connected accounts<br/>OAuth and token refresh"]
-    sessions --> connections
-  end
-  apps["Connected apps<br/>Personal Gmail and shared HubSpot"]
-  browser <-->|"Authenticated requests and progress"| api
-  worker <-->|"Model calls"| model
-  worker -->|"Allowed reads"| sessions
-  executor -->|"Approved send"| sessions
-  connections <-->|"Authenticated API calls"| apps
+  accTitle: B2B agent application
+  accDescr: Employees use a web app to start work and approve actions. A background worker calls the model and Composio, and saves work in a database. Composio connects to Gmail and HubSpot.
+  person["Employee"] --> app["Your application<br/>Web app, worker, database"]
+  app --> model["Model"]
+  app --> composio["Composio"]
+  composio --> apps["Gmail and HubSpot"]
 ```
 
-The request follows these boundaries:
+Your application checks who is asking, selects their connections, and saves the work. The model chooses from the tools you allow. Composio manages authentication to connected apps and executes tool calls.
 
-1. Your API verifies the signed-in person and their membership in the active customer organization.
-2. Your database stores a run and a pending dispatch record in one transaction. A dispatcher submits the job and retries delivery if needed.
-3. The worker loads the run by ID, rechecks access, and creates a Composio session with explicit connections and allowed tools.
-4. The agent reads app data through that session and saves the brief and proposed email. Your application stores the conversation and results.
-5. After approval, an action worker rechecks access and sends the exact approved email through a separate, restricted session.
+Chat requests and schedules start the same worker. Sending an approved email is a separate job in that worker, with no model call. These jobs can share one deployment.
 
-Composio [sessions](/docs/how-composio-works) provide integration context, including account selection and tool access. Your application owns customer membership, conversation history, approval records, scheduling, and run recovery.
+The proposed stack gives each component a concrete implementation:
 
-### A concrete stack
-
-The proposed companion uses TypeScript throughout. The choices below make the design implementable without requiring the same vendors in your product.
-
-| Responsibility | Proposed component | Reason for the choice |
+| Component | Choice | Responsibility |
 |---|---|---|
-| Web interface and API | Next.js | One application for chat, connection settings, approvals, and server endpoints |
-| Sign-in and organizations | [Clerk Organizations](https://clerk.com/docs/guides/organizations/overview) | An identity provider with organization membership |
-| Application state | Postgres | Transactions and constraints for tenant-scoped records and action status |
-| Model calls and tool schemas | [Vercel AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling) | A TypeScript interface to model providers, with application-owned tool execution |
-| Background execution | [Inngest](https://www.inngest.com/docs/learn/inngest-steps) | Checkpointed work and schedules outside the browser request |
-| App connections and tools | Composio TypeScript SDK | Per-user sessions, shared connections, OAuth, and authenticated execution |
+| Web app | Next.js | Chat, connection settings, approvals, and API endpoints |
+| Sign-in | [Clerk Organizations](https://clerk.com/docs/guides/organizations/overview) | User identity and customer membership |
+| Database | Postgres | Conversations, runs, drafts, and approvals |
+| Agent | [Vercel AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling) | Model calls and tool schemas |
+| Background jobs | [Inngest](https://www.inngest.com/docs/learn/inngest-steps) | Schedules and resumable work |
+| App integrations | Composio | Connections, tool access, and execution |
 
-Next.js serves the application endpoints, including worker handlers. Inngest coordinates background execution. Postgres holds the business records that your application queries and authorizes. Inngest's execution history supports job recovery; it does not replace those records.
+You can substitute your existing stack. The meeting brief needs one agent reading current app data. It needs no vector database or code execution sandbox.
 
-An existing identity provider, queue, or agent framework can fill the same role. The design depends on the responsibilities and persisted state, rather than a particular hosting provider.
+## Users and connections
 
-## Customer identity and connection ownership
+Each customer organization is a tenant. Your database maps each person's membership in that tenant to a stable Composio `userId`.
 
-A customer organization is a tenant in your application. A person can belong to several tenants. Each membership has its own stable Composio `userId`, stored in your database.
+Alice might belong to both Northwind and Contoso. This design gives her a different Composio user ID in each, with separate connections. Your backend resolves the ID after checking her membership. The browser and model cannot choose it.
 
-For example, Alice's membership in Northwind maps to `member_northwind_alice`. Her membership in another customer organization maps to a different ID. The illustrative IDs below stand for opaque database identifiers in the implementation.
+For a run at Northwind, the application selects two accounts:
 
 ```mermaid
 flowchart TB
-  accTitle: Customer membership and connected account ownership
-  accDescr: Alice's Northwind membership maps to one Composio user ID. Her private Gmail account and an explicitly granted shared CRM account are pinned into her run's session. Membership in another customer maps to a different user ID.
-  person["Alice<br/>Authenticated application user"]
-  subgraph tenant["Northwind customer organization"]
-    member["Alice's membership<br/>member_northwind_alice"]
-    owner["Organization connection owner<br/>org_northwind_connections"]
-    private["Private Gmail connection<br/>Owned by Alice's membership"]
-    shared["Shared HubSpot connection<br/>Owned by the organization identity"]
-    session["Run session<br/>Acts as member_northwind_alice"]
-    member -->|"Owns"| private
-    owner -->|"Owns"| shared
-    member -->|"Acting identity"| session
-    private -->|"Explicit account pin"| session
-    shared -->|"Explicit pin plus ACL grant"| session
-  end
-  other["Alice's membership in another customer<br/>A different Composio userId"]
-  person --> member
-  person --> other
+  accTitle: Accounts available to Alice's session
+  accDescr: Alice's Northwind membership determines the session user ID. The application pins her private Gmail connection and Northwind's shared HubSpot connection, with an explicit access grant for the shared account.
+  alice["Alice at Northwind"] -->|"userId"| session["Composio session"]
+  session -->|"Private account"| gmail["Alice's Gmail"]
+  session -->|"Shared account with access grant"| crm["Northwind's HubSpot"]
 ```
 
-Your backend resolves this mapping from the authenticated request and active membership. Browser input and model output cannot choose the acting `userId` or supply an arbitrary connected account ID. Every lookup of a conversation, run, connection, or approval includes its tenant and permitted membership.
+Alice connects Gmail from the application's settings through a [Connect Link](/docs/authentication/manually-authenticating). The backend verifies the completed connection before saving its account ID against her membership.
 
-This design gives a person separate connections in each customer organization. That requires separate onboarding when they use the product in more than one organization. It avoids implicitly sharing personal data across those organizations.
+An administrator connects HubSpot under a stable, backend-controlled Composio user ID for Northwind. The application creates a [shared connection](/docs/extending-sessions/shared-connections) and grants access to specific membership user IDs. It checks current membership before each use and pins the account explicitly into the session.
 
-### Personal connections
+That shared connection uses the connected CRM account's permissions. If employees need different access to CRM records, use personal connections or add record-level authorization. The shared account alone does not enforce those differences.
 
-An employee connects Gmail from the application's connection settings. Your backend starts the [Connect Link flow](/docs/authentication/manually-authenticating) for that membership's Composio user ID.
+Shared connections have [ACL and session limits](/docs/extending-sessions/shared-connections#using-a-shared-connection). This design uses explicit grants. `allowAllUsers` does not represent a customer boundary.
 
-The pending connection record binds the flow to the tenant, membership, and expected toolkit. The backend confirms the account's status and ownership with Composio before storing the selected account ID. A browser redirect alone does not prove a successful connection.
+## A session for each run
 
-Each run pins that selected account. A newly connected Gmail account does not silently replace the account used by an existing schedule.
+The worker creates a [session](/docs/configuring-sessions) for the run's user and selected accounts. For the meeting brief, its configuration has:
 
-### Organization connections
+- Explicit `connectedAccounts` for Gmail and HubSpot.
+- An allowlist of read tools, exposed through `SessionPreset.DIRECT_TOOLS`.
+- `manageConnections: false`, because employees connect apps in settings.
+- `sandbox: { enable: false }`, because the task needs no code execution.
 
-A customer administrator connects HubSpot under a stable organization connection identity. That identity is a Composio user ID controlled by your backend, separate from an employee's membership.
+The model can request those read tools. Your worker validates each call before `session.execute()`, then passes the result back to the model. It saves the brief and email draft in Postgres. The draft stays inside your application until approval.
 
-The backend creates a [shared connection](/docs/extending-sessions/shared-connections) and grants access to specific membership user IDs. Each run explicitly pins the shared connection. The application checks membership and permissions before using it, even when the shared connection's ACL permits access.
+A new task gets a new session through `composio.sessions.create()`. A retried run restores its saved session with `composio.sessions.use()`. Conversation history lives in your database and can span several runs.
 
-The shared account grants the provider permissions of the connected CRM account. It does not reproduce each employee's CRM permissions. This design assumes that authorized members may read the CRM data available to that shared connection. A product with per-record CRM permissions needs additional resource authorization or personal CRM connections.
+The worker checks permissions again when work resumes. Changed permissions or accounts invalidate pending work. The application deletes sessions when finished runs no longer need them.
 
-<Callout title="Shared connection limits">
-Shared connections are experimental. Each allow or deny list supports up to 1,000 user IDs, and a session can pin at most one shared connection per toolkit. This design uses explicit grants rather than `allowAllUsers`, which would not represent your application's tenant boundary.
-</Callout>
+## Approval before sending
 
-## Session policy and agent execution
+Session configuration limits tool access. Your application records approval for a specific email. The agent's read session has no send tool, proxy tool, or sandbox that could bypass that approval.
 
-The assistant's capabilities are defined by an application policy. For this task, the agent can read selected email and CRM records and produce a local draft. It cannot send email during the reasoning loop.
+The send path is short:
 
-The worker creates a session with `composio.sessions.create()` and stores the session ID on the run. Its configuration specifies:
+1. The application shows the sender, recipients, subject, and body to the requesting employee.
+2. The employee approves that exact version. Editing it requires a new approval.
+3. A send job checks current access and approval expiry, then claims the action in the database so another job cannot send it too.
+4. The job uses a separate send-only session to execute the saved email and records the result.
 
-- The membership's `userId` and explicit `connectedAccounts` for Gmail and HubSpot.
-- An exact allowlist of the read tools needed for the brief.
-- `SessionPreset.DIRECT_TOOLS`, so the model sees the selected app tools directly.
-- `manageConnections: false`, because connection onboarding happens in the application.
-- `sandbox: { enable: false }`, because this task needs no generated code execution.
+No model rewrites the email after approval. Rejection or expiry ends the action without sending. Approval lives in the database, so the employee can close the browser and return later.
 
-The worker validates each requested tool and its arguments before calling `session.execute()`. It passes tool results back to the model within configured limits on steps, output size, elapsed time, and model usage. Those limits are application controls.
+This check belongs on the execution path. A local `beforeExecute` hook does not cover every SDK or hosted MCP call.
 
-This assistant can grow to handle more tasks, but its first workflow has a small tool set. A broader assistant can use [dynamic tool discovery](/docs/how-composio-works#meta-tools). That change also requires reviewing approval enforcement for nested tool calls, batch execution, and sandbox access.
+## Scheduled work and failures
 
-### Session lifetime
+A schedule stores the task, acting membership, selected connections, and timezone. Each occurrence starts an ordinary run with current permission checks. It uses the same agent and approval rules as chat.
 
-A run owns its session. The worker resumes it with `composio.sessions.use()` after a retry. A new run gets a new session, including each scheduled occurrence. Multiple runs may belong to the same conversation.
+The application saves pending jobs with their run records and retries delivery to the job service. Workers use run IDs and database constraints to reject duplicate work. If OAuth expires, the run stops and asks the employee to reconnect through the application.
 
-The application stores conversation history separately and selects the context for each run. It rechecks current permissions before resumed work. If the policy or selected connections changed, it invalidates the pending work and creates a new session under the new configuration.
+Reads can retry transient failures within a limit. Sending email needs more care: the provider might accept a message just before a timeout. In that case, the action records an unknown outcome and does not automatically resend. Recovery checks the provider or asks for review. A durable job runner cannot guarantee exactly-once delivery to an external app.
 
-This keeps a run's tool context separate from later tasks while allowing recovery within that run. Composio sessions persist, so application cleanup includes deleting sessions when their runs no longer need them.
+## Operating the app
 
-## Approval and external actions
+The production responsibilities remain in your application:
 
-Session policy and approval solve different problems. Session configuration defines available tools and connections. Your application records a person's authorization for a particular action.
+- Check tenant and membership access for every conversation, run, connection, and approval. Database relationships also prevent records from linking across tenants.
+- Keep the Composio API key, session IDs, and connection credentials out of the browser and model context. Treat email and CRM content as untrusted tool results.
+- On membership removal, stop new work, disable schedules, cancel approvals, revoke shared grants, and delete affected sessions. Calls already accepted by a provider cannot be recalled.
+- Bound each run's steps, runtime, and model usage. Limit concurrent work per customer.
+- Record the acting user, session, approval, and tool outcome. Keep email bodies and OAuth links out of operational logs, and set retention for stored drafts and job history.
 
-```mermaid
-sequenceDiagram
-  accTitle: From a meeting brief to an approved email
-  accDescr: The agent reads through a restricted session and saves a proposal. The employee approves the proposal through the application. An action worker checks current access, claims the action, and executes the approved payload through Composio.
-  actor Employee
-  participant App as Web application
-  participant Worker as Application workers
-  participant DB as Postgres
-  participant Composio
-  Employee->>App: Request a meeting brief
-  App->>DB: Store authorized run and dispatch record
-  Note over DB,Worker: Dispatcher starts durable work
-  Worker->>DB: Load run and current permissions
-  Worker->>Composio: Create session with read tools and pinned accounts
-  Worker->>Composio: Read email and CRM context
-  Composio-->>Worker: Tool results
-  Worker->>DB: Save brief and immutable action proposal
-  Employee->>App: Review and approve the proposal
-  App->>DB: Record decision and dispatch action
-  Note over DB,Worker: Action worker handles approved work without a model call
-  Worker->>DB: Recheck access and atomically claim action
-  Worker->>Composio: Create send-only session and execute approved payload
-  Composio-->>Worker: Result or uncertain outcome
-  Worker->>DB: Record outcome and execution log ID
-  Employee->>App: Read action status
-```
-
-The proposed email stays in Postgres. The approval record identifies the tenant, requesting membership, connected account, tool, exact arguments, policy version, and expiry. The review UI displays the sending account, recipients, subject, and body.
-
-Editing the proposal invalidates its approval. The action worker loads the approved payload from the database, rechecks membership and connection access, and atomically claims the action. It creates a separate session that permits only the required send tool. No model rewrites the approved email.
-
-Rejection or expiry ends the action without sending. A duplicate approval request cannot claim the same action again. The reference design lets the requesting employee approve a send from their own mailbox.
-
-Local `beforeExecute` hooks can help instrument an execution path. They do not cover every SDK or hosted MCP path. In this design, the model receives no send tool, proxy tool, or code execution tool. The application routes every external write through the approved action worker.
-
-## Scheduled work and recovery
-
-A schedule stores the tenant, acting membership, task, selected connections, and timezone. Each occurrence creates a run with a unique schedule-and-occurrence key. It uses the same worker as an interactive request.
-
-The worker reloads current membership and permissions when it starts. If a connection needs authentication, the run enters `needs_connection` and the application asks the employee to reconnect. Background work never waits for an interactive OAuth flow inside the model loop.
-
-Approval also lives in persisted application state. The agent worker finishes after saving the proposal. Approval starts a separate action job, so an open browser or an in-memory promise is unnecessary.
-
-The run and its pending dispatch record are committed together. A dispatcher retries undelivered records, and workers deduplicate by run or action ID. This closes the gap between saving work and submitting a job.
-
-### Retry behavior
-
-Read failures can use bounded retries for transient errors and rate limits. Authentication failures require reconnection. Invalid arguments require correction.
-
-An external write needs different treatment. A provider may accept an email just before a timeout or worker crash. A persisted action claim prevents another worker from sending it immediately, but cannot prove whether the provider accepted it.
-
-An interrupted send enters `outcome_unknown`. The worker does not automatically resend it. Recovery checks the provider's result where possible and otherwise requires review. A provider-supported idempotency key can improve this path when the specific tool exposes one. Durable execution alone does not guarantee exactly-once external effects.
-
-Event-triggered work can later enter the same run path. A [Composio webhook handler](/docs/setting-up-triggers/subscribing-to-events) verifies the raw signed payload, resolves its connection to a tenant, and persists it before acknowledging delivery. It also deduplicates events. The initial companion only needs interactive requests and schedules.
-
-## State, access, and operations
-
-Postgres stores tenant-scoped memberships, connection references, conversations, runs, schedules, proposals, approvals, and execution attempts. Tenant-aware foreign keys and uniqueness constraints prevent records from linking across customers. The application also checks access on every read, mutation, and worker entry point.
-
-Composio stores connected-account credentials. Your application stores connection IDs and keeps its Composio API key server-side. It treats session IDs and MCP URLs as sensitive and never gives them to the browser or model as credentials.
-
-Email and CRM content remain untrusted input. The worker passes retrieved content as tool results, not application instructions. Deterministic tool restrictions and the separate approval path limit what the model can execute.
-
-When a membership is removed, the application blocks new work, disables its schedules, and cancels pending approvals. It revokes shared-account grants and deletes affected sessions. Workers recheck access before subsequent calls. A request already accepted by an external provider cannot be recalled by deleting a session.
-
-Each run records the tenant, membership, session ID, policy version, model usage, and tool outcomes. Each external action also records its proposal, approver, attempts, and Composio execution log ID when available. Operational logs omit email bodies and OAuth links. Access to stored briefs and drafts follows the same membership checks as the originating conversation.
-
-Separate Composio projects keep development and production connections apart. Application configuration sets per-tenant concurrency and run budgets. Failed dispatches, overdue jobs, reconnect requests, and unknown write outcomes are visible to operators. Application records, job history, and [Composio logs](/docs/poc-to-prod/stream-logs-to-a-siem) each need a defined retention policy.
-
-## Adapting the design
-
-The first implementation has one agent, one shared CRM connection per customer, and one selected Gmail connection per membership. It has no vector database, multi-agent coordinator, or generated-code sandbox. The meeting brief reads current app data directly.
-
-Your product can use another agent framework or job runner while preserving the same identity mapping, account selection, and approval records. Per-customer infrastructure, finer CRM permissions, or larger shared-account ACLs require a separate isolation and access design.
-
-The next step is a companion implementation that proves the request, schedule, and approval paths. Until that project exists, the diagrams describe the intended design rather than a tested deployment.
+Use separate Composio projects for development and production. [Composio execution logs](/docs/poc-to-prod/stream-logs-to-a-siem) help trace tool calls alongside your application's run records.
 
 <Cards>
-  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Tool policies, direct tools, account selection, and sandbox configuration." />
-  <Card title="Shared connections" href="/docs/extending-sessions/shared-connections" description="Experimental shared accounts, explicit pins, and access rules." />
-  <Card title="General agent with Pi" href="/examples/general-agent-with-pi" description="An existing runnable example with per-user sessions and a shared workspace connection." />
+  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Tool access, account selection, and sandbox settings." />
+  <Card title="Shared connections" href="/docs/extending-sessions/shared-connections" description="Shared accounts, access rules, and current limits." />
+  <Card title="General agent with Pi" href="/examples/general-agent-with-pi" description="A runnable example with per-user sessions and a shared connection." />
 </Cards>

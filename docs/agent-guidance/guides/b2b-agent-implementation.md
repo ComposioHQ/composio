@@ -8,6 +8,8 @@ Build a workplace assistant for customer organizations. Demonstrate one task: pr
 
 Support interactive requests and scheduled briefs through the same worker. Keep event-triggered runs, multiple agents, retrieval indexes, and generated-code execution outside the first implementation.
 
+Agent runs and approved sends are separate job handlers in the same worker deployment. They do not require separate services. Keep the detailed records and recovery rules below in the implementation; the architecture page shows only the main components and account selection.
+
 Use TypeScript, Next.js, Clerk Organizations, Postgres, Vercel AI SDK, Inngest, and Composio as the proposed stack. Verify current APIs and pin compatible dependencies in the implementation repository. Substitute a component if necessary, but preserve the responsibilities described below and update the architecture to match.
 
 ## Application records
