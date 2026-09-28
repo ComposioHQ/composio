@@ -92,6 +92,10 @@ jobs:
           uv pip install -e providers/crewai
           uv pip install -e providers/langchain
           uv pip install -e providers/langgraph
+          uv pip install -e providers/gemini
+          uv pip install -e providers/google
+          uv pip install -e providers/openai_agents
+          uv pip install -e providers/claude_agent_sdk
           uv pip install hypothesis pytest pytest-mock
 
       - name: Run Import Tests
@@ -99,6 +103,9 @@ jobs:
           cd python/
           source .venv/bin/activate
           python -c "from composio import Composio; print('✓ Basic import successful')"
+          # The Gemini and Google provider tests skip when these are missing, so
+          # fail here instead of letting the unit tests skip silently.
+          python -c "import composio_gemini, composio_google, google.genai; print('✓ Gemini and Google provider imports successful')"
 
       - name: Test Autogen Provider Installation
         run: |
@@ -131,6 +138,15 @@ jobs:
           cd python/
           source .venv/bin/activate
           python -m pytest tests/ -v --tb=short
+
+      - name: Run Provider Package Tests
+        run: |
+          cd python/
+          source .venv/bin/activate
+          # Separate runs: these files share the `test_provider.py` basename
+          # with tests/, which pytest cannot collect in a single session.
+          python -m pytest providers/openai_agents/tests -v --tb=short
+          python -m pytest providers/claude_agent_sdk/tests -v --tb=short
 
       - name: Test Package Installation
         run: |

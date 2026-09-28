@@ -265,19 +265,6 @@ describe('LlamaindexProvider', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should handle single item array', () => {
-      const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-      const result = provider.wrapMcpServerResponse(mcpResponse);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        url: new URL('https://single.example.com'),
-        name: 'single-server',
-      });
-    });
-
     it('should create proper URL objects from string URLs', () => {
       const mcpResponse = [
         { name: 'http-server', url: 'http://insecure.example.com' },

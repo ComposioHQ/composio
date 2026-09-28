@@ -6,7 +6,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
-import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
+import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
@@ -254,7 +254,6 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
     let orgName = '~';
     if (apiKey) {
       const sessionInfo = yield* getSessionInfoByUserApiKey({
-        baseURL: userContext.data.baseURL,
         userApiKey: apiKey,
         orgId: Option.getOrUndefined(userContext.data.orgId),
       }).pipe(Effect.catch(() => Effect.succeed(null)));
@@ -921,7 +920,7 @@ const runConnectedAccountsLink = (params: {
         Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
-            const slug = extractSlug(error);
+            const slug = extractApiErrorDetails(error)?.slug;
 
             if (slug === 'ToolRouterV2_NoManagedAuth') {
               yield* handleNoManagedAuth(ui, toolkitSlug, params.noBrowser);

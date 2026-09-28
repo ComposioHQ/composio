@@ -10,12 +10,11 @@ import {
   Layer,
 } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
-import {
-  ComposioClientSingleton,
-  ComposioSessionRepository,
-  type CliRealtimeAuthResponse,
-  type CliRealtimeCredentialsResponse,
-} from 'src/services/composio-clients';
+import type {
+  RealtimeAuthResponse as CliRealtimeAuthResponse,
+  RealtimeCredentialsResponse as CliRealtimeCredentialsResponse,
+} from '@composio/client/resources/cli';
+import { ComposioClientSingleton, ComposioSessionRepository } from 'src/services/composio-clients';
 
 const RawRealtimeEvent = JsonRecordSchema;
 type RawRealtimeEvent = typeof RawRealtimeEvent.Type;

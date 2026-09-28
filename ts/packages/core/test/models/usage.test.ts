@@ -43,7 +43,10 @@ describe('Experimental.usage', () => {
 
   describe('summary', () => {
     it('sends an empty body when called without params', async () => {
-      mockClient.project.usage.retrieveSummary.mockResolvedValue({ entities: {} });
+      mockClient.project.usage.retrieveSummary.mockResolvedValue({
+        entities: {},
+        premium_usage_charge: '0',
+      });
 
       const result = await experimental.usage.summary();
 
@@ -51,7 +54,7 @@ describe('Experimental.usage', () => {
         { from: undefined, to: undefined, entity_types: undefined, filters: undefined },
         undefined
       );
-      expect(result).toEqual({ entities: {} });
+      expect(result).toEqual({ entities: {}, premiumUsageCharge: '0' });
     });
 
     it('maps params to the wire and transforms the response', async () => {
@@ -60,6 +63,7 @@ describe('Experimental.usage', () => {
           tool_calls: { unit: 'call', total_quantity: '42', event_count: 42 },
           sessions: { unit: 'session', total_quantity: '3', event_count: 3 },
         },
+        premium_usage_charge: '0.025',
       });
       const signal = new AbortController().signal;
 
@@ -87,6 +91,7 @@ describe('Experimental.usage', () => {
           tool_calls: { unit: 'call', totalQuantity: '42', eventCount: 42 },
           sessions: { unit: 'session', totalQuantity: '3', eventCount: 3 },
         },
+        premiumUsageCharge: '0.025',
       });
     });
 

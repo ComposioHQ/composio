@@ -1,6 +1,5 @@
 import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
-import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
@@ -83,11 +82,7 @@ export const connectedAccountsCmd$List = Command.make(
             client.connectedAccounts.list({
               toolkit_slugs: toolkitSlugs,
               user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-              // Bypass the stale Stainless union (still missing 'REVOKED')
-              // until @composio/client is regenerated.
-              statuses: Option.isSome(status)
-                ? ([status.value] as ConnectedAccountListParams['statuses'])
-                : undefined,
+              statuses: Option.isSome(status) ? [status.value] : undefined,
               limit: clampLimit(limit),
             }),
           catch: cause =>

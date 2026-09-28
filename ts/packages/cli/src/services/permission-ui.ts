@@ -18,6 +18,10 @@ export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = loadHos
   interactivePermissionUiDisabledConfig
 );
 
+// Enhanced controls are not offered on Intel Macs (#3421).
+export const isEnhancedControlsPlatformSupported = (): boolean =>
+  !(process.platform === 'darwin' && process.arch === 'x64');
+
 const normalizeCallerAgent = (value?: string): PermissionCallerAgent | undefined => {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, '');
   if (normalized === 'claude' || normalized === 'codex' || normalized === 'openclaw') {

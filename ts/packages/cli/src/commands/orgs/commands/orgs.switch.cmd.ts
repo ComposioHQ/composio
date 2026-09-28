@@ -38,7 +38,6 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
 
     const result = yield* runOrgSelection({
       apiKey,
-      baseURL: ctx.data.baseURL,
       explicitOrgId: Option.getOrUndefined(orgId),
       currentOrgId: Option.getOrUndefined(ctx.data.orgId),
       limit,
@@ -52,7 +51,6 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
     yield* ctx.login(apiKey, result.id, Option.getOrUndefined(ctx.data.testUserId));
     yield* linkAnalyticsIdentityForOrg({
       apiKey,
-      baseURL: ctx.data.baseURL,
       orgId: result.id,
     });
 

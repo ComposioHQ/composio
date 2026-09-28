@@ -108,7 +108,7 @@ def search(query: str, model: str | None = ...) -> SessionSearchResponse
 Execute a tool within the session.  For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the original slug (e.g. "GREP") when that original slug is unique across the session's custom tools and toolkits. Custom tools are executed in-process; remote tools are sent to the Composio backend.
 
 ```python
-def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ...) -> SessionExecuteResponse
+def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
 **Parameters**
@@ -121,7 +121,7 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str
 
 **Returns**
 
-`SessionExecuteResponse`
+`ToolRouterSessionExecuteResponse`
 
 ---
 
@@ -259,4 +259,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L172)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L184)
