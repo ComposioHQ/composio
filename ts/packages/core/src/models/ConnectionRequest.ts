@@ -36,13 +36,22 @@ export function createConnectionRequest(
   status?: ConnectedAccountStatus,
   redirectUrl?: string | null
 ): ConnectionRequest {
-  const state: ConnectionRequestState = {
+  // `waitForConnection` records each observed status on this same object, so
+  // `request.status` and `toJSON()` never disagree.
+  const request: ConnectionRequest = {
     id: connectedAccountId,
     status: status || ConnectedAccountStatuses.INITIATED,
     redirectUrl,
+    waitForConnection,
+    toJSON: (): ConnectionRequestState => ({
+      id: request.id,
+      status: request.status,
+      redirectUrl: request.redirectUrl,
+    }),
+    toString: () => JSON.stringify(request.toJSON(), null, 2),
   };
 
-  telemetry.instrument(state, 'ConnectionRequest');
+  telemetry.instrument(request, 'ConnectionRequest');
 
   /**
    * Waits for the connection request to complete and become active.
@@ -87,7 +96,7 @@ export function createConnectionRequest(
           `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
           {
             meta: {
-              connectedAccountId: state.id,
+              connectedAccountId: request.id,
               status: response.status,
               statusReason: response.status_reason,
             },
@@ -97,19 +106,19 @@ export function createConnectionRequest(
     };
 
     try {
-      const response = await client.connectedAccounts.retrieve(state.id);
+      const response = await client.connectedAccounts.retrieve(request.id);
+      request.status = response.status;
       if (response.status === ConnectedAccountStatuses.ACTIVE) {
-        state.status = ConnectedAccountStatuses.ACTIVE;
         return transformConnectedAccountResponse(response);
       }
       failIfTerminal(response);
     } catch (error) {
       if (error instanceof ComposioClient.NotFoundError) {
         throw new ComposioConnectedAccountNotFoundError(
-          `Connected account with id ${state.id} not found`,
+          `Connected account with id ${request.id} not found`,
           {
             meta: {
-              connectedAccountId: state.id,
+              connectedAccountId: request.id,
             },
           }
         );
@@ -123,9 +132,9 @@ export function createConnectionRequest(
 
     while (Date.now() - start < timeout) {
       try {
-        const response = await client.connectedAccounts.retrieve(state.id);
+        const response = await client.connectedAccounts.retrieve(request.id);
 
-        state.status = response.status;
+        request.status = response.status;
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
           return transformConnectedAccountResponse(response);
         }
@@ -138,13 +147,8 @@ export function createConnectionRequest(
       }
     }
 
-    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${state.id}`);
+    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
   }
 
-  return {
-    ...state,
-    waitForConnection,
-    toJSON: () => ({ ...state }),
-    toString: () => JSON.stringify(state, null, 2),
-  };
+  return request;
 }
