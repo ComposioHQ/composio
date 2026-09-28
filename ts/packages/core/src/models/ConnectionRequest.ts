@@ -27,8 +27,7 @@ import { ConnectionRequest, ConnectionRequestState } from '../types/connectionRe
  * @param {string} connectedAccountId - The ID of the connected account
  * @param {ConnectedAccountStatus} [status] - Initial status of the connection
  * @param {string | null} [redirectUrl] - OAuth redirect URL if applicable
- * @returns {ConnectionRequestState & { waitForConnection: (timeout?: number) => Promise<ConnectedAccountRetrieveResponse> }}
- * Connection request object with state and methods
+ * @returns {ConnectionRequest} Connection request object with state and methods
  */
 export function createConnectionRequest(
   client: ComposioClient,
