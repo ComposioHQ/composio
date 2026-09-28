@@ -56,6 +56,7 @@ export const ToolKitItemSchema = z.object({
   authSchemes: z.array(z.string()).optional(),
   composioManagedAuthSchemes: z.array(z.string()).optional(),
   noAuth: z.boolean().optional(),
+  instant: z.object({ supported: z.literal(true) }).optional(),
 });
 
 export const ToolKitListResponseSchema = z.array(ToolKitItemSchema);
@@ -130,6 +131,7 @@ export const ToolkitRetrieveResponseSchema = z.object({
   slug: z.string(),
   meta: ToolKitMetaSchema,
   isLocalToolkit: z.boolean(),
+  instant: z.object({ supported: z.literal(true) }).optional(),
   composioManagedAuthSchemes: z.array(z.string()).optional(),
   authConfigDetails: z.array(ToolkitAuthConfigDetailsSchema).optional(),
   baseUrl: z.string().optional(),

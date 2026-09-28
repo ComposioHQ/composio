@@ -1,0 +1,12 @@
+---
+title: Tool pricing
+description: Understand charges for Instant Tools and other tool calls
+---
+
+A tool can incur an additional charge when it runs through Instant access. The charge belongs to the *tool*, not the toolkit. A toolkit can contain both Instant-supported and account-required tools.
+
+Check the tool's `instant.price.description` for its rate and unit before execution. Usage may depend on requests, characters, time, results, or a provider model. An optional `instant.price.discount` is a percentage from 0 to 100; the description still shows the regular rate. You.com and Parallel have a 100% Instant discount in this release. No end date is shown because the offer may change.
+
+Instant charges are additional to standard tool-call charges and platform fees. When you set `instant.return_charge: true` on a Session, a known amount appears at `instant.charge`. If the amount is unknown, `instant` is present without `charge`. A successful fully discounted call reports `amount: "0"`. See [Instant Tools](/docs/instant-tools) for discovery, Session setup, and access-route choices.
+
+Tool execution also follows your plan's [API rate limits](/reference/rate-limits). For account-specific pricing questions, [contact support](https://composio.dev/contact?utm_source=docs&cta_placement=docs-tool-pricing).

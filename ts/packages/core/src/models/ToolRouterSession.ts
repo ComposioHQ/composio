@@ -167,7 +167,7 @@ export class ToolRouterSession<
       execute: {},
       search: {},
       preload: { tools: [] },
-      premium_usage: false,
+      instant: false,
     };
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
@@ -1118,8 +1118,8 @@ export class ToolRouterSession<
           : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
-      ...(remoteResult?.premiumCharge !== undefined && {
-        premiumCharge: remoteResult.premiumCharge,
+      ...(remoteResult?.instant !== undefined && {
+        instant: remoteResult.instant,
       }),
     };
   }

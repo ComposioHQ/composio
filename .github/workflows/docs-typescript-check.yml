@@ -38,8 +38,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
+      - name: Build local TypeScript SDK
+        working-directory: .
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm --filter @composio/json-schema-to-zod build
+          pnpm --filter @composio/core build
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Use local SDK build for docs examples
+        run: |
+          rm -rf node_modules/@composio/core/dist
+          cp -R ../ts/packages/core/dist node_modules/@composio/core/dist
 
       - name: Lint TypeScript
         run: bun run lint

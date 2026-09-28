@@ -50,9 +50,10 @@ import {
   transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
-  transformToolRouterPremiumUsageParams,
+  transformToolRouterInstantParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
+import type { SessionInstantBody } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
@@ -267,13 +268,19 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateParams & {
+      instant?: SessionInstantBody;
+      connected_account_usage?: boolean;
+    } = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
-      ...(routerConfig.premiumUsage !== undefined && {
-        premium_usage: transformToolRouterPremiumUsageParams(routerConfig.premiumUsage),
+      ...(routerConfig.instant !== undefined && {
+        instant: transformToolRouterInstantParams(routerConfig.instant),
+      }),
+      ...(routerConfig.connectedAccountUsage !== undefined && {
+        connected_account_usage: routerConfig.connectedAccountUsage,
       }),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),

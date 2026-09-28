@@ -25,6 +25,7 @@ describe('toolRouterResponseTransform', () => {
           GMAIL_SEND_EMAIL: {
             tool_slug: 'GMAIL_SEND_EMAIL',
             toolkit: 'gmail',
+            instant: { supported: true, available: false },
             description: 'Send an email',
             hasFullSchema: true,
             input_schema: { to: { type: 'string' } },
@@ -36,6 +37,12 @@ describe('toolRouterResponseTransform', () => {
             toolkit: 'gmail',
             description: 'Gmail toolkit',
             has_active_connection: true,
+            is_ready: true,
+            instant: {
+              supported: true,
+              available: false,
+              allowed_tool_slugs: ['GMAIL_SEND_EMAIL'],
+            },
             status_message: 'Connected',
           },
         ],
@@ -70,6 +77,7 @@ describe('toolRouterResponseTransform', () => {
       expect(result.toolSchemas.GMAIL_SEND_EMAIL).toEqual({
         toolSlug: 'GMAIL_SEND_EMAIL',
         toolkit: 'gmail',
+        instant: { supported: true, available: false },
         description: 'Send an email',
         hasFullSchema: true,
         inputSchema: { to: { type: 'string' } },
@@ -79,6 +87,8 @@ describe('toolRouterResponseTransform', () => {
         toolkit: 'gmail',
         description: 'Gmail toolkit',
         hasActiveConnection: true,
+        isReady: true,
+        instant: { supported: true, available: false, allowedToolSlugs: ['GMAIL_SEND_EMAIL'] },
         statusMessage: 'Connected',
       });
       expect(result.nextStepsGuidance).toEqual(['Connect Gmail if needed']);
@@ -167,7 +177,7 @@ describe('toolRouterResponseTransform', () => {
       };
 
       const [hosted, notHosted] = transformSearchResponse(raw).toolkitConnectionStatuses;
-      expect(hosted.hostedAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(hosted).not.toHaveProperty('hostedAccount');
       expect(notHosted).not.toHaveProperty('hostedAccount');
     });
   });
@@ -200,18 +210,33 @@ describe('toolRouterResponseTransform', () => {
       expect(result.logId).toBe('log_err');
     });
 
-    it('preserves the optional premium charge without inventing one', () => {
+    it('preserves the optional Instant charge without inventing one', () => {
       expect(
         transformExecuteResponse({
           data: {},
           error: null,
           log_id: 'log_paid',
-          premium_charge: { amount: '0.01', currency: 'USD' },
-        }).premiumCharge
-      ).toEqual({ amount: '0.01', currency: 'USD' });
+          instant: { charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' } },
+        }).instant
+      ).toEqual({ charge: { amount: '0.01', currency: 'USD', chargedBy: 'composio' } });
       expect(
         transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
-      ).not.toHaveProperty('premiumCharge');
+      ).not.toHaveProperty('instant');
+      expect(
+        transformExecuteResponse({ data: {}, error: null, log_id: 'log_unknown', instant: {} })
+          .instant
+      ).toEqual({});
+    });
+
+    it('keeps a successful tool result when charge metadata is malformed', () => {
+      expect(
+        transformExecuteResponse({
+          data: { id: 'result_1' },
+          error: null,
+          log_id: 'log_malformed_charge',
+          instant: { charge: { amount: '0.01', currency: 'EUR', charged_by: 'composio' } },
+        })
+      ).toEqual({ data: { id: 'result_1' }, error: null, logId: 'log_malformed_charge' });
     });
   });
 });

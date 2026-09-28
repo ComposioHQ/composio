@@ -13,6 +13,7 @@ export const ToolkitSchema = z.object({
   slug: z.string().describe('The slug of the toolkit'),
   name: z.string().describe('The name of the toolkit'),
   logo: z.string().describe('The logo of the toolkit').optional(),
+  instant: z.object({ supported: z.literal(true) }).optional(),
 });
 export type Toolkit = z.infer<typeof ToolkitSchema>;
 
@@ -196,6 +197,17 @@ export const ToolSchema = z.object({
     .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
   isNoAuth: z.boolean().describe('Do the tool support no auth?').optional(),
+  instant: z
+    .object({
+      supported: z.literal(true),
+      price: z
+        .object({
+          description: z.string(),
+          discount: z.number().min(0).max(100).optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
@@ -407,8 +419,17 @@ export const ToolExecuteResponseSchema = z.object({
   successful: z.boolean(),
   logId: z.string().optional(),
   sessionInfo: z.unknown().optional(),
-  /** Actual premium usage charge when the Session opts into returning it. */
-  premiumCharge: z.unknown().optional(),
+  instant: z
+    .object({
+      charge: z
+        .object({
+          amount: z.string(),
+          currency: z.literal('USD'),
+          chargedBy: z.literal('composio'),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;
 

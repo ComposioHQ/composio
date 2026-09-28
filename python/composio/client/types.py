@@ -82,8 +82,25 @@ from composio_client.types.tool_router import (
     session_config_history_params,
     session_config_history_response,
 )
+from pydantic import BaseModel, Field
 
-Tool: t.TypeAlias = tool_list_response.Item
+
+class InstantPrice(BaseModel):
+    description: str
+    discount: t.Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class ToolInstant(BaseModel):
+    supported: t.Literal[True]
+    price: t.Optional[InstantPrice] = None
+
+
+class Tool(tool_list_response.Item):
+    """Catalog tool with typed Instant availability and optional price."""
+
+    instant: t.Optional[ToolInstant] = None
+
+
 ToolkitMinimal: t.TypeAlias = tool_list_response.ItemToolkit
 AuthConfig: t.TypeAlias = connected_account_create_params.AuthConfig
 

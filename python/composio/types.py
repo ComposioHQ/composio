@@ -3,7 +3,8 @@ from composio.core.models.connected_accounts import auth_scheme
 from composio.core.models.experimental import UsageSummaryResponse
 from composio.core.models.tools import (
     Modifiers,
-    PremiumCharge,
+    InstantCharge,
+    InstantExecution,
     ToolExecuteParams,
     ToolExecutionResponse,
 )
@@ -21,7 +22,8 @@ __all__ = [
     "Tool",
     "TTool",
     "TToolCollection",
-    "PremiumCharge",
+    "InstantCharge",
+    "InstantExecution",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "UsageSummaryResponse",

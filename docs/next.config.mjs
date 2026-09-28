@@ -86,8 +86,13 @@ const config = {
         permanent: true,
       },
       {
+        source: '/toolkits/pro-tools',
+        destination: '/toolkits/tool-pricing',
+        permanent: true,
+      },
+      {
         source: '/toolkits/premium-tools',
-        destination: '/toolkits/pro-tools',
+        destination: '/toolkits/tool-pricing',
         permanent: true,
       },
       // Deleted/merged pages -> closest surviving page (semantically resolved + verified)

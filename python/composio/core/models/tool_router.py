@@ -49,7 +49,7 @@ from composio.core.models.tool_router_constants import (
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
-    ToolRouterPremiumUsageConfig,
+    ToolRouterInstantConfig,
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
@@ -727,9 +727,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
-        premium_usage: t.Optional[
-            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
-        ] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        connected_account_usage: t.Optional[bool] = None,
         mcp: t.Literal[True],
     ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
 
@@ -758,9 +757,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
-        premium_usage: t.Optional[
-            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
-        ] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        connected_account_usage: t.Optional[bool] = None,
         mcp: t.Literal[False] = False,
     ) -> ToolRouterSession[TTool, TToolCollection]: ...
 
@@ -788,9 +786,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
-        premium_usage: t.Optional[
-            t.Union[t.Literal[False], ToolRouterPremiumUsageConfig]
-        ] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        connected_account_usage: t.Optional[bool] = None,
         mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -898,9 +895,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
-        :param premium_usage: Experimental premium usage policy. The project
-                              must allow premium usage. ``False`` disables it for this
-                              Session; a policy can restrict eligible toolkits and tools.
+        :param instant: Instant access policy. The project must allow Instant Tools.
+                        ``False`` disables it for this Session; a policy can
+                        restrict eligible toolkits and tools.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint
@@ -1094,8 +1091,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         create_params: t.Dict[str, t.Any] = {
             "user_id": user_id,
         }
-        if premium_usage is not None:
-            create_params["premium_usage"] = premium_usage
+        extra_body: t.Dict[str, t.Any] = {}
+        if instant is not None:
+            extra_body["instant"] = instant
+        if connected_account_usage is not None:
+            extra_body["connected_account_usage"] = connected_account_usage
+        if extra_body:
+            create_params["extra_body"] = extra_body
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
