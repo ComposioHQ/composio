@@ -125,6 +125,77 @@ The production responsibilities remain in your application:
 
 Use separate Composio projects for development and production. [Composio execution logs](/docs/poc-to-prod/stream-logs-to-a-siem) help trace tool calls alongside your application's run records.
 
+## Detailed flows
+
+These diagrams expand the overview above for implementation.
+
+### Components and stored state
+
+Postgres holds the run, draft, and approval records. Pending dispatch records keep work recoverable if the job service is unavailable. The agent and send jobs are separate handlers in the same worker deployment.
+
+```mermaid
+flowchart TB
+  accTitle: Detailed B2B agent architecture
+  accDescr: Browser requests and schedules reach application workers. Workers persist state in Postgres, call a model, and use Composio sessions to execute tools against personal Gmail and shared HubSpot connections.
+  browser["Employee browser<br/>Chat, connections, approvals"]
+  subgraph app["Your application"]
+    api["Web API<br/>Authentication and membership checks"]
+    jobs["Durable jobs<br/>Requests and schedules"]
+    worker["Agent job<br/>Read, draft, request approval"]
+    executor["Send job<br/>Recheck access and execute"]
+    db[("Postgres<br/>Memberships, runs, drafts, approvals")]
+    api -->|"Persist run and dispatch record"| db
+    db -->|"Dispatch pending work"| jobs
+    jobs --> worker
+    jobs --> executor
+    worker <-->|"Checkpoint and results"| db
+    executor <-->|"Approval and action status"| db
+  end
+  model["Model provider"]
+  subgraph composio["Composio"]
+    sessions["Scoped sessions<br/>Tool policies and account selection"]
+    connections["Connected accounts<br/>OAuth and token refresh"]
+    sessions --> connections
+  end
+  apps["Connected apps<br/>Personal Gmail and shared HubSpot"]
+  browser <-->|"Authenticated requests and progress"| api
+  worker <-->|"Model calls"| model
+  worker -->|"Allowed reads"| sessions
+  executor -->|"Approved send"| sessions
+  connections <-->|"Authenticated API calls"| apps
+```
+
+### Request and approval sequence
+
+The agent job ends after saving its proposal. Approval starts the send job, which rechecks access and executes the saved email. An uncertain send result is recorded for review rather than automatically retried.
+
+```mermaid
+sequenceDiagram
+  accTitle: From a meeting brief to an approved email
+  accDescr: The agent reads through a restricted session and saves a proposal. The employee approves the proposal through the application. An action worker checks current access, claims the action, and executes the approved payload through Composio.
+  actor Employee
+  participant App as Web application
+  participant Worker as Worker
+  participant DB as Postgres
+  participant Composio
+  Employee->>App: Request a meeting brief
+  App->>DB: Store authorized run and dispatch record
+  Note over DB,Worker: Dispatcher starts durable work
+  Worker->>DB: Load run and current permissions
+  Worker->>Composio: Create session with read tools and pinned accounts
+  Worker->>Composio: Read email and CRM context
+  Composio-->>Worker: Tool results
+  Worker->>DB: Save brief and immutable action proposal
+  Employee->>App: Review and approve the proposal
+  App->>DB: Record decision and dispatch action
+  Note over DB,Worker: Send job runs without a model call
+  Worker->>DB: Recheck access and atomically claim action
+  Worker->>Composio: Create send-only session and execute approved payload
+  Composio-->>Worker: Result or uncertain outcome
+  Worker->>DB: Record outcome and execution log ID
+  Employee->>App: Read action status
+```
+
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Tool access, account selection, and sandbox settings." />
   <Card title="Shared connections" href="/docs/extending-sessions/shared-connections" description="Shared accounts, access rules, and current limits." />
