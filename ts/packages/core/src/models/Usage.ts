@@ -32,6 +32,7 @@ import {
  * ```typescript
  * const summary = await composio.experimental.usage.summary();
  * console.log(summary.entities.tool_calls?.totalQuantity);
+ * console.log(summary.premiumUsageCharge); // exact USD string
  *
  * const byTool = await composio.experimental.usage.breakdown('tool_calls', {
  *   groupBy: 'tool_slug',
@@ -52,7 +53,7 @@ export class Usage {
    * **Experimental — shape may change in future releases.**
    *
    * @param {UsageSummaryParams} [params] - Optional range, `entityTypes` and filters
-   * @returns {Promise<UsageSummaryResponse>} Totals keyed by entity type
+   * @returns {Promise<UsageSummaryResponse>} Totals keyed by entity type and the exact USD premium usage charge
    * @throws {ValidationError} If the params fail validation
    *
    * @example
