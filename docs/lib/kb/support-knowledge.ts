@@ -401,7 +401,7 @@ function guideFor(
     lastVerifiedAt: document.lastReviewed,
     reviewAfter: document.reviewBy,
     freshness: importedFreshness(document),
-    state: 'published',
+    state: previousGuide?.state === 'retired' ? 'retired' : 'published',
     featured: previousGuide?.featured ?? false,
     ...(previousGuide?.verifyIgnoreToolSlugs?.length
       ? { verifyIgnoreToolSlugs: previousGuide.verifyIgnoreToolSlugs }
