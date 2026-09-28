@@ -1,7 +1,7 @@
 # Effect v4 CLI testing
 
-The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.0-rc.115` and
-`@effect/vitest@4.0.0-rc.115` (pinned exactly, matching `ts/packages/cli/package.json` and the
+The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.0-rc.117` and
+`@effect/vitest@4.0.0-rc.117` (pinned exactly, matching `ts/packages/cli/package.json` and the
 workspace catalog in `pnpm-workspace.yaml`). `@effect/cli` and `@effect/platform` no longer exist
 as dependencies — their functionality moved into `effect`/`effect/unstable/*`. Read
 `ts/packages/cli/test/__utils__/services/test-layer.ts` before writing a new test suite; it is the
