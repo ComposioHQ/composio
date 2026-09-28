@@ -20,6 +20,7 @@
     "[Restrict Gmail by domain](/examples/restrict-gmail-domain)",
     "[Custom tools with Composio](/examples/custom-tools)",
     "---Deployment---",
-    "[Cloudflare Workers](/examples/cloudflare-workers)"
+    "[Cloudflare Workers](/examples/cloudflare-workers)",
+    "reference-architectures"
   ]
 }
