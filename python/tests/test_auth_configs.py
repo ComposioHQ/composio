@@ -1,5 +1,6 @@
 """Tests for auth configs management."""
 
+import json
 from unittest.mock import Mock
 
 import httpx
@@ -458,6 +459,10 @@ def test_mutation_response_through_generated_client(
     assert len(requests) == 1
     assert requests[0].method == method
     assert requests[0].url.path == path
+    if operation == "update_default":
+        assert json.loads(requests[0].content)["type"] == "default"
+    elif operation == "update_custom":
+        assert json.loads(requests[0].content)["type"] == "custom"
     assert isinstance(result, response_type)
     assert isinstance(result, BaseModel)
     assert result.success is True
