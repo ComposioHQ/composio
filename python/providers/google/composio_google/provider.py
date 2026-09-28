@@ -100,15 +100,6 @@ class GoogleProvider(
         # Gemini returns args as a MapComposite; normalize after converting to a
         # plain dict so a stringified payload is handled uniformly too (issue #2406).
         arguments = normalize_tool_arguments(_convert_map_composite(function_call.args))
-        if session is None:
-            if user_id is None:
-                raise ValueError("Provide exactly one of user_id or session")
-            return self.execute_tool(
-                slug=function_call.name,
-                arguments=arguments,
-                modifiers=modifiers,
-                user_id=user_id,
-            )
         return self.execute_tool_for_target(
             target=self.resolve_tool_call_execution_target(
                 user_id=user_id, session=session
@@ -153,14 +144,11 @@ class GoogleProvider(
         """
         if response is None:
             raise TypeError("response is required")
-        if session is None and user_id is None:
-            raise ValueError("Provide exactly one of user_id or session")
-        if session is not None:
-            self.resolve_tool_call_execution_target(user_id=user_id, session=session)
-            if modifiers is not None:
-                raise ValueError(
-                    "Direct execution modifiers cannot be used with a Tool Router session"
-                )
+        self.resolve_tool_call_execution_target(user_id=user_id, session=session)
+        if session is not None and modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
         outputs = []
         for candidate in response.candidates:
             if isinstance(candidate.content, Content) and candidate.content.parts:
