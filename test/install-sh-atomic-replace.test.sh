@@ -189,6 +189,8 @@ printf '%s\n' old-process >"$marker.result"
 EOF
   chmod +x "$install_dir/composio"
   printf '%s\n' stale >"$install_dir/acp-adapters/stale.txt"
+  mkdir -p "$install_dir/local-tools-binaries/peekaboo"
+  printf '%s\n' legacy >"$install_dir/local-tools-binaries/peekaboo/peekaboo"
   old_inode=$(stat_inode "$install_dir/composio")
   "$install_dir/composio" "$marker" &
   survivor_pid=$!
@@ -205,6 +207,8 @@ EOF
     fail "$interpreter_name reinstall binary contents"
   [[ ! -e "$install_dir/acp-adapters/stale.txt" ]] ||
     fail "$interpreter_name reinstall retained stale directory contents"
+  [[ ! -e "$install_dir/local-tools-binaries" ]] ||
+    fail "$interpreter_name reinstall retained obsolete local-tools-binaries"
   : >"$marker.release"
   wait "$survivor_pid"
   survivor_pid=

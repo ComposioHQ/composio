@@ -465,9 +465,12 @@ describe('UpgradeBinary', () => {
       });
       const fakeExecPath = path.join(installDir, 'composio');
       const sourceBinaryPath = path.join(sourceDir, 'composio');
+      const legacyLocalToolsPath = path.join(installDir, 'local-tools-binaries');
 
       yield* fs.writeFileString(fakeExecPath, 'old-binary');
       yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.makeDirectory(path.join(legacyLocalToolsPath, 'peekaboo'), { recursive: true });
+      yield* fs.writeFileString(path.join(legacyLocalToolsPath, 'peekaboo', 'peekaboo'), 'old');
       const originalBinaryInfo = yield* fs.stat(fakeExecPath);
 
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
@@ -492,6 +495,7 @@ describe('UpgradeBinary', () => {
         Option.getOrThrow(originalBinaryInfo.ino)
       );
       expect(replacedBinaryInfo.mode & 0o777).toBe(0o755);
+      expect(yield* fs.exists(legacyLocalToolsPath)).toBe(false);
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 

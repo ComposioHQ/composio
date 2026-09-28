@@ -43,6 +43,9 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
+// Older releases shipped macOS local-tool sidecars in this directory next to the
+// binary. Current archives omit it, so upgrades remove what an old install left.
+const LEGACY_LOCAL_TOOLS_DIRNAME = 'local-tools-binaries';
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -602,6 +605,15 @@ const replaceBinary = (
     yield* provideFsAndPath(ctx, atomicReplaceFile({ sourcePath, targetPath, mode: 0o755 })).pipe(
       Effect.mapError(mapAtomicReplaceError('Failed to replace binary'))
     );
+
+    const legacyLocalToolsPath = path.join(targetDirectory, LEGACY_LOCAL_TOOLS_DIRNAME);
+    yield* fs
+      .remove(legacyLocalToolsPath, { recursive: true, force: true })
+      .pipe(
+        Effect.catch(cause =>
+          Effect.logDebug(`Could not remove obsolete ${legacyLocalToolsPath}: ${String(cause)}`)
+        )
+      );
   });
 
 /**

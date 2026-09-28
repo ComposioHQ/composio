@@ -318,6 +318,11 @@ install_bundle() {
     publish_staged_entry "$stage/composio"
     rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
     stage=
+
+    # Older releases shipped macOS local-tool sidecars here. Current archives
+    # omit the directory, so remove what a previous install left behind.
+    rm -rf "$resolved_install_dir/local-tools-binaries" ||
+        warn "Could not remove obsolete $resolved_install_dir/local-tools-binaries"
 }
 
 install_entry_point() {
