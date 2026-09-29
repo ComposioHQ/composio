@@ -352,19 +352,28 @@ class TestRemoteFile:
 
         assert not (tmp_path / ".composio").exists()
 
-    @pytest.mark.parametrize("mount_relative_path", ["report.\u00a0", "report.\u0085"])
-    def test_save_rejects_dot_exposed_by_stripping(self, tmp_path, mount_relative_path):
+    @pytest.mark.parametrize(
+        ("mount_relative_path", "expected"),
+        [
+            ("report.\u00a0", "report"),
+            ("out/report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00.csv"),
+            ("What is this?.png", "What is this_.png"),
+        ],
+    )
+    def test_save_makes_unportable_names_portable(
+        self, tmp_path, mount_relative_path, expected
+    ):
         rf = RemoteFile(
             expires_at="2026-01-01",
             mount_relative_path=mount_relative_path,
             sandbox_mount_prefix="/mnt/files",
             download_url="https://example.com/file",
         )
-        with patch.object(rf, "buffer", return_value=b"should not be written"):
+        with patch.object(rf, "buffer", return_value=b"content"):
             with patch("pathlib.Path.home", return_value=tmp_path):
-                with pytest.raises(ValidationError, match="ending in a space or dot"):
-                    rf.save()
-        assert not (tmp_path / ".composio").exists()
+                saved = Path(rf.save())
+        assert saved.name == expected
+        assert saved.read_bytes() == b"content"
 
 
 class TestResponseDerivedUrlsAreGuarded:

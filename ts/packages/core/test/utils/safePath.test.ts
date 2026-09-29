@@ -50,7 +50,7 @@ describe('safeBasename', () => {
       expect(safeBasename(input)).toBe(expected);
     });
 
-    it('accepts a filename at the byte limit', () => {
+    it('keeps a filename at the byte limit unchanged', () => {
       const name = 'x'.repeat(MAX_FILENAME_BYTES);
       expect(safeBasename(name)).toBe(name);
     });
@@ -82,50 +82,86 @@ describe('safeBasename', () => {
     });
   });
 
-  describe('rejects unsafe names', () => {
+  describe('rejects names that cannot be written', () => {
     it.each(['report\u0000.pdf', 'report.pdf\u0000.exe'])('rejects NUL byte in %j', input => {
       expect(() => safeBasename(input)).toThrow(/NUL byte/);
-    });
-
-    it.each([
-      'report?.txt',
-      'report.txt:payload',
-      'report<1>.txt',
-      'a|b.txt',
-      'tab\there.txt',
-      '\u001creport.txt\u001f',
-      'output/C:report.txt',
-    ])('rejects Windows-reserved characters in %j on every platform', input => {
-      expect(() => safeBasename(input)).toThrow(/reserved by Windows/);
-    });
-
-    it.each(['report.txt.', 'report.txt ', '\ufeff..', 'report.\u00a0', 'report.\u0085'])(
-      'rejects trailing space or dot in %j',
-      input => {
-        expect(() => safeBasename(input)).toThrow(/ending in a space or dot/);
-      }
-    );
-
-    it.each(['NUL', 'nul', 'NUL.tar.gz', 'COM1.log.bak', 'COM¹.txt', 'LPT³.data', 'aux.txt'])(
-      'rejects reserved device name %j with any extension',
-      input => {
-        expect(() => safeBasename(input)).toThrow(/reserved device name/);
-      }
-    );
-
-    it('rejects a filename over the byte limit', () => {
-      expect(() => safeBasename('x'.repeat(MAX_FILENAME_BYTES + 1))).toThrow(/longer than/);
-    });
-
-    it('measures the limit in bytes, not code units', () => {
-      // Each emoji is two UTF-16 code units but four UTF-8 bytes.
-      expect(safeBasename('😀'.repeat(32))).toBe('😀'.repeat(32));
-      expect(() => safeBasename('😀'.repeat(33))).toThrow(/longer than/);
     });
 
     it('rejects a lone surrogate, which cannot be encoded as UTF-8', () => {
       expect(() => safeBasename('report-\ud800.txt')).toThrow(/invalid Unicode/);
       expect(() => safeBasename('report-\udc00.txt')).toThrow(/invalid Unicode/);
+    });
+
+    it.each(['. .', '.. ', ' . . '])(
+      'rejects %j, which is a dot run once Windows trims it',
+      input => {
+        expect(() => safeBasename(input)).toThrow(/leaves no usable basename/);
+      }
+    );
+  });
+
+  describe('makes unportable names portable on every platform', () => {
+    it.each([
+      ['report_2026-09-29T10:30:00.csv', 'report_2026-09-29T10_30_00.csv'],
+      ['What is this?.png', 'What is this_.png'],
+      ['invoice "final".pdf', 'invoice _final_.pdf'],
+      ['report.txt:payload', 'report.txt_payload'],
+      ['report<1>.txt', 'report_1_.txt'],
+      ['a|b*.txt', 'a_b_.txt'],
+      ['tab\there.txt', 'tab_here.txt'],
+      ['\u001creport.txt\u001f', 'report.txt'],
+      ['output/C:report.txt', 'C_report.txt'],
+    ])('replaces reserved characters in %j', (input, expected) => {
+      expect(safeBasename(input)).toBe(expected);
+    });
+
+    it.each([
+      ['report.txt.', 'report.txt'],
+      ['report.txt ', 'report.txt'],
+      ['report. .', 'report'],
+      ['report.\u00a0', 'report'],
+      ['report.\u0085', 'report'],
+      ['\ufeff..', '\ufeff'],
+    ])('drops trailing spaces and dots from %j', (input, expected) => {
+      expect(safeBasename(input)).toBe(expected);
+    });
+
+    it.each([
+      ['NUL', '_NUL'],
+      ['nul', '_nul'],
+      ['NUL.tar.gz', '_NUL.tar.gz'],
+      ['COM1.log.bak', '_COM1.log.bak'],
+      ['COM¹.txt', '_COM¹.txt'],
+      ['LPT³.data', '_LPT³.data'],
+      ['aux.txt', '_aux.txt'],
+      ['CON .txt', '_CON .txt'],
+      ['COM1:.txt', 'COM1_.txt'],
+    ])('prefixes reserved device name %j', (input, expected) => {
+      expect(safeBasename(input)).toBe(expected);
+    });
+
+    it('truncates a long name to the byte limit and keeps its extension', () => {
+      const result = safeBasename(`${'x'.repeat(200)}.pdf`);
+      expect(result).toBe(`${'x'.repeat(MAX_FILENAME_BYTES - 4)}.pdf`);
+    });
+
+    it('truncates by whole code points, measured in bytes', () => {
+      // Each CJK character is one UTF-16 code unit but three UTF-8 bytes, and
+      // each emoji is two code units but four bytes.
+      const cjk = safeBasename(`${'請'.repeat(70)}.pdf`);
+      expect(cjk).toBe(`${'請'.repeat(41)}.pdf`);
+      expect(new TextEncoder().encode(cjk).length).toBeLessThanOrEqual(MAX_FILENAME_BYTES);
+      expect(safeBasename('😀'.repeat(33))).toBe('😀'.repeat(32));
+    });
+
+    it('truncates an over-long extension with the rest of the name', () => {
+      const result = safeBasename(`report.${'x'.repeat(200)}`);
+      expect(result).toBe(`report.${'x'.repeat(MAX_FILENAME_BYTES - 7)}`);
+    });
+
+    it('drops a trailing dot exposed by truncation', () => {
+      const name = `${'x'.repeat(MAX_FILENAME_BYTES - 1)}.${'y'.repeat(40)}`;
+      expect(safeBasename(name)).toBe('x'.repeat(MAX_FILENAME_BYTES - 1));
     });
   });
 

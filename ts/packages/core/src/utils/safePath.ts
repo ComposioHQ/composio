@@ -17,14 +17,21 @@ import { ValidationError } from '../errors/ValidationErrors';
 
 /**
  * Upper bound on a filename, well under the 255-byte limit common to
- * ext4/APFS/NTFS. Keeps a long server-supplied name from failing with a raw
- * `ENAMETOOLONG` mid-write. Matches `MAX_COMPONENT_LENGTH` in the Python SDK.
+ * ext4/APFS/NTFS. A longer server-supplied name is truncated to fit rather
+ * than failing with a raw `ENAMETOOLONG` mid-write. Matches
+ * `MAX_COMPONENT_LENGTH` in the Python SDK.
  */
 export const MAX_FILENAME_BYTES = 128;
 
 /**
+ * Longest extension, in bytes and including its dot, that truncation keeps.
+ * Anything longer is not a real extension and is truncated with the rest.
+ */
+const MAX_PRESERVED_EXTENSION_BYTES = 32;
+
+/**
  * Reserved DOS device names. Writing to one on Windows targets the device
- * rather than a file. Rejected on every platform so behavior does not diverge
+ * rather than a file. Prefixed on every platform so behavior does not diverge
  * between a POSIX developer machine and a Windows deployment.
  */
 const WINDOWS_RESERVED_NAMES: ReadonlySet<string> = new Set([
@@ -38,7 +45,12 @@ const WINDOWS_RESERVED_NAMES: ReadonlySet<string> = new Set([
 ]);
 
 /** Control characters and characters reserved by Windows. */
-const WINDOWS_INVALID_CHARS = /[\u0000-\u001f<>:"|?*]/;
+const WINDOWS_INVALID_CHARS = /[\u0000-\u001f<>:"|?*]/g;
+
+/** Windows drops trailing spaces and dots from a filename. */
+const TRAILING_SPACES_AND_DOTS = /[. ]+$/;
+
+const utf8Length = (value: string): number => new TextEncoder().encode(value).length;
 
 /**
  * Python str.strip() whitespace: Unicode White_Space plus U+001C–U+001F.
@@ -93,56 +105,73 @@ function hasLoneSurrogate(value: string): boolean {
   return false;
 }
 
+/** The longest prefix of `value`, by whole code points, that fits in `maxBytes`. */
+function truncateToBytes(value: string, maxBytes: number): string {
+  let truncated = '';
+  let bytes = 0;
+  for (const char of value) {
+    bytes += utf8Length(char);
+    if (bytes > maxBytes) {
+      break;
+    }
+    truncated += char;
+  }
+  return truncated;
+}
+
 /**
- * Collapses an untrusted filename to a bare, writable basename.
+ * Truncates `name` to {@link MAX_FILENAME_BYTES}, keeping a short extension so
+ * the file still opens with the right application.
+ */
+function fitFilenameBytes(name: string): string {
+  if (utf8Length(name) <= MAX_FILENAME_BYTES) {
+    return name;
+  }
+  const dot = name.lastIndexOf('.');
+  const extension = dot > 0 ? name.slice(dot) : '';
+  const extensionBytes = utf8Length(extension);
+  if (extension && extensionBytes <= MAX_PRESERVED_EXTENSION_BYTES) {
+    return truncateToBytes(name.slice(0, dot), MAX_FILENAME_BYTES - extensionBytes) + extension;
+  }
+  return truncateToBytes(name, MAX_FILENAME_BYTES);
+}
+
+/**
+ * Collapses an untrusted filename to a bare basename that is safe to write on
+ * every platform.
  *
- * Applies, in order: no usable basename (empty or a run of dots once
- * surrounding whitespace is stripped), NUL bytes, control and Windows-reserved
- * characters, trailing space or dot, invalid Unicode, a byte-length bound, and
- * reserved device names. This is the order `safe_basename` uses in the Python
- * SDK. This implementation rejects lone surrogates rather than relying on
- * Python filesystem encoding behavior.
+ * Names that cannot be written at all are refused: a NUL byte, invalid
+ * Unicode, or no usable basename (empty or a run of dots). A response that
+ * cannot name its own file is malformed or hostile, and inventing a name would
+ * hide that. `""`, `"."` and `".."` make an output path equal to, or escape,
+ * its own directory, which surfaces as a raw `EISDIR` at write time instead of
+ * a validation error.
  *
- * Names that leave no usable basename are refused rather than replaced with a
- * generated one: a response that cannot name its own file is malformed or
- * hostile, and inventing a name would hide that. `""`, `"."` and `".."` make
- * an output path equal to, or escape, its own directory, which surfaces as a
- * raw `EISDIR` at write time instead of a validation error.
+ * Names that are merely unportable are made portable instead, because ordinary
+ * files have them (`report_2026-09-29T10:30:00.csv`, `What is this?.png`), on
+ * every platform so a name does not depend on where the SDK runs:
+ * control and Windows-reserved characters become `_`, reserved device names
+ * get a `_` prefix, names over {@link MAX_FILENAME_BYTES} are truncated with
+ * their extension kept, and trailing spaces and dots are dropped as Windows
+ * would. `safe_basename` in the Python SDK applies the same rules in the same
+ * order.
  *
- * The usability check runs on the *trimmed* basename because that is what gets
- * written: Python-compatible stripping removes whitespace, so `"\u00a0.\u00a0"` would
- * otherwise pass a check on the raw segment and then be written as `"."`. The
- * hazard checks that follow run on the raw segment so a trailing ASCII space or
- * dot is refused, not trimmed away. Check the stripped value for trailing dots
- * too, since stripping whitespace can expose one.
+ * Python-compatible stripping removes surrounding whitespace first, and the
+ * usability check runs last, on the value that gets written, so neither
+ * `"\u00a0.\u00a0"` nor `". ."` can be written as `.` or as its own directory.
  *
  * @param name - The untrusted filename or relative path to reduce.
  * @param label - How the value is described in error messages.
- * @returns The validated bare basename, with surrounding whitespace trimmed.
- * @throws ValidationError if `name` yields no usable basename or is unsafe to write.
+ * @returns The bare basename to write, adjusted to be portable.
+ * @throws ValidationError if `name` contains a NUL byte or invalid Unicode, or
+ *   leaves no usable basename.
  */
 export function safeBasename(name: string, label: string = 'filename'): string {
-  const rawBasename = untrustedBasename(name);
-  const basename = rawBasename.replace(SURROUNDING_WHITESPACE, '');
+  const basename = untrustedBasename(name).replace(SURROUNDING_WHITESPACE, '');
 
-  if (!basename || /^\.+$/.test(basename)) {
-    throw new ValidationError(
-      `Path traversal detected: ${label} ${JSON.stringify(name)} leaves no usable basename to write to.`
-    );
-  }
-  if (rawBasename.includes('\u0000')) {
+  if (basename.includes('\u0000')) {
     throw new ValidationError(
       `Refusing to write ${label} containing a NUL byte: ${JSON.stringify(name)}`
-    );
-  }
-  if (WINDOWS_INVALID_CHARS.test(rawBasename)) {
-    throw new ValidationError(
-      `Refusing to write ${label} containing characters reserved by Windows: ${JSON.stringify(name)}`
-    );
-  }
-  if (rawBasename.endsWith(' ') || rawBasename.endsWith('.') || basename.endsWith('.')) {
-    throw new ValidationError(
-      `Refusing to write ${label} ending in a space or dot: ${JSON.stringify(name)}`
     );
   }
   if (hasLoneSurrogate(basename)) {
@@ -151,22 +180,20 @@ export function safeBasename(name: string, label: string = 'filename'): string {
     );
   }
 
-  const encodedLength = new TextEncoder().encode(basename).length;
-  if (encodedLength > MAX_FILENAME_BYTES) {
-    throw new ValidationError(
-      `Refusing to write ${label} longer than ${MAX_FILENAME_BYTES} bytes: ` +
-        `${JSON.stringify(basename.slice(0, 32))}... (${encodedLength} bytes)`
-    );
-  }
-
+  let portable = basename.replace(WINDOWS_INVALID_CHARS, '_');
   // Compare everything before the first dot: on Windows `NUL.tar.gz` opens the
   // null device just as `NUL` does, so extensions provide no protection.
-  const deviceName = basename.split('.', 1)[0].replace(/ +$/, '').toUpperCase();
+  const deviceName = portable.split('.', 1)[0].replace(/ +$/, '').toUpperCase();
   if (WINDOWS_RESERVED_NAMES.has(deviceName)) {
+    portable = `_${portable}`;
+  }
+  portable = fitFilenameBytes(portable).replace(TRAILING_SPACES_AND_DOTS, '');
+
+  if (!portable) {
     throw new ValidationError(
-      `Refusing to write ${label} that is a reserved device name: ${JSON.stringify(name)}`
+      `Path traversal detected: ${label} ${JSON.stringify(name)} leaves no usable basename to write to.`
     );
   }
 
-  return basename;
+  return portable;
 }

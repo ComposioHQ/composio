@@ -58,8 +58,16 @@ WINDOWS_RESERVED_NAMES = frozenset(
     | {f"LPT{i}" for i in "¹²³"}
 )
 """Reserved DOS device names. Writing to one on Windows targets the device
-rather than a file. Rejected on every platform so behaviour does not diverge
-between a POSIX developer machine and a Windows deployment."""
+rather than a file. Rejected as slugs and prefixed in filenames, on every
+platform, so behaviour does not diverge between a POSIX developer machine and a
+Windows deployment."""
+
+MAX_PRESERVED_EXTENSION_BYTES = 32
+"""Longest extension, in bytes and including its dot, that filename truncation
+keeps. Anything longer is not a real extension and is truncated with the rest."""
+
+_WINDOWS_INVALID_FILENAME_CHARS = re.compile(r'[\x00-\x1f<>:"|?*]')
+"""Control characters and characters reserved by Windows."""
 
 
 def is_inside_dir(child: Path, parent: Path) -> bool:
@@ -141,80 +149,103 @@ def assert_safe_path_component(value: str, *, label: str = "path component") -> 
     return value
 
 
+def _encoded_length(value: str) -> int:
+    return len(os.fsencode(value))
+
+
+def _truncate_to_bytes(value: str, max_bytes: int) -> str:
+    """The longest prefix of ``value``, by whole code points, that fits in
+    ``max_bytes``."""
+    truncated = []
+    size = 0
+    for char in value:
+        size += _encoded_length(char)
+        if size > max_bytes:
+            break
+        truncated.append(char)
+    return "".join(truncated)
+
+
+def _fit_filename_bytes(name: str) -> str:
+    """Truncate ``name`` to :data:`MAX_COMPONENT_LENGTH` bytes, keeping a short
+    extension so the file still opens with the right application."""
+    if _encoded_length(name) <= MAX_COMPONENT_LENGTH:
+        return name
+    dot = name.rfind(".")
+    extension = name[dot:] if dot > 0 else ""
+    extension_length = _encoded_length(extension)
+    if extension and extension_length <= MAX_PRESERVED_EXTENSION_BYTES:
+        stem = _truncate_to_bytes(name[:dot], MAX_COMPONENT_LENGTH - extension_length)
+        return stem + extension
+    return _truncate_to_bytes(name, MAX_COMPONENT_LENGTH)
+
+
 def safe_basename(name: str, *, label: str = "filename") -> str:
-    """Collapse an untrusted filename to a bare, writable basename.
+    """Collapse an untrusted filename to a bare basename that is safe to write
+    on every platform.
 
     Filenames need their own validator: :func:`assert_safe_path_component`
-    forbids ``.``, which nearly every real filename contains. This applies the
-    remaining checks — no separators, no traversal, no NUL, bounded length, no
-    reserved device name — to the one component a server most directly controls.
+    forbids ``.``, which nearly every real filename contains.
 
     ``PureWindowsPath`` treats both ``/`` and ``\\`` as separators, so a name
     crafted for a Windows target (``..\\..\\evil``) is stripped even when the
     SDK runs on POSIX, where ``Path(...).name`` would return it intact.
 
-    Names that leave no usable basename are refused rather than replaced with a
-    generated one: a response that cannot name its own file is malformed or
-    hostile, and inventing a name would hide that. ``.`` and the empty string
-    both basename to ``""``, which makes an output path equal to its own
-    directory and surfaces as ``IsADirectoryError`` at write time.
+    Names that cannot be written at all are refused: a NUL byte, invalid
+    Unicode, or no usable basename (empty or a run of dots). A response that
+    cannot name its own file is malformed or hostile, and inventing a name
+    would hide that. ``.`` and the empty string both basename to ``""``, which
+    makes an output path equal to its own directory and surfaces as
+    ``IsADirectoryError`` at write time.
 
-    The usability check runs on the *stripped* basename, because that is the
-    value that gets written: ``str.strip`` removes Unicode whitespace, so
-    ``"\\u00a0.\\u00a0"`` would otherwise pass a check on the raw segment and
-    then be written as ``"."``. The hazard checks that follow stay on the raw
-    segment so that a trailing ASCII space or dot is refused, not trimmed away.
+    Names that are merely unportable are made portable instead, because
+    ordinary files have them (``report_2026-09-29T10:30:00.csv``,
+    ``What is this?.png``), on every platform so a name does not depend on
+    where the SDK runs: control and Windows-reserved characters become ``_``,
+    reserved device names get a ``_`` prefix, names over
+    :data:`MAX_COMPONENT_LENGTH` bytes are truncated with their extension kept,
+    and trailing spaces and dots are dropped as Windows would. ``safeBasename``
+    in the TypeScript SDK applies the same rules in the same order.
 
-    :raises UnsafePathComponentError: when ``name`` yields no usable basename or
-        is unsafe to write.
+    ``str.strip`` removes surrounding whitespace first, and the usability check
+    runs last, on the value that gets written, so neither ``"\\u00a0.\\u00a0"``
+    nor ``". ."`` can be written as ``.`` or as its own directory.
+
+    :raises UnsafePathComponentError: when ``name`` contains a NUL byte or
+        invalid Unicode, or leaves no usable basename.
     """
     if not isinstance(name, str):
         raise UnsafePathComponentError(
             f"Refusing to write a non-string {label}: {name!r}"
         )
 
-    raw_basename = PureWindowsPath(name).name
-    basename = raw_basename.strip()
-    if not basename or set(basename) == {"."}:
-        raise UnsafePathComponentError(
-            f"Path traversal detected: {label} {name!r} leaves no usable "
-            "basename to write to."
-        )
-    if "\x00" in raw_basename:
+    basename = PureWindowsPath(name).name.strip()
+    if "\x00" in basename:
         raise UnsafePathComponentError(
             f"Refusing to write {label} containing a NUL byte: {name!r}"
         )
-    if any(ord(char) < 32 or char in '<>:"|?*' for char in raw_basename):
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} containing characters reserved by "
-            f"Windows: {name!r}"
-        )
-    # Stripping Unicode whitespace can expose a trailing dot on the written name.
-    if raw_basename.endswith((" ", ".")) or basename.endswith("."):
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} ending in a space or dot: {name!r}"
-        )
-
     try:
-        encoded_length = len(os.fsencode(basename))
+        _encoded_length(basename)
     except UnicodeEncodeError as e:
         raise UnsafePathComponentError(
             f"Refusing to write {label} containing invalid Unicode: {name!r}"
         ) from e
-    if encoded_length > MAX_COMPONENT_LENGTH:
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} longer than {MAX_COMPONENT_LENGTH} bytes: "
-            f"{basename[:32]!r}... ({encoded_length} bytes)"
-        )
+
+    portable = _WINDOWS_INVALID_FILENAME_CHARS.sub("_", basename)
     # Compare everything before the first dot: on Windows `NUL.tar.gz` opens
     # the null device just as `NUL` does, so any number of extensions provides
     # no protection.
-    device_name = basename.split(".", 1)[0].rstrip(" ").upper()
+    device_name = portable.split(".", 1)[0].rstrip(" ").upper()
     if device_name in WINDOWS_RESERVED_NAMES:
+        portable = f"_{portable}"
+    portable = _fit_filename_bytes(portable).rstrip(". ")
+
+    if not portable:
         raise UnsafePathComponentError(
-            f"Refusing to write {label} that is a reserved device name: {name!r}"
+            f"Path traversal detected: {label} {name!r} leaves no usable "
+            "basename to write to."
         )
-    return basename
+    return portable
 
 
 def resolve_root(root: t.Union[str, Path]) -> Path:

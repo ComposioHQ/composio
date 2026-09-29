@@ -11,6 +11,7 @@ import pytest
 
 from composio.exceptions import UnsafePathComponentError
 from composio.utils.safe_path import (
+    MAX_COMPONENT_LENGTH,
     SAFE_COMPONENT_REGEX,
     assert_safe_path_component,
     is_inside_dir,
@@ -172,32 +173,87 @@ class TestSafeBasename:
         with pytest.raises(UnsafePathComponentError, match="no usable basename"):
             safe_basename(value)
 
-    @pytest.mark.parametrize(
-        "value",
-        ["NUL.tar.gz", "COM1.log.bak", "COM¹.txt", "LPT³.data"],
-    )
-    def test_rejects_windows_device_names_with_any_extension(self, value):
-        with pytest.raises(UnsafePathComponentError, match="reserved device name"):
+    @pytest.mark.parametrize("value", [". .", ".. ", " . . "])
+    def test_rejects_dot_runs_once_windows_trims_them(self, value):
+        with pytest.raises(UnsafePathComponentError, match="no usable basename"):
             safe_basename(value)
 
+    def test_rejects_nul_byte(self):
+        with pytest.raises(UnsafePathComponentError, match="NUL byte"):
+            safe_basename("report\x00.pdf")
+
     @pytest.mark.parametrize(
-        "value",
+        ("value", "expected"),
         [
-            "report?.txt",
-            "report.txt:payload",
-            "report.txt.",
-            "report.txt ",
-            "report.\u00a0",
-            "report.\u0085",
+            ("report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00.csv"),
+            ("What is this?.png", "What is this_.png"),
+            ('invoice "final".pdf', "invoice _final_.pdf"),
+            ("report.txt:payload", "report.txt_payload"),
+            ("report<1>.txt", "report_1_.txt"),
+            ("a|b*.txt", "a_b_.txt"),
+            ("tab\there.txt", "tab_here.txt"),
+            ("\x1creport.txt\x1f", "report.txt"),
+            ("output/C:report.txt", "C_report.txt"),
         ],
     )
-    def test_rejects_windows_invalid_names_on_every_platform(self, value):
-        with pytest.raises(UnsafePathComponentError):
-            safe_basename(value)
+    def test_replaces_windows_reserved_characters(self, value, expected):
+        assert safe_basename(value) == expected
 
-    def test_limits_encoded_filename_bytes(self):
-        with pytest.raises(UnsafePathComponentError, match="longer than"):
-            safe_basename("😀" * 128)
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("report.txt.", "report.txt"),
+            ("report.txt ", "report.txt"),
+            ("report. .", "report"),
+            ("report.\u00a0", "report"),
+            ("report.\u0085", "report"),
+            ("\ufeff..", "\ufeff"),
+        ],
+    )
+    def test_drops_trailing_spaces_and_dots(self, value, expected):
+        assert safe_basename(value) == expected
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("NUL", "_NUL"),
+            ("nul", "_nul"),
+            ("NUL.tar.gz", "_NUL.tar.gz"),
+            ("COM1.log.bak", "_COM1.log.bak"),
+            ("COM¹.txt", "_COM¹.txt"),
+            ("LPT³.data", "_LPT³.data"),
+            ("aux.txt", "_aux.txt"),
+            ("CON .txt", "_CON .txt"),
+            ("COM1:.txt", "COM1_.txt"),
+        ],
+    )
+    def test_prefixes_windows_device_names_with_any_extension(self, value, expected):
+        assert safe_basename(value) == expected
+
+    def test_keeps_a_filename_at_the_byte_limit(self):
+        name = "x" * MAX_COMPONENT_LENGTH
+        assert safe_basename(name) == name
+
+    def test_truncates_to_the_byte_limit_and_keeps_the_extension(self):
+        assert (
+            safe_basename("x" * 200 + ".pdf")
+            == "x" * (MAX_COMPONENT_LENGTH - 4) + ".pdf"
+        )
+
+    def test_truncates_by_whole_code_points_measured_in_bytes(self):
+        cjk = safe_basename("請" * 70 + ".pdf")
+        assert cjk == "請" * 41 + ".pdf"
+        assert len(cjk.encode()) <= MAX_COMPONENT_LENGTH
+        assert safe_basename("😀" * 33) == "😀" * 32
+
+    def test_truncates_an_over_long_extension_with_the_rest(self):
+        assert safe_basename("report." + "x" * 200) == "report." + "x" * (
+            MAX_COMPONENT_LENGTH - 7
+        )
+
+    def test_drops_a_trailing_dot_exposed_by_truncation(self):
+        name = "x" * (MAX_COMPONENT_LENGTH - 1) + "." + "y" * 40
+        assert safe_basename(name) == "x" * (MAX_COMPONENT_LENGTH - 1)
 
     def test_rejects_unencodable_filename(self):
         with pytest.raises(UnsafePathComponentError, match="invalid Unicode"):

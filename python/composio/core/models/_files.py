@@ -716,8 +716,11 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
+        # A presigned storage URL can legitimately answer with a redirect (an S3
+        # region redirect, say), so it is followed, with every hop validated.
         try:
-            response = safe_get(
+            response = safe_request(
+                "GET",
                 self.s3url,
                 stream=True,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),

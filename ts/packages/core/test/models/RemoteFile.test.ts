@@ -319,6 +319,11 @@ describe('RemoteFile', () => {
         ['C:report.txt', 'report.txt'],
         ['\ufeffreport.txt', '\ufeffreport.txt'],
         ['\u0085report.txt\u0085', 'report.txt'],
+        ['out/report_2026-09-29T10:30:00.csv', 'report_2026-09-29T10_30_00.csv'],
+        ['What is this?.png', 'What is this_.png'],
+        ['report.\u00a0', 'report'],
+        ['NUL.txt', '_NUL.txt'],
+        [`${'請'.repeat(70)}.pdf`, `${'請'.repeat(41)}.pdf`],
       ])(
         'should save %j under the default directory as %j',
         async (mountRelativePath, expectedName) => {
@@ -347,16 +352,6 @@ describe('RemoteFile', () => {
           await expect(file.save()).rejects.toThrow(ValidationError);
           await expect(file.save()).rejects.toThrow(/leaves no usable basename/);
           expect(fetchMock).not.toHaveBeenCalled();
-          expect(platform.existsSync(composioDir)).toBe(false);
-        }
-      );
-
-      it.each(['report.\u00a0', 'report.\u0085'])(
-        'should reject a trailing dot exposed by stripping %j before creating directories',
-        async mountRelativePath => {
-          const { platform } = await import('../../src/platform/node');
-          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
-          await expect(file.save()).rejects.toThrow(/ending in a space or dot/);
           expect(platform.existsSync(composioDir)).toBe(false);
         }
       );
