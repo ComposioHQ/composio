@@ -38,7 +38,9 @@ Contract note (why this is a *signal*, not a self-retrying loop): a Composio
 has no handle to re-invoke the tool (``tools.execute`` applies the modifier to
 the finished result and returns it -- see ``tools.py``).  So on settlement this
 modifier annotates the response with ``retry_required: true`` and a
-``payment_ref``; the caller/agent performs the retry with the proof attached.
+``payment_ref``, keeps ``successful: False`` and sets ``error`` to say the
+payment was made and the call must be retried; the caller/agent performs the
+retry with the proof attached.
 It never claims to have re-run the tool it cannot re-run.
 
 Transport-signal boundary: the ``402`` status and ``payment-required`` header
@@ -444,7 +446,20 @@ def _modifier(payer: t.Optional[Payer]) -> t.Callable[[str, str, "ToolExecutionR
         if action.settled:
             # after_execute cannot re-invoke the tool; it signals the caller to
             # retry with the proof attached. See the module contract note.
+            # The paid result is NOT in this response, so say so where every
+            # caller looks (``successful``/``error``), not only in ``data``.
             outcome["retry_required"] = True
+            ref = f" (payment_ref={action.payment_ref})" if action.payment_ref else ""
+            return {
+                **response,
+                "data": outcome,
+                "successful": False,
+                "error": (
+                    f"x402 payment settled{ref} but the tool was not re-run: "
+                    "retry the same call with the payment proof attached to "
+                    "receive the paid result"
+                ),
+            }
         return {**response, "data": outcome}
 
     return _apply

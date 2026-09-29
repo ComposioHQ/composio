@@ -184,6 +184,25 @@ class TestX402AfterExecute:
         assert out["data"]["payment_ref"] == "BLOCK123"
         assert out["data"]["retry_required"] is True
 
+    def test_settled_payment_is_explicit_in_error_not_a_silent_failure(self):
+        # The modifier cannot re-run the tool (greptile P1 "Payment does not
+        # retry execution"), so a caller that paid must be told so where it
+        # looks first: successful stays False and error says the payment was
+        # made and the call must be retried -- never a bare 402 failure.
+        mod = x402_after_execute(
+            lambda env: PaymentAction(settled=True, payment_ref="BLOCK123"),
+            toolkits=["http"],
+        )
+        resp = {
+            "data": {"status": 402, "body": {"accepts": [_accept()]}},
+            "error": "402 Payment Required",
+            "successful": False,
+        }
+        out = self._apply(mod, "HTTPS_REQUEST", "http", resp)
+        assert out["successful"] is False
+        assert out["error"].startswith("x402 payment settled (payment_ref=BLOCK123)")
+        assert "not re-run" in out["error"] and "retry" in out["error"]
+
     def test_payer_refuses_signals_payment_required(self):
         def payer(env):
             return PaymentAction(settled=False, message="below spend cap")
