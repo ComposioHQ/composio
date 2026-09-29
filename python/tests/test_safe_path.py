@@ -230,6 +230,12 @@ class TestSafeBasename:
     def test_prefixes_windows_device_names_with_any_extension(self, value, expected):
         assert safe_basename(value) == expected
 
+    def test_prefixes_a_device_name_exposed_by_truncation(self):
+        # Truncation keeps `NUL` plus spaces before `.txt`, and Windows ignores
+        # the spaces, so the checked name must be the fitted one.
+        assert safe_basename("NUL" + " " * 200 + "x.txt") == "_NUL" + " " * 120 + ".txt"
+        assert safe_basename("CON" + " " * 200 + "x") == "_CON"
+
     def test_keeps_a_filename_at_the_byte_limit(self):
         name = "x" * MAX_COMPONENT_LENGTH
         assert safe_basename(name) == name

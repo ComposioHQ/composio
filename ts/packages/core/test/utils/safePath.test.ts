@@ -140,6 +140,13 @@ describe('safeBasename', () => {
       expect(safeBasename(input)).toBe(expected);
     });
 
+    it('prefixes a device name exposed by truncation or trailing-space removal', () => {
+      // Truncation keeps `NUL` plus spaces before `.txt`, and Windows ignores
+      // the spaces, so the checked name must be the fitted one.
+      expect(safeBasename(`NUL${' '.repeat(200)}x.txt`)).toBe(`_NUL${' '.repeat(120)}.txt`);
+      expect(safeBasename(`CON${' '.repeat(200)}x`)).toBe('_CON');
+    });
+
     it('truncates a long name to the byte limit and keeps its extension', () => {
       const result = safeBasename(`${'x'.repeat(200)}.pdf`);
       expect(result).toBe(`${'x'.repeat(MAX_FILENAME_BYTES - 4)}.pdf`);

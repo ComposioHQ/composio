@@ -150,11 +150,11 @@ function fitFilenameBytes(name: string): string {
  * Names that are merely unportable are made portable instead, because ordinary
  * files have them (`report_2026-09-29T10:30:00.csv`, `What is this?.png`), on
  * every platform so a name does not depend on where the SDK runs:
- * control and Windows-reserved characters become `_`, reserved device names
- * get a `_` prefix, names over {@link MAX_FILENAME_BYTES} are truncated with
- * their extension kept, and trailing spaces and dots are dropped as Windows
- * would. `safe_basename` in the Python SDK applies the same rules in the same
- * order.
+ * control and Windows-reserved characters become `_`, names over
+ * {@link MAX_FILENAME_BYTES} are truncated with their extension kept, trailing
+ * spaces and dots are dropped as Windows would, and a resulting reserved
+ * device name gets a `_` prefix. `safe_basename` in the Python SDK applies the
+ * same rules in the same order.
  *
  * Python-compatible stripping removes surrounding whitespace first, and the
  * usability check runs last, on the value that gets written, so neither
@@ -180,14 +180,18 @@ export function safeBasename(name: string, label: string = 'filename'): string {
     );
   }
 
-  let portable = basename.replace(WINDOWS_INVALID_CHARS, '_');
-  // Compare everything before the first dot: on Windows `NUL.tar.gz` opens the
-  // null device just as `NUL` does, so extensions provide no protection.
+  const fit = (value: string): string =>
+    fitFilenameBytes(value).replace(TRAILING_SPACES_AND_DOTS, '');
+  let portable = fit(basename.replace(WINDOWS_INVALID_CHARS, '_'));
+  // Checked on the fitted name, because truncation and trailing-dot removal
+  // can expose one (`NUL` followed by spaces and a long tail). Compare
+  // everything before the first dot: on Windows `NUL.tar.gz` opens the null
+  // device just as `NUL` does, so extensions provide no protection. Fitting
+  // again keeps the byte bound, and a `_`-prefixed name is never a device.
   const deviceName = portable.split('.', 1)[0].replace(/ +$/, '').toUpperCase();
   if (WINDOWS_RESERVED_NAMES.has(deviceName)) {
-    portable = `_${portable}`;
+    portable = fit(`_${portable}`);
   }
-  portable = fitFilenameBytes(portable).replace(TRAILING_SPACES_AND_DOTS, '');
 
   if (!portable) {
     throw new ValidationError(

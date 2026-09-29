@@ -202,10 +202,10 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
     ordinary files have them (``report_2026-09-29T10:30:00.csv``,
     ``What is this?.png``), on every platform so a name does not depend on
     where the SDK runs: control and Windows-reserved characters become ``_``,
-    reserved device names get a ``_`` prefix, names over
-    :data:`MAX_COMPONENT_LENGTH` bytes are truncated with their extension kept,
-    and trailing spaces and dots are dropped as Windows would. ``safeBasename``
-    in the TypeScript SDK applies the same rules in the same order.
+    names over :data:`MAX_COMPONENT_LENGTH` bytes are truncated with their
+    extension kept, trailing spaces and dots are dropped as Windows would, and
+    a resulting reserved device name gets a ``_`` prefix. ``safeBasename`` in
+    the TypeScript SDK applies the same rules in the same order.
 
     ``str.strip`` removes surrounding whitespace first, and the usability check
     runs last, on the value that gets written, so neither ``"\\u00a0.\\u00a0"``
@@ -231,14 +231,18 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
             f"Refusing to write {label} containing invalid Unicode: {name!r}"
         ) from e
 
-    portable = _WINDOWS_INVALID_FILENAME_CHARS.sub("_", basename)
-    # Compare everything before the first dot: on Windows `NUL.tar.gz` opens
-    # the null device just as `NUL` does, so any number of extensions provides
-    # no protection.
+    def fit(value: str) -> str:
+        return _fit_filename_bytes(value).rstrip(". ")
+
+    portable = fit(_WINDOWS_INVALID_FILENAME_CHARS.sub("_", basename))
+    # Checked on the fitted name, because truncation and trailing-dot removal
+    # can expose one (`NUL` followed by spaces and a long tail). Compare
+    # everything before the first dot: on Windows `NUL.tar.gz` opens the null
+    # device just as `NUL` does, so extensions provide no protection. Fitting
+    # again keeps the byte bound, and a `_`-prefixed name is never a device.
     device_name = portable.split(".", 1)[0].rstrip(" ").upper()
     if device_name in WINDOWS_RESERVED_NAMES:
-        portable = f"_{portable}"
-    portable = _fit_filename_bytes(portable).rstrip(". ")
+        portable = fit(f"_{portable}")
 
     if not portable:
         raise UnsafePathComponentError(
