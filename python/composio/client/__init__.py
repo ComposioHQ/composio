@@ -8,7 +8,7 @@ import os
 import platform
 import typing as t
 import weakref
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from uuid import uuid4
 
 import typing_extensions as te
@@ -20,7 +20,8 @@ from composio_client import (
     NotGiven,
 )
 from composio_client import Composio as BaseComposio
-from httpx import URL, Client, Request, Response, Timeout
+from composio_client._base_client import HeaderParam, RequestOptions
+from httpx import URL, Client, Response, Timeout
 
 from composio.core.models.tool_router_constants import (
     PROJECT_API_KEY_HEADER,
@@ -28,6 +29,18 @@ from composio.core.models.tool_router_constants import (
 )
 from composio.exceptions import ComposioError, InvalidParams
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
+
+
+def _distribution_version(name: str) -> str:
+    try:
+        return version(name)
+    except PackageNotFoundError:
+        return "unknown"
+
+
+_SDK_VERSION = _distribution_version("composio")
+_CLIENT_LIBRARY_VERSION = _distribution_version("composio-client")
+
 
 ComposioAPIError = APIError
 APIEnvironment = te.Literal["production", "staging", "local"]
@@ -525,17 +538,45 @@ class HttpClient(BaseComposio, WithLogger):
             super()._make_status_error(err_msg, body=body, response=response)
         )
 
-    def _prepare_request(self, request: Request) -> None:
-        """
-        Request interceptor to inject request id, provider, and SDK version.
-        """
+    def _headers_for(
+        self,
+        url: str,
+        *,
+        json_body: t.Optional[t.Dict[str, t.Any]],
+        method_headers: t.Optional[HeaderParam],
+        options: RequestOptions,
+        withdrawn: bool,
+        scheme: str,
+    ) -> t.Dict[str, str]:
+        """Add SDK context at the active generated client's dispatch boundary."""
+        headers = super()._headers_for(
+            url,
+            json_body=json_body,
+            method_headers=method_headers,
+            options=options,
+            withdrawn=withdrawn,
+            scheme=scheme,
+        )
+        target, base = URL(url), URL(self.base_url)
+        if (target.scheme, target.host, target.port) != (
+            base.scheme,
+            base.host,
+            base.port,
+        ):
+            return headers
         ctx = self.request_ctx.get()
-        request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
-        request.headers["x-framework"] = ctx["provider"]
-        request.headers["x-source"] = "PYTHON_SDK"
-        request.headers["x-runtime"] = HttpClient._runtime_env
-
-        try:
-            request.headers["x-sdk-version"] = version("composio")
-        except Exception:
-            request.headers["x-sdk-version"] = "unknown"
+        headers["x-request-id"] = (
+            ctx.get("id") or headers.get("x-request-id") or uuid4().hex
+        )
+        headers["x-framework"] = ctx["provider"]
+        headers["x-source"] = "PYTHON_SDK"
+        headers["x-runtime"] = HttpClient._runtime_env
+        headers["x-runtime-version"] = platform.python_version()
+        headers["x-client-provenance"] = "composio"
+        headers["x-client-language"] = "python"
+        headers["x-client-runtime"] = "python"
+        headers["x-client-library"] = "composio-client"
+        headers["x-client-library-version"] = _CLIENT_LIBRARY_VERSION
+        headers["x-sdk-version"] = _SDK_VERSION
+        headers["x-client-version"] = _SDK_VERSION
+        return headers
