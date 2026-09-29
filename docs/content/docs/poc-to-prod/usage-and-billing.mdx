@@ -4,7 +4,7 @@ description: View organization and project usage in the dashboard, pull all-time
 keywords: [usage, billing, metering, export, CSV, premium usage charge, invoice, cost attribution, production]
 ---
 
-Track how much usage your organization and projects consume, for billing reconciliation, per-customer cost attribution, or forecasting. The dashboard covers recent activity at a glance; the usage APIs accept arbitrary time ranges and return data you can export.
+Track how much usage your organization and projects consume, for billing reconciliation, per-customer cost attribution, or forecasting. The dashboard covers recent activity at a glance; the usage APIs cover any period, up to 366 days per request, and return data you can export.
 
 ## Usage in the dashboard
 
@@ -43,7 +43,7 @@ curl --fail-with-body --silent --show-error --max-time 30 \
 
 ### Request parameters
 
-- `from` / `to`: Unix epoch milliseconds; `from` is inclusive, `to` is exclusive. These accept arbitrary ranges, so unlike the dashboard there is no 90-day cap. The 30-day window (`to` defaults to now, `from` to 30 days earlier) is only the default. For an all-time view, set `from` to your account-creation time (or `0`).
+- `from` / `to`: Unix epoch milliseconds; `from` is inclusive, `to` is exclusive. `to` defaults to now and `from` to 30 days before `to`. A single request spans at most 366 days; longer ranges return a 400. That is much more than the dashboard's 90-day cap, and for an all-time view you chain windows of up to 366 days each, as the [CSV export](#export-to-csv) below does.
 - `group_by` (breakdown only): dimension to group by. Defaults to `tool_slug` for `tool_calls` and `user_id` for `sessions`.
 - `order_by` / `order_direction` (breakdown only): `key`, `total_quantity` (default), or `event_count`; `asc` or `desc` (default).
 - `limit` (breakdown only): maximum number of groups returned. Defaults to 100, max 1000.
@@ -80,32 +80,58 @@ Summary responses return the same totals per entity type, without `groups`.
 
 ## Export to CSV
 
-The breakdown endpoint plus `jq` gives you a CSV export. This pulls org-wide tool-call usage since account creation, grouped by tool:
+The breakdown endpoint plus `jq` gives you a CSV export. Because a single request spans at most 366 days, an all-time export walks the full period in windows and merges the rows. Set `EXPORT_START` to the date your usage began, such as your account-creation date; an earlier date is safe because empty windows return no groups. This pulls org-wide tool-call usage from `EXPORT_START` to now, grouped by tool:
 
 ```bash
 set -euo pipefail
 : "${COMPOSIO_ORG_API_KEY:?Set your Composio organization API key}"
+: "${EXPORT_START:?Set the export start date (YYYY-MM-DD), e.g. your account-creation date}"
 
-# All-time export: set FROM to your account-creation time (epoch ms)
-FROM=1704067200000
-TO=$(date +%s%3N)
+FROM=$(date -d "${EXPORT_START}" +%s%3N)
+NOW=$(date +%s%3N)
+WINDOW_MS=$((366 * 86400 * 1000))
+GROUPS_FILE=$(mktemp)
 
-curl --fail-with-body --silent --show-error --max-time 30 \
-	-X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
-	-H "x-org-api-key: ${COMPOSIO_ORG_API_KEY}" \
-	-H "Content-Type: application/json" \
-	-d "{\"from\": ${FROM}, \"to\": ${TO}, \"group_by\": \"tool_slug\", \"limit\": 1000}" \
-	| jq -r '
-		["key", "total_quantity", "event_count", "premium_usage_charge"],
-		(.groups[] | [.key, .total_quantity, .event_count, .premium_usage_charge])
-		| @csv
-	' > usage.csv
+while [ "${FROM}" -lt "${NOW}" ]; do
+	TO=$((FROM + WINDOW_MS))
+	if [ "${TO}" -gt "${NOW}" ]; then TO="${NOW}"; fi
+
+	RESPONSE=$(curl --fail-with-body --silent --show-error --max-time 30 \
+		-X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
+		-H "x-org-api-key: ${COMPOSIO_ORG_API_KEY}" \
+		-H "Content-Type: application/json" \
+		-d "{\"from\": ${FROM}, \"to\": ${TO}, \"group_by\": \"tool_slug\", \"limit\": 1000}")
+
+	if [ "$(jq '.groups | length' <<< "${RESPONSE}")" -eq 1000 ]; then
+		echo "Window ${FROM}..${TO} hit the 1000-group cap; lower WINDOW_MS or add filters" >&2
+		exit 1
+	fi
+
+	jq '.groups' <<< "${RESPONSE}" >> "${GROUPS_FILE}"
+	FROM="${TO}"
+done
+
+jq -r -s '
+	add
+	| group_by(.key)
+	| map({
+			key: .[0].key,
+			total_quantity: (map(.total_quantity | tonumber) | add),
+			event_count: (map(.event_count) | add),
+			premium_usage_charge: ((map(.premium_usage_charge | tonumber) | add) * 100 | round / 100)
+		})
+	| sort_by(-.total_quantity)
+	| (["key", "total_quantity", "event_count", "premium_usage_charge"],
+		(.[] | [.key, .total_quantity, .event_count, .premium_usage_charge]))
+	| @csv
+' "${GROUPS_FILE}" > usage.csv
+rm -f "${GROUPS_FILE}"
 ```
 
 Swap the URL to `project/usage/tool_calls` and the header to `x-api-key` for a single project, or change `group_by` to `user_id` for per-customer attribution.
 
 <Callout>
-Breakdown responses are not paginated: each call returns at most 1000 groups (`limit`). If you have more groups than that, narrow the `filters` or split the date range into smaller windows and merge the CSVs.
+Breakdown responses are not paginated: each request returns at most 1000 groups (`limit`), with no flag to say groups were dropped. Treat a response with exactly 1000 groups as truncated, as the script above does, and lower the window size or add `filters` (for example, batches of `user_id` values) until every response comes back under the cap. When you merge windows, aggregate rows that share a key, because the same tool or user appears in every window it was active in; the script's final `jq` step does both the merge and the aggregation.
 </Callout>
 
 ## Query usage from the SDK
