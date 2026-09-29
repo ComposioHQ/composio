@@ -101,6 +101,27 @@ describe("Content - no empty pages", () => {
   });
 });
 
+describe("Content - valid HTML nesting", () => {
+  test("no <p> tag sits alone on a line", async () => {
+    // MDX parses the lines inside a block-level <p> as a markdown paragraph,
+    // rendering <p><p>…</p></p>. Browsers split that apart, so React hydration
+    // fails and the page re-renders on the client. Use a <div> wrapper instead.
+    const files = [...(await findMdxFiles(DOCS_DIR)), ...(await findMdxFiles(EXAMPLES_DIR))];
+    const nested: string[] = [];
+
+    for (const file of files) {
+      const lines = (await readFile(file, "utf-8")).split("\n");
+      lines.forEach((line, i) => {
+        if (/^\s*<p(\s[^>]*)?>\s*$/.test(line)) {
+          nested.push(`${relative(join(DOCS_DIR, ".."), file)}:${i + 1}`);
+        }
+      });
+    }
+
+    expect(nested).toEqual([]);
+  });
+});
+
 describe("Content - provider compatibility", () => {
   test("Gemini Python docs use the google-genai-compatible provider", async () => {
     const content = await readFile(GOOGLE_PROVIDER_DOC, "utf-8");
