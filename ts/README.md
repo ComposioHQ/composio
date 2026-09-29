@@ -32,7 +32,7 @@ Published packages:
 | [`@composio/experimental`](packages/experimental) | Experimental integrations, currently the Pi provider. |
 | [`@composio/json-schema-to-zod`](packages/json-schema-to-zod) | JSON Schema to Zod conversion. |
 
-Internal (unpublished) packages: `cli-keyring` and `cli-local-tools` support the CLI; `ts-builders` generates TypeScript source.
+Internal (unpublished) packages: `cli-keyring` supports the CLI; `ts-builders` generates TypeScript source.
 
 ## Layout
 

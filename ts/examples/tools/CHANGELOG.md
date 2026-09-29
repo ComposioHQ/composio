@@ -1,5 +1,18 @@
 # tools-example
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [f478a3d]
+- Updated dependencies [f478a3d]
+- Updated dependencies [485c09d]
+- Updated dependencies [e7580cf]
+- Updated dependencies [ae3c069]
+- Updated dependencies [e182bc8]
+  - @composio/core@0.22.0
+  - @composio/vercel@0.12.1
+
 ## 0.1.5
 
 ### Patch Changes

@@ -35,6 +35,7 @@ import {
 import {
   transformSearchResponse,
   transformExecuteResponse,
+  transformSessionConfig,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -167,7 +168,7 @@ export class ToolRouterSession<
       execute: {},
       search: {},
       preload: { tools: [] },
-      premium_usage: false,
+      instant: false,
     };
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
@@ -855,7 +856,7 @@ export class ToolRouterSession<
     }
 
     this.configVersion = response.config_version;
-    this.config = response.config;
+    this.config = transformSessionConfig(response.config);
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
@@ -912,7 +913,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: item.config,
+        config: transformSessionConfig(item.config),
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
@@ -1118,8 +1119,8 @@ export class ToolRouterSession<
           : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
-      ...(remoteResult?.premiumCharge !== undefined && {
-        premiumCharge: remoteResult.premiumCharge,
+      ...(remoteResult?.instantCharge !== undefined && {
+        instantCharge: remoteResult.instantCharge,
       }),
     };
   }

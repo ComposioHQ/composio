@@ -94,7 +94,7 @@ const openaiTools = openaiProvider.wrapTools(composioTools);
 
 #### executeToolCall(userId, tool, options?, modifiers?)
 
-Executes a tool call from an OpenAI assistant.
+Executes a tool call from an OpenAI chat completion.
 
 ```typescript
 const result = await openaiProvider.executeToolCall(
@@ -134,75 +134,29 @@ const outputs = await openaiProvider.handleToolCalls('user123', chatCompletion);
 
 **Returns:** Promise<OpenAI.ChatCompletionToolMessageParam[]> - The results of the tool calls
 
-> [!WARNING]
-> **Deprecated.** OpenAI deprecated the Assistants API, and it shuts down on August 26, 2026. The `handleAssistantMessage`, `waitAndHandleAssistantStreamToolCalls`, and `waitAndHandleAssistantToolCalls` methods below remain in the SDK until then, but new agentic flows should use `OpenAIResponsesProvider` instead — see [the OpenAI provider guide](../providers/openai.md).
+### OpenAIResponsesProvider
 
-#### handleAssistantMessage(userId, run, options?, modifiers?)
-
-Handles tool calls from an OpenAI assistant run.
+OpenAI shut down the Assistants API on August 26, 2026, and the SDK no longer ships its helpers (`handleAssistantMessage`, `waitAndHandleAssistantToolCalls`, `waitAndHandleAssistantStreamToolCalls`). Use `OpenAIResponsesProvider` from `@composio/openai` with the [Responses API](https://developers.openai.com/api/docs/assistants/migration) instead.
 
 ```typescript
-const toolOutputs = await openaiProvider.handleAssistantMessage('user123', run);
+import { Composio } from '@composio/core';
+import { OpenAIResponsesProvider } from '@composio/openai';
+import OpenAI from 'openai';
+
+const openai = new OpenAI();
+const composio = new Composio({ provider: new OpenAIResponsesProvider() });
+const session = await composio.create('user123');
+const tools = await session.tools();
+
+const response = await openai.responses.create({
+  model: 'gpt-5',
+  input: 'Star the composiohq/composio repository on GitHub',
+  tools,
+});
+const toolOutputs = await composio.provider.handleResponse(session, response);
 ```
 
-**Parameters:**
-
-- `userId` (string): The user ID
-- `run` (OpenAI.Beta.Threads.Run): The run object containing tool calls
-- `options` (ExecuteToolFnOptions): Optional parameters for tool execution
-- `modifiers` (ExecuteToolModifiers): Optional modifiers for request/response transformation
-
-**Returns:** Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]> - The tool outputs
-
-#### waitAndHandleAssistantStreamToolCalls(userId, client, runStream, thread, options?, modifiers?)
-
-Waits for and handles tool calls from an OpenAI assistant stream.
-
-```typescript
-for await (const event of openaiProvider.waitAndHandleAssistantStreamToolCalls(
-  'user123',
-  openaiClient,
-  runStream,
-  thread
-)) {
-  console.log(event);
-}
-```
-
-**Parameters:**
-
-- `userId` (string): The user ID
-- `client` (OpenAI): The OpenAI client
-- `runStream` (Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>): The run stream
-- `thread` (OpenAI.Beta.Threads.Thread): The thread object
-- `options` (ExecuteToolFnOptions): Optional parameters for tool execution
-- `modifiers` (ExecuteToolModifiers): Optional modifiers for request/response transformation
-
-**Returns:** AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown> - Generator of stream events
-
-#### waitAndHandleAssistantToolCalls(userId, client, run, thread, options?, modifiers?)
-
-Waits for and handles tool calls from an OpenAI assistant.
-
-```typescript
-const finalRun = await openaiProvider.waitAndHandleAssistantToolCalls(
-  'user123',
-  openaiClient,
-  run,
-  thread
-);
-```
-
-**Parameters:**
-
-- `userId` (string): The user ID
-- `client` (OpenAI): The OpenAI client
-- `run` (OpenAI.Beta.Threads.Run): The run object containing tool calls
-- `thread` (OpenAI.Beta.Threads.Thread): The thread object
-- `options` (ExecuteToolFnOptions): Optional parameters for tool execution
-- `modifiers` (ExecuteToolModifiers): Optional modifiers for request/response transformation
-
-**Returns:** Promise<OpenAI.Beta.Threads.Run> - The final run object
+`executeToolCall`, `handleToolCalls`, and `handleResponse` take the session that produced the tools, or a user ID for tools fetched with `tools.get()`. They return `function_call_output` items to send back with `previous_response_id`.
 
 ## Creating Custom Providers
 

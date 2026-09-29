@@ -1,7 +1,10 @@
+import { APIError } from '@composio/client';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { makeSessionInfo } from 'test/__utils__/models/account';
+import type { MockRequestScope } from 'test/__utils__/services/test-layer';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
@@ -351,6 +354,7 @@ describe('CLI: composio dev connected-accounts link', () => {
     );
   });
 
+  const sessionInfoScopes: MockRequestScope[] = [];
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -358,8 +362,31 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
       toolRouter: {
         link: async () => {
-          throw Object.assign(new Error('No managed auth'), {
-            slug: 'ToolRouterV2_NoManagedAuth',
+          throw APIError.generate(
+            400,
+            {
+              error: {
+                message: 'No managed auth',
+                code: 400,
+                slug: 'ToolRouterV2_NoManagedAuth',
+                status: 400,
+              },
+            },
+            undefined,
+            new Headers()
+          );
+        },
+      },
+      accountData: {
+        sessionInfo: scope => {
+          sessionInfoScopes.push(scope);
+          return makeSessionInfo({
+            orgId: 'org_selected',
+            orgName: 'Selected Org',
+            orgMemberId: 'member_selected',
+            projectId: 'project_id_selected',
+            projectNanoId: 'project_selected',
+            projectName: 'Selected Project',
           });
         },
       },
@@ -370,60 +397,9 @@ describe('CLI: composio dev connected-accounts link', () => {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_selected', 'consumer-user-org_selected');
 
-        const originalFetch = globalThis.fetch;
-        const sessionInfoRequests: Headers[] = [];
-        vi.spyOn(globalThis, 'fetch').mockImplementation(
-          async (requestInput: RequestInfo | URL, init?: RequestInit) => {
-            const url =
-              typeof requestInput === 'string'
-                ? requestInput
-                : requestInput instanceof URL
-                  ? requestInput.toString()
-                  : requestInput.url;
-
-            if (url.includes('/api/v3/auth/session/info')) {
-              const headers = new Headers(init?.headers);
-              sessionInfoRequests.push(headers);
-              return new Response(
-                JSON.stringify({
-                  project: {
-                    name: 'Selected Project',
-                    id: 'project_id_selected',
-                    org_id: 'org_selected',
-                    nano_id: 'project_selected',
-                    email: 'project@example.com',
-                    created_at: '2026-01-01T00:00:00.000Z',
-                    updated_at: '2026-01-01T00:00:00.000Z',
-                    org: {
-                      id: 'org_selected',
-                      name: 'Selected Org',
-                      plan: 'enterprise',
-                    },
-                  },
-                  org_member: {
-                    id: 'member_selected',
-                    user_id: 'user_123',
-                    email: 'cli@example.com',
-                    name: 'CLI User',
-                    role: 'admin',
-                  },
-                  api_key: null,
-                }),
-                {
-                  status: 200,
-                  headers: { 'Content-Type': 'application/json' },
-                }
-              );
-            }
-
-            return originalFetch(requestInput, init);
-          }
-        );
-
         yield* cli(['link', 'gmail', '--no-browser']);
 
-        expect(sessionInfoRequests).toHaveLength(1);
-        expect(sessionInfoRequests[0].get('x-org-id')).toBe('org_selected');
+        expect(sessionInfoScopes.map(scope => scope.orgId)).toEqual(['org_selected']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('/Selected%20Org/~/connect/apps/gmail?open=true');
       })

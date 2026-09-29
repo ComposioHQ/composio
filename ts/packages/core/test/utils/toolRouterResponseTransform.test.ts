@@ -2,9 +2,31 @@ import { describe, it, expect } from 'vitest';
 import {
   transformSearchResponse,
   transformExecuteResponse,
+  transformSessionConfig,
 } from '../../src/utils/transformers/toolRouterResponseTransform';
 
 describe('toolRouterResponseTransform', () => {
+  it('preserves the new Instant policy in server-side session config', () => {
+    const config = {
+      user_id: 'user_1',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+      instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+      premium_usage: false as const,
+    };
+    expect(transformSessionConfig(config)).toEqual({
+      user_id: 'user_1',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+      instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+    });
+    expect(transformSessionConfig({ ...config, instant: false }).instant).toBe(false);
+    expect(() =>
+      transformSessionConfig({ ...config, instant: { return_instant_charge: 'yes' } })
+    ).toThrow();
+  });
   describe('transformSearchResponse', () => {
     it('should transform snake_case search response to camelCase', () => {
       const raw = {
@@ -132,7 +154,7 @@ describe('toolRouterResponseTransform', () => {
       });
     });
 
-    it('maps the hosted account allowlist only when the API sends one', () => {
+    it('maps the Instant account allowlist only when the API sends one', () => {
       const raw = {
         success: true,
         error: null,
@@ -143,8 +165,8 @@ describe('toolRouterResponseTransform', () => {
             toolkit: 'exa',
             description: 'Exa',
             has_active_connection: true,
-            status_message: 'Connected via the Composio hosted account.',
-            hosted_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
           },
           {
             toolkit: 'gmail',
@@ -166,9 +188,10 @@ describe('toolRouterResponseTransform', () => {
         },
       };
 
-      const [hosted, notHosted] = transformSearchResponse(raw).toolkitConnectionStatuses;
-      expect(hosted.hostedAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
-      expect(notHosted).not.toHaveProperty('hostedAccount');
+      const [instantAccount, notInstantAccount] =
+        transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(instantAccount.instantAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(notInstantAccount).not.toHaveProperty('instantAccount');
     });
   });
 
@@ -200,18 +223,18 @@ describe('toolRouterResponseTransform', () => {
       expect(result.logId).toBe('log_err');
     });
 
-    it('preserves the optional premium charge without inventing one', () => {
+    it('preserves the optional Instant charge without inventing one', () => {
       expect(
         transformExecuteResponse({
           data: {},
           error: null,
           log_id: 'log_paid',
-          premium_charge: { amount: '0.01', currency: 'USD' },
-        }).premiumCharge
+          instant_charge: { amount: '0.01', currency: 'USD' },
+        }).instantCharge
       ).toEqual({ amount: '0.01', currency: 'USD' });
       expect(
         transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
-      ).not.toHaveProperty('premiumCharge');
+      ).not.toHaveProperty('instantCharge');
     });
   });
 });

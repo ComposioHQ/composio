@@ -5,7 +5,6 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/cli/**'
-      - 'ts/packages/cli-local-tools/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
@@ -99,22 +98,18 @@ jobs:
           - target: bun-linux-x64
             artifact: composio-linux-x64
             runner: ubuntu-latest
-            local_tools_target: ''
             codex_target: linux-x64
           - target: bun-linux-arm64
             artifact: composio-linux-aarch64
             runner: ubuntu-latest
-            local_tools_target: ''
             codex_target: linux-arm64
           - target: bun-darwin-x64
             artifact: composio-darwin-x64
             runner: macos-15-intel
-            local_tools_target: ''
             codex_target: darwin-x64
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
             runner: macos-15
-            local_tools_target: darwin-arm64
             codex_target: darwin-arm64
 
     steps:
@@ -129,29 +124,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup Swift 6.2 for local-tool sidecars
-        if: matrix.local_tools_target != ''
-        uses: swift-actions/setup-swift@364295d9c23900ce04d4e5cc708387921b4e50f9 # v3
-        with:
-          swift-version: '6.2'
-
-      - name: Verify Swift toolchain
-        if: matrix.local_tools_target != ''
-        run: swift --version
-
       - name: Build packages
         run: pnpm build:packages
-
-      - name: Build local-tool sidecar binaries
-        if: matrix.local_tools_target != ''
-        run: pnpm --filter @composio/cli-local-tools build:local-tool-binaries -- --target ${{ matrix.local_tools_target }}
-
-      - name: Verify local-tool sidecars
-        if: matrix.local_tools_target != ''
-        run: |
-          test -x ts/packages/cli-local-tools/local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli
-          test -x ts/packages/cli-local-tools/local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo
-          test -x ts/packages/cli-local-tools/local-tools-binaries/composio-native-ui/${{ matrix.local_tools_target }}/composio-native-ui
 
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
@@ -199,14 +173,6 @@ jobs:
           ARTIFACT: ${{ matrix.artifact }}
           HOST_CODEX_TARGET: ${{ matrix.codex_target }}
         run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
-
-      - name: Verify local-tool sidecars in archive
-        if: matrix.local_tools_target != ''
-        working-directory: ts/packages/cli
-        run: |
-          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli"
-          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo"
-          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/composio-native-ui/${{ matrix.local_tools_target }}/composio-native-ui"
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

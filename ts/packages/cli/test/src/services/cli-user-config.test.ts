@@ -61,7 +61,6 @@ describe('ComposioCliUserConfig', () => {
         const config = yield* ComposioCliUserConfig;
         assertEquals(config.channel, 'beta');
         assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-        assertEquals(config.isExperimentalFeatureEnabled('local_tools'), true);
       } finally {
         execPathSpy.mockRestore();
       }

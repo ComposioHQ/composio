@@ -1,8 +1,8 @@
 import http from 'node:http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
+import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
-import { detectCliPlatform } from '@composio/cli-local-tools';
 import {
   Data,
   Effect,
@@ -17,22 +17,23 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import {
-  detectNativeUiCallerAgent,
+  detectPermissionCallerAgent,
+  isEnhancedControlsPlatformSupported,
   isInteractivePermissionUiDisabled,
-  requestNativeUiPermissionDecision,
-  type NativeUiCallerAgent,
-} from 'src/services/native-ui-sidecar';
+  type PermissionCallerAgent,
+} from 'src/services/permission-ui';
+import { ComposioClientSingleton, type ClientError } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
-
-const ENHANCED_CONTROLS_UNSUPPORTED_PLATFORMS: ReadonlySet<string> = new Set(['darwin-x64']);
-
-const isEnhancedControlsPlatformSupported = (): boolean =>
-  !ENHANCED_CONTROLS_UNSUPPORTED_PLATFORMS.has(detectCliPlatform());
 
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';
 
 const CACHE_FILE_NAME = 'tool-permissions-cache.json';
 const PERMISSION_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Each path is passed once for the request and once for the error payload, so
+// they live in constants to keep those uses in sync.
+const ORG_CONSUMER_CONFIG_PATH = '/api/v3.1/org/consumer/config';
+const CONSUMER_PERMISSIONS_RESOLVE_PATH = '/api/v3.1/consumer/permissions/resolve';
 const ALLOW_FOR_DURATION_LABEL = '1 hr';
 const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
@@ -185,7 +186,6 @@ const cachePath = (path: Path.Path, cacheDirectory: string) =>
   path.join(cacheDirectory, CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
   [params.orgId, params.projectId, params.consumerUserId].join(':');
-const normalizeBaseUrl = (baseURL: string) => baseURL.replace(/\/$/, '');
 
 const uniq = (values: ReadonlyArray<string | undefined>) => [
   ...new Set(values.filter((value): value is string => Boolean(value))),
@@ -301,45 +301,72 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
-const fetchJson = async <S extends Schema.ConstraintDecoder<unknown>>(
+// These two consumer endpoints are absent from the v3.1 spec, so they go
+// through the client's generic escape hatch rather than a typed resource. The
+// client still supplies credentials, retries, and redirect handling.
+const requestJson = async <S extends Schema.ConstraintDecoder<unknown>>(
   responseSchema: S,
   {
-    baseURL,
-    apiKey,
-    orgId,
-    projectId,
+    client,
     path,
     method = 'GET',
     body,
   }: {
-    readonly baseURL: string;
-    readonly apiKey: string;
-    readonly orgId: string;
-    readonly projectId: string;
+    readonly client: RawComposioClient;
     readonly path: string;
     readonly method?: 'GET' | 'POST';
     readonly body?: unknown;
   }
 ): Promise<S['Type']> => {
-  const response = await fetch(`${normalizeBaseUrl(baseURL)}${path}`, {
-    method,
-    redirect: 'error',
-    headers: {
-      'x-user-api-key': apiKey,
-      'x-org-id': orgId,
-      'x-project-id': projectId,
-      'User-Agent': '@composio/cli',
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ${response.statusText}`);
-  }
-  const responseBody: unknown = await response.json();
+  const responseBody: unknown =
+    method === 'GET' ? await client.get(path) : await client.post(path, { body });
   return Schema.decodeUnknownPromise(responseSchema)(responseBody);
 };
+
+/**
+ * The client for the caller's org and project, with a failure the permission
+ * paths already recover from.
+ */
+const permissionsClient = (params: {
+  readonly apiKey: string;
+  readonly orgId: string;
+  readonly projectId: string;
+  readonly path: string;
+}): Effect.Effect<RawComposioClient, ToolPermissionsRequestError, ComposioClientSingleton> =>
+  Effect.gen(function* () {
+    const clientSingleton = yield* ComposioClientSingleton;
+    return yield* clientSingleton
+      .getFor({
+        userApiKey: params.apiKey,
+        orgId: params.orgId,
+        projectId: params.projectId,
+      })
+      .pipe(
+        Effect.mapError(
+          (cause: ClientError) =>
+            new ToolPermissionsRequestError({
+              path: params.path,
+              message: 'Failed to build a Composio client for the consumer permission request.',
+              cause,
+            })
+        )
+      );
+  });
+
+const fetchConsumerConfig = (client: RawComposioClient) =>
+  Effect.tryPromise({
+    try: () =>
+      requestJson(ConsumerConfigResponseSchema, {
+        client,
+        path: ORG_CONSUMER_CONFIG_PATH,
+      }),
+    catch: cause =>
+      new ToolPermissionsRequestError({
+        path: ORG_CONSUMER_CONFIG_PATH,
+        message: 'Failed to fetch the org consumer config.',
+        cause,
+      }),
+  });
 
 export const refreshConsumerPermissionSnapshot = (params: {
   readonly orgId: string;
@@ -356,22 +383,13 @@ export const refreshConsumerPermissionSnapshot = (params: {
     if (!apiKey) return undefined;
 
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        fetchJson(ConsumerConfigResponseSchema, {
-          baseURL: userContext.data.baseURL,
-          apiKey,
-          orgId: params.orgId,
-          projectId: params.projectId,
-          path: '/api/v3.1/org/consumer/config',
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
+    const client = yield* permissionsClient({
+      apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
+    const config = yield* fetchConsumerConfig(client);
     const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
     const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
     if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
@@ -385,12 +403,9 @@ export const refreshConsumerPermissionSnapshot = (params: {
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise({
             try: () =>
-              fetchJson(PermissionResolveResponseSchema, {
-                baseURL: userContext.data.baseURL,
-                apiKey,
-                orgId: params.orgId,
-                projectId: params.projectId,
-                path: '/api/v3.1/consumer/permissions/resolve',
+              requestJson(PermissionResolveResponseSchema, {
+                client,
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 method: 'POST',
                 body: {
                   connected_account_ids: connectedAccountIds,
@@ -399,7 +414,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
               }),
             catch: cause =>
               new ToolPermissionsRequestError({
-                path: '/api/v3.1/consumer/permissions/resolve',
+                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
                 message: 'Failed to resolve consumer permissions.',
                 cause,
               }),
@@ -501,22 +516,13 @@ export const getOrgEnhancedControlsStatus = (params: {
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
 
-    const config = yield* Effect.tryPromise({
-      try: () =>
-        fetchJson(ConsumerConfigResponseSchema, {
-          baseURL: userContext.data.baseURL,
-          apiKey,
-          orgId: params.orgId,
-          projectId: params.projectId,
-          path: '/api/v3.1/org/consumer/config',
-        }),
-      catch: cause =>
-        new ToolPermissionsRequestError({
-          path: '/api/v3.1/org/consumer/config',
-          message: 'Failed to fetch the org consumer config.',
-          cause,
-        }),
+    const client = yield* permissionsClient({
+      apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+      path: ORG_CONSUMER_CONFIG_PATH,
     });
+    const config = yield* fetchConsumerConfig(client);
     const remoteEnabled = readEnhancedControlsFlag(config);
     const platformSupported = isEnhancedControlsPlatformSupported();
     return {
@@ -636,25 +642,23 @@ const escapeHtml = (value: string): string =>
     }
   });
 
-// Agent glyphs — same SVGs the macOS sidecar embeds (see
-// `ts/packages/cli-local-tools/native/composio-native-ui/Sources/ComposioNativeUI/main.swift`).
-// Kept verbatim so the browser fallback shows the same brand mark.
-const AGENT_SVGS: Readonly<Record<NativeUiCallerAgent, string>> = {
+// Agent glyphs shown next to the caller agent's name on the approval page.
+const AGENT_SVGS: Readonly<Record<PermissionCallerAgent, string>> = {
   composio: `<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_2367_5)"><path d="M91.7032 28.1801L35.3611 16.6572C31.6669 15.8988 28.1929 18.7367 28.1929 22.5043V49.1954V50.6144V77.3052C28.1929 81.0729 31.6669 83.9112 35.3611 83.1526L91.7032 71.6296" stroke="black" stroke-width="2.8556" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M48.1992 7.38531C48.1993 2.09223 53.6097 -1.44765 58.4546 0.57874L58.6851 0.679333L58.6902 0.68227L88.8308 14.6023C91.4759 15.7947 93.1338 18.4366 93.1346 21.3053V33.0975C93.1346 37.3994 89.4707 40.797 85.1902 40.4658L51.0547 37.918V61.8914L85.185 59.3435L85.585 59.323C89.6842 59.2231 93.1331 62.5334 93.109 66.6876V78.4797C93.109 81.3707 91.4075 83.9737 88.8105 85.1812L88.806 85.1827L58.691 99.0774L58.6917 99.0782C53.7808 101.351 48.1992 97.7714 48.1992 92.3759V81.1383C47.9779 81.2256 47.741 81.2834 47.4921 81.3015L30.8347 82.5007C29.4429 82.6007 28.2584 81.4977 28.2582 80.1023V67.7354C28.2583 67.256 28.4014 66.8063 28.6474 66.4277L14.9439 67.4513H14.9388C10.6701 67.7539 7.00001 64.3671 7 60.0823V39.7271C7.00031 35.4239 10.6671 32.0248 14.9491 32.3589H14.9483L28.3486 33.3589C28.2905 33.152 28.2583 32.9345 28.2582 32.7099V19.6826C28.2582 17.7807 29.9597 16.3299 31.8377 16.6304L47.6992 19.168C47.8735 19.1959 48.0404 19.2435 48.1992 19.3059V7.38531ZM85.4075 62.191H85.4023L51.0547 64.755V79.6601L90.2541 71.4669V66.6774L90.2496 66.435C90.1323 63.9438 87.9489 61.9928 85.4075 62.191ZM27.7075 36.1748C27.9471 36.5495 28.0863 36.9936 28.0864 37.4678V62.7813C28.0864 63.0748 28.0314 63.3559 27.9344 63.6169L48.1992 62.1044V37.7043L27.7075 36.1748ZM51.0547 35.0544L85.4023 37.6183L85.4075 37.6191L85.6511 37.6316C88.1632 37.6928 90.279 35.6595 90.279 33.0975V28.1405L51.0547 19.9411V35.0544Z" fill="black"/></g><defs><clipPath id="clip0_2367_5"><rect width="86.4662" height="100" fill="white" transform="translate(7)"/></clipPath></defs></svg>`,
   claude: `<svg preserveAspectRatio="xMidYMid" viewBox="0 0 256 257" xmlns="http://www.w3.org/2000/svg"><path fill="#D97757" d="m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z"/></svg>`,
   codex: `<svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M9.064 3.344a4.578 4.578 0 012.285-.312c1 .115 1.891.54 2.673 1.275.01.01.024.017.037.021a.09.09 0 00.043 0 4.55 4.55 0 013.046.275l.047.022.116.057a4.581 4.581 0 012.188 2.399c.209.51.313 1.041.315 1.595a4.24 4.24 0 01-.134 1.223.123.123 0 00.03.115c.594.607.988 1.33 1.183 2.17.289 1.425-.007 2.71-.887 3.854l-.136.166a4.548 4.548 0 01-2.201 1.388.123.123 0 00-.081.076c-.191.551-.383 1.023-.74 1.494-.9 1.187-2.222 1.846-3.711 1.838-1.187-.006-2.239-.44-3.157-1.302a.107.107 0 00-.105-.024c-.388.125-.78.143-1.204.138a4.441 4.441 0 01-1.945-.466 4.544 4.544 0 01-1.61-1.335c-.152-.202-.303-.392-.414-.617a5.81 5.81 0 01-.37-.961 4.582 4.582 0 01-.014-2.298.124.124 0 00.006-.056.085.085 0 00-.027-.048 4.467 4.467 0 01-1.034-1.651 3.896 3.896 0 01-.251-1.192 5.189 5.189 0 01.141-1.6c.337-1.112.982-1.985 1.933-2.618.212-.141.413-.251.601-.33.215-.089.43-.164.646-.227a.098.098 0 00.065-.066 4.51 4.51 0 01.829-1.615 4.535 4.535 0 011.837-1.388zm3.482 10.565a.637.637 0 000 1.272h3.636a.637.637 0 100-1.272h-3.636zM8.462 9.23a.637.637 0 00-1.106.631l1.272 2.224-1.266 2.136a.636.636 0 101.095.649l1.454-2.455a.636.636 0 00.005-.64L8.462 9.23z" fill="url(#lobe-icons-codex-_R_0_)"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-codex-_R_0_" x1="12" x2="12" y1="3" y2="21"><stop stop-color="#B1A7FF"></stop><stop offset=".5" stop-color="#7A9DFF"></stop><stop offset="1" stop-color="#3941FF"></stop></linearGradient></defs></svg>`,
   openclaw: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="openclaw__lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff4d4d"/><stop offset="100%" stop-color="#991b1b"/></linearGradient></defs><path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#openclaw__lobster-gradient)"/><path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#openclaw__lobster-gradient)"/><path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#openclaw__lobster-gradient)"/><path d="M45 15 Q35 5 30 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/><path d="M75 15 Q85 5 90 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/><circle cx="45" cy="35" r="6" fill="#050810"/><circle cx="75" cy="35" r="6" fill="#050810"/><circle cx="46" cy="34" r="2.5" fill="#00e5cc"/><circle cx="76" cy="34" r="2.5" fill="#00e5cc"/></svg>`,
 };
 
-const AGENT_DISPLAY_NAMES: Readonly<Record<NativeUiCallerAgent, string>> = {
+const AGENT_DISPLAY_NAMES: Readonly<Record<PermissionCallerAgent, string>> = {
   composio: 'Composio',
   claude: 'Claude',
   codex: 'Codex',
   openclaw: 'OpenClaw',
 };
 
-// 8x8 Bayer matrix encoded as a tiny SVG, matching the sidecar's ordered-dither
-// shader. Tiled across the card as a multiply-blended background.
+// 8x8 Bayer matrix encoded as a tiny SVG for an ordered-dither texture.
+// Tiled across the card as a multiply-blended background.
 const DITHER_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><g fill='%23000' fill-opacity='0.10'>${[
   [0, 0],
   [4, 0],
@@ -697,7 +701,7 @@ const approvalHtml = (params: {
   toolSlug: string;
   accountLabel?: string;
   token: string;
-  agent: NativeUiCallerAgent;
+  agent: PermissionCallerAgent;
 }) => {
   const toolSlug = escapeHtml(params.toolSlug);
   const account = escapeHtml(params.accountLabel ?? 'default connection');
@@ -705,8 +709,8 @@ const approvalHtml = (params: {
   const agent = params.agent;
   const agentName = AGENT_DISPLAY_NAMES[agent];
   const agentSvg = AGENT_SVGS[agent];
-  // The sidecar uses "wants to use TOOL" when an agent is detected and falls
-  // back to "The composio cli wants to execute TOOL" in CLI mode. Mirror it.
+  // "AGENT wants to use TOOL" when an agent is detected; otherwise
+  // "The composio cli wants to execute TOOL".
   const titleBody =
     agent === 'composio'
       ? `The composio cli wants to execute <code>${toolSlug}</code>`
@@ -753,8 +757,7 @@ const approvalHtml = (params: {
         0 18px 50px rgba(0, 0, 0, 0.16),
         0 2px 6px rgba(0, 0, 0, 0.06);
     }
-    /* Dithered Bayer pattern, multiplied beneath the wash — same recipe the
-       Metal shader uses in the macOS sidecar. */
+    /* Dithered Bayer pattern, multiplied beneath the wash. */
     .card::before {
       content: "";
       position: absolute;
@@ -971,7 +974,7 @@ const completionHtml = (decision: PermissionDecision) => {
 const requestPermissionInBrowser = (params: {
   readonly toolSlug: string;
   readonly accountLabel?: string;
-  readonly agent: NativeUiCallerAgent;
+  readonly agent: PermissionCallerAgent;
 }): Promise<PermissionDecision> =>
   new Promise((resolve, reject) => {
     const token = crypto.randomUUID();
@@ -1060,13 +1063,7 @@ const requestPermissionDecision = async (params: {
     );
   }
 
-  // Prefer the bundled macOS native sidecar when it is available. The browser
-  // prompt remains the cross-platform fallback and is only opened when the
-  // native sidecar is missing or fails before returning a decision.
-  const nativeDecision = await requestNativeUiPermissionDecision(params).catch(() => undefined);
-  if (nativeDecision === 'allow_once' || nativeDecision === 'allow_session') return nativeDecision;
-  if (nativeDecision === 'deny' || nativeDecision === 'dismissed') return 'deny';
-  return requestPermissionInBrowser({ ...params, agent: await detectNativeUiCallerAgent() });
+  return requestPermissionInBrowser({ ...params, agent: await detectPermissionCallerAgent() });
 };
 
 export const gateToolExecution = (params: GateParams) =>
