@@ -25,7 +25,7 @@ export function FaqSection({ faq }: FaqSectionProps) {
         {faq.map((item) => (
           <Accordion key={item.question} title={item.question}>
             <div
-              className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-fd-border [&_pre]:bg-fd-muted [&_pre]:p-3 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0"
+              className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground"
               dangerouslySetInnerHTML={{ __html: item.answer }}
             />
           </Accordion>
