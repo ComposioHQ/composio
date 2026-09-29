@@ -1365,12 +1365,12 @@ describe('Tools', () => {
         });
       });
 
-      it('returns the premium charge for provider-wrapped session tools', async () => {
+      it('returns the Instant charge for provider-wrapped session tools', async () => {
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
           data: {},
           error: null,
           log_id: '123',
-          premium_charge: { amount: '0.01', currency: 'USD' },
+          instant_charge: { amount: '0.01', currency: 'USD' },
         });
 
         const result = await context.tools.executeSessionTool('EXA_SEARCH', {
@@ -1378,7 +1378,7 @@ describe('Tools', () => {
           arguments: {},
         });
 
-        expect(result.premiumCharge).toEqual({ amount: '0.01', currency: 'USD' });
+        expect(result.instantCharge).toEqual({ amount: '0.01', currency: 'USD' });
       });
 
       it('should pass inline custom tools to tool router session execute', async () => {
