@@ -201,26 +201,24 @@ describe('ToolRouter', () => {
   describe('create method', () => {
     const userId = 'user_123';
 
-    it('passes premium usage only when requested', async () => {
+    it('passes Instant usage only when requested', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       await toolRouter.create(userId, {
-        premiumUsage: { toolkits: { enable: ['exa'] }, returnPremiumCharge: true },
+        instant: { toolkits: { enable: ['exa'] }, returnInstantCharge: true },
       });
       expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0]).toMatchObject({
-        premium_usage: { toolkits: { enable: ['exa'] }, return_premium_charge: true },
+        instant: { toolkits: { enable: ['exa'] }, return_instant_charge: true },
       });
 
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      await toolRouter.create(userId, { premiumUsage: false });
+      await toolRouter.create(userId, { instant: false });
       expect(mockClient.toolRouter.session.create.mock.calls[1]?.[0]).toMatchObject({
-        premium_usage: false,
+        instant: false,
       });
 
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       await toolRouter.create(userId);
-      expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty(
-        'premium_usage'
-      );
+      expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty('instant');
     });
 
     describe('basic session creation', () => {
@@ -2838,7 +2836,7 @@ describe('ToolRouter', () => {
       );
     });
 
-    it('should return the hosted account allowlist on toolkit connection statuses', async () => {
+    it('should return the Instant account allowlist on toolkit connection statuses', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       mockClient.toolRouter.session.search.mockResolvedValueOnce({
         ...mockSearchResponse,
@@ -2847,8 +2845,8 @@ describe('ToolRouter', () => {
             toolkit: 'exa',
             description: 'Exa',
             has_active_connection: true,
-            hosted_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
-            status_message: 'Connected via the Composio hosted account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+            status_message: 'Connected via the Composio Instant account.',
           },
         ],
       });
@@ -2856,7 +2854,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.search({ query: 'search the web' });
 
-      expect(result.toolkitConnectionStatuses[0].hostedAccount).toEqual({
+      expect(result.toolkitConnectionStatuses[0].instantAccount).toEqual({
         allowedToolSlugs: ['EXA_SEARCH'],
       });
     });
@@ -2905,19 +2903,19 @@ describe('ToolRouter', () => {
       expect(result.logId).toBe('log_abc');
     });
 
-    it('returns the premium charge when the API includes one', async () => {
+    it('returns the Instant charge when the API includes one', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       mockClient.toolRouter.session.execute.mockResolvedValueOnce({
         ...mockExecuteResponse,
-        premium_charge: { amount: '0.01', currency: 'USD' },
+        instant_charge: { amount: '0.01', currency: 'USD' },
       });
 
       const session = await toolRouter.create(userId, {
-        premiumUsage: { returnPremiumCharge: true },
+        instant: { returnInstantCharge: true },
       });
       const result = await session.execute('GMAIL_SEND_EMAIL');
 
-      expect(result.premiumCharge).toEqual({ amount: '0.01', currency: 'USD' });
+      expect(result.instantCharge).toEqual({ amount: '0.01', currency: 'USD' });
     });
 
     it('should propagate execute API errors', async () => {

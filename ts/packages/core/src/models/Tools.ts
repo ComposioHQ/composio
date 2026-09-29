@@ -1258,13 +1258,13 @@ export class Tools<
       requestOptions?.signal
     );
 
-    const { data, error, logId, premiumCharge } = transformExecuteResponse(response);
+    const { data, error, logId, instantCharge } = transformExecuteResponse(response);
     let result: ToolExecuteResponse = {
       data,
       error,
       successful: !error,
       logId,
-      ...(premiumCharge !== undefined && { premiumCharge }),
+      ...(instantCharge !== undefined && { instantCharge }),
     };
 
     // Apply afterExecute modifier if provided

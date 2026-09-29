@@ -114,8 +114,8 @@ def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return {k: _serialize_value(v) for k, v in arguments.items()}
 
 
-class PremiumCharge(te.TypedDict):
-    """Premium usage charge reported for a Session tool execution."""
+class InstantCharge(te.TypedDict):
+    """Instant usage charge reported for a Session tool execution."""
 
     amount: str
     """Exact non-negative USD decimal string, e.g. ``"0.01"``."""
@@ -127,9 +127,9 @@ class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
-    premium_charge: te.NotRequired[PremiumCharge]
+    instant_charge: te.NotRequired[InstantCharge]
     """Present only when the Session sets
-    ``premium_usage.return_premium_charge`` and a charge is available."""
+    ``instant.return_instant_charge`` and a charge is available."""
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -583,9 +583,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 "error": response.error if hasattr(response, "error") else None,
                 "successful": not (hasattr(response, "error") and response.error),
             }
-            premium_charge = getattr(response, "premium_charge", None)
-            if isinstance(premium_charge, dict):
-                result["premium_charge"] = t.cast(PremiumCharge, premium_charge)
+            instant_charge = getattr(response, "instant_charge", None)
+            if isinstance(instant_charge, dict):
+                result["instant_charge"] = t.cast(InstantCharge, instant_charge)
 
             # Apply after_execute modifiers
             if modifiers is not None:
@@ -678,7 +678,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         :param slug: The slug of the tool to execute.
         :param arguments: The arguments to pass to the tool.
-        :param connected_account_id: The ID of the connected account to use for the tool.
+        :param connected_account_id: The connected account ID, or ``instant_account``
+                                     to explicitly use the Composio Instant account.
         :param custom_auth_params: The custom auth params to use for the tool.
         :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
         :param user_id: The ID of the user to execute the tool for.
@@ -816,7 +817,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
 __all__ = [
     "Tools",
-    "PremiumCharge",
+    "InstantCharge",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "Modifiers",

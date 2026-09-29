@@ -108,8 +108,8 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
-/** Experimental premium usage policy for a Session. */
-export const ToolRouterPremiumUsageSchema = z.union([
+/** Experimental Instant usage policy for a Session. */
+export const ToolRouterInstantSchema = z.union([
   z.literal(false),
   z
     .object({
@@ -126,15 +126,15 @@ export const ToolRouterPremiumUsageSchema = z.union([
         )
         .optional(),
       /**
-       * Return the actual premium charge in Session tool responses. Controls
-       * visibility only; on update, any policy object still re-enables premium
+       * Return the actual Instant charge in Session tool responses. Controls
+       * visibility only; on update, any policy object still re-enables Instant
        * usage on a Session set to `false`.
        */
-      returnPremiumCharge: z.boolean().optional(),
+      returnInstantCharge: z.boolean().optional(),
     })
     .strict(),
 ]);
-export type ToolRouterPremiumUsage = z.infer<typeof ToolRouterPremiumUsageSchema>;
+export type ToolRouterInstant = z.infer<typeof ToolRouterInstantSchema>;
 
 export const ToolRouterManageConnectionsConfigSchema = z.object({
   enable: z
@@ -265,8 +265,8 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .optional()
       .describe('The toolkits to use in the tool router session'),
 
-    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental premium usage policy. Omission permits eligible tools when the project allows premium usage; false disables it for this Session.'
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Experimental Instant usage policy. Omission permits eligible tools when the project allows Instant usage; false disables it for this Session.'
     ),
 
     authConfigs: z
@@ -426,7 +426,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
- * @param {ToolRouterPremiumUsage} [premiumUsage] - Experimental premium usage policy. The project must allow premium usage.
+ * @param {ToolRouterInstant} [instant] - Experimental Instant usage policy. The project must allow Instant usage.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -608,8 +608,8 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   statusMessage: z.string(),
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
-  /** Present when the toolkit runs on a Composio hosted account; only these tools run on it. */
-  hostedAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
+  /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
+  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -630,8 +630,8 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
-  /** Actual premium usage charge when the Session opts into returning it. */
-  premiumCharge: z.unknown().optional(),
+  /** Actual Instant usage charge when the Session opts into returning it. */
+  instantCharge: z.unknown().optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -692,7 +692,8 @@ export type ToolRouterSessionExecuteFn = (
 
 export interface ToolRouterSessionExecuteOptions {
   /**
-   * Account identifier for direct app tool execution. Accepted on every project:
+   * Account identifier for direct app tool execution. Use `instant_account` to
+   * explicitly select the Composio Instant account. Accepted on every project:
    * in multi-account sessions it picks the account; on single-account projects it
    * must match one of the session's active connections for the toolkit.
    * Meta/helper tools either ignore this top-level field or define
@@ -713,7 +714,36 @@ export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
  * allowlists, tags, auth configs, connected accounts, manage_connections,
  * preload, sandbox (`workbench`), search and execute settings.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+/** Instant policy in the server's Session config (wire field casing). */
+export const ToolRouterInstantResponseSchema = z.object({
+  toolkits: z
+    .union([
+      z.object({ enabled: z.array(z.string()) }),
+      z.object({ disabled: z.array(z.string()) }),
+    ])
+    .optional(),
+  tools: z
+    .record(
+      z.string(),
+      z.union([
+        z.object({ enabled: z.array(z.string()) }),
+        z.object({ disabled: z.array(z.string()) }),
+      ])
+    )
+    .optional(),
+  return_instant_charge: z.boolean(),
+});
+export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;
+
+/**
+ * Server-side session configuration as returned by the API: toolkit/tool
+ * allowlists, tags, auth configs, connected accounts, manage_connections,
+ * preload, sandbox (`workbench`), search, execute and Instant settings.
+ * The generated client still declares the old policy name.
+ */
+export type ToolRouterSessionConfig = Omit<SessionCreateResponse.Config, 'premium_usage'> & {
+  instant?: false | ToolRouterInstantResponse;
+};
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -858,8 +888,8 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
  */
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
-    premiumUsage: ToolRouterPremiumUsageSchema.optional().describe(
-      'Experimental premium usage policy. False disables it. Any supplied object, even one that only sets returnPremiumCharge, re-enables it. Omitted subfields keep their stored values.'
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values.'
     ),
     toolkits: z
       .union([
