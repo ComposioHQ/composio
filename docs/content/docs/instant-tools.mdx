@@ -21,7 +21,13 @@ Developer organizations get a one-time $2 starter credit. Check your balance in 
 
 Instant coverage is per tool, not per toolkit. A toolkit may support Instant Tools without every tool in it being eligible. Composio's provider account can be shared across customers, so only reviewed actions can run through it. Actions that could reveal shared account history or send arbitrary proxy requests are excluded. Use a connected account for actions Instant does not support.
 
-The public [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not yet return Instant availability or offer an Instant filter. Do not infer Instant support from `no_auth` or `composio_managed_auth_schemes`; they describe different access routes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+In the dashboard, open **Toolkits** and select the **Instant Tools** filter. An **Instant** badge on a toolkit means at least one of its tools supports Instant access. Open the toolkit to find the **Instant** badge beside each eligible tool.
+
+<Figure src="/images/instant-toolkit-filter.png" alt="Toolkits dashboard with the Instant Tools filter selected and Instant badges on matching toolkits" caption="Filter the toolkit catalog to find Instant support." />
+
+<Figure src="/images/instant-tool-eligibility.png" alt="Firecrawl toolkit page with Instant badges on Map multiple URLs, Scrape URL, and Search, but not on other tools" caption="Check individual tools before using an Instant account." />
+
+Instant eligibility and pricing discovery in the catalog APIs are coming soon. The public [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not yet return Instant availability or offer an Instant filter. Do not infer Instant support from `no_auth` or `composio_managed_auth_schemes`; they describe different access routes. During experimental access, ask [support@composio.dev](mailto:support@composio.dev) to confirm supported tools and rates.
 
 ## Create a Session
 
@@ -64,12 +70,14 @@ Top-level `toolkits` controls which tools the Session can discover and run. Omit
 
 ## Run a search with an agent
 
-Install `composio` and `openai-agents`, then set `COMPOSIO_API_KEY` and `OPENAI_API_KEY` as in the [Quickstart](/docs/quickstart). This small agent can choose when to search. The wrapper prints the Instant charge after each search call:
+Install `composio`, `openai-agents`, and `python-dotenv`, then put `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart). This small agent can choose when to search. The wrapper prints the Instant charge after each search call:
 
 ```python
 from agents import Agent, Runner, function_tool
 from composio import Composio
+from dotenv import load_dotenv
 
+load_dotenv()
 session = Composio().sessions.create(user_id="user_123", toolkits=["exa"], instant={"return_instant_charge": True})
 
 @function_tool
@@ -129,7 +137,7 @@ Check the current [tool input schema](/reference/api-reference/tools/getToolsByT
 
 ### Read charge details
 
-With `instant.return_instant_charge` enabled, `session.execute()` returns charge details when available in the typed `instant_charge` field on `ToolRouterSessionExecuteResponse`. Read it from the result above:
+With `instant.return_instant_charge` enabled, the response from `session.execute()` includes `instant_charge` when an Instant account runs the tool. Read it from the result above:
 
 ```python
 charge = result.instant_charge
@@ -159,6 +167,7 @@ console.log(result.instantCharge ?? "No Instant charge");
 `instant` is a Session policy in both SDKs. It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
 
 The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable Instant usage for other eligible toolkits. Use `instant.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
+
 The examples below use Python and REST field names. In TypeScript, use `instant` and `returnInstantCharge`, and read the charge from `instantCharge` on the tool result.
 
 | Session value | Effect |
@@ -195,6 +204,38 @@ const session = await composio.create("user_123", {
   instant: {
     toolkits: { enable: ["exa"] },
     tools: { exa: { enable: ["EXA_SEARCH"] } },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+To keep both toolkits discoverable but exclude Firecrawl and `EXA_SEARCH` from Instant usage, use `disable`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["exa", "firecrawl"],
+    instant={
+        "toolkits": {"disable": ["firecrawl"]},
+        "tools": {"exa": {"disable": ["EXA_SEARCH"]}},
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["exa", "firecrawl"],
+  instant: {
+    toolkits: { disable: ["firecrawl"] },
+    tools: { exa: { disable: ["EXA_SEARCH"] } },
   },
 });
 ```
