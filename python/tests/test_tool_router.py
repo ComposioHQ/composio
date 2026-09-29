@@ -1,5 +1,6 @@
 """Test ToolRouter functionality."""
 
+import json
 import logging
 import os
 import typing as t
@@ -8,6 +9,9 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from composio_client import ConflictError, omit
+from composio_client.types.tool_router.session_search_response import (
+    SessionSearchResponse,
+)
 from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
@@ -76,6 +80,9 @@ def mock_client():
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
     client.tool_router.session.attach.return_value = mock_session_response
+    client.tool_router.session.search.return_value = (
+        SessionSearchResponse.model_validate(_search_json())
+    )
 
     # Mock link response
     mock_link_response = MagicMock()
@@ -172,23 +179,25 @@ class TestToolRouter:
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
 
-    def test_create_with_premium_usage_policy(self, tool_router, mock_client):
-        policy = {"toolkits": {"enable": ["exa"]}, "return_premium_charge": True}
-        tool_router.create(user_id="user_123", premium_usage=policy)
+    def test_create_with_instant_policy(self, tool_router, mock_client):
+        policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
+        tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["premium_usage"] == policy
-        assert "extra_body" not in kwargs
+        assert kwargs["extra_body"]["instant"] == policy
+        assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
         tool_router.create(user_id="user_123")
+        assert "instant" not in mock_client.tool_router.session.create.call_args.kwargs
         assert (
-            "premium_usage"
-            not in mock_client.tool_router.session.create.call_args.kwargs
+            "extra_body" not in mock_client.tool_router.session.create.call_args.kwargs
         )
 
-        tool_router.create(user_id="user_123", premium_usage=False)
+        tool_router.create(user_id="user_123", instant=False)
         assert (
-            mock_client.tool_router.session.create.call_args.kwargs["premium_usage"]
+            mock_client.tool_router.session.create.call_args.kwargs["extra_body"][
+                "instant"
+            ]
             is False
         )
 
@@ -2040,12 +2049,12 @@ class TestToolRouterExecution:
         assert result["data"] == {"result": "success"}
         assert result["error"] is None
         assert result["successful"] is True
-        assert "premium_charge" not in result
+        assert "instant_charge" not in result
 
-    def test_execute_endpoint_preserves_premium_charge(
+    def test_execute_endpoint_preserves_instant_charge(
         self, tool_router, mock_client, mock_provider
     ):
-        """Provider-wrapped session tools keep the reported premium charge."""
+        """Provider-wrapped session tools keep the reported Instant charge."""
         from composio_client.types.tool_router.session_execute_response import (
             SessionExecuteResponse,
         )
@@ -2059,7 +2068,7 @@ class TestToolRouterExecution:
                     "data": {"result": "success"},
                     "error": None,
                     "log_id": "log_123",
-                    "premium_charge": charge,
+                    "instant_charge": charge,
                 }
             )
         )
@@ -2074,7 +2083,7 @@ class TestToolRouterExecution:
 
         result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
 
-        assert result["premium_charge"] == charge
+        assert result["instant_charge"] == charge
 
     def test_execute_endpoint_passes_inline_custom_tools(
         self, tool_router, mock_client, mock_provider
@@ -2270,6 +2279,7 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
+            "instant": {"return_instant_charge": True},
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2277,6 +2287,136 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "config_version": 3,
         "warnings": [],
     }
+
+
+def _search_json() -> t.Dict[str, t.Any]:
+    return {
+        "success": True,
+        "error": None,
+        "results": [],
+        "tool_schemas": {},
+        "toolkit_connection_statuses": [
+            {
+                "toolkit": "exa",
+                "description": "Search",
+                "has_active_connection": True,
+                "status_message": "Instant account available",
+                "instant_account": {"allowed_tool_slugs": ["EXA_SEARCH"]},
+            }
+        ],
+        "next_steps_guidance": [],
+        "session": {"id": "session_123", "generate_id": False, "instructions": ""},
+        "time_info": {
+            "current_time_utc": "2026-09-29T12:00:00Z",
+            "current_time_utc_epoch_seconds": 1790683200,
+            "message": "UTC",
+        },
+    }
+
+
+class TestInstantContractTransport:
+    """Exercise new wire fields through the pinned generated client."""
+
+    @pytest.mark.parametrize(
+        "policy", [False, {}, {"return_instant_charge": True}, None]
+    )
+    def test_create_and_patch_send_new_policy(self, policy):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+        router = ToolRouter(client=client, provider=MagicMock())
+        session = router.create(user_id="user_123", instant=policy)
+        body = json.loads(requests[0].content)
+        assert "premium_usage" not in body
+        if policy is None:
+            assert "instant" not in body
+        else:
+            assert body["instant"] == policy
+        assert session.config.instant == {"return_instant_charge": True}
+        assert "premium_usage" not in session.config.model_dump()
+
+        if policy is None:
+            session.update(expected_config_version=3)
+        else:
+            session.update(instant=policy, expected_config_version=3)
+        body = json.loads(requests[-1].content)
+        assert body["expected_config_version"] == 3
+        assert "premium_usage" not in body
+        if policy is None:
+            assert "instant" not in body
+        else:
+            assert body["instant"] == policy
+        assert session.config.instant == {"return_instant_charge": True}
+        assert "premium_usage" not in session.config.model_dump()
+
+        attached = router.use(session_id="session_123")
+        assert attached.config.instant == {"return_instant_charge": True}
+
+    def test_execute_selector_charge_and_search_coverage(self):
+        requests: t.List[httpx.Request] = []
+        charge = {"amount": "0.012", "currency": "USD", "charged_by": "composio"}
+
+        def handler(request):
+            requests.append(request)
+            if request.url.path.endswith("/execute"):
+                return httpx.Response(
+                    200,
+                    json={
+                        "data": {},
+                        "error": None,
+                        "log_id": "log_123",
+                        "instant_charge": charge,
+                    },
+                )
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=_search_json())
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+        result = session.execute("EXA_SEARCH", arguments={}, account="instant_account")
+        assert json.loads(requests[-1].content)["account"] == "instant_account"
+        assert result.instant_charge == charge
+        assert "premium_charge" not in result.model_dump()
+        status = session.search(query="search").toolkit_connection_statuses[0]
+        assert status.instant_account is not None
+        assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert "hosted_account" not in status.model_dump()
+
+    def test_search_keeps_lenient_generated_response(self):
+        payload = _search_json()
+        payload["toolkit_connection_statuses"][0]["account_type"] = "INSTANT"
+        del payload["time_info"]
+
+        def handler(request):
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+        result = session.search(query="search")
+
+        assert isinstance(result, SessionSearchResponse)
+        status = result.toolkit_connection_statuses[0]
+        assert status.account_type == "INSTANT"
+        assert status.instant_account is not None
+        assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert result.to_dict() == payload
 
 
 def _transport_client(
@@ -2575,30 +2715,32 @@ class TestSessionUpdateContract:
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
-    def test_premium_usage_policy_is_sent(self, session, mock_client):
+    def test_instant_policy_is_sent(self, session, mock_client):
         session.update(
-            premium_usage={
+            instant={
                 "toolkits": {"enable": ["exa"]},
-                "return_premium_charge": True,
+                "return_instant_charge": True,
             }
         )
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["premium_usage"] == {
+        assert kwargs["extra_body"]["instant"] == {
             "toolkits": {"enable": ["exa"]},
-            "return_premium_charge": True,
+            "return_instant_charge": True,
         }
-        assert kwargs["extra_body"] is None
+        assert "premium_usage" not in kwargs
 
-    def test_premium_usage_can_be_disabled(self, session, mock_client):
-        session.update(premium_usage=False)
+    def test_instant_can_be_disabled(self, session, mock_client):
+        session.update(instant=False)
         assert (
-            mock_client.tool_router.session.patch.call_args.kwargs["premium_usage"]
+            mock_client.tool_router.session.patch.call_args.kwargs["extra_body"][
+                "instant"
+            ]
             is False
         )
 
-    def test_premium_usage_rejects_none(self, session, mock_client):
-        with pytest.raises(InvalidParams, match="premium_usage"):
-            session.update(premium_usage=None)  # type: ignore[arg-type]
+    def test_instant_rejects_none(self, session, mock_client):
+        with pytest.raises(InvalidParams, match="instant"):
+            session.update(instant=None)  # type: ignore[arg-type]
         mock_client.tool_router.session.patch.assert_not_called()
 
     def test_update_sends_no_precondition_by_default_without_retries(

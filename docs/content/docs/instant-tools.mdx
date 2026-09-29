@@ -60,7 +60,7 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `instant.toolkits` separately restricts which eligible tools can incur Instant usage charges. Omitting it leaves eligible tools available when the project and Session permit them. `return_instant_charge` defaults to `false` and only controls whether the actual charge appears in the immediate tool response. A toolkit that supports Instant can still contain tools that need a connected account.
+Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `instant.toolkits` separately restricts which eligible tools can incur Instant usage charges. Omitting `instant.toolkits` does not restrict Instant usage: eligible tools remain available when the project and Session permit them. `return_instant_charge` defaults to `false` and only controls whether the actual charge appears in the immediate tool response. A toolkit with Instant support can still contain tools that need a connected account; Instant account coverage is tool-specific.
 
 ## Run a search with an agent
 
@@ -159,7 +159,6 @@ console.log(result.instantCharge ?? "No Instant charge");
 `instant` is a Session policy in both SDKs. It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
 
 The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable Instant usage for other eligible toolkits. Use `instant.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
-
 The examples below use Python and REST field names. In TypeScript, use `instant` and `returnInstantCharge`, and read the charge from `instantCharge` on the tool result.
 
 | Session value | Effect |
@@ -188,6 +187,9 @@ session = composio.sessions.create(
 <Tab value="TypeScript">
 ```typescript
 // @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
 const session = await composio.create("user_123", {
   toolkits: ["exa", "firecrawl"],
   instant: {
@@ -210,6 +212,10 @@ session.update(instant=False)
 <Tab value="TypeScript">
 ```typescript
 // @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+const session = await composio.create("user_123");
+// ---cut---
 await session.update({ instant: false });
 ```
 </Tab>
@@ -227,7 +233,7 @@ You pay an Instant charge only when Composio's Instant account runs the tool. A 
 
 Session search tells you when an Instant account serves a toolkit. The toolkit's connection status includes `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
 
-To choose the Instant account explicitly, pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. This route does not fall back to another credential if it fails.
+To choose the Instant account explicitly, pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. For direct `composio.tools.execute()`, pass `connected_account_id="instant_account"` in Python or `connectedAccountId: "instant_account"` in TypeScript. This route does not fall back to another credential if it fails.
 
 Instant accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `instant` policy.
 

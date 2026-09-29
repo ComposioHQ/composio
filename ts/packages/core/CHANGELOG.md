@@ -1,5 +1,19 @@
 # @composio/core
 
+## 0.22.0
+
+### Minor Changes
+
+- e7580cf: Align session creation and updates with `instant.return_instant_charge`, expose `instantCharge` on execution results, and rename search account metadata to `instantAccount`. Use `instant_account` for explicit account selection.
+- ae3c069: Expose the exact Instant charge as `instantCharge` in project usage summaries and as `metadata.instant_charge` in tool log metadata.
+- e182bc8: Remove the deprecated OpenAI Assistants API helpers from `OpenAIProvider`: `handleAssistantMessage`, `waitAndHandleAssistantToolCalls`, and `waitAndHandleAssistantStreamToolCalls`. OpenAI shut down the Assistants API on August 26, 2026, so these helpers could no longer complete a run. Use `OpenAIResponsesProvider` from `@composio/openai` with the Responses API instead.
+
+### Patch Changes
+
+- f478a3d: Keep `ConnectionRequest.status` in sync with `waitForConnection()`. The request now reports `ACTIVE` once the connection completes, or the terminal status (`FAILED`, `EXPIRED`, `REVOKED`) when it fails, matching `toJSON()` and the Python SDK.
+- f478a3d: Restore telemetry for `ConnectionRequest.waitForConnection()`. `telemetry.instrument()` now also instruments async methods defined directly on plain objects, such as the ones returned by `createConnectionRequest()`.
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
 ## 0.21.0
 
 ### Minor Changes

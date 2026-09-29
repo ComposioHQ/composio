@@ -1,9 +1,14 @@
 from composio.client.types import Tool
 from composio.core.models.connected_accounts import auth_scheme
 from composio.core.models.experimental import UsageSummaryResponse
+from composio.core.models.tool_router_session import (
+    ToolRouterInstantConfig,
+    ToolRouterSessionConfig,
+    ToolRouterSessionSearchResponse,
+)
 from composio.core.models.tools import (
+    InstantCharge,
     Modifiers,
-    PremiumCharge,
     ToolExecuteParams,
     ToolExecutionResponse,
 )
@@ -21,7 +26,10 @@ __all__ = [
     "Tool",
     "TTool",
     "TToolCollection",
-    "PremiumCharge",
+    "InstantCharge",
+    "ToolRouterInstantConfig",
+    "ToolRouterSessionConfig",
+    "ToolRouterSessionSearchResponse",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "UsageSummaryResponse",

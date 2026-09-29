@@ -43,10 +43,12 @@ interface DocsProductConfig {
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS = [
+/** A sidebar entry that both products list: one page or one content folder. */
+type SharedSidebarItem = Extract<ProductSidebarItem, { type: 'page' | 'folder' }>;
+
+const SHARED_SIDEBAR_ITEMS: readonly SharedSidebarItem[] = [
   { type: 'page', url: '/docs/using-composio-skill' },
-  { type: 'folder', path: 'security', label: 'Security and data' },
-] as const satisfies readonly ProductSidebarItem[];
+];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
   item.type === 'page' ? item.url : `/docs/${item.path}`
@@ -137,7 +139,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
-      '/docs/security/data-retention',
+      '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
@@ -216,6 +218,7 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
+          { type: 'folder', path: 'security', label: 'Security and data' },
         ],
       },
       {

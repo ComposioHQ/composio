@@ -1,5 +1,11 @@
 # @composio/anthropic
 
+## 0.11.3
+
+### Patch Changes
+
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
 ## 0.11.2
 
 ### Patch Changes

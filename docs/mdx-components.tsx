@@ -52,6 +52,7 @@ import { MediaSplit } from '@/components/media-split';
 import { PackageInstall } from '@/components/package-install';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
+import { ZdrLogVisual } from '@/components/zdr-log-visual';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -164,6 +165,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     PackageInstall,
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
+    ZdrLogVisual,
     // Lucide icons
     ShieldCheck,
     RouteIcon,
