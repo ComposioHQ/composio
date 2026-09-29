@@ -1,23 +1,25 @@
 ---
-title: Composio Instant
+title: Instant tools
 description: Run supported provider tools without setting up a provider account; see the result and charge
-keywords: [Composio Instant, tool calls, provider access]
+keywords: [Instant tools, tool calls, provider access]
 experimental: true
 ---
 
-Composio handles provider access and billing for Composio Instant tool calls, so your agent can use a supported provider tool without asking each user to set up that provider account. For example, run a web search with Exa, get its results, and read the actual charge for that call.
+Composio handles provider access and billing for calls to Instant tools, so your agent can use a supported provider tool without asking each user to set up that provider account. For example, run a web search with Exa, get its results, and read the actual charge for that call.
 
 <Callout type="warning" title="Experimental access">
-  Ask [support@composio.dev](mailto:support@composio.dev) to enable Composio Instant for your project and confirm which tools and rates are available. A session cannot override a project where access is off. The code below uses the currently released SDK fields; the proposed naming and configuration changes are not implemented in this API yet.
+  Ask [support@composio.dev](mailto:support@composio.dev) to enable Instant tools for your project and confirm which tools and rates are available. A session cannot override a project where access is off. The code below uses the currently released SDK fields. The finalized `enable_instant` project flag and tool-level listing changes are not available in the public API yet; do not pass them to the current SDK.
 </Callout>
 
 ## Run one search
 
-Install `composio`, set `COMPOSIO_API_KEY` as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. This Python example runs the search and prints its result and actual charge when a charge is returned:
+Install `composio` and `python-dotenv`, then put `COMPOSIO_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. This Python example runs the search and prints its result and actual charge when a charge is returned:
 
 ```python
+from dotenv import load_dotenv
 from composio import Composio
 
+load_dotenv()
 composio = Composio()
 session = composio.sessions.create(
     user_id="user_123",
@@ -31,6 +33,9 @@ result = session.execute(
     "EXA_SEARCH",
     arguments={"query": "Composio documentation"},
 )
+if result.error:
+    raise RuntimeError(f"Search failed: {result.error}")
+
 print(result.data)
 if result.premium_charge is not None:
     print(result.premium_charge["amount"], result.premium_charge["currency"])
@@ -42,11 +47,13 @@ The result is the tool's search response. The printed amount is the charge for t
 
 ## Coverage and routing
 
-Composio Instant applies to individual tools within an app, not every tool in an app. Some actions still require the user's own provider connection. Today's [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not indicate which tools support this route or filter by it. Its `no_auth` and `composio_managed_auth_schemes` fields do not mean Composio Instant support. Confirm current coverage and prices with support.
+Instant tools are individual tools within an app, not every tool in an app. Some actions still require the user's own provider connection. Today’s [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not indicate which tools support the instant route or filter by it. Its `no_auth` and `composio_managed_auth_schemes` fields do not mean Instant tools support. The planned tool listing field is `instant` on each supported tool, not an app-level label. This change is not yet in the public API. Confirm current coverage and prices with support.
 
-A connection you explicitly select takes priority and does not fall back to another account on failure. Otherwise, an available user or shared connection takes priority over Composio's provider account. When no supported provider route exists, use the normal connection flow. Composio-managed OAuth still asks the user to connect their own account; it is not Composio Instant access. This route does not support arbitrary provider requests through proxy execution.
+A connection you explicitly select takes priority and does not fall back to another account on failure. Otherwise, an available user or shared connection takes priority over Composio's provider account. When no supported provider route exists, use the normal connection flow. Composio-managed OAuth still asks the user to connect their own account; it is not access to Instant tools. This route does not support arbitrary provider requests through proxy execution.
 
 ## Control which calls may incur charges
+
+The finalized project-level access flag is `enable_instant`. The public API does not yet expose it, so this is the planned name rather than an instruction to send it in a request. For experimental access, ask support to enable your project. The Session policy below controls eligible calls after project access is enabled; it does not turn the project flag on.
 
 The released Session policy is named `premium_usage` in Python and REST, or `premiumUsage` in TypeScript. These are existing API field names, not a new product or tier name. Once the project is enabled, an omitted policy permits eligible calls by default. To block charged calls in a particular Session, create it with `premium_usage=False` (TypeScript: `premiumUsage: false`), or call `session.update(premium_usage=False)` later. Your own connected-account routes remain available.
 
