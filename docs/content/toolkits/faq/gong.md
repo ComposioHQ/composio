@@ -1,6 +1,6 @@
 ## Which IP addresses should I allowlist for Gong OAuth?
 
-Gong now requires every OAuth integration to have trusted IP addresses configured. Gong announced this change in September 2026 and is rolling it out in October 2026. See the [Gong release notes](https://help.gong.io/docs/release-notes) for the announcement.
+Gong now requires every OAuth integration to have trusted IP addresses configured. Gong announced this change in September 2026 and is rolling it out in October 2026. See the [Gong release notes](https://help.gong.io/docs/release-notes) for the announcement. If Gong gave your integration an October 15, 2026 deadline, add these IPs before that date.
 
 Gong enforces two separate trusted IP lists on each integration:
 
