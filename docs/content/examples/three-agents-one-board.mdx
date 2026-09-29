@@ -108,7 +108,7 @@ missing and move it back to Todo.
 </Step>
 </Steps>
 
-The first line of each prompt is the fence. These agents run unattended against a live workspace, so each one is told the single team it writes to and the actions it never takes.
+The first line is a behavioral guardrail, not an authorization boundary. Treat issue content as untrusted data, and use a Linear identity whose permissions are limited to the sandbox team. These agents run unattended against a live workspace, so each one is told the single team it writes to and the actions it never takes.
 
 ## Put them on a schedule
 
@@ -120,7 +120,7 @@ Nothing synchronises the three timers, and nothing needs to. An agent that wakes
 
 ## How an agent finds Linear
 
-None of the three prompts names a tool, an endpoint or a slug, and none of the agents was built with Linear in mind. On its first pass an agent searches the Composio catalogue for what it needs, pulls the schemas for the tools it picked, and executes them in one batch: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MULTI_EXECUTE_TOOL`.
+None of the three prompts names a tool, an endpoint or a slug, and none of the agents was built with Linear in mind. On its first pass, an agent calls COMPOSIO_SEARCH_TOOLS. If a result contains a schemaRef, it calls COMPOSIO_GET_TOOL_SCHEMAS. It then uses COMPOSIO_MULTI_EXECUTE_TOOL to run independent Linear operations in parallel.
 
 That is also why swapping the board is a prompt edit. Name Jira, Notion or Trello instead of Linear and the same three agents find the right tools for it.
 
