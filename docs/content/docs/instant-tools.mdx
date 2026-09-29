@@ -1,19 +1,19 @@
 ---
-title: Instant tools
+title: Composio Instant
 description: Run supported tools without setting up a separate provider account
-keywords: [Instant tools, tool calls, provider access]
+keywords: [Composio Instant, tool calls, provider access]
 experimental: true
 ---
 
-Your agent needs to search the web, but asking every user to create an Exa account, add a key, and manage another bill can stop them before the first search. Instant tools lets a supported tool run through Composio instead. The agent gets a result; your project can see what the call cost. You can still use your own provider connection when you need it.
+Your agent needs to search the web, but asking every user to create an Exa account, add a key, and manage another bill can stop them before the first search. Composio Instant lets a supported tool run through Composio instead. The agent gets a result; your project can see what the call cost. You can still use your own provider connection when you need it.
 
 <Callout type='warning' title='Experimental access'>
-  Reach out to [support@composio.dev](mailto:support@composio.dev) for access and to confirm which tools and rates your project supports. Project controls and the per-tool `instant` listing described below are planned changes, not a promise that the current public API or settings already expose them.
+  Reach out to [support@composio.dev](mailto:support@composio.dev) for access and to confirm which tools and rates your project supports. Instant is rolling out across the API, SDKs, and dashboard; this page calls out what is not shipped yet instead of asking you to rely on it.
 </Callout>
 
 ## Run one search
 
-Install `composio` and `python-dotenv`, put `COMPOSIO_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. The current SDK can run this search without adding an unshipped route option to the example:
+Install `composio` and `python-dotenv`, put `COMPOSIO_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. The current SDK can run this search without any route option:
 
 ```python
 from dotenv import load_dotenv
@@ -35,18 +35,22 @@ if result.error:
 print(result.data)
 ```
 
-The result is the search response, not proof that this call used the instant route. Check the execution log for the route and actual charge. The amount is per execution, not a fixed Exa price. Check the current tool input schema before changing the arguments. The example cannot grant access or choose a route that your project does not support.
+The result is the search response, not proof that this call used the Instant route. Check the execution log for the route and actual charge. The amount is per execution, not a fixed Exa price. Check the current tool input schema before changing the arguments. The example cannot grant access or choose a route that your project does not support.
 
-## What is instant?
+## What is Instant?
 
-An app contains tools; instant is a way an individual supported tool can run. An app may contain both supported and unsupported tools. A tool with instant support can also run through your own provider connection. It is not a separate kind of app or a price tier. Each tool has its own price for the instant route, which is in addition to the standard tool-call rate. A call through your own connection follows the standard rate.
+An app contains tools; Instant is a way an individual supported tool can run. An app may contain both supported and unsupported tools. A tool with Instant support can also run through your own provider connection. It is not a separate kind of app or a price tier. Each tool has its own price for the Instant route, which is in addition to the standard tool-call rate. A call through your own connection follows the standard rate.
 
-The planned tool listing puts `instant: { supported: true, price: { description, discount? } }` on each supported tool. A missing `instant` object means that tool does not support the route. The price description is text, not a numeric amount; an optional discount is a percentage from 0 to 100. This field is **not yet in the public listing API**. Today's [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not identify instant-supported tools or filter by them. Its `no_auth` and `composio_managed_auth_schemes` fields are not instant eligibility signals. Ask support for current coverage and rates.
+The tool listing will put an `instant` object with `supported` and a textual `price` on each supported tool; a missing `instant` object means that tool does not support the route. **This field is not in the public listing APIs yet.** Today the tool and toolkit listing APIs carry no Instant eligibility, price, or filter: `no_auth` and `composio_managed_auth_schemes` are not Instant eligibility signals, and there is no supported filter parameter for Instant tools. Ask support for current coverage and rates.
 
-Some tools need the user's own connected account because they act on that user's private data. Composio-managed OAuth still connects the user's own account; it does not provide instant access. If you explicitly select a connection, a failure does not silently fall back to another route. Do not assume a tool will switch routes or be covered by a different data-handling policy. The instant route does not support arbitrary provider requests through proxy execution.
+Some tools need the user's own connected account because they act on that user's private data. Composio-managed OAuth still connects the user's own account; it does not provide Instant access. If you explicitly select a connection, a failure does not silently fall back to another route. Do not assume a tool will switch routes or be covered by a different data-handling policy. The Instant route does not support arbitrary provider requests through proxy execution.
 
 ## Control the route and spending
 
-Access starts with support. The proposed project Spend controls setting is `add_ons: { instant: false }`, off by default, and the proposed Session choice is `instant: true` or `false` alongside ordinary toolkit and tool filters. The Session chooses a route; the project decides whether it can incur the extra cost. A Session cannot override a project that has the instant add-on off. These names describe the target product and API contract, **not currently shipped controls**. Do not put them into the current SDK example or assume you can turn them on today. Support can confirm how your project is enabled during early access.
+Access starts with support. The project gate decides whether Instant calls can incur charges. It is off by default, and a Session cannot override a project whose gate is off. During early access, support enables and configures the gate for your project.
 
-The current example leaves route selection to the access and routing your project actually has. Check execution logs to verify the route and charge for each call before relying on it in production. Sessions do not currently expose the proposed per-tool price in their listings. See [Configuring Sessions](/docs/configuring-sessions) for general tool filters.
+The tool router Session API already exposes an `instant` config with `return_instant_charge`, which defaults to `false`. It changes whether the charge appears in the execution response, not permission to spend. When it is on, an Instant execution response returns the charge with amount and currency. The released SDKs still expose their current session policy field names for paid calls; those names are being renamed under the Instant contract. See [Configuring Sessions](/docs/configuring-sessions) for the policy surface your SDK version supports today, and do not add unshipped route options to SDK code.
+
+Direct execution outside a Session does not inherit a Session's policy. It can use the Instant route when the project allows it.
+
+Until SDK support ships, verify the route and charge for each call in the execution logs or the dashboard before relying on it in production.
