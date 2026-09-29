@@ -323,6 +323,41 @@ describe('whole-schema semantic regressions', () => {
     expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
   });
 
+  it('keeps a guarded object root a ZodObject with its shape', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        q: { type: 'string' },
+        limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+      },
+      required: ['q'],
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed).toBeInstanceOf(z.ZodObject);
+    expect(Object.keys((parsed as z.AnyZodObject).shape)).toEqual(['q', 'limit']);
+    expect(parsed.safeParse({ q: 'cats', limit: null }).success).toBe(true);
+    expect(parsed.safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
+    expect(parsed.describe('Search').safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
+  });
+
+  it('accepts patterns with identity escapes that Unicode mode refuses', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', pattern: '^[a-z\\_]+$' },
+        ref: { $ref: '#/$defs/handle' },
+        limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+      },
+      $defs: { handle: { type: 'string', pattern: '^\\@[a-z\\-]+$' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ slug: 'a_b', ref: '@a-b' }).success).toBe(true);
+    expect(parsed.safeParse({ slug: 'A' }).success).toBe(false);
+    expect(parsed.safeParse({ ref: 'a-b' }).success).toBe(false);
+  });
+
   it('compares decimal multiples by their JSON number spelling', () => {
     const schema: JsonSchema = { type: 'number', multipleOf: 0.1 };
     expect(jsonSchemaToZod(schema).safeParse(0.3).success).toBe(true);

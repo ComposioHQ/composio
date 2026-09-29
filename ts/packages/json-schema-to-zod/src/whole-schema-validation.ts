@@ -161,12 +161,65 @@ export const guardSchemaAt = (
       { ...refs.root, $ref: `#/${refs.path.map(part => encodePointer(String(part))).join('/')}` }
     : node;
 
+const compilesAsUnicode = (pattern: string): boolean => {
+  try {
+    new RegExp(pattern, 'u');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const REGEX_SYNTAX_CHARACTERS = new Set('^$\\.*+?()[]{}|/');
+
 /**
- * OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
- * `minimum`/`maximum`. The Draft 7 interpreter ignores the flag, so the guard
- * receives the numeric spelling the native number parser already honors.
+ * The interpreter compiles every pattern with the `u` flag, while
+ * `compilePattern` deliberately does not. Tool schemas routinely use identity
+ * escapes such as `\_` or `\:` that are literal characters without the flag
+ * and a SyntaxError with it, so those escapes are dropped. Returns `undefined`
+ * when the pattern still has no Unicode-mode spelling.
  */
-const normalizeExclusiveBounds = (value: unknown, seen: WeakSet<object>): void => {
+const toUnicodePattern = (pattern: string): string | undefined => {
+  if (compilesAsUnicode(pattern)) {
+    return pattern;
+  }
+
+  let rewritten = '';
+  let inClass = false;
+  for (let index = 0; index < pattern.length; index++) {
+    const char = pattern[index];
+    if (char === '\\' && index + 1 < pattern.length) {
+      const escaped = pattern[++index];
+      const keepEscape =
+        /[A-Za-z0-9]/.test(escaped) ||
+        REGEX_SYNTAX_CHARACTERS.has(escaped) ||
+        (inClass && escaped === '-');
+      rewritten += keepEscape ? `\\${escaped}` : escaped;
+      continue;
+    }
+    if (char === '[') {
+      inClass = true;
+    } else if (char === ']') {
+      inClass = false;
+    }
+    rewritten += char;
+  }
+
+  return compilesAsUnicode(rewritten) ? rewritten : undefined;
+};
+
+/**
+ * Rewrites the guard's private copy of a schema into what the Draft 7
+ * interpreter understands the way the native parsers do:
+ *
+ * - OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
+ *   `minimum`/`maximum`. The interpreter ignores the flag, so it receives the
+ *   numeric spelling the native number parser already honors.
+ * - Patterns get their Unicode-mode spelling (see `toUnicodePattern`). A
+ *   `pattern` without one is left to the native string parser, which compiles
+ *   it without the flag, instead of failing every value.
+ */
+const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>): void => {
   if (!isObject(value) || seen.has(value)) {
     return;
   }
@@ -185,17 +238,77 @@ const normalizeExclusiveBounds = (value: unknown, seen: WeakSet<object>): void =
     delete value.exclusiveMaximum;
   }
 
+  if (typeof value.pattern === 'string') {
+    const pattern = toUnicodePattern(value.pattern);
+    if (pattern === undefined) {
+      delete value.pattern;
+    } else {
+      value.pattern = pattern;
+    }
+  }
+  if (isObject(value.patternProperties)) {
+    value.patternProperties = Object.fromEntries(
+      Object.entries(value.patternProperties).map(([pattern, schema]) => [
+        toUnicodePattern(pattern) ?? pattern,
+        schema,
+      ])
+    );
+  }
+
   for (const [key, child] of Object.entries(value)) {
     if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested => normalizeExclusiveBounds(nested, seen));
+      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen));
     } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested => normalizeExclusiveBounds(nested, seen));
+      child.forEach(nested => prepareInterpreterSchema(nested, seen));
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       (Array.isArray(child) ? child : [child]).forEach(nested =>
-        normalizeExclusiveBounds(nested, seen)
+        prepareInterpreterSchema(nested, seen)
       );
     }
   }
+};
+
+type WholeSchemaGuard = (value: unknown) => string | undefined;
+type GuardedDef = z.ZodTypeDef & { wholeSchemaGuard?: WholeSchemaGuard };
+type ZodSchemaClass = {
+  new (def: z.ZodTypeDef): z.ZodTypeAny;
+  prototype: z.ZodTypeAny;
+};
+
+const guardedSchemaClasses = new WeakMap<ZodSchemaClass, ZodSchemaClass>();
+
+/**
+ * A subclass of the parsed schema's own class that checks the source value
+ * against the guard before parsing it. Keeping the class, rather than wrapping
+ * it in a pipeline, keeps the schema's kind: a guarded object is still a
+ * `ZodObject` with a `shape`, which is what zod-to-json-schema and the MCP SDK
+ * need to emit a root `type: "object"` for LLM tool parameters. The guard lives
+ * on `_def`, so copies such as `.describe()` keep it.
+ */
+const guardedSchemaClass = (Base: ZodSchemaClass): ZodSchemaClass => {
+  const cached = guardedSchemaClasses.get(Base);
+  if (cached) {
+    return cached;
+  }
+
+  const parseAsBase = Base.prototype._parse;
+  class Guarded extends Base {
+    override _parse(input: z.ParseInput): z.ParseReturnType<unknown> {
+      const failure = (this._def as GuardedDef).wholeSchemaGuard?.(input.data);
+      if (failure === undefined) {
+        return parseAsBase.call(this, input);
+      }
+      z.addIssueToContext(this._getOrReturnCtx(input), {
+        code: z.ZodIssueCode.custom,
+        message: failure,
+      });
+      return z.DIRTY(input.data);
+    }
+  }
+  guardedSchemaClasses.set(Base, Guarded);
+  // Guarding an already guarded schema reuses its class and composes guards.
+  guardedSchemaClasses.set(Guarded, Guarded);
+  return Guarded;
 };
 
 export const withWholeSchemaValidation = (
@@ -203,36 +316,27 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const interpreterSchema = structuredClone(jsonSchema);
-  normalizeExclusiveBounds(interpreterSchema, new WeakSet());
+  prepareInterpreterSchema(interpreterSchema, new WeakSet());
   const validator = new Validator(interpreterSchema as InterpreterSchema, '7', false);
 
   // Validate the source value before defaults and other Zod transforms run.
   // Otherwise a missing required field can be synthesized and incorrectly
   // appear valid to the JSON Schema interpreter.
-  const guardedSchema = z
-    .any()
-    .superRefine((value, ctx) => {
-      let result: ReturnType<Validator['validate']>;
-      try {
-        result = validator.validate(value);
-      } catch (cause) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `JSON Schema validation failed: ${String(cause)}`,
-        });
-        return;
-      }
+  const innerGuard = (parsedSchema._def as GuardedDef).wholeSchemaGuard;
+  const wholeSchemaGuard: WholeSchemaGuard = value => {
+    let result: ReturnType<Validator['validate']>;
+    try {
+      result = validator.validate(value);
+    } catch (cause) {
+      return `JSON Schema validation failed: ${String(cause)}`;
+    }
 
-      if (!result.valid) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.',
-        });
-      }
-    })
-    .pipe(parsedSchema);
+    if (!result.valid) {
+      return result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.';
+    }
+    return innerGuard?.(value);
+  };
 
-  return parsedSchema.description
-    ? guardedSchema.describe(parsedSchema.description)
-    : guardedSchema;
+  const Guarded = guardedSchemaClass(parsedSchema.constructor as ZodSchemaClass);
+  return new Guarded({ ...parsedSchema._def, wholeSchemaGuard } as GuardedDef);
 };
