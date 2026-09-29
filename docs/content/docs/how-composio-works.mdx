@@ -128,6 +128,8 @@ const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_
 
 Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
+The TypeScript Google and Cloudflare providers also accept `executeToolCall(session, toolCall)`. Pass the Session that produced the tools to preserve its execution settings. Passing a user ID uses direct execution.
+
 ## Sandbox
 
 Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
