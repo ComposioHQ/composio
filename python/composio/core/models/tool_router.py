@@ -894,8 +894,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
         :param instant: Experimental Instant usage policy. The project
-                              must allow Instant usage. ``False`` disables it for this
-                              Session; a policy can restrict eligible toolkits and tools.
+                        must allow Instant usage. ``False`` disables it for this
+                        Session; a policy can restrict eligible toolkits and tools.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint

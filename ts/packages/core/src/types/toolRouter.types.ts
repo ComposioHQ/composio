@@ -709,28 +709,15 @@ export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Work
 
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
-/**
- * Server-side session configuration as returned by the API: toolkit and tool
- * allowlists, tags, auth configs, connected accounts, manage_connections,
- * preload, sandbox (`workbench`), search and execute settings.
- */
+const ToolRouterInstantResponseFilterSchema = z.union([
+  z.object({ enabled: z.array(z.string()) }),
+  z.object({ disabled: z.array(z.string()) }),
+]);
+
 /** Instant policy in the server's Session config (wire field casing). */
 export const ToolRouterInstantResponseSchema = z.object({
-  toolkits: z
-    .union([
-      z.object({ enabled: z.array(z.string()) }),
-      z.object({ disabled: z.array(z.string()) }),
-    ])
-    .optional(),
-  tools: z
-    .record(
-      z.string(),
-      z.union([
-        z.object({ enabled: z.array(z.string()) }),
-        z.object({ disabled: z.array(z.string()) }),
-      ])
-    )
-    .optional(),
+  toolkits: ToolRouterInstantResponseFilterSchema.optional(),
+  tools: z.record(z.string(), ToolRouterInstantResponseFilterSchema).optional(),
   return_instant_charge: z.boolean(),
 });
 export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;

@@ -7,13 +7,15 @@ import {
   type ToolRouterInstantResponse,
 } from '../../types/toolRouter.types';
 
+const SessionConfigInstantSchema = z.object({
+  instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional(),
+});
+
 /** Session config retains its API casing, including `instant.return_instant_charge`. */
 export function transformSessionConfig<Config extends { premium_usage?: unknown }>(
   raw: Config
 ): Omit<Config, 'premium_usage'> & { instant?: false | ToolRouterInstantResponse } {
-  const { instant } = z
-    .object({ instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional() })
-    .parse(raw);
+  const { instant } = SessionConfigInstantSchema.parse(raw);
   const { premium_usage: _previousPolicy, ...config } = raw;
   return { ...config, ...(instant !== undefined && { instant }) };
 }
