@@ -1,5 +1,11 @@
 import { z } from 'zod/v3';
 
+// JSON Schema's `time` format is an RFC 3339 `full-time`, which always carries
+// a UTC offset (`Z` or `±hh:mm`). Zod's `.time()` rejects offsets entirely, so
+// it both rejects valid times (`10:30:00Z`) and accepts invalid ones (`10:30`).
+const RFC3339_FULL_TIME =
+  /^([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d+)?([zZ]|[+-]([01]\d|2[0-3]):[0-5]\d)$/;
+
 import type { JsonSchemaObject, Refs } from '../types';
 import { compilePattern } from '../utils/compile-pattern';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
@@ -27,7 +33,7 @@ export const parseString = (
       case 'date-time':
         return zs.datetime({ offset: true, message: errorMsg });
       case 'time':
-        return zs.time(errorMsg);
+        return zs.regex(RFC3339_FULL_TIME, errorMsg);
       case 'date':
         return zs.date(errorMsg);
       case 'binary':

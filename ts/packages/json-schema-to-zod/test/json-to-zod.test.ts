@@ -77,6 +77,21 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse('invalid-date')).toThrow();
     });
 
+    it('should validate time format per RFC 3339', () => {
+      const schema: JsonSchema = {
+        type: 'string',
+        format: 'time',
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse('10:30:00Z')).toBe('10:30:00Z');
+      expect(zodSchema.parse('10:30:00+05:30')).toBe('10:30:00+05:30');
+      expect(zodSchema.parse('10:30:00.123-04:00')).toBe('10:30:00.123-04:00');
+      expect(() => zodSchema.parse('10:30:00')).toThrow(); // missing offset
+      expect(() => zodSchema.parse('10:30')).toThrow(); // not a full-time
+      expect(() => zodSchema.parse('25:00:00Z')).toThrow();
+      expect(() => zodSchema.parse('invalid-time')).toThrow();
+    });
+
     it('should validate uuid format', () => {
       const schema: JsonSchema = {
         type: 'string',
