@@ -5,7 +5,7 @@ keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, experime
 experimental: true
 ---
 
-Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. Register the server, connect it if authentication is required, then add its synced `CUSTOM_*` toolkit slug to a session.
+Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. Register the server and add its `CUSTOM_*` toolkit slug to a session. Tool Router can then help the user connect if authentication is required.
 
 <Callout type="warn">
 Custom MCP is experimental. Its setup flow, authentication options, and API contracts may change while we work with early customers.
@@ -19,7 +19,7 @@ A Custom MCP moves through this lifecycle:
 
 1. **Deploy** your MCP server at a public HTTPS URL.
 2. **Register** its URL and authentication scheme. Composio creates a project-scoped `CUSTOM_*` toolkit.
-3. **Connect** an account if the server uses an API key or DCR OAuth. No-auth servers skip this step.
+3. **Connect** an account through a session if the server uses an API key or DCR OAuth. No-auth servers skip this step.
 4. **Sync** its tools. The first sync starts automatically; later tool changes require a manual sync.
 5. **Use** the toolkit in a session. Tool Router matches connected accounts to the session’s `user_id`; selecting an account explicitly is optional.
 
@@ -271,7 +271,7 @@ Deletion removes the custom toolkit and its tools. It also revokes and removes t
 
 ## Use Custom MCP in a session
 
-Once the toolkit is synced, add its `CUSTOM_*` slug to a session.
+Add the registered toolkit’s `CUSTOM_*` slug to a session. For authenticated servers, connect an account before executing tools; the first active connection starts the initial sync.
 
 ### Use a no-auth server
 
