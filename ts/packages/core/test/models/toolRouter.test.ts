@@ -4106,6 +4106,42 @@ describe('ToolRouter', () => {
       });
     });
 
+    it('should expose each historical Instant policy under instant', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.toolRouter.session.configHistory.mockResolvedValueOnce({
+        items: [
+          {
+            ...rawHistoryItem,
+            config: {
+              ...rawHistoryItem.config,
+              premium_usage: false,
+              instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+            },
+          },
+          {
+            ...rawHistoryItem,
+            version: 1,
+            is_current: false,
+            config: { ...rawHistoryItem.config, instant: false },
+          },
+        ],
+        total_pages: 1,
+        current_page: 1,
+        total_items: 2,
+      });
+
+      const session = await toolRouter.use(sessionId);
+      const { items } = await session.listConfigHistory();
+
+      expect(items.map(item => item.config)).toEqual([
+        {
+          ...rawHistoryItem.config,
+          instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+        },
+        { ...rawHistoryItem.config, instant: false },
+      ]);
+    });
+
     it('should default nextCursor to null and forward request options', async () => {
       mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
       mockClient.toolRouter.session.configHistory.mockResolvedValueOnce({

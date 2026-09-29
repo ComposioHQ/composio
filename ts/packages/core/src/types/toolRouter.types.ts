@@ -1057,9 +1057,14 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
 
 /**
  * The session configuration at one version, as stored by the API. This is
- * the wire shape (snake_case), typed from the generated client.
+ * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+export type ToolRouterSessionConfigHistoryConfig = Omit<
+  SessionConfigHistoryResponse.Item.Config,
+  'premium_usage'
+> & {
+  instant?: false | ToolRouterInstantResponse;
+};
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */

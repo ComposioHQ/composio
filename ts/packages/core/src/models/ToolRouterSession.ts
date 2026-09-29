@@ -913,7 +913,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: item.config,
+        config: transformSessionConfig(item.config),
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,

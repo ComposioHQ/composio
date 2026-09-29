@@ -22,6 +22,13 @@ async function instantContract(): Promise<void> {
     void returnsCharge;
   }
 
+  const { items } = await session.listConfigHistory();
+  const [historical] = items;
+  if (historical?.config.instant) {
+    const returnedCharge: boolean = historical.config.instant.return_instant_charge;
+    void returnedCharge;
+  }
+
   const summary = await composio.experimental.usage.summary();
   const charge: string = summary.instantCharge;
   void charge;
@@ -35,6 +42,8 @@ async function instantContract(): Promise<void> {
   await session.update({ instant: { returnPremiumCharge: true } });
   // @ts-expect-error server-side config exposes the Instant policy
   void session.config.premium_usage;
+  // @ts-expect-error config history exposes the Instant policy
+  void historical?.config.premium_usage;
   // @ts-expect-error usage summaries expose the Instant charge
   void summary.premiumUsageCharge;
 }

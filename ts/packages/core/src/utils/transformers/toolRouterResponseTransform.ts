@@ -2,14 +2,15 @@
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
 import { z } from 'zod/v3';
-import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   ToolRouterInstantResponseSchema,
-  type ToolRouterSessionConfig,
+  type ToolRouterInstantResponse,
 } from '../../types/toolRouter.types';
 
 /** Session config retains its API casing, including `instant.return_instant_charge`. */
-export function transformSessionConfig(raw: SessionCreateResponse.Config): ToolRouterSessionConfig {
+export function transformSessionConfig<Config extends { premium_usage?: unknown }>(
+  raw: Config
+): Omit<Config, 'premium_usage'> & { instant?: false | ToolRouterInstantResponse } {
   const { instant } = z
     .object({ instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional() })
     .parse(raw);
