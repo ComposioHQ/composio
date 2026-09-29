@@ -80,17 +80,23 @@ Summary responses return the same totals per entity type, without `groups`.
 
 ## Export to CSV
 
-The breakdown endpoint plus `jq` gives you a CSV export. Because a single request spans at most 366 days, an all-time export walks the full period in windows and merges the rows. Set `EXPORT_START` to the date your usage began, such as your account-creation date; an earlier date is safe because empty windows return no groups. This pulls org-wide tool-call usage from `EXPORT_START` to now, grouped by tool:
+The breakdown endpoint plus `jq` gives you a CSV export. Because a single request spans at most 366 days, an all-time export walks the full period in windows and collects the rows. Set `EXPORT_START` to the date your usage began, such as your account-creation date; an earlier date is safe because empty windows return no groups. This pulls org-wide tool-call usage from `EXPORT_START` to now, grouped by tool:
 
 ```bash
 set -euo pipefail
 : "${COMPOSIO_ORG_API_KEY:?Set your Composio organization API key}"
 : "${EXPORT_START:?Set the export start date (YYYY-MM-DD), e.g. your account-creation date}"
 
-FROM=$(date -d "${EXPORT_START}" +%s%3N)
-NOW=$(date +%s%3N)
+if date -u -d "${EXPORT_START}" +%s >/dev/null 2>&1; then
+	START_S=$(date -u -d "${EXPORT_START}" +%s) # GNU date (Linux)
+else
+	START_S=$(date -ju -f "%Y-%m-%d %H:%M:%S" "${EXPORT_START} 00:00:00" +%s) # BSD date (macOS)
+fi
+FROM=$((START_S * 1000))
+NOW=$(( $(date +%s) * 1000 ))
 WINDOW_MS=$((366 * 86400 * 1000))
 GROUPS_FILE=$(mktemp)
+trap 'rm -f "${GROUPS_FILE}"' EXIT
 
 while [ "${FROM}" -lt "${NOW}" ]; do
 	TO=$((FROM + WINDOW_MS))
@@ -107,31 +113,26 @@ while [ "${FROM}" -lt "${NOW}" ]; do
 		exit 1
 	fi
 
-	jq '.groups' <<< "${RESPONSE}" >> "${GROUPS_FILE}"
+	jq --argjson from "${FROM}" --argjson to "${TO}" \
+		'.groups | map(. + {from: $from, to: $to})' <<< "${RESPONSE}" >> "${GROUPS_FILE}"
 	FROM="${TO}"
 done
 
 jq -r -s '
 	add
-	| group_by(.key)
-	| map({
-			key: .[0].key,
-			total_quantity: (map(.total_quantity | tonumber) | add),
-			event_count: (map(.event_count) | add),
-			premium_usage_charge: ((map(.premium_usage_charge | tonumber) | add) * 100 | round / 100)
-		})
-	| sort_by(-.total_quantity)
-	| (["key", "total_quantity", "event_count", "premium_usage_charge"],
-		(.[] | [.key, .total_quantity, .event_count, .premium_usage_charge]))
+	| sort_by(.key, .from)
+	| (["key", "from", "to", "total_quantity", "event_count", "premium_usage_charge"],
+		(.[] | [.key, .from, .to, .total_quantity, .event_count, .premium_usage_charge]))
 	| @csv
 ' "${GROUPS_FILE}" > usage.csv
-rm -f "${GROUPS_FILE}"
 ```
+
+The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals. Sum `premium_usage_charge` with a decimal-aware tool such as your spreadsheet or warehouse, not floating-point arithmetic, because the strings are exact USD amounts and reconciliation depends on them staying exact.
 
 Swap the URL to `project/usage/tool_calls` and the header to `x-api-key` for a single project, or change `group_by` to `user_id` for per-customer attribution.
 
 <Callout>
-Breakdown responses are not paginated: each request returns at most 1000 groups (`limit`), with no flag to say groups were dropped. Treat a response with exactly 1000 groups as truncated, as the script above does, and lower the window size or add `filters` (for example, batches of `user_id` values) until every response comes back under the cap. When you merge windows, aggregate rows that share a key, because the same tool or user appears in every window it was active in; the script's final `jq` step does both the merge and the aggregation.
+Breakdown responses are not paginated: each request returns at most 1000 groups (`limit`), with no flag to say groups were dropped. Treat a response with exactly 1000 groups as truncated, as the script above does, and lower the window size or add `filters` (for example, batches of `user_id` values) until every response comes back under the cap. Every returned group lands in the CSV as its own row, so nothing is silently omitted or altered.
 </Callout>
 
 ## Query usage from the SDK
