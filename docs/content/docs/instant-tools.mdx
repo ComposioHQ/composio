@@ -102,7 +102,9 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 
 Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean Instant account access is available for that tool. Confirm supported tools and rates during Experimental access.
 
-### Read charge details in Python
+### Read charge details
+
+In TypeScript, enable `instant.returnInstantCharge` and read `result.instantCharge` from `session.execute()`. This optional field has type `unknown`; validate its shape before accessing charge properties.
 
 With `instant.return_instant_charge` enabled, `session.execute()` returns charge details when available in the typed `instant_charge` field on `ToolRouterSessionExecuteResponse`. Read it from the result above:
 
