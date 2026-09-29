@@ -140,9 +140,6 @@ importers:
       '@composio/anthropic':
         specifier: workspace:*
         version: link:ts/packages/providers/anthropic
-      '@composio/cli-local-tools':
-        specifier: workspace:*
-        version: link:ts/packages/cli-local-tools
       '@composio/core':
         specifier: workspace:*
         version: link:ts/packages/core
@@ -1227,9 +1224,6 @@ importers:
       '@composio/cli-keyring':
         specifier: workspace:*
         version: link:../cli-keyring
-      '@composio/cli-local-tools':
-        specifier: workspace:*
-        version: link:../cli-local-tools
       '@composio/client':
         specifier: 'catalog:'
         version: 2.0.0-rc.8
@@ -1336,37 +1330,6 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
-      tsdown:
-        specifier: 'catalog:'
-        version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/ui@5.0.1)(vite@7.3.5(@types/node@26.6.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
-
-  ts/packages/cli-local-tools:
-    dependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../core
-      '@modelcontextprotocol/sdk':
-        specifier: 'catalog:'
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)
-      extract-zip:
-        specifier: ^2.0.1
-        version: 2.0.1(supports-color@10.2.2)
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: ^26.6.2
-        version: 26.6.2
-      chrome-devtools-mcp:
-        specifier: 1.9.0
-        version: 1.9.0
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -4617,19 +4580,6 @@ packages:
       ai:
         optional: true
       zod:
-        optional: true
-
-  chrome-devtools-mcp@1.9.0:
-    resolution: {integrity: sha512-RnzXoJiUQ44hpOihWk90uOhLD/CnwDkDy0ldHMZONJ2nYQ+dWN1fq1luHHqyd+7FuYnyIlCY6uTThbN5ut9kSQ==}
-    engines: {node: ^20.19.0 || ^22.12.0 || >=23}
-    hasBin: true
-    peerDependencies:
-      '@blackwell-systems/gcf': ^2.2.2
-      '@toon-format/toon': ^4.1.0
-    peerDependenciesMeta:
-      '@blackwell-systems/gcf':
-        optional: true
-      '@toon-format/toon':
         optional: true
 
   cjs-module-lexer@1.2.3:
@@ -9549,8 +9499,6 @@ snapshots:
       zod: 4.5.4
     transitivePeerDependencies:
       - supports-color
-
-  chrome-devtools-mcp@1.9.0: {}
 
   cjs-module-lexer@1.2.3: {}
 

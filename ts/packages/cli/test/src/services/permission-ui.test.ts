@@ -2,9 +2,9 @@ import { describe, expect, it } from '@effect/vitest';
 import { ChildProcessSpawner } from 'effect/unstable/process';
 import { ConfigProvider, Effect, Layer, PlatformError } from 'effect';
 import {
-  detectNativeUiCallerAgentEffect,
+  detectPermissionCallerAgentEffect,
   interactivePermissionUiDisabledConfig,
-} from 'src/services/native-ui-sidecar';
+} from 'src/services/permission-ui';
 import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
 
 const loadFlag = (entries: Record<string, string>) =>
@@ -33,10 +33,10 @@ const detectAgent = (
     const signals = yield* UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS.pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv({ env }))
     );
-    return yield* detectNativeUiCallerAgentEffect(signals);
+    return yield* detectPermissionCallerAgentEffect(signals);
   }).pipe(Effect.provide(layer));
 
-describe('native UI sidecar', () => {
+describe('permission UI', () => {
   it.effect('disables interactive permission UI in CI and Vitest environments', () =>
     Effect.gen(function* () {
       expect(yield* loadFlag({})).toBe(false);

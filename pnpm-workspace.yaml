@@ -8,7 +8,6 @@ packages:
   - ts/examples/*
   - ts/packages/cli
   - ts/packages/cli-keyring
-  - ts/packages/cli-local-tools
   - ts/packages/core
   - ts/packages/experimental
   - ts/packages/json-schema-to-effect-schema
@@ -165,10 +164,10 @@ auditConfig:
   ignoreGhsas:
     # extract-zip symlink path traversal. GitHub records no fixed version --
     # 2.0.1 is the newest release and the repository has been dormant since
-    # 2021 -- so there is nothing to upgrade to. Both consumers extract through
+    # 2021 -- so there is nothing to upgrade to. The CLI extracts through
     # `extractZipSafely`, which rejects symlink entries before they are written
-    # (ts/packages/cli/src/utils/extract-zip-safely.ts and the cli-local-tools
-    # copy, both covered by tests). Drop once a patched release exists.
+    # (ts/packages/cli/src/utils/extract-zip-safely.ts, covered by tests). Drop
+    # once a patched release exists.
     # GHSA-7pqw-9j4j-h8q3 is GitHub's second write-up of the same symlink
     # extraction bug (arbitrary file write through a symlink entry), with the
     # same empty patched range.

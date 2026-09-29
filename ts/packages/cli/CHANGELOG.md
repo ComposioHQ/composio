@@ -4,6 +4,14 @@
 
 ### Patch Changes
 
+- Remove the experimental local-tools stack: the `local-tools` command group,
+  the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
+  and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
+  Release archives no longer ship `local-tools-binaries/`; `composio upgrade`
+  and the installer delete one left by an older install. CI no longer installs
+  Swift. Permission prompts always use the browser approval page. A
+  stored `local_tools` setting is now listed as an unknown feature and has no
+  effect.
 - Every Composio API call now goes through the `@composio/client` 2.0 runtime,
   the same client `@composio/core` uses. Org, project, session-info, and
   consumer lookups gain the client's retries and redirect handling, and API

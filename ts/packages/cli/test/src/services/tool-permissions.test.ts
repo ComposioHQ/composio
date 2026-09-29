@@ -9,9 +9,9 @@ import { Composio as RawComposioClient } from '@composio/client';
 
 // Enhanced controls are disabled on darwin-x64, so pin the platform: these
 // scenarios are about the transport, not about where the CLI runs.
-vi.mock('@composio/cli-local-tools', async importOriginal => ({
-  ...(await importOriginal<typeof import('@composio/cli-local-tools')>()),
-  detectCliPlatform: () => 'linux-x64',
+vi.mock('src/services/permission-ui', async importOriginal => ({
+  ...(await importOriginal<typeof import('src/services/permission-ui')>()),
+  isEnhancedControlsPlatformSupported: () => true,
 }));
 import {
   decodeCacheFileTolerant,

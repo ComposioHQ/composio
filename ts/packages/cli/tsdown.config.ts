@@ -19,7 +19,6 @@ export default defineConfig({
     neverBundle: [/^bun:/, /^node:/],
     alwaysBundle: [
       '@composio/core',
-      '@composio/cli-local-tools',
       /^zod(?:\/.*)?$/,
       /^@agentclientprotocol\/sdk(?:\/.*)?$/,
       /^@modelcontextprotocol\/sdk(?:\/.*)?$/,

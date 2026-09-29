@@ -13,7 +13,6 @@
     "ts/packages/json-schema-to-zod",
     "ts/packages/cli",
     "ts/packages/cli-keyring",
-    "ts/packages/cli-local-tools",
     "ts/packages/ts-builders",
     "ts/packages/providers/*"
   ],
@@ -77,7 +76,6 @@
     "@changesets/cli": "^3.0.3",
     "@changesets/read": "^1.0.1",
     "@composio/anthropic": "workspace:*",
-    "@composio/cli-local-tools": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@types/bun": "catalog:",
