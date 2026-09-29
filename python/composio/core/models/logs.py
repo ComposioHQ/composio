@@ -36,7 +36,7 @@ class Logs(Resource):
         :param time_range: Time window to search within.
         :return: Matching logs plus a ``next_cursor`` for pagination. A charged
             tool log has an exact USD string at
-            ``log.metadata["premium_usage_charge"]``.
+            ``log.metadata["instant_charge"]``.
 
         Example:
             page = composio.logs.search(
@@ -58,7 +58,7 @@ class Logs(Resource):
 
         :param id: The log id.
         :return: The full log entry. For charged calls,
-            ``log.metadata["premium_usage_charge"]`` is the exact USD amount.
+            ``log.metadata["instant_charge"]`` is the exact USD amount.
 
         Example:
             log = composio.logs.get("log_123")

@@ -32,7 +32,7 @@ class TestExperimentalUsage:
     def test_summary_passes_params_through(self, usage, mock_client):
         mock_client.project.usage.retrieve_summary.return_value = (
             usage_retrieve_summary_response.UsageRetrieveSummaryResponse.model_validate(
-                {"entities": {}, "premium_usage_charge": "0.025"}
+                {"entities": {}, "instant_charge": "0.025"}
             )
         )
 
@@ -44,7 +44,7 @@ class TestExperimentalUsage:
         )
 
         assert result.entities == {}
-        assert result.premium_usage_charge == "0.025"
+        assert result.instant_charge == "0.025"
         mock_client.project.usage.retrieve_summary.assert_called_once_with(
             from_=1.0,
             to=2.0,
@@ -55,14 +55,14 @@ class TestExperimentalUsage:
     def test_summary_without_params(self, usage, mock_client):
         mock_client.project.usage.retrieve_summary.return_value = (
             usage_retrieve_summary_response.UsageRetrieveSummaryResponse.model_validate(
-                {"entities": {}, "premium_usage_charge": "0"}
+                {"entities": {}, "instant_charge": "0"}
             )
         )
 
         result = usage.summary()
 
         mock_client.project.usage.retrieve_summary.assert_called_once_with()
-        assert result.premium_usage_charge == "0"
+        assert result.instant_charge == "0"
 
     def test_breakdown_passes_entity_type_and_params(self, usage, mock_client):
         mock_client.project.usage.retrieve.return_value = "breakdown"

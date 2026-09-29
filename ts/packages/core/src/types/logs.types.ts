@@ -56,10 +56,10 @@ export const ToolExecutionLogParentSchema = z
   })
   .nullable();
 
-/** Tool log metadata, including the optional exact USD premium charge. */
+/** Tool log metadata, including the optional exact USD Instant charge. */
 export const ToolExecutionLogMetadataSchema = z
   .object({
-    premium_usage_charge: z.string().optional(),
+    instant_charge: z.string().optional(),
   })
   .catchall(z.unknown());
 export type ToolExecutionLogMetadata = z.infer<typeof ToolExecutionLogMetadataSchema>;
