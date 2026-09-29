@@ -2,4 +2,4 @@
 "@composio/core": minor
 ---
 
-Rename usage summary `premiumUsageCharge` to `instantCharge` and tool log metadata `premium_usage_charge` to `instant_charge` to match the Instant API contract.
+Expose the exact Instant charge as `instantCharge` in project usage summaries and as `metadata.instant_charge` in tool log metadata.
