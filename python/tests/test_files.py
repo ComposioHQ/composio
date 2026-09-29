@@ -3161,19 +3161,23 @@ class TestFileDownloadablePathTraversal:
     @pytest.mark.parametrize(
         "name,expected",
         [
-            ("report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00.csv"),
-            ("What is this?.png", "What is this_.png"),
-            ('invoice "final".pdf', "invoice _final_.pdf"),
-            ("NUL", "_NUL"),
-            ("NUL.tar.gz", "_NUL.tar.gz"),
-            ("x" * 300 + ".pdf", "x" * 124 + ".pdf"),
-            ("請" * 70 + ".pdf", "請" * 41 + ".pdf"),
+            (
+                "report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("What is this?.png", "What is this_-9c68adf2da8b6e8d.png"),
+            ('invoice "final".pdf', "invoice _final_-ec493385353bf798.pdf"),
+            ("NUL", "_NUL-369eba19c29ffe00"),
+            ("NUL.tar.gz", "_NUL.tar-c5d0283bb0ecb474.gz"),
+            ("x" * 300 + ".pdf", "x" * 107 + "-b8191dd974368539.pdf"),
+            ("請" * 70 + ".pdf", "請" * 35 + "-a7cbc40614b84819.pdf"),
         ],
     )
     def test_unportable_filenames_are_made_portable(self, name, expected, tmp_path):
         """Ordinary names with a `:` or `?`, reserved device names, and names over
         the byte limit are written under a portable name rather than failing
-        the download after the tool has already run."""
+        the download after the tool has already run. The name is tagged with a
+        digest of the original, so names that normalize alike stay apart."""
         outdir = tmp_path / "safe"
         f = FileDownloadable(
             name=name,
@@ -3187,6 +3191,29 @@ class TestFileDownloadablePathTraversal:
             outfile = f.download(outdir, root=outdir)
         assert outfile == (outdir / expected).resolve()
         assert outfile.read_bytes() == b"x"
+
+    def test_names_that_normalize_alike_do_not_overwrite_each_other(self, tmp_path):
+        outdir = tmp_path / "safe"
+        names = ["report?.png", "report*.png", "report_.png"]
+        outfiles = []
+        for index, name in enumerate(names):
+            f = FileDownloadable(
+                name=name,
+                mimetype="image/png",
+                s3url="https://example.com/file",
+            )
+            with patch(
+                "composio.core.models._files.safe_request",
+                return_value=self._mock_response(bytes([index])),
+            ):
+                outfiles.append(f.download(outdir, root=outdir))
+
+        assert len(set(outfiles)) == len(names)
+        assert [outfile.read_bytes() for outfile in outfiles] == [
+            b"\x00",
+            b"\x01",
+            b"\x02",
+        ]
 
 
 class TestDownloadDirSlugTraversal:

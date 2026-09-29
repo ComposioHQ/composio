@@ -319,11 +319,11 @@ describe('RemoteFile', () => {
         ['C:report.txt', 'report.txt'],
         ['\ufeffreport.txt', '\ufeffreport.txt'],
         ['\u0085report.txt\u0085', 'report.txt'],
-        ['out/report_2026-09-29T10:30:00.csv', 'report_2026-09-29T10_30_00.csv'],
-        ['What is this?.png', 'What is this_.png'],
-        ['report.\u00a0', 'report'],
-        ['NUL.txt', '_NUL.txt'],
-        [`${'請'.repeat(70)}.pdf`, `${'請'.repeat(41)}.pdf`],
+        ['out/report_2026-09-29T10:30:00.csv', 'report_2026-09-29T10_30_00-d7211bb25cb815fe.csv'],
+        ['What is this?.png', 'What is this_-9c68adf2da8b6e8d.png'],
+        ['report.\u00a0', 'report-11aada8ba3168adf'],
+        ['NUL.txt', '_NUL-d0848f78ce05ded6.txt'],
+        [`${'請'.repeat(70)}.pdf`, `${'請'.repeat(35)}-a7cbc40614b84819.pdf`],
       ])(
         'should save %j under the default directory as %j',
         async (mountRelativePath, expectedName) => {
@@ -337,6 +337,29 @@ describe('RemoteFile', () => {
           expect(new Uint8Array(platform.readFileSync(result) as Uint8Array)).toEqual(content);
         }
       );
+
+      it('should not let files whose names normalize alike overwrite each other', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])];
+        globalThis.fetch = vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[0].buffer) })
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[1].buffer) })
+          .mockResolvedValueOnce({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(bodies[2].buffer),
+          });
+
+        const paths = [];
+        for (const mountRelativePath of ['report?.png', 'report*.png', 'report_.png']) {
+          paths.push(await new RemoteFile({ ...validCamelCaseData, mountRelativePath }).save());
+        }
+
+        expect(new Set(paths).size).toBe(3);
+        expect(
+          paths.map(path => new Uint8Array(platform.readFileSync(path) as Uint8Array))
+        ).toEqual(bodies);
+      });
 
       // Each of these would make the save path equal its own directory (or the
       // parent), which previously surfaced as an unhandled `EISDIR` from

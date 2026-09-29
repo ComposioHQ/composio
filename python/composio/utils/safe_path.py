@@ -166,18 +166,50 @@ def _truncate_to_bytes(value: str, max_bytes: int) -> str:
     return "".join(truncated)
 
 
-def _fit_filename_bytes(name: str) -> str:
-    """Truncate ``name`` to :data:`MAX_COMPONENT_LENGTH` bytes, keeping a short
-    extension so the file still opens with the right application."""
-    if _encoded_length(name) <= MAX_COMPONENT_LENGTH:
-        return name
+def _split_extension(name: str) -> t.Tuple[str, str]:
+    """Split off a short trailing extension (with its dot); a leading dot is
+    not one."""
     dot = name.rfind(".")
     extension = name[dot:] if dot > 0 else ""
-    extension_length = _encoded_length(extension)
-    if extension and extension_length <= MAX_PRESERVED_EXTENSION_BYTES:
-        stem = _truncate_to_bytes(name[:dot], MAX_COMPONENT_LENGTH - extension_length)
-        return stem + extension
-    return _truncate_to_bytes(name, MAX_COMPONENT_LENGTH)
+    if extension and _encoded_length(extension) <= MAX_PRESERVED_EXTENSION_BYTES:
+        return name[:dot], extension
+    return name, ""
+
+
+def _fit_filename_bytes(name: str, max_bytes: int = MAX_COMPONENT_LENGTH) -> str:
+    """Truncate ``name`` to ``max_bytes``, keeping a short extension so the file
+    still opens with the right application."""
+    if _encoded_length(name) <= max_bytes:
+        return name
+    stem, extension = _split_extension(name)
+    return _truncate_to_bytes(stem, max_bytes - _encoded_length(extension)) + extension
+
+
+_FNV_OFFSET_BASIS_64 = 0xCBF29CE484222325
+_FNV_PRIME_64 = 0x100000001B3
+_UINT64_MASK = 0xFFFFFFFFFFFFFFFF
+
+
+def _fnv1a64_hex(value: str) -> str:
+    """64-bit FNV-1a of the UTF-8 bytes, as 16 hex digits. ``fnv1a64Hex`` in
+    the TypeScript SDK matches it."""
+    digest = _FNV_OFFSET_BASIS_64
+    for byte in value.encode("utf-8", "surrogatepass"):
+        digest = ((digest ^ byte) * _FNV_PRIME_64) & _UINT64_MASK
+    return f"{digest:016x}"
+
+
+def _tag_with_original(portable: str, original: str) -> str:
+    """Tag a name that portability changed with a digest of the name it came
+    from, before the extension: ``report?.png`` and ``report*.png`` both become
+    ``report_.png``, and two long names can share a truncated prefix, so
+    without the tag one download would overwrite the other in a shared
+    directory."""
+    tag = f"-{_fnv1a64_hex(original)}"
+    stem, extension = _split_extension(
+        _fit_filename_bytes(portable, MAX_COMPONENT_LENGTH - len(tag))
+    )
+    return stem + tag + extension
 
 
 def safe_basename(name: str, *, label: str = "filename") -> str:
@@ -204,8 +236,12 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
     where the SDK runs: control and Windows-reserved characters become ``_``,
     names over :data:`MAX_COMPONENT_LENGTH` bytes are truncated with their
     extension kept, trailing spaces and dots are dropped as Windows would, and
-    a resulting reserved device name gets a ``_`` prefix. ``safeBasename`` in
-    the TypeScript SDK applies the same rules in the same order.
+    a resulting reserved device name gets a ``_`` prefix. A name any of these
+    rules changed is then tagged with a digest of the original before its
+    extension (``report_-<16 hex>.png``), so distinct names never land on the
+    same file; a name that was already portable is returned unchanged.
+    ``safeBasename`` in the TypeScript SDK applies the same rules in the same
+    order.
 
     ``str.strip`` removes surrounding whitespace first, and the usability check
     runs last, on the value that gets written, so neither ``"\\u00a0.\\u00a0"``
@@ -249,7 +285,7 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
             f"Path traversal detected: {label} {name!r} leaves no usable "
             "basename to write to."
         )
-    return portable
+    return portable if portable == basename else _tag_with_original(portable, basename)
 
 
 def resolve_root(root: t.Union[str, Path]) -> Path:

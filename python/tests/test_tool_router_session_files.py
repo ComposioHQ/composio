@@ -355,9 +355,12 @@ class TestRemoteFile:
     @pytest.mark.parametrize(
         ("mount_relative_path", "expected"),
         [
-            ("report.\u00a0", "report"),
-            ("out/report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00.csv"),
-            ("What is this?.png", "What is this_.png"),
+            ("report.\u00a0", "report-11aada8ba3168adf"),
+            (
+                "out/report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("What is this?.png", "What is this_-9c68adf2da8b6e8d.png"),
         ],
     )
     def test_save_makes_unportable_names_portable(

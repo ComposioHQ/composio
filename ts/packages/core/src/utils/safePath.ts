@@ -52,6 +52,22 @@ const TRAILING_SPACES_AND_DOTS = /[. ]+$/;
 
 const utf8Length = (value: string): number => new TextEncoder().encode(value).length;
 
+const FNV_OFFSET_BASIS_64 = 0xcbf29ce484222325n;
+const FNV_PRIME_64 = 0x100000001b3n;
+const UINT64_MASK = 0xffffffffffffffffn;
+
+/**
+ * 64-bit FNV-1a of the UTF-8 bytes, as 16 hex digits. Pure and synchronous, so
+ * it runs on every runtime; `_fnv1a64_hex` in the Python SDK matches it.
+ */
+function fnv1a64Hex(value: string): string {
+  let hash = FNV_OFFSET_BASIS_64;
+  for (const byte of new TextEncoder().encode(value)) {
+    hash = ((hash ^ BigInt(byte)) * FNV_PRIME_64) & UINT64_MASK;
+  }
+  return hash.toString(16).padStart(16, '0');
+}
+
 /**
  * Python str.strip() whitespace: Unicode White_Space plus U+001C–U+001F.
  * Unlike JavaScript trim(), this includes U+0085 and preserves U+FEFF.
@@ -119,21 +135,39 @@ function truncateToBytes(value: string, maxBytes: number): string {
   return truncated;
 }
 
-/**
- * Truncates `name` to {@link MAX_FILENAME_BYTES}, keeping a short extension so
- * the file still opens with the right application.
- */
-function fitFilenameBytes(name: string): string {
-  if (utf8Length(name) <= MAX_FILENAME_BYTES) {
-    return name;
-  }
+/** Splits off a short trailing extension (with its dot); a leading dot is not one. */
+function splitExtension(name: string): [stem: string, extension: string] {
   const dot = name.lastIndexOf('.');
   const extension = dot > 0 ? name.slice(dot) : '';
-  const extensionBytes = utf8Length(extension);
-  if (extension && extensionBytes <= MAX_PRESERVED_EXTENSION_BYTES) {
-    return truncateToBytes(name.slice(0, dot), MAX_FILENAME_BYTES - extensionBytes) + extension;
+  return extension && utf8Length(extension) <= MAX_PRESERVED_EXTENSION_BYTES
+    ? [name.slice(0, dot), extension]
+    : [name, ''];
+}
+
+/**
+ * Truncates `name` to `maxBytes`, keeping a short extension so the file still
+ * opens with the right application.
+ */
+function fitFilenameBytes(name: string, maxBytes: number = MAX_FILENAME_BYTES): string {
+  if (utf8Length(name) <= maxBytes) {
+    return name;
   }
-  return truncateToBytes(name, MAX_FILENAME_BYTES);
+  const [stem, extension] = splitExtension(name);
+  return truncateToBytes(stem, maxBytes - utf8Length(extension)) + extension;
+}
+
+/**
+ * Tags a name that portability changed with a digest of the name it came
+ * from, before the extension: `report?.png` and `report*.png` both become
+ * `report_.png`, and two long names can share a truncated prefix, so without
+ * the tag one download would overwrite the other in a shared directory.
+ */
+function tagWithOriginal(portable: string, original: string): string {
+  const tag = `-${fnv1a64Hex(original)}`;
+  const [stem, extension] = splitExtension(
+    fitFilenameBytes(portable, MAX_FILENAME_BYTES - tag.length)
+  );
+  return stem + tag + extension;
 }
 
 /**
@@ -153,8 +187,11 @@ function fitFilenameBytes(name: string): string {
  * control and Windows-reserved characters become `_`, names over
  * {@link MAX_FILENAME_BYTES} are truncated with their extension kept, trailing
  * spaces and dots are dropped as Windows would, and a resulting reserved
- * device name gets a `_` prefix. `safe_basename` in the Python SDK applies the
- * same rules in the same order.
+ * device name gets a `_` prefix. A name any of these rules changed is then
+ * tagged with a digest of the original before its extension
+ * (`report_-<16 hex>.png`), so distinct names never land on the same file; a
+ * name that was already portable is returned unchanged. `safe_basename` in
+ * the Python SDK applies the same rules in the same order.
  *
  * Python-compatible stripping removes surrounding whitespace first, and the
  * usability check runs last, on the value that gets written, so neither
@@ -199,5 +236,5 @@ export function safeBasename(name: string, label: string = 'filename'): string {
     );
   }
 
-  return portable;
+  return portable === basename ? portable : tagWithOriginal(portable, basename);
 }

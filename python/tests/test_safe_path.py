@@ -4,6 +4,7 @@ See that module's docstring for why containment must be anchored on a constant
 root rather than on a directory the input helped build.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -139,6 +140,16 @@ class TestIsInsideDir:
         assert is_inside_dir(Path("C:\\Foo\\Bar"), Path("c:\\foo"))
 
 
+TAG_BYTES = 17
+"""Bytes a changed name gains: ``-`` and 16 hex digits of the original's
+digest."""
+
+
+def tagged(stem: str, extension: str = "") -> "re.Pattern[str]":
+    """Match ``stem``, the digest tag of a changed name, then ``extension``."""
+    return re.compile(re.escape(stem) + "-[0-9a-f]{16}" + re.escape(extension))
+
+
 class TestSafeBasename:
     @pytest.mark.parametrize(
         ("value", "expected"),
@@ -149,6 +160,8 @@ class TestSafeBasename:
             (".gitignore", ".gitignore"),
             ("..\\..\\evil", "evil"),
             (" report.pdf", "report.pdf"),
+            ("report.pdf ", "report.pdf"),
+            ("\x1creport.txt\x1f", "report.txt"),
             ("café.txt", "café.txt"),
             ("C:report.txt", "report.txt"),
             ("\ufeffreport.txt", "\ufeffreport.txt"),
@@ -183,83 +196,120 @@ class TestSafeBasename:
             safe_basename("report\x00.pdf")
 
     @pytest.mark.parametrize(
-        ("value", "expected"),
+        ("value", "stem", "extension"),
         [
-            ("report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00.csv"),
-            ("What is this?.png", "What is this_.png"),
-            ('invoice "final".pdf', "invoice _final_.pdf"),
-            ("report.txt:payload", "report.txt_payload"),
-            ("report<1>.txt", "report_1_.txt"),
-            ("a|b*.txt", "a_b_.txt"),
-            ("tab\there.txt", "tab_here.txt"),
-            ("\x1creport.txt\x1f", "report.txt"),
-            ("output/C:report.txt", "C_report.txt"),
+            ("report_2026-09-29T10:30:00.csv", "report_2026-09-29T10_30_00", ".csv"),
+            ("What is this?.png", "What is this_", ".png"),
+            ('invoice "final".pdf', "invoice _final_", ".pdf"),
+            ("report.txt:payload", "report", ".txt_payload"),
+            ("report<1>.txt", "report_1_", ".txt"),
+            ("a|b*.txt", "a_b_", ".txt"),
+            ("tab\there.txt", "tab_here", ".txt"),
+            ("output/C:report.txt", "C_report", ".txt"),
         ],
     )
-    def test_replaces_windows_reserved_characters(self, value, expected):
-        assert safe_basename(value) == expected
+    def test_replaces_windows_reserved_characters(self, value, stem, extension):
+        assert tagged(stem, extension).fullmatch(safe_basename(value))
 
     @pytest.mark.parametrize(
-        ("value", "expected"),
+        ("value", "stem", "extension"),
         [
-            ("report.txt.", "report.txt"),
-            ("report.txt ", "report.txt"),
-            ("report. .", "report"),
-            ("report.\u00a0", "report"),
-            ("report.\u0085", "report"),
-            ("\ufeff..", "\ufeff"),
+            ("report.txt.", "report", ".txt"),
+            ("report. .", "report", ""),
+            ("report.\u00a0", "report", ""),
+            ("report.\u0085", "report", ""),
+            ("\ufeff..", "\ufeff", ""),
         ],
     )
-    def test_drops_trailing_spaces_and_dots(self, value, expected):
-        assert safe_basename(value) == expected
+    def test_drops_trailing_spaces_and_dots(self, value, stem, extension):
+        assert tagged(stem, extension).fullmatch(safe_basename(value))
 
     @pytest.mark.parametrize(
-        ("value", "expected"),
+        ("value", "stem", "extension"),
         [
-            ("NUL", "_NUL"),
-            ("nul", "_nul"),
-            ("NUL.tar.gz", "_NUL.tar.gz"),
-            ("COM1.log.bak", "_COM1.log.bak"),
-            ("COM¹.txt", "_COM¹.txt"),
-            ("LPT³.data", "_LPT³.data"),
-            ("aux.txt", "_aux.txt"),
-            ("CON .txt", "_CON .txt"),
-            ("COM1:.txt", "COM1_.txt"),
+            ("NUL", "_NUL", ""),
+            ("nul", "_nul", ""),
+            ("NUL.tar.gz", "_NUL.tar", ".gz"),
+            ("COM1.log.bak", "_COM1.log", ".bak"),
+            ("COM¹.txt", "_COM¹", ".txt"),
+            ("LPT³.data", "_LPT³", ".data"),
+            ("aux.txt", "_aux", ".txt"),
+            ("CON .txt", "_CON ", ".txt"),
+            ("COM1:.txt", "COM1_", ".txt"),
         ],
     )
-    def test_prefixes_windows_device_names_with_any_extension(self, value, expected):
-        assert safe_basename(value) == expected
+    def test_prefixes_windows_device_names_with_any_extension(
+        self, value, stem, extension
+    ):
+        assert tagged(stem, extension).fullmatch(safe_basename(value))
 
     def test_prefixes_a_device_name_exposed_by_truncation(self):
         # Truncation keeps `NUL` plus spaces before `.txt`, and Windows ignores
         # the spaces, so the checked name must be the fitted one.
-        assert safe_basename("NUL" + " " * 200 + "x.txt") == "_NUL" + " " * 120 + ".txt"
-        assert safe_basename("CON" + " " * 200 + "x") == "_CON"
+        spaces = " " * (MAX_COMPONENT_LENGTH - TAG_BYTES - 8)
+        assert tagged("_NUL" + spaces, ".txt").fullmatch(
+            safe_basename("NUL" + " " * 200 + "x.txt")
+        )
+        assert tagged("_CON").fullmatch(safe_basename("CON" + " " * 200 + "x"))
 
     def test_keeps_a_filename_at_the_byte_limit(self):
         name = "x" * MAX_COMPONENT_LENGTH
         assert safe_basename(name) == name
 
     def test_truncates_to_the_byte_limit_and_keeps_the_extension(self):
-        assert (
-            safe_basename("x" * 200 + ".pdf")
-            == "x" * (MAX_COMPONENT_LENGTH - 4) + ".pdf"
+        result = safe_basename("x" * 200 + ".pdf")
+        assert tagged("x" * (MAX_COMPONENT_LENGTH - TAG_BYTES - 4), ".pdf").fullmatch(
+            result
         )
+        assert len(result) == MAX_COMPONENT_LENGTH
 
     def test_truncates_by_whole_code_points_measured_in_bytes(self):
         cjk = safe_basename("請" * 70 + ".pdf")
-        assert cjk == "請" * 41 + ".pdf"
+        assert tagged("請" * 35, ".pdf").fullmatch(cjk)
         assert len(cjk.encode()) <= MAX_COMPONENT_LENGTH
-        assert safe_basename("😀" * 33) == "😀" * 32
+        assert tagged("😀" * 27).fullmatch(safe_basename("😀" * 33))
 
     def test_truncates_an_over_long_extension_with_the_rest(self):
-        assert safe_basename("report." + "x" * 200) == "report." + "x" * (
-            MAX_COMPONENT_LENGTH - 7
-        )
+        stem = "report." + "x" * (MAX_COMPONENT_LENGTH - TAG_BYTES - 7)
+        assert tagged(stem).fullmatch(safe_basename("report." + "x" * 200))
 
     def test_drops_a_trailing_dot_exposed_by_truncation(self):
         name = "x" * (MAX_COMPONENT_LENGTH - 1) + "." + "y" * 40
-        assert safe_basename(name) == "x" * (MAX_COMPONENT_LENGTH - 1)
+        assert tagged("x" * (MAX_COMPONENT_LENGTH - TAG_BYTES)).fullmatch(
+            safe_basename(name)
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            # safePath.test.ts asserts the same vectors, so both SDKs write a
+            # given server name to the same file.
+            ("report?.png", "report_-05fcb95aa5b918e9.png"),
+            ("report*.png", "report_-aa921bdab2b33292.png"),
+            (
+                "report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("NUL.txt", "_NUL-d0848f78ce05ded6.txt"),
+        ],
+    )
+    def test_tags_a_changed_name_with_a_digest_of_the_original(self, value, expected):
+        assert safe_basename(value) == expected
+
+    def test_distinct_names_that_normalize_alike_stay_distinct(self):
+        names = ["report?.png", "report*.png", "report:.png", "report_.png"]
+        assert len({safe_basename(name) for name in names}) == len(names)
+
+    def test_distinct_long_names_sharing_a_truncated_prefix_stay_distinct(self):
+        prefix = "a" * 200
+        assert safe_basename(prefix + "-1.txt") != safe_basename(prefix + "-2.txt")
+
+    def test_returns_an_already_portable_name_unchanged(self):
+        assert safe_basename("report_.png") == "report_.png"
+
+    def test_treats_a_tagged_name_as_already_portable(self):
+        written = safe_basename("report?.png")
+        assert safe_basename(written) == written
 
     def test_rejects_unencodable_filename(self):
         with pytest.raises(UnsafePathComponentError, match="invalid Unicode"):
