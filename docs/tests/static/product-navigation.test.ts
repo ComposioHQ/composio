@@ -183,6 +183,7 @@ describe('Docs product navigation', () => {
       '/reference/rate-limits',
       '/docs/security/data-retention',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
+      '/docs/poc-to-prod/usage-and-billing',
     ]);
     for (const url of readinessUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
