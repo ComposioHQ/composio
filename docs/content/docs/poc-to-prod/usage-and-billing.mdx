@@ -127,7 +127,7 @@ jq -r -s '
 ' "${GROUPS_FILE}" > usage.csv
 ```
 
-The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals. Sum `premium_usage_charge` with a decimal-aware tool such as your spreadsheet or warehouse, not floating-point arithmetic, because the strings are exact USD amounts and reconciliation depends on them staying exact.
+The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals. Sum `premium_usage_charge` with true decimal arithmetic, such as a warehouse `NUMERIC` or `DECIMAL` column or Python's `decimal` module, because the strings are exact USD amounts and reconciliation depends on them staying exact. Spreadsheets and other floating-point tools can silently change the values.
 
 Swap the URL to `project/usage/tool_calls` and the header to `x-api-key` for a single project, or change `group_by` to `user_id` for per-customer attribution.
 
