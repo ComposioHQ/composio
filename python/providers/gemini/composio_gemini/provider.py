@@ -58,7 +58,25 @@ def _to_serializable(value: t.Any) -> t.Any:
     return value
 
 
-def _afc_annotation(annotation: t.Any) -> t.Any:
+def _literal_type(schema: t.Any) -> type:
+    """The Python type shared by a typeless property's ``const``/``enum``
+    values, or ``object`` when there is none."""
+    if not isinstance(schema, dict):
+        return object
+    if "const" in schema:
+        values = [schema["const"]]
+    elif isinstance(schema.get("enum"), list) and schema["enum"]:
+        values = schema["enum"]
+    else:
+        return object
+    # ``bool`` first: it is a subclass of ``int``.
+    for literal_type in (bool, str, int, float):
+        if all(type(value) is literal_type for value in values):
+            return literal_type
+    return object
+
+
+def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
     """Return an annotation google-genai AFC can convert arguments with.
 
     AFC reads the callable's signature both to declare the function and to
@@ -67,11 +85,17 @@ def _afc_annotation(annotation: t.Any) -> t.Any:
     parameterized ``Dict`` and ``typing.Any``, so any tool using them failed
     before it ran. The plain annotations declare the same function; the source
     schema is still enforced by ``args_schema``.
+
+    A property without a ``type`` is ``typing.Any``. A bare ``const`` or
+    ``enum`` is declared with the type of its values, so ``{"enum": ["asc",
+    "desc"]}`` stays a string as it was before the signature carried
+    validators. Anything else becomes ``object``, which declares no type and
+    lets the conversion accept any value.
     """
     origin = t.get_origin(annotation)
     args = t.get_args(annotation)
     if origin is t.Annotated:
-        return _afc_annotation(args[0])
+        return _afc_annotation(args[0], schema)
     if origin is list and args:
         return t.List[_afc_annotation(args[0])]  # type: ignore[misc]
     if origin is dict:
@@ -79,7 +103,7 @@ def _afc_annotation(annotation: t.Any) -> t.Any:
     if origin in (t.Union, pytypes.UnionType):
         return t.Union[tuple(_afc_annotation(arg) for arg in args)]
     if annotation is t.Any:
-        return object
+        return _literal_type(schema)
     return annotation
 
 
@@ -165,8 +189,11 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # parameterized generics (e.g. List[str] instead of bare List).
         # The google-genai SDK requires parameterized array types — bare List
         # generates {"type": "ARRAY"} without "items", which the API rejects.
+        properties = aliases.schema.get("properties") or {}
         sig_params = [
-            param.replace(annotation=_afc_annotation(param.annotation))
+            param.replace(
+                annotation=_afc_annotation(param.annotation, properties.get(param.name))
+            )
             for param in get_pydantic_signature_format_from_schema_params(
                 schema_params=aliases.schema,
                 skip_default=True,
