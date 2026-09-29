@@ -5,17 +5,19 @@ keywords: [Instant Tools, Sessions, premium usage, hosted account]
 experimental: true
 ---
 
-Instant Tools let your Session run supported tools without an end-user provider connection. A Composio hosted account provides access for eligible tools. Premium usage charges for those calls come from your organization's available balance.
+Adding a capability to your agent can mean another provider account, API key, and bill or subscription. Instant Tools let your Session use supported actions without that setup. Composio supplies access and charges usage to your organization's available balance. Your users can still connect their own accounts when a task needs their provider identity.
 
 <Callout type="warning" title="Experimental access">
-  This feature requires a project setting that is not yet self-service. Email [support@composio.dev](mailto:support@composio.dev) to enable it for your project and confirm which tools and rates are available. Session configuration cannot override a project where the setting is off.
+  The project setting `enable_instant` must be `true`. It is off by default and is not yet self-service. Email [support@composio.dev](mailto:support@composio.dev) to enable it for your project and confirm which tools and rates are available. Session configuration cannot override a project where the setting is off.
 </Callout>
 
 Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `premium_usage` is omitted. Set `premium_usage=False` in Python or `premiumUsage: false` in TypeScript when creating a Session that must not incur premium usage charges.
 
 ## Find eligible tools
 
-Instant tool coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return instant tool availability or offer an instant tool filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+Instant coverage is per tool, not per toolkit. A toolkit may support Instant Tools without every tool in it being eligible. Composio's provider account can be shared across customers, so only reviewed actions can run through it. Actions that could reveal shared account history or send arbitrary proxy requests are excluded. Use a connected account for actions Instant does not support.
+
+The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return Instant availability or offer an Instant filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
 
 ## Create a Session
 
@@ -182,5 +184,9 @@ If you select a connected account explicitly, that route wins and does not fall 
 Session search tells you when a hosted account serves a toolkit. The toolkit's connection status includes `hosted_account.allowed_tool_slugs` (`hostedAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
 
 Hosted accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
+
+## Review usage
+
+Use the [project usage summary API](/reference/api-reference/projects/postProjectUsageSummary) for totals and the [tool-execution logs API](/reference/api-reference/logs/postLogsToolExecution) for individual calls. Filter logs by `session_id` when you need to trace a Session. These records remain available even when `return_premium_charge` is `false`.
 
 See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.
