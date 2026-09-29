@@ -10,7 +10,6 @@ Verifies:
 """
 
 import inspect
-import typing as t
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -194,8 +193,10 @@ class TestWrapTool:
         result = provider.wrap_tool(tool, create_mock_execute_tool())
         parameter = inspect.signature(result).parameters["payload"]
 
-        assert parameter.annotation == t.Dict[str, t.Any]  # noqa: UP006
-        assert result.__annotations__["payload"] == t.Dict[str, t.Any]  # noqa: UP006
+        # Plain `dict`: AFC calls `isinstance` with each value's annotation, and
+        # `Dict[str, Any]` makes that raise for every nested value.
+        assert parameter.annotation is dict
+        assert result.__annotations__["payload"] is dict
 
     def test_callable_has_annotations(self):
         from composio_gemini import GeminiProvider
@@ -584,6 +585,124 @@ class TestAFCCompatibility:
         if callable(func):
             function_map[func.__name__] = func
         assert "GITHUB_STAR_REPO" in function_map
+
+    @pytest.mark.parametrize(
+        ("properties", "required", "arguments"),
+        [
+            (
+                {"query": {"type": "string"}, "max_results": {"type": "integer"}},
+                ["query"],
+                {"query": "is:unread"},
+            ),
+            (
+                {"order": {"type": "string", "enum": ["asc", "desc"]}},
+                ["order"],
+                {"order": "asc"},
+            ),
+            (
+                {"slug": {"type": "string", "pattern": "^[a-z_]+$"}},
+                ["slug"],
+                {"slug": "a_b"},
+            ),
+            ({"n": {"type": "integer", "minimum": 1}}, ["n"], {"n": 3}),
+            (
+                {"v": {"anyOf": [{"type": "integer"}, {"type": "string"}]}},
+                ["v"],
+                {"v": "x"},
+            ),
+            ({"meta": {"type": "object"}}, ["meta"], {"meta": {"x": {"y": 1}}}),
+            ({"c": {"const": "fixed"}}, ["c"], {"c": "fixed"}),
+            (
+                {
+                    "body": {
+                        "type": "object",
+                        "properties": {
+                            "a": {"type": "string"},
+                            "b": {"type": "integer"},
+                        },
+                        "required": ["a"],
+                    }
+                },
+                ["body"],
+                {"body": {"a": "x"}},
+            ),
+            (
+                {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "k": {"type": "string"},
+                                "v": {"type": "string"},
+                            },
+                            "required": ["k"],
+                        },
+                    }
+                },
+                ["items"],
+                {"items": [{"k": "a"}, {"k": "b", "v": "c"}]},
+            ),
+        ],
+        ids=[
+            "omitted-optional",
+            "enum",
+            "pattern",
+            "minimum",
+            "any-of",
+            "free-form-object",
+            "const",
+            "nested-omitted-optional",
+            "array-of-objects",
+        ],
+    )
+    def test_afc_executes_arguments_as_returned(self, properties, required, arguments):
+        """AFC converts each argument with its annotation before calling the tool."""
+        from composio_gemini import GeminiProvider
+        from google import genai
+        from google.genai import _extra_utils
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "AFC_TOOL",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": properties,
+                "required": required,
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        func = provider.wrap_tool(tool, execute_tool)
+
+        client = genai.Client(api_key="test")
+        genai_types.FunctionDeclaration.from_callable(
+            client=client._api_client, callable=func
+        )
+        _extra_utils.invoke_function_from_dict_args(arguments, func)
+
+        execute_tool.assert_called_once_with("AFC_TOOL", arguments)
+
+    def test_afc_still_validates_the_source_schema(self):
+        from composio_gemini import GeminiProvider
+        from google.genai import _extra_utils, errors
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "AFC_TOOL",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {"slug": {"type": "string", "pattern": "^[a-z_]+$"}},
+                "required": ["slug"],
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        func = provider.wrap_tool(tool, execute_tool)
+
+        with pytest.raises(errors.FunctionInvocationError):
+            _extra_utils.invoke_function_from_dict_args({"slug": "Not Valid"}, func)
+        execute_tool.assert_not_called()
 
     def test_callables_in_generate_content_config(self):
         """Wrapped callables can be passed to GenerateContentConfig without error."""
