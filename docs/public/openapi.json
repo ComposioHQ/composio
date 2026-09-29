@@ -12624,23 +12624,23 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
-                          },
-                          "premium_usage_charge": {
-                            "type": "string",
-                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count",
-                          "premium_usage_charge"
+                          "event_count"
                         ]
                       }
+                    },
+                    "instant_charge": {
+                      "type": "string",
+                      "description": "Total Instant charge over this window, as an exact USD amount. Zero when nothing in it was charged."
                     }
                   },
                   "required": [
-                    "entities"
+                    "entities",
+                    "instant_charge"
                   ]
                 }
               }
@@ -12824,10 +12824,6 @@
                       "type": "integer",
                       "minimum": 0
                     },
-                    "premium_usage_charge": {
-                      "type": "string",
-                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
-                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -12842,17 +12838,12 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
-                          },
-                          "premium_usage_charge": {
-                            "type": "string",
-                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count",
-                          "premium_usage_charge"
+                          "event_count"
                         ]
                       }
                     }
@@ -12862,7 +12853,6 @@
                     "unit",
                     "total_quantity",
                     "event_count",
-                    "premium_usage_charge",
                     "groups"
                   ]
                 }
@@ -13007,23 +12997,23 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
-                          },
-                          "premium_usage_charge": {
-                            "type": "string",
-                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "unit",
                           "total_quantity",
-                          "event_count",
-                          "premium_usage_charge"
+                          "event_count"
                         ]
                       }
+                    },
+                    "instant_charge": {
+                      "type": "string",
+                      "description": "Total Instant charge over this window, as an exact USD amount. Zero when nothing in it was charged."
                     }
                   },
                   "required": [
-                    "entities"
+                    "entities",
+                    "instant_charge"
                   ]
                 }
               }
@@ -13198,10 +13188,6 @@
                       "type": "integer",
                       "minimum": 0
                     },
-                    "premium_usage_charge": {
-                      "type": "string",
-                      "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
-                    },
                     "groups": {
                       "type": "array",
                       "items": {
@@ -13216,17 +13202,12 @@
                           "event_count": {
                             "type": "integer",
                             "minimum": 0
-                          },
-                          "premium_usage_charge": {
-                            "type": "string",
-                            "description": "Total charge for premium usage in this aggregate, as an exact USD amount. Zero when nothing in it was charged."
                           }
                         },
                         "required": [
                           "key",
                           "total_quantity",
-                          "event_count",
-                          "premium_usage_charge"
+                          "event_count"
                         ]
                       }
                     }
@@ -13236,7 +13217,6 @@
                     "unit",
                     "total_quantity",
                     "event_count",
-                    "premium_usage_charge",
                     "groups"
                   ]
                 }
