@@ -200,35 +200,61 @@ const decodePointerSegment = (segment: string): string => {
 };
 
 /**
+ * What a JSON Pointer segment addresses: a keyword of a schema, a name in a
+ * keyword's map (`properties`, `$defs`, ...), a `patternProperties` key, an
+ * index into a schema array, or something that holds no schemas.
+ */
+type PointerPosition = 'keyword' | 'name' | 'patternKey' | 'index' | 'other';
+
+const positionAfter = (position: PointerPosition, key: string, child: unknown): PointerPosition => {
+  if (position !== 'keyword') {
+    return position === 'other' ? 'other' : 'keyword';
+  }
+  if (key === 'patternProperties') {
+    return 'patternKey';
+  }
+  if (SCHEMA_MAP_KEYWORDS.has(key)) {
+    return 'name';
+  }
+  if (SCHEMA_ARRAY_KEYWORDS.has(key) || (SCHEMA_VALUE_KEYWORDS.has(key) && Array.isArray(child))) {
+    return 'index';
+  }
+  return SCHEMA_VALUE_KEYWORDS.has(key) ? 'keyword' : 'other';
+};
+
+/**
  * A local `$ref` rewritten to address the renamed `patternProperties` keys of
- * the interpreter copy. `root` is the unrenamed document it points into.
+ * the interpreter copy. `root` is the unrenamed document it points into. Only
+ * a segment in keyword position is a keyword, so a definition that happens to
+ * be named `patternProperties` is not mistaken for one.
  */
 const renameRefThroughPatternKeys = (ref: string, root: unknown): string => {
   if (!ref.startsWith('#/')) {
     return ref;
   }
 
-  const segments = ref.slice(2).split('/');
   let node: unknown = root;
+  let position: PointerPosition = 'keyword';
   let changed = false;
-  const renamed = segments.map((segment, index) => {
-    const key = decodePointerSegment(segment);
-    let result = segment;
-    if (
-      index > 0 &&
-      decodePointerSegment(segments[index - 1]) === 'patternProperties' &&
-      isObject(node)
-    ) {
-      const renamedKey = renamePatternKeys(node).get(key);
-      if (renamedKey !== undefined && renamedKey !== key) {
-        result = encodePointer(renamedKey);
-        changed = true;
+  const renamed = ref
+    .slice(2)
+    .split('/')
+    .map(segment => {
+      const key = decodePointerSegment(segment);
+      let result = segment;
+      if (position === 'patternKey' && isObject(node)) {
+        const renamedKey = renamePatternKeys(node).get(key);
+        if (renamedKey !== undefined && renamedKey !== key) {
+          result = encodePointer(renamedKey);
+          changed = true;
+        }
       }
-    }
-    node =
-      isObject(node) || Array.isArray(node) ? (node as Record<string, unknown>)[key] : undefined;
-    return result;
-  });
+      const child =
+        isObject(node) || Array.isArray(node) ? (node as Record<string, unknown>)[key] : undefined;
+      position = positionAfter(position, key, child);
+      node = child;
+      return result;
+    });
 
   return changed ? `#/${renamed.join('/')}` : ref;
 };
