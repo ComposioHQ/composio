@@ -1,19 +1,19 @@
 ---
 title: Instant tools
-description: Run supported provider tools without setting up a provider account; see the result and charge
+description: Run supported tools without setting up a separate provider account
 keywords: [Instant tools, tool calls, provider access]
 experimental: true
 ---
 
-Your agent should be able to run a web search without making every user set up an Exa account or handle a separate bill. Instant tools makes that possible: Composio handles provider access and billing. Run a search, get its results, and see the actual charge for the call.
+Your agent needs to search the web, but asking every user to create an Exa account, add a key, and manage another bill can stop them before the first search. Instant tools lets a supported tool run through Composio instead. The agent gets a result; your project can see what the call cost. You can still use your own provider connection when you need it.
 
-<Callout type="warning" title="Experimental access">
-  Reach out to [support@composio.dev](mailto:support@composio.dev) to get access to Instant tools and confirm supported tools and rates. Once access is granted, turn on `enable_instant` in your project settings. A Session cannot override a project where this setting is off. The code below uses the currently released SDK fields; the planned tool-level listing fields are not in the public API yet.
+<Callout type='warning' title='Experimental access'>
+  Reach out to [support@composio.dev](mailto:support@composio.dev) for access and to confirm which tools and rates your project supports. Project controls and the per-tool `instant` listing described below are planned changes, not a promise that the current public API or settings already expose them.
 </Callout>
 
 ## Run one search
 
-Install `composio` and `python-dotenv`, then put `COMPOSIO_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. This Python example runs the search and prints its result and actual charge when a charge is returned:
+Install `composio` and `python-dotenv`, put `COMPOSIO_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart), and ask support to confirm that `EXA_SEARCH` is enabled for your project. The current SDK can run this search without adding an unshipped route option to the example:
 
 ```python
 from dotenv import load_dotenv
@@ -22,53 +22,31 @@ from composio import Composio
 load_dotenv()
 composio = Composio()
 session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["exa"],
-    premium_usage={
-        "toolkits": {"enable": ["exa"]},
-        "return_premium_charge": True,
-    },
+    user_id='user_123',
+    toolkits=['exa'],
 )
 result = session.execute(
-    "EXA_SEARCH",
-    arguments={"query": "Composio documentation"},
+    'EXA_SEARCH',
+    arguments={'query': 'Composio documentation'},
 )
 if result.error:
-    raise RuntimeError(f"Search failed: {result.error}")
+    raise RuntimeError(f'Search failed: {result.error}')
 
 print(result.data)
-if result.premium_charge is not None:
-    print(result.premium_charge["amount"], result.premium_charge["currency"])
-else:
-    print("No charge returned; check the execution log and project billing")
 ```
 
-The result is the tool's search response. The printed amount is the charge for this execution, not a fixed Exa price. Check the current tool input schema before changing the arguments. Confirm the supported tools and rates with support before production use; neither the existence of `EXA_SEARCH` nor the example guarantees a specific rate or that this project has access. See [tool execution logs](/docs/poc-to-prod/stream-logs-to-a-siem) for the charge record.
+The result is the search response, not proof that this call used the instant route. Check the execution log for the route and actual charge. The amount is per execution, not a fixed Exa price. Check the current tool input schema before changing the arguments. The example cannot grant access or choose a route that your project does not support.
 
-## Coverage and routing
+## What is instant?
 
-Instant tools are individual tools within an app, not every tool in an app. Some actions still require the user's own provider connection. Today’s [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not indicate which tools support the instant route or filter by it. Its `no_auth` and `composio_managed_auth_schemes` fields do not mean Instant tools support. The planned tool listing field is `instant` on each supported tool, not an app-level label. This change is not yet in the public API. Confirm current coverage and prices with support.
+An app contains tools; instant is a way an individual supported tool can run. An app may contain both supported and unsupported tools. A tool with instant support can also run through your own provider connection. It is not a separate kind of app or a price tier. Each tool has its own price for the instant route, which is in addition to the standard tool-call rate. A call through your own connection follows the standard rate.
 
-A connection you explicitly select takes priority and does not fall back to another account on failure. Otherwise, an available user or shared connection takes priority over Composio's provider account. When no supported provider route exists, use the normal connection flow. Composio-managed OAuth still asks the user to connect their own account; it is not access to Instant tools. This route does not support arbitrary provider requests through proxy execution.
+The planned tool listing puts `instant: { supported: true, price: { description, discount? } }` on each supported tool. A missing `instant` object means that tool does not support the route. The price description is text, not a numeric amount; an optional discount is a percentage from 0 to 100. This field is **not yet in the public listing API**. Today's [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not identify instant-supported tools or filter by them. Its `no_auth` and `composio_managed_auth_schemes` fields are not instant eligibility signals. Ask support for current coverage and rates.
 
-## Control which calls may incur charges
+Some tools need the user's own connected account because they act on that user's private data. Composio-managed OAuth still connects the user's own account; it does not provide instant access. If you explicitly select a connection, a failure does not silently fall back to another route. Do not assume a tool will switch routes or be covered by a different data-handling policy. The instant route does not support arbitrary provider requests through proxy execution.
 
-First get access from support. Then turn on `enable_instant` in your project settings to use Instant tools. This is a project setting, not a field to pass to the current SDK. The Session policy below controls eligible calls after project access is granted and the setting is on; it does not turn the project setting on.
+## Control the route and spending
 
-The released Session policy is named `premium_usage` in Python and REST, or `premiumUsage` in TypeScript. These are existing API field names, not a new product or tier name. Once the project is enabled, an omitted policy permits eligible calls by default. To block charged calls in a particular Session, create it with `premium_usage=False` (TypeScript: `premiumUsage: false`), or call `session.update(premium_usage=False)` later. Your own connected-account routes remain available.
+Access starts with support. The proposed project Spend controls setting is `add_ons: { instant: false }`, off by default, and the proposed Session choice is `instant: true` or `false` alongside ordinary toolkit and tool filters. The Session chooses a route; the project decides whether it can incur the extra cost. A Session cannot override a project that has the instant add-on off. These names describe the target product and API contract, **not currently shipped controls**. Do not put them into the current SDK example or assume you can turn them on today. Support can confirm how your project is enabled during early access.
 
-Top-level `toolkits` determines which tools the Session can discover and run. `premium_usage.toolkits` separately restricts which eligible tools can incur these charges. To allow only Exa and only `EXA_SEARCH`, use:
-
-```python
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["exa"],
-    premium_usage={
-        "toolkits": {"enable": ["exa"]},
-        "tools": {"exa": {"enable": ["EXA_SEARCH"]}},
-        "return_premium_charge": True,
-    },
-)
-```
-
-Each filter takes either `enable` or `disable`, not both. A `tools.exa` rule by itself does not block charged calls in other toolkits. `return_premium_charge` controls whether the immediate response includes charge detail, not whether a call may spend. Supplying any policy object when updating a Session that was set to `false` enables the policy again if the project allows it. Session search and MCP use the same Session policy; direct execution outside a Session does not inherit it. See [Configuring Sessions](/docs/configuring-sessions) for general filters and the [create Session reference](/reference/api-reference/tool-router/postToolRouterSession) for the shipped request schema.
+The current example leaves route selection to the access and routing your project actually has. Check execution logs to verify the route and charge for each call before relying on it in production. Sessions do not currently expose the proposed per-tool price in their listings. See [Configuring Sessions](/docs/configuring-sessions) for general tool filters.
