@@ -29,7 +29,7 @@ from composio_client.types.tool_router import (
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -197,18 +197,25 @@ class ToolRouterToolkitConnectionStatus(
     instant_account: t.Optional[ToolRouterInstantAccount] = None
 
 
-class ToolRouterSessionSearchResponse(BaseModel):
+class ToolRouterSessionSearchResponse(session_search_response.SessionSearchResponse):
     """Session search result, including typed Instant account coverage."""
 
-    model_config = ConfigDict(extra="allow")
-    error: t.Optional[str] = None
-    next_steps_guidance: t.List[str]
-    results: t.List[session_search_response.Result]
-    session: session_search_response.Session
-    success: bool
-    time_info: session_search_response.TimeInfo
-    tool_schemas: t.Dict[str, session_search_response.ToolSchemas]
-    toolkit_connection_statuses: t.List[ToolRouterToolkitConnectionStatus]
+    # Narrows the generated list item type; `list` is invariant for mypy.
+    toolkit_connection_statuses: t.List[ToolRouterToolkitConnectionStatus]  # type: ignore[assignment]
+
+
+def _with_instant_account(status: t.Any) -> t.Any:
+    if not isinstance(status, BaseModel):
+        return status
+    fields = dict(status)
+    account = fields.get("instant_account")
+    if isinstance(account, dict):
+        fields["instant_account"] = ToolRouterInstantAccount.model_construct(
+            _fields_set=set(account), **account
+        )
+    return ToolRouterToolkitConnectionStatus.model_construct(
+        _fields_set=status.model_fields_set, **fields
+    )
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -930,7 +937,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 self._inline_custom_tools_payload
             ),
         )
-        return ToolRouterSessionSearchResponse.model_validate(response.model_dump())
+        # The client already built the response without enforcing its schema.
+        # Construct without revalidating so an unexpected field can't fail a
+        # search; only the Instant account coverage gains a typed model.
+        fields = dict(response)
+        statuses = fields.get("toolkit_connection_statuses")
+        if isinstance(statuses, list):
+            fields["toolkit_connection_statuses"] = [
+                _with_instant_account(status) for status in statuses
+            ]
+        return ToolRouterSessionSearchResponse.model_construct(
+            _fields_set=response.model_fields_set, **fields
+        )
 
     def execute(
         self,

@@ -2390,6 +2390,34 @@ class TestInstantContractTransport:
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
         assert "hosted_account" not in status.model_dump()
 
+    def test_search_keeps_lenient_generated_response(self):
+        payload = _search_json()
+        payload["toolkit_connection_statuses"][0]["account_type"] = "INSTANT"
+        del payload["time_info"]
+
+        def handler(request):
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+        result = session.search(query="search")
+
+        assert isinstance(result, SessionSearchResponse)
+        status = result.toolkit_connection_statuses[0]
+        assert status.account_type == "INSTANT"
+        assert status.instant_account is not None
+        assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert result.to_dict() == payload
+
 
 def _transport_client(
     *,
