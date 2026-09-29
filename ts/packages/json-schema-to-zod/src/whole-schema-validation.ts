@@ -1,8 +1,9 @@
-import { encodePointer, Validator } from '@cfworker/json-schema';
+import { encodePointer, format, Validator } from '@cfworker/json-schema';
 import type { Schema as InterpreterSchema } from '@cfworker/json-schema';
 import { z } from 'zod/v3';
 
 import type { JsonSchema, JsonSchemaObject } from './types';
+import { toUnicodePattern } from './utils/unicode-pattern';
 
 const REQUIRES_WHOLE_SCHEMA_VALIDATION = new Set([
   '$ref',
@@ -161,51 +162,98 @@ export const guardSchemaAt = (
       { ...refs.root, $ref: `#/${refs.path.map(part => encodePointer(String(part))).join('/')}` }
     : node;
 
-const compilesAsUnicode = (pattern: string): boolean => {
+const patternKeyRenames = new WeakMap<object, ReadonlyMap<string, string>>();
+
+/**
+ * The Unicode spelling of each `patternProperties` key. Two keys that spell
+ * the same way (`^a\_b$` and `^a_b$`) stay separate entries: the later one is
+ * wrapped in a non-capturing group, which matches the same names, so neither
+ * value schema is dropped. A key with no Unicode spelling is kept as is and
+ * surfaces as a guard failure rather than an unenforced constraint.
+ */
+const renamePatternKeys = (patternProperties: object): ReadonlyMap<string, string> => {
+  const cached = patternKeyRenames.get(patternProperties);
+  if (cached) {
+    return cached;
+  }
+
+  const renames = new Map<string, string>();
+  const used = new Set<string>();
+  for (const key of Object.keys(patternProperties)) {
+    let renamed = toUnicodePattern(key) ?? key;
+    while (used.has(renamed)) {
+      renamed = `(?:${renamed})`;
+    }
+    used.add(renamed);
+    renames.set(key, renamed);
+  }
+  patternKeyRenames.set(patternProperties, renames);
+  return renames;
+};
+
+const decodePointerSegment = (segment: string): string => {
   try {
-    new RegExp(pattern, 'u');
-    return true;
+    return decodeURI(segment).replace(/~1/g, '/').replace(/~0/g, '~');
   } catch {
-    return false;
+    return segment;
   }
 };
 
-const REGEX_SYNTAX_CHARACTERS = new Set('^$\\.*+?()[]{}|/');
+/**
+ * A local `$ref` rewritten to address the renamed `patternProperties` keys of
+ * the interpreter copy. `root` is the unrenamed document it points into.
+ */
+const renameRefThroughPatternKeys = (ref: string, root: unknown): string => {
+  if (!ref.startsWith('#/')) {
+    return ref;
+  }
+
+  const segments = ref.slice(2).split('/');
+  let node: unknown = root;
+  let changed = false;
+  const renamed = segments.map((segment, index) => {
+    const key = decodePointerSegment(segment);
+    let result = segment;
+    if (
+      index > 0 &&
+      decodePointerSegment(segments[index - 1]) === 'patternProperties' &&
+      isObject(node)
+    ) {
+      const renamedKey = renamePatternKeys(node).get(key);
+      if (renamedKey !== undefined && renamedKey !== key) {
+        result = encodePointer(renamedKey);
+        changed = true;
+      }
+    }
+    node =
+      isObject(node) || Array.isArray(node) ? (node as Record<string, unknown>)[key] : undefined;
+    return result;
+  });
+
+  return changed ? `#/${renamed.join('/')}` : ref;
+};
+
+const PATTERN_FORMAT_PREFIX = 'composio-pattern:';
 
 /**
- * The interpreter compiles every pattern with the `u` flag, while
- * `compilePattern` deliberately does not. Tool schemas routinely use identity
- * escapes such as `\_` or `\:` that are literal characters without the flag
- * and a SyntaxError with it, so those escapes are dropped. Returns `undefined`
- * when the pattern still has no Unicode-mode spelling.
+ * Registers `pattern` as an interpreter format that tests it exactly as the
+ * native string parser does, without the `u` flag, and returns the format
+ * name. The name is derived from the pattern, so every schema using the same
+ * pattern shares one entry. Returns `undefined` for a pattern that does not
+ * compile at all, which the interpreter then reports as it always has.
  */
-const toUnicodePattern = (pattern: string): string | undefined => {
-  if (compilesAsUnicode(pattern)) {
-    return pattern;
-  }
-
-  let rewritten = '';
-  let inClass = false;
-  for (let index = 0; index < pattern.length; index++) {
-    const char = pattern[index];
-    if (char === '\\' && index + 1 < pattern.length) {
-      const escaped = pattern[++index];
-      const keepEscape =
-        /[A-Za-z0-9]/.test(escaped) ||
-        REGEX_SYNTAX_CHARACTERS.has(escaped) ||
-        (inClass && escaped === '-');
-      rewritten += keepEscape ? `\\${escaped}` : escaped;
-      continue;
+const patternFormat = (pattern: string): string | undefined => {
+  const name = `${PATTERN_FORMAT_PREFIX}${pattern}`;
+  if (!Object.hasOwn(format, name)) {
+    let regex: RegExp;
+    try {
+      regex = new RegExp(pattern);
+    } catch {
+      return undefined;
     }
-    if (char === '[') {
-      inClass = true;
-    } else if (char === ']') {
-      inClass = false;
-    }
-    rewritten += char;
+    format[name] = value => regex.test(value);
   }
-
-  return compilesAsUnicode(rewritten) ? rewritten : undefined;
+  return name;
 };
 
 /**
@@ -215,11 +263,15 @@ const toUnicodePattern = (pattern: string): string | undefined => {
  * - OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
  *   `minimum`/`maximum`. The interpreter ignores the flag, so it receives the
  *   numeric spelling the native number parser already honors.
- * - Patterns get their Unicode-mode spelling (see `toUnicodePattern`). A
- *   `pattern` without one is left to the native string parser, which compiles
- *   it without the flag, instead of failing every value.
+ * - The interpreter compiles patterns with the `u` flag, which refuses legacy
+ *   syntax tool schemas use, such as `\_`. A `pattern` becomes a format that
+ *   tests it without the flag, exactly like the native string parser. A
+ *   `patternProperties` key cannot leave the interpreter, so it gets its
+ *   Unicode spelling (`toUnicodePattern`), and local `$ref`s through a renamed
+ *   key follow the rename. `root` is the unmodified document those refs
+ *   address.
  */
-const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>): void => {
+const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>, root: unknown): void => {
   if (!isObject(value) || seen.has(value)) {
     return;
   }
@@ -238,18 +290,25 @@ const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>): void =
     delete value.exclusiveMaximum;
   }
 
-  if (typeof value.pattern === 'string') {
-    const pattern = toUnicodePattern(value.pattern);
-    if (pattern === undefined) {
-      delete value.pattern;
+  if (typeof value.$ref === 'string') {
+    value.$ref = renameRefThroughPatternKeys(value.$ref, root);
+  }
+  const patternFormatName =
+    typeof value.pattern === 'string' ? patternFormat(value.pattern) : undefined;
+  if (patternFormatName !== undefined) {
+    delete value.pattern;
+    if (value.format === undefined) {
+      value.format = patternFormatName;
     } else {
-      value.pattern = pattern;
+      const allOf = Array.isArray(value.allOf) ? value.allOf : [];
+      value.allOf = [...allOf, { format: patternFormatName }];
     }
   }
   if (isObject(value.patternProperties)) {
+    const renames = renamePatternKeys(value.patternProperties);
     value.patternProperties = Object.fromEntries(
       Object.entries(value.patternProperties).map(([pattern, schema]) => [
-        toUnicodePattern(pattern) ?? pattern,
+        renames.get(pattern) ?? pattern,
         schema,
       ])
     );
@@ -257,12 +316,12 @@ const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>): void =
 
   for (const [key, child] of Object.entries(value)) {
     if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen));
+      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen, root));
     } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested => prepareInterpreterSchema(nested, seen));
+      child.forEach(nested => prepareInterpreterSchema(nested, seen, root));
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       (Array.isArray(child) ? child : [child]).forEach(nested =>
-        prepareInterpreterSchema(nested, seen)
+        prepareInterpreterSchema(nested, seen, root)
       );
     }
   }
@@ -316,7 +375,7 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const interpreterSchema = structuredClone(jsonSchema);
-  prepareInterpreterSchema(interpreterSchema, new WeakSet());
+  prepareInterpreterSchema(interpreterSchema, new WeakSet(), jsonSchema);
   const validator = new Validator(interpreterSchema as InterpreterSchema, '7', false);
 
   // Validate the source value before defaults and other Zod transforms run.

@@ -358,6 +358,48 @@ describe('whole-schema semantic regressions', () => {
     expect(parsed.safeParse({ ref: 'a-b' }).success).toBe(false);
   });
 
+  it.each([
+    { name: 'a legacy identity escape', pattern: '^\\k_$', valid: 'k_', invalid: 'wrong' },
+    { name: 'a quantified lookahead', pattern: '^(?=a){2}ab$', valid: 'ab', invalid: 'b' },
+  ])('enforces $name in a pattern only the guard sees', ({ pattern, valid, invalid }) => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: { handle: { $ref: '#/$defs/handle' } },
+      $defs: { handle: { type: 'string', pattern } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ handle: valid }).success).toBe(true);
+    expect(parsed.safeParse({ handle: invalid }).success).toBe(false);
+  });
+
+  it('enforces every patternProperties key, including keys that differ only in escapes', () => {
+    const schema: JsonSchema = {
+      patternProperties: {
+        '^a\\_b$': { type: 'integer', minimum: 10 },
+        '^a_b$': { type: 'integer' },
+        '^\\k_$': { type: 'string' },
+      },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ a_b: 12, k_: 'ok' }).success).toBe(true);
+    expect(parsed.safeParse({ a_b: 2 }).success).toBe(false);
+    expect(parsed.safeParse({ k_: 1 }).success).toBe(false);
+  });
+
+  it('resolves references nested under a patternProperties key that needs a rewrite', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      patternProperties: { '^x\\_': { $ref: '#/$defs/label' } },
+      $defs: { label: { type: 'string' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ x_1: 'ok' }).success).toBe(true);
+    expect(parsed.safeParse({ x_1: 1 }).success).toBe(false);
+  });
+
   it('compares decimal multiples by their JSON number spelling', () => {
     const schema: JsonSchema = { type: 'number', multipleOf: 0.1 };
     expect(jsonSchemaToZod(schema).safeParse(0.3).success).toBe(true);
