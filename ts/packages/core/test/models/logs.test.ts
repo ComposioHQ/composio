@@ -26,7 +26,7 @@ const rawLog = {
   status: 'success',
   level: 'info',
   message: 'ok',
-  metadata: { tool_slug: 'GITHUB_GET_REPO', premium_usage_charge: '0.012' },
+  metadata: { tool_slug: 'GITHUB_GET_REPO', instant_charge: '0.012' },
   metrics: { duration_ms: 12 },
   parent: { log_id: 'log_0', tool_slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' },
 };
@@ -37,7 +37,7 @@ const transformedLog = {
   status: 'success',
   level: 'info',
   message: 'ok',
-  metadata: { tool_slug: 'GITHUB_GET_REPO', premium_usage_charge: '0.012' },
+  metadata: { tool_slug: 'GITHUB_GET_REPO', instant_charge: '0.012' },
   metrics: { duration_ms: 12 },
   parent: { logId: 'log_0', toolSlug: 'COMPOSIO_MULTI_EXECUTE_TOOL' },
 };
@@ -102,7 +102,7 @@ describe('Logs', () => {
         ],
         nextCursor: 'cursor_2',
       });
-      expect(result.logs[0]?.metadata.premium_usage_charge).toBe('0.012');
+      expect(result.logs[0]?.metadata.instant_charge).toBe('0.012');
     });
 
     it('throws a ValidationError for an unknown filter field', async () => {
@@ -114,9 +114,9 @@ describe('Logs', () => {
       expect(mockClient.logs.createToolExecution).not.toHaveBeenCalled();
     });
 
-    it('rejects a non-string premium charge in log metadata', async () => {
+    it('rejects a non-string Instant charge in log metadata', async () => {
       mockClient.logs.createToolExecution.mockResolvedValue({
-        logs: [{ ...rawLog, metadata: { premium_usage_charge: 0.012 } }],
+        logs: [{ ...rawLog, metadata: { instant_charge: 0.012 } }],
         next_cursor: null,
       });
 
@@ -160,7 +160,7 @@ describe('Logs', () => {
       expect(result.context).toEqual({});
     });
 
-    it('leaves the premium charge absent for an uncharged call', async () => {
+    it('leaves the Instant charge absent for an uncharged call', async () => {
       mockClient.logs.retrieveToolExecution.mockResolvedValue({
         ...rawLog,
         metadata: { tool_slug: 'GITHUB_GET_REPO' },
@@ -171,7 +171,7 @@ describe('Logs', () => {
 
       const result = await logs.get('log_1');
 
-      expect(result.metadata.premium_usage_charge).toBeUndefined();
+      expect(result.metadata.instant_charge).toBeUndefined();
     });
   });
 });

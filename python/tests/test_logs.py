@@ -25,7 +25,7 @@ def logs(mock_client: Mock) -> Logs:
 
 
 class TestLogs:
-    def test_search_preserves_premium_usage_charge(self, logs, mock_client):
+    def test_search_preserves_instant_charge(self, logs, mock_client):
         mock_client.logs.create_tool_execution.return_value = log_create_tool_execution_response.LogCreateToolExecutionResponse.model_validate(
             {
                 "logs": [
@@ -35,7 +35,7 @@ class TestLogs:
                         "type": "tool.execution",
                         "status": "success",
                         "level": "info",
-                        "metadata": {"premium_usage_charge": "0.012"},
+                        "metadata": {"instant_charge": "0.012"},
                         "metrics": {},
                         "parent": None,
                     }
@@ -46,7 +46,7 @@ class TestLogs:
 
         result = logs.search()
 
-        assert result.logs[0].metadata["premium_usage_charge"] == "0.012"
+        assert result.logs[0].metadata["instant_charge"] == "0.012"
 
     def test_search_passes_params_through(self, logs, mock_client):
         mock_client.logs.create_tool_execution.return_value = "page"
@@ -77,7 +77,7 @@ class TestLogs:
         assert logs.get("log_123") == "log"
         mock_client.logs.retrieve_tool_execution.assert_called_once_with("log_123")
 
-    def test_get_preserves_premium_usage_charge(self, logs, mock_client):
+    def test_get_preserves_instant_charge(self, logs, mock_client):
         mock_client.logs.retrieve_tool_execution.return_value = log_retrieve_tool_execution_response.LogRetrieveToolExecutionResponse.model_validate(
             {
                 "id": "log_1",
@@ -85,7 +85,7 @@ class TestLogs:
                 "type": "tool.execution",
                 "status": "success",
                 "level": "info",
-                "metadata": {"premium_usage_charge": "0.012"},
+                "metadata": {"instant_charge": "0.012"},
                 "metrics": {},
                 "parent": None,
                 "context": {},
@@ -96,4 +96,4 @@ class TestLogs:
 
         result = logs.get("log_1")
 
-        assert result.metadata["premium_usage_charge"] == "0.012"
+        assert result.metadata["instant_charge"] == "0.012"

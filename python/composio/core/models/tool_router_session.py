@@ -21,19 +21,15 @@ from composio_client.types.tool_list_response import (
     ItemToolkit,
 )
 from composio_client.types.tool_router import (
-    session_attach_response,
     session_create_response,
     session_link_params,
     session_patch_params,
-    session_patch_response,
-    session_retrieve_response,
+    session_search_response,
 )
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from composio_client.types.tool_router.session_search_response import (
-    SessionSearchResponse,
-)
+from pydantic import BaseModel
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -75,7 +71,7 @@ from composio.core.models.tool_router_session_delete import (
     delete_tool_router_session,
 )
 from composio.core.models.tools import (
-    PremiumCharge,
+    InstantCharge,
     ToolExecuteParams,
     ToolExecutionResponse,
 )
@@ -103,42 +99,123 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
-#: Server-side session configuration as returned by the API: toolkit and tool
-#: allowlists, tags, auth configs, connected accounts, ``manage_connections``,
-#: preload, sandbox (``workbench``), search and execute settings. The four
-#: generated response models carry the same fields.
-ToolRouterSessionConfig = t.Union[
-    session_create_response.Config,
-    session_retrieve_response.Config,
-    session_attach_response.Config,
-    session_patch_response.Config,
-]
+class ToolRouterInstantResponseEnable(te.TypedDict):
+    enabled: t.List[str]
 
 
-class ToolRouterPremiumUsageEnable(te.TypedDict):
+class ToolRouterInstantResponseDisable(te.TypedDict):
+    disabled: t.List[str]
+
+
+class ToolRouterInstantResponse(te.TypedDict):
+    """Stored Instant policy returned in Session config, using API field casing."""
+
+    toolkits: te.NotRequired[
+        t.Union[ToolRouterInstantResponseEnable, ToolRouterInstantResponseDisable]
+    ]
+    tools: te.NotRequired[
+        t.Dict[
+            str,
+            t.Union[ToolRouterInstantResponseEnable, ToolRouterInstantResponseDisable],
+        ]
+    ]
+    return_instant_charge: bool
+
+
+class ToolRouterSessionConfig(t.Protocol):
+    """Server-side Session config. New Instant fields are retained by the client
+    as Pydantic extras until its generated response types adopt this contract.
+    """
+
+    user_id: str
+    instant: t.Union[t.Literal[False], ToolRouterInstantResponse]
+    auth_configs: t.Optional[t.Dict[str, str]]
+    connected_accounts: t.Optional[t.Dict[str, t.List[str]]]
+    execute: session_create_response.ConfigExecute
+    manage_connections: t.Optional[session_create_response.ConfigManageConnections]
+    multi_account: t.Optional[session_create_response.ConfigMultiAccount]
+    preload: session_create_response.ConfigPreload
+    search: session_create_response.ConfigSearch
+    tags: t.Optional[session_create_response.ConfigTags]
+    toolkits: t.Union[
+        session_create_response.ConfigToolkitsEnabled,
+        session_create_response.ConfigToolkitsDisabled,
+        None,
+    ]
+    tools: t.Optional[
+        t.Dict[
+            str,
+            t.Union[
+                session_create_response.ConfigToolsEnabled,
+                session_create_response.ConfigToolsDisabled,
+                session_create_response.ConfigToolsTags,
+            ],
+        ]
+    ]
+    workbench: t.Optional[session_create_response.ConfigWorkbench]
+
+    def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
+
+    def model_dump_json(self, **kwargs: t.Any) -> str: ...
+
+    def model_copy(self, **kwargs: t.Any) -> ToolRouterSessionConfig: ...
+
+
+class ToolRouterInstantEnable(te.TypedDict):
     enable: t.List[str]
 
 
-class ToolRouterPremiumUsageDisable(te.TypedDict):
+class ToolRouterInstantDisable(te.TypedDict):
     disable: t.List[str]
 
 
-class ToolRouterPremiumUsageConfig(te.TypedDict, total=False):
-    """Experimental premium usage policy for a Session."""
+class ToolRouterInstantConfig(te.TypedDict, total=False):
+    """Experimental Instant usage policy for a Session."""
 
-    toolkits: t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
-    tools: t.Dict[
-        str, t.Union[ToolRouterPremiumUsageEnable, ToolRouterPremiumUsageDisable]
-    ]
-    return_premium_charge: bool
+    toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
+    tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
+    return_instant_charge: bool
 
 
 class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
     """Result of :meth:`ToolRouterSession.execute`."""
 
-    premium_charge: t.Optional[PremiumCharge] = None
+    instant_charge: t.Optional[InstantCharge] = None
     """Present only when the Session sets
-    ``premium_usage.return_premium_charge`` and a charge is available."""
+    ``instant.return_instant_charge`` and a charge is available."""
+
+
+class ToolRouterInstantAccount(BaseModel):
+    """Tools served by the Composio Instant account for a toolkit."""
+
+    allowed_tool_slugs: t.List[str]
+
+
+class ToolRouterToolkitConnectionStatus(
+    session_search_response.ToolkitConnectionStatus
+):
+    instant_account: t.Optional[ToolRouterInstantAccount] = None
+
+
+class ToolRouterSessionSearchResponse(session_search_response.SessionSearchResponse):
+    """Session search result, including typed Instant account coverage."""
+
+    # Narrows the generated list item type; `list` is invariant for mypy.
+    toolkit_connection_statuses: t.List[ToolRouterToolkitConnectionStatus]  # type: ignore[assignment]
+
+
+def _with_instant_account(status: t.Any) -> t.Any:
+    if not isinstance(status, BaseModel):
+        return status
+    fields = dict(status)
+    account = fields.get("instant_account")
+    if isinstance(account, dict):
+        fields["instant_account"] = ToolRouterInstantAccount.model_construct(
+            _fields_set=set(account), **account
+        )
+    return ToolRouterToolkitConnectionStatus.model_construct(
+        _fields_set=status.model_fields_set, **fields
+    )
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -247,12 +324,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         # Sessions built from an API response always carry their config; the
         # fallback only covers direct construction without one (tests).
-        self.config = config or session_create_response.Config(
-            user_id=user_id or "",
-            execute=session_create_response.ConfigExecute(),
-            search=session_create_response.ConfigSearch(),
-            preload=session_create_response.ConfigPreload(tools=self.preload.tools),
-            premium_usage=False,
+        self.config = config or t.cast(
+            ToolRouterSessionConfig,
+            session_create_response.Config.model_construct(
+                user_id=user_id or "",
+                execute=session_create_response.ConfigExecute(),
+                search=session_create_response.ConfigSearch(),
+                preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+                instant=False,
+            ),
         )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
@@ -707,8 +787,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             "error": error_message,
             "successful": not has_any_error,
         }
-        if remote_result and remote_result.get("premium_charge") is not None:
-            merged["premium_charge"] = remote_result["premium_charge"]
+        if remote_result and remote_result.get("instant_charge") is not None:
+            merged["instant_charge"] = remote_result["instant_charge"]
         return merged
 
     def authorize(
@@ -843,19 +923,31 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         query: str,
         model: t.Optional[str] = None,
-    ) -> SessionSearchResponse:
+    ) -> ToolRouterSessionSearchResponse:
         """
         Search for tools by semantic use case.
 
         Returns relevant tools for the given query with schemas and guidance.
         """
-        return self._client.tool_router.session.search(
+        response = self._client.tool_router.session.search(
             session_id=self.session_id,
             queries=[{"use_case": query}],
             model=model if model else omit,
             experimental=inline_custom_tools_search_experimental(
                 self._inline_custom_tools_payload
             ),
+        )
+        # The client already built the response without enforcing its schema.
+        # Construct without revalidating so an unexpected field can't fail a
+        # search; only the Instant account coverage gains a typed model.
+        fields = dict(response)
+        statuses = fields.get("toolkit_connection_statuses")
+        if isinstance(statuses, list):
+            fields["toolkit_connection_statuses"] = [
+                _with_instant_account(status) for status in statuses
+            ]
+        return ToolRouterSessionSearchResponse.model_construct(
+            _fields_set=response.model_fields_set, **fields
         )
 
     def execute(
@@ -878,7 +970,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             top-level field or define their own account-selection fields.
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
-        ``error``, ``log_id``, and ``premium_charge`` attributes.
+        ``error``, ``log_id``, and ``instant_charge`` attributes.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
@@ -902,7 +994,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             ),
         )
         # The client already validated data/error/log_id and kept the
-        # undeclared premium_charge as an extra. Construct without
+        # undeclared instant_charge as an extra. Construct without
         # revalidating so a malformed charge can't fail an executed call.
         return ToolRouterSessionExecuteResponse.model_construct(**dict(response))
 
@@ -1015,9 +1107,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self,
         *,
         toolkits: t.Union[t.Optional[session_patch_params.Toolkits], "Omit"] = omit,
-        premium_usage: t.Union[
-            t.Literal[False], ToolRouterPremiumUsageConfig, "Omit"
-        ] = omit,
+        instant: t.Union[t.Literal[False], ToolRouterInstantConfig, "Omit"] = omit,
         tools: t.Union[
             t.Optional[t.Dict[str, session_patch_params.Tools]], "Omit"
         ] = omit,
@@ -1057,10 +1147,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         as-is). Supplied ``tools``, ``auth_configs`` and ``connected_accounts``
         maps replace the stored map entirely. Inside ``manage_connections``,
         ``callback_url=None`` removes only the stored callback URL.
-        Experimental ``premium_usage`` accepts ``False`` to disable billed
+        Experimental ``instant`` accepts ``False`` to disable billed
         access or an object to set its filters; it does not accept ``None``.
-        Any object, even one that only sets ``return_premium_charge``,
-        re-enables premium usage on a Session set to ``False``.
+        Any object, even one that only sets ``return_instant_charge``,
+        re-enables Instant usage on a Session set to ``False``.
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1092,10 +1182,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
             )
-        if premium_usage is None:
+        if instant is None:
             raise exceptions.InvalidParams(
-                "`premium_usage` does not accept None; pass False to disable "
-                "premium usage, or omit it to keep the stored policy"
+                "`instant` does not accept None; pass False to disable "
+                "Instant usage, or omit it to keep the stored policy"
             )
 
         precondition: t.Union[int, "Omit"]
@@ -1113,11 +1203,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # The generated client has no typed parameter for the precondition, so
         # it travels as an extra root body field.
-        extra_body = (
+        extra_body: t.Optional[t.Dict[str, t.Any]] = (
             None
             if isinstance(precondition, Omit)
             else {"expected_config_version": precondition}
         )
+        if not isinstance(instant, Omit):
+            # Send the new wire contract without passing the old generated keyword.
+            extra_body = {**(extra_body or {}), "instant": instant}
 
         # The generated client does not type ``None`` for every policy block
         # although the API accepts it (it removes the stored override), nor the
@@ -1151,14 +1244,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
                 ),
-                premium_usage=t.cast(
-                    t.Union[
-                        t.Literal[False],
-                        session_patch_params.CurrentPremiumUsageVariant1,
-                        "Omit",
-                    ],
-                    premium_usage,
-                ),
                 extra_body=extra_body,
                 # A stale precondition is a deterministic 409: never retry it.
                 request_options={"max_retries": 0},
@@ -1181,7 +1266,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     None if isinstance(precondition, Omit) else precondition
                 ),
             ) from exc
-        self.config = response.config
+        self.config = t.cast(ToolRouterSessionConfig, response.config)
         self.config_version = response.config_version
         self.preload = _session_preload_config(response.config.preload)
         return self.config
