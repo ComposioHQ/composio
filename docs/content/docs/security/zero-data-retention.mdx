@@ -53,7 +53,6 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 | Triggers | With ZDR on, trigger logs leave out event payloads, but Composio still stores the events to process and deliver them. | Do not use triggers for data that needs ZDR. |
 | Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
 | Files | Composio stages files that tools upload or download, including Proxy Execute binary responses, and cleans them up after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
-| Requests with the `x-debug: true` header | Composio archives these requests for debugging. | Do not send this header from ZDR projects. |
 | Tool search in sessions | Composio can cache search queries to improve results. | Keep sensitive data out of search queries, or use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to turn off tool search. |
 | Third parties | The destination apps you connect, your model provider, external MCP servers, and your own logs keep their own data policies. | Review each provider's data policy, and set retention for your own logs. |
 
@@ -93,7 +92,7 @@ See [Disabling the sandbox](/docs/configuring-sessions#disabling-the-sandbox) fo
 
 Composio stores audit logs and telemetry on every plan, and ZDR does not change them:
 
-- **Audit logs** record who did what and when, including the metadata row for each tool call.
+- **Audit logs** record who did what and when, including the metadata row for each tool call. They do not hold request arguments, response data, or error text.
 - **Telemetry** is the metrics, traces, application logs, error reports, and usage metering that Composio uses to run and bill the service. Telemetry can include error messages returned by providers.
 
 ## Existing data
