@@ -1,4 +1,5 @@
 import Ajv from 'ajv';
+import { format } from '@cfworker/json-schema';
 import { describe, expect, it } from 'vitest';
 
 import { z } from 'zod/v3';
@@ -371,6 +372,19 @@ describe('whole-schema semantic regressions', () => {
 
     expect(parsed.safeParse({ handle: valid }).success).toBe(true);
     expect(parsed.safeParse({ handle: invalid }).success).toBe(false);
+  });
+
+  it('leaves no pattern formats in the interpreter format table', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: { handle: { $ref: '#/$defs/handle' } },
+      $defs: { handle: { type: 'string', pattern: '^leak-check-\\d+$' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ handle: 'leak-check-1' }).success).toBe(true);
+    expect(parsed.safeParse({ handle: 'wrong' }).success).toBe(false);
+    expect(Object.keys(format).filter(name => name.includes('leak-check'))).toEqual([]);
   });
 
   it('enforces every patternProperties key, including keys that differ only in escapes', () => {

@@ -261,23 +261,25 @@ const renameRefThroughPatternKeys = (ref: string, root: unknown): string => {
 
 const PATTERN_FORMAT_PREFIX = 'composio-pattern:';
 
+/** Pattern formats of one guard, installed on the interpreter only while it validates. */
+type PatternFormats = Map<string, (value: string) => boolean>;
+
 /**
- * Registers `pattern` as an interpreter format that tests it exactly as the
- * native string parser does, without the `u` flag, and returns the format
- * name. The name is derived from the pattern, so every schema using the same
- * pattern shares one entry. Returns `undefined` for a pattern that does not
- * compile at all, which the interpreter then reports as it always has.
+ * Adds `pattern` to `formats` as an interpreter format that tests it exactly as
+ * the native string parser does, without the `u` flag, and returns the format
+ * name. Returns `undefined` for a pattern that does not compile at all, which
+ * the interpreter then reports as it always has.
  */
-const patternFormat = (pattern: string): string | undefined => {
+const patternFormat = (pattern: string, formats: PatternFormats): string | undefined => {
   const name = `${PATTERN_FORMAT_PREFIX}${pattern}`;
-  if (!Object.hasOwn(format, name)) {
+  if (!formats.has(name)) {
     let regex: RegExp;
     try {
       regex = new RegExp(pattern);
     } catch {
       return undefined;
     }
-    format[name] = value => regex.test(value);
+    formats.set(name, value => regex.test(value));
   }
   return name;
 };
@@ -295,9 +297,14 @@ const patternFormat = (pattern: string): string | undefined => {
  *   `patternProperties` key cannot leave the interpreter, so it gets its
  *   Unicode spelling (`toUnicodePattern`), and local `$ref`s through a renamed
  *   key follow the rename. `root` is the unmodified document those refs
- *   address.
+ *   address. `formats` collects the pattern formats.
  */
-const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>, root: unknown): void => {
+const prepareInterpreterSchema = (
+  value: unknown,
+  seen: WeakSet<object>,
+  root: unknown,
+  formats: PatternFormats
+): void => {
   if (!isObject(value) || seen.has(value)) {
     return;
   }
@@ -320,7 +327,7 @@ const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>, root: u
     value.$ref = renameRefThroughPatternKeys(value.$ref, root);
   }
   const patternFormatName =
-    typeof value.pattern === 'string' ? patternFormat(value.pattern) : undefined;
+    typeof value.pattern === 'string' ? patternFormat(value.pattern, formats) : undefined;
   if (patternFormatName !== undefined) {
     delete value.pattern;
     if (value.format === undefined) {
@@ -342,12 +349,12 @@ const prepareInterpreterSchema = (value: unknown, seen: WeakSet<object>, root: u
 
   for (const [key, child] of Object.entries(value)) {
     if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen, root));
+      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
     } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested => prepareInterpreterSchema(nested, seen, root));
+      child.forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       (Array.isArray(child) ? child : [child]).forEach(nested =>
-        prepareInterpreterSchema(nested, seen, root)
+        prepareInterpreterSchema(nested, seen, root, formats)
       );
     }
   }
@@ -401,7 +408,8 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const interpreterSchema = structuredClone(jsonSchema);
-  prepareInterpreterSchema(interpreterSchema, new WeakSet(), jsonSchema);
+  const formats: PatternFormats = new Map();
+  prepareInterpreterSchema(interpreterSchema, new WeakSet(), jsonSchema, formats);
   const validator = new Validator(interpreterSchema as InterpreterSchema, '7', false);
 
   // Validate the source value before defaults and other Zod transforms run.
@@ -409,11 +417,21 @@ export const withWholeSchemaValidation = (
   // appear valid to the JSON Schema interpreter.
   const innerGuard = (parsedSchema._def as GuardedDef).wholeSchemaGuard;
   const wholeSchemaGuard: WholeSchemaGuard = value => {
+    // The interpreter only reads formats from its process-wide table. This
+    // guard's pattern formats live there only for this synchronous call, so
+    // the table does not grow with every distinct pattern ever converted.
     let result: ReturnType<Validator['validate']>;
     try {
+      formats.forEach((test, name) => {
+        format[name] = test;
+      });
       result = validator.validate(value);
     } catch (cause) {
       return `JSON Schema validation failed: ${String(cause)}`;
+    } finally {
+      formats.forEach((_, name) => {
+        delete format[name];
+      });
     }
 
     if (!result.valid) {
