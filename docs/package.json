@@ -99,6 +99,7 @@
     "@llamaindex/workflow": "^1.1.25",
     "@mastra/core": "1.53.0",
     "@mastra/mcp": "1.17.2",
+    "@mdx-js/mdx": "^3.1.1",
     "@openai/agents": "^0.13.5",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/postcss": "^4.3.3",
