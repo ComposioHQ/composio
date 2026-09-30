@@ -274,33 +274,6 @@ const writeCacheEntry = (
     allowEntries: current.allowEntries,
   }));
 
-const readCachedEntry = (
-  fs: FileSystem.FileSystem,
-  path: Path.Path,
-  cacheDirectory: string,
-  params: {
-    orgId: string;
-    projectId: string;
-    consumerUserId: string;
-  }
-): Effect.Effect<ConsumerPermissionSnapshot | undefined> =>
-  readCacheFile(fs, path, cacheDirectory).pipe(
-    Effect.map(cache => cache.entries[cacheKey(params)])
-  );
-
-const isFreshForAccounts = (
-  entry: ConsumerPermissionSnapshot | undefined,
-  connectedAccountIds: ReadonlyArray<string>
-): entry is ConsumerPermissionSnapshot => {
-  if (!entry) return false;
-  if (Date.now() - entry.fetchedAt > PERMISSION_SNAPSHOT_CACHE_TTL_MS) return false;
-  const cachedIds = new Set(entry.connectedAccountIds);
-  return connectedAccountIds.every(id => cachedIds.has(id));
-};
-
-const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
-  payload.enhanced_controls === true || payload.enhancedControls === true;
-
 // `/consumer/permissions/resolve` has been observed returning override keys
 // built from a tool slug that repeats its leading word twice (e.g.
 // `OUTLOOK_OUTLOOK_SEARCH_MESSAGES` instead of `OUTLOOK_SEARCH_MESSAGES`) —
@@ -351,6 +324,43 @@ const normalizePermissionsOverrides = (
     ? permissions
     : { ...permissions, overrides: normalizedOverrides };
 };
+
+// Applied on every cache read (not just on fetch) so a snapshot persisted by
+// an older CLI version — or one still within the fresh-cache TTL from just
+// before this normalization shipped — doesn't keep serving stale
+// doubled-prefix keys for up to PERMISSION_SNAPSHOT_CACHE_TTL_MS after
+// upgrade.
+const normalizeSnapshot = (
+  entry: ConsumerPermissionSnapshot | undefined
+): ConsumerPermissionSnapshot | undefined =>
+  entry && { ...entry, permissions: normalizePermissionsOverrides(entry.permissions) };
+
+const readCachedEntry = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cacheDirectory: string,
+  params: {
+    orgId: string;
+    projectId: string;
+    consumerUserId: string;
+  }
+): Effect.Effect<ConsumerPermissionSnapshot | undefined> =>
+  readCacheFile(fs, path, cacheDirectory).pipe(
+    Effect.map(cache => normalizeSnapshot(cache.entries[cacheKey(params)]))
+  );
+
+const isFreshForAccounts = (
+  entry: ConsumerPermissionSnapshot | undefined,
+  connectedAccountIds: ReadonlyArray<string>
+): entry is ConsumerPermissionSnapshot => {
+  if (!entry) return false;
+  if (Date.now() - entry.fetchedAt > PERMISSION_SNAPSHOT_CACHE_TTL_MS) return false;
+  const cachedIds = new Set(entry.connectedAccountIds);
+  return connectedAccountIds.every(id => cachedIds.has(id));
+};
+
+const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
+  payload.enhanced_controls === true || payload.enhancedControls === true;
 
 const fetchJson = async <S extends Schema.ConstraintDecoder<unknown>>(
   responseSchema: S,

@@ -8,6 +8,7 @@ import {
   decodeCacheFileTolerant,
   decodeToolRouterPermissionsConfig,
   gateToolExecution,
+  getConsumerPermissionSnapshot,
   normalizeLegacyOverrideKeys,
   resolveGateState,
   ToolPermissionDeniedError,
@@ -15,6 +16,28 @@ import {
 } from 'src/services/tool-permissions';
 import { extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
+import { ComposioUserContext } from 'src/services/user-context';
+
+// apiKey: none() makes refreshConsumerPermissionSnapshot's background
+// refresh a no-op (it bails before any network call), so a fresh cache hit
+// is observed exactly as read from disk.
+const ComposioUserContextTest = Layer.succeed(
+  ComposioUserContext,
+  ComposioUserContext.of({
+    data: {
+      apiKey: Option.none(),
+      baseURL: 'https://backend.composio.dev',
+      webURL: 'https://app.composio.dev',
+      orgId: Option.none(),
+      projectId: Option.none(),
+      testUserId: Option.none(),
+    },
+    isLoggedIn: () => false,
+    logout: Effect.void,
+    login: () => Effect.void,
+    update: () => Effect.void,
+  })
+);
 
 // Pinned wall clock for deterministic fixtures. The SUT reads the real
 // `Date.now()` (snapshot TTL, allow-decision expiry), so every timestamp
@@ -29,6 +52,11 @@ const ToolPermissionsTest = Layer.mergeAll(
   // fromEnv() snapshots the environment when built; build it per provide so the
   // per-test COMPOSIO_CACHE_DIR stub is observed.
   ConfigProvider.layer(Effect.sync(() => extendConfigProvider(ConfigProvider.fromEnv())))
+);
+
+const ToolPermissionsWithUserContextTest = Layer.mergeAll(
+  ToolPermissionsTest,
+  ComposioUserContextTest
 );
 
 const snapshotFixture = (
@@ -185,6 +213,49 @@ describe('tool permissions', () => {
       })
     ).toBe('always_allow');
   });
+
+  it.effect(
+    'normalizes a doubled-prefix override key already sitting in a still-fresh cache entry',
+    () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const cacheDir = yield* Config.String('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
+
+        const staleSnapshot = snapshotFixture({
+          orgId: 'org_fresh_cache',
+          connectedAccountIds: ['ca_outlook_1'],
+          permissions: {
+            default: 'ask_every_call',
+            overrides: { 'OUTLOOK_OUTLOOK_SEARCH_MESSAGES:ca_outlook_1': 'always_allow' },
+          },
+        });
+        yield* fs.writeFileString(
+          path.join(cacheDir, 'tool-permissions-cache.json'),
+          JSON.stringify({
+            entries: { 'org_fresh_cache:project_test:user_test': staleSnapshot },
+          })
+        );
+
+        // Unexpired relative to the pinned clock, so this hits the fast
+        // path that returns the cached entry directly instead of awaiting
+        // a fresh fetch (see `getConsumerPermissionSnapshot`).
+        const result = yield* getConsumerPermissionSnapshot({
+          orgId: 'org_fresh_cache',
+          projectId: 'project_test',
+          consumerUserId: 'user_test',
+          connectedAccountIds: ['ca_outlook_1'],
+        });
+
+        expect(
+          resolveGateState({
+            toolSlug: 'OUTLOOK_SEARCH_MESSAGES',
+            connectedAccountId: 'ca_outlook_1',
+            snapshot: result,
+          })
+        ).toBe('always_allow');
+      }).pipe(Effect.provide(ToolPermissionsWithUserContextTest))
+  );
 
   it('resolves overrides ahead of the default mode', () => {
     expect(
