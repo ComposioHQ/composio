@@ -34,7 +34,7 @@ catalog:
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.22.0
   '@cloudflare/workers-types': ^5.20260922.1
-  '@composio/client': 2.0.0-rc.8
+  '@composio/client': 2.0.0-rc.9
   '@effect/language-service': ^0.87.2
   '@effect/platform-bun': 4.0.0-rc.117
   '@effect/vitest': 4.0.0-rc.117
@@ -117,8 +117,10 @@ overrides:
   # vulnerable 4.2.0; GHSA-2883-xcg3-v3hh raised the patched floor to 4.3.2.
   # Drop when it ships >=4.3.2.
   'js-yaml@>=4.0.0 <4.3.2': '>=4.3.2 <5'
-  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x; drop when it ships >=6.28.0.
-  'undici@>=5.0.0 <6.28.0': '>=6.28.0 <7'
+  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x;
+  # GHSA-rfgv-xxqx-mfg5 raised the patched floor to 6.28.1. Drop when it ships
+  # >=6.28.1.
+  'undici@>=5.0.0 <6.28.1': '>=6.28.1 <7'
   # temporary: gray-matter (via @mastra/core) exact-pins vulnerable js-yaml 3.15.0;
   # GHSA-2883-xcg3-v3hh raised the patched floor to 3.15.2. Drop when it ships
   # >=3.15.2.
@@ -140,17 +142,17 @@ overrides:
   # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
   'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
-  # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
-  # majors deliberately -- narrowing it to the 5.x line would reintroduce a
-  # HIGH finding on the production openapi-typescript path and fail the audit
-  # gate.
+  # GHSA-rgw5-rvv9-x895, GHSA-6j4f-fj2g-mc7p, and GHSA-qhr7-859c-m2p7 raise
+  # its patched floor to 5.0.11. This selector spans majors deliberately --
+  # narrowing it to the 5.x line would reintroduce a HIGH finding on the
+  # production openapi-typescript path and fail the audit gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
   # brace-expansion as a callable CJS export, which 5.x replaced with a named
   # `expand`, so a brace-containing pattern throws there. Not reachable today --
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.8': '>=5.0.9 <6'
+  'brace-expansion@<=5.0.10': '>=5.0.11 <6'
   # temporary: miniflare (via wrangler and @cloudflare/vitest-pool-workers in the
   # Cloudflare e2e fixtures) exact-pins sharp 0.35.2, which bundles a libheif
   # with GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545. Nothing here imports
