@@ -4,12 +4,10 @@ Gong now requires every OAuth integration to have trusted IP addresses configure
 
 If you use your own Gong OAuth integration with Composio, add all four Composio IPs to both the **Access Token** and **Refresh Token** trusted IP lists:
 
-```text
-52.72.72.59/32
-54.243.138.89/32
-54.224.131.195/32
-34.233.50.61/32
-```
+- `52.72.72.59/32`
+- `54.243.138.89/32`
+- `54.224.131.195/32`
+- `34.233.50.61/32`
 
 Composio's traffic to Gong can come from any of these addresses. If you add only some of them, or add them to only one list, API calls or token refreshes can fail intermittently.
 
