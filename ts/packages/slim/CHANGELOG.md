@@ -1,5 +1,19 @@
 # @composio/slim
 
+## 0.22.0
+
+### Patch Changes
+
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
+## 0.21.0
+
+No changes in this release.
+
+## 0.20.0
+
+No changes in this release.
+
 ## 0.19.0
 
 ### Minor Changes

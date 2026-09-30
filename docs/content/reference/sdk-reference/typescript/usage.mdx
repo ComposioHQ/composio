@@ -52,7 +52,7 @@ Usage totals per metering entity type for a time range.
 **Experimental — shape may change in future releases.**
 
 ```typescript
-async summary(params?: { entityTypes?: string[]; filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; to?: number }, requestOptions?: ComposioRequestOptions): Promise<{ entities: Record<string, { eventCount: number; totalQuantity: string; unit: string }> }>
+async summary(params?: { entityTypes?: string[]; filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; to?: number }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -64,7 +64,7 @@ async summary(params?: { entityTypes?: string[]; filters?: { sessionId?: string[
 
 **Returns**
 
-`Promise<...>` — Totals keyed by entity type
+`Promise<...>` — Totals keyed by entity type and the exact USD Instant charge
 
 **Example**
 

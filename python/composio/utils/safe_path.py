@@ -58,8 +58,16 @@ WINDOWS_RESERVED_NAMES = frozenset(
     | {f"LPT{i}" for i in "¹²³"}
 )
 """Reserved DOS device names. Writing to one on Windows targets the device
-rather than a file. Rejected on every platform so behaviour does not diverge
-between a POSIX developer machine and a Windows deployment."""
+rather than a file. Rejected as slugs and prefixed in filenames, on every
+platform, so behaviour does not diverge between a POSIX developer machine and a
+Windows deployment."""
+
+MAX_PRESERVED_EXTENSION_BYTES = 32
+"""Longest extension, in bytes and including its dot, that filename truncation
+keeps. Anything longer is not a real extension and is truncated with the rest."""
+
+_WINDOWS_INVALID_FILENAME_CHARS = re.compile(r'[\x00-\x1f<>:"|?*]')
+"""Control characters and characters reserved by Windows."""
 
 
 def is_inside_dir(child: Path, parent: Path) -> bool:
@@ -141,73 +149,176 @@ def assert_safe_path_component(value: str, *, label: str = "path component") -> 
     return value
 
 
+def _encoded_length(value: str) -> int:
+    return len(os.fsencode(value))
+
+
+def _truncate_to_bytes(value: str, max_bytes: int) -> str:
+    """The longest prefix of ``value``, by whole code points, that fits in
+    ``max_bytes``."""
+    truncated = []
+    size = 0
+    for char in value:
+        size += _encoded_length(char)
+        if size > max_bytes:
+            break
+        truncated.append(char)
+    return "".join(truncated)
+
+
+def _split_extension(name: str) -> t.Tuple[str, str]:
+    """Split off a short trailing extension (with its dot); a leading dot is
+    not one."""
+    dot = name.rfind(".")
+    extension = name[dot:] if dot > 0 else ""
+    if extension and _encoded_length(extension) <= MAX_PRESERVED_EXTENSION_BYTES:
+        return name[:dot], extension
+    return name, ""
+
+
+def _fit_filename_bytes(name: str, max_bytes: int = MAX_COMPONENT_LENGTH) -> str:
+    """Truncate ``name`` to ``max_bytes``, keeping a short extension so the file
+    still opens with the right application."""
+    if _encoded_length(name) <= max_bytes:
+        return name
+    stem, extension = _split_extension(name)
+    return _truncate_to_bytes(stem, max_bytes - _encoded_length(extension)) + extension
+
+
+def numbered_basename(name: str, copy: int) -> str:
+    """Add a copy number before the extension within the filename byte limit."""
+    suffix = f"-{copy}"
+    stem, extension = _split_extension(name)
+    return (
+        _truncate_to_bytes(
+            stem, MAX_COMPONENT_LENGTH - _encoded_length(extension) - len(suffix)
+        )
+        + suffix
+        + extension
+    )
+
+
+def open_unique_file(path: Path) -> t.Tuple[Path, t.BinaryIO]:
+    """Claim a validated download path without replacing an existing file.
+
+    Numbered alternatives stay in the same directory and preserve a short
+    extension. Exclusive creation also prevents concurrent saves from sharing
+    a destination.
+    """
+    copy = 0
+    while True:
+        candidate = (
+            path if copy == 0 else path.with_name(numbered_basename(path.name, copy))
+        )
+        try:
+            return candidate, candidate.open("xb")
+        except FileExistsError:
+            copy += 1
+
+
+_FNV_OFFSET_BASIS_64 = 0xCBF29CE484222325
+_FNV_PRIME_64 = 0x100000001B3
+_UINT64_MASK = 0xFFFFFFFFFFFFFFFF
+
+
+def _fnv1a64_hex(value: str) -> str:
+    """64-bit FNV-1a of the UTF-8 bytes, as 16 hex digits. ``fnv1a64Hex`` in
+    the TypeScript SDK matches it."""
+    digest = _FNV_OFFSET_BASIS_64
+    for byte in value.encode("utf-8", "surrogatepass"):
+        digest = ((digest ^ byte) * _FNV_PRIME_64) & _UINT64_MASK
+    return f"{digest:016x}"
+
+
+def _tag_with_original(portable: str, original: str) -> str:
+    """Tag a name that portability changed with a digest of the name it came
+    from, before the extension: ``report?.png`` and ``report*.png`` both become
+    ``report_.png``, and two long names can share a truncated prefix, so
+    without the tag one download would overwrite the other in a shared
+    directory."""
+    tag = f"-{_fnv1a64_hex(original)}"
+    stem, extension = _split_extension(
+        _fit_filename_bytes(portable, MAX_COMPONENT_LENGTH - len(tag))
+    )
+    return stem + tag + extension
+
+
 def safe_basename(name: str, *, label: str = "filename") -> str:
-    """Collapse an untrusted filename to a bare, writable basename.
+    """Collapse an untrusted filename to a bare basename that is safe to write
+    on every platform.
 
     Filenames need their own validator: :func:`assert_safe_path_component`
-    forbids ``.``, which nearly every real filename contains. This applies the
-    remaining checks — no separators, no traversal, no NUL, bounded length, no
-    reserved device name — to the one component a server most directly controls.
+    forbids ``.``, which nearly every real filename contains.
 
     ``PureWindowsPath`` treats both ``/`` and ``\\`` as separators, so a name
     crafted for a Windows target (``..\\..\\evil``) is stripped even when the
     SDK runs on POSIX, where ``Path(...).name`` would return it intact.
 
-    Names that leave no usable basename are refused rather than replaced with a
-    generated one: a response that cannot name its own file is malformed or
-    hostile, and inventing a name would hide that. ``.`` and the empty string
-    both basename to ``""``, which makes an output path equal to its own
-    directory and surfaces as ``IsADirectoryError`` at write time.
+    Names that cannot be written at all are refused: a NUL byte, invalid
+    Unicode, or no usable basename (empty or a run of dots). A response that
+    cannot name its own file is malformed or hostile, and inventing a name
+    would hide that. ``.`` and the empty string both basename to ``""``, which
+    makes an output path equal to its own directory and surfaces as
+    ``IsADirectoryError`` at write time.
 
-    :raises UnsafePathComponentError: when ``name`` yields no usable basename or
-        is unsafe to write.
+    Names that are merely unportable are made portable instead, because
+    ordinary files have them (``report_2026-09-29T10:30:00.csv``,
+    ``What is this?.png``), on every platform so a name does not depend on
+    where the SDK runs: control and Windows-reserved characters become ``_``,
+    names over :data:`MAX_COMPONENT_LENGTH` bytes are truncated with their
+    extension kept, trailing spaces and dots are dropped as Windows would, and
+    a resulting reserved device name gets a ``_`` prefix. A name any of these
+    rules changed is then tagged with a digest of the original before its
+    extension (``report_-<16 hex>.png``) to distinguish ordinary normalization
+    collisions; a name that was already portable is returned unchanged. The
+    result can still equal a literal server name, so download writes use
+    :func:`open_unique_file` to preserve existing files.
+    ``safeBasename`` in the TypeScript SDK applies the same rules in the same
+    order.
+
+    ``str.strip`` removes surrounding whitespace first, and the usability check
+    runs last, on the value that gets written, so neither ``"\\u00a0.\\u00a0"``
+    nor ``". ."`` can be written as ``.`` or as its own directory.
+
+    :raises UnsafePathComponentError: when ``name`` contains a NUL byte or
+        invalid Unicode, or leaves no usable basename.
     """
     if not isinstance(name, str):
         raise UnsafePathComponentError(
             f"Refusing to write a non-string {label}: {name!r}"
         )
 
-    raw_basename = PureWindowsPath(name).name
-    if not raw_basename or not raw_basename.strip() or set(raw_basename) == {"."}:
-        raise UnsafePathComponentError(
-            f"Path traversal detected: {label} {name!r} leaves no usable "
-            "basename to write to."
-        )
-    if "\x00" in raw_basename:
+    basename = PureWindowsPath(name).name.strip()
+    if "\x00" in basename:
         raise UnsafePathComponentError(
             f"Refusing to write {label} containing a NUL byte: {name!r}"
         )
-    if any(ord(char) < 32 or char in '<>:"|?*' for char in raw_basename):
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} containing characters reserved by "
-            f"Windows: {name!r}"
-        )
-    if raw_basename.endswith((" ", ".")):
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} ending in a space or dot: {name!r}"
-        )
-
-    basename = raw_basename.strip()
     try:
-        encoded_length = len(os.fsencode(basename))
+        _encoded_length(basename)
     except UnicodeEncodeError as e:
         raise UnsafePathComponentError(
             f"Refusing to write {label} containing invalid Unicode: {name!r}"
         ) from e
-    if encoded_length > MAX_COMPONENT_LENGTH:
-        raise UnsafePathComponentError(
-            f"Refusing to write {label} longer than {MAX_COMPONENT_LENGTH} bytes: "
-            f"{basename[:32]!r}... ({encoded_length} bytes)"
-        )
-    # Compare everything before the first dot: on Windows `NUL.tar.gz` opens
-    # the null device just as `NUL` does, so any number of extensions provides
-    # no protection.
-    device_name = basename.split(".", 1)[0].rstrip(" ").upper()
+
+    def fit(value: str) -> str:
+        return _fit_filename_bytes(value).rstrip(". ")
+
+    portable = fit(_WINDOWS_INVALID_FILENAME_CHARS.sub("_", basename))
+    # Checked on the fitted name, because truncation and trailing-dot removal
+    # can expose one (`NUL` followed by spaces and a long tail). Compare
+    # everything before the first dot: on Windows `NUL.tar.gz` opens the null
+    # device just as `NUL` does, so extensions provide no protection. Fitting
+    # again keeps the byte bound, and a `_`-prefixed name is never a device.
+    device_name = portable.split(".", 1)[0].rstrip(" ").upper()
     if device_name in WINDOWS_RESERVED_NAMES:
+        portable = fit(f"_{portable}")
+
+    if not portable:
         raise UnsafePathComponentError(
-            f"Refusing to write {label} that is a reserved device name: {name!r}"
+            f"Path traversal detected: {label} {name!r} leaves no usable "
+            "basename to write to."
         )
-    return basename
+    return portable if portable == basename else _tag_with_original(portable, basename)
 
 
 def resolve_root(root: t.Union[str, Path]) -> Path:

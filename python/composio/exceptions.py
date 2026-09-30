@@ -360,9 +360,8 @@ class MCPDestinationError(ComposioClientError):
 
 class SessionConfigConflictError(ComposioClientError):
     """Raised when a session update is rejected with HTTP 409 because the
-    session configuration changed since it was last read: the
-    ``expected_config_version`` precondition (the session's last observed
-    ``config_version`` by default) is stale.
+    session configuration changed since it was last read, for example when an
+    ``expected_config_version`` precondition passed to ``update()`` is stale.
 
     The local session object is left as it was before the call. Re-fetch the
     session with ``composio.sessions.use(session_id)`` and retry the update

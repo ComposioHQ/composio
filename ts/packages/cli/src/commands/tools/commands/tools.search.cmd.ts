@@ -1,5 +1,4 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
-import { isLocalToolkitSlug } from '@composio/cli-local-tools';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -17,6 +16,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -96,8 +96,6 @@ const stripSearchResultMetadata = <
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
 
-const isRemoteCustomToolSlug = (slug: string): boolean => slug.toUpperCase().startsWith('CUSTOM_');
-
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
 
@@ -148,7 +146,7 @@ const buildSearchNextSteps = (params: {
   rootOnly: boolean;
 }) => {
   const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit && !isLocalToolkitSlug(params.firstToolkit)) {
+  if (params.firstToolkit) {
     steps.push({
       action: 'Link a user account',
       command: params.rootOnly
@@ -361,24 +359,19 @@ const runToolsSearch = (params: {
           consumerUserId: resolvedUserId.value,
         });
       }
-      const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
-        client,
-        resolvedUserId.value,
-        {
-          toolkits: toolkitList,
-          cacheScope:
-            resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
-              ? {
-                  orgId: resolvedProject.orgId,
-                  projectId: resolvedProject.projectId,
-                  consumerUserId: resolvedProject.consumerUserId,
-                }
-              : undefined,
-        }
-      );
+      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
+        toolkits: toolkitList,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
+      });
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
-        ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
       };
       const searchResponse = yield* Effect.tryPromise({
         try: () => client.toolRouter.session.search(sessionId, searchPayload),

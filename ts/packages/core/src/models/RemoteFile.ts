@@ -1,6 +1,9 @@
 import { platform } from '#platform';
 import { ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
+import { z } from 'zod';
+
+const existingFileError = z.object({ code: z.literal('EEXIST') });
 
 function getParentDir(filePath: string): string {
   const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
@@ -14,6 +17,7 @@ import {
   ValidationError,
 } from '../errors';
 import { readResponseBodyWithLimit } from '../utils/readResponseBody';
+import { numberedBasename, safeBasename, untrustedBasename } from '../utils/safePath';
 
 /**
  * Represents a file stored in a tool router session's file mount.
@@ -77,9 +81,20 @@ export class RemoteFile {
     return new RemoteFile(parsed.data);
   }
 
-  /** Filename extracted from the mount path (e.g. "report.pdf" from "output/report.pdf") */
+  /**
+   * Filename extracted from the mount path (e.g. "report.pdf" from "output/report.pdf").
+   *
+   * Deliberately non-throwing: this is a display value, and `downloadBytes()`
+   * reads it while constructing `RemoteFileDownloadError`. A validator here
+   * would replace a genuine download error with a validation error thrown from
+   * inside the error constructor. {@link save} validates instead, at the point
+   * the value actually becomes a path.
+   *
+   * Both `/` and `\` count as separators, as in the Python SDK, so a mount path
+   * crafted for a Windows target is reduced the same way on every platform.
+   */
   get filename(): string {
-    return platform.basename(this.mountRelativePath);
+    return untrustedBasename(this.mountRelativePath);
   }
 
   private downloadError(message: string, cause: unknown, response?: Response) {
@@ -161,8 +176,10 @@ export class RemoteFile {
    * Requires a Node.js runtime with file system support (not available in Cloudflare Workers/Edge).
    *
    * @param path - Local path to save the file. If omitted, saves to the Composio temp directory using the filename from the mount path.
+   * An existing default destination gets a copy number before its extension.
    * @returns The absolute path where the file was saved
    * @throws Error if file system is not supported or the save fails
+   * @throws ValidationError if `path` is omitted and the mount path yields no usable filename
    */
   async save(path?: string): Promise<string> {
     if (!platform.supportsFileSystem) {
@@ -172,24 +189,43 @@ export class RemoteFile {
       );
     }
 
-    const content = await this.buffer();
     const homeDir = platform.homedir();
     if (!homeDir) {
       throw new Error('Cannot determine save location: home directory is not available');
     }
 
-    const savePath =
-      path ?? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME, this.filename);
+    // An explicit `path` is the caller's own. The default branch builds a path
+    // out of `mountRelativePath`, a server-controlled response field, so it is
+    // validated first (SEC-316, mirroring the Python SDK): a value such as `""`,
+    // `"."` or `"foo/.."` would otherwise make `savePath` its own directory or
+    // the parent, and fail with a raw `EISDIR` only after `mkdirSync` had run.
+    const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    const defaultName = path == null ? safeBasename(this.mountRelativePath, 'mount path') : '';
+    const savePath = path ?? platform.joinPath(defaultDir, defaultName);
 
-    const dir =
-      path != null
-        ? getParentDir(savePath)
-        : platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    const content = await this.buffer();
+
+    const dir = path != null ? getParentDir(savePath) : defaultDir;
     if (dir && !platform.existsSync(dir)) {
       platform.mkdirSync(dir);
     }
 
-    platform.writeFileSync(savePath, content);
-    return savePath;
+    if (path != null) {
+      platform.writeFileSync(savePath, content);
+      return savePath;
+    }
+
+    // Server names can equal a digest-tagged name literally. Reserve a new
+    // destination atomically so either save order keeps both downloads.
+    for (let copy = 0; ; copy++) {
+      const destination =
+        copy === 0 ? savePath : platform.joinPath(defaultDir, numberedBasename(defaultName, copy));
+      try {
+        platform.writeFileExclusiveSync(destination, content);
+        return destination;
+      } catch (error) {
+        if (!existingFileError.safeParse(error).success) throw error;
+      }
+    }
   }
 }

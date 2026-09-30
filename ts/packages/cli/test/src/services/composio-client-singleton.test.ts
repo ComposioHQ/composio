@@ -1,15 +1,34 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, describe, expect, it } from '@effect/vitest';
+import { vi } from 'vitest';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
+
+// Exercise real user-context/config resolution without opening the OS credential store.
+vi.mock('@composio/cli-keyring/effect', async importOriginal => {
+  const actual = await importOriginal<typeof import('@composio/cli-keyring/effect')>();
+  const { Effect, Layer } = await import('effect');
+  const { KeyringError } = await import('@composio/cli-keyring');
+  return {
+    ...actual,
+    KeyringLiveWithBackend: () =>
+      Layer.succeed(actual.KeyringService, {
+        getPassword: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        getSecret: () => Effect.fail(new KeyringError({ kind: 'NoEntry' })),
+        setPassword: () => Effect.die(new Error('Unexpected credential write')),
+        setSecret: () => Effect.die(new Error('Unexpected credential write')),
+        deleteCredential: () => Effect.die(new Error('Unexpected credential deletion')),
+        isAvailable: Effect.succeed(true),
+      }),
+  };
+});
 
 const withConfigLayer = (map: Map<string, string>, homedir: string) =>
   Layer.mergeAll(
@@ -61,22 +80,6 @@ const writeCliSessionCache = (
   });
 
 describe('ComposioClientSingleton headers', () => {
-  // Delete any real keychain entry so the subprocess keyring read
-  // inside ComposioUserContextLive (baked into
-  // ComposioClientSingleton.Default's dependencies) finds nothing
-  // and apiKey resolves to Option.none(). Without this, the test
-  // picks up real credentials and assertions on x-user-api-key fail.
-  beforeAll(() => {
-    try {
-      execSync(
-        '/usr/bin/security delete-generic-password -s com.composio.cli -a default 2>/dev/null',
-        { stdio: 'ignore' }
-      );
-    } catch {
-      // Entry may not exist — fine.
-    }
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
@@ -218,6 +221,170 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.get('x-user-api-key')).toBeNull();
       expect(headers.has('x-api-key')).toBe(false);
       expect(headers.get('x-source')).toBe('CLI');
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  it.effect('ignores ambient COMPOSIO_* variables and logs nothing', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const consoleSpies = (['log', 'info', 'warn', 'error', 'debug'] as const).map(method =>
+      vi.spyOn(console, method)
+    );
+    vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_ambient');
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_ambient');
+    vi.stubEnv('COMPOSIO_CUSTOM_HEADERS', '{"x-extra":"1"}');
+    vi.stubEnv('COMPOSIO_LOG_LEVEL', 'debug');
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([['COMPOSIO_BASE_URL', 'https://backend.composio.dev']]);
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
+      yield* Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.has('x-extra')).toBe(false);
+      expect(headers.has('x-user-api-key')).toBe(false);
+      expect(headers.has('x-api-key')).toBe(false);
+      for (const spy of consoleSpies) {
+        expect(spy).not.toHaveBeenCalled();
+      }
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  it.effect('sends exactly one user credential when a user key is set', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_single'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+    ]);
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
+      // `auth.session.retrieveInfo` is an operation where the client would
+      // attach its own `userApiKey` credential; the caller-placed header wins.
+      yield* Effect.promise(() =>
+        client.auth.session
+          .retrieveInfo()
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+
+      const [input, init] = fetchSpy.mock.calls[0]!;
+      expect(String(input)).toContain('/api/v3.1/auth/session/info');
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.get('x-user-api-key')).toBe('uak_single');
+      expect(headers.has('x-api-key')).toBe(false);
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  it.effect('supports an explicitly configured plain-HTTP backend without an extra opt-in', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_insecure'],
+      ['COMPOSIO_BASE_URL', 'http://host.docker.internal:9900'],
+    ]);
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
+      yield* Effect.promise(() => client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [input, init] = fetchSpy.mock.calls[0]!;
+      expect(String(input)).toContain('http://host.docker.internal:9900/');
+      expect(new Headers((init as RequestInit).headers).get('x-user-api-key')).toBe('uak_insecure');
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  it.effect('caches one client per key, org, and project', () => {
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([['COMPOSIO_BASE_URL', 'https://backend.composio.dev']]);
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
+
+      const first = yield* clientSingleton.getFor(scope);
+      const second = yield* clientSingleton.getFor(scope);
+      const otherProject = yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' });
+
+      expect(second).toBe(first);
+      expect(otherProject).not.toBe(first);
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  it.effect('counts requests and response bytes, with or without Content-Length', () => {
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_metrics'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+    ]);
+    const sized = (length: number) =>
+      new Response(JSON.stringify({ data: [] }).padEnd(length, ' '), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Content-Length': String(length) },
+      });
+    const unsized = () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"items":[]}'));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
+      // Installed after the client exists: the counting fetch still resolves
+      // `globalThis.fetch` per call.
+      vi.spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(sized(10))
+        .mockResolvedValueOnce(sized(20))
+        .mockResolvedValueOnce(unsized());
+      const list = () =>
+        Effect.promise(() => client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+
+      yield* list();
+      yield* list();
+      expect(yield* clientSingleton.getMetrics()).toEqual({ requests: 2, byteSize: 30 });
+
+      yield* list();
+      expect(yield* clientSingleton.getMetrics()).toEqual({
+        requests: 3,
+        byteSize: 30 + '{"items":[]}'.length,
+      });
     }).pipe(
       Effect.provide(
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))

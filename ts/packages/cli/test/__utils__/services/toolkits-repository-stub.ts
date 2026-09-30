@@ -2,6 +2,7 @@ import { Effect, Layer } from 'effect';
 import {
   ComposioToolkitsRepository,
   type ComposioToolkitsRepositoryShape,
+  type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import type { Toolkits } from 'src/models/toolkits';
 
@@ -49,14 +50,36 @@ const unusedRepositoryMethods = {
   deleteTrigger: notUsed('deleteTrigger'),
 } as const;
 
+export type GetProjectToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getProjectToolkits']>
+>;
+
+/**
+ * A repository whose every method dies unless the test overrides it.
+ */
+export const makeToolkitsRepositoryStub = (
+  overrides: Partial<ComposioToolkitsRepositoryShape>
+): ComposioToolkitsRepositoryShape =>
+  ComposioToolkitsRepository.of({
+    ...unusedRepositoryMethods,
+    getToolkits: notUsed('getToolkits'),
+    getProjectToolkits: notUsed('getProjectToolkits'),
+    ...overrides,
+  });
+
 /**
  * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test
- * can assert not just what was resolved but what it cost.
+ * can assert not just what was resolved but what it cost. The native and
+ * project-managed catalogs are counted separately.
  */
 export const countingToolkitsRepository = (
-  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>
+  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
+  getProjectToolkits: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError> = () => Effect.succeed([])
 ) => {
   let calls = 0;
+  let projectCalls = 0;
 
   const layer = Layer.succeed(
     ComposioToolkitsRepository,
@@ -67,8 +90,13 @@ export const countingToolkitsRepository = (
           calls += 1;
           return getToolkits();
         }),
+      getProjectToolkits: scope =>
+        Effect.suspend(() => {
+          projectCalls += 1;
+          return getProjectToolkits(scope);
+        }),
     })
   );
 
-  return { layer, calls: () => calls };
+  return { layer, calls: () => calls, projectCalls: () => projectCalls };
 };

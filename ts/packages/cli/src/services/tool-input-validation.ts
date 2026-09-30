@@ -1,7 +1,6 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Schema, SchemaIssue } from 'effect';
-import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
   jsonSchemaToEffectSchema,
   type JsonSchemaValidationIssue,
@@ -197,9 +196,7 @@ const fetchLatestToolVersionOnce = memoizeInProcess({
   }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
   make: ({ slug, apiKey, params }) =>
     Effect.gen(function* () {
-      const userContext = yield* ComposioUserContext;
       const latest = yield* getLatestToolVersion({
-        baseURL: userContext.data.baseURL,
         apiKey,
         toolSlug: slug,
         orgId: params?.orgId,
@@ -240,24 +237,8 @@ const fetchAndCacheToolInputDefinition = (
     const path = yield* Path.Path;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
-    const localDefinition = getLocalToolInputDefinition(slug);
-    const schemaPath = toolDefinitionPath(path, cacheDir, localDefinition?.finalSlug ?? slug);
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
     yield* ensureToolDefinitionsDir(fs, path, cacheDir);
-
-    if (localDefinition) {
-      yield* fs.writeFileString(
-        schemaPath,
-        serializeCachedToolDefinition({
-          version: localDefinition.version,
-          inputSchema: localDefinition.schema,
-        })
-      );
-      return {
-        schemaPath,
-        schema: localDefinition.schema,
-        version: localDefinition.version,
-      };
-    }
 
     const [tool, latestVersion] = yield* Effect.all(
       [

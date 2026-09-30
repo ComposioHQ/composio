@@ -49,7 +49,9 @@ from composio.core.models.tool_router_constants import (
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
+    ToolRouterInstantConfig,
     ToolRouterSession,
+    ToolRouterSessionConfig,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
     ToolRouterUpdateExperimentalConfig,
@@ -726,6 +728,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
         mcp: t.Literal[True],
     ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
 
@@ -754,6 +757,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
         mcp: t.Literal[False] = False,
     ) -> ToolRouterSession[TTool, TToolCollection]: ...
 
@@ -781,6 +785,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
         mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -888,6 +893,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param instant: Experimental Instant usage policy. The project
+                        must allow Instant usage. ``False`` disables it for this
+                        Session; a policy can restrict eligible toolkits and tools.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint
@@ -1081,6 +1089,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         create_params: t.Dict[str, t.Any] = {
             "user_id": user_id,
         }
+        if instant is not None:
+            # The pinned generated client has no `instant` keyword yet.
+            create_params["extra_body"] = {"instant": instant}
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
@@ -1232,7 +1243,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
-            config=session.config,
+            config=t.cast(ToolRouterSessionConfig, session.config),
             config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
@@ -1392,7 +1403,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
-            config=session.config,
+            config=t.cast(ToolRouterSessionConfig, session.config),
             config_version=session.config_version,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),

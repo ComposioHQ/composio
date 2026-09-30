@@ -30,7 +30,7 @@ origins is logged, so native tools keep working.
 **Overload 1**
 
 ```typescript
-async create(userId: string, config: { authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string | string[]>; experimental?: { assistivePrompt?: { userTimezone?: string }; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] }; manageConnections?: boolean | { callbackUrl?: string; enable?: boolean; waitForConnections?: boolean }; mcp?: boolean; multiAccount?: { enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean }; preload?: { tools?: string[] | 'all' }; sandbox?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' }; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: ... | ... | ... | ...[]; enable?: ... | ... | ... | ...[] }; toolkits?: string[] | { disable: string[] } | { enable: string[] }; tools?: Record<string, string[] | { enable: ...[] } | { disable: ...[] } | { tags: ... | ... }>; workbench?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } } & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -38,7 +38,7 @@ async create(userId: string, config: { authConfigs?: Record<string, string>; con
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config` | `\{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| string[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: string[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: ... \| ... \| ... \| ...[]; enable?: ... \| ... \| ... \| ...[] \}; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \}; tools?: Record<string, string[] \| \{ enable: ...[] \} \| \{ disable: ...[] \} \| \{ tags: ... \| ... \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \} & \{ mcp: true \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config` | `ToolRouterCreateSessionConfig & \{ mcp: true \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -48,7 +48,7 @@ async create(userId: string, config: { authConfigs?: Record<string, string>; con
 **Overload 2**
 
 ```typescript
-async create(userId: string, config?: { authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string | string[]>; experimental?: { assistivePrompt?: { userTimezone?: string }; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] }; manageConnections?: boolean | { callbackUrl?: string; enable?: boolean; waitForConnections?: boolean }; mcp?: boolean; multiAccount?: { enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean }; preload?: { tools?: string[] | 'all' }; sandbox?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' }; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] | { disable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[]; enable?: 'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'[] }; toolkits?: string[] | { disable: string[] } | { enable: string[] }; tools?: Record<string, string[] | { enable: string[] } | { disable: string[] } | { tags: ...[] | { disable?: ...; enable?: ... } }>; workbench?: { autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge' } }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -56,7 +56,7 @@ async create(userId: string, config?: { authConfigs?: Record<string, string>; co
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config?` | `\{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| string[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: string[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \| \{ disable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enable?: 'readOnlyHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \}; toolkits?: string[] \| \{ disable: string[] \} \| \{ enable: string[] \}; tools?: Record<string, string[] \| \{ enable: string[] \} \| \{ disable: string[] \} \| \{ tags: ...[] \| \{ disable?: ...; enable?: ... \} \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config?` | `ToolRouterCreateSessionConfig` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -77,6 +77,12 @@ const session = await composio.sessions.create('user_123', {
     customTools: [myCustomTool],
     customToolkits: [myToolkit],
   },
+});
+
+// Start from a saved Session config instead of inline access fields
+const configured = await composio.sessions.create('user_123', {
+  authConfigs: { github: 'ac_123' },
+  experimental: { sessionConfigId: 'sc_123' },
 });
 ```
 

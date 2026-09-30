@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_autogen",
-    version="0.23.0",
+    version="0.25.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Autogen agent.",
@@ -24,7 +24,7 @@ setup(
     install_requires=[
         # ag2 1.x removed the top-level `autogen` namespace this provider imports.
         "ag2>=0.14,<1.0",
-        "flaml==2.6.0",
+        "flaml==2.7.0",
         "autogen_core>=0.7.5",
         "composio",
     ],

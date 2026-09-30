@@ -17,6 +17,7 @@ import type {
   RegisteredCustomToolkit,
 } from './customTool.types';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+import { addSessionConfigConflictIssue } from '../lib/sessionConfigConflict';
 
 export const SessionPreset = {
   DIRECT_TOOLS: 'direct_tools',
@@ -106,6 +107,34 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
     ),
   })
   .strict();
+
+/** Experimental Instant usage policy for a Session. */
+export const ToolRouterInstantSchema = z.union([
+  z.literal(false),
+  z
+    .object({
+      toolkits: z
+        .union([ToolRouterToolkitsEnabledConfigSchema, ToolRouterToolkitsDisabledConfigSchema])
+        .optional(),
+      tools: z
+        .record(
+          z.string(),
+          z.union([
+            z.object({ enable: z.array(z.string()) }).strict(),
+            z.object({ disable: z.array(z.string()) }).strict(),
+          ])
+        )
+        .optional(),
+      /**
+       * Return the actual Instant charge in Session tool responses. Controls
+       * visibility only; on update, any policy object still re-enables Instant
+       * usage on a Session set to `false`.
+       */
+      returnInstantCharge: z.boolean().optional(),
+    })
+    .strict(),
+]);
+export type ToolRouterInstant = z.infer<typeof ToolRouterInstantSchema>;
 
 export const ToolRouterManageConnectionsConfigSchema = z.object({
   enable: z
@@ -236,6 +265,10 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .optional()
       .describe('The toolkits to use in the tool router session'),
 
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Experimental Instant usage policy. Omission permits eligible tools when the project allows Instant usage; false disables it for this Session.'
+    ),
+
     authConfigs: z
       .record(z.string(), z.string())
       .describe(
@@ -324,12 +357,32 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           .describe(
             'Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental.'
           ),
+        sessionConfigId: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
+          ),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
   })
   .partial()
   .superRefine((config, ctx) => {
+    // "Provided" means `!== undefined`, so empty arrays conflict too.
+    if (config.experimental?.sessionConfigId !== undefined) {
+      addSessionConfigConflictIssue(
+        ctx,
+        [
+          config.toolkits !== undefined && 'toolkits',
+          config.tools !== undefined && 'tools',
+          config.tags !== undefined && 'tags',
+          config.experimental.customTools !== undefined && 'experimental.customTools',
+          config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
+        ].filter((field): field is string => field !== false)
+      );
+    }
     if (config.sandbox !== undefined && config.workbench !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -373,6 +426,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
+ * @param {ToolRouterInstant} [instant] - Experimental Instant usage policy. The project must allow Instant usage.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -388,8 +442,39 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
+ * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
-export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
+export type ToolRouterCreateSessionConfig =
+  InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
+
+type ParsedCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
+type ParsedCreateSessionExperimental = NonNullable<ParsedCreateSessionConfig['experimental']>;
+
+/** Create input that sets access inline and applies no saved Session config. */
+type InlineAccessCreateSessionConfig = Omit<ParsedCreateSessionConfig, 'experimental'> & {
+  experimental?: Omit<ParsedCreateSessionExperimental, 'sessionConfigId'> & {
+    sessionConfigId?: never;
+  };
+};
+
+/** Create input that takes its access policy from a saved Session config. */
+type SavedConfigCreateSessionConfig = Omit<
+  ParsedCreateSessionConfig,
+  'toolkits' | 'tools' | 'tags' | 'experimental'
+> & {
+  toolkits?: never;
+  tools?: never;
+  tags?: never;
+  experimental: Omit<
+    ParsedCreateSessionExperimental,
+    'sessionConfigId' | 'customTools' | 'customToolkits'
+  > & {
+    sessionConfigId: string;
+    customTools?: never;
+    customToolkits?: never;
+  };
+};
 
 export const ToolkitConnectionStateSchema = z
   .object({
@@ -523,6 +608,8 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   statusMessage: z.string(),
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
+  /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
+  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -543,6 +630,8 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
+  /** Actual Instant usage charge when the Session opts into returning it. */
+  instantCharge: z.unknown().optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -580,6 +669,14 @@ export interface SessionExperimental {
    * File mount operations (list, upload, download, delete) for the session's virtual filesystem.
    */
   files: ToolRouterSessionFilesMount;
+  /**
+   * The last saved Session config applied to this session, set from the
+   * create, `use()` and `update()` responses. Later inline access updates
+   * keep it. It reflects the last response this object saw: an update from
+   * another process leaves it stale until `sessions.use()`.
+   * @experimental
+   */
+  sourceSessionConfig?: { id: string };
 }
 
 export type ToolRouterSessionSearchFn = (params: {
@@ -595,7 +692,8 @@ export type ToolRouterSessionExecuteFn = (
 
 export interface ToolRouterSessionExecuteOptions {
   /**
-   * Account identifier for direct app tool execution. Accepted on every project:
+   * Account identifier for direct app tool execution. Use `instant_account` to
+   * explicitly select the Composio Instant account. Accepted on every project:
    * in multi-account sessions it picks the account; on single-account projects it
    * must match one of the session's active connections for the toolkit.
    * Meta/helper tools either ignore this top-level field or define
@@ -611,12 +709,28 @@ export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Work
 
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
+const ToolRouterInstantResponseFilterSchema = z.union([
+  z.object({ enabled: z.array(z.string()) }),
+  z.object({ disabled: z.array(z.string()) }),
+]);
+
+/** Instant policy in the server's Session config (wire field casing). */
+export const ToolRouterInstantResponseSchema = z.object({
+  toolkits: ToolRouterInstantResponseFilterSchema.optional(),
+  tools: z.record(z.string(), ToolRouterInstantResponseFilterSchema).optional(),
+  return_instant_charge: z.boolean(),
+});
+export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;
+
 /**
- * Server-side session configuration as returned by the API: toolkit and tool
+ * Server-side session configuration as returned by the API: toolkit/tool
  * allowlists, tags, auth configs, connected accounts, manage_connections,
- * preload, sandbox (`workbench`), search and execute settings.
+ * preload, sandbox (`workbench`), search, execute and Instant settings.
+ * The generated client still declares the old policy name.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+export type ToolRouterSessionConfig = Omit<SessionCreateResponse.Config, 'premium_usage'> & {
+  instant?: false | ToolRouterInstantResponse;
+};
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -744,8 +858,11 @@ export const ToolRouterUpdateExperimentalSchema = z
       ),
     sessionConfigId: z
       .string()
+      .min(1)
       .optional()
-      .describe('Apply the latest active Session config from this project to this session'),
+      .describe(
+        "Apply the latest active saved Session config (`sc_…`) from this project to this session. Replaces the session's toolkit, tool and tag access and cannot be combined with toolkits, tools or tags"
+      ),
   })
   .strict();
 export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdateExperimentalSchema>;
@@ -758,6 +875,9 @@ export type ToolRouterUpdateExperimentalConfig = z.infer<typeof ToolRouterUpdate
  */
 export const ToolRouterUpdateSessionConfigSchema = z
   .object({
+    instant: ToolRouterInstantSchema.optional().describe(
+      'Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values.'
+    ),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,
@@ -843,11 +963,22 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .union([z.number().int().positive(), z.literal(false)])
       .optional()
       .describe(
-        'Precondition sent as `expected_config_version`. Omitted: the session sends the configVersion it last observed, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten. A positive integer sends that version instead. `false` sends no precondition (last writer wins)'
+        'Precondition sent as `expected_config_version`. A positive integer (for example `session.configVersion`) makes the update conditional, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten; the API must support the field. Omitted or `false`: no precondition (last writer wins)'
       ),
   })
   .partial()
   .superRefine((config, ctx) => {
+    // "Provided" means `!== undefined`, so `null` conflicts too.
+    if (config.experimental?.sessionConfigId !== undefined) {
+      addSessionConfigConflictIssue(
+        ctx,
+        [
+          config.toolkits !== undefined && 'toolkits',
+          config.tools !== undefined && 'tools',
+          config.tags !== undefined && 'tags',
+        ].filter((field): field is string => field !== false)
+      );
+    }
     if (config.sandbox !== undefined && config.workbench !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -858,7 +989,35 @@ export const ToolRouterUpdateSessionConfigSchema = z
     }
   });
 
-export type ToolRouterUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
+/**
+ * Options for `session.update()`. `experimental.sessionConfigId` applies a
+ * saved Session config and cannot be combined with `toolkits`, `tools` or
+ * `tags` (including `null`).
+ */
+export type ToolRouterUpdateSessionConfig =
+  InlineAccessUpdateSessionConfig | SavedConfigUpdateSessionConfig;
+
+type ParsedUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
+type ParsedUpdateSessionExperimental = NonNullable<ParsedUpdateSessionConfig['experimental']>;
+
+/** Update input that sets access inline and applies no saved Session config. */
+type InlineAccessUpdateSessionConfig = Omit<ParsedUpdateSessionConfig, 'experimental'> & {
+  experimental?:
+    (Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & { sessionConfigId?: never }) | null;
+};
+
+/** Update input that applies a saved Session config. */
+type SavedConfigUpdateSessionConfig = Omit<
+  ParsedUpdateSessionConfig,
+  'toolkits' | 'tools' | 'tags' | 'experimental'
+> & {
+  toolkits?: never;
+  tools?: never;
+  tags?: never;
+  experimental: Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & {
+    sessionConfigId: string;
+  };
+};
 
 export type ToolRouterSessionUpdateFn = (
   config: ToolRouterUpdateSessionConfig
@@ -885,9 +1044,14 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
 
 /**
  * The session configuration at one version, as stored by the API. This is
- * the wire shape (snake_case), typed from the generated client.
+ * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+export type ToolRouterSessionConfigHistoryConfig = Omit<
+  SessionConfigHistoryResponse.Item.Config,
+  'premium_usage'
+> & {
+  instant?: false | ToolRouterInstantResponse;
+};
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */
@@ -955,9 +1119,9 @@ export interface Session<
   sessionId: string;
   mcp: ToolRouterMCPServerConfig;
   /**
-   * Server-side session configuration (toolkit/tool allowlists, tags, preload,
-   * sandbox, manage_connections) as returned by the API. Refreshed in place by
-   * `update()`.
+   * The session's current configuration (policy snapshot and runtime
+   * settings). Refreshed in place by `update()`. For saved, reusable Session
+   * configs, see `composio.sessionConfigs`.
    */
   config: ToolRouterSessionConfig;
   /** Stored preload configuration for this session. */

@@ -44,16 +44,21 @@ import type {
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
+  type SessionCreateBody,
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
   transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
+  transformToolRouterInstantParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
+import { transformSessionConfig } from '../utils/transformers/toolRouterResponseTransform';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -72,7 +77,7 @@ function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
   const metadata: ToolRouterSessionMetadata = {
-    config: session.config,
+    config: transformSessionConfig(session.config),
     preload: session.config.preload,
     workbench: session.config.workbench,
     configVersion: session.config_version,
@@ -189,6 +194,12 @@ export class ToolRouter<
    *     customToolkits: [myToolkit],
    *   },
    * });
+   *
+   * // Start from a saved Session config instead of inline access fields
+   * const configured = await composio.sessions.create('user_123', {
+   *   authConfigs: { github: 'ac_123' },
+   *   experimental: { sessionConfigId: 'sc_123' },
+   * });
    * ```
    */
   // Overloads: passing `{ mcp: true }` surfaces `session.mcp` in the returned
@@ -209,7 +220,7 @@ export class ToolRouter<
     config?: ToolRouterCreateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+    const routerConfig = parseSessionConfigInput(ToolRouterCreateSessionConfigSchema, config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
     // Extract custom tools/toolkits from experimental config
@@ -225,6 +236,10 @@ export class ToolRouter<
 
     // Build the typed experimental payload for the backend
     const experimentalPayload: SessionCreateParams['experimental'] = {};
+
+    if (routerConfig.experimental?.sessionConfigId !== undefined) {
+      experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
+    }
 
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
@@ -254,11 +269,14 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
+      ...(routerConfig.instant !== undefined && {
+        instant: transformToolRouterInstantParams(routerConfig.instant),
+      }),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),
       manage_connections: transformToolRouterManageConnectionsParams(
@@ -302,7 +320,7 @@ export class ToolRouter<
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp, routerConfig.mcp === true),
-      { assistivePrompt },
+      { assistivePrompt, sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata
@@ -413,7 +431,7 @@ export class ToolRouter<
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp, options?.mcp === true),
-      undefined,
+      { sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata

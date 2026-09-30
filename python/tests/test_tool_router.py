@@ -1,5 +1,6 @@
 """Test ToolRouter functionality."""
 
+import json
 import logging
 import os
 import typing as t
@@ -8,6 +9,9 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from composio_client import ConflictError, omit
+from composio_client.types.tool_router.session_search_response import (
+    SessionSearchResponse,
+)
 from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
@@ -76,6 +80,9 @@ def mock_client():
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
     client.tool_router.session.attach.return_value = mock_session_response
+    client.tool_router.session.search.return_value = (
+        SessionSearchResponse.model_validate(_search_json())
+    )
 
     # Mock link response
     mock_link_response = MagicMock()
@@ -171,6 +178,28 @@ class TestToolRouter:
 
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
+
+    def test_create_with_instant_policy(self, tool_router, mock_client):
+        policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
+        tool_router.create(user_id="user_123", instant=policy)
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["extra_body"]["instant"] == policy
+        assert "premium_usage" not in kwargs
+
+        mock_client.tool_router.session.create.reset_mock()
+        tool_router.create(user_id="user_123")
+        assert "instant" not in mock_client.tool_router.session.create.call_args.kwargs
+        assert (
+            "extra_body" not in mock_client.tool_router.session.create.call_args.kwargs
+        )
+
+        tool_router.create(user_id="user_123", instant=False)
+        assert (
+            mock_client.tool_router.session.create.call_args.kwargs["extra_body"][
+                "instant"
+            ]
+            is False
+        )
 
     def test_create_session_default_returns_base_session(self, tool_router):
         """Default create() (mcp omitted) returns the base ToolRouterSession.
@@ -2020,6 +2049,41 @@ class TestToolRouterExecution:
         assert result["data"] == {"result": "success"}
         assert result["error"] is None
         assert result["successful"] is True
+        assert "instant_charge" not in result
+
+    def test_execute_endpoint_preserves_instant_charge(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Provider-wrapped session tools keep the reported Instant charge."""
+        from composio_client.types.tool_router.session_execute_response import (
+            SessionExecuteResponse,
+        )
+
+        from composio.core.models.tools import Tools as RealTools
+
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "data": {"result": "success"},
+                    "error": None,
+                    "log_id": "log_123",
+                    "instant_charge": charge,
+                }
+            )
+        )
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        assert result["instant_charge"] == charge
 
     def test_execute_endpoint_passes_inline_custom_tools(
         self, tool_router, mock_client, mock_provider
@@ -2215,6 +2279,7 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
+            "instant": {"return_instant_charge": True},
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2222,6 +2287,136 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "config_version": 3,
         "warnings": [],
     }
+
+
+def _search_json() -> t.Dict[str, t.Any]:
+    return {
+        "success": True,
+        "error": None,
+        "results": [],
+        "tool_schemas": {},
+        "toolkit_connection_statuses": [
+            {
+                "toolkit": "exa",
+                "description": "Search",
+                "has_active_connection": True,
+                "status_message": "Instant account available",
+                "instant_account": {"allowed_tool_slugs": ["EXA_SEARCH"]},
+            }
+        ],
+        "next_steps_guidance": [],
+        "session": {"id": "session_123", "generate_id": False, "instructions": ""},
+        "time_info": {
+            "current_time_utc": "2026-09-29T12:00:00Z",
+            "current_time_utc_epoch_seconds": 1790683200,
+            "message": "UTC",
+        },
+    }
+
+
+class TestInstantContractTransport:
+    """Exercise new wire fields through the pinned generated client."""
+
+    @pytest.mark.parametrize(
+        "policy", [False, {}, {"return_instant_charge": True}, None]
+    )
+    def test_create_and_patch_send_new_policy(self, policy):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+        router = ToolRouter(client=client, provider=MagicMock())
+        session = router.create(user_id="user_123", instant=policy)
+        body = json.loads(requests[0].content)
+        assert "premium_usage" not in body
+        if policy is None:
+            assert "instant" not in body
+        else:
+            assert body["instant"] == policy
+        assert session.config.instant == {"return_instant_charge": True}
+        assert "premium_usage" not in session.config.model_dump()
+
+        if policy is None:
+            session.update(expected_config_version=3)
+        else:
+            session.update(instant=policy, expected_config_version=3)
+        body = json.loads(requests[-1].content)
+        assert body["expected_config_version"] == 3
+        assert "premium_usage" not in body
+        if policy is None:
+            assert "instant" not in body
+        else:
+            assert body["instant"] == policy
+        assert session.config.instant == {"return_instant_charge": True}
+        assert "premium_usage" not in session.config.model_dump()
+
+        attached = router.use(session_id="session_123")
+        assert attached.config.instant == {"return_instant_charge": True}
+
+    def test_execute_selector_charge_and_search_coverage(self):
+        requests: t.List[httpx.Request] = []
+        charge = {"amount": "0.012", "currency": "USD", "charged_by": "composio"}
+
+        def handler(request):
+            requests.append(request)
+            if request.url.path.endswith("/execute"):
+                return httpx.Response(
+                    200,
+                    json={
+                        "data": {},
+                        "error": None,
+                        "log_id": "log_123",
+                        "instant_charge": charge,
+                    },
+                )
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=_search_json())
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+        result = session.execute("EXA_SEARCH", arguments={}, account="instant_account")
+        assert json.loads(requests[-1].content)["account"] == "instant_account"
+        assert result.instant_charge == charge
+        assert "premium_charge" not in result.model_dump()
+        status = session.search(query="search").toolkit_connection_statuses[0]
+        assert status.instant_account is not None
+        assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert "hosted_account" not in status.model_dump()
+
+    def test_search_keeps_lenient_generated_response(self):
+        payload = _search_json()
+        payload["toolkit_connection_statuses"][0]["account_type"] = "INSTANT"
+        del payload["time_info"]
+
+        def handler(request):
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+        result = session.search(query="search")
+
+        assert isinstance(result, SessionSearchResponse)
+        status = result.toolkit_connection_statuses[0]
+        assert status.account_type == "INSTANT"
+        assert status.instant_account is not None
+        assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert result.to_dict() == payload
 
 
 def _transport_client(
@@ -2520,13 +2715,41 @@ class TestSessionUpdateContract:
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
-    def test_update_sends_the_observed_version_by_default_without_retries(
+    def test_instant_policy_is_sent(self, session, mock_client):
+        session.update(
+            instant={
+                "toolkits": {"enable": ["exa"]},
+                "return_instant_charge": True,
+            }
+        )
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["extra_body"]["instant"] == {
+            "toolkits": {"enable": ["exa"]},
+            "return_instant_charge": True,
+        }
+        assert "premium_usage" not in kwargs
+
+    def test_instant_can_be_disabled(self, session, mock_client):
+        session.update(instant=False)
+        assert (
+            mock_client.tool_router.session.patch.call_args.kwargs["extra_body"][
+                "instant"
+            ]
+            is False
+        )
+
+    def test_instant_rejects_none(self, session, mock_client):
+        with pytest.raises(InvalidParams, match="instant"):
+            session.update(instant=None)  # type: ignore[arg-type]
+        mock_client.tool_router.session.patch.assert_not_called()
+
+    def test_update_sends_no_precondition_by_default_without_retries(
         self, session, mock_client
     ):
         session.update(toolkits={"enable": ["gmail"]})
 
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["extra_body"] == {"expected_config_version": 7}
+        assert kwargs["extra_body"] is None
         assert kwargs["request_options"] == {"max_retries": 0}
         assert session.config_version == 8
         assert session.preload.tools == ["SLACK_SEND_MESSAGE"]
@@ -2596,7 +2819,10 @@ class TestSessionUpdateContract:
         mock_client.tool_router.session.patch.side_effect = self._conflict()
 
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(toolkits={"enable": ["gmail"]})
+            session.update(
+                toolkits={"enable": ["gmail"]},
+                expected_config_version=session.config_version,
+            )
 
         assert "re-fetch" in str(excinfo.value).lower()
         assert "retry" in str(excinfo.value).lower()
@@ -2606,16 +2832,15 @@ class TestSessionUpdateContract:
         assert session.preload is preload_before
         assert session.config_version == 7
 
+    @pytest.mark.parametrize("opt_out", [{}, {"expected_config_version": False}])
     def test_update_conflict_without_precondition_reports_in_flight_change(
-        self, session, mock_client
+        self, session, mock_client, opt_out
     ):
         config_before = session.config
         mock_client.tool_router.session.patch.side_effect = self._conflict()
 
         with pytest.raises(SessionConfigConflictError) as excinfo:
-            session.update(
-                toolkits={"enable": ["gmail"]}, expected_config_version=False
-            )
+            session.update(toolkits={"enable": ["gmail"]}, **opt_out)
 
         message = str(excinfo.value)
         assert "changed while this update was in flight" in message
@@ -2630,7 +2855,10 @@ class TestSessionUpdateContract:
         second = tool_router.use(session_id="session_123")
         assert first.config_version == second.config_version == 7
 
-        first.update(toolkits={"enable": ["gmail"]})
+        first.update(
+            toolkits={"enable": ["gmail"]},
+            expected_config_version=first.config_version,
+        )
         assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
             "expected_config_version": 7
         }
@@ -2638,7 +2866,10 @@ class TestSessionUpdateContract:
 
         mock_client.tool_router.session.patch.side_effect = self._conflict()
         with pytest.raises(SessionConfigConflictError):
-            second.update(toolkits={"enable": ["slack"]})
+            second.update(
+                toolkits={"enable": ["slack"]},
+                expected_config_version=second.config_version,
+            )
         assert second.config_version == 7
 
         mock_client.tool_router.session.patch.side_effect = None
@@ -2646,7 +2877,10 @@ class TestSessionUpdateContract:
         mock_client.tool_router.session.patch.return_value.config_version = 9
         reread = tool_router.use(session_id="session_123")
         assert reread.config_version == 8
-        reread.update(toolkits={"enable": ["slack"]})
+        reread.update(
+            toolkits={"enable": ["slack"]},
+            expected_config_version=reread.config_version,
+        )
         assert mock_client.tool_router.session.patch.call_args.kwargs["extra_body"] == {
             "expected_config_version": 8
         }

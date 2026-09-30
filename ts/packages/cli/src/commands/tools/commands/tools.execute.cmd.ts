@@ -1,5 +1,4 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
-import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
@@ -18,13 +17,12 @@ import {
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
-import {
-  LocalToolsDisabledError,
-  ToolsExecutor,
-  detectInBandWarning,
-} from 'src/services/tools-executor';
+import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
@@ -61,8 +59,6 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 
 const slug = Argument.String('slug').pipe(
@@ -151,7 +147,6 @@ type ToolExecutionErrorFields = {
     | 'file_input'
     | 'connected_account'
     | 'missing_user_id'
-    | 'unsupported_local_file'
     | 'connection_check'
     | 'execution_failed'
     | 'parallel_failed';
@@ -451,9 +446,10 @@ const emitExecuteFailureTelemetry = (params: {
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
   readonly logId?: string;
   readonly mappedError?: ReturnType<typeof mapComposioError>;
+  readonly projectScope?: ToolkitProjectScope;
 }) =>
   Effect.gen(function* () {
-    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug);
+    const toolkitSlug = yield* toolkitFromToolSlug(params.toolSlug, params.projectScope);
     const { invocationOrigin } = yield* cliInvocationContext;
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
     const failureOrigin: 'fast_fail' | 'main_endpoint' =
@@ -705,10 +701,11 @@ const handleExecutionError = (
     projectMode: 'consumer' | 'developer';
     stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
     logId?: string;
+    projectScope?: ToolkitProjectScope;
   }
 ) =>
   Effect.gen(function* () {
-    const toolkit = yield* toolkitFromToolSlug(context.toolSlug);
+    const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
     const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
@@ -720,6 +717,7 @@ const handleExecutionError = (
         projectMode: context.projectMode,
         stage: context.stage,
         logId: context.logId,
+        projectScope: context.projectScope,
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -742,6 +740,7 @@ const handleExecutionError = (
       projectMode: context.projectMode,
       stage: context.stage,
       logId: context.logId,
+      projectScope: context.projectScope,
       mappedError: mapped,
     });
 
@@ -973,6 +972,15 @@ type ResolvedExecuteContext = {
   readonly executeOutputDir?: string;
 };
 
+/**
+ * The resolved project as toolkit resolution needs it: custom toolkits are
+ * listed per project, and it has to be the project execute runs against.
+ */
+const toolkitProjectScope = (resolvedProject: ToolkitProjectScope): ToolkitProjectScope => ({
+  orgId: resolvedProject.orgId,
+  projectId: resolvedProject.projectId,
+});
+
 type ResolvedSchemaContext = {
   readonly ui: TerminalUI;
   readonly resolvedProject: {
@@ -1018,46 +1026,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const executor = yield* ToolsExecutor;
     const input = (yield* resolveInput(params.data)) ?? '{}';
     const parsedArgs = yield* parseArguments(input);
-    const cliConfig = yield* ComposioCliUserConfig;
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
-
-    if (
-      isLocalToolSlug(params.slug) &&
-      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
-    ) {
-      return yield* new LocalToolsDisabledError({
-        toolSlug: params.slug,
-        feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
-        message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`,
-      });
-    }
-
-    if (isLocalToolSlug(params.slug)) {
-      if (Option.isSome(params.file)) {
-        return yield* new ToolExecutionError({
-          reason: 'unsupported_local_file',
-          toolSlug: params.slug,
-          message: '--file is not supported for local tools yet.',
-        });
-      }
-      return {
-        ui,
-        executor,
-        resolvedProject: {
-          orgId: 'local',
-          projectId: 'local',
-          projectType: 'DEVELOPER',
-        },
-        args: parsedArgs,
-        resolvedUserId: 'local',
-        selectedConnectedAccountId: undefined,
-        executeOutputDir: runOutputDirectory,
-        executeParams: {
-          userId: 'local',
-          arguments: parsedArgs,
-        },
-      } satisfies ResolvedExecuteContext;
-    }
 
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
@@ -1095,9 +1064,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const toolkitSlug = isLocalToolSlug(params.slug)
-      ? undefined
-      : yield* toolkitFromToolSlug(params.slug);
+    const toolkitSlug = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(resolvedProject)
+    );
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
@@ -1196,7 +1166,6 @@ const runConnectedToolkitFailFast = (params: {
       return;
     }
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
-    if (isLocalToolSlug(params.slug)) return;
 
     yield* perfDebugLog('execute.connected_toolkits.refresh_start', {
       slug: params.slug,
@@ -1227,7 +1196,10 @@ const runConnectedToolkitFailFast = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1304,8 +1276,7 @@ const runExecuteWithSpinner = (params: {
   readonly skipChecks: boolean;
 }) =>
   Effect.gen(function* () {
-    const verificationDisabled =
-      params.skipChecks || params.skipToolParamsCheck || isLocalToolSlug(params.slug);
+    const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
     const cachedDefinition = verificationDisabled
       ? null
       : yield* getCachedToolInputDefinition(params.slug);
@@ -1349,6 +1320,7 @@ const runExecuteWithSpinner = (params: {
                     surface: params.surface,
                     projectMode: params.projectMode,
                     stage: 'dry_run',
+                    projectScope: toolkitProjectScope(params.resolvedProject),
                   })
                 )
               )));
@@ -1366,6 +1338,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'dry_run',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 })
               )
             );
@@ -1419,6 +1392,7 @@ const runExecuteWithSpinner = (params: {
                   surface: params.surface,
                   projectMode: params.projectMode,
                   stage: 'execution',
+                  projectScope: toolkitProjectScope(params.resolvedProject),
                 });
                 yield* writeExecuteStdout(
                   params.ui,
@@ -1474,6 +1448,7 @@ const runExecuteWithSpinner = (params: {
             projectMode: params.projectMode,
             stage: 'execution',
             logId: result.logId,
+            projectScope: toolkitProjectScope(params.resolvedProject),
           });
           yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* new ReportedToolExecutionError({
@@ -1531,19 +1506,7 @@ const runExecuteWithSpinner = (params: {
 
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!isLocalToolSlug(params.slug) && !(yield* requireAuth)) return;
-
-    const cliConfig = yield* ComposioCliUserConfig;
-    if (
-      isLocalToolSlug(params.slug) &&
-      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
-    ) {
-      return yield* new LocalToolsDisabledError({
-        toolSlug: params.slug,
-        feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
-        message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`,
-      });
-    }
+    if (!(yield* requireAuth)) return;
 
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
@@ -1559,6 +1522,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'schema_fetch',
+            projectScope: toolkitProjectScope(context.resolvedProject),
           })
         )
       );
@@ -1816,7 +1780,6 @@ const checkConnectedToolkitOrFail = (params: {
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) return;
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
-    if (isLocalToolSlug(params.slug)) return;
 
     yield* refreshConsumerConnectedToolkitsCache({
       orgId: params.resolvedProject.orgId,
@@ -1827,7 +1790,10 @@ const checkConnectedToolkitOrFail = (params: {
       Effect.asVoid
     );
 
-    const toolkit = yield* toolkitFromToolSlug(params.slug);
+    const toolkit = yield* toolkitFromToolSlug(
+      params.slug,
+      toolkitProjectScope(params.resolvedProject)
+    );
     if (!toolkit) return;
 
     const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
@@ -1889,7 +1855,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           >;
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {
@@ -2041,7 +2007,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           };
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug).pipe(
+            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
                 const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
                 return {

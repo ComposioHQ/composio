@@ -1,14 +1,16 @@
 /**
- * Utilities for extracting structured information from deeply-nested API errors.
+ * Adapters from failures to the Composio API error envelope.
  *
- * The Composio SDK wraps errors in multiple layers (ComposioToolExecutionError → API response → JSON body).
- * These functions traverse the `.error` / `.cause` chain to find the actual error details,
- * the error slug, and a human-readable message.
+ * `@composio/client` rejects with an `APIError` whose `details` is the parsed
+ * `{ error: { message, code, slug, ... } }` envelope. Effect wrappers keep the
+ * original rejection in `.cause`, so the adapter walks that chain to the first
+ * `APIError`.
  *
  * Used by both the `ToolsExecutor` service (for error classification) and the
  * `tools execute` command (for error display).
  */
 
+import { APIError } from '@composio/client';
 import { Predicate } from 'effect';
 
 export interface ApiErrorDetails {
@@ -20,31 +22,40 @@ export interface ApiErrorDetails {
   readonly suggested_fix?: string;
 }
 
-const pickString = (value: object, key: string): string | undefined =>
-  Predicate.hasProperty(value, key) && Predicate.isString(value[key]) ? value[key] : undefined;
+/**
+ * Returns the first `APIError` along the `.cause` chain, starting at `value`.
+ */
+export const findApiError = (value: unknown): APIError | undefined => {
+  const seen = new Set<unknown>();
+  let current: unknown = value;
 
-const pickNumber = (value: object, key: string): number | undefined =>
-  Predicate.hasProperty(value, key) && Predicate.isNumber(value[key]) ? value[key] : undefined;
+  while (Predicate.isObject(current) && !seen.has(current)) {
+    if (current instanceof APIError) return current;
+    seen.add(current);
+    current = Predicate.hasProperty(current, 'cause') ? current.cause : undefined;
+  }
 
-// Field-by-field extraction: a present-but-mistyped field (e.g. a numeric
-// `message`) drops only that field, not the node's other perfectly good
-// details like `slug` and `request_id`.
-const extractCandidate = (value: object): ApiErrorDetails | undefined => {
-  const candidate: ApiErrorDetails = {
-    message: pickString(value, 'message'),
-    code: pickNumber(value, 'code'),
-    slug: pickString(value, 'slug'),
-    status: pickNumber(value, 'status'),
-    request_id: pickString(value, 'request_id'),
-    suggested_fix: pickString(value, 'suggested_fix'),
+  return undefined;
+};
+
+/**
+ * The API error envelope carried by the first `APIError` in the cause chain,
+ * with the HTTP status and request id. A body that is not the envelope keeps
+ * the status and falls back to the error's own message.
+ */
+export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefined => {
+  const apiError = findApiError(value);
+  if (!apiError) return undefined;
+
+  const details = apiError.details;
+  return {
+    message: details?.message ?? apiError.message,
+    code: details?.code,
+    slug: details?.slug,
+    status: apiError.status,
+    request_id: apiError.requestId ?? details?.request_id,
+    suggested_fix: details?.suggested_fix,
   };
-  const hasAnyApiField =
-    candidate.message !== undefined ||
-    candidate.code !== undefined ||
-    candidate.slug !== undefined ||
-    candidate.status !== undefined ||
-    candidate.request_id !== undefined;
-  return hasAnyApiField ? candidate : undefined;
 };
 
 /**
@@ -86,82 +97,4 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
   if (value instanceof Error) return value.message;
 
   return undefined;
-};
-
-/**
- * Walk the `.error` / `.cause` chain looking for a `slug` string field.
- */
-export const extractSlug = (value: unknown): string | undefined => {
-  let current: unknown = value;
-  const seen = new Set<unknown>();
-
-  while (Predicate.isObject(current) && !seen.has(current)) {
-    seen.add(current);
-
-    if (Predicate.hasProperty(current, 'slug') && Predicate.isString(current.slug)) {
-      return current.slug;
-    }
-
-    if (Predicate.hasProperty(current, 'error')) {
-      current = current.error;
-      continue;
-    }
-
-    if (Predicate.hasProperty(current, 'cause')) {
-      current = current.cause;
-      continue;
-    }
-
-    break;
-  }
-
-  return undefined;
-};
-
-/**
- * BFS through the `.error` / `.cause` chain to find a plain object with
- * API-specific fields (slug, request_id, code, status, message).
- *
- * Prefers objects with "strong" API fields (slug or request_id) over
- * objects that merely have a `message` (which any Error has).
- * Skips Error instances and Effect's UnknownException wrappers.
- */
-export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefined => {
-  const hasStrongApiFields = (candidate: ApiErrorDetails): boolean =>
-    typeof candidate.slug === 'string' || typeof candidate.request_id === 'string';
-
-  const seen = new Set<unknown>();
-  const queue: unknown[] = [value];
-  let head = 0;
-  let fallback: ApiErrorDetails | undefined;
-
-  while (head < queue.length) {
-    const current = queue[head++];
-    if (!Predicate.isObject(current) || seen.has(current)) {
-      continue;
-    }
-    seen.add(current);
-
-    const candidate = extractCandidate(current);
-    const isWrapper = current instanceof Error || Predicate.isTagged(current, 'UnknownException');
-
-    if (candidate !== undefined && !isWrapper) {
-      if (hasStrongApiFields(candidate)) {
-        return candidate;
-      }
-      if (!fallback) {
-        fallback = candidate;
-      }
-    }
-
-    if (Predicate.hasProperty(current, 'error')) {
-      queue.push(current.error);
-    }
-
-    if (Predicate.hasProperty(current, 'cause')) {
-      queue.push(current.cause);
-    }
-  }
-
-  return fallback;
 };

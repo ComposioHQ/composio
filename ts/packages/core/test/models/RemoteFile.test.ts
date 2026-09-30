@@ -283,5 +283,161 @@ describe('RemoteFile', () => {
       const written = platform.readFileSync(savePath) as Uint8Array;
       expect(new Uint8Array(written)).toEqual(content);
     });
+
+    describe('default location', () => {
+      // `save()` without a path derives the filename from `mountRelativePath`,
+      // a server-controlled response field. These cover the SEC-316 guard the
+      // Python SDK already applies; see `src/utils/safePath.ts`.
+      const content = new Uint8Array([1, 2, 3]);
+      let homeDir: string;
+      let composioDir: string;
+
+      beforeEach(async () => {
+        const { mkdtempSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const { tmpdir } = await import('node:os');
+        const { platform } = await import('../../src/platform/node');
+
+        homeDir = mkdtempSync(join(tmpdir(), 'composio-remote-file-home-'));
+        composioDir = join(homeDir, '.composio');
+        vi.spyOn(platform, 'homedir').mockReturnValue(homeDir);
+
+        globalThis.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(content.buffer),
+        });
+      });
+
+      afterEach(async () => {
+        vi.restoreAllMocks();
+        const { rmSync } = await import('node:fs');
+        rmSync(homeDir, { recursive: true, force: true });
+      });
+
+      it.each([
+        ['out/report.pdf', 'report.pdf'],
+        ['C:report.txt', 'report.txt'],
+        ['\ufeffreport.txt', '\ufeffreport.txt'],
+        ['\u0085report.txt\u0085', 'report.txt'],
+        ['out/report_2026-09-29T10:30:00.csv', 'report_2026-09-29T10_30_00-d7211bb25cb815fe.csv'],
+        ['What is this?.png', 'What is this_-9c68adf2da8b6e8d.png'],
+        ['report.\u00a0', 'report-11aada8ba3168adf'],
+        ['NUL.txt', '_NUL-d0848f78ce05ded6.txt'],
+        [`${'請'.repeat(70)}.pdf`, `${'請'.repeat(35)}-a7cbc40614b84819.pdf`],
+      ])(
+        'should save %j under the default directory as %j',
+        async (mountRelativePath, expectedName) => {
+          const { platform } = await import('../../src/platform/node');
+          const { join } = await import('node:path');
+          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
+
+          const result = await file.save();
+
+          expect(result).toBe(join(composioDir, 'files', expectedName));
+          expect(new Uint8Array(platform.readFileSync(result) as Uint8Array)).toEqual(content);
+        }
+      );
+
+      it('should not let files whose names normalize alike overwrite each other', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])];
+        globalThis.fetch = vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[0].buffer) })
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[1].buffer) })
+          .mockResolvedValueOnce({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(bodies[2].buffer),
+          });
+
+        const paths = [];
+        for (const mountRelativePath of ['report?.png', 'report*.png', 'report_.png']) {
+          paths.push(await new RemoteFile({ ...validCamelCaseData, mountRelativePath }).save());
+        }
+
+        expect(new Set(paths).size).toBe(3);
+        expect(
+          paths.map(path => new Uint8Array(platform.readFileSync(path) as Uint8Array))
+        ).toEqual(bodies);
+      });
+
+      it.each([
+        ['report?.png', 'report_-05fcb95aa5b918e9.png'],
+        ['report_-05fcb95aa5b918e9.png', 'report?.png'],
+      ])('should keep both downloads when %j and %j map to one name', async (first, second) => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2])];
+        globalThis.fetch = vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[0].buffer) })
+          .mockResolvedValueOnce({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(bodies[1].buffer),
+          });
+
+        const paths = [];
+        for (const mountRelativePath of [first, second]) {
+          paths.push(await new RemoteFile({ ...validCamelCaseData, mountRelativePath }).save());
+        }
+
+        expect(new Set(paths).size).toBe(2);
+        expect(paths.map(path => new Uint8Array(platform.readFileSync(path)))).toEqual(bodies);
+      });
+
+      it('should preserve concurrent default saves within the filename byte limit', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])];
+        let nextBody = 0;
+        globalThis.fetch = vi.fn().mockImplementation(() => {
+          const body = bodies[nextBody++];
+          return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(body.buffer) });
+        });
+        const files = bodies.map(
+          () =>
+            new RemoteFile({
+              ...validCamelCaseData,
+              mountRelativePath: `${'請'.repeat(41)}.pdf`,
+            })
+        );
+
+        const paths = await Promise.all(files.map(file => file.save()));
+
+        expect(new Set(paths).size).toBe(3);
+        expect(paths.map(path => new Uint8Array(platform.readFileSync(path)))).toEqual(bodies);
+        for (const path of paths) {
+          const name = path.slice(path.lastIndexOf('/') + 1);
+          expect(new TextEncoder().encode(name).length).toBeLessThanOrEqual(128);
+          expect(name.endsWith('.pdf')).toBe(true);
+        }
+      });
+
+      // Each of these would make the save path equal its own directory (or the
+      // parent), which previously surfaced as an unhandled `EISDIR` from
+      // `writeFileSync` after the directory had already been created.
+      it.each(['', '.', 'sub/.', 'foo/..', '..', '\u00a0.\u00a0', '\u2007..\u2007'])(
+        'should reject mountRelativePath %j before downloading',
+        async mountRelativePath => {
+          const { platform } = await import('../../src/platform/node');
+          const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath });
+          const fetchMock = vi.fn().mockRejectedValue(new Error('Download unavailable'));
+          globalThis.fetch = fetchMock;
+
+          await expect(file.save()).rejects.toThrow(ValidationError);
+          await expect(file.save()).rejects.toThrow(/leaves no usable basename/);
+          expect(fetchMock).not.toHaveBeenCalled();
+          expect(platform.existsSync(composioDir)).toBe(false);
+        }
+      );
+
+      it('should still honor an explicit path when the mount path is unusable', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const { join } = await import('node:path');
+        const file = new RemoteFile({ ...validCamelCaseData, mountRelativePath: '..' });
+        const savePath = join(homeDir, 'explicit.pdf');
+
+        await expect(file.save(savePath)).resolves.toBe(savePath);
+        expect(platform.existsSync(savePath)).toBe(true);
+      });
+    });
   });
 });

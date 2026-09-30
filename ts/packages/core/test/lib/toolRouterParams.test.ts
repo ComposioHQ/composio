@@ -183,6 +183,17 @@ describe('transformToolRouterTagsParams', () => {
 });
 
 describe('transformToolRouterUpdateParams', () => {
+  it('maps the experimental Instant usage policy without changing other session settings', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        instant: { toolkits: { disable: ['exa'] }, returnInstantCharge: true },
+      })
+    ).toEqual({ instant: { toolkits: { disable: ['exa'] }, return_instant_charge: true } });
+    expect(transformToolRouterUpdateParams({ instant: false })).toEqual({
+      instant: false,
+    });
+  });
+
   it('keeps an empty toolkit allowlist in the request', () => {
     expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
       toolkits: { enable: [] },
