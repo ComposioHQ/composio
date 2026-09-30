@@ -7,7 +7,11 @@ import { platform } from '../../src/platform/node';
 
 vi.mock('node:fs', async importOriginal => {
   const actual = await importOriginal<typeof import('node:fs')>();
-  return { ...actual, writeFileSync: vi.fn(actual.writeFileSync) };
+  return {
+    ...actual,
+    closeSync: vi.fn(actual.closeSync),
+    writeFileSync: vi.fn(actual.writeFileSync),
+  };
 });
 
 const invertAsciiCase = (value: string): string =>
@@ -56,6 +60,26 @@ describe('node platform exclusive writes', () => {
 
       expect(() => platform.writeFileExclusiveSync(filePath, new Uint8Array([1, 2]))).toThrow(
         'no space left on device'
+      );
+      expect(existsSync(filePath)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('removes the file it created when closing it fails', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-exclusive-write-'));
+    try {
+      const filePath = path.join(root, 'report.pdf');
+      const actual = vi.mocked(fs.closeSync).getMockImplementation()!;
+      // Some filesystems report a deferred write error only on close.
+      vi.mocked(fs.closeSync).mockImplementationOnce(fd => {
+        actual(fd);
+        throw Object.assign(new Error('disk quota exceeded'), { code: 'EDQUOT' });
+      });
+
+      expect(() => platform.writeFileExclusiveSync(filePath, new Uint8Array([1, 2]))).toThrow(
+        'disk quota exceeded'
       );
       expect(existsSync(filePath)).toBe(false);
     } finally {
