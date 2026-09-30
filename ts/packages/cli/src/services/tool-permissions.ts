@@ -278,10 +278,10 @@ const writeCacheEntry = (
 // built from a tool slug that repeats its leading word twice (e.g.
 // `OUTLOOK_OUTLOOK_SEARCH_MESSAGES` instead of `OUTLOOK_SEARCH_MESSAGES`) —
 // a stale artifact of an earlier server-side slug-generation scheme. This
-// isn't limited to the one or two tools first reported: the CLI's own
-// historical Outlook fixtures show the identical doubling across two dozen
-// different tool slugs, all of which resolve to a bare (non-doubled) slug
-// in the current toolkit catalog. That's a fix owned by the backend's
+// isn't limited to the one or two tools first reported: the CLI's historical
+// tool enums show the same doubling across many Outlook tools and other
+// toolkits, and nearly all of those slugs have a bare (non-doubled) twin in
+// the current toolkit catalog. That's a fix owned by the backend's
 // `/consumer/permissions/resolve` endpoint (closed-source, out of scope
 // here) — this strips the doubled leading word client-side, before any
 // permissionField() lookup happens, so a current slug still inherits the
