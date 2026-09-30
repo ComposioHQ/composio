@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- API requests and command analytics now report CLI product/version, language,
+  runtime/version, and the installed API client version separately.
+
 - Remove the experimental local-tools stack: the `local-tools` command group,
   the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
   and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
