@@ -1,7 +1,7 @@
 ---
 title: Track and export usage
-description: View organization and project usage in the dashboard, pull all-time usage through the usage APIs, export it to CSV, and reconcile premium charges against your invoice.
-keywords: [usage, billing, metering, export, CSV, premium usage charge, invoice, cost attribution, production]
+description: View organization and project usage in the dashboard, pull all-time usage through the usage APIs, export it to CSV, and reconcile Instant charges against your invoice.
+keywords: [usage, billing, metering, export, CSV, Instant charge, invoice, cost attribution, production]
 ---
 
 Track how much usage your organization and projects consume, for billing reconciliation, per-customer cost attribution, or forecasting. The dashboard covers recent activity at a glance; the usage APIs cover any period, up to 366 days per request, and return data you can export.
@@ -60,23 +60,21 @@ A breakdown response contains the totals for the range plus one row per group:
   "unit": "calls",
   "total_quantity": "18234",
   "event_count": 18234,
-  "premium_usage_charge": "12.40",
   "groups": [
     {
       "key": "GITHUB_CREATE_ISSUE",
       "total_quantity": "9120",
-      "event_count": 9120,
-      "premium_usage_charge": "6.20"
+      "event_count": 9120
     }
   ]
 }
 ```
 
-Summary responses return the same totals per entity type, without `groups`.
+Summary responses return the same totals per entity type, without `groups`, plus the window's total Instant charge as `instant_charge`.
 
 ## Reconcile charges against your invoice
 
-`premium_usage_charge` is the exact USD amount charged for premium usage in that aggregate, as a decimal string (`"0"` when nothing was charged). Set `from` and `to` to a billing period to compare the totals against your invoice, and read the per-group values to see which tools or users drove the charge.
+`instant_charge` in the summary response is the exact USD amount charged for Instant usage in the window, as a decimal string (`"0"` when nothing was charged). Set `from` and `to` to a billing period and compare the total against your invoice. Breakdowns contain usage quantities and event counts, not charges: to see which executions drove a charge, read `metadata.instant_charge` on charged entries in [tool execution logs](/reference/api-reference/logs).
 
 ## Export to CSV
 
@@ -121,15 +119,15 @@ done
 jq -r -s '
 	add
 	| sort_by(.key, .from)
-	| (["key", "from", "to", "total_quantity", "event_count", "premium_usage_charge"],
-		(.[] | [.key, .from, .to, .total_quantity, .event_count, .premium_usage_charge]))
+	| (["key", "from", "to", "total_quantity", "event_count"],
+		(.[] | [.key, .from, .to, .total_quantity, .event_count]))
 	| @csv
 ' "${GROUPS_FILE}" > usage.csv
 ```
 
-The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals. Sum `premium_usage_charge` with true decimal arithmetic, such as a warehouse `NUMERIC` or `DECIMAL` column or Python's `decimal` module, because the strings are exact USD amounts and reconciliation depends on them staying exact. Spreadsheets and other floating-point tools can silently change the values.
+The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals.
 
-Swap the URL to `project/usage/tool_calls` and the header to `x-api-key` for a single project, or change `group_by` to `user_id` for per-customer attribution.
+To scope the export to a single project, swap the URL to `project/usage/tool_calls`, the header to `x-api-key`, and the credential to a project API key: replace the `COMPOSIO_ORG_API_KEY` guard with `: "${COMPOSIO_PROJECT_API_KEY:?Set your Composio project API key}"` and send `x-api-key: ${COMPOSIO_PROJECT_API_KEY}`. Change `group_by` to `user_id` for per-customer attribution.
 
 <Callout>
 Breakdown responses are not paginated: each request returns at most 1000 groups (`limit`), with no flag to say groups were dropped. Treat a response with exactly 1000 groups as truncated, as the script above does, and lower the window size or add `filters` (for example, batches of `user_id` values) until every response comes back under the cap. Every returned group lands in the CSV as its own row, so nothing is silently omitted or altered.
@@ -137,4 +135,4 @@ Breakdown responses are not paginated: each request returns at most 1000 groups 
 
 ## Query usage from the SDK
 
-Both SDKs expose the same metering data through `composio.experimental.usage.summary()` and `composio.experimental.usage.breakdown()`, scoped to the project associated with your API key. Both methods are experimental, and their response shape may change in future releases. See [Inspect project usage](/docs/production-readiness#inspect-project-usage) and the [TypeScript Usage reference](/reference/sdk-reference/typescript/usage).
+Both SDKs return usage quantities and event counts through `composio.experimental.usage.summary()` and `composio.experimental.usage.breakdown()`, scoped to the project associated with your API key. The summary also returns the window's total Instant charge (`instantCharge` in TypeScript, `instant_charge` in Python). Breakdowns carry no charges, in the SDKs or over REST: for per-execution charge attribution, read `metadata.instant_charge` from [tool execution logs](/reference/api-reference/logs). Both methods are experimental, and their response shape may change in future releases. See [Inspect project usage](/docs/production-readiness#inspect-project-usage) and the [TypeScript Usage reference](/reference/sdk-reference/typescript/usage).
