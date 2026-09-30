@@ -275,7 +275,7 @@ With the default search-first session, your agent can discover the custom tools 
 
 ### Use an authenticated server
 
-Use the same session configuration shown above. To select a specific connected account, pass its ID:
+Sessions automatically match connected accounts by `user_id`. If you created the auth config yourself, set `is_enabled_for_tool_router: true` to enable automatic account matching. To select a specific connected account, pass its ID in the session configuration:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
