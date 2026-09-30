@@ -237,7 +237,7 @@ Deletion removes the custom toolkit and its tools. It also revokes and removes t
 
 Once the toolkit is synced, add its `CUSTOM_*` slug to a session.
 
-### Use a no-auth server
+### Create a session
 
 Pass the toolkit slug when you create the session:
 
@@ -275,7 +275,7 @@ With the default search-first session, your agent can discover the custom tools 
 
 ### Use an authenticated server
 
-Sessions automatically match connected accounts by `user_id`. If you created the auth config yourself, set `is_enabled_for_tool_router: true` to enable automatic account matching. To select a specific connected account, pass its ID in the session configuration:
+Sessions automatically match connected accounts by `user_id`. If you created the auth config yourself, [set `is_enabled_for_tool_router: true`](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) to enable automatic account matching. To select a specific connected account, pass its ID in the session configuration:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
