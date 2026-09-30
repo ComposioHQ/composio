@@ -261,8 +261,14 @@ class RemoteFile:
             save_path.write_bytes(content)
         else:
             save_path, fd = open_unique_file(save_path)
-            with fd:
-                fd.write(content)
+            try:
+                with fd:
+                    fd.write(content)
+            except BaseException:
+                # The path was claimed for this save, so a failed write must
+                # not leave a partial file that a retry would number around.
+                save_path.unlink(missing_ok=True)
+                raise
         return str(save_path.resolve())
 
     @classmethod

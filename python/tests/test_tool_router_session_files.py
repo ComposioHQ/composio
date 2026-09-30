@@ -406,6 +406,24 @@ class TestRemoteFile:
         assert all(len(path.name.encode()) <= 128 for path in paths)
         assert all(path.suffix == Path(names[0]).suffix for path in paths)
 
+    def test_failed_default_save_leaves_no_file_behind(self, tmp_path):
+        file = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path="report.pdf",
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            # Writing `str` to the binary file fails after the path is claimed.
+            with patch.object(file, "buffer", return_value="not bytes"):
+                with pytest.raises(TypeError):
+                    file.save()
+            with patch.object(file, "buffer", return_value=b"content"):
+                saved = Path(file.save())
+
+        assert saved.name == "report.pdf"
+        assert [path.name for path in saved.parent.iterdir()] == ["report.pdf"]
+
 
 class TestResponseDerivedUrlsAreGuarded:
     """`download_url` and `upload_url` are response fields, so they are guarded.
