@@ -20,7 +20,7 @@ There is no code in this example. Three agents, three prompts, one connected too
 
 They run in the cloud on Atomic Bot: no terminal, no Docker, and nothing on your side that has to stay awake for a scheduled pass to fire.
 
-<Figure src="/images/three-agents-one-board/issue-thread.png" alt="A Linear issue showing the intake comment followed by the builder comment" caption="One issue, three agents, and every handover written down" size="full" />
+<Figure src="/images/three-agents-one-board/issue-thread.png" alt="A Linear issue showing the intake comment followed by the builder comment" caption="One issue, three agents, and every handover written down" size="full" width={2300} height={1592} />
 
 <Callout type="warn" title="Is this the right example for you?">
 It is a reference for four things: background agents that never stop for auth, a toolkit as the coordination layer, roles that live in prompts instead of code, and per-agent connections. It is not a multi agent framework: no orchestrator, no queue, no shared state, no agent-to-agent protocol.
@@ -40,7 +40,7 @@ Clicking through Linear is one way. Asking an agent is another: creating a team 
 
 In Atomic Bot, add three agents from the agent list. Ours were Hermes, Codex and OpenClaw, all on Claude Opus 5.
 
-<Figure src="/images/three-agents-one-board/agents.png" alt="Three agents listed in one Atomic Bot account" caption="Three agents in one account, each an instance of its own" size="lg" />
+<Figure src="/images/three-agents-one-board/agents.png" alt="Three agents listed in one Atomic Bot account" caption="Three agents in one account, each an instance of its own" size="full" width={1540} height={2460} className="max-w-[700px] mx-auto" />
 
 Hermes on intake, because sorting a vague request and spotting a duplicate is the part that needs judgement. Codex on the work itself. OpenClaw on review, where the criteria are already written down and the job is to check them. Roles are prompts, so three copies of the same agent work too.
 
@@ -48,7 +48,7 @@ Hermes on intake, because sorting a vague request and spotting a duplicate is th
 
 Open Connectors for the first agent and connect Linear. Composio runs the authorization, and the connected account belongs to that agent, not to the whole account. Repeat it for the other two.
 
-<Figure src="/images/three-agents-one-board/connectors.png" alt="The Connectors screen with Linear connected" caption="Connections are per agent, so an agent can only reach what you connected for it" size="lg" />
+<Figure src="/images/three-agents-one-board/connectors.png" alt="The Connectors screen with Linear connected" caption="Connections are per agent, so an agent can only reach what you connected for it" size="full" width={2320} height={1868} />
 
 Nothing else needs connecting for this example. Add Gmail to intake if you want requests to arrive from a mailbox instead of by hand.
 
@@ -114,7 +114,7 @@ The first line is a behavioral guardrail, not an authorization boundary. Treat i
 
 Each agent runs its own pass on its own timer. Add a job under Cron Jobs for every agent, fifteen minutes apart, with the same text you pasted into the chat.
 
-<Figure src="/images/three-agents-one-board/cron.png" alt="A scheduled job for one of the agents" caption="Three timers, one per agent, and nothing that coordinates them" size="lg" />
+<Figure src="/images/three-agents-one-board/cron.png" alt="A scheduled job for one of the agents" caption="Three timers, one per agent, and nothing that coordinates them" size="full" width={2320} height={670} />
 
 Nothing synchronises the three timers, and nothing needs to. An agent that wakes up to an empty column does nothing and goes back to sleep.
 
@@ -130,15 +130,15 @@ Three issues landed in Backlog. Two were real requests, and the third was the fi
 
 **Intake** read the backlog and rewrote each issue into something workable, adding an `Ask`, a `Source` and a `Done when` with three conditions. It commented what area the request touched, moved both real issues to Todo, and marked the third as a duplicate of the first without being told the two were related.
 
-<Figure src="/images/three-agents-one-board/issue-intake.png" alt="A Linear issue with an Ask, a Source and a Done when section added by the intake agent" caption="The request arrived as two lines. This is what Intake left behind." size="lg" />
+<Figure src="/images/three-agents-one-board/issue-intake.png" alt="A Linear issue with an Ask, a Source and a Done when section added by the intake agent" caption="The request arrived as two lines. This is what Intake left behind." size="full" width={2300} height={1574} />
 
-<Figure src="/images/three-agents-one-board/board.png" alt="The Linear board with issues in different statuses" caption="The board carries the state: one issue moving, one waiting its turn, one closed as a duplicate" size="lg" />
+<Figure src="/images/three-agents-one-board/board.png" alt="The Linear board with issues in different statuses" caption="The board carries the state: one issue done, one waiting its turn, one closed as a duplicate" size="full" width={2296} height={844} />
 
 **Builder** took the older of the two, moved it to In Progress, wrote the answer the issue asked for, and checked every claim in it against the official documentation before posting the result in full as a comment. What the documentation did not cover it kept out of the answer and listed at the bottom as an open item. Then In Review.
 
 **Reviewer** read that comment against the three conditions in `Done when`, said in one line which of them it had checked, and closed the issue.
 
-<Figure src="/images/three-agents-one-board/review-approved.png" alt="The reviewer comment approving the work, followed by the status change to Done" caption="The last two events on the issue: the check, then Done" size="lg" />
+<Figure src="/images/three-agents-one-board/review-approved.png" alt="The reviewer comment approving the work, followed by the status change to Done" caption="The last two events on the issue: the check, then Done" size="full" width={2300} height={1314} />
 
 Total human involvement after setup: none. The person who opens the board sees the request, what was made of it, what was produced, and what was verified, in one thread, in order.
 
