@@ -17,7 +17,7 @@ import {
   ToolRouterUpdateManageConnectionsSchema,
   ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
-  ToolRouterPremiumUsage,
+  ToolRouterInstant,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -195,25 +195,33 @@ export type SessionPatchBody = Omit<
     SessionPatchParams,
     'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
   >,
-  'manage_connections' | 'multi_account' | 'experimental'
+  'manage_connections' | 'multi_account' | 'experimental' | 'premium_usage'
 > & {
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
   expected_config_version?: number;
+  instant?: SessionInstantBody;
 };
 
-export type SessionPremiumUsageBody = NonNullable<SessionPatchParams['premium_usage']>;
+/** SDK-owned wire contract until the generated client adopts the Instant names. */
+export type SessionInstantBody =
+  | false
+  | (Omit<Exclude<ToolRouterInstant, false>, 'returnInstantCharge'> & {
+      return_instant_charge?: boolean;
+    });
 
-export const transformToolRouterPremiumUsageParams = (
-  config: ToolRouterPremiumUsage
-): SessionPremiumUsageBody => {
+export type SessionCreateBody = Omit<SessionCreateParams, 'premium_usage'> & {
+  instant?: SessionInstantBody;
+};
+
+export const transformToolRouterInstantParams = (config: ToolRouterInstant): SessionInstantBody => {
   if (config === false) return false;
   return {
     ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
     ...(config.tools !== undefined && { tools: config.tools }),
-    ...(config.returnPremiumCharge !== undefined && {
-      return_premium_charge: config.returnPremiumCharge,
+    ...(config.returnInstantCharge !== undefined && {
+      return_instant_charge: config.returnInstantCharge,
     }),
   };
 };
@@ -354,8 +362,8 @@ export const transformToolRouterUpdateParams = (
     params.toolkits =
       config.toolkits === null ? null : transformToolRouterToolkitsParams(config.toolkits);
   }
-  if (config.premiumUsage !== undefined) {
-    params.premium_usage = transformToolRouterPremiumUsageParams(config.premiumUsage);
+  if (config.instant !== undefined) {
+    params.instant = transformToolRouterInstantParams(config.instant);
   }
   if (config.tools !== undefined) {
     params.tools = config.tools === null ? null : transformToolRouterToolsParams(config.tools);

@@ -7,7 +7,7 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `config` | `Config` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
+| `config` | `ToolRouterSessionConfig` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
 | `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
 | `experimental` | `SessionExperimental` |  |
 | `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
@@ -239,7 +239,7 @@ Search for tools by semantic use case.
 Returns relevant tools for the given query with schemas and guidance.
 
 ```typescript
-async search(params: { query: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ error: string | null; nextStepsGuidance: string[]; results: { difficulty?: string; error?: string | null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: { code: ...; description: ... }[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string }[]; session: { generateId: boolean; id: string; instructions: string }; success: boolean; timeInfo: { currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string }; toolkitConnectionStatuses: { connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; hostedAccount?: { allowedToolSlugs: ...[] }; statusMessage: string; toolkit: string }[]; toolSchemas: Record<string, { description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: { args: { toolSlugs: ... }; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' }; toolkit: string; toolSlug: string }> }>
+async search(params: { query: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ error: string | null; nextStepsGuidance: string[]; results: { difficulty?: string; error?: string | null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: { code: ...; description: ... }[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string }[]; session: { generateId: boolean; id: string; instructions: string }; success: boolean; timeInfo: { currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string }; toolkitConnectionStatuses: { connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; instantAccount?: { allowedToolSlugs: ...[] }; statusMessage: string; toolkit: string }[]; toolSchemas: Record<string, { description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: { args: { toolSlugs: ... }; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' }; toolkit: string; toolSlug: string }> }>
 ```
 
 **Parameters**
@@ -251,7 +251,7 @@ async search(params: { query: string; toolkits?: string[] }, requestOptions?: Co
 
 **Returns**
 
-`Promise<\{ error: string \| null; nextStepsGuidance: string[]; results: \{ difficulty?: string; error?: string \| null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: \{ code: ...; description: ... \}[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string \}[]; session: \{ generateId: boolean; id: string; instructions: string \}; success: boolean; timeInfo: \{ currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string \}; toolkitConnectionStatuses: \{ connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; hostedAccount?: \{ allowedToolSlugs: ...[] \}; statusMessage: string; toolkit: string \}[]; toolSchemas: Record<string, \{ description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: \{ args: \{ toolSlugs: ... \}; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' \}; toolkit: string; toolSlug: string \}> \}>`
+`Promise<\{ error: string \| null; nextStepsGuidance: string[]; results: \{ difficulty?: string; error?: string \| null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: \{ code: ...; description: ... \}[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string \}[]; session: \{ generateId: boolean; id: string; instructions: string \}; success: boolean; timeInfo: \{ currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string \}; toolkitConnectionStatuses: \{ connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; instantAccount?: \{ allowedToolSlugs: ...[] \}; statusMessage: string; toolkit: string \}[]; toolSchemas: Record<string, \{ description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: \{ args: \{ toolSlugs: ... \}; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' \}; toolkit: string; toolSlug: string \}> \}>`
 
 ---
 
@@ -338,7 +338,7 @@ for example for an archived or missing config, surface unchanged.
 successful response, and the updated `config` is returned.
 
 ```typescript
-async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<Config>
+async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionConfig>
 ```
 
 **Parameters**
@@ -350,6 +350,6 @@ async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioReq
 
 **Returns**
 
-`Promise<Config>`
+`Promise<ToolRouterSessionConfig>`
 
 ---

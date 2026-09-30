@@ -1,25 +1,37 @@
 ---
 title: Instant Tools
 description: Use supported tools in a Session without asking every user to connect a provider account
-keywords: [Instant Tools, Sessions, premium usage, hosted account]
+keywords: [Instant Tools, Sessions, Instant usage, Instant account]
 experimental: true
 ---
 
-Instant Tools let your Session run supported tools without an end-user provider connection. A Composio hosted account provides access for eligible tools. Premium usage charges for those calls come from your organization's available balance.
+Instant Tools give your agent capabilities beyond what your users have connected, including web search, scraping, data enrichment, and image and video generation. We add more regularly. Supported tools run on Composio's provider accounts, so your users don't need OAuth, provider API keys, or per-provider signups. Calls through those accounts charge your Composio balance. When a task needs a user's own identity, they can still connect their account.
 
 <Callout type="warning" title="Experimental access">
-  This feature requires a project setting that is not yet self-service. Email [support@composio.dev](mailto:support@composio.dev) to enable it for your project and confirm which tools and rates are available. Session configuration cannot override a project where the setting is off.
+  Email [support@composio.dev](mailto:support@composio.dev) to enable Instant for your project during experimental access. A Session cannot override a project where Instant is off.
 </Callout>
 
-Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `premium_usage` is omitted. Set `premium_usage=False` in Python or `premiumUsage: false` in TypeScript when creating a Session that must not incur premium usage charges.
+Once the project setting is enabled, new Sessions can use eligible Instant Tools by default, even if `instant` is omitted. Set `instant=False` in Python or `instant: false` in TypeScript when creating a Session that must not incur Instant usage charges.
+
+## Balance and failed calls
+
+Developer organizations get a one-time $2 starter credit. Check your balance in [Dashboard → Organization Settings → Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). On Pro, add prepaid funds there; Hobby organizations must upgrade to Pro before adding funds. When Composio confirms that the balance is exhausted, an Instant call fails with HTTP 402 (`Metering_WalletBalanceExhausted`). It does not fall back to another account. Calls that select a user's connected account can still run. Balance verification is asynchronous, so $0 is not a strict per-call spending cap.
 
 ## Find eligible tools
 
-Instant tool coverage is per tool, not per toolkit. The current [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not return instant tool availability or offer an instant tool filter. Its `no_auth` and `composio_managed_auth_schemes` fields mean different things and should not be used as substitutes. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) for the supported tools and rates before allowing them in a production Session.
+Instant coverage is per tool, not per toolkit. A toolkit may support Instant Tools without every tool in it being eligible. Composio's provider account can be shared across customers, so only reviewed actions can run through it. Actions that could reveal shared account history or send arbitrary proxy requests are excluded. Use a connected account for actions Instant does not support.
+
+In the dashboard, open **Toolkits** and select the **Instant Tools** filter. An **Instant** badge on a toolkit means at least one of its tools supports Instant access. Open the toolkit to find the **Instant** badge beside each eligible tool.
+
+<Figure src="/images/instant-toolkit-filter.png" alt="Toolkits dashboard with the Instant Tools filter selected and Instant badges on matching toolkits" caption="Filter the toolkit catalog to find Instant support." />
+
+<Figure src="/images/instant-tool-eligibility.png" alt="Firecrawl toolkit page with Instant badges on Map multiple URLs, Scrape URL, and Search, but not on other tools" caption="Check individual tools before using an Instant account." />
+
+Instant eligibility and pricing discovery in the catalog APIs are coming soon. The public [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not yet return Instant availability or offer an Instant filter. Do not infer Instant support from `no_auth` or `composio_managed_auth_schemes`; they describe different access routes. During experimental access, ask [support@composio.dev](mailto:support@composio.dev) to confirm supported tools and rates.
 
 ## Create a Session
 
-After your project is enabled, create a Session. This example makes Exa available and permits premium usage for its eligible tools:
+After your project is enabled, create a Session. This example makes Exa available and permits Instant usage for its eligible tools:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -30,9 +42,9 @@ composio = Composio()
 session = composio.sessions.create(
     user_id="user_123",
     toolkits=["exa"],
-    premium_usage={
+    instant={
         "toolkits": {"enable": ["exa"]},
-        "return_premium_charge": True,
+        "return_instant_charge": True,
     },
 )
 ```
@@ -45,20 +57,45 @@ import { Composio } from "@composio/core";
 const composio = new Composio();
 const session = await composio.create("user_123", {
   toolkits: ["exa"],
-  premiumUsage: {
+  instant: {
     toolkits: { enable: ["exa"] },
-    returnPremiumCharge: true,
+    returnInstantCharge: true,
   },
 });
 ```
 </Tab>
 </Tabs>
 
-Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `premium_usage.toolkits` (or `premiumUsage.toolkits` in TypeScript) separately restricts which eligible tools can incur premium usage charges. Omitting `premium_usage.toolkits` does not restrict premium usage: eligible tools remain available when the project and Session permit them. `return_premium_charge` defaults to `false` and only controls whether the actual charge appears in the immediate tool response. An Instant toolkit can still contain tools that need a connected account; hosted account coverage is tool-specific.
+Top-level `toolkits` controls which tools the Session can discover and run. Omit it to make all toolkits discoverable. `instant.toolkits` separately restricts which eligible tools can incur Instant usage charges. Omitting `instant.toolkits` does not restrict Instant usage: eligible tools remain available when the project and Session permit them. `return_instant_charge` defaults to `false` and only controls whether the actual charge appears in the immediate tool response. A toolkit with Instant support can still contain tools that need a connected account; Instant account coverage is tool-specific.
 
-## Find and run a tool
+## Run a search with an agent
 
-Pass `session.tools()` to your agent as in the [Quickstart](/docs/quickstart), so it can discover and run eligible tools. If your agent uses MCP, expose the same Session through `session.mcp` as described in [Using sessions via MCP](/docs/sessions-via-mcp). The premium usage policy applies to that Session in either path; your agent does not need a separate premium usage setting.
+Install `composio`, `openai-agents`, and `python-dotenv`, then put `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart). This small agent can choose when to search. The wrapper prints the Instant charge after each search call:
+
+```python
+from agents import Agent, Runner, function_tool
+from composio import Composio
+from dotenv import load_dotenv
+
+load_dotenv()
+session = Composio().sessions.create(user_id="user_123", toolkits=["exa"], instant={"return_instant_charge": True})
+
+@function_tool
+def search(query: str) -> str:
+    result = session.execute("EXA_SEARCH", arguments={"query": query})
+    print("Instant charge:", result.instant_charge or "none")
+    return str(result.data)
+
+agent = Agent(name="Researcher", instructions="Use search when you need current information.", tools=[search])
+while prompt := input("You: "):
+    print(Runner.run_sync(agent, prompt).final_output)
+```
+
+The charge is present only if an Instant account served the call. A connected-account call prints `none`. Check the [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) if you change tools or arguments.
+
+## Find and run other tools
+
+Pass `session.tools()` to your agent as in the [Quickstart](/docs/quickstart), so it can discover and run eligible tools. If your agent uses MCP, expose the same Session through `session.mcp` as described in [Using sessions via MCP](/docs/sessions-via-mcp). The Instant usage policy applies to that Session in either path; your agent does not need a separate Instant usage setting.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -96,37 +133,52 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 </Tab>
 </Tabs>
 
-Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean hosted account access is available for that tool. Confirm supported tools and rates during Experimental access.
+Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean Instant account access is available for that tool. Confirm supported tools and rates during Experimental access.
 
-### Read charge details in Python
+### Read charge details
 
-With `premium_usage.return_premium_charge` enabled, `session.execute()` returns charge details when available in the typed `premium_charge` field on `ToolRouterSessionExecuteResponse`. Read it from the result above:
+With `instant.return_instant_charge` enabled, the response from `session.execute()` includes `instant_charge` when an Instant account runs the tool. Read it from the result above:
 
 ```python
-charge = result.premium_charge
+charge = result.instant_charge
 if charge is not None:
     print(charge["amount"], charge["currency"], charge["charged_by"])
 ```
 
-The `PremiumCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
+The `InstantCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
 
-## Control premium usage
+In TypeScript, read `instantCharge` from the result:
 
-`premium_usage` is a Session policy (`premiumUsage` in TypeScript). It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
 
-The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable premium usage for other eligible toolkits. Use `premium_usage.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
+const composio = new Composio();
+const session = await composio.create("user_123", {
+  toolkits: ["exa"],
+  instant: { returnInstantCharge: true },
+});
+const result = await session.execute("EXA_SEARCH", { query: "Composio documentation" });
+console.log(result.instantCharge ?? "No Instant charge");
+```
 
-The examples below use Python and REST field names. In TypeScript, use `premiumUsage` and `returnPremiumCharge`, and read the charge from `premiumCharge` on the tool result.
+## Control Instant usage
+
+`instant` is a Session policy in both SDKs. It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
+
+The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable Instant usage for other eligible toolkits. Use `instant.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
+
+The examples below use Python and REST field names. In TypeScript, use `instant` and `returnInstantCharge`, and read the charge from `instantCharge` on the tool result.
 
 | Session value | Effect |
 |---|---|
-| Omitted or `{}` | Permits premium usage for eligible tools, subject to the project setting and normal Session filters. The charge is not returned in tool responses by default. |
-| `false` | Disables premium usage for that Session. Your own connected-account routes remain available. |
-| `{ "toolkits": { "enable": ["exa"] } }` | Permits premium usage only for listed toolkits. Use `disable` instead to exclude selected toolkits. |
-| `{ "tools": { "exa": { "enable": ["EXA_SEARCH"] } } }` | Narrows premium usage to selected tools within a toolkit. |
-| `{ "return_premium_charge": true }` | Requests the actual `premium_charge` in an eligible Session tool response. On create, this changes charge visibility, not permission to spend. On update, it also re-enables premium usage on a Session set to `false`, like any other object. |
+| Omitted or `{}` | Permits Instant usage for eligible tools, subject to the project setting and normal Session filters. The charge is not returned in tool responses by default. |
+| `false` | Disables Instant usage for that Session. Your own connected-account routes remain available. |
+| `{ "toolkits": { "enable": ["exa"] } }` | Permits Instant usage only for listed toolkits. Use `disable` instead to exclude selected toolkits. |
+| `{ "tools": { "exa": { "enable": ["EXA_SEARCH"] } } }` | Narrows Instant usage to selected tools within a toolkit. |
+| `{ "return_instant_charge": true }` | Requests the actual `instant_charge` in an eligible Session tool response. On create, this changes charge visibility, not permission to spend. On update, it also re-enables Instant usage on a Session set to `false`, like any other object. |
 
-For example, keep Exa and Firecrawl available, but permit premium usage only for `EXA_SEARCH`:
+For example, keep Exa and Firecrawl available, but permit Instant usage only for `EXA_SEARCH`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -134,7 +186,7 @@ For example, keep Exa and Firecrawl available, but permit premium usage only for
 session = composio.sessions.create(
     user_id="user_123",
     toolkits=["exa", "firecrawl"],
-    premium_usage={
+    instant={
         "toolkits": {"enable": ["exa"]},
         "tools": {"exa": {"enable": ["EXA_SEARCH"]}},
     },
@@ -144,9 +196,12 @@ session = composio.sessions.create(
 <Tab value="TypeScript">
 ```typescript
 // @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
 const session = await composio.create("user_123", {
   toolkits: ["exa", "firecrawl"],
-  premiumUsage: {
+  instant: {
     toolkits: { enable: ["exa"] },
     tools: { exa: { enable: ["EXA_SEARCH"] } },
   },
@@ -155,32 +210,76 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-To stop premium usage on an existing Session, update its policy:
+To keep both toolkits discoverable but exclude Firecrawl and `EXA_SEARCH` from Instant usage, use `disable`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session.update(premium_usage=False)
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["exa", "firecrawl"],
+    instant={
+        "toolkits": {"disable": ["firecrawl"]},
+        "tools": {"exa": {"disable": ["EXA_SEARCH"]}},
+    },
+)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
 // @noErrors
-await session.update({ premiumUsage: false });
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["exa", "firecrawl"],
+  instant: {
+    toolkits: { disable: ["firecrawl"] },
+    tools: { exa: { disable: ["EXA_SEARCH"] } },
+  },
+});
 ```
 </Tab>
 </Tabs>
 
-On patch, omitted `premium_usage` fields keep their existing values. Supplying any object after `false`, even one that only sets `return_premium_charge`, enables this Session policy again, provided the project allows it.
+To stop Instant usage on an existing Session, update its policy:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(instant=False)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+const session = await composio.create("user_123");
+// ---cut---
+await session.update({ instant: false });
+```
+</Tab>
+</Tabs>
+
+<Callout type="warning" title="Updating a disabled Session">
+  On patch, omitted `instant` fields keep their existing values. But supplying any `instant` object after `instant=false`, even `{ "return_instant_charge": true }`, silently re-enables Instant spending for that Session if the project allows it. Leave `instant` as `false` if the Session must not spend.
+</Callout>
 
 ## Know which account runs the tool
 
-A hosted account is a provider account held by Composio for specific tools. It is different from **Composio-managed auth**, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool Instant.
+An Instant account is a provider account held by Composio for specific tools. It is different from **Composio-managed auth**, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool Instant.
 
-If you select a connected account explicitly, that route wins and does not fall back to the hosted account on failure. Otherwise, available user or shared connections take priority over a hosted account. If the chosen tool is not supported by a hosted account, it follows the normal connection flow.
+You pay an Instant charge only when Composio's Instant account runs the tool. A call using the user's own connection has no Composio Instant charge; the provider may bill that user under their own plan. If you select a connected account explicitly, that route wins and does not fall back to the Instant account on failure. Otherwise, available user or shared connections take priority over an Instant account. If the chosen tool is not supported by an Instant account, it follows the normal connection flow.
 
-Session search tells you when a hosted account serves a toolkit. The toolkit's connection status includes `hosted_account.allowed_tool_slugs` (`hostedAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
+Session search tells you when an Instant account serves a toolkit. The toolkit's connection status includes `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
 
-Hosted accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `premium_usage` policy.
+To choose the Instant account explicitly, pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. For direct `composio.tools.execute()`, pass `connected_account_id="instant_account"` in Python or `connectedAccountId: "instant_account"` in TypeScript. This route does not fall back to another credential if it fails.
+
+Instant accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Direct execution outside a Session does not inherit its `instant` policy.
+
+## Review usage
+
+Use the [project usage summary API](/reference/api-reference/projects/postProjectUsageSummary) for totals and the [tool-execution logs API](/reference/api-reference/logs/postLogsToolExecution) for individual calls. The summary's `instant_charge` is a top-level field; individual log charges appear in `metadata.instant_charge`. Both are exact USD strings. Filter logs by `session_id` when you need to trace a Session. These records remain available even when `return_instant_charge` is `false`.
 
 See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.

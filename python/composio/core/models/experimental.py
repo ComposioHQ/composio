@@ -52,9 +52,9 @@ ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT = "acl_config_for_shared is only valid on SHA
 class UsageSummaryResponse(
     usage_retrieve_summary_response.UsageRetrieveSummaryResponse
 ):
-    """Project usage summary with the exact USD premium charge for the window."""
+    """Project usage summary with the exact USD Instant charge for the window."""
 
-    premium_usage_charge: str
+    instant_charge: str
 
 
 class ExperimentalUsage:
@@ -89,7 +89,7 @@ class ExperimentalUsage:
         :param entity_types: Restrict the summary to these entity types.
         :param filters: Additional server-side filters.
         :return: Usage totals under ``.entities`` and the exact USD amount in
-            ``.premium_usage_charge`` (``"0"`` when nothing was charged).
+            ``.instant_charge`` (``"0"`` when nothing was charged).
 
         Example:
             summary = composio.experimental.usage.summary(

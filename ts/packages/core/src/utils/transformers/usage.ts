@@ -44,7 +44,7 @@ export const transformUsageSummaryResponse = (
   response: RawUsageSummaryResponse
 ): UsageSummaryResponse => {
   // The pinned generated client predates this response field but preserves the raw JSON.
-  const { premium_usage_charge } = z.object({ premium_usage_charge: z.string() }).parse(response);
+  const { instant_charge } = z.object({ instant_charge: z.string() }).parse(response);
   return transform(response)
     .with(UsageSummaryResponseSchema)
     .using(response => ({
@@ -58,7 +58,7 @@ export const transformUsageSummaryResponse = (
           },
         ])
       ),
-      premiumUsageCharge: premium_usage_charge,
+      instantCharge: instant_charge,
     }));
 };
 
