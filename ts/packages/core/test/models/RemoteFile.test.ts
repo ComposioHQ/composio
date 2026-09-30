@@ -361,6 +361,56 @@ describe('RemoteFile', () => {
         ).toEqual(bodies);
       });
 
+      it.each([
+        ['report?.png', 'report_-05fcb95aa5b918e9.png'],
+        ['report_-05fcb95aa5b918e9.png', 'report?.png'],
+      ])('should keep both downloads when %j and %j map to one name', async (first, second) => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2])];
+        globalThis.fetch = vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: () => Promise.resolve(bodies[0].buffer) })
+          .mockResolvedValueOnce({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(bodies[1].buffer),
+          });
+
+        const paths = [];
+        for (const mountRelativePath of [first, second]) {
+          paths.push(await new RemoteFile({ ...validCamelCaseData, mountRelativePath }).save());
+        }
+
+        expect(new Set(paths).size).toBe(2);
+        expect(paths.map(path => new Uint8Array(platform.readFileSync(path)))).toEqual(bodies);
+      });
+
+      it('should preserve concurrent default saves within the filename byte limit', async () => {
+        const { platform } = await import('../../src/platform/node');
+        const bodies = [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])];
+        let nextBody = 0;
+        globalThis.fetch = vi.fn().mockImplementation(() => {
+          const body = bodies[nextBody++];
+          return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(body.buffer) });
+        });
+        const files = bodies.map(
+          () =>
+            new RemoteFile({
+              ...validCamelCaseData,
+              mountRelativePath: `${'請'.repeat(41)}.pdf`,
+            })
+        );
+
+        const paths = await Promise.all(files.map(file => file.save()));
+
+        expect(new Set(paths).size).toBe(3);
+        expect(paths.map(path => new Uint8Array(platform.readFileSync(path)))).toEqual(bodies);
+        for (const path of paths) {
+          const name = path.slice(path.lastIndexOf('/') + 1);
+          expect(new TextEncoder().encode(name).length).toBeLessThanOrEqual(128);
+          expect(name.endsWith('.pdf')).toBe(true);
+        }
+      });
+
       // Each of these would make the save path equal its own directory (or the
       // parent), which previously surfaced as an unhandled `EISDIR` from
       // `writeFileSync` after the directory had already been created.

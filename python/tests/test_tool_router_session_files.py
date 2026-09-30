@@ -378,6 +378,34 @@ class TestRemoteFile:
         assert saved.name == expected
         assert saved.read_bytes() == b"content"
 
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["report?.png", "report_-05fcb95aa5b918e9.png"],
+            ["report_-05fcb95aa5b918e9.png", "report?.png"],
+            ["請" * 41 + ".pdf"] * 3,
+        ],
+    )
+    def test_default_save_preserves_files_with_colliding_names(self, names, tmp_path):
+        paths = []
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            for index, name in enumerate(names):
+                file = RemoteFile(
+                    expires_at="2026-01-01",
+                    mount_relative_path=name,
+                    sandbox_mount_prefix="/mnt/files",
+                    download_url="https://example.com/file",
+                )
+                with patch.object(file, "buffer", return_value=bytes([index])):
+                    paths.append(Path(file.save()))
+
+        assert len(set(paths)) == len(names)
+        assert [path.read_bytes() for path in paths] == [
+            bytes([i]) for i in range(len(names))
+        ]
+        assert all(len(path.name.encode()) <= 128 for path in paths)
+        assert all(path.suffix == Path(names[0]).suffix for path in paths)
+
 
 class TestResponseDerivedUrlsAreGuarded:
     """`download_url` and `upload_url` are response fields, so they are guarded.

@@ -185,6 +185,37 @@ def _fit_filename_bytes(name: str, max_bytes: int = MAX_COMPONENT_LENGTH) -> str
     return _truncate_to_bytes(stem, max_bytes - _encoded_length(extension)) + extension
 
 
+def numbered_basename(name: str, copy: int) -> str:
+    """Add a copy number before the extension within the filename byte limit."""
+    suffix = f"-{copy}"
+    stem, extension = _split_extension(name)
+    return (
+        _truncate_to_bytes(
+            stem, MAX_COMPONENT_LENGTH - _encoded_length(extension) - len(suffix)
+        )
+        + suffix
+        + extension
+    )
+
+
+def open_unique_file(path: Path) -> t.Tuple[Path, t.BinaryIO]:
+    """Claim a validated download path without replacing an existing file.
+
+    Numbered alternatives stay in the same directory and preserve a short
+    extension. Exclusive creation also prevents concurrent saves from sharing
+    a destination.
+    """
+    copy = 0
+    while True:
+        candidate = (
+            path if copy == 0 else path.with_name(numbered_basename(path.name, copy))
+        )
+        try:
+            return candidate, candidate.open("xb")
+        except FileExistsError:
+            copy += 1
+
+
 _FNV_OFFSET_BASIS_64 = 0xCBF29CE484222325
 _FNV_PRIME_64 = 0x100000001B3
 _UINT64_MASK = 0xFFFFFFFFFFFFFFFF
@@ -238,8 +269,10 @@ def safe_basename(name: str, *, label: str = "filename") -> str:
     extension kept, trailing spaces and dots are dropped as Windows would, and
     a resulting reserved device name gets a ``_`` prefix. A name any of these
     rules changed is then tagged with a digest of the original before its
-    extension (``report_-<16 hex>.png``), so distinct names never land on the
-    same file; a name that was already portable is returned unchanged.
+    extension (``report_-<16 hex>.png``) to distinguish ordinary normalization
+    collisions; a name that was already portable is returned unchanged. The
+    result can still equal a literal server name, so download writes use
+    :func:`open_unique_file` to preserve existing files.
     ``safeBasename`` in the TypeScript SDK applies the same rules in the same
     order.
 

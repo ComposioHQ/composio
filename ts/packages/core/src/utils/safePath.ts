@@ -156,6 +156,17 @@ function fitFilenameBytes(name: string, maxBytes: number = MAX_FILENAME_BYTES): 
   return truncateToBytes(stem, maxBytes - utf8Length(extension)) + extension;
 }
 
+/** Adds a copy number before the extension without exceeding the filename byte limit. */
+export function numberedBasename(name: string, copy: number): string {
+  const suffix = `-${copy}`;
+  const [stem, extension] = splitExtension(name);
+  return (
+    truncateToBytes(stem, MAX_FILENAME_BYTES - utf8Length(extension) - suffix.length) +
+    suffix +
+    extension
+  );
+}
+
 /**
  * Tags a name that portability changed with a digest of the name it came
  * from, before the extension: `report?.png` and `report*.png` both become
@@ -189,8 +200,10 @@ function tagWithOriginal(portable: string, original: string): string {
  * spaces and dots are dropped as Windows would, and a resulting reserved
  * device name gets a `_` prefix. A name any of these rules changed is then
  * tagged with a digest of the original before its extension
- * (`report_-<16 hex>.png`), so distinct names never land on the same file; a
- * name that was already portable is returned unchanged. `safe_basename` in
+ * (`report_-<16 hex>.png`) to distinguish ordinary normalization collisions;
+ * a name that was already portable is returned unchanged. A result can still
+ * equal a literal server name, so default saves create files exclusively.
+ * `safe_basename` in
  * the Python SDK applies the same rules in the same order.
  *
  * Python-compatible stripping removes surrounding whitespace first, and the

@@ -27,7 +27,7 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.safe_path import secure_basename_join, secure_join
+from composio.utils.safe_path import open_unique_file, secure_basename_join, secure_join
 from composio.utils.url_safety import (
     parse_content_length,
     safe_get,
@@ -748,12 +748,17 @@ class FileDownloadable(BaseModel):
             )
 
         total_bytes = 0
+        created = False
         try:
             # Only once the fetch is validated and connected, so a blocked URL
             # leaves no directory behind — and inside the `try`, so a failure
             # here still closes the response.
             outdir.mkdir(exist_ok=True, parents=True)
-            with outfile.open("wb") as fd:
+            # A literal server name can equal a digest-tagged name. Claim the
+            # path exclusively, then choose a numbered name if it exists.
+            outfile, fd = open_unique_file(outfile)
+            created = True
+            with fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:
                         total_bytes += len(chunk)
@@ -766,14 +771,16 @@ class FileDownloadable(BaseModel):
         except ResponseTooLargeError:
             # Propagates uncaught — callers must see the limit hit — but the
             # truncated file must not be left behind as if it were the download.
-            _discard_partial_download(outfile)
+            if created:
+                _discard_partial_download(outfile)
             raise
         except OSError as e:
             # `requests.exceptions.RequestException` subclasses `OSError`, so a
             # mid-stream transport failure and a failing `fd.write`/`mkdir`
             # (disk full, permissions) both land here — and both owe the caller
             # the `ErrorDownloadingFile` this method documents.
-            _discard_partial_download(outfile)
+            if created:
+                _discard_partial_download(outfile)
             raise ErrorDownloadingFile(
                 "Error downloading file: "
                 f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"

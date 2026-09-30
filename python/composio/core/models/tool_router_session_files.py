@@ -28,7 +28,7 @@ from composio.exceptions import (
     ValidationError,
 )
 from composio.utils.mimetypes import get_extension_from_mime_type
-from composio.utils.safe_path import secure_basename_join
+from composio.utils.safe_path import open_unique_file, secure_basename_join
 from composio.utils.url_safety import (
     parse_content_length,
     safe_get,
@@ -232,6 +232,7 @@ class RemoteFile:
 
         Returns the absolute path where the file was saved.
         If path is omitted, saves to ~/.composio/files/ using the filename.
+        An existing default destination gets a copy number before its extension.
         """
         content = self.buffer()
         save_path: Path
@@ -256,7 +257,12 @@ class RemoteFile:
                 raise ValidationError(str(e)) from e
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        save_path.write_bytes(content)
+        if path is not None:
+            save_path.write_bytes(content)
+        else:
+            save_path, fd = open_unique_file(save_path)
+            with fd:
+                fd.write(content)
         return str(save_path.resolve())
 
     @classmethod

@@ -2686,8 +2686,11 @@ class TestDownloadSizeLimit:
         with pytest.raises(ResponseTooLargeError):
             self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
 
+    @pytest.mark.parametrize("existing", [False, True])
     @patch("composio.core.models._files.safe_request")
-    def test_download_removes_partial_file_on_failure(self, mock_get, tmp_path):
+    def test_download_removes_partial_file_on_failure(
+        self, mock_get, tmp_path, existing
+    ):
         """A truncated download must not be left behind as if it succeeded."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -2696,10 +2699,17 @@ class TestDownloadSizeLimit:
         mock_response.close = MagicMock()
         mock_get.return_value = mock_response
 
+        if existing:
+            (tmp_path / "report.bin").write_bytes(b"original")
+
         with pytest.raises(ResponseTooLargeError):
             self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
 
-        assert list(tmp_path.iterdir()) == []
+        if existing:
+            assert list(tmp_path.iterdir()) == [tmp_path / "report.bin"]
+            assert (tmp_path / "report.bin").read_bytes() == b"original"
+        else:
+            assert list(tmp_path.iterdir()) == []
 
     @patch("composio.core.models._files.safe_request")
     def test_download_accepts_file_within_limit(self, mock_get, tmp_path):
@@ -3214,6 +3224,36 @@ class TestFileDownloadablePathTraversal:
             b"\x01",
             b"\x02",
         ]
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["report?.png", "report_-05fcb95aa5b918e9.png"],
+            ["report_-05fcb95aa5b918e9.png", "report?.png"],
+            ["請" * 41 + ".pdf"] * 3,
+        ],
+    )
+    def test_literal_tag_name_does_not_overwrite_download(self, names, tmp_path):
+        outdir = tmp_path / "safe"
+        outfiles = []
+        for index, name in enumerate(names):
+            file = FileDownloadable(
+                name=name,
+                mimetype="image/png",
+                s3url="https://example.com/file",
+            )
+            with patch(
+                "composio.core.models._files.safe_request",
+                return_value=self._mock_response(bytes([index])),
+            ):
+                outfiles.append(file.download(outdir, root=outdir))
+
+        assert len(set(outfiles)) == len(names)
+        assert [outfile.read_bytes() for outfile in outfiles] == [
+            bytes([i]) for i in range(len(names))
+        ]
+        assert all(len(outfile.name.encode()) <= 128 for outfile in outfiles)
+        assert all(outfile.suffix == Path(names[0]).suffix for outfile in outfiles)
 
 
 class TestDownloadDirSlugTraversal:

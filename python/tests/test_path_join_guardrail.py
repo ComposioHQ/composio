@@ -128,7 +128,8 @@ REVIEWED_JOINS: t.Dict[t.Tuple[str, str], t.Dict[str, t.Any]] = {
         "`safe_basename` collapses the value, rejects NUL bytes and invalid "
         "Unicode, rewrites Windows-invalid forms and reserved device names, fits "
         "the encoded length, and tags a rewritten name with a digest of the "
-        "original so distinct names never share a file.",
+        "original to distinguish ordinary normalization collisions. Download "
+        "writes create files exclusively to preserve existing destinations.",
         "_encoded_length",
         "_fit_filename_bytes",
         "_tag_with_original",

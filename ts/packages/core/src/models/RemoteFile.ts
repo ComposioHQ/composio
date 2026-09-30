@@ -1,6 +1,9 @@
 import { platform } from '#platform';
 import { ssrfSafeFetchWhereSupported } from '#ssrf_guard';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
+import { z } from 'zod';
+
+const existingFileError = z.object({ code: z.literal('EEXIST') });
 
 function getParentDir(filePath: string): string {
   const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
@@ -14,7 +17,7 @@ import {
   ValidationError,
 } from '../errors';
 import { readResponseBodyWithLimit } from '../utils/readResponseBody';
-import { safeBasename, untrustedBasename } from '../utils/safePath';
+import { numberedBasename, safeBasename, untrustedBasename } from '../utils/safePath';
 
 /**
  * Represents a file stored in a tool router session's file mount.
@@ -173,6 +176,7 @@ export class RemoteFile {
    * Requires a Node.js runtime with file system support (not available in Cloudflare Workers/Edge).
    *
    * @param path - Local path to save the file. If omitted, saves to the Composio temp directory using the filename from the mount path.
+   * An existing default destination gets a copy number before its extension.
    * @returns The absolute path where the file was saved
    * @throws Error if file system is not supported or the save fails
    * @throws ValidationError if `path` is omitted and the mount path yields no usable filename
@@ -196,8 +200,8 @@ export class RemoteFile {
     // `"."` or `"foo/.."` would otherwise make `savePath` its own directory or
     // the parent, and fail with a raw `EISDIR` only after `mkdirSync` had run.
     const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-    const savePath =
-      path ?? platform.joinPath(defaultDir, safeBasename(this.mountRelativePath, 'mount path'));
+    const defaultName = path == null ? safeBasename(this.mountRelativePath, 'mount path') : '';
+    const savePath = path ?? platform.joinPath(defaultDir, defaultName);
 
     const content = await this.buffer();
 
@@ -206,7 +210,22 @@ export class RemoteFile {
       platform.mkdirSync(dir);
     }
 
-    platform.writeFileSync(savePath, content);
-    return savePath;
+    if (path != null) {
+      platform.writeFileSync(savePath, content);
+      return savePath;
+    }
+
+    // Server names can equal a digest-tagged name literally. Reserve a new
+    // destination atomically so either save order keeps both downloads.
+    for (let copy = 0; ; copy++) {
+      const destination =
+        copy === 0 ? savePath : platform.joinPath(defaultDir, numberedBasename(defaultName, copy));
+      try {
+        platform.writeFileExclusiveSync(destination, content);
+        return destination;
+      } catch (error) {
+        if (!existingFileError.safeParse(error).success) throw error;
+      }
+    }
   }
 }

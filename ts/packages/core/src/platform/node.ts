@@ -108,4 +108,8 @@ export const platform = {
       fs.writeFileSync(filePath, content);
     }
   },
+
+  writeFileExclusiveSync(filePath: string, content: Uint8Array): void {
+    fs.writeFileSync(filePath, content, { flag: 'wx' });
+  },
 } as Platform;
