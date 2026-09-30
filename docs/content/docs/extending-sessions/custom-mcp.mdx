@@ -5,7 +5,7 @@ keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, experime
 experimental: true
 ---
 
-Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. Register the server and add its `CUSTOM_*` toolkit slug to a session. Tool Router can then help the user connect if authentication is required.
+Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. Register the server, connect it if authentication is required, then add its synced `CUSTOM_*` toolkit slug to a session.
 
 <Callout type="warn">
 Custom MCP is experimental. Its setup flow, authentication options, and API contracts may change while we work with early customers.
@@ -19,9 +19,9 @@ A Custom MCP moves through this lifecycle:
 
 1. **Deploy** your MCP server at a public HTTPS URL.
 2. **Register** its URL and authentication scheme. Composio creates a project-scoped `CUSTOM_*` toolkit.
-3. **Connect** an account through a session if the server uses an API key or DCR OAuth. No-auth servers skip this step.
+3. **Connect** an account if the server uses an API key or DCR OAuth. No-auth servers skip this step.
 4. **Sync** its tools. The first sync starts automatically; later tool changes require a manual sync.
-5. **Use** the toolkit in a session. Tool Router matches connected accounts to the session’s `user_id`; selecting an account explicitly is optional.
+5. **Use** the toolkit in a session.
 
 <Callout type="warn" title="API-only while Custom MCP is experimental">
 Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. You can also use the experimental SDK methods described below. These contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
@@ -162,46 +162,10 @@ Choose the mode that matches your server, then complete any required connection:
 | Authentication | Use it when | After registration |
 | --- | --- | --- |
 | No auth | The server accepts requests without credentials. | No connection is required. Initial sync runs automatically. |
-| API key | Each connected account supplies an API key. | Use Tool Router to collect the key and create a connection. Initial sync then starts in the background. |
-| DCR OAuth | The server supports OAuth Dynamic Client Registration. | Use Tool Router to start authorization. Initial sync starts when the connection becomes active. |
+| API key | Each connected account supplies an API key. | Create an active connection. Initial sync then starts in the background. |
+| DCR OAuth | The server supports OAuth Dynamic Client Registration. | Authorize a connection. Initial sync starts when it becomes active. |
 
 For DCR OAuth, the server must support the standard authorization-code flow. Other OAuth grant types aren't supported.
-
-### Let Tool Router manage authentication
-
-Add the registered `CUSTOM_*` toolkit to a session. When your agent needs a connection, `COMPOSIO_MANAGE_CONNECTIONS` can create an auth config automatically and return a link for the user to connect. No-auth servers need neither an auth config nor a connection.
-
-Tool Router reuses eligible connections for the session’s `user_id`. You don't need to create an auth config yourself or pass a connected account ID for this flow.
-
-### Create an auth config yourself (optional)
-
-For a setup flow you manage directly through the API, you can create the auth config yourself. Set `is_enabled_for_tool_router` to `true` so Tool Router can use it and match its connected accounts by `user_id`:
-
-```bash
-curl --request POST \
-  --url https://backend.composio.dev/api/v3.1/auth_configs \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "toolkit": { "slug": "CUSTOM_ACME" },
-    "auth_config": {
-      "type": "use_custom_auth",
-      "authScheme": "API_KEY",
-      "credentials": {},
-      "is_enabled_for_tool_router": true
-    }
-  }'
-```
-
-Tool Router enables this flag on auth configs it creates automatically. If you created a config yourself without the flag, enable it to make its connections available for automatic matching:
-
-```bash
-curl --request PATCH \
-  --url https://backend.composio.dev/api/v3.1/auth_configs/ac_xxxxxxxx \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header "Content-Type: application/json" \
-  --data '{ "type": "custom", "is_enabled_for_tool_router": true }'
-```
 
 ## Sync and resync tools
 
@@ -271,7 +235,7 @@ Deletion removes the custom toolkit and its tools. It also revokes and removes t
 
 ## Use Custom MCP in a session
 
-Add the registered toolkit’s `CUSTOM_*` slug to a session. For authenticated servers, connect an account before executing tools; the first active connection starts the initial sync.
+Once the toolkit is synced, add its `CUSTOM_*` slug to a session.
 
 ### Use a no-auth server
 
@@ -311,9 +275,7 @@ With the default search-first session, your agent can discover the custom tools 
 
 ### Use an authenticated server
 
-Create the session with the toolkit slug as in the example above. Tool Router can [create the auth config and start a connection](#let-tool-router-manage-authentication) when needed, then use the connected account for the session’s `user_id`.
-
-If you need a specific account, you can pin it explicitly:
+Use the same session configuration shown above. To select a specific connected account, pass its ID:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -406,7 +368,6 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 </Accordion>
 <Accordion title="Sessions and tool APIs">
 
-- **Manually created auth configs:** set `is_enabled_for_tool_router: true` to make their connections available for automatic matching. Tool Router sets this flag on configs it creates automatically.
 - **Prefer the v3.1 tools API:** The v3 tools API pins a default version that doesn't contain custom tools. If you must use v3, explicitly select `latest` as described above.
 
 </Accordion>
