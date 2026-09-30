@@ -1,6 +1,7 @@
 import typing as t
 
 from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
+from anthropic.types.cache_control_ephemeral_param import CacheControlEphemeralParam
 from anthropic.types.message import Message as ToolsBetaMessage
 from anthropic.types.tool_param import ToolParam
 from anthropic.types.tool_use_block import ToolUseBlock
@@ -22,18 +23,29 @@ class AnthropicProvider(
     Composio toolset for Anthropic Claude platform.
     """
 
-    def __init__(self, **kwargs: t.Any) -> None:
+    def __init__(self, cache_tools: bool = False, **kwargs: t.Any) -> None:
+        """
+        :param cache_tools: Attach Anthropic's ephemeral cache_control to
+            every wrapped tool definition, letting Claude reuse cached tool
+            schemas across requests. Mirrors the TypeScript
+            ``AnthropicProvider({ cacheTools: true })`` option. Defaults to
+            ``False``.
+        """
         super().__init__(**kwargs)
+        self.cache_tools = cache_tools
         self._aliases: dict[str, ToolSchemaAliases] = {}
 
     def wrap_tool(self, tool: Tool) -> ToolParam:
         aliases = alias_tool_input_schema(tool.input_parameters or {})
         self._aliases[tool.slug] = aliases
-        return ToolParam(
+        wrapped = ToolParam(
             input_schema=aliases.schema,
             name=tool.slug,
             description=tool.description,
         )
+        if self.cache_tools:
+            wrapped["cache_control"] = CacheControlEphemeralParam(type="ephemeral")
+        return wrapped
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[ToolParam]:
         return [self.wrap_tool(tool) for tool in tools]
