@@ -353,13 +353,19 @@ export const proxyCmd = Command.make('proxy', {
 
           return yield* Effect.tryPromise({
             try: () =>
-              client.toolRouter.session.proxyExecute(sessionId, {
-                toolkit_slug: normalizedToolkit,
-                endpoint,
-                method: normalizedMethod,
-                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-              }),
+              client.toolRouter.session.proxyExecute(
+                sessionId,
+                {
+                  toolkit_slug: normalizedToolkit,
+                  endpoint,
+                  method: normalizedMethod,
+                  ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                  ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+                },
+                // Never retry a proxied call: a retry after the upstream API
+                // already acted duplicates the side effect.
+                { maxRetries: 0 }
+              ),
             catch: cause =>
               new ProxyRequestError({
                 message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
