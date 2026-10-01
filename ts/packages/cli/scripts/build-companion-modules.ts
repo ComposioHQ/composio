@@ -3,26 +3,23 @@
 /**
  * Build the `composio run` companion modules next to an already-compiled binary.
  *
- * `scripts/build-binary.ts` does this as part of a full release build, shipping
- * every platform's codex-acp binary. This entry point exists for builds whose
- * output only ever runs on the building machine — the CLI e2e image — where
- * downloading three foreign codex-acp binaries costs ~600MB and minutes of build
- * time for files that machine can never execute.
+ * `scripts/build-binary.ts` does this as part of a full release build. This
+ * entry point exists for builds that compile the binary themselves, such as the
+ * CLI e2e image.
  *
- * Usage: `bun scripts/build-companion-modules.ts <OUTPUT_DIR> [--host-only]`
+ * Usage: `bun scripts/build-companion-modules.ts <OUTPUT_DIR>`
  */
 
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, hostCodexAcpBinaryTargets, teardown } from './_shared';
+import { buildCompanionModules, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
 
 export function buildCompanionModulesCommand() {
   return Effect.gen(function* () {
-    const args = process.argv.slice(2);
-    const outputDir = args.find(arg => !arg.startsWith('--'));
+    const outputDir = process.argv[2];
 
     if (!outputDir) {
       return yield* new BinaryBuildError({
@@ -31,18 +28,9 @@ export function buildCompanionModulesCommand() {
       });
     }
 
-    const hostOnly = args.includes('--host-only');
-    const codexBinaryTargets = hostOnly ? hostCodexAcpBinaryTargets() : undefined;
+    yield* buildCompanionModules(outputDir);
 
-    yield* buildCompanionModules(outputDir, { codexBinaryTargets });
-
-    yield* Console.log(
-      `Companion modules built in ${outputDir}${
-        hostOnly
-          ? ` (codex-acp: ${codexBinaryTargets?.map(target => target.relativePath).join(', ') || 'none for this host'})`
-          : ''
-      }`
-    );
+    yield* Console.log(`Companion modules built in ${outputDir}`);
   });
 }
 

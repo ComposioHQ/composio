@@ -20,8 +20,6 @@ import {
 } from 'src/commands/run-source-transforms';
 import {
   RUN_COMPANION_MODULE_FILENAMES,
-  hasInstalledRunCompanionModules,
-  hostRunCompanionStaticAssetRelativePaths,
   listMissingInstalledRunCompanionModules,
   readInstalledReleaseTag,
   resolveRunCompanionModulePath,
@@ -612,7 +610,7 @@ describe('resolveRunCompanionModulePath', () => {
           const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-dist-'));
           const callerPath = path.join(tempDir, 'commands-abc.mjs');
           const servicesDir = path.join(tempDir, 'services');
-          const companionPath = path.join(servicesDir, 'run-subagent-shared.mjs');
+          const companionPath = path.join(servicesDir, 'run-helpers-runtime.mjs');
           fs.writeFileSync(callerPath, '', 'utf8');
           fs.mkdirSync(servicesDir);
           fs.writeFileSync(companionPath, '', 'utf8');
@@ -621,7 +619,7 @@ describe('resolveRunCompanionModulePath', () => {
             yield* resolveRunCompanionModulePath({
               callerImportMetaUrl: pathToFileURL(callerPath).href,
               execPath: '/tmp/composio',
-              relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+              relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
             })
           ).toBe(companionPath);
         })
@@ -633,14 +631,14 @@ describe('resolveRunCompanionModulePath', () => {
         Effect.gen(function* () {
           const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-bin-'));
           const execPath = path.join(tempDir, 'composio');
-          const companionPath = path.join(tempDir, 'run-subagent-shared.mjs');
+          const companionPath = path.join(tempDir, 'run-helpers-runtime.mjs');
           fs.writeFileSync(companionPath, '', 'utf8');
 
           expect(
             yield* resolveRunCompanionModulePath({
               callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
               execPath,
-              relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+              relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
             })
           ).toBe(companionPath);
         })
@@ -678,39 +676,6 @@ describe('run companion install metadata', () => {
     );
 
     it.effect(
-      '[Given] an install without ACP adapters [Then] the startup tier reports nothing missing',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-acp-'));
-          const execPath = path.join(tempDir, 'composio');
-          for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-            fs.writeFileSync(path.join(tempDir, fileName), '', 'utf8');
-          }
-
-          // The ACP adapters are the lazy tier: a plain `composio run` must not
-          // treat an install without them as broken.
-          const hostStaticAssets = yield* hostRunCompanionStaticAssetRelativePaths;
-          expect(hostStaticAssets.length).toBeGreaterThan(0);
-          for (const relativePath of hostStaticAssets) {
-            expect(fs.existsSync(path.join(tempDir, relativePath))).toBe(false);
-          }
-
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([]);
-          expect(yield* hasInstalledRunCompanionModules(execPath)).toBe(true);
-        })
-    );
-
-    it.effect(
-      '[Given] a source checkout [Then] the executable has no companion modules next to it',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-install-'));
-
-          expect(yield* hasInstalledRunCompanionModules(path.join(tempDir, 'bun'))).toBe(false);
-        })
-    );
-
-    it.effect(
       '[Given] a nested companion dependency is missing [Then] it reports the missing helper asset',
       () =>
         Effect.gen(function* () {
@@ -725,23 +690,8 @@ describe('run companion install metadata', () => {
             'utf8'
           );
           fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-shared.mjs'),
-            'export * from "./services/run-subagent-shared.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-acp.mjs'),
-            'export * from "./services/run-subagent-acp.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-legacy.mjs'),
-            'export * from "./services/run-subagent-legacy.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-output-mcp.mjs'),
-            'export * from "./services/run-subagent-output-mcp.mjs";\n',
+            path.join(tempDir, 'generation-runtime.mjs'),
+            'export * from "./services/generation-runtime.mjs";\n',
             'utf8'
           );
 
@@ -751,29 +701,14 @@ describe('run companion install metadata', () => {
             'utf8'
           );
           fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-shared.mjs'),
-            'export const x = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-acp.mjs'),
+            path.join(servicesDir, 'generation-runtime.mjs'),
             'export * from "../run-companion-modules-abc123.mjs";\n',
             'utf8'
           );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-legacy.mjs'),
-            'export const y = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
-            'export const z = 1;\n',
-            'utf8'
-          );
 
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toContain(
-            'run-companion-modules-abc123.mjs'
-          );
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([
+            'run-companion-modules-abc123.mjs',
+          ]);
         })
     );
 
@@ -792,23 +727,8 @@ describe('run companion install metadata', () => {
             'utf8'
           );
           fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-shared.mjs'),
-            'export * from "./services/run-subagent-shared.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-acp.mjs'),
-            'export * from "./services/run-subagent-acp.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-legacy.mjs'),
-            'export * from "./services/run-subagent-legacy.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'run-subagent-output-mcp.mjs'),
-            'export * from "./services/run-subagent-output-mcp.mjs";\n',
+            path.join(tempDir, 'generation-runtime.mjs'),
+            'export * from "./services/generation-runtime.mjs";\n',
             'utf8'
           );
 
@@ -818,29 +738,14 @@ describe('run companion install metadata', () => {
             'utf8'
           );
           fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-shared.mjs'),
-            'export const sharedValue = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-acp.mjs'),
+            path.join(servicesDir, 'generation-runtime.mjs'),
             'export { helperValue } from "../run-companion-modules-def456.mjs";\n',
             'utf8'
           );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-legacy.mjs'),
-            'export const legacyValue = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
-            'export const outputValue = 1;\n',
-            'utf8'
-          );
 
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toContain(
-            'run-companion-modules-def456.mjs'
-          );
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([
+            'run-companion-modules-def456.mjs',
+          ]);
         })
     );
   });

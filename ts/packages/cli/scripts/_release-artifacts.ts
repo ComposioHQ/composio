@@ -1,16 +1,13 @@
 /**
  * Release artifact identity: which platform/arch each published archive targets,
- * and which companion assets belong inside it.
+ * and which companion paths belong inside it.
  *
  * Deliberately free of Bun-only imports so the packaging rules stay unit-testable
  * under Node.
  */
 
 import { Data, Option, Result } from 'effect';
-import {
-  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
-  runCompanionStaticAssetRelativePathsFor,
-} from '../src/services/run-companion-modules';
+import { RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS } from '../src/services/run-companion-modules';
 
 export type ReleaseArtifactTarget = {
   readonly artifactName: string;
@@ -70,39 +67,25 @@ export type ArchiveCompanionEntry = {
 };
 
 /**
- * Decide how each companion asset enters one archive.
+ * Decide how each companion path enters an archive.
  *
- * An archive already carries a platform-specific `composio` binary, so only one
- * of the four codex-acp binaries inside it can ever execute. The other three are
- * ~651 MB that every machine unpacking this archive downloads, stores, and can
- * never run.
- *
- * They cannot simply be dropped. A CLI released before 2026-08-18 verifies a
- * downloaded upgrade package against all four codex-acp paths and refuses to
+ * The live companions are copied. The legacy paths are written as empty files:
+ * the sub-agent helper they served is gone, but every stable CLI from 0.2.12 to
+ * 0.4.2 verifies a downloaded upgrade package against those paths and refuses to
  * install one that is missing any of them, so omitting them breaks
- * `composio upgrade` for every client already in the field. An empty placeholder
- * satisfies that existence check at zero bytes, and no host ever executes a
- * foreign codex-acp binary, so the placeholder is never read.
+ * `composio upgrade` for every client already in the field. That check looks at
+ * existence only, and an empty wrapper imports nothing, so a placeholder
+ * satisfies it at zero bytes and is never read.
  *
  * Once no supported client performs that check, placeholders can become plain
  * omissions.
  */
-export const archiveCompanionEntries = ({
-  allRelativePaths,
-  target,
-}: {
-  readonly allRelativePaths: ReadonlyArray<string>;
-  readonly target: ReleaseArtifactTarget;
-}): ReadonlyArray<ArchiveCompanionEntry> => {
-  const executableHere = new Set(runCompanionStaticAssetRelativePathsFor(target));
-  const foreignCodexPaths = new Set(
-    RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS.filter(
-      relativePath => !executableHere.has(relativePath)
-    )
-  );
-
-  return allRelativePaths.map(relativePath => ({
+export const archiveCompanionEntries = (
+  liveRelativePaths: ReadonlyArray<string>
+): ReadonlyArray<ArchiveCompanionEntry> => [
+  ...liveRelativePaths.map(relativePath => ({ relativePath, kind: 'copy' as const })),
+  ...RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.map(relativePath => ({
     relativePath,
-    kind: foreignCodexPaths.has(relativePath) ? ('placeholder' as const) : ('copy' as const),
-  }));
-};
+    kind: 'placeholder' as const,
+  })),
+];
