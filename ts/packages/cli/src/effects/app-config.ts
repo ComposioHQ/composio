@@ -16,7 +16,6 @@ type APP_CONFIG = Config.Wrap<{
   WEBHOOK_SECRET: string | undefined;
   CLI_INVOCATION_ORIGIN: string | undefined;
   CLI_PARENT_RUN_ID: string | undefined;
-  RUN_ACP_ONLY: boolean;
   RUN_OUTPUT_DIR: string | undefined;
   PERF_DEBUG: boolean;
   TOOL_DEBUG: boolean;
@@ -173,7 +172,6 @@ export const APP_CONFIG = {
   // Internal context propagated between CLI processes
   CLI_INVOCATION_ORIGIN: optionalTrimmedString('CLI_INVOCATION_ORIGIN'),
   CLI_PARENT_RUN_ID: optionalTrimmedString('CLI_PARENT_RUN_ID'),
-  RUN_ACP_ONLY: booleanFlag('RUN_ACP_ONLY'),
   RUN_OUTPUT_DIR: optionalTrimmedString('RUN_OUTPUT_DIR'),
 
   // Runtime debug flags

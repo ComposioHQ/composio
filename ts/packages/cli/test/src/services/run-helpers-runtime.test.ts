@@ -237,7 +237,6 @@ describe('run-helpers-runtime', () => {
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
     vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
-    vi.stubEnv('COMPOSIO_RUN_ACP_ONLY', '1');
     vi.stubEnv('BUN_BE_BUN', '1');
 
     const childScript = [
@@ -247,7 +246,6 @@ describe('run-helpers-runtime', () => {
       '    sentinel: process.env.COMPOSIO_RUN_ENV_SENTINEL,',
       '    perfDebug: process.env.COMPOSIO_PERF_DEBUG,',
       '    toolDebug: process.env.COMPOSIO_TOOL_DEBUG,',
-      '    acpOnly: process.env.COMPOSIO_RUN_ACP_ONLY,',
       '    bunBeBun: process.env.BUN_BE_BUN,',
       '  },',
       '}));',
@@ -255,7 +253,7 @@ describe('run-helpers-runtime', () => {
 
     await installRunHelpers({
       cliPrefix: [process.execPath, '-e', childScript],
-      helperContext: { perfDebug: false, toolDebug: false, acpOnly: false },
+      helperContext: { perfDebug: false, toolDebug: false },
     });
 
     const installedGlobals: unknown = globalThis;
@@ -273,7 +271,6 @@ describe('run-helpers-runtime', () => {
         sentinel: 'forwarded',
         perfDebug: '0',
         toolDebug: '0',
-        acpOnly: '0',
         bunBeBun: '',
       },
     });

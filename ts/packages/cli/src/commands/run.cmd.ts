@@ -13,7 +13,6 @@ import { ComposioUserContext } from 'src/services/user-context';
 import {
   CLI_DEBUG_FLAG_NAMES,
   debugFlagsToChildEnv,
-  isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
@@ -82,7 +81,8 @@ const runFlags = {
 };
 
 /** Share names with the passthrough adapter; the framework owns parsing the flag values. */
-export const RUN_KNOWN_VALUE_FLAGS = new Set([`--${RUN_FLAG_NAMES.file}`, '-f', '--log-level']);
+export const RUN_FILE_FLAGS = new Set([`--${RUN_FLAG_NAMES.file}`, '-f']);
+export const RUN_KNOWN_VALUE_FLAGS = new Set([...RUN_FILE_FLAGS, '--log-level']);
 export const RUN_KNOWN_BOOLEAN_FLAGS = new Set([
   ...Object.values(RUN_FLAG_NAMES)
     .filter(name => name !== RUN_FLAG_NAMES.file)
@@ -478,7 +478,6 @@ export const runCmd = Command.make('run', {
         );
         const perfDebug = yield* isPerfDebugEnabled;
         const toolDebug = yield* isToolDebugEnabled;
-        const acpOnly = yield* isAcpOnlyEnabled;
         const telemetryDebug = yield* isTelemetryDebugEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
@@ -500,7 +499,6 @@ export const runCmd = Command.make('run', {
           telemetryDebug,
           debug,
           logsOff,
-          acpOnly,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,
@@ -549,7 +547,7 @@ export const runCmd = Command.make('run', {
             env: {
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
-              ...debugFlagsToChildEnv({ perfDebug, toolDebug, acpOnly, telemetryDebug }),
+              ...debugFlagsToChildEnv({ perfDebug, toolDebug, telemetryDebug }),
             },
             extendEnv: true,
             stdin: 'inherit',

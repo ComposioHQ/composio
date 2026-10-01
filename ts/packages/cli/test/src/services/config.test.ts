@@ -15,7 +15,6 @@ const NORMALIZED_APP_CONFIG_DEFAULTS = {
   WEBHOOK_SECRET: undefined,
   CLI_INVOCATION_ORIGIN: undefined,
   CLI_PARENT_RUN_ID: undefined,
-  RUN_ACP_ONLY: false,
   RUN_OUTPUT_DIR: undefined,
   PERF_DEBUG: false,
   TOOL_DEBUG: false,
@@ -112,7 +111,6 @@ describe('Config', () => {
             WEBHOOK_SECRET: 'secret',
             CLI_INVOCATION_ORIGIN: 'run',
             CLI_PARENT_RUN_ID: 'run_parent',
-            RUN_ACP_ONLY: true,
             RUN_OUTPUT_DIR: '/tmp/composio-output',
             PERF_DEBUG: true,
             TOOL_DEBUG: true,
@@ -155,16 +153,14 @@ describe('Config', () => {
           // config decoding, which would surface as an unrecoverable defect at the call site.
           const map = new Map([
             ['COMPOSIO_PERF_DEBUG', ''],
-            ['COMPOSIO_TOOL_DEBUG', '   '],
-            ['COMPOSIO_RUN_ACP_ONLY', 'maybe'],
-            ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', ''],
+            ['COMPOSIO_TOOL_DEBUG', 'maybe'],
+            ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', '   '],
           ]) satisfies Map<string, string>;
 
           const actual = yield* withMapConfigProvider(map)(
             Config.all({
               perfDebug: APP_CONFIG.PERF_DEBUG,
               toolDebug: APP_CONFIG.TOOL_DEBUG,
-              acpOnly: APP_CONFIG.RUN_ACP_ONLY,
               disableConnectedAccountCache: APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE,
             })
           );
@@ -172,11 +168,10 @@ describe('Config', () => {
           deepStrictEqual(actual, {
             // Blank falls back to the flag's own default, ...
             perfDebug: false,
-            toolDebug: false,
             // ... which must hold for a default-true flag too, ...
             disableConnectedAccountCache: true,
             // ... while any other non-falsy value counts as set.
-            acpOnly: true,
+            toolDebug: true,
           });
         })
       );
@@ -186,18 +181,22 @@ describe('Config', () => {
           const map = new Map([
             ['COMPOSIO_PERF_DEBUG', '0'],
             ['COMPOSIO_TOOL_DEBUG', 'false'],
-            ['COMPOSIO_RUN_ACP_ONLY', 'OFF'],
+            ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'OFF'],
           ]) satisfies Map<string, string>;
 
           const actual = yield* withMapConfigProvider(map)(
             Config.all({
               perfDebug: APP_CONFIG.PERF_DEBUG,
               toolDebug: APP_CONFIG.TOOL_DEBUG,
-              acpOnly: APP_CONFIG.RUN_ACP_ONLY,
+              disableConnectedAccountCache: APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE,
             })
           );
 
-          deepStrictEqual(actual, { perfDebug: false, toolDebug: false, acpOnly: false });
+          deepStrictEqual(actual, {
+            perfDebug: false,
+            toolDebug: false,
+            disableConnectedAccountCache: false,
+          });
         })
       );
 

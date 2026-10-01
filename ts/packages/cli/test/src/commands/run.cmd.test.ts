@@ -33,10 +33,6 @@ import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context'
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { CommandRunner } from 'src/services/command-runner';
 
-const acpOnlyConfigProvider = ConfigProvider.fromEnvRecord({
-  COMPOSIO_RUN_ACP_ONLY: '1',
-}).pipe(extendConfigProvider);
-
 const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_RUN_ACP_ONLY: '1',
   COMPOSIO_PERF_DEBUG: '1',
@@ -241,39 +237,35 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(RunTestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
+  layer(RunTestLive({ baseConfigProvider: enabledRuntimeFlagsConfigProvider }))(it => {
     it.effect(
-      '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] run enables ACP-only execution without a flag',
+      '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] only the remaining debug flags reach the script',
       () =>
         Effect.gen(function* () {
+          let preloadSource = '';
           commandRuns.mockImplementation(command => {
-            expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
-              '"acpOnly":true'
-            );
+            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
             return Effect.succeed(ChildProcessSpawner.ExitCode(0));
           });
 
           yield* cli(['run', 'console.log("hi")']);
 
-          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+          expect(command.env).toEqual({
+            BUN_BE_BUN: '1',
+            COMPOSIO_CLI_PARENT_RUN_ID: expect.any(String),
+            COMPOSIO_PERF_DEBUG: '1',
+            COMPOSIO_TOOL_DEBUG: '1',
+            COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
+          });
+          expect(preloadSource).toContain('"perfDebug":true');
+          expect(preloadSource).toContain('"toolDebug":true');
+          expect(preloadSource).toContain('"telemetryDebug":false');
+          expect(preloadSource).not.toContain('acpOnly');
+          expect(preloadSource).not.toContain('COMPOSIO_RUN_ACP_ONLY');
         })
     );
 
-    it.effect('[Given] --acp-only=false and configured ACP-only mode [Then] the flag wins', () =>
-      Effect.gen(function* () {
-        commandRuns.mockImplementation(command => {
-          expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain('"acpOnly":false');
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
-
-        yield* cli(['run', '--acp-only=false', 'console.log("hi")']);
-
-        expect(commandRuns).toHaveBeenCalledTimes(1);
-      })
-    );
-  });
-
-  layer(RunTestLive({ baseConfigProvider: enabledRuntimeFlagsConfigProvider }))(it => {
     it.effect('[Given] explicit false flags [Then] inherited true values are cleared', () =>
       Effect.gen(function* () {
         let preloadSource = '';
@@ -282,22 +274,16 @@ describe('CLI: composio run', () => {
           return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
-        yield* cli([
-          'run',
-          '--perf-debug=false',
-          '--tool-debug=false',
-          '--acp-only=false',
-          'console.log("hi")',
-        ]);
+        yield* cli(['run', '--perf-debug=false', '--tool-debug=false', 'console.log("hi")']);
 
         const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
         expect(command.env).toMatchObject({
           COMPOSIO_PERF_DEBUG: '0',
           COMPOSIO_TOOL_DEBUG: '0',
-          COMPOSIO_RUN_ACP_ONLY: '0',
           COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
         });
-        expect(preloadSource).toContain('"acpOnly":false');
+        expect(preloadSource).toContain('"perfDebug":false');
+        expect(preloadSource).toContain('"toolDebug":false');
       })
     );
   });
@@ -323,25 +309,20 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.effect(
-      '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
-      () =>
+    for (const flag of ['--acp-only', '--acp-only=false', '--no-acp-only']) {
+      it.effect(`[Given] the removed ${flag} [Then] run rejects it as an unknown flag`, () =>
         Effect.gen(function* () {
-          commandRuns.mockImplementation(command => {
-            expect(readRunPreloadSource(inspectRunCommand(command).cmd)).toContain(
-              '"acpOnly":true'
-            );
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
+          const exit = yield* cli(['run', flag, 'console.log(1)']).pipe(Effect.exit);
 
-          yield* cli(['run', '--acp-only', 'console.log("hi")']);
-
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(process.exitCode).toBe(0);
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(commandRuns).not.toHaveBeenCalled();
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain(
+            `Unrecognized flag: ${flag.split('=')[0]} in command composio run`
+          );
         })
-    );
+      );
+    }
 
     it.effect('[Given] repeated invocations [Then] hidden flags do not leak', () =>
       Effect.gen(function* () {
@@ -351,12 +332,12 @@ describe('CLI: composio run', () => {
           return Effect.succeed(ChildProcessSpawner.ExitCode(0));
         });
 
-        yield* cli(['run', '--acp-only', 'console.log("first")']);
+        yield* cli(['run', '--perf-debug', 'console.log("first")']);
         yield* cli(['run', 'console.log("second")']);
 
         expect(preloadSources).toHaveLength(2);
-        expect(preloadSources[0]).toContain('"acpOnly":true');
-        expect(preloadSources[1]).toContain('"acpOnly":false');
+        expect(preloadSources[0]).toContain('"perfDebug":true');
+        expect(preloadSources[1]).toContain('"perfDebug":false');
       })
     );
   });
@@ -496,14 +477,7 @@ describe('CLI: composio run', () => {
       () =>
         Effect.gen(function* () {
           const script = 'console.log("hi")';
-          const tail = [
-            '--perf-debug',
-            '--tool-debug',
-            '--acp-only',
-            '--telemetry-debug',
-            '--help',
-            '--version',
-          ];
+          const tail = ['--perf-debug', '--tool-debug', '--telemetry-debug', '--help', '--version'];
           for (const args of [
             [script, ...tail],
             [script, '--', ...tail],
@@ -515,7 +489,6 @@ describe('CLI: composio run', () => {
             expect(spawned.env).toMatchObject({
               COMPOSIO_PERF_DEBUG: '0',
               COMPOSIO_TOOL_DEBUG: '0',
-              COMPOSIO_RUN_ACP_ONLY: '0',
               COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
             });
           }
@@ -596,7 +569,6 @@ describe('buildRunHelpersSource', () => {
         webURL: 'https://app.example.test',
         orgId: 'org_test',
         consumerUserId: 'consumer_user_test',
-        acpOnly: true,
         logsOff: true,
         dryRun: true,
         runLogFilePath: '/tmp/composio-run/run.log',
@@ -609,7 +581,6 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('import { installRunHelpers } from "file://');
     expect(source).toContain('await installRunHelpers(');
     expect(source).toContain('"cliPrefix":["/tmp/composio"]');
-    expect(source).toContain('"acpOnly":true');
     expect(source).toContain('"logsOff":true');
     expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');

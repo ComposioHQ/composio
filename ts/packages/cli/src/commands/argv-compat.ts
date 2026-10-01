@@ -1,5 +1,5 @@
 import { Array as Arr } from 'effect';
-import { RUN_KNOWN_BOOLEAN_FLAGS, RUN_KNOWN_VALUE_FLAGS } from './run.cmd';
+import { RUN_FILE_FLAGS, RUN_KNOWN_BOOLEAN_FLAGS, RUN_KNOWN_VALUE_FLAGS } from './run.cmd';
 import { rootCommandIndex } from 'src/utils/cli-args';
 
 export const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
@@ -22,18 +22,27 @@ export const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): Readonly
   );
 };
 
+// A token shaped like a lone option (`--name`, `--name=value`, `-n`), as opposed to source code.
+const FLAG_SHAPED_TOKEN = /^--?[A-Za-z][A-Za-z0-9-]*(=|$)/;
+
 // Preserve the legacy undelimited script syntax by inserting Effect's native `--`
 // before the script tail. The framework then parses every operand itself.
+//
+// Without `--file` the first operand is inline source. An unknown option in that position is
+// left ahead of the boundary so the framework rejects it by name instead of running it as code.
+// Source that really starts that way needs an explicit `--`.
 export const normalizeRunScriptArgs = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const commandIndex = 2 + rootCommandIndex(argv.slice(2));
   if (argv[commandIndex] !== 'run') return argv;
 
   let index = commandIndex + 1;
+  let hasFile = false;
   while (index < argv.length) {
     const token = argv[index];
     const equalsIndex = token.indexOf('=');
     const flagName = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
     if (RUN_KNOWN_VALUE_FLAGS.has(flagName)) {
+      hasFile ||= RUN_FILE_FLAGS.has(flagName);
       index += equalsIndex === -1 ? 2 : 1;
     } else if (RUN_KNOWN_BOOLEAN_FLAGS.has(flagName)) {
       index += 1;
@@ -42,6 +51,7 @@ export const normalizeRunScriptArgs = (argv: ReadonlyArray<string>): ReadonlyArr
     }
   }
   if (index >= argv.length) return argv;
+  if (!hasFile && FLAG_SHAPED_TOKEN.test(argv[index])) return argv;
 
   const tail = argv.slice(index);
   // The first user delimiter marks the script boundary; subsequent delimiters

@@ -20,7 +20,6 @@ export type CliUserConfigResolved = {
   readonly developerDangerousCommandsEnabled: boolean;
   readonly experimentalFeatures: Readonly<Record<string, boolean>>;
   readonly artifactDirectory: string | undefined;
-  readonly experimentalSubagentTarget: 'auto' | 'claude' | 'codex';
   /**
    * Where the CLI stores the Composio API key. See the
    * `SecurityBackend` type in `src/models/cli-user-config.ts`.
@@ -40,7 +39,6 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
   },
   experimentalFeatures: {},
   artifactDirectory: Option.none(),
-  experimentalSubagent: Option.none(),
   security: 'auto',
 });
 
@@ -73,10 +71,6 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
   developerDangerousCommandsEnabled: raw.developer.destructiveActions,
   experimentalFeatures: raw.experimentalFeatures,
   artifactDirectory: Option.getOrUndefined(raw.artifactDirectory),
-  experimentalSubagentTarget: Option.match(raw.experimentalSubagent, {
-    onNone: () => 'auto',
-    onSome: value => value.target,
-  }),
   security: raw.security,
 });
 

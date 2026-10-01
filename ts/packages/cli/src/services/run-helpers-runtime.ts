@@ -36,7 +36,6 @@ export type RunHelperContext = {
   readonly skipToolParamsCheck?: boolean;
   readonly skipChecks?: boolean;
   readonly debug?: boolean;
-  readonly acpOnly?: boolean;
   readonly logsOff?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
@@ -488,7 +487,6 @@ const createCliRunner = (params: {
     ...debugFlagsToChildEnv({
       perfDebug: perfDebugEnabled,
       toolDebug: toolDebugEnabled,
-      acpOnly: helperContext.acpOnly === true,
       telemetryDebug: helperContext.telemetryDebug === true,
     }),
   };
