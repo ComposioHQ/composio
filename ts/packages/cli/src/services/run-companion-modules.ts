@@ -131,39 +131,6 @@ const collectRelativeImportPaths = ({
     }
   });
 
-export const collectRunCompanionAssetRelativePaths = (
-  rootDir: string
-): Effect.Effect<ReadonlyArray<string>, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
-    const collected = new Set<string>();
-
-    for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-      yield* collectRelativeImportPaths({
-        fs,
-        path,
-        rootDir,
-        relativePath: fileName,
-        collected,
-      });
-    }
-
-    if (collected.size === 0) {
-      for (const baseName of RUN_COMPANION_MODULE_BASENAMES) {
-        yield* collectRelativeImportPaths({
-          fs,
-          path,
-          rootDir,
-          relativePath: `services/${baseName}.mjs`,
-          collected,
-        });
-      }
-    }
-
-    return [...collected].sort();
-  });
-
 /**
  * Relative paths an install rooted at `rootDir` is expected to contain: the
  * companion wrappers and every relative import reachable from them.

@@ -405,7 +405,6 @@ describe('Config', () => {
         Effect.gen(function* () {
           const provider = ConfigProvider.fromEnvRecord(
             Object.fromEntries([
-              ['CACHE_DIR', '  /host/cache  '],
               ['npm_config_user_agent', 'pnpm/9.0.0 npm/? node/v22.0.0 darwin arm64'],
               ['CI', ' TRUE '],
               ['NO_COLOR', '1'],
@@ -420,7 +419,6 @@ describe('Config', () => {
           const actual = yield* Config.all(UNPREFIXED_CONFIG).parse(provider);
 
           expect(actual).toEqual({
-            CACHE_DIR: '/host/cache',
             NPM_CONFIG_USER_AGENT: 'pnpm/9.0.0 npm/? node/v22.0.0 darwin arm64',
             CI_REDACTION_ENABLED: true,
             INTERACTIVE_PERMISSION_UI_DISABLED: true,

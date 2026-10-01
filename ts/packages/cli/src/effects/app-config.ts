@@ -23,7 +23,6 @@ type APP_CONFIG = Config.Wrap<{
 }>;
 
 type UNPREFIXED_CONFIG = Config.Wrap<{
-  CACHE_DIR: string | undefined;
   NPM_CONFIG_USER_AGENT: string | undefined;
   CI_REDACTION_ENABLED: boolean;
   INTERACTIVE_PERMISSION_UI_DISABLED: boolean;
@@ -192,9 +191,6 @@ export const APP_CONFIG = {
  * inspect raw environment strings.
  */
 export const UNPREFIXED_CONFIG = {
-  // The cache directory of the host tool driving the CLI (not `COMPOSIO_CACHE_DIR`)
-  CACHE_DIR: optionalTrimmedString('CACHE_DIR'),
-
   // The package manager that invoked the CLI, as reported by npm-compatible clients
   NPM_CONFIG_USER_AGENT: optionalString('npm_config_user_agent'),
 

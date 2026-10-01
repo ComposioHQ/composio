@@ -1,4 +1,3 @@
-import { Option, Result } from 'effect';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -9,8 +8,6 @@ import {
   archiveCompanionEntries,
   ARTIFACT_NAMES,
   RELEASE_ARTIFACT_TARGETS,
-  releaseArtifactTargetFor,
-  UnknownReleaseArtifactError,
 } from '../../../scripts/_release-artifacts';
 
 /**
@@ -29,7 +26,7 @@ const LEGACY_WRAPPERS: ReadonlyArray<string> = [
   'run-subagent-output-mcp.mjs',
 ];
 
-describe('releaseArtifactTargetFor', () => {
+describe('RELEASE_ARTIFACT_TARGETS', () => {
   it('maps every published artifact name to a Node platform/arch pair', () => {
     expect(
       RELEASE_ARTIFACT_TARGETS.map(({ artifactName, platform, arch }) => [
@@ -43,24 +40,6 @@ describe('releaseArtifactTargetFor', () => {
       ['composio-linux-aarch64', 'linux-arm64'],
     ]);
   });
-
-  it.each(ARTIFACT_NAMES)('resolves %s', artifactName => {
-    const target = releaseArtifactTargetFor(artifactName);
-
-    expect(Result.isSuccess(target)).toBe(true);
-  });
-
-  it.each(['composio-linux-arm64', 'composio-windows-x64', 'composio', ''])(
-    'rejects the unknown artifact name %o',
-    artifactName => {
-      const target = releaseArtifactTargetFor(artifactName);
-
-      const error = Option.getOrUndefined(Result.getFailure(target));
-
-      expect(error).toBeInstanceOf(UnknownReleaseArtifactError);
-      expect(error?.message).toContain('Unknown release artifact');
-    }
-  );
 });
 
 describe('archiveCompanionEntries', () => {

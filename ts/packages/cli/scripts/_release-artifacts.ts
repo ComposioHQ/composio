@@ -6,7 +6,6 @@
  * under Node.
  */
 
-import { Data, Option, Result } from 'effect';
 import { RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS } from '../src/services/run-companion-modules';
 
 export type ReleaseArtifactTarget = {
@@ -33,31 +32,6 @@ export const RELEASE_ARTIFACT_TARGETS: ReadonlyArray<ReleaseArtifactTarget> = [
 export const ARTIFACT_NAMES: ReadonlyArray<string> = RELEASE_ARTIFACT_TARGETS.map(
   target => target.artifactName
 );
-
-export class UnknownReleaseArtifactError extends Data.TaggedError(
-  'scripts/UnknownReleaseArtifactError'
-)<{
-  readonly artifactName: string;
-}> {
-  get message(): string {
-    return `Unknown release artifact ${this.artifactName}. Expected one of: ${ARTIFACT_NAMES.join(', ')}.`;
-  }
-}
-
-/**
- * Resolve an artifact name to its platform/arch. The mapping is total over
- * {@link RELEASE_ARTIFACT_TARGETS}; anything else fails instead of silently
- * producing an archive with no platform-specific assets.
- */
-export const releaseArtifactTargetFor = (
-  artifactName: string
-): Result.Result<ReleaseArtifactTarget, UnknownReleaseArtifactError> =>
-  Result.fromOption(
-    Option.fromUndefinedOr(
-      RELEASE_ARTIFACT_TARGETS.find(target => target.artifactName === artifactName)
-    ),
-    () => new UnknownReleaseArtifactError({ artifactName })
-  );
 
 export type ArchiveCompanionEntryKind = 'copy' | 'placeholder';
 
