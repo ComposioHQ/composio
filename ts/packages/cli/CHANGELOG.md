@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- `composio execute` (including meta tools) and `composio proxy` are never
+  retried, so a request that timed out or failed after the backend already
+  acted cannot repeat a side effect such as sending the same email twice.
+
 - API requests and command analytics now report CLI product/version, language,
   runtime/version, and the installed API client version separately.
 
