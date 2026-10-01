@@ -133,7 +133,7 @@ if (completion.choices[0].message.tool_calls) {
 
 ## Working with OpenAI Responses
 
-Use `OpenAIResponsesProvider` for new agentic flows. It formats Composio tools for the Responses API and returns `function_call_output` items that you can pass back with `previous_response_id`.
+Use `OpenAIResponsesProvider` for new agentic flows; it replaces the Assistants API, which OpenAI shut down on August 26, 2026. It formats Composio tools for the Responses API and returns `function_call_output` items that you can pass back with `previous_response_id`.
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -149,10 +149,9 @@ const openai = new OpenAI({
   apiKey: 'your-openai-api-key',
 });
 
-// Get GitHub tools
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-});
+// Create a session for your user
+const session = await composio.create('default');
+const tools = await session.tools();
 
 let response = await openai.responses.create({
   model: 'gpt-5',
@@ -161,7 +160,7 @@ let response = await openai.responses.create({
 });
 
 while (response.output.some(item => item.type === 'function_call')) {
-  const toolOutputs = await composio.provider.handleToolCalls('default', response.output);
+  const toolOutputs = await composio.provider.handleResponse(session, response);
   response = await openai.responses.create({
     model: 'gpt-5',
     tools,

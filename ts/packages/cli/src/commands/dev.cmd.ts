@@ -9,7 +9,6 @@ import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cmd';
 import { triggersCmd } from './triggers/triggers.cmd';
 import { projectsCmd } from './projects/projects.cmd';
-import { devNativeUiCmd } from './dev/dev.native-ui.cmd';
 import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-user-config';
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -30,7 +29,6 @@ export const devSubcommands = [
   connectedAccountsCmd,
   triggersCmd,
   projectsCmd,
-  devNativeUiCmd,
 ] as const;
 
 const describeCurrentMode = (enabled: boolean) =>

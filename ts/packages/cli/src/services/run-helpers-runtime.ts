@@ -1,3 +1,4 @@
+import { cliRequestHeaders } from './client-provenance';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
@@ -920,6 +921,7 @@ const createProxyHelper = (params: {
     const response = await fetch(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
+        ...cliRequestHeaders(),
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,

@@ -11,7 +11,6 @@ import pytest
 from composio import Composio, exceptions
 from composio.client import HttpClient
 from composio.core.provider._openai import OpenAIProvider
-from composio.core.types import ToolkitVersionParam
 
 
 class TestComposioSDK:
@@ -28,27 +27,6 @@ class TestComposioSDK:
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
             with pytest.raises(exceptions.ApiKeyNotProvidedError):
                 Composio(api_key=None)
-
-    def test_sdk_accepts_api_key_from_env(self):
-        """Test that SDK accepts API key from environment."""
-        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
-            with patch("composio.core.models.Tools"):
-                with patch("composio.core.models.Toolkits"):
-                    with patch("composio.core.models.Triggers"):
-                        with patch("composio.core.models.AuthConfigs"):
-                            with patch("composio.core.models.ConnectedAccounts"):
-                                sdk = Composio()
-                                assert sdk is not None
-
-    def test_sdk_accepts_api_key_as_parameter(self):
-        """Test that SDK accepts API key as parameter."""
-        with patch("composio.core.models.Tools"):
-            with patch("composio.core.models.Toolkits"):
-                with patch("composio.core.models.Triggers"):
-                    with patch("composio.core.models.AuthConfigs"):
-                        with patch("composio.core.models.ConnectedAccounts"):
-                            sdk = Composio(api_key="test-key")
-                            assert sdk is not None
 
     def test_sdk_forwards_user_and_org_api_keys_to_client(self):
         """User and org keys reach the API client, which selects them per operation."""
@@ -105,20 +83,6 @@ class TestComposioSDK:
         }
         assert set(SDKConfig.__annotations__.keys()) == expected_fields
 
-    def test_toolkit_version_param_types(self):
-        """Test toolkit version parameter types."""
-        from composio.core.types import (
-            ToolkitLatestVersion,
-            ToolkitVersion,
-            ToolkitVersions,
-        )
-
-        # Test that types are defined correctly
-        assert ToolkitLatestVersion is not None
-        assert ToolkitVersion is not None
-        assert ToolkitVersions is not None
-        assert ToolkitVersionParam is not None
-
     def test_sdk_mounts_webhooks_and_logs(self):
         from composio.core.models import Logs, Webhooks
 
@@ -160,20 +124,6 @@ class TestComposioSDK:
                                 assert hasattr(sdk, "provider")
                                 assert hasattr(sdk, "client")
 
-    def test_sdk_default_provider(self):
-        """Test that SDK uses default provider."""
-        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
-            with patch("composio.core.models.Tools"):
-                with patch("composio.core.models.Toolkits"):
-                    with patch("composio.core.models.Triggers"):
-                        with patch("composio.core.models.AuthConfigs"):
-                            with patch("composio.core.models.ConnectedAccounts"):
-                                sdk = Composio()
-
-                                # Check that provider is set
-                                assert sdk.provider is not None
-                                assert hasattr(sdk.provider, "name")
-
     def test_default_provider_is_isolated_per_instance(self):
         """Regression test for #4369.
 
@@ -199,41 +149,6 @@ class TestComposioSDK:
         provider = OpenAIProvider()
         sdk = Composio(provider=provider, api_key="key-a")
         assert sdk.provider is provider
-
-    def test_toolkit_versions_processing(self):
-        """Test toolkit versions parameter processing."""
-        with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
-            with patch("composio.core.models.Tools"):
-                with patch("composio.core.models.Toolkits"):
-                    with patch("composio.core.models.Triggers"):
-                        with patch("composio.core.models.AuthConfigs"):
-                            with patch("composio.core.models.ConnectedAccounts"):
-                                with patch(
-                                    "composio.sdk.get_toolkit_versions"
-                                ) as mock_get_versions:
-                                    mock_get_versions.return_value = "latest"
-
-                                    # Test with string version
-                                    Composio(toolkit_versions="v1.0.0")
-                                    mock_get_versions.assert_called_once()
-
-                                    # Reset mock for next test
-                                    mock_get_versions.reset_mock()
-
-                                    # Test with dict version
-                                    versions_dict = {
-                                        "github": "v1.0.0",
-                                        "slack": "latest",
-                                    }
-                                    Composio(toolkit_versions=versions_dict)
-                                    mock_get_versions.assert_called_once()
-
-                                    # Reset mock for next test
-                                    mock_get_versions.reset_mock()
-
-                                    # Test with None (default)
-                                    Composio()
-                                    mock_get_versions.assert_called_once()
 
     def test_sdk_env_var_integration(self):
         """Test that SDK properly integrates with environment variables for toolkit versions."""

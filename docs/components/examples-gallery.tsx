@@ -151,7 +151,7 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
       : resolved.filter((e) => e.categories.includes(label)).length;
 
   return (
-    <div className="exg w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
+    <div className="exg w-full px-5 py-12 [grid-area:main] sm:px-8 lg:px-12 lg:py-16">
       {/* Hero */}
       <header className="mb-10 max-w-3xl">
         <p className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-fd-muted-foreground">

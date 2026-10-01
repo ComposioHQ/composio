@@ -1,3 +1,4 @@
+import { cliAnalyticsProvenance } from 'src/services/client-provenance';
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
@@ -106,6 +107,7 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
+let cliAnalyticsVersion = APP_VERSION;
 let cliChannel = inferSkillReleaseChannel(APP_VERSION);
 
 /**
@@ -113,6 +115,7 @@ let cliChannel = inferSkillReleaseChannel(APP_VERSION);
  * resolved from release-tag.txt before any command can emit telemetry.
  */
 export const configureCliAnalyticsReleaseVersion = (version: string): void => {
+  cliAnalyticsVersion = version;
   cliChannel = inferSkillReleaseChannel(version);
 };
 
@@ -123,6 +126,24 @@ const buildEvent = (
   name,
   properties: {
     ...properties,
+    ...cliAnalyticsProvenance(
+      typeof properties.cli_version === 'string' ? properties.cli_version : cliAnalyticsVersion
+    ),
+    // Command events can describe offline or mixed work. Do not pretend they
+    // each represent one HTTP request.
+    execution_channel:
+      typeof properties.command_path === 'string' &&
+      [
+        'execute',
+        'search',
+        'link',
+        'proxy',
+        'dev playground-execute',
+        'dev toolkits search',
+        'dev connected-accounts link',
+      ].includes(properties.command_path)
+        ? 'tool_router'
+        : 'unknown',
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
     cli_channel: cliChannel,
   },

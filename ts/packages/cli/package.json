@@ -35,7 +35,7 @@
     "generate:toolkit-slugs": "bun run ./scripts/generate-toolkit-slugs.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "tsdown && bun run ./scripts/copy-local-tools-assets.ts ./dist",
+    "build": "tsdown",
     "bin": "./dist/composio",
     "test": "pnpm run validate:skills && pnpm run validate:boundaries && vitest run",
     "prepublishOnly": "pnpm run build && pnpm run build:binary",
@@ -63,11 +63,10 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^1.4.0",
+    "@agentclientprotocol/sdk": "^1.5.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
     "@composio/cli-keyring": "workspace:*",
-    "@composio/cli-local-tools": "workspace:*",
     "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/json-schema-to-effect-schema": "workspace:*",

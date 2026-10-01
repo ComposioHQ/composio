@@ -31,7 +31,6 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
     const organizations = yield* ui.withSpinner(
       'Loading organizations...',
       listOrganizations({
-        baseURL: ctx.data.baseURL,
         apiKey,
         limit: clampedLimit,
       }),

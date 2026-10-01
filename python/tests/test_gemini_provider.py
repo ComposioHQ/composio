@@ -10,7 +10,6 @@ Verifies:
 """
 
 import inspect
-import typing as t
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -194,8 +193,10 @@ class TestWrapTool:
         result = provider.wrap_tool(tool, create_mock_execute_tool())
         parameter = inspect.signature(result).parameters["payload"]
 
-        assert parameter.annotation == t.Dict[str, t.Any]  # noqa: UP006
-        assert result.__annotations__["payload"] == t.Dict[str, t.Any]  # noqa: UP006
+        # Plain `dict`: AFC calls `isinstance` with each value's annotation, and
+        # `Dict[str, Any]` makes that raise for every nested value.
+        assert parameter.annotation is dict
+        assert result.__annotations__["payload"] is dict
 
     def test_callable_has_annotations(self):
         from composio_gemini import GeminiProvider
@@ -539,6 +540,146 @@ class TestWrapTools:
 # ---------------------------------------------------------------------------
 
 
+AFC_CASES = [
+    pytest.param(
+        {"query": {"type": "string"}, "max_results": {"type": "integer"}},
+        ["query"],
+        {"query": "is:unread"},
+        {"query": {"type": "STRING"}, "max_results": {"type": "INTEGER"}},
+        id="omitted-optional",
+    ),
+    pytest.param(
+        {"order": {"type": "string", "enum": ["asc", "desc"]}},
+        ["order"],
+        {"order": "asc"},
+        {"order": {"type": "STRING"}},
+        id="enum",
+    ),
+    pytest.param(
+        {"order": {"enum": ["asc", "desc"]}},
+        ["order"],
+        {"order": "asc"},
+        {"order": {"type": "STRING"}},
+        id="typeless-enum",
+    ),
+    pytest.param(
+        {"slug": {"type": "string", "pattern": "^[a-z_]+$"}},
+        ["slug"],
+        {"slug": "a_b"},
+        {"slug": {"type": "STRING"}},
+        id="pattern",
+    ),
+    pytest.param(
+        {"n": {"type": "integer", "minimum": 1}},
+        ["n"],
+        {"n": 3},
+        {"n": {"type": "INTEGER"}},
+        id="minimum",
+    ),
+    pytest.param(
+        {"v": {"anyOf": [{"type": "integer"}, {"type": "string"}]}},
+        ["v"],
+        {"v": "x"},
+        {"v": {"any_of": [{"type": "INTEGER"}, {"type": "STRING"}], "type": "OBJECT"}},
+        id="any-of",
+    ),
+    pytest.param(
+        {"meta": {"type": "object"}},
+        ["meta"],
+        {"meta": {"x": {"y": 1}}},
+        {"meta": {"type": "OBJECT"}},
+        id="free-form-object",
+    ),
+    pytest.param(
+        {"meta": {"description": "Anything"}},
+        ["meta"],
+        {"meta": {"x": 1}},
+        {"meta": {}},
+        id="typeless-free-form",
+    ),
+    pytest.param(
+        {"c": {"const": "fixed"}},
+        ["c"],
+        {"c": "fixed"},
+        {"c": {"type": "STRING"}},
+        id="const",
+    ),
+    pytest.param(
+        {"version": {"const": 2}},
+        ["version"],
+        {"version": 2},
+        {"version": {"type": "INTEGER"}},
+        id="integer-const",
+    ),
+    pytest.param(
+        {
+            "body": {
+                "type": "object",
+                "properties": {"a": {"type": "string"}, "b": {"type": "integer"}},
+                "required": ["a"],
+            }
+        },
+        ["body"],
+        {"body": {"a": "x"}},
+        {
+            "body": {
+                "type": "OBJECT",
+                "properties": {"a": {"type": "STRING"}, "b": {"type": "INTEGER"}},
+                "required": ["a", "b"],
+            }
+        },
+        id="nested-omitted-optional",
+    ),
+    pytest.param(
+        {
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"k": {"type": "string"}, "v": {"type": "string"}},
+                    "required": ["k"],
+                },
+            }
+        },
+        ["items"],
+        {"items": [{"k": "a"}, {"k": "b", "v": "c"}]},
+        {
+            "items": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {"k": {"type": "STRING"}, "v": {"type": "STRING"}},
+                    "required": ["k", "v"],
+                },
+            }
+        },
+        id="array-of-objects",
+    ),
+]
+"""AFC round-trip cases: source properties and required names, the arguments
+the model returns, and the ``properties`` Gemini is declared. The declarations
+match the ones from before #4316, except that a typeless ``const``/``enum`` of
+integers is declared as an integer and a typeless free-form property declares
+no type, instead of both being declared as strings the conversion then
+refused."""
+
+
+def _wrap_afc_tool(properties, required):
+    from composio_gemini import GeminiProvider
+
+    tool = create_mock_tool(
+        "AFC_TOOL",
+        "test",
+        input_parameters={
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        },
+    )
+    execute_tool = create_mock_execute_tool()
+    return GeminiProvider().wrap_tool(tool, execute_tool), execute_tool
+
+
 @requires_genai
 class TestAFCCompatibility:
     """Verify callables work with google-genai's AFC pipeline."""
@@ -584,6 +725,65 @@ class TestAFCCompatibility:
         if callable(func):
             function_map[func.__name__] = func
         assert "GITHUB_STAR_REPO" in function_map
+
+    @pytest.mark.parametrize(
+        ("properties", "required", "arguments", "declared"),
+        AFC_CASES,
+    )
+    def test_afc_executes_arguments_as_returned(
+        self, properties, required, arguments, declared
+    ):
+        """AFC converts each argument with its annotation before calling the tool."""
+        from google.genai import _extra_utils
+
+        func, execute_tool = _wrap_afc_tool(properties, required)
+
+        _extra_utils.invoke_function_from_dict_args(arguments, func)
+
+        execute_tool.assert_called_once_with("AFC_TOOL", arguments)
+
+    @pytest.mark.parametrize(
+        ("properties", "required", "arguments", "declared"),
+        AFC_CASES,
+    )
+    def test_afc_declares_the_argument_schema(
+        self, properties, required, arguments, declared
+    ):
+        """Gemini receives the same declaration as before the signature carried
+        validators, and a typeless ``enum``/``const`` keeps its values' type."""
+        from google import genai
+
+        func, _ = _wrap_afc_tool(properties, required)
+
+        declaration = genai_types.FunctionDeclaration.from_callable(
+            client=genai.Client(api_key="test")._api_client, callable=func
+        )
+
+        assert declaration.parameters is not None
+        parameters = declaration.parameters.model_dump(exclude_none=True, mode="json")
+        assert parameters["properties"] == declared
+        assert set(required) <= set(parameters["required"])
+
+    def test_afc_still_validates_the_source_schema(self):
+        from composio_gemini import GeminiProvider
+        from google.genai import _extra_utils, errors
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "AFC_TOOL",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {"slug": {"type": "string", "pattern": "^[a-z_]+$"}},
+                "required": ["slug"],
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        func = provider.wrap_tool(tool, execute_tool)
+
+        with pytest.raises(errors.FunctionInvocationError):
+            _extra_utils.invoke_function_from_dict_args({"slug": "Not Valid"}, func)
+        execute_tool.assert_not_called()
 
     def test_callables_in_generate_content_config(self):
         """Wrapped callables can be passed to GenerateContentConfig without error."""

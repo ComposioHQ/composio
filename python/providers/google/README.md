@@ -12,7 +12,7 @@ Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) i
 
 ## Quickstart
 
-`GoogleProvider` is non-agentic: the model returns function calls, and `composio.provider.handle_response` executes every function call in the response and returns the results.
+`GoogleProvider` is non-agentic: the model returns function calls, and `composio.provider.handle_response` executes every function call in the response through the session and returns the results.
 
 ```python
 import vertexai
@@ -40,11 +40,11 @@ response = chat.send_message(
 )
 
 # Execute the function calls the model requested
-results = composio.provider.handle_response(user_id="user_123", response=response)
+results = composio.provider.handle_response(session=session, response=response)
 print(results)
 ```
 
-To execute a single call instead of the whole response, use `composio.provider.execute_tool_call(user_id="user_123", function_call=part.function_call)`.
+To execute a single call instead of the whole response, use `composio.provider.execute_tool_call(session=session, function_call=part.function_call)`. For tools fetched with `composio.tools.get()`, pass `user_id=` instead of `session=`.
 
 ## composio-google vs composio-gemini
 

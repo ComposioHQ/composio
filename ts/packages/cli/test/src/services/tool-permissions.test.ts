@@ -2,41 +2,68 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, beforeEach, describe, expect, it } from '@effect/vitest';
+import { vi } from 'vitest';
 import { Config, ConfigProvider, Effect, Layer, Option } from 'effect';
+import { Composio as RawComposioClient } from '@composio/client';
+
+// Enhanced controls are disabled on darwin-x64, so pin the platform: these
+// scenarios are about the transport, not about where the CLI runs.
+vi.mock('src/services/permission-ui', async importOriginal => ({
+  ...(await importOriginal<typeof import('src/services/permission-ui')>()),
+  isEnhancedControlsPlatformSupported: () => true,
+}));
 import {
   decodeCacheFileTolerant,
   decodeToolRouterPermissionsConfig,
   gateToolExecution,
   getConsumerPermissionSnapshot,
   normalizeLegacyOverrideKeys,
+  refreshConsumerPermissionSnapshot,
   resolveGateState,
   ToolPermissionDeniedError,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 import { extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
+import {
+  ComposioClientConfigurationError,
+  ComposioClientSingleton,
+} from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 
 // apiKey: none() makes refreshConsumerPermissionSnapshot's background
 // refresh a no-op (it bails before any network call), so a fresh cache hit
-// is observed exactly as read from disk.
-const ComposioUserContextTest = Layer.succeed(
-  ComposioUserContext,
-  ComposioUserContext.of({
-    data: {
-      apiKey: Option.none(),
-      baseURL: 'https://backend.composio.dev',
-      webURL: 'https://app.composio.dev',
-      orgId: Option.none(),
-      projectId: Option.none(),
-      testUserId: Option.none(),
-    },
-    isLoggedIn: () => false,
-    logout: Effect.void,
-    login: () => Effect.void,
-    update: () => Effect.void,
-  })
+// is observed exactly as read from disk. ComposioClientSingleton is only
+// provided to satisfy the type: dying if it's ever actually reached keeps
+// that assumption honest.
+const ComposioUserContextTest = Layer.mergeAll(
+  Layer.succeed(
+    ComposioUserContext,
+    ComposioUserContext.of({
+      data: {
+        apiKey: Option.none(),
+        baseURL: 'https://backend.composio.dev',
+        webURL: 'https://app.composio.dev',
+        orgId: Option.none(),
+        projectId: Option.none(),
+        testUserId: Option.none(),
+      },
+      isLoggedIn: () => false,
+      logout: Effect.void,
+      login: () => Effect.void,
+      update: () => Effect.void,
+    })
+  ),
+  Layer.succeed(
+    ComposioClientSingleton,
+    ComposioClientSingleton.of({
+      get: () => Effect.die('ComposioClientSingleton.get should not be reached without an apiKey'),
+      getFor: () =>
+        Effect.die('ComposioClientSingleton.getFor should not be reached without an apiKey'),
+      getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
+    })
+  )
 );
 
 // Pinned wall clock for deterministic fixtures. The SUT reads the real
@@ -71,6 +98,76 @@ const snapshotFixture = (
   fetchedAt: PINNED_NOW,
   ...overrides,
 });
+
+/**
+ * The consumer endpoints the permission snapshot reads. Both are absent from
+ * the v3.1 spec, so production calls them through the client's generic
+ * `get`/`post`; the double answers at that same boundary.
+ */
+const permissionsClientLayer = (responses: {
+  readonly config?: unknown;
+  readonly permissions?: unknown;
+  readonly clientUnavailable?: boolean;
+}) => {
+  const paths: string[] = [];
+  const client = {
+    get: async (path: string) => {
+      paths.push(`GET ${path}`);
+      if (responses.config === undefined) throw new Error(`no stub for GET ${path}`);
+      return responses.config;
+    },
+    post: async (path: string) => {
+      paths.push(`POST ${path}`);
+      if (responses.permissions === undefined) throw new Error(`no stub for POST ${path}`);
+      return responses.permissions;
+    },
+  } as unknown as RawComposioClient;
+
+  const layer = Layer.mergeAll(
+    Layer.succeed(
+      ComposioClientSingleton,
+      ComposioClientSingleton.of({
+        get: () => Effect.succeed(client),
+        getFor: () =>
+          responses.clientUnavailable === true
+            ? Effect.fail(
+                new ComposioClientConfigurationError({
+                  message: 'invalid base URL',
+                  cause: null,
+                })
+              )
+            : Effect.succeed(client),
+        getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
+      })
+    ),
+    Layer.succeed(
+      ComposioUserContext,
+      ComposioUserContext.of({
+        data: {
+          apiKey: Option.some('uak_permissions_test'),
+          baseURL: 'https://backend.composio.dev',
+          webURL: 'https://app.composio.dev',
+          orgId: Option.some('org_test'),
+          projectId: Option.none(),
+          testUserId: Option.none(),
+        },
+        isLoggedIn: () => true,
+        logout: Effect.void,
+        login: () => Effect.void,
+        update: () => Effect.void,
+      })
+    )
+  );
+
+  return { layer, paths };
+};
+
+const refreshParams = {
+  orgId: 'org_test',
+  projectId: 'project_test',
+  consumerUserId: 'user_test',
+  connectedAccountIds: ['ca_one'],
+};
 
 describe('tool permissions', () => {
   beforeEach(() => {
@@ -354,4 +451,53 @@ describe('tool permissions', () => {
       expect(result).toStrictEqual({ approvalStatus: 'cached_approved' });
     }).pipe(Effect.provide(ToolPermissionsTest))
   );
+
+  describe('consumer permission snapshot over the owned client', () => {
+    it.effect('reads the policy through the client and keeps it in the snapshot', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({
+          config: { enhanced_controls: true },
+          permissions: { experimental: { permissions: { default: 'allow_all', overrides: {} } } },
+        });
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(stub.paths).toEqual([
+          'GET /api/v3.1/org/consumer/config',
+          'POST /api/v3.1/consumer/permissions/resolve',
+        ]);
+        expect(snapshot?.enhancedControlsEnabled).toBe(true);
+        expect(snapshot?.permissions).toEqual({ default: 'allow_all', overrides: {} });
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+
+    it.effect('fails closed to ask_every_call when the policy call fails', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({ config: { enhanced_controls: true } });
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(snapshot?.enhancedControlsEnabled).toBe(true);
+        expect(snapshot?.permissions).toEqual({ default: 'ask_every_call' });
+        expect(resolveGateState({ snapshot, toolSlug: 'GMAIL_SEND_EMAIL' })).toBe('ask_every_call');
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+
+    it.effect('returns no snapshot when a client cannot be built', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({ clientUnavailable: true });
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(snapshot).toBeUndefined();
+        expect(stub.paths).toEqual([]);
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+  });
 });

@@ -69,39 +69,11 @@ export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarg
   return hostTarget ? [hostTarget] : [];
 };
 
-export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
-
 // Kept out of --env: Bun honors only the last --env, which would clobber DEBUG_OVERRIDE_*.
 export const posthogBakeArgs = (): ReadonlyArray<string> => {
   const key = process.env.COMPOSIO_POSTHOG_PROJECT_API_KEY?.trim();
   return key ? ['--define', `COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED=${JSON.stringify(key)}`] : [];
 };
-
-const localToolsBinaryAssetsSourceDir = (): string =>
-  path.resolve(process.cwd(), '../cli-local-tools', LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-
-const copyLocalToolBinaryAssetsDirectory = async (outputDir: string): Promise<boolean> => {
-  const sourceDir = localToolsBinaryAssetsSourceDir();
-  const sourceExists = await stat(sourceDir)
-    .then(stats => stats.isDirectory())
-    .catch(() => false);
-  if (!sourceExists) return false;
-
-  const outputAssetDir = path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-  await rm(outputAssetDir, { force: true, recursive: true });
-  await copyDirectoryRecursive(sourceDir, outputAssetDir);
-  return true;
-};
-
-export const copyLocalToolBinaryAssets = (outputDir: string) =>
-  Effect.gen(function* () {
-    const copied = yield* Effect.tryPromise(() => copyLocalToolBinaryAssetsDirectory(outputDir));
-    if (copied) {
-      yield* Effect.logDebug(
-        `Copied local tool binary assets into ${path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`
-      );
-    }
-  });
 
 const isAllowedRuntimeSpecifier = (specifier: string): boolean =>
   specifier.startsWith('.') ||

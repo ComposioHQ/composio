@@ -61,6 +61,8 @@ export type UsageEntitySummary = z.infer<typeof UsageEntitySummarySchema>;
 export const UsageSummaryResponseSchema = z.object({
   /** Aggregates keyed by metering entity type (e.g. `tool_calls`, `sessions`). */
   entities: z.record(z.string(), UsageEntitySummarySchema),
+  /** Total Instant charge for the window, in USD as an exact decimal string. */
+  instantCharge: z.string(),
 });
 export type UsageSummaryResponse = z.infer<typeof UsageSummaryResponseSchema>;
 
