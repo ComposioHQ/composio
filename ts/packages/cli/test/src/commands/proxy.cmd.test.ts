@@ -47,6 +47,7 @@ describe('CLI: composio proxy', () => {
       it.effect('forwards proxy execute params and prints the response', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
+          let proxyOptions: { maxRetries?: number } | undefined;
           let proxyParams:
             | {
                 sessionId: string;
@@ -117,8 +118,13 @@ describe('CLI: composio proxy', () => {
                   tool_router_tools: [],
                 };
               },
-              proxyExecute: async (sessionId: string, params: SessionProxyExecuteParams) => {
+              proxyExecute: async (
+                sessionId: string,
+                params: SessionProxyExecuteParams,
+                options?: { maxRetries?: number }
+              ) => {
                 proxyParams = { sessionId, params };
+                proxyOptions = options;
                 return {
                   status: 200,
                   data: {
@@ -173,6 +179,9 @@ describe('CLI: composio proxy', () => {
               ],
             },
           });
+          // A proxied call is never retried: a retry after the upstream API
+          // already acted would duplicate the side effect.
+          expect(proxyOptions).toEqual({ maxRetries: 0 });
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');

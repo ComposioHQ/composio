@@ -277,19 +277,25 @@ export interface TestLiveInput {
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
     create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
-    /** Override `session.execute`. Receives sessionId and params. */
-    execute?: (sessionId: string, params: SessionExecuteParams) => Promise<SessionExecuteResponse>;
-    /** Override `session.executeMeta`. Receives sessionId and params. */
+    /** Override `session.execute`. Receives sessionId, params, and request options. */
+    execute?: (
+      sessionId: string,
+      params: SessionExecuteParams,
+      options?: { maxRetries?: number }
+    ) => Promise<SessionExecuteResponse>;
+    /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
-      params: SessionExecuteMetaParams
+      params: SessionExecuteMetaParams,
+      options?: { maxRetries?: number }
     ) => Promise<SessionExecuteMetaResponse>;
     /** Override `session.link`. Receives sessionId and params. */
     link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
-    /** Override `session.proxyExecute`. Receives sessionId and params. */
+    /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
     proxyExecute?: (
       sessionId: string,
-      params: SessionProxyExecuteParams
+      params: SessionProxyExecuteParams,
+      options?: { maxRetries?: number }
     ) => Promise<SessionProxyExecuteResponse>;
     /** Override `session.search`. Receives sessionId and params. */
     search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;

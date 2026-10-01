@@ -40,6 +40,7 @@ from composio.exceptions import (
     SessionConfigConflictError,
     ValidationError,
 )
+from tests.conftest import mock_http_client
 
 experimental_api = ExperimentalAPI()
 
@@ -51,7 +52,7 @@ class GrepInput(BaseModel):
 @pytest.fixture
 def mock_client():
     """Create a mock HTTP client."""
-    client = MagicMock()
+    client = mock_http_client(MagicMock)
     client.api_key = "test-api-key"
     client.user_api_key = None
     client.base_url = httpx.URL("https://backend.composio.dev")

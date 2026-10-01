@@ -2135,7 +2135,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { file: staged },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
   });
@@ -2217,7 +2217,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           user_id: 'test-user',
           version: 'latest',
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -2394,7 +2394,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { text: 'keep' },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 

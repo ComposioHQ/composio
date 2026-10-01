@@ -483,15 +483,17 @@ class HttpClient(BaseComposio, WithLogger):
         """
         A cached sibling client that never retries requests.
 
-        Used for non-idempotent writes (``tools.execute`` / ``tools.proxy``),
+        Used for tool executions and proxied API calls (``tools.execute``,
+        ``tools.proxy``, and the session ``execute`` / ``proxy_execute`` paths),
         where a silent retry after a read timeout can duplicate a side effect
         (e.g. send an email twice). Reads keep the default retry behaviour.
 
-        Scope: only ``tools.execute`` / ``tools.proxy`` route through this today.
-        Other non-idempotent writes (``auth_configs.create`` / ``update`` /
-        ``delete``, ``mcp.update`` / ``delete``, ``connected_accounts.delete`` /
-        ``refresh``, ``link.create``) keep the default retries — most are
-        naturally idempotent on retry, and the durable fix is backend-honoured
+        Scope: every execution path routes through this, because the backend
+        does not deduplicate executions. Other non-idempotent writes
+        (``auth_configs.create`` / ``update`` / ``delete``, ``mcp.update`` /
+        ``delete``, ``connected_accounts.delete`` / ``refresh``,
+        ``link.create``) keep the default retries — most are naturally
+        idempotent on retry, and the durable fix is backend-honoured
         idempotency keys.
 
         The sibling is cached rather than rebuilt per call so a fresh client is

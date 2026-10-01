@@ -984,7 +984,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
-        response = self._client.tool_router.session.execute(
+        # Disable retries: a session execution is a non-idempotent write, and a
+        # silent retry after a read timeout can duplicate the side effect.
+        response = self._client.without_retries.tool_router.session.execute(
             session_id=self.session_id,
             tool_slug=tool_slug,
             arguments=arguments if arguments is not None else omit,
