@@ -347,6 +347,14 @@ describe('CLI: composio execute', () => {
             log_id: 'log_gmail_default',
           };
         },
+        executeMeta: async (_sessionId, params, options) => {
+          recordedExecuteOptions.push(options);
+          return {
+            data: { slug: params.slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_meta_default',
+          };
+        },
       },
     })
   )('[Given] default alias exists [Then] execute pins the default connected account', it => {
@@ -366,6 +374,14 @@ describe('CLI: composio execute', () => {
         // An execution is never retried: a retry after the backend already
         // acted would duplicate the side effect.
         expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+      })
+    );
+
+    it.effect('never retries a meta tool execution', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
+
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
       })
     );
 
