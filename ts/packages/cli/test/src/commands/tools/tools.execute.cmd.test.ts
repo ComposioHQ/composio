@@ -538,19 +538,26 @@ describe('CLI: composio execute', () => {
           '--skip-checks',
           'GMAIL_SEND_EMAIL',
           '-d',
-          '{"recipient":"work@example.com"}',
+          '{"recipient":"repeat-first@example.com"}',
           '--account',
           'forest',
           'GMAIL_SEND_EMAIL',
           '-d',
-          '{"recipient":"default@example.com"}',
+          '{"recipient":"repeat-second@example.com"}',
           '--account',
           'castle',
         ]);
 
+        // Read this invocation's own aggregate: the console is shared with the
+        // sibling tests in this layer.
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n')).toContain('work@example.com');
-        expect(lines.join('\n')).toContain('default@example.com');
+        const output = parseLastJson(lines) as unknown as {
+          results: Array<{ data: { arguments: Record<string, unknown> } }>;
+        };
+        expect(output.results.map(result => result.data.arguments)).toEqual([
+          { recipient: 'repeat-first@example.com' },
+          { recipient: 'repeat-second@example.com' },
+        ]);
         expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
           expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
         );
