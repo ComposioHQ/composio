@@ -127,7 +127,7 @@ describe('CLI: composio run', () => {
     it.effect('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
       Effect.gen(function* () {
         const telemetryContext = createCliCommandTelemetryContext(
-          ['bun', 'composio', 'run', 'console.log("hi")'],
+          ['bun', 'composio', '--telemetry-debug', 'run', 'console.log("hi")'],
           '0.0.0-test',
           { stdoutIsTTY: false, stderrIsTTY: false },
           { invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN, parentRunId: undefined }
@@ -143,7 +143,7 @@ describe('CLI: composio run', () => {
 
         // The bootstrap hands the run id it minted for telemetry to the command, the way
         // `cli-main.ts` does, instead of publishing it through process-wide state.
-        yield* cli(['run', 'console.log("hi")'], { runId });
+        yield* cli(['--telemetry-debug', 'run', 'console.log("hi")'], { runId });
 
         expect(commandRuns).toHaveBeenCalledTimes(1);
       })

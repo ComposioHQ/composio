@@ -1,15 +1,6 @@
 import { Array as Arr } from 'effect';
 import { RUN_KNOWN_BOOLEAN_FLAGS, RUN_KNOWN_VALUE_FLAGS } from './run.cmd';
-
-const rootCommandIndex = (args: ReadonlyArray<string>) => {
-  let index = 0;
-  while (index < args.length && args[index].startsWith('-')) {
-    if (args[index] === '--') return index;
-    if (args[index] === '--log-level') index += 2;
-    else index += 1;
-  }
-  return index;
-};
+import { rootCommandIndex } from 'src/utils/cli-args';
 
 export const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const head = Arr.take(argv, 2);
