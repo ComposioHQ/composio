@@ -417,8 +417,17 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
+    }
+
+    // Same breakpoint-overflow hazard as wrapTools: a model that calls
+    // several tools in one turn (parallel tool calls) produces one
+    // tool_result per call here. One breakpoint on the last result covers
+    // the whole batch, since a breakpoint caches everything up to and
+    // including it.
+    const lastOutput = outputs[outputs.length - 1];
+    if (this.cacheTools && lastOutput) {
+      lastOutput.cache_control = { type: 'ephemeral' };
     }
 
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
