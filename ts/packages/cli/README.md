@@ -48,6 +48,9 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio upgrade [--beta]`: Self-update the Composio CLI from the stable channel, or from the beta channel with `--beta`.
 - `composio setup skill <claude|codex|openclaw> [--name skill-name]`: Manually install the composio skill for Claude, Codex, or OpenClaw.
 
+Use `composio execute <slug> --get-schema` to print a tool's input schema as JSON.
+`composio execute <slug> --help` now shows command options and examples.
+
 ## Configuration
 
 The Composio CLI supports configuration via environment variables. It stores authenticated user context in `user_data.json` and general CLI settings in `config.json`.

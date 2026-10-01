@@ -2071,7 +2071,7 @@ const executeExamples = [
   },
   {
     command: 'composio execute GMAIL_SEND_EMAIL --get-schema',
-    description: 'Check what inputs a tool needs',
+    description: 'Print the tool input schema as JSON (--help shows command options)',
   },
   {
     command: 'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
