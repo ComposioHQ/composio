@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- `composio execute` now validates the arguments before it sends the tool
+  call, so a call that fails local validation is never run. Validation used to
+  race the request, and the tool could execute while the CLI reported a
+  validation failure. The cached schema named in the validation error is now
+  kept on disk instead of being deleted.
 - `composio run` now validates binary download URLs returned by the proxy API
   before fetching them. Private, loopback, link-local, and redirect-based SSRF
   targets are blocked, DNS resolutions are pinned to prevent rebinding, and the

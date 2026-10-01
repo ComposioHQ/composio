@@ -199,6 +199,8 @@ export interface TestLiveInput {
   toolsExecutor?: {
     failWith?: unknown;
     respondWith?: ToolExecuteResponse;
+    /** Called each time the mock executor actually runs a tool call. */
+    onExecute?: (slug: string) => void;
   };
 
   /**
@@ -1298,20 +1300,22 @@ export const TestLayer = (input?: TestLiveInput) =>
       ? Layer.succeed(
           ToolsExecutor,
           ToolsExecutor.of({
-            execute: (slug, params) => {
-              if (input.toolsExecutor!.failWith) {
-                return Effect.fail(input.toolsExecutor!.failWith);
-              }
-              if (input.toolsExecutor!.respondWith) {
-                return Effect.succeed(input.toolsExecutor!.respondWith);
-              }
-              return Effect.succeed({
-                data: { slug, params },
-                error: null,
-                successful: true,
-                logId: 'log_test',
-              });
-            },
+            execute: (slug, params) =>
+              Effect.suspend(() => {
+                input.toolsExecutor!.onExecute?.(slug);
+                if (input.toolsExecutor!.failWith) {
+                  return Effect.fail(input.toolsExecutor!.failWith);
+                }
+                if (input.toolsExecutor!.respondWith) {
+                  return Effect.succeed(input.toolsExecutor!.respondWith);
+                }
+                return Effect.succeed({
+                  data: { slug, params },
+                  error: null,
+                  successful: true,
+                  logId: 'log_test',
+                });
+              }),
           })
         )
       : Layer.provide(
