@@ -1,3 +1,4 @@
+import { VERSION as clientLibraryVersion } from '@composio/client';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import * as tempy from 'tempy';
@@ -58,6 +59,23 @@ describe('CLI analytics execute failure events', () => {
     expect(event?.properties).toMatchObject({
       stdout_is_tty: true,
       stderr_is_tty: false,
+    });
+  });
+
+  it('keeps CLI product and installed library separate on tool-router command events', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'execute', 'GITHUB_GET_ME'],
+      '0.4.2',
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    expect(getPrimaryLifecycleSucceededEvent(context)?.properties).toMatchObject({
+      client_name: '@composio/cli',
+      client_version: '0.4.2',
+      client_library: '@composio/client',
+      client_library_version: clientLibraryVersion,
+      execution_channel: 'tool_router',
+      duration_ms: expect.any(Number),
     });
   });
 
@@ -355,6 +373,15 @@ describe('CLI analytics setup runtime-context events', () => {
         cli_version: APP_VERSION,
         command_path: 'whoami',
         agent_host: 'claude',
+        client_name: '@composio/cli',
+        client_version: APP_VERSION,
+        client_language: 'typescript',
+        client_runtime: 'nodejs',
+        client_runtime_version: process.versions.node,
+        client_library: '@composio/client',
+        client_library_version: clientLibraryVersion,
+        client_framework: 'cli',
+        execution_channel: 'unknown',
         journey_stage: 'setup',
         cli_channel: inferSkillReleaseChannel(APP_VERSION),
       },

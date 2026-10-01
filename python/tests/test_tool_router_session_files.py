@@ -352,19 +352,77 @@ class TestRemoteFile:
 
         assert not (tmp_path / ".composio").exists()
 
-    @pytest.mark.parametrize("mount_relative_path", ["report.\u00a0", "report.\u0085"])
-    def test_save_rejects_dot_exposed_by_stripping(self, tmp_path, mount_relative_path):
+    @pytest.mark.parametrize(
+        ("mount_relative_path", "expected"),
+        [
+            ("report.\u00a0", "report-11aada8ba3168adf"),
+            (
+                "out/report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("What is this?.png", "What is this_-9c68adf2da8b6e8d.png"),
+        ],
+    )
+    def test_save_makes_unportable_names_portable(
+        self, tmp_path, mount_relative_path, expected
+    ):
         rf = RemoteFile(
             expires_at="2026-01-01",
             mount_relative_path=mount_relative_path,
             sandbox_mount_prefix="/mnt/files",
             download_url="https://example.com/file",
         )
-        with patch.object(rf, "buffer", return_value=b"should not be written"):
+        with patch.object(rf, "buffer", return_value=b"content"):
             with patch("pathlib.Path.home", return_value=tmp_path):
-                with pytest.raises(ValidationError, match="ending in a space or dot"):
-                    rf.save()
-        assert not (tmp_path / ".composio").exists()
+                saved = Path(rf.save())
+        assert saved.name == expected
+        assert saved.read_bytes() == b"content"
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["report?.png", "report_-05fcb95aa5b918e9.png"],
+            ["report_-05fcb95aa5b918e9.png", "report?.png"],
+            ["請" * 41 + ".pdf"] * 3,
+        ],
+    )
+    def test_default_save_preserves_files_with_colliding_names(self, names, tmp_path):
+        paths = []
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            for index, name in enumerate(names):
+                file = RemoteFile(
+                    expires_at="2026-01-01",
+                    mount_relative_path=name,
+                    sandbox_mount_prefix="/mnt/files",
+                    download_url="https://example.com/file",
+                )
+                with patch.object(file, "buffer", return_value=bytes([index])):
+                    paths.append(Path(file.save()))
+
+        assert len(set(paths)) == len(names)
+        assert [path.read_bytes() for path in paths] == [
+            bytes([i]) for i in range(len(names))
+        ]
+        assert all(len(path.name.encode()) <= 128 for path in paths)
+        assert all(path.suffix == Path(names[0]).suffix for path in paths)
+
+    def test_failed_default_save_leaves_no_file_behind(self, tmp_path):
+        file = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path="report.pdf",
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            # Writing `str` to the binary file fails after the path is claimed.
+            with patch.object(file, "buffer", return_value="not bytes"):
+                with pytest.raises(TypeError):
+                    file.save()
+            with patch.object(file, "buffer", return_value=b"content"):
+                saved = Path(file.save())
+
+        assert saved.name == "report.pdf"
+        assert [path.name for path in saved.parent.iterdir()] == ["report.pdf"]
 
 
 class TestResponseDerivedUrlsAreGuarded:

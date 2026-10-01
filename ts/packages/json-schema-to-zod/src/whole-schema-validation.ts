@@ -1,8 +1,9 @@
-import { encodePointer, Validator } from '@cfworker/json-schema';
+import { encodePointer, format, Validator } from '@cfworker/json-schema';
 import type { Schema as InterpreterSchema } from '@cfworker/json-schema';
 import { z } from 'zod/v3';
 
 import type { JsonSchema, JsonSchemaObject } from './types';
+import { toUnicodePattern } from './utils/unicode-pattern';
 
 const REQUIRES_WHOLE_SCHEMA_VALIDATION = new Set([
   '$ref',
@@ -161,12 +162,149 @@ export const guardSchemaAt = (
       { ...refs.root, $ref: `#/${refs.path.map(part => encodePointer(String(part))).join('/')}` }
     : node;
 
+const patternKeyRenames = new WeakMap<object, ReadonlyMap<string, string>>();
+
 /**
- * OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
- * `minimum`/`maximum`. The Draft 7 interpreter ignores the flag, so the guard
- * receives the numeric spelling the native number parser already honors.
+ * The Unicode spelling of each `patternProperties` key. Two keys that spell
+ * the same way (`^a\_b$` and `^a_b$`) stay separate entries: the later one is
+ * wrapped in a non-capturing group, which matches the same names, so neither
+ * value schema is dropped. A key with no Unicode spelling is kept as is and
+ * surfaces as a guard failure rather than an unenforced constraint.
  */
-const normalizeExclusiveBounds = (value: unknown, seen: WeakSet<object>): void => {
+const renamePatternKeys = (patternProperties: object): ReadonlyMap<string, string> => {
+  const cached = patternKeyRenames.get(patternProperties);
+  if (cached) {
+    return cached;
+  }
+
+  const renames = new Map<string, string>();
+  const used = new Set<string>();
+  for (const key of Object.keys(patternProperties)) {
+    let renamed = toUnicodePattern(key) ?? key;
+    while (used.has(renamed)) {
+      renamed = `(?:${renamed})`;
+    }
+    used.add(renamed);
+    renames.set(key, renamed);
+  }
+  patternKeyRenames.set(patternProperties, renames);
+  return renames;
+};
+
+const decodePointerSegment = (segment: string): string => {
+  try {
+    return decodeURI(segment).replace(/~1/g, '/').replace(/~0/g, '~');
+  } catch {
+    return segment;
+  }
+};
+
+/**
+ * What a JSON Pointer segment addresses: a keyword of a schema, a name in a
+ * keyword's map (`properties`, `$defs`, ...), a `patternProperties` key, an
+ * index into a schema array, or something that holds no schemas.
+ */
+type PointerPosition = 'keyword' | 'name' | 'patternKey' | 'index' | 'other';
+
+const positionAfter = (position: PointerPosition, key: string, child: unknown): PointerPosition => {
+  if (position !== 'keyword') {
+    return position === 'other' ? 'other' : 'keyword';
+  }
+  if (key === 'patternProperties') {
+    return 'patternKey';
+  }
+  if (SCHEMA_MAP_KEYWORDS.has(key)) {
+    return 'name';
+  }
+  if (SCHEMA_ARRAY_KEYWORDS.has(key) || (SCHEMA_VALUE_KEYWORDS.has(key) && Array.isArray(child))) {
+    return 'index';
+  }
+  return SCHEMA_VALUE_KEYWORDS.has(key) ? 'keyword' : 'other';
+};
+
+/**
+ * A local `$ref` rewritten to address the renamed `patternProperties` keys of
+ * the interpreter copy. `root` is the unrenamed document it points into. Only
+ * a segment in keyword position is a keyword, so a definition that happens to
+ * be named `patternProperties` is not mistaken for one.
+ */
+const renameRefThroughPatternKeys = (ref: string, root: unknown): string => {
+  if (!ref.startsWith('#/')) {
+    return ref;
+  }
+
+  let node: unknown = root;
+  let position: PointerPosition = 'keyword';
+  let changed = false;
+  const renamed = ref
+    .slice(2)
+    .split('/')
+    .map(segment => {
+      const key = decodePointerSegment(segment);
+      let result = segment;
+      if (position === 'patternKey' && isObject(node)) {
+        const renamedKey = renamePatternKeys(node).get(key);
+        if (renamedKey !== undefined && renamedKey !== key) {
+          result = encodePointer(renamedKey);
+          changed = true;
+        }
+      }
+      const child =
+        isObject(node) || Array.isArray(node) ? (node as Record<string, unknown>)[key] : undefined;
+      position = positionAfter(position, key, child);
+      node = child;
+      return result;
+    });
+
+  return changed ? `#/${renamed.join('/')}` : ref;
+};
+
+const PATTERN_FORMAT_PREFIX = 'composio-pattern:';
+
+/** Pattern formats of one guard, installed on the interpreter only while it validates. */
+type PatternFormats = Map<string, (value: string) => boolean>;
+
+/**
+ * Adds `pattern` to `formats` as an interpreter format that tests it exactly as
+ * the native string parser does, without the `u` flag, and returns the format
+ * name. Returns `undefined` for a pattern that does not compile at all, which
+ * the interpreter then reports as it always has.
+ */
+const patternFormat = (pattern: string, formats: PatternFormats): string | undefined => {
+  const name = `${PATTERN_FORMAT_PREFIX}${pattern}`;
+  if (!formats.has(name)) {
+    let regex: RegExp;
+    try {
+      regex = new RegExp(pattern);
+    } catch {
+      return undefined;
+    }
+    formats.set(name, value => regex.test(value));
+  }
+  return name;
+};
+
+/**
+ * Rewrites the guard's private copy of a schema into what the Draft 7
+ * interpreter understands the way the native parsers do:
+ *
+ * - OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
+ *   `minimum`/`maximum`. The interpreter ignores the flag, so it receives the
+ *   numeric spelling the native number parser already honors.
+ * - The interpreter compiles patterns with the `u` flag, which refuses legacy
+ *   syntax tool schemas use, such as `\_`. A `pattern` becomes a format that
+ *   tests it without the flag, exactly like the native string parser. A
+ *   `patternProperties` key cannot leave the interpreter, so it gets its
+ *   Unicode spelling (`toUnicodePattern`), and local `$ref`s through a renamed
+ *   key follow the rename. `root` is the unmodified document those refs
+ *   address. `formats` collects the pattern formats.
+ */
+const prepareInterpreterSchema = (
+  value: unknown,
+  seen: WeakSet<object>,
+  root: unknown,
+  formats: PatternFormats
+): void => {
   if (!isObject(value) || seen.has(value)) {
     return;
   }
@@ -185,17 +323,84 @@ const normalizeExclusiveBounds = (value: unknown, seen: WeakSet<object>): void =
     delete value.exclusiveMaximum;
   }
 
+  if (typeof value.$ref === 'string') {
+    value.$ref = renameRefThroughPatternKeys(value.$ref, root);
+  }
+  const patternFormatName =
+    typeof value.pattern === 'string' ? patternFormat(value.pattern, formats) : undefined;
+  if (patternFormatName !== undefined) {
+    delete value.pattern;
+    if (value.format === undefined) {
+      value.format = patternFormatName;
+    } else {
+      const allOf = Array.isArray(value.allOf) ? value.allOf : [];
+      value.allOf = [...allOf, { format: patternFormatName }];
+    }
+  }
+  if (isObject(value.patternProperties)) {
+    const renames = renamePatternKeys(value.patternProperties);
+    value.patternProperties = Object.fromEntries(
+      Object.entries(value.patternProperties).map(([pattern, schema]) => [
+        renames.get(pattern) ?? pattern,
+        schema,
+      ])
+    );
+  }
+
   for (const [key, child] of Object.entries(value)) {
     if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested => normalizeExclusiveBounds(nested, seen));
+      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
     } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested => normalizeExclusiveBounds(nested, seen));
+      child.forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       (Array.isArray(child) ? child : [child]).forEach(nested =>
-        normalizeExclusiveBounds(nested, seen)
+        prepareInterpreterSchema(nested, seen, root, formats)
       );
     }
   }
+};
+
+type WholeSchemaGuard = (value: unknown) => string | undefined;
+type GuardedDef = z.ZodTypeDef & { wholeSchemaGuard?: WholeSchemaGuard };
+type ZodSchemaClass = {
+  new (def: z.ZodTypeDef): z.ZodTypeAny;
+  prototype: z.ZodTypeAny;
+};
+
+const guardedSchemaClasses = new WeakMap<ZodSchemaClass, ZodSchemaClass>();
+
+/**
+ * A subclass of the parsed schema's own class that checks the source value
+ * against the guard before parsing it. Keeping the class, rather than wrapping
+ * it in a pipeline, keeps the schema's kind: a guarded object is still a
+ * `ZodObject` with a `shape`, which is what zod-to-json-schema and the MCP SDK
+ * need to emit a root `type: "object"` for LLM tool parameters. The guard lives
+ * on `_def`, so copies such as `.describe()` keep it.
+ */
+const guardedSchemaClass = (Base: ZodSchemaClass): ZodSchemaClass => {
+  const cached = guardedSchemaClasses.get(Base);
+  if (cached) {
+    return cached;
+  }
+
+  const parseAsBase = Base.prototype._parse;
+  class Guarded extends Base {
+    override _parse(input: z.ParseInput): z.ParseReturnType<unknown> {
+      const failure = (this._def as GuardedDef).wholeSchemaGuard?.(input.data);
+      if (failure === undefined) {
+        return parseAsBase.call(this, input);
+      }
+      z.addIssueToContext(this._getOrReturnCtx(input), {
+        code: z.ZodIssueCode.custom,
+        message: failure,
+      });
+      return z.DIRTY(input.data);
+    }
+  }
+  guardedSchemaClasses.set(Base, Guarded);
+  // Guarding an already guarded schema reuses its class and composes guards.
+  guardedSchemaClasses.set(Guarded, Guarded);
+  return Guarded;
 };
 
 export const withWholeSchemaValidation = (
@@ -203,36 +408,38 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const interpreterSchema = structuredClone(jsonSchema);
-  normalizeExclusiveBounds(interpreterSchema, new WeakSet());
+  const formats: PatternFormats = new Map();
+  prepareInterpreterSchema(interpreterSchema, new WeakSet(), jsonSchema, formats);
   const validator = new Validator(interpreterSchema as InterpreterSchema, '7', false);
 
   // Validate the source value before defaults and other Zod transforms run.
   // Otherwise a missing required field can be synthesized and incorrectly
   // appear valid to the JSON Schema interpreter.
-  const guardedSchema = z
-    .any()
-    .superRefine((value, ctx) => {
-      let result: ReturnType<Validator['validate']>;
-      try {
-        result = validator.validate(value);
-      } catch (cause) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `JSON Schema validation failed: ${String(cause)}`,
-        });
-        return;
-      }
+  const innerGuard = (parsedSchema._def as GuardedDef).wholeSchemaGuard;
+  const wholeSchemaGuard: WholeSchemaGuard = value => {
+    // The interpreter only reads formats from its process-wide table. This
+    // guard's pattern formats live there only for this synchronous call, so
+    // the table does not grow with every distinct pattern ever converted.
+    let result: ReturnType<Validator['validate']>;
+    try {
+      formats.forEach((test, name) => {
+        format[name] = test;
+      });
+      result = validator.validate(value);
+    } catch (cause) {
+      return `JSON Schema validation failed: ${String(cause)}`;
+    } finally {
+      formats.forEach((_, name) => {
+        delete format[name];
+      });
+    }
 
-      if (!result.valid) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.',
-        });
-      }
-    })
-    .pipe(parsedSchema);
+    if (!result.valid) {
+      return result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.';
+    }
+    return innerGuard?.(value);
+  };
 
-  return parsedSchema.description
-    ? guardedSchema.describe(parsedSchema.description)
-    : guardedSchema;
+  const Guarded = guardedSchemaClass(parsedSchema.constructor as ZodSchemaClass);
+  return new Guarded({ ...parsedSchema._def, wholeSchemaGuard } as GuardedDef);
 };

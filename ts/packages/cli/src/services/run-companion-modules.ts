@@ -597,7 +597,7 @@ const toRepairError = (error: unknown) =>
   });
 
 // Self-repair honors the unprefixed GITHUB_* contract (set by CI and the binary
-// build workflow, mirrored by cli-local-tools) first, then falls back to the
+// build workflow) first, then falls back to the
 // CLI-wide COMPOSIO_-prefixed spelling installed by cli-main's config provider.
 //
 // Built lazily (a function, not a memoized module-level constant): each

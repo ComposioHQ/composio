@@ -107,6 +107,74 @@ print(_json.dumps({
     }
   });
 
+  it('never re-sends a tool execution after a network failure', () => {
+    const source = experimental_createPythonWorkbenchHelperSource();
+    const directory = mkdtempSync(join(tmpdir(), 'composio-helper-'));
+    const scriptPath = join(directory, 'helper_retry_test.py');
+    const testScript = `${source}
+
+import json as _json
+
+_timeout_calls = []
+
+def _post_json_timeout(url, headers, payload, timeout=120):
+    # The backend may already have run the tool when the read times out.
+    _timeout_calls.append(payload)
+    raise TimeoutError("timed out")
+
+_post_json = _post_json_timeout
+timeout_data, timeout_error = run_composio_tool(
+    "gmail_send_email", {"to": "a@example.com"}, {"delay_ms": 0}, False
+)
+
+_rate_limit_calls = []
+
+def _post_json_rate_limited(url, headers, payload, timeout=120):
+    # A 429 is rejected before the tool runs, so it stays safe to retry.
+    _rate_limit_calls.append(payload)
+    if len(_rate_limit_calls) == 1:
+        return 429, {}, _json.dumps({"error": "rate limited"})
+    return 200, {}, _json.dumps({"data": {"ok": True}})
+
+_post_json = _post_json_rate_limited
+rate_limit_data, rate_limit_error = run_composio_tool(
+    "gmail_send_email", {"to": "a@example.com"}, {"delay_ms": 0}, False
+)
+
+print(_json.dumps({
+    "timeout_calls": len(_timeout_calls),
+    "timeout_data": timeout_data,
+    "timeout_error": timeout_error,
+    "rate_limit_calls": len(_rate_limit_calls),
+    "rate_limit_data": rate_limit_data,
+    "rate_limit_error": rate_limit_error,
+}))
+`;
+
+    try {
+      writeFileSync(scriptPath, testScript);
+      const output = execFileSync('python3', [scriptPath], {
+        env: {
+          ...process.env,
+          BACKEND_URL: 'https://backend.test/',
+          COMPOSIO_TOOLROUTER_SESSION_ID: 'session_123',
+          COMPOSIO_API_KEY: 'project_key',
+        },
+        encoding: 'utf8',
+      });
+      const parsed = JSON.parse(output);
+
+      expect(parsed.timeout_calls).toBe(1);
+      expect(parsed.timeout_data).toEqual({});
+      expect(parsed.timeout_error).toContain('Composio tool request failed');
+      expect(parsed.rate_limit_calls).toBe(2);
+      expect(parsed.rate_limit_data).toEqual({ data: { ok: true } });
+      expect(parsed.rate_limit_error).toBe('');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('round-trips helper calls through the session execute endpoint shape', () => {
     const source = experimental_createPythonWorkbenchHelperSource({
       invokeLlmModel: 'test/model',

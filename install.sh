@@ -318,6 +318,12 @@ install_bundle() {
     publish_staged_entry "$stage/composio"
     rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
     stage=
+
+    # Remove legacy sidecars only when the selected release omits them.
+    if [ ! -d "$install_bundle_dir/local-tools-binaries" ]; then
+        rm -rf "$resolved_install_dir/local-tools-binaries" ||
+            warn "Could not remove obsolete $resolved_install_dir/local-tools-binaries"
+    fi
 }
 
 install_entry_point() {

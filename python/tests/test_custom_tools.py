@@ -46,6 +46,7 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionExecuteResponse,
 )
 from composio.exceptions import ValidationError
+from tests.conftest import mock_http_client
 
 # ────────────────────────────────────────────────────────────────
 # Fixtures
@@ -752,7 +753,10 @@ class TestSessionContextImpl:
     def test_sibling_routing(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
         ctx = SessionContextImpl(
-            client=MagicMock(), user_id="u", session_id="s", custom_tools_map=m
+            client=mock_http_client(MagicMock),
+            user_id="u",
+            session_id="s",
+            custom_tools_map=m,
         )
         result = ctx.execute("GREP", {"pattern": "test"})
         assert isinstance(result, SessionExecuteResponse)
@@ -769,7 +773,7 @@ class TestSessionContextImpl:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         m = build_custom_tools_map([], [alpha, beta])
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
         )
@@ -783,7 +787,7 @@ class TestSessionContextImpl:
 
     def test_remote_fallback(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
             data={"remote": True}, error=None, log_id="log_123"
         )
@@ -799,7 +803,7 @@ class TestSessionContextImpl:
         )
 
     def test_remote_fallback_passes_inline_custom_tools(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
             data={"remote": True}, error=None, log_id="log_123"
         )
@@ -828,7 +832,7 @@ class TestSessionContextImpl:
         )
 
     def test_proxy_execute(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data={"ok": True}, headers={}, binary_data=None
@@ -847,7 +851,7 @@ class TestSessionContextImpl:
         Equality alone cannot catch the leak, because ``200 == 200.0``. Only the
         type assertion distinguishes ``200`` from the ``200.0`` a raw read returns.
         """
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data=None, headers=None, binary_data=None
@@ -861,7 +865,7 @@ class TestSessionContextImpl:
         assert result == {"status": 200, "data": None, "headers": None}
 
     def test_proxy_execute_projects_binary_data(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -894,7 +898,7 @@ class TestSessionContextImpl:
 
     def test_proxy_execute_binary_data_without_expiry(self):
         """``expires_at`` is optional on the generated model; the key stays present."""
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -927,7 +931,7 @@ class TestSessionContextImpl:
 @pytest.fixture
 def mock_session_deps(grep_tool, email_tool, role_toolkit):
     return {
-        "client": MagicMock(),
+        "client": mock_http_client(MagicMock),
         "provider": MagicMock(),
         "experimental": MagicMock(),
         "tools_map": build_custom_tools_map([grep_tool, email_tool], [role_toolkit]),
@@ -981,7 +985,7 @@ class TestToolRouterSessionCustomTools:
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
-    def test_execute_remote_exposes_premium_charge(self, mock_session_deps):
+    def test_execute_remote_exposes_instant_charge(self, mock_session_deps):
         charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
         mock_session_deps[
             "client"
@@ -991,7 +995,7 @@ class TestToolRouterSessionCustomTools:
                     "data": {"sent": True},
                     "error": None,
                     "log_id": "log_123",
-                    "premium_charge": charge,
+                    "instant_charge": charge,
                 }
             )
         )
@@ -1001,11 +1005,11 @@ class TestToolRouterSessionCustomTools:
 
         assert isinstance(result, ToolRouterSessionExecuteResponse)
         assert isinstance(result, SessionExecuteResponse)
-        assert result.premium_charge == charge
+        assert result.instant_charge == charge
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
-    def test_execute_remote_without_premium_charge(self, mock_session_deps):
+    def test_execute_remote_without_instant_charge(self, mock_session_deps):
         mock_session_deps[
             "client"
         ].tool_router.session.execute.return_value = SessionExecuteResponse(
@@ -1015,7 +1019,7 @@ class TestToolRouterSessionCustomTools:
 
         result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
 
-        assert result.premium_charge is None
+        assert result.instant_charge is None
 
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
@@ -1109,7 +1113,7 @@ class TestToolRouterSessionCustomTools:
         beta._tools.append(beta_tool)
         custom_tools_map = build_custom_tools_map([], [alpha, beta])
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1148,7 +1152,7 @@ class TestToolRouterSessionCustomTools:
             [], [alpha, beta], mock_exp
         )
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1172,7 +1176,7 @@ class TestToolRouterSessionCustomTools:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         custom_tools_map = build_custom_tools_map([], [alpha, beta])
-        client = MagicMock()
+        client = mock_http_client(MagicMock)
         s = ToolRouterSession(
             client=client,
             provider=MagicMock(),
@@ -1195,7 +1199,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_empty_when_no_map(self):
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1214,7 +1218,7 @@ class TestMultiExecuteRouting:
     def _make_session(self, *tools, inline_custom_tools_payload=None):
         m = build_custom_tools_map(list(tools))
         return ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1243,7 +1247,7 @@ class TestMultiExecuteRouting:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1341,9 +1345,9 @@ class TestMultiExecuteRouting:
         assert result["data"]["total_count"] == 2
         assert result["data"]["success_count"] == 2
         assert result["data"]["error_count"] == 0
-        assert "premium_charge" not in result
+        assert "instant_charge" not in result
 
-    def test_mixed_preserves_remote_premium_charge(self, grep_tool):
+    def test_mixed_preserves_remote_instant_charge(self, grep_tool):
         s = self._make_session(grep_tool)
         tm = MagicMock()
         charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
@@ -1355,7 +1359,7 @@ class TestMultiExecuteRouting:
             },
             "error": None,
             "successful": True,
-            "premium_charge": charge,
+            "instant_charge": charge,
         }
         tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
         result = s._route_multi_execute(
@@ -1368,7 +1372,7 @@ class TestMultiExecuteRouting:
             tm,
         )
 
-        assert result["premium_charge"] == charge
+        assert result["instant_charge"] == charge
 
     def test_failure_propagated(self):
         @exp.tool()

@@ -4,6 +4,7 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
 import {
@@ -35,6 +36,7 @@ import {
 import {
   transformSearchResponse,
   transformExecuteResponse,
+  transformSessionConfig,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -167,7 +169,7 @@ export class ToolRouterSession<
       execute: {},
       search: {},
       preload: { tools: [] },
-      premium_usage: false,
+      instant: false,
     };
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
@@ -723,7 +725,12 @@ export class ToolRouterSession<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          this.sessionId,
+          executeParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
     const transformed = transformExecuteResponse(response);
@@ -749,7 +756,11 @@ export class ToolRouterSession<
     const clientParams = transformProxyParams(validated.data);
     const response = await withCancellation(
       () =>
-        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+        this.client.toolRouter.session.proxyExecute(
+          this.sessionId,
+          clientParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
@@ -855,7 +866,7 @@ export class ToolRouterSession<
     }
 
     this.configVersion = response.config_version;
-    this.config = response.config;
+    this.config = transformSessionConfig(response.config);
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
@@ -912,7 +923,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: item.config,
+        config: transformSessionConfig(item.config),
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
@@ -1118,8 +1129,8 @@ export class ToolRouterSession<
           : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
-      ...(remoteResult?.premiumCharge !== undefined && {
-        premiumCharge: remoteResult.premiumCharge,
+      ...(remoteResult?.instantCharge !== undefined && {
+        instantCharge: remoteResult.instantCharge,
       }),
     };
   }

@@ -2659,7 +2659,7 @@ class TestDownloadSizeLimit:
             s3url="https://example.com/report.bin",
         )
 
-    @patch("composio.core.models._files.safe_get")
+    @patch("composio.core.models._files.safe_request")
     def test_download_rejects_oversized_content_length(self, mock_get, tmp_path):
         """A self-declared oversized body is rejected before any bytes are read."""
         mock_response = MagicMock()
@@ -2673,7 +2673,7 @@ class TestDownloadSizeLimit:
 
         mock_response.iter_content.assert_not_called()
 
-    @patch("composio.core.models._files.safe_get")
+    @patch("composio.core.models._files.safe_request")
     def test_download_rejects_oversized_during_streaming(self, mock_get, tmp_path):
         """A dishonest (here, absent) Content-Length cannot bypass the cap."""
         mock_response = MagicMock()
@@ -2686,8 +2686,11 @@ class TestDownloadSizeLimit:
         with pytest.raises(ResponseTooLargeError):
             self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
 
-    @patch("composio.core.models._files.safe_get")
-    def test_download_removes_partial_file_on_failure(self, mock_get, tmp_path):
+    @pytest.mark.parametrize("existing", [False, True])
+    @patch("composio.core.models._files.safe_request")
+    def test_download_removes_partial_file_on_failure(
+        self, mock_get, tmp_path, existing
+    ):
         """A truncated download must not be left behind as if it succeeded."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -2696,12 +2699,19 @@ class TestDownloadSizeLimit:
         mock_response.close = MagicMock()
         mock_get.return_value = mock_response
 
+        if existing:
+            (tmp_path / "report.bin").write_bytes(b"original")
+
         with pytest.raises(ResponseTooLargeError):
             self._downloadable().download(outdir=tmp_path, root=tmp_path, max_size=1024)
 
-        assert list(tmp_path.iterdir()) == []
+        if existing:
+            assert list(tmp_path.iterdir()) == [tmp_path / "report.bin"]
+            assert (tmp_path / "report.bin").read_bytes() == b"original"
+        else:
+            assert list(tmp_path.iterdir()) == []
 
-    @patch("composio.core.models._files.safe_get")
+    @patch("composio.core.models._files.safe_request")
     def test_download_accepts_file_within_limit(self, mock_get, tmp_path):
         """A body under the cap is written through unchanged."""
         mock_response = MagicMock()
@@ -2718,7 +2728,7 @@ class TestDownloadSizeLimit:
         assert outfile.exists()
         assert outfile.read_bytes() == b"x" * 256 + b"y" * 256
 
-    @patch("composio.core.models._files.safe_get")
+    @patch("composio.core.models._files.safe_request")
     def test_download_wraps_stream_failure_and_removes_partial_file(
         self, mock_get, tmp_path
     ):
@@ -2740,7 +2750,7 @@ class TestDownloadSizeLimit:
 
         assert list(tmp_path.iterdir()) == []
 
-    @patch("composio.core.models._files.safe_get")
+    @patch("composio.core.models._files.safe_request")
     def test_download_wraps_write_failure_and_removes_partial_file(
         self, mock_get, tmp_path
     ):
@@ -2942,7 +2952,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"#!/bin/sh\n"),
         ):
             written = f.download(outdir, root=outdir)
@@ -2961,7 +2971,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"x"),
         ):
             written = f.download(outdir, root=outdir)
@@ -2982,7 +2992,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
@@ -2998,7 +3008,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"%PDF-1.4"),
         ):
             written = f.download(outdir, root=outdir)
@@ -3014,12 +3024,13 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"%PDF-1.4"),
         ) as mock_get:
             f.download(outdir, root=outdir)
 
         mock_get.assert_called_once_with(
+            "GET",
             "https://example.com/file",
             stream=True,
             timeout=(5, 60),
@@ -3033,7 +3044,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             side_effect=requests.exceptions.Timeout(
                 "Max retries exceeded with url: /file?token=abc"
             ),
@@ -3058,7 +3069,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
@@ -3078,7 +3089,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file?token=abc",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=response,
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
@@ -3102,7 +3113,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(),
         ):
             with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
@@ -3129,7 +3140,7 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"x"),
         ):
             with pytest.raises(ErrorDownloadingFile, match="no usable basename"):
@@ -3138,26 +3149,45 @@ class TestFileDownloadablePathTraversal:
         # Rejected before `mkdir`, so nothing was created on disk at all.
         assert not outdir.exists()
 
-    @pytest.mark.parametrize(
-        "name,reason",
-        [
-            ("NUL", "reserved device name"),
-            ("nul.txt", "reserved device name"),
-            ("NUL.tar.gz", "reserved device name"),
-            ("COM1", "reserved device name"),
-            ("report.txt:payload", "reserved by Windows"),
-            ("a\x00b", "NUL byte"),
-            ("😀" * 128, "longer than"),
-            ("x" * 300, "longer than"),
-        ],
-    )
-    def test_unsafe_filenames_are_rejected(self, name, reason, tmp_path):
-        """`self.name` is untrusted by the same rule as the slugs. Without these
-        checks a NUL byte escapes as a raw ValueError from `resolve()`, an
-        over-long name as a raw OSError mid-write, and `NUL` opens the Windows
-        null device — silently discarding the payload while returning a path."""
+    def test_nul_byte_filename_is_rejected(self, tmp_path):
+        """`self.name` is untrusted by the same rule as the slugs. Without this
+        check a NUL byte escapes as a raw ValueError from `resolve()`."""
         from composio.exceptions import ErrorDownloadingFile
 
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="a\x00b",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.safe_request",
+            return_value=self._mock_response(b"x"),
+        ):
+            with pytest.raises(ErrorDownloadingFile, match="NUL byte"):
+                f.download(outdir, root=outdir)
+        assert not outdir.exists()
+
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            (
+                "report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("What is this?.png", "What is this_-9c68adf2da8b6e8d.png"),
+            ('invoice "final".pdf', "invoice _final_-ec493385353bf798.pdf"),
+            ("NUL", "_NUL-369eba19c29ffe00"),
+            ("NUL.tar.gz", "_NUL.tar-c5d0283bb0ecb474.gz"),
+            ("x" * 300 + ".pdf", "x" * 107 + "-b8191dd974368539.pdf"),
+            ("請" * 70 + ".pdf", "請" * 35 + "-a7cbc40614b84819.pdf"),
+        ],
+    )
+    def test_unportable_filenames_are_made_portable(self, name, expected, tmp_path):
+        """Ordinary names with a `:` or `?`, reserved device names, and names over
+        the byte limit are written under a portable name rather than failing
+        the download after the tool has already run. The name is tagged with a
+        digest of the original, so names that normalize alike stay apart."""
         outdir = tmp_path / "safe"
         f = FileDownloadable(
             name=name,
@@ -3165,12 +3195,65 @@ class TestFileDownloadablePathTraversal:
             s3url="https://example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._mock_response(b"x"),
         ):
-            with pytest.raises(ErrorDownloadingFile, match=reason):
-                f.download(outdir, root=outdir)
-        assert not outdir.exists()
+            outfile = f.download(outdir, root=outdir)
+        assert outfile == (outdir / expected).resolve()
+        assert outfile.read_bytes() == b"x"
+
+    def test_names_that_normalize_alike_do_not_overwrite_each_other(self, tmp_path):
+        outdir = tmp_path / "safe"
+        names = ["report?.png", "report*.png", "report_.png"]
+        outfiles = []
+        for index, name in enumerate(names):
+            f = FileDownloadable(
+                name=name,
+                mimetype="image/png",
+                s3url="https://example.com/file",
+            )
+            with patch(
+                "composio.core.models._files.safe_request",
+                return_value=self._mock_response(bytes([index])),
+            ):
+                outfiles.append(f.download(outdir, root=outdir))
+
+        assert len(set(outfiles)) == len(names)
+        assert [outfile.read_bytes() for outfile in outfiles] == [
+            b"\x00",
+            b"\x01",
+            b"\x02",
+        ]
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["report?.png", "report_-05fcb95aa5b918e9.png"],
+            ["report_-05fcb95aa5b918e9.png", "report?.png"],
+            ["請" * 41 + ".pdf"] * 3,
+        ],
+    )
+    def test_literal_tag_name_does_not_overwrite_download(self, names, tmp_path):
+        outdir = tmp_path / "safe"
+        outfiles = []
+        for index, name in enumerate(names):
+            file = FileDownloadable(
+                name=name,
+                mimetype="image/png",
+                s3url="https://example.com/file",
+            )
+            with patch(
+                "composio.core.models._files.safe_request",
+                return_value=self._mock_response(bytes([index])),
+            ):
+                outfiles.append(file.download(outdir, root=outdir))
+
+        assert len(set(outfiles)) == len(names)
+        assert [outfile.read_bytes() for outfile in outfiles] == [
+            bytes([i]) for i in range(len(names))
+        ]
+        assert all(len(outfile.name.encode()) <= 128 for outfile in outfiles)
+        assert all(outfile.suffix == Path(names[0]).suffix for outfile in outfiles)
 
 
 class TestDownloadDirSlugTraversal:
@@ -3220,7 +3303,7 @@ class TestDownloadDirSlugTraversal:
         response.status_code = 200
         response.iter_content = lambda chunk_size: [content]
         response.close = MagicMock()
-        return patch("composio.core.models._files.safe_get", return_value=response)
+        return patch("composio.core.models._files.safe_request", return_value=response)
 
     @pytest.mark.parametrize("slug", TRAVERSALS)
     def test_hostile_tool_slug_is_rejected(self, slug, tmp_path):
@@ -3469,14 +3552,14 @@ class TestResponseDerivedUrlsAreGuarded:
             s3url="https://s3.example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
+            "composio.core.models._files.safe_request",
             return_value=self._download_response(),
         ) as mock_get:
             f.download(tmp_path / "out", root=tmp_path / "out")
 
-        # `safe_get` is the guard: it validates the target and connects to the
-        # address it validated, rather than re-resolving the hostname.
-        assert mock_get.call_args.args == ("https://s3.example.com/file",)
+        # `safe_request` is the guard: it validates each hop and connects to
+        # the address it validated, rather than re-resolving the hostname.
+        assert mock_get.call_args.args == ("GET", "https://s3.example.com/file")
 
     def test_download_blocked_url_never_reaches_the_network(self, tmp_path):
         outdir = tmp_path / "out"
@@ -3498,21 +3581,29 @@ class TestResponseDerivedUrlsAreGuarded:
         mock_send.assert_not_called()
         assert not outdir.exists()
 
-    def test_download_refuses_to_follow_redirects(self, tmp_path):
+    def test_download_follows_a_validated_redirect(self, tmp_path):
+        """A presigned URL may answer with a redirect (an S3 region redirect,
+        say). The download follows it, and every hop goes through the pinned,
+        validated request rather than a plain ``requests`` redirect."""
+        redirect = MagicMock()
+        redirect.status_code = 307
+        redirect.headers = {"Location": "https://s3.eu.example.com/file"}
         f = FileDownloadable(
             name="report.pdf",
             mimetype="application/pdf",
             s3url="https://s3.example.com/file",
         )
         with patch(
-            "composio.core.models._files.safe_get",
-            return_value=self._download_response(),
-        ) as mock_get:
-            f.download(tmp_path / "out", root=tmp_path / "out")
+            "composio.utils.url_safety._pinned_request",
+            side_effect=[redirect, self._download_response()],
+        ) as mock_pinned:
+            outfile = f.download(tmp_path / "out", root=tmp_path / "out")
 
-        # `safe_get` never follows redirects, and passing `allow_redirects`
-        # through to it would be a way to turn that off.
-        assert "allow_redirects" not in mock_get.call_args.kwargs
+        assert outfile.read_bytes() == b"%PDF-1.4"
+        assert [call.args[:2] for call in mock_pinned.call_args_list] == [
+            ("GET", "https://s3.example.com/file"),
+            ("GET", "https://s3.eu.example.com/file"),
+        ]
 
     def test_upload_bytes_to_s3_goes_through_safe_request(self):
         client = self._s3_client("https://s3.example.com/upload")

@@ -1,3 +1,4 @@
+import { cliRequestHeaders } from './client-provenance';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Result, Schema } from 'effect';
@@ -228,6 +229,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
           redirect: 'error',
           ...init,
           headers: {
+            ...cliRequestHeaders(),
             Accept: 'application/json',
             ...(init.body ? { 'Content-Type': 'application/json' } : {}),
             ...(init.headers ?? {}),
@@ -460,7 +462,7 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
 
     yield* ctx.login(userApiKey, orgId);
     // Best-effort analytics stitch after the credential persists; must never break login.
-    yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
+    yield* getSessionInfoByUserApiKey({ userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
       Effect.catchCause(() => Effect.void)
     );

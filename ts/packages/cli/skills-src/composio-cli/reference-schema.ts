@@ -43,7 +43,6 @@ const TOP_LEVEL_COMMANDS = new Set([
   'execute',
   'link',
   'listen',
-  'local-tools',
   'login',
   'logout',
   'proxy',
@@ -61,10 +60,6 @@ export const resolveSkillBuildContext = (
   experimentalFeatures: {
     [CLI_EXPERIMENTAL_FEATURES.LISTEN]: isExperimentalFeatureEnabledByDefault(
       CLI_EXPERIMENTAL_FEATURES.LISTEN,
-      channel
-    ),
-    [CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS]: isExperimentalFeatureEnabledByDefault(
-      CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
       channel
     ),
     ...overrides,

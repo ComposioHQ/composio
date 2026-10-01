@@ -5,16 +5,12 @@ import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
 
 describe('CLI process error handling', () => {
-  it('prints unreported ToolExecutionError failures and exits non-zero', () => {
+  it('prints unreported typed execute failures and exits non-zero', () => {
     const configDirectory = tempy.temporaryDirectory();
-    fs.writeFileSync(
-      path.join(configDirectory, 'config.json'),
-      JSON.stringify({ experimental_features: { local_tools: true } })
-    );
     fs.writeFileSync(
       path.join(configDirectory, 'user_data.json'),
       JSON.stringify({
-        api_key: null,
+        api_key: 'test-api-key',
         base_url: 'https://backend.composio.dev',
         web_url: 'https://platform.composio.dev',
         org_id: null,
@@ -24,16 +20,7 @@ describe('CLI process error handling', () => {
 
     const result = spawnSync(
       'bun',
-      [
-        'run',
-        'src/bin.ts',
-        'execute',
-        'LOCAL_PEEKABOO_VERSION',
-        '--file',
-        '/tmp/does-not-matter',
-        '-d',
-        '{}',
-      ],
+      ['run', 'src/bin.ts', 'execute', 'GITHUB_GET_THE_AUTHENTICATED_USER', '-d', '[]'],
       {
         cwd: process.cwd(),
         encoding: 'utf8',
@@ -48,7 +35,7 @@ describe('CLI process error handling', () => {
 
     expect(result.status).toBe(1);
     expect(`${result.stdout}\n${result.stderr}`).toContain(
-      '--file is not supported for local tools yet.'
+      'Expected a JSON object for tool arguments'
     );
   });
 

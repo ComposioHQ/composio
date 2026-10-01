@@ -109,6 +109,25 @@ function previousManifest(): KbManifest {
 }
 
 describe('support-knowledge snapshot import', () => {
+  test('keeps a retired guide unpublished when its public source is refreshed', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-retired-'));
+    try {
+      writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+      const previous = previousManifest();
+      previous.guides[0]!.state = 'retired';
+      const snapshot = buildSupportKnowledgeSnapshot({
+        sourceRoot,
+        sourceCommit: 'updated-source',
+        previousManifest: previous,
+        now: new Date('2026-08-18T00:00:00Z'),
+      });
+
+      expect(snapshot.manifest.guides[0]?.state).toBe('retired');
+    } finally {
+      rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
   test('verifies the checkout repository and exact source commit', () => {
     const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-git-'));
     git(sourceRoot, 'init');

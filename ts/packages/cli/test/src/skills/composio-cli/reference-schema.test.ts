@@ -7,6 +7,5 @@ describe('composio-cli skill build context', () => {
     const build = resolveSkillBuildContext('stable');
 
     expect(build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LISTEN]).toBe(false);
-    expect(build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS]).toBe(false);
   });
 });
