@@ -111,8 +111,6 @@ overrides:
   # Drop when its lockfile resolution is >=6.16.0 without an override.
   'qs@<6.16.0': '>=6.16.0 <7'
   protobufjs: 7.6.5
-  # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
-  'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
   # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins
   # vulnerable 4.2.0; GHSA-2883-xcg3-v3hh raised the patched floor to 4.3.2.
   # Drop when it ships >=4.3.2.

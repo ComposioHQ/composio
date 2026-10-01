@@ -16,7 +16,6 @@ type APP_CONFIG = Config.Wrap<{
   WEBHOOK_SECRET: string | undefined;
   CLI_INVOCATION_ORIGIN: string | undefined;
   CLI_PARENT_RUN_ID: string | undefined;
-  RUN_ACP_ONLY: boolean;
   RUN_OUTPUT_DIR: string | undefined;
   PERF_DEBUG: boolean;
   TOOL_DEBUG: boolean;
@@ -24,7 +23,6 @@ type APP_CONFIG = Config.Wrap<{
 }>;
 
 type UNPREFIXED_CONFIG = Config.Wrap<{
-  CACHE_DIR: string | undefined;
   NPM_CONFIG_USER_AGENT: string | undefined;
   CI_REDACTION_ENABLED: boolean;
   INTERACTIVE_PERMISSION_UI_DISABLED: boolean;
@@ -173,7 +171,6 @@ export const APP_CONFIG = {
   // Internal context propagated between CLI processes
   CLI_INVOCATION_ORIGIN: optionalTrimmedString('CLI_INVOCATION_ORIGIN'),
   CLI_PARENT_RUN_ID: optionalTrimmedString('CLI_PARENT_RUN_ID'),
-  RUN_ACP_ONLY: booleanFlag('RUN_ACP_ONLY'),
   RUN_OUTPUT_DIR: optionalTrimmedString('RUN_OUTPUT_DIR'),
 
   // Runtime debug flags
@@ -194,9 +191,6 @@ export const APP_CONFIG = {
  * inspect raw environment strings.
  */
 export const UNPREFIXED_CONFIG = {
-  // The cache directory of the host tool driving the CLI (not `COMPOSIO_CACHE_DIR`)
-  CACHE_DIR: optionalTrimmedString('CACHE_DIR'),
-
   // The package manager that invoked the CLI, as reported by npm-compatible clients
   NPM_CONFIG_USER_AGENT: optionalString('npm_config_user_agent'),
 

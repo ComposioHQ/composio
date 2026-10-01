@@ -258,9 +258,9 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
-### Run scripts and sub-agents
+### Run scripts
 
-Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, data transformation, or LLM-assisted summarization. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `experimental_subAgent()`, `result.prompt()`, and `z` injected.
+Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
 
 Run a single scripted workflow:
 
@@ -284,30 +284,6 @@ const [emails, issues, events] = await Promise.all([
   execute("GOOGLECALENDAR_FIND_EVENT", { calendar_id: "primary" }),
 ]);
 console.log({ emails: emails.data, issues: issues.data, events: events.data });
-'
-```
-
-Ask a sub-agent to summarize tool output and return structured data:
-
-```bash
-composio run --logs-off '
-const [emails, issues] = await Promise.all([
-  execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),
-  execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),
-]);
-
-const brief = await experimental_subAgent(
-  `Create a morning brief from these emails and issues.\n\n${emails.prompt()}\n\n${issues.prompt()}`,
-  {
-    schema: z.object({
-      brief: z.string(),
-      urgentEmails: z.array(z.string()),
-      urgentIssues: z.array(z.string()),
-    }),
-  }
-);
-
-console.log(brief.structuredOutput);
 '
 ```
 

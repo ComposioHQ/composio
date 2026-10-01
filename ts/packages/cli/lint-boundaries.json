@@ -16,7 +16,7 @@
   "src/services/run-helpers-runtime.ts": [
     {
       "rule": "no-restricted-imports",
-      "reason": "sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime",
+      "reason": "sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime",
       "target": "import * as fs from 'node:fs';"
     }
   ],

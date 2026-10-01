@@ -1,24 +1,14 @@
 import { cliRequestHeaders } from './client-provenance';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
-// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
+// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/unstable/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
+import { Effect, Option, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
-import { JsonRecordSchema } from 'src/effects/json';
-import type { MasterKind } from 'src/services/master-detector';
-import {
-  isAcpInvokeError,
-  parseJson,
-  type HelperDebugLog,
-  type InvokeAgentNormalizedOptions,
-} from 'src/services/run-subagent-shared';
-import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
-import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
@@ -45,14 +35,10 @@ export type RunHelperContext = {
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
   readonly skipChecks?: boolean;
-  readonly master?: MasterKind;
   readonly debug?: boolean;
-  readonly acpOnly?: boolean;
   readonly logsOff?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
-  readonly readAccessRoots?: ReadonlyArray<string>;
-  readonly cliConfigPath?: string;
 };
 
 type RunHelpersInstallParams = {
@@ -62,15 +48,8 @@ type RunHelpersInstallParams = {
 
 type RunCliResult = unknown;
 
-const JsonObject = JsonRecordSchema;
-const ExperimentalSubagentConfig = Schema.Struct({
-  experimental_subagent: Schema.optional(
-    Schema.Struct({ target: Schema.optional(Schema.Unknown) })
-  ),
-});
-const decodeExperimentalSubagentConfig = Schema.decodeUnknownSync(
-  Schema.fromJsonString(ExperimentalSubagentConfig)
-);
+type HelperDebugLog = (step: string, details?: Record<string, unknown>) => void;
+
 const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
 const ProxyExecuteResponse = Schema.Struct({
   headers: Schema.optional(Schema.Record(Schema.String, Schema.String)),
@@ -79,48 +58,6 @@ const ProxyExecuteResponse = Schema.Struct({
   status: Schema.optional(Schema.Number),
 });
 type ProxyExecuteResponse = Schema.Schema.Type<typeof ProxyExecuteResponse>;
-
-const experimentalSubAgentSchema = {
-  type: 'function',
-  description:
-    'Experimental helper: prompt a sub-agent from the same agent family as the current main agent (Codex -> Codex, Claude -> Claude) and return its final response.',
-  parameters: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['prompt'],
-    properties: {
-      prompt: { type: 'string', description: 'The prompt to send to the agent CLI.' },
-      target: {
-        type: 'string',
-        enum: ['claude', 'codex', 'user'],
-        description: 'Optional master override. Defaults to the detected current master.',
-      },
-      model: {
-        type: 'string',
-        description: 'Optional model override passed through to the agent CLI.',
-      },
-      schema: {
-        description:
-          'Optional structured-output schema. Accepts a Zod schema or raw JSON Schema object.',
-      },
-      jsonSchema: {
-        description: 'Optional JSON Schema requesting structured output from the agent.',
-      },
-    },
-  },
-  returns: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['master', 'target', 'result'],
-    properties: {
-      master: { type: 'string', enum: ['claude', 'codex', 'user'] },
-      target: { type: 'string', enum: ['claude', 'codex'] },
-      result: { description: 'Final plain-text result when available.' },
-      structuredOutput: { description: 'Structured output when jsonSchema was requested.' },
-      logFilePath: { description: 'Path to the local run log file for helper execution details.' },
-    },
-  },
-};
 
 const proxySchema = {
   type: 'function',
@@ -152,6 +89,16 @@ const proxySchema = {
   },
 };
 
+const REMOVED_SUB_AGENT_MESSAGE =
+  'experimental_subAgent() was removed from composio run. To keep using it, install an older CLI version with the installer: curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=<version> sh';
+
+// Rejects instead of throwing synchronously: the removed helper always returned a
+// promise, so scripts that handle its failure with `.catch` or `Promise.allSettled`
+// keep doing so.
+const removedSubAgent = async (): Promise<never> => {
+  throw new Error(REMOVED_SUB_AGENT_MESSAGE);
+};
+
 const encodeBase64 = (bytes: Uint8Array): string => {
   let binary = '';
   for (const byte of bytes) {
@@ -163,6 +110,22 @@ const encodeBase64 = (bytes: Uint8Array): string => {
 // ---------------------------------------------------------------------------
 // Pure helpers — no run-context captures, hoisted to module scope
 // ---------------------------------------------------------------------------
+
+/**
+ * Sync JSON probe for the non-Effect child-process runtime; `Option` is pure
+ * data from the already-bundled `effect` package, so it is safe there.
+ */
+const parseJsonOption = (text: string): Option.Option<unknown> =>
+  Option.liftThrowable((s: string): unknown => JSON.parse(s))(text);
+
+export const parseJson = (text: string): unknown => {
+  const value = text.trim();
+  if (!value) {
+    return undefined;
+  }
+  // Non-JSON output is returned verbatim by design.
+  return Option.getOrElse(parseJsonOption(value), (): unknown => value);
+};
 
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
@@ -191,58 +154,6 @@ const previewDebugValue = (value: unknown): string => {
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
   switch (step) {
-    case 'subAgent.target':
-      return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;
-    case 'subAgent.acp.resolve':
-      return `[experimental_subAgent] ACP via ${details.source} (${details.target})`;
-    case 'subAgent.acp.initialized':
-      return `[experimental_subAgent] ACP initialized (${details.target})`;
-    case 'subAgent.acp.session':
-      return `[experimental_subAgent] session ready (${details.target})`;
-    case 'subAgent.acp.model':
-      return details.applied === true
-        ? `[experimental_subAgent] model=${details.model}`
-        : `[experimental_subAgent] model unchanged (${details.model})`;
-    case 'subAgent.acp.message': {
-      const text = previewDebugValue(details.text);
-      return text ? `[experimental_subAgent] ${text}` : null;
-    }
-    case 'subAgent.acp.thought': {
-      const text = previewDebugValue(details.text);
-      return text ? `[experimental_subAgent:thinking] ${text}` : null;
-    }
-    case 'subAgent.acp.tool_call': {
-      const locations = Array.isArray(details.locations) ? details.locations : [];
-      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-      return `[experimental_subAgent:tool] ${details.status || 'pending'} ${
-        details.title || details.kind || 'tool'
-      }${where}`;
-    }
-    case 'subAgent.acp.tool_call_update': {
-      const locations = Array.isArray(details.locations) ? details.locations : [];
-      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-      const preview = previewDebugValue(details.rawOutput);
-      return `[experimental_subAgent:tool] ${details.status || 'update'} ${
-        details.title || details.toolCallId || details.kind || 'tool'
-      }${where}${preview ? ` -> ${preview}` : ''}`;
-    }
-    case 'subAgent.acp.plan': {
-      const entries = Array.isArray(details.entries)
-        ? details.entries.filter(Predicate.isObject)
-        : [];
-      if (entries.length === 0) return '[experimental_subAgent:plan] updated';
-      const summary = entries
-        .slice(0, 3)
-        .map(entry => {
-          const status = typeof entry.status === 'string' ? entry.status : 'pending';
-          const content = typeof entry.content === 'string' ? entry.content : '';
-          return `${status}:${truncateDebugText(content, 48)}`;
-        })
-        .join(' | ');
-      return `[experimental_subAgent:plan] ${summary}`;
-    }
-    case 'subAgent.acp.fallback':
-      return `[experimental_subAgent] ACP fallback (${details.code})`;
     case 'execute.prepare':
       return `[execute] ${details.slug}`;
     case 'search.prepare':
@@ -324,73 +235,6 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
   if (typeof result.error === 'string' && result.error.trim().length > 0)
     return result.error.trim();
   return result;
-};
-
-const readConfiguredExperimentalSubagentTarget = (
-  cliConfigPath: string | undefined
-): 'auto' | 'claude' | 'codex' => {
-  if (!cliConfigPath) return 'auto';
-
-  return Result.getOrElse(
-    Result.try(() => {
-      const raw = fs.readFileSync(cliConfigPath, 'utf8');
-      const parsed = decodeExperimentalSubagentConfig(raw);
-      const target = parsed.experimental_subagent?.target;
-      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-    }),
-    () => 'auto' as const
-  );
-};
-
-const normalizeInvokeAgentOptions = (
-  options: Record<string, unknown> = {}
-): InvokeAgentNormalizedOptions => {
-  if (options == null || typeof options !== 'object' || Array.isArray(options)) {
-    throw new Error('experimental_subAgent() options must be an object when provided.');
-  }
-  if (options.schema !== undefined && options.jsonSchema !== undefined) {
-    throw new Error(
-      'experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.'
-    );
-  }
-  const requestedTarget = options.target;
-  if (
-    requestedTarget !== undefined &&
-    requestedTarget !== 'claude' &&
-    requestedTarget !== 'codex' &&
-    requestedTarget !== 'user'
-  ) {
-    throw new Error(
-      'experimental_subAgent() target must be "claude", "codex", or "user" when provided.'
-    );
-  }
-  const inputSchema = options.schema ?? options.jsonSchema;
-  let structuredSchema: Record<string, unknown> | undefined;
-  let zodSchema: z.ZodType | undefined;
-  if (inputSchema !== undefined) {
-    if (inputSchema instanceof z.ZodType) {
-      if (typeof z.toJSONSchema !== 'function') {
-        throw new Error(
-          'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
-        );
-      }
-      zodSchema = inputSchema;
-      const generatedSchema = z.toJSONSchema(inputSchema);
-      structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
-    } else if (Predicate.isObject(inputSchema)) {
-      structuredSchema = inputSchema;
-    } else {
-      throw new Error('experimental_subAgent() schema must be a Zod schema or JSON Schema object.');
-    }
-  }
-  return {
-    ...(requestedTarget === undefined ? {} : { target: requestedTarget }),
-    ...(typeof options.model === 'string' ? { model: options.model } : {}),
-    ...(options.schema === undefined ? {} : { schema: options.schema }),
-    ...(options.jsonSchema === undefined ? {} : { jsonSchema: options.jsonSchema }),
-    ...(structuredSchema === undefined ? {} : { structuredSchema }),
-    ...(zodSchema === undefined ? {} : { zodSchema }),
-  };
 };
 
 const normalizeProxyToolkit = (toolkit: string) => {
@@ -503,18 +347,14 @@ const createRunHelperLoggers = (params: {
     writeError(`[perf] ${JSON.stringify(payload)}`);
   };
 
-  const shouldStreamHelperLog = (step: string, formattedLine: string | null): boolean => {
-    if (helperContext.logsOff === true) return false;
-    if (helperContext.debug === true) return true;
-    return formattedLine !== null && (step.startsWith('subAgent.') || step.startsWith('agent.'));
-  };
+  const streamHelperLogs = helperContext.logsOff !== true && helperContext.debug === true;
 
   const helperDebugLog: HelperDebugLog = (step, details = {}) => {
     const formattedLine = formatHelperDebugEvent(step, details);
     const elapsedMs = Date.now() - perfDebugStart;
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
     appendRunLogLine(line);
-    if (shouldStreamHelperLog(step, formattedLine)) {
+    if (streamHelperLogs) {
       writeError(line);
     }
   };
@@ -647,7 +487,6 @@ const createCliRunner = (params: {
     ...debugFlagsToChildEnv({
       perfDebug: perfDebugEnabled,
       toolDebug: toolDebugEnabled,
-      acpOnly: helperContext.acpOnly === true,
       telemetryDebug: helperContext.telemetryDebug === true,
     }),
   };
@@ -800,95 +639,6 @@ const createSearchAndExecuteHelpers = (params: {
   };
 
   return { search, execute };
-};
-
-const createExperimentalSubAgent = (params: {
-  readonly helperContext: RunHelperContext;
-  readonly helperDebugLog: HelperDebugLog;
-}) => {
-  const { helperContext, helperDebugLog } = params;
-
-  // The parent CLI resolves the master via `detectMasterFromHost` and serializes
-  // it into `helperContext` (see run.cmd.ts), so a missing or unrecognized value
-  // deliberately falls back to 'user' instead of re-detecting from this child
-  // process's environment.
-  const detectInvokeAgentMaster = (): MasterKind | 'user' => {
-    if (
-      helperContext.master === 'claude' ||
-      helperContext.master === 'codex' ||
-      helperContext.master === 'user'
-    ) {
-      return helperContext.master;
-    }
-    return 'user';
-  };
-
-  const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
-    if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget(helperContext.cliConfigPath);
-    if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
-    const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
-    if (detected === 'codex' || detected === 'claude') return detected;
-    if (typeof Bun.which === 'function' && Bun.which('codex')) return 'codex';
-    if (typeof Bun.which === 'function' && Bun.which('claude')) return 'claude';
-    throw new Error(
-      'experimental_subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: "codex" | "claude" }.'
-    );
-  };
-
-  const experimentalSubAgentImpl = async (
-    prompt: string,
-    options: Record<string, unknown> = {}
-  ) => {
-    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
-      throw new Error('experimental_subAgent() requires a non-empty prompt string.');
-    }
-    const logFilePath =
-      typeof helperContext.runLogFilePath === 'string' && helperContext.runLogFilePath.length > 0
-        ? helperContext.runLogFilePath
-        : undefined;
-    const normalizedOptions = normalizeInvokeAgentOptions(options);
-    const target = resolveInvokeAgentTarget(normalizedOptions.target);
-    const master = detectInvokeAgentMaster();
-    helperDebugLog('subAgent.target', {
-      requestedTarget: normalizedOptions.target ?? null,
-      resolvedTarget: target,
-      master,
-    });
-    const response = await invokeAcpSubAgent({
-      prompt: prompt.trim(),
-      options: normalizedOptions,
-      master,
-      target,
-      allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-        ? helperContext.readAccessRoots
-        : [],
-      helperDebugLog,
-    }).catch(error => {
-      // Only ACP protocol failures fall back to the legacy sub-agent. A damaged
-      // install (MissingAcpAdapterAssetsError) is not one of them: its message
-      // names the repair, and swapping in a different sub-agent implementation
-      // would hide the fact that the install needs fixing.
-      if (!isAcpInvokeError(error)) throw error;
-      if (helperContext.acpOnly === true) throw error;
-      helperDebugLog('subAgent.acp.fallback', {
-        target,
-        code: error.code,
-        message: error.message,
-      });
-      return invokeLegacySubAgent({
-        prompt: prompt.trim(),
-        options: normalizedOptions,
-        master,
-        target,
-        helperDebugLog,
-      });
-    });
-    return logFilePath ? { ...response, logFilePath } : response;
-  };
-
-  Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
-  return experimentalSubAgentImpl;
 };
 
 const createProxyHelper = (params: {
@@ -1068,9 +818,8 @@ export const installRunHelpers = async ({
     helperDebugLog,
   });
 
-  const experimentalSubAgentImpl = createExperimentalSubAgent({ helperContext, helperDebugLog });
-  Reflect.set(globalThis, 'experimental_subAgent', experimentalSubAgentImpl);
-  Reflect.set(globalThis, 'invokeAgent', experimentalSubAgentImpl);
+  Reflect.set(globalThis, 'experimental_subAgent', removedSubAgent);
+  Reflect.set(globalThis, 'invokeAgent', removedSubAgent);
 
   const proxy = createProxyHelper({ helperContext, composioBaseURL, helperDebugLog });
 

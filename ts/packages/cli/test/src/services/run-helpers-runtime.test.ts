@@ -1,6 +1,6 @@
 import { Predicate } from 'effect';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installRunHelpers } from 'src/services/run-helpers-runtime';
+import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
 
 const installedGlobalNames = [
   'z',
@@ -17,6 +17,30 @@ const originalGlobalDescriptors = new Map(
   installedGlobalNames.map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)])
 );
 
+const readInstalledFunction = (name: string): ((...args: ReadonlyArray<unknown>) => unknown) => {
+  const value: unknown = Reflect.get(globalThis, name);
+  if (typeof value !== 'function') {
+    throw new Error(`installRunHelpers() did not install ${name}().`);
+  }
+  return (...args) => Reflect.apply(value, undefined, [...args]);
+};
+
+describe('parseJson', () => {
+  it('[Given] blank text [Then] returns undefined', () => {
+    expect(parseJson('   ')).toBeUndefined();
+  });
+
+  it('[Given] valid JSON [Then] returns the parsed value', () => {
+    expect(parseJson(' {"a": 1} ')).toEqual({ a: 1 });
+    expect(parseJson('[1, 2, 3]')).toEqual([1, 2, 3]);
+    expect(parseJson('null')).toBeNull();
+  });
+
+  it('[Given] non-JSON text [Then] returns the trimmed text verbatim', () => {
+    expect(parseJson('  not json at all  ')).toBe('not json at all');
+  });
+});
+
 describe('run-helpers-runtime', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -27,6 +51,46 @@ describe('run-helpers-runtime', () => {
       } else {
         Reflect.deleteProperty(globalThis, name);
       }
+    }
+  });
+
+  it('[Given] installed helpers [Then] every documented global is defined', async () => {
+    await installRunHelpers({ cliPrefix: ['composio'] });
+
+    for (const name of ['execute', 'search', 'proxy', 'experimental_subAgent', 'invokeAgent']) {
+      expect(typeof Reflect.get(globalThis, name)).toBe('function');
+    }
+    expect(Reflect.get(globalThis, 'z')).toBeDefined();
+    expect(Reflect.get(globalThis, 'zod')).toBe(Reflect.get(globalThis, 'z'));
+  });
+
+  it('[Given] experimental_subAgent or invokeAgent [Then] both reject with the same removal message naming the installer', async () => {
+    await installRunHelpers({ cliPrefix: ['composio'] });
+
+    const outcomes = await Promise.allSettled([
+      readInstalledFunction('experimental_subAgent')('p'),
+      readInstalledFunction('invokeAgent')('p'),
+    ]);
+
+    const messages = outcomes.map(outcome =>
+      outcome.status === 'rejected' && outcome.reason instanceof Error
+        ? outcome.reason.message
+        : undefined
+    );
+    expect(outcomes.map(outcome => outcome.status)).toEqual(['rejected', 'rejected']);
+    expect(messages[0]).toContain('removed');
+    expect(messages[0]).toContain('https://composio.dev/install');
+    expect(messages[1]).toBe(messages[0]);
+  });
+
+  it('[Given] any arguments, including none [Then] experimental_subAgent rejects instead of throwing', async () => {
+    await installRunHelpers({ cliPrefix: ['composio'] });
+    const subAgent = readInstalledFunction('experimental_subAgent');
+
+    for (const args of [[], ['p', { target: 'codex' }], [42, null, 'extra']]) {
+      const returned = subAgent(...args);
+      expect(returned).toBeInstanceOf(Promise);
+      await expect(returned).rejects.toThrow(/removed/);
     }
   });
 
@@ -173,7 +237,6 @@ describe('run-helpers-runtime', () => {
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
     vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
-    vi.stubEnv('COMPOSIO_RUN_ACP_ONLY', '1');
     vi.stubEnv('BUN_BE_BUN', '1');
 
     const childScript = [
@@ -183,7 +246,6 @@ describe('run-helpers-runtime', () => {
       '    sentinel: process.env.COMPOSIO_RUN_ENV_SENTINEL,',
       '    perfDebug: process.env.COMPOSIO_PERF_DEBUG,',
       '    toolDebug: process.env.COMPOSIO_TOOL_DEBUG,',
-      '    acpOnly: process.env.COMPOSIO_RUN_ACP_ONLY,',
       '    bunBeBun: process.env.BUN_BE_BUN,',
       '  },',
       '}));',
@@ -191,7 +253,7 @@ describe('run-helpers-runtime', () => {
 
     await installRunHelpers({
       cliPrefix: [process.execPath, '-e', childScript],
-      helperContext: { perfDebug: false, toolDebug: false, acpOnly: false },
+      helperContext: { perfDebug: false, toolDebug: false },
     });
 
     const installedGlobals: unknown = globalThis;
@@ -209,7 +271,6 @@ describe('run-helpers-runtime', () => {
         sentinel: 'forwarded',
         perfDebug: '0',
         toolDebug: '0',
-        acpOnly: '0',
         bunBeBun: '',
       },
     });
