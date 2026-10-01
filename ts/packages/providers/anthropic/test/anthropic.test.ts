@@ -176,6 +176,40 @@ describe('AnthropicProvider', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
     });
+
+    it('should place a single cache_control breakpoint on the last tool when caching is enabled', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+        { ...mockTool, slug: 'tool-c' },
+      ];
+
+      const wrapped = cachingProvider.wrapTools(tools);
+
+      expect(wrapped[0].cache_control).toBeUndefined();
+      expect(wrapped[1].cache_control).toBeUndefined();
+      expect(wrapped[2].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should still cache a single-tool batch', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+
+      const wrapped = cachingProvider.wrapTools([mockTool]);
+
+      expect(wrapped[0].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should omit cache_control from every tool when caching is disabled', () => {
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+      ];
+
+      const wrapped = provider.wrapTools(tools);
+
+      expect(wrapped.every(tool => tool.cache_control === undefined)).toBe(true);
+    });
   });
 
   describe('executeToolCall', () => {
