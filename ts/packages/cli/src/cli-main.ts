@@ -56,7 +56,7 @@ import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { MissingRunSourceError } from 'src/commands/run.cmd';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
-import { splitRunPassthroughArgs } from 'src/commands/argv-compat';
+import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -337,7 +337,7 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {
-  const debug = readTelemetryDebugOverride(splitRunPassthroughArgs(options.argv).argv);
+  const debug = readTelemetryDebugOverride(normalizeRunScriptArgs(options.argv));
   cliProgram(options.argv).pipe(
     effect =>
       debug === undefined ? effect : Effect.provide(effect, telemetryDebugModeLayer(debug)),

@@ -10,7 +10,7 @@ import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import { RunPassthroughArgs, runCmd } from './run.cmd';
+import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
@@ -40,7 +40,7 @@ import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
 import { withBackgroundUpdateCheck } from './background-update-check';
 import { debugCmd } from './debug.cmd';
-import { normalizeListenStreamFlag, splitRunPassthroughArgs } from './argv-compat';
+import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 
 const ROOT_COMMANDS = [
@@ -134,16 +134,16 @@ export const runWithConfig = Effect.gen(function* () {
   const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h', '--version', '-v']);
 
   const runCli = (args: ReadonlyArray<string>) =>
-    args.length === 0 || args.some(arg => EXPLICIT_STDOUT_FLAGS.has(arg))
+    args.length === 0 ||
+    Arr.takeWhile(args, arg => arg !== '--').some(arg => EXPLICIT_STDOUT_FLAGS.has(arg))
       ? run(args)
       : runWithDecorationOnStderr(args);
 
   return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
-    const { argv: parsedArgv, tail } = splitRunPassthroughArgs(normalizeListenStreamFlag(argv));
+    const parsedArgv = normalizeRunScriptArgs(normalizeListenStreamFlag(argv));
     return runCli(parsedArgv.slice(2)).pipe(
       Effect.provideService(ExecuteInvocationArgs, parsedArgv.slice(2)),
-      Effect.provide(Layer.merge(cliDebugFlagsLayer(), cliRunIdLayer(bootstrap.runId))),
-      Effect.provideService(RunPassthroughArgs, tail)
+      Effect.provide(Layer.merge(cliDebugFlagsLayer(), cliRunIdLayer(bootstrap.runId)))
     );
   };
 });

@@ -485,32 +485,36 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.effect('forwards hidden flags after the script without enabling them in the CLI', () =>
-      Effect.gen(function* () {
-        yield* cli([
-          '--perf-debug=false',
-          'run',
-          'console.log("hi")',
-          '--perf-debug',
-          '--tool-debug',
-          '--acp-only',
-          '--telemetry-debug',
-        ]);
-        const spawned = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-        expect(spawned.cmd.slice(5)).toEqual([
-          '--',
-          '--perf-debug',
-          '--tool-debug',
-          '--acp-only',
-          '--telemetry-debug',
-        ]);
-        expect(spawned.env).toMatchObject({
-          COMPOSIO_PERF_DEBUG: '0',
-          COMPOSIO_TOOL_DEBUG: '0',
-          COMPOSIO_RUN_ACP_ONLY: '0',
-          COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
-        });
-      })
+    it.effect(
+      'forwards script flags with or without a delimiter without enabling them in the CLI',
+      () =>
+        Effect.gen(function* () {
+          const script = 'console.log("hi")';
+          const tail = [
+            '--perf-debug',
+            '--tool-debug',
+            '--acp-only',
+            '--telemetry-debug',
+            '--help',
+            '--version',
+          ];
+          for (const args of [
+            [script, ...tail],
+            [script, '--', ...tail],
+            ['--', script, ...tail],
+          ]) {
+            yield* cli(['--perf-debug=false', 'run', ...args]);
+            const spawned = inspectRunCommand(commandRuns.mock.calls.at(-1)![0]);
+            expect(spawned.cmd.slice(5)).toEqual(['--', ...tail]);
+            expect(spawned.env).toMatchObject({
+              COMPOSIO_PERF_DEBUG: '0',
+              COMPOSIO_TOOL_DEBUG: '0',
+              COMPOSIO_RUN_ACP_ONLY: '0',
+              COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
+            });
+          }
+          expect(commandRuns).toHaveBeenCalledTimes(3);
+        })
     );
   });
 
@@ -536,9 +540,6 @@ describe('CLI: composio run', () => {
       '[Given] a script arg literally starting with the old escape-marker string [Then] it reaches the script untouched',
       () =>
         Effect.gen(function* () {
-          // The passthrough tail is now handed off out-of-band instead of being
-          // smuggled through the parser with a marker string, so a user token
-          // that happens to look like the old marker is never mangled.
           yield* cli(['run', 'console.log("hi")', '@@composio-run-raw@@literal']);
 
           expect(commandRuns).toHaveBeenCalledTimes(1);

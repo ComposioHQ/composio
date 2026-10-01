@@ -3,7 +3,7 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
-import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
+import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
@@ -105,20 +105,6 @@ const args = Argument.String('arg').pipe(
 );
 
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
-
-/**
- * Out-of-band passthrough tail for `run`'s script arguments. See
- * `splitRunPassthroughArgs` in `src/commands/argv-compat.ts` for the full
- * mechanism this exists for (lexer/parser facts + the handoff); that
- * function provides this reference for the scope of a single CLI
- * invocation. `undefined` here means no front door provided it (direct
- * programmatic/test invocations of this command), so the handler below
- * falls back to the parsed `Argument.variadic()` value.
- */
-export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | undefined>(
-  'composio/cli/run/RunPassthroughArgs',
-  { defaultValue: () => undefined }
-);
 
 /**
  * The source rewrites need the TypeScript compiler, which ships in the
@@ -527,11 +513,9 @@ export const runCmd = Command.make('run', {
       skipConnectionCheck,
       skipToolParamsCheck,
       skipChecks,
-      args: rawArgs,
+      args,
     }) =>
       Effect.gen(function* () {
-        const passthroughTail = yield* RunPassthroughArgs;
-        const args = passthroughTail ?? rawArgs;
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
         if (Option.isNone(file) && !args[0]) {

@@ -14,7 +14,7 @@ The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-ori
 
 ### Entry Point — `src/bin.ts` / `src/cli-main.ts`
 
-`bin.ts` is a thin bootstrap: it strips the internal `--telemetry-debug` flag, routes background-worker invocations (analytics dispatch) through a minimal layer set, and otherwise dynamically imports `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/unstable/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
+`bin.ts` is a thin bootstrap: it routes background-worker invocations (analytics dispatch) through a minimal layer set and otherwise passes argv unchanged to the dynamically imported `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/unstable/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
 
 - `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [Help, GlobalFlag.Version]` (see Configuration below); a small `CliOutput.Formatter` keeps versions bare and appends a short root overview; Effect generates command help and parse errors
 - `ComposioUserContextLive` — User authentication state from `~/.composio/`
@@ -103,7 +103,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Configuration
 
-- CLI: `cli-config.ts` enables help and version global actions. `commands/root-help.ts` derives the native `help` command tree and delegates documents to Effect. The formatter keeps version output bare and appends a short root overview. Hidden debug settings use `Flag.withHidden`; the diagnostic group uses `Command.unlisted` (the pinned framework's hidden-command API). `commands/argv-compat.ts` holds the two syntax adapters Effect cannot express: optional `listen --stream` values and `run` script passthrough. Never strip flags from the script tail. `setup skill` installs agent skills; `--dangerously-allow` is local to `dev triggers disable`.
+- CLI: `cli-config.ts` enables help and version global actions. `commands/root-help.ts` derives the native `help` command tree and delegates documents to Effect. The formatter keeps version output bare and appends a short root overview. Hidden debug settings use `Flag.withHidden`; the diagnostic group uses `Command.unlisted` (the pinned framework's hidden-command API). `commands/argv-compat.ts` preserves optional `listen --stream` values and inserts the native `--` boundary for legacy undelimited `run` script arguments. Effect parses the script tail through `Argument.variadic`; never strip its flags. `setup skill` installs agent skills; `--dangerously-allow` is local to `dev triggers disable`.
 - Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
 - User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`
