@@ -84,7 +84,6 @@ The CLI and its installer use these variables to coordinate nested commands. The
 | ------------------------------ | -------------------------------------------------------------------------- | ------- |
 | COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it | cli     |
 | COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                      | None    |
-| COMPOSIO_RUN_ACP_ONLY          | Set to `1` to disable the legacy sub-agent fallback                        | 0       |
 | COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands        | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
