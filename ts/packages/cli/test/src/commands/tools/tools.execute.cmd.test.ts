@@ -18,7 +18,6 @@ import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import {
   parseParallelExecuteArgs,
-  showToolsExecuteInputHelp,
   type ParallelExecuteArgumentError,
 } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -1414,8 +1413,11 @@ describe('CLI: composio execute', () => {
     it.effect('aggregates results from multiple tool calls', () =>
       Effect.gen(function* () {
         yield* cli([
+          '--tool-debug=false',
           'execute',
           '--parallel',
+          '--log-level',
+          'Info',
           '--skip-checks',
           'GMAIL_SEND_EMAIL',
           '-d',
@@ -2292,51 +2294,6 @@ describe('CLI: composio execute', () => {
       } satisfies TestLiveInput['toolkitsData'],
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] execute-help helper [Then] prints input parameters only', it => {
-    it.effect('prints execute input schema help for the provided slug', () =>
-      Effect.gen(function* () {
-        yield* showToolsExecuteInputHelp('GMAIL_SEND_EMAIL');
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('Data Parameters:');
-        expect(output).toContain('recipient');
-        expect(output).toContain('subject');
-        expect(output).not.toContain('Output Parameters:');
-      })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      toolkitsData: {
-        tools: [
-          {
-            name: 'Send Email',
-            slug: 'GMAIL_SEND_EMAIL',
-            description: 'Send an email',
-            tags: ['email'],
-            available_versions: ['20260101_00'],
-            input_parameters: {
-              type: 'object',
-              required: ['recipient'],
-              properties: {
-                recipient: { type: 'string', description: 'Recipient email' },
-                subject: { type: 'string', description: 'Subject line' },
-              },
-            },
-            output_parameters: {
-              type: 'object',
-              properties: {
-                message_id: { type: 'string' },
-              },
-            },
-          },
-        ],
-      } satisfies TestLiveInput['toolkitsData'],
-      stdin: { isTTY: true, data: '' },
-    })
   )('[Given] execute --help with a slug [Then] it shows command help', it => {
     it.effect('shows the root execute help text', () =>
       Effect.gen(function* () {
@@ -2345,12 +2302,12 @@ describe('CLI: composio execute', () => {
         const output = lines.join('\n');
 
         expect(output).toContain('USAGE');
-        expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--account selector] [--file path] [--dry-run] [--get-schema] [--parallel]'
-        );
+        expect(output).toContain('composio execute');
+        expect(output).toContain('--get-schema');
+        expect(output).not.toContain('Fetching input parameters');
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
         expect(output).toContain('--parallel');
-        expect(output).toContain('--account <selector>');
+        expect(output).toContain('--account');
         expect(output).toContain('GITHUB_CREATE_AN_ISSUE');
       })
     );

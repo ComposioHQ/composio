@@ -485,6 +485,36 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
+    it.effect('forwards hidden flags after the script without enabling them in the CLI', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          '--perf-debug=false',
+          'run',
+          'console.log("hi")',
+          '--perf-debug',
+          '--tool-debug',
+          '--acp-only',
+          '--telemetry-debug',
+        ]);
+        const spawned = inspectRunCommand(commandRuns.mock.calls[0]![0]);
+        expect(spawned.cmd.slice(5)).toEqual([
+          '--',
+          '--perf-debug',
+          '--tool-debug',
+          '--acp-only',
+          '--telemetry-debug',
+        ]);
+        expect(spawned.env).toMatchObject({
+          COMPOSIO_PERF_DEBUG: '0',
+          COMPOSIO_TOOL_DEBUG: '0',
+          COMPOSIO_RUN_ACP_ONLY: '0',
+          COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
+        });
+      })
+    );
+  });
+
+  layer(RunTestLive())(it => {
     it.effect(
       '[Given] a second literal -- in passthrough args [Then] it is forwarded to the script',
       () =>
@@ -536,8 +566,8 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--logs-off');
           expect(output).toContain('experimental_subAgent');
           expect(output).toContain('schema: z.object');
-          expect(output).toContain('INJECTED HELPERS');
-          expect(output).toContain('Global from zod');
+          expect(output).toContain('Injected helpers');
+          expect(output).toContain('Injected global from `zod`');
           expect(output).toContain('composio search "<query>"');
           expect(output).toContain('composio execute <slug> --get-schema');
           expect(output).not.toContain('--acp-only');

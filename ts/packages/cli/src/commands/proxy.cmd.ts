@@ -266,21 +266,21 @@ export const proxyCmd = Command.make('proxy', {
   skipConnectionCheck,
 }).pipe(
   Command.withDescription(
-    [
-      'curl-like access to any toolkit API through Composio using your connected account.',
-      'Composio handles authentication — just provide the full URL and toolkit.',
-      '',
-      'Examples:',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
-      `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
-      `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
-      '',
-      'See also:',
-      '  composio link <toolkit>                   Connect an account before calling proxy',
-      '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
-    ].join('\n')
+    'curl-like access to any toolkit API through Composio using your connected account.\nComposio handles authentication — just provide the full URL and toolkit.'
   ),
+  Command.withShortDescription(
+    'curl-like access to any toolkit API through Composio using your connected account.'
+  ),
+  Command.withExamples([
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
+    },
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\\n  -X POST -H \'content-type: application/json\' -d \'{"message":{"raw":"..."}}\'',
+    },
+  ]),
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;

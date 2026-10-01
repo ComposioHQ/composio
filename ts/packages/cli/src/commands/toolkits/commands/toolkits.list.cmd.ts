@@ -203,4 +203,7 @@ export const toolkitsCmd$List = Command.make(
         })
       )
     )
-).pipe(Command.withDescription('List available toolkits with connection status.'));
+).pipe(
+  Command.withDescription('List available toolkits with connection status.'),
+  Command.withExamples([{ command: 'composio dev toolkits list' }])
+);

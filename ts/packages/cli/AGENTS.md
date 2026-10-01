@@ -16,7 +16,7 @@ The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-ori
 
 `bin.ts` is a thin bootstrap: it strips the internal `--telemetry-debug` flag, routes background-worker invocations (analytics dispatch) through a minimal layer set, and otherwise dynamically imports `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/unstable/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
 
-- `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [GlobalFlag.Help]` (see Configuration below); the only `CliConfig` customization Composio makes — no custom `CliOutput.Formatter` is provided, so `Command.runWith` renders help and parse errors with v4's own defaults
+- `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [Help, GlobalFlag.Version]` (see Configuration below); a small `CliOutput.Formatter` keeps versions bare and appends a short root overview; Effect generates command help and parse errors
 - `ComposioUserContextLive` — User authentication state from `~/.composio/`
 - `ComposioSessionRepositoryLive` — OAuth2 session management
 - `ComposioToolkitsRepositoryCachedLive` — Cached API client for toolkits/tools
@@ -103,7 +103,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Configuration
 
-- CLI: `cli-config.ts` defines `ComposioCliConfig` (`builtIns: [GlobalFlag.Help]`, `effect/unstable/cli`'s `CliConfig.Service` shrank to just that one field in v4) — the only `CliConfig` customization Composio makes, wired into `cli-main.ts`'s layer stack as `CliConfigLive`. v3's `autoCorrectLimit`/`isCaseSensitive` have no v4 config equivalent, and neither is reproduced anymore: "Did you mean?" suggestions on `UnrecognizedOption`/`UnknownSubcommand` now render as v4's parser always computes them (no config knob exists to disable them, and Composio wants them), and v4's parser performs no case-folding at all, so case-sensitivity needs no knob. `cli-main.ts` provides no custom `CliOutput.Formatter` — `Command.runWith` uses v4's own `CliOutput.defaultFormatter()`. `GlobalFlag.Version` is deliberately not enabled: `composio --version`, `composio -v`, and the `composio version` command all print the same bare `pkg.version` via `ui.output()`, because `src/commands/index.ts` rewrites the flag spellings to the `version` command before parsing (`normalizeVersionFlag`).
+- CLI: `cli-config.ts` enables help and version global actions. `commands/root-help.ts` derives the native `help` command tree and delegates documents to Effect. The formatter keeps version output bare and appends a short root overview. Hidden debug settings use `Flag.withHidden`; the diagnostic group uses `Command.unlisted` (the pinned framework's hidden-command API). `commands/argv-compat.ts` holds the two syntax adapters Effect cannot express: optional `listen --stream` values and `run` script passthrough. Never strip flags from the script tail. `setup skill` installs agent skills; `--dangerously-allow` is local to `dev triggers disable`.
 - Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
 - User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`
