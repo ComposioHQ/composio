@@ -6,7 +6,6 @@ import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
-import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
@@ -19,7 +18,6 @@ import {
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
-import { detectMasterFromHost } from 'src/services/master-detector';
 import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
@@ -29,10 +27,7 @@ import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
-import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { loadHostConfig } from 'src/services/config';
-import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
 const RUN_FLAG_NAMES = {
@@ -192,28 +187,11 @@ const createRunHelpersPreloadFile = (
         ? context.runOutputDir
         : yield* fs.makeTempDirectory({ directory: os.tmpdir, prefix: 'composio-run-artifacts-' });
     const runLogFilePath = path.join(runOutputDir, 'run.log');
-    const readAccessRoots = [
-      ...new Set(
-        [
-          ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
-          runOutputDir,
-        ].map(value => path.resolve(value))
-      ),
-    ];
     yield* fs.makeDirectory(runOutputDir, { recursive: true });
     yield* fs.writeFileString(runLogFilePath, '');
     yield* fs.writeFileString(
       preloadPath,
-      buildRunHelpersSource(
-        cliPrefix,
-        {
-          ...context,
-          runOutputDir,
-          runLogFilePath,
-          readAccessRoots,
-        },
-        moduleUrls
-      )
+      buildRunHelpersSource(cliPrefix, { ...context, runOutputDir, runLogFilePath }, moduleUrls)
     );
     return { directory, preloadPath, runOutputDir, runLogFilePath };
   });
@@ -293,29 +271,14 @@ export const buildRunCommand = ({
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const os = yield* NodeOs;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
-    const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
-    // Honors the same COMPOSIO_CACHE_DIR-then-CACHE_DIR precedence the spawned
-    // run-helpers child applies when locating its cache, so the sandbox read
-    // roots below always include the directory the child actually uses.
-    const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
-    const hostCacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
-    const configuredCacheDir = composioCacheDir || hostCacheDir || defaultComposioDir;
-    const baseReadAccessRoots = [
-      ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
-    ];
-
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
       webURL: userContext.data.webURL,
       orgId,
-      cliConfigPath: yield* resolveCliConfigPath,
-      readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {
@@ -340,13 +303,6 @@ const resolveRunHelperContext = () =>
       consumerProjectId: consumerProject.value.projectId,
       consumerProjectName: consumerProject.value.projectName,
       runOutputDir: sessionArtifactsDir,
-      readAccessRoots: [
-        ...new Set(
-          [...baseReadAccessRoots, sessionArtifactsDir]
-            .filter((value): value is string => typeof value === 'string' && value.length > 0)
-            .map(value => path.resolve(value))
-        ),
-      ],
     } satisfies RunHelperContext;
   });
 
@@ -454,7 +410,7 @@ export const runCmd = Command.make('run', {
   args,
 }).pipe(
   Command.withDescription(
-    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.\n\nInjected helpers (behave like their CLI counterparts):\n  execute(slug, data?)          Same as `composio execute` — returns parsed JSON\n  search(query, options?)        Same as `composio search` — returns matching tools\n  experimental_subAgent(prompt, options?) Experimental helper to spawn a powerful sub-agent from the same agent family as your current main agent\n                                 (Codex -> Codex, Claude -> Claude) with optional Zod structured output\n  result.prompt()                Prompt-safe serialization of a helper result, ideal for experimental_subAgent(...)\n  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function\n                                 Example: const f = await proxy("gmail")\n                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")\n  z                              Injected global from `zod` for structured output schemas\n\nAll helpers reuse your CLI auth state and connected accounts.\n\nUse composio search "<query>" to discover tools and composio execute <slug> --get-schema to inspect inputs.'
+    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.\n\nInjected helpers (behave like their CLI counterparts):\n  execute(slug, data?)          Same as `composio execute` — returns parsed JSON\n  search(query, options?)        Same as `composio search` — returns matching tools\n  result.prompt()                Prompt-safe serialization of a helper result\n  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function\n                                 Example: const f = await proxy("gmail")\n                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")\n  z                              Injected global from `zod` for defining and validating schemas\n\nAll helpers reuse your CLI auth state and connected accounts.\n\nUse composio search "<query>" to discover tools and composio execute <slug> --get-schema to inspect inputs.'
   ),
   Command.withShortDescription(
     'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.'
@@ -489,19 +445,8 @@ export const runCmd = Command.make('run', {
       description: 'proxy(toolkit) — returns a fetch() bound to your connected account',
     },
     {
-      command:
-        'composio run \'\n  const [emails, issues] = await Promise.all([\n    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),\n    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),\n  ]);\n  // result.prompt() serializes helper output for LLM consumption\n  // z is a global from zod for defining structured output schemas\n  const brief = await experimental_subAgent(\n    `Summarize these emails and issues.\\n\\n${emails.prompt()}\\n\\n${issues.prompt()}`,\n    { schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }) }\n  );\n  console.log(brief.structuredOutput);\n\'',
-      description:
-        'experimental_subAgent + z + result.prompt() — structured output from a sub-agent',
-    },
-    {
       command: 'composio run --file ./workflow.ts -- --repo acme/app',
       description: 'Run from a file',
-    },
-    {
-      command:
-        'composio run \'\n  const [emails, issues] = await Promise.all([\n    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),\n    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),\n  ]);\n  const brief = await experimental_subAgent(\n    `Create a morning brief from these emails and issues.\\n\\n${emails.prompt()}\\n\\n${issues.prompt()}`,\n    {\n      schema: z.object({\n        brief: z.string(),\n        urgentEmails: z.array(z.string()),\n        urgentIssues: z.array(z.string()),\n      }),\n    }\n  );\n  brief.structuredOutput;\n\'',
-      description: 'Create a structured brief with an injected sub-agent.',
     },
   ]),
   Command.withHandler(
@@ -550,7 +495,6 @@ export const runCmd = Command.make('run', {
         const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
           runId,
-          master: yield* detectMasterFromHost,
           perfDebug,
           toolDebug,
           telemetryDebug,

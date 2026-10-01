@@ -27,14 +27,6 @@ import {
   resolveRunCompanionModulePath,
   writeInstalledReleaseTag,
 } from 'src/services/run-companion-modules';
-import {
-  ACP_STRUCTURED_OUTPUT_WRAPPER_KEY,
-  buildStructuredRepairPrompt,
-  buildStructuredOutputToolSchema,
-  buildStructuredPrompt,
-  buildStructuredToolPrompt,
-  finalizeInvokeAgentText,
-} from 'src/services/run-subagent-shared';
 import { extendConfigProvider } from 'src/services/config';
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
@@ -230,6 +222,25 @@ describe('CLI: composio run', () => {
     );
   });
 
+  layer(RunTestLive())(it => {
+    it.effect('[Given] a run [Then] the preload context carries no sub-agent inputs', () =>
+      Effect.gen(function* () {
+        let preloadSource = '';
+        commandRuns.mockImplementation(command => {
+          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+        });
+
+        yield* cli(['run', 'console.log("hi")']);
+
+        expect(preloadSource).toContain('"runLogFilePath":');
+        expect(preloadSource).not.toContain('"master":');
+        expect(preloadSource).not.toContain('"readAccessRoots":');
+        expect(preloadSource).not.toContain('"cliConfigPath":');
+      })
+    );
+  });
+
   layer(RunTestLive({ baseConfigProvider: acpOnlyConfigProvider }))(it => {
     it.effect(
       '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] run enables ACP-only execution without a flag',
@@ -367,39 +378,34 @@ describe('CLI: composio run', () => {
 
   layer(RunTestLive())(it => {
     it.effect(
-      '[Given] a multiline structured experimental_subAgent script [Then] run preserves the inline TypeScript source',
+      '[Given] a multiline execute script [Then] run preserves the inline TypeScript source',
       () =>
         Effect.gen(function* () {
           const script = `
-            const brief = await experimental_subAgent(
-              [
-                "Do not read files.",
-                "Do not run terminal commands.",
-                "Do not inspect the workspace.",
-                "Return exactly this structured value:",
-                "{\\"summary\\":\\"ok\\",\\"urgent\\":[\\"a\\",\\"b\\"]}",
-              ].join("\\n"),
+            const issue = await execute(
+              "GITHUB_CREATE_ISSUE",
               {
-                target: "codex",
-                schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }),
+                owner: "acme",
+                title: [
+                  "Deploy v2",
+                  "Do not run terminal commands.",
+                ].join("\\n"),
               }
             );
-            console.log(JSON.stringify(brief));
-            console.log(JSON.stringify(brief.structuredOutput));
+            console.log(JSON.stringify(issue));
+            console.log(JSON.stringify(issue.data));
           `;
           yield* cli(['run', '--logs-off', script]);
 
           expect(commandRuns).toHaveBeenCalledTimes(1);
           const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(spawnConfig.cmd[4]).toContain('const brief = await experimental_subAgent(');
+          expect(spawnConfig.cmd[4]).toContain('const issue = await execute(');
           expect(spawnConfig.cmd[4]).toContain('"Do not run terminal commands."');
           expect(spawnConfig.cmd[4]).toContain('].join("\\n"),');
-          expect(spawnConfig.cmd[4]).toContain('target: "codex"');
-          expect(spawnConfig.cmd[4]).toContain('console.log(JSON.stringify(brief));');
-          expect(spawnConfig.cmd[4]).toContain(
-            'return (console.log(JSON.stringify(brief.structuredOutput)));'
-          );
+          expect(spawnConfig.cmd[4]).toContain('owner: "acme"');
+          expect(spawnConfig.cmd[4]).toContain('console.log(JSON.stringify(issue));');
+          expect(spawnConfig.cmd[4]).toContain('return (console.log(JSON.stringify(issue.data)));');
           expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
           expect(process.exitCode).toBe(0);
         })
@@ -552,7 +558,7 @@ describe('CLI: composio run', () => {
 
   layer(RunTestLive())(it => {
     it.effect(
-      '[Given] run help [Then] it documents injected execute, search, proxy, experimental_subAgent, and z helpers',
+      '[Given] run help [Then] it documents injected execute, search, proxy, and z helpers without the removed sub-agent',
       () =>
         Effect.gen(function* () {
           yield* cli(['run', '--help']);
@@ -565,9 +571,12 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--skip-tool-params-check');
           expect(output).toContain('--skip-checks');
           expect(output).toContain('--logs-off');
-          expect(output).toContain('experimental_subAgent');
-          expect(output).toContain('schema: z.object');
+          expect(output).not.toContain('experimental_subAgent');
           expect(output).toContain('Injected helpers');
+          expect(output).toContain('execute(slug, data?)');
+          expect(output).toContain('search(query, options?)');
+          expect(output).toContain('result.prompt()');
+          expect(output).toContain('const f = await proxy(toolkit)');
           expect(output).toContain('Injected global from `zod`');
           expect(output).toContain('composio search "<query>"');
           expect(output).toContain('composio execute <slug> --get-schema');
@@ -605,119 +614,6 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
     expect(source).not.toContain('globalThis.execute = async (slug, data = {}) => {');
-  });
-});
-
-describe('run-subagent-shared', () => {
-  it('[Given] a structured schema [Then] it appends a strict JSON response contract', () => {
-    expect(buildStructuredPrompt('hello', { type: 'object' })).toContain(
-      'Return only a valid JSON value that matches this schema.'
-    );
-  });
-
-  it('[Given] a non-object structured schema [Then] the MCP output tool schema wraps it under a value key', () => {
-    expect(buildStructuredOutputToolSchema({ type: 'array', items: { type: 'string' } })).toEqual({
-      type: 'object',
-      additionalProperties: false,
-      required: [ACP_STRUCTURED_OUTPUT_WRAPPER_KEY],
-      properties: {
-        [ACP_STRUCTURED_OUTPUT_WRAPPER_KEY]: { type: 'array', items: { type: 'string' } },
-      },
-    });
-  });
-
-  it('[Given] structured tool mode [Then] the prompt instructs the agent to use the output tool', () => {
-    expect(
-      buildStructuredToolPrompt(
-        'Summarize it.',
-        { type: 'array', items: { type: 'string' } },
-        'submit_structured_output'
-      )
-    ).toContain('call the MCP tool `submit_structured_output` exactly once');
-  });
-
-  it('[Given] a repair prompt [Then] it requires no more tools and JSON-only fallback', () => {
-    const prompt = buildStructuredRepairPrompt(
-      { type: 'object', properties: { summary: { type: 'string' } } },
-      'submit_structured_output'
-    );
-
-    expect(prompt).toContain('Your previous response was not valid structured output.');
-    expect(prompt).toContain('Do not read files. Do not run terminal commands.');
-    expect(prompt).toContain('reply with only raw JSON matching the schema');
-  });
-
-  it('[Given] Zod-like structured output [Then] it validates and returns structured data', () => {
-    const result = finalizeInvokeAgentText('{"ok":true}', {
-      structuredSchema: { type: 'object' },
-      zodSchema: {
-        safeParse: value => ({ success: true as const, data: value }),
-      },
-    });
-
-    expect(result).toEqual({
-      result: null,
-      structuredOutput: { ok: true },
-    });
-  });
-
-  it('[Given] plain text output [Then] it omits structuredOutput', () => {
-    const result = finalizeInvokeAgentText('hello', {});
-
-    expect(result).toEqual({
-      result: 'hello',
-    });
-    expect('structuredOutput' in result).toBe(false);
-  });
-
-  it('[Given] invalid JSON in structured mode [Then] it throws a clear error', () => {
-    expect(() =>
-      finalizeInvokeAgentText('not-json', {
-        structuredSchema: { type: 'object' },
-      })
-    ).toThrow('experimental_subAgent() expected valid JSON output for structured response.');
-  });
-
-  it('[Given] prose followed by JSON in structured mode [Then] it recovers the final JSON payload', () => {
-    const result = finalizeInvokeAgentText('Reading file now.\n{"ok":true}', {
-      structuredSchema: { type: 'object' },
-      zodSchema: {
-        safeParse: value => ({ success: true as const, data: value }),
-      },
-    });
-
-    expect(result).toEqual({
-      result: null,
-      structuredOutput: { ok: true },
-    });
-  });
-
-  it('[Given] fenced JSON in structured mode [Then] it parses the fenced payload', () => {
-    const result = finalizeInvokeAgentText('```json\n{"ok":true}\n```', {
-      structuredSchema: { type: 'object' },
-      zodSchema: {
-        safeParse: value => ({ success: true as const, data: value }),
-      },
-    });
-
-    expect(result).toEqual({
-      result: null,
-      structuredOutput: { ok: true },
-    });
-  });
-
-  it('[Given] an object containing arrays [Then] it prefers the full object over an inner array', () => {
-    const result = finalizeInvokeAgentText('Working...\n{"summary":"done","urgent":["a","b"]}', {
-      structuredSchema: { type: 'object' },
-      zodSchema: {
-        safeParse: value => ({ success: true as const, data: value }),
-      },
-    });
-
-    expect(result).toEqual({
-      result: null,
-      structuredOutput: { summary: 'done', urgent: ['a', 'b'] },
-    });
   });
 });
 
