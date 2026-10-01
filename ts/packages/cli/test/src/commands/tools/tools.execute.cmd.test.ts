@@ -529,6 +529,34 @@ describe('CLI: composio execute', () => {
         );
       })
     );
+
+    it.effect('keeps every repeated --data and --account with its own parallel tool', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"work@example.com"}',
+          '--account',
+          'forest',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"default@example.com"}',
+          '--account',
+          'castle',
+        ]);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        expect(lines.join('\n')).toContain('work@example.com');
+        expect(lines.join('\n')).toContain('default@example.com');
+        expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
+          expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
+        );
+        expect(recordedSessionCreateParams).toHaveLength(2);
+      })
+    );
   });
 
   layer(
