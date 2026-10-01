@@ -213,17 +213,21 @@ export const ToolsExecutorLive = Layer.effect(
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
             {
+              // Never retry an execution: a retry after the backend already acted
+              // duplicates the side effect (e.g. sends the same email twice).
               try: () => {
                 if (isMetaToolSlug(slug)) {
-                  return resolvedClient.toolRouter.session.executeMeta(sessionId, {
-                    slug,
-                    arguments: normalizedArguments,
-                  });
+                  return resolvedClient.toolRouter.session.executeMeta(
+                    sessionId,
+                    { slug, arguments: normalizedArguments },
+                    { maxRetries: 0 }
+                  );
                 }
-                return resolvedClient.toolRouter.session.execute(sessionId, {
-                  tool_slug: slug,
-                  arguments: normalizedArguments,
-                });
+                return resolvedClient.toolRouter.session.execute(
+                  sessionId,
+                  { tool_slug: slug, arguments: normalizedArguments },
+                  { maxRetries: 0 }
+                );
               },
               catch: cause => cause,
             }

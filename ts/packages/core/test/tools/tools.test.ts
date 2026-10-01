@@ -896,7 +896,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -926,7 +926,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -965,7 +965,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -998,7 +998,7 @@ describe('Tools', () => {
         expect.objectContaining({
           version: explicitVersion,
         }),
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -1117,7 +1117,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1169,7 +1169,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1221,7 +1221,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1252,7 +1252,7 @@ describe('Tools', () => {
           connected_account_id: 'test-account-id',
           parameters: [],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1304,7 +1304,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1355,7 +1355,7 @@ describe('Tools', () => {
             arguments: body.arguments,
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
         expect(result).toEqual({
           data: { results: true },
@@ -1417,7 +1417,7 @@ describe('Tools', () => {
               custom_tools: [expect.objectContaining({ slug: 'GREP' })],
             },
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1488,7 +1488,7 @@ describe('Tools', () => {
             arguments: { query: 'modified' },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1651,7 +1651,7 @@ describe('Tools', () => {
             arguments: { query: 'test' },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
         expect(result).toEqual({
           data: { results: true },
@@ -1699,7 +1699,7 @@ describe('Tools', () => {
             arguments: { query: 'test', modified: true },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1953,7 +1953,7 @@ describe('Tools', () => {
             version: 'latest', // should use latest as default
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1984,7 +1984,7 @@ describe('Tools', () => {
             version: '20251201_03', // should use global version
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2029,7 +2029,7 @@ describe('Tools', () => {
             version: '20251201_01', // should use test-toolkit-specific version
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2072,7 +2072,7 @@ describe('Tools', () => {
             version: 'latest', // should fallback to latest for unknown toolkit
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2108,7 +2108,7 @@ describe('Tools', () => {
             version: '20251201_03', // explicit version takes precedence
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2170,7 +2170,7 @@ describe('Tools', () => {
             version: 'latest', // should fallback to latest for unknown toolkit
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
     });
@@ -2340,7 +2340,7 @@ describe('Tools', () => {
             version: 'latest',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2383,7 +2383,7 @@ describe('Tools', () => {
             version: '20251201_01', // specific version should work without skip flag
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2413,7 +2413,7 @@ describe('Tools', () => {
             version: '20251201_03',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2530,7 +2530,7 @@ describe('Tools', () => {
             version: 'latest',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2596,7 +2596,7 @@ describe('Tools', () => {
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           unknownToolSlug,
           expect.objectContaining({ user_id: userId, version: 'latest' }),
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2637,68 +2637,9 @@ describe('Tools', () => {
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           toolSlug,
           expect.objectContaining({ version: '20250101_00' }),
-          undefined
+          { maxRetries: 0 }
         );
       });
     });
-  });
-});
-
-describe('retries disabled on non-idempotent writes', () => {
-  // Regression: a timed-out, non-idempotent tools.execute / tools.proxy must not
-  // be silently retried — a retry after a server-side success duplicates the side
-  // effect (e.g. sends the same email up to 3 times). Both route through a sibling
-  // client built with maxRetries: 0; reads keep the client's default retries.
-  // See https://github.com/ComposioHQ/composio/issues/3586 (TS parity with Python).
-  const context = createTestContext();
-  setupTest(context);
-
-  it('routes tools.execute through a client with maxRetries: 0', async () => {
-    await mockToolExecution(context.tools);
-
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
-    expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
-  });
-
-  it('routes tools.proxyExecute through a client with maxRetries: 0', async () => {
-    mockClient.tools.proxy.mockResolvedValueOnce({ data: {}, successful: true });
-
-    await context.tools.proxyExecute({
-      endpoint: '/api/test',
-      method: 'POST' as const,
-      body: { data: 'test' },
-      connectedAccountId: 'test-account-id',
-    });
-
-    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
-    expect(mockClient.tools.proxy).toHaveBeenCalledTimes(1);
-  });
-
-  it('reuses one no-retries sibling client across executes (cached per instance)', async () => {
-    const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
-
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    // Queue a second execute; mockToolExecution only primed one response.
-    getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
-    mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test again' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    expect(mockClient.tools.execute).toHaveBeenCalledTimes(2);
-    expect(mockClient.withOptions).toHaveBeenCalledTimes(1);
   });
 });

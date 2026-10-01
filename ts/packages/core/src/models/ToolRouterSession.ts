@@ -4,6 +4,7 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
 import {
@@ -724,7 +725,12 @@ export class ToolRouterSession<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          this.sessionId,
+          executeParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
     const transformed = transformExecuteResponse(response);
@@ -750,7 +756,11 @@ export class ToolRouterSession<
     const clientParams = transformProxyParams(validated.data);
     const response = await withCancellation(
       () =>
-        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+        this.client.toolRouter.session.proxyExecute(
+          this.sessionId,
+          clientParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
