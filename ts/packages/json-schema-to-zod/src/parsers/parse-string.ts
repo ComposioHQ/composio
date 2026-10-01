@@ -70,6 +70,12 @@ export const parseString = (
         : undefined;
 
   let result: z.ZodTypeAny = zodSchema;
+  if (jsonSchema.format === 'time') {
+    result = result.refine(hasValidLeapSecond, {
+      message: errorMessages?.format ?? 'Invalid time',
+    });
+  }
+
   if (minLength !== undefined) {
     result = result.refine(value => codePointLength(value) >= minLength, {
       message: errorMessages?.minLength ?? `String must contain at least ${minLength} character(s)`,
@@ -85,3 +91,19 @@ export const parseString = (
 };
 
 const codePointLength = (value: string): number => [...value].length;
+
+// RFC 3339 section 5.7: a leap second occurs at 23:59 UTC and shifts with
+// the offset. A time-only value has no date, so only the UTC minute can
+// be checked, not whether a leap second was announced for a given day.
+const hasValidLeapSecond = (value: string): boolean => {
+  if (value.slice(6, 8) !== '60') return true;
+  if (!RFC3339_FULL_TIME.test(value)) return false;
+
+  const localMinutes = Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+  const offset = /([+-])(\d{2}):(\d{2})$/.exec(value);
+  const offsetMinutes = offset
+    ? (offset[1] === '+' ? 1 : -1) * (Number(offset[2]) * 60 + Number(offset[3]))
+    : 0;
+  const utcMinutes = (((localMinutes - offsetMinutes) % 1440) + 1440) % 1440;
+  return utcMinutes === 1439;
+};
