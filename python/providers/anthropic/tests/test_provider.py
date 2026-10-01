@@ -34,15 +34,39 @@ def test_wrap_tool_attaches_ephemeral_cache_control_when_cache_tools_enabled():
     assert wrapped["cache_control"] == {"type": "ephemeral"}
 
 
-def test_wrap_tools_attaches_cache_control_to_every_tool():
-    """The cache breakpoint applies uniformly across a batch of tools, not
-    just the first/last one.
+def test_wrap_tools_caches_only_the_last_tool():
+    """`wrap_tools` places a single breakpoint on the last tool: a breakpoint
+    caches everything up to and including it, so one is enough to cover the
+    whole tool list. Anthropic caps requests at 4 breakpoints total (shared
+    with the system prompt and messages); a breakpoint on every tool would
+    blow past that limit once a caller passes 5+ tools.
     """
     tools = [_tool(slug="TOOL_A"), _tool(slug="TOOL_B"), _tool(slug="TOOL_C")]
 
     wrapped_tools = AnthropicProvider(cache_tools=True).wrap_tools(tools)
 
-    assert all(t["cache_control"] == {"type": "ephemeral"} for t in wrapped_tools)
+    assert all("cache_control" not in t for t in wrapped_tools[:-1])
+    assert wrapped_tools[-1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_wrap_tools_single_tool_still_gets_cache_control():
+    """A batch of exactly one tool is also "the last tool" and should still
+    be cached.
+    """
+    wrapped_tools = AnthropicProvider(cache_tools=True).wrap_tools([_tool()])
+
+    assert wrapped_tools[-1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_wrap_tools_omits_cache_control_by_default():
+    """No `cache_tools` option means no cache_control anywhere in the batch,
+    including the last tool.
+    """
+    tools = [_tool(slug="TOOL_A"), _tool(slug="TOOL_B")]
+
+    wrapped_tools = AnthropicProvider().wrap_tools(tools)
+
+    assert all("cache_control" not in t for t in wrapped_tools)
 
 
 def test_wrap_tool_still_preserves_schema_and_metadata_with_caching_enabled():

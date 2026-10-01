@@ -25,9 +25,14 @@ class AnthropicProvider(
 
     def __init__(self, cache_tools: bool = False, **kwargs: t.Any) -> None:
         """
-        :param cache_tools: Attach Anthropic's ephemeral cache_control to
-            every wrapped tool definition, letting Claude reuse cached tool
-            schemas across requests. Mirrors the TypeScript
+        :param cache_tools: Attach Anthropic's ephemeral cache_control to the
+            tool definitions so Claude can reuse the cached tool schemas
+            across requests. Anthropic allows at most 4 cache_control
+            breakpoints per request, shared across the system prompt, tools,
+            and messages, and a breakpoint caches everything up to and
+            including it — so :meth:`wrap_tools` places a single breakpoint
+            on the last tool, covering the whole tool list with one
+            breakpoint. Mirrors the TypeScript
             ``AnthropicProvider({ cacheTools: true })`` option. Defaults to
             ``False``.
         """
@@ -48,7 +53,16 @@ class AnthropicProvider(
         return wrapped
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[ToolParam]:
-        return [self.wrap_tool(tool) for tool in tools]
+        wrapped = [self.wrap_tool(tool) for tool in tools]
+        # A cache_control breakpoint caches every block up to and including
+        # it, so one breakpoint on the last tool covers the entire tool list.
+        # Anthropic caps breakpoints at 4 per request (shared with the system
+        # prompt and messages); a breakpoint on every tool would exceed that
+        # limit as soon as a caller passes 5+ tools.
+        if self.cache_tools:
+            for tool_param in wrapped[:-1]:
+                tool_param.pop("cache_control", None)
+        return wrapped
 
     @t.overload
     def execute_tool_call(
