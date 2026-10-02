@@ -196,6 +196,26 @@
           "error"
         ]
       },
+      "InstantAccount": {
+        "type": "object",
+        "properties": {
+          "supported": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "price": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Published pricing from the selected tool row, unchanged."
+          }
+        },
+        "required": [
+          "supported"
+        ],
+        "description": "Present only when the tool supports an Instant account and its selected toolkit version is the latest. Missing for older toolkit versions or ineligible tools."
+      },
       "Tool": {
         "type": "object",
         "properties": {
@@ -278,6 +298,9 @@
             "type": "string",
             "description": "Current version of the tool",
             "example": "20250905_00"
+          },
+          "instant": {
+            "$ref": "#/components/schemas/InstantAccount"
           },
           "output_parameters": {
             "type": "object",
@@ -562,7 +585,7 @@
             "description": "Pricing unit, such as per call or per second."
           }
         },
-        "description": "Current published pricing, independent of the requested tool version. Omitted when unspecified; absence does not mean free.",
+        "description": "Published pricing for the tool; absence does not mean free. Display metadata, not a billing calculation.",
         "additionalProperties": false
       },
       "ToolDetails": {
@@ -647,6 +670,9 @@
             "type": "string",
             "description": "Current version of the tool",
             "example": "20250905_00"
+          },
+          "instant": {
+            "$ref": "#/components/schemas/InstantAccount"
           },
           "output_parameters": {
             "type": "object",
@@ -4320,8 +4346,9 @@
     },
     "/api/v3.1/tools/execute/{tool_slug}/input": {
       "post": {
-        "summary": "Generate tool inputs from natural language",
-        "description": "Uses AI to translate a natural language description into structured arguments for a specific tool. This endpoint is useful when you want to let users describe what they want to do in plain language instead of providing structured parameters.",
+        "summary": "Generate tool inputs from natural language (DEPRECATED)",
+        "description": "DEPRECATED: This endpoint is no longer maintained. It still works for existing integrations but may be removed in a future release. To build tool arguments, fetch the tool's input schema with `GET /api/v3/tools/{tool_slug}` and generate the arguments in your own application. Uses AI to translate a natural language description into structured arguments for a specific tool.",
+        "deprecated": true,
         "tags": [
           "Tools"
         ],
@@ -5627,6 +5654,309 @@
         "x-api-version": "3.1"
       }
     },
+    "/api/v3.1/custom/toolkits": {
+      "post": {
+        "summary": "Create a custom toolkit",
+        "description": "Experimental: custom toolkit access control is in pilot and this contract may change. Creates a custom MCP toolkit for the project and returns its slug, derived from app_url (CUSTOM_NOTION for a toolkit shared with all users, CUSTOM_NOTION_K7F2Q for a private one). user_id decides who can use it: \"all\" shares it with every user in the project, a user_id makes it private to that user. Access cannot be changed after create. For a private toolkit the response carries connect_link, a hosted connect page for that user (callback_url sets where it returns them); it is null for a shared toolkit, a NO_AUTH toolkit, or when the link could not be made. Returns 409 when the user_id can already use another private toolkit for the same MCP URL; the error names that toolkit. Change the name, logo or API key input copy later with PATCH /api/v3.1/custom/toolkits/{slug}.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "postCustomToolkits",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Toolkit to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Human readable name for your application"
+                  },
+                  "app_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "App URL for the toolkit. For MCP apps, please provide the MCP URL here"
+                  },
+                  "logo_file": {
+                    "type": "object",
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000000,
+                        "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+                        "description": "Base64-encoded image bytes, max 3MB decoded"
+                      },
+                      "mime_type": {
+                        "type": "string",
+                        "enum": [
+                          "image/png",
+                          "image/jpeg"
+                        ],
+                        "description": "Image MIME type of the encoded bytes"
+                      }
+                    },
+                    "required": [
+                      "content",
+                      "mime_type"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                  },
+                  "auth_schemes": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "NO_AUTH"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "API_KEY"
+                              ]
+                            },
+                            "headers": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "Headers to be used for the API key authentication. Please replace your actual api key with {{generic_api_key}}"
+                            },
+                            "api_key_field": {
+                              "type": "object",
+                              "properties": {
+                                "display_name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100,
+                                  "description": "Label shown to end users for the API key input on the connect page"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500,
+                                  "description": "Help text shown to end users below the API key input on the connect page"
+                                }
+                              },
+                              "additionalProperties": false,
+                              "description": "End-user-facing copy for the API key input on the connect page"
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "headers"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "DCR_OAUTH"
+                              ]
+                            },
+                            "discovery_url": {
+                              "type": "string",
+                              "format": "uri",
+                              "description": "URL to fetch the full auth scheme from, usually the /.well-known/oauth-authorization-server path of your MCP URL"
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "discovery_url"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "description": "Authentication schemes for the toolkit"
+                  },
+                  "user_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "all"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      }
+                    ],
+                    "description": "Who can use the toolkit: \"all\" shares it with every user in the project, a user_id makes it private to that user. Cannot be changed after create.",
+                    "example": "all"
+                  },
+                  "callback_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Where the connect page sends the user after they connect, e.g. back to your app. Only used for a private toolkit's connect_link; defaults to Composio's connected page."
+                  }
+                },
+                "required": [
+                  "name",
+                  "app_url",
+                  "auth_schemes",
+                  "user_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully created toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "description": "Slug of the created toolkit",
+                      "example": "CUSTOM_NOTION_K7F2Q"
+                    },
+                    "connect_link": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "redirect_url": {
+                          "type": "string",
+                          "description": "Composio's hosted connect page for the toolkit's user; send them here to connect"
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "description": "ISO timestamp when the link expires"
+                        },
+                        "connected_account_id": {
+                          "type": "string",
+                          "format": "connectedAccountId",
+                          "description": "The connected account the link creates for the user; it becomes ACTIVE once they connect"
+                        }
+                      },
+                      "required": [
+                        "redirect_url",
+                        "expires_at",
+                        "connected_account_id"
+                      ],
+                      "description": "Connect link for the user a private toolkit is for. Null when the toolkit is shared with \"all\", has a NO_AUTH scheme, or the link could not be made; create one later with POST /api/v3/connected_accounts/link."
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "connect_link"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - The caller cannot write custom toolkits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - The user_id can already use another private toolkit for this MCP URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - Retry after a short backoff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Failed to create toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
     "/api/v3.1/custom/toolkits/{slug}": {
       "delete": {
         "summary": "Delete a custom toolkit",
@@ -5727,7 +6057,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - Toolkit is managed by Composio and cannot be deleted",
+            "description": "Forbidden - The caller cannot write custom toolkits, or the toolkit is managed by Composio and cannot be deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -5768,6 +6098,208 @@
           },
           "500": {
             "description": "Internal server error - Failed to delete toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      },
+      "patch": {
+        "summary": "Update a custom toolkit",
+        "description": "Experimental: custom toolkit access control is in pilot and this contract may change. Updates a custom MCP toolkit owned by the project: its name, logo and API key input copy on the connect page (api_key_field). Omitted fields keep their current value. app_url, auth_schemes and who can use the toolkit (user_id) cannot be changed; delete and re-create the toolkit instead. Composio-managed toolkits and toolkits of other projects return 404.",
+        "tags": [
+          "Toolkits"
+        ],
+        "operationId": "patchCustomToolkitsBySlug",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 37,
+              "pattern": "^[a-zA-Z0-9_]+$",
+              "description": "Slug of the project-owned custom toolkit to update, as returned when it was created",
+              "example": "CUSTOM_NOTION_K7F2Q"
+            },
+            "required": true,
+            "description": "Custom toolkit slug to update",
+            "name": "slug",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Fields to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Human readable name for your application"
+                  },
+                  "logo_file": {
+                    "type": "object",
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000000,
+                        "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+                        "description": "Base64-encoded image bytes, max 3MB decoded"
+                      },
+                      "mime_type": {
+                        "type": "string",
+                        "enum": [
+                          "image/png",
+                          "image/jpeg"
+                        ],
+                        "description": "Image MIME type of the encoded bytes"
+                      }
+                    },
+                    "required": [
+                      "content",
+                      "mime_type"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                  },
+                  "api_key_field": {
+                    "type": "object",
+                    "properties": {
+                      "display_name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100,
+                        "description": "Label shown to end users for the API key input on the connect page"
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500,
+                        "description": "Help text shown to end users below the API key input on the connect page"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "End-user-facing copy for the API key input on the connect page; only for toolkits with an API_KEY auth scheme"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated toolkit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "description": "The toolkit was updated"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - The caller cannot write custom toolkits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - Toolkit not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - The toolkit cannot be updated in its current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - Retry after a short backoff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Failed to update toolkit",
             "content": {
               "application/json": {
                 "schema": {
@@ -15180,8 +15712,9 @@
     },
     "/api/v3.1/auth_configs/{nanoid}/{status}": {
       "patch": {
-        "summary": "Enable or disable an authentication configuration",
-        "description": "Updates the status of an authentication configuration to either enabled or disabled. Disabled configurations cannot be used for new connections.",
+        "summary": "Enable or disable an authentication configuration (DEPRECATED)",
+        "description": "DEPRECATED: We are controlling the API surface and the dependencies between endpoints, and enabling or disabling an auth config is covered by existing endpoints. To stop new connections through an auth config, stop creating connected accounts with it; to remove it, delete it with `DELETE /api/v3/auth_configs/{nanoid}` (pass `?revoke_on_delete=true` to also revoke the upstream credentials of its connections). This endpoint still works for existing integrations but may be removed in a future release. It sets the auth config to ENABLED or DISABLED; disabled auth configs cannot be used for new connections.",
+        "deprecated": true,
         "tags": [
           "Auth Configs"
         ],
@@ -17251,8 +17784,9 @@
     },
     "/api/v3.1/connected_accounts/{nanoId}/status": {
       "patch": {
-        "summary": "Enable or disable a connected account",
-        "description": "Updates the status of a connected account to either enabled (active) or disabled (inactive). Disabled accounts cannot be used for API calls but remain in the database.",
+        "summary": "Enable or disable a connected account (DEPRECATED)",
+        "description": "DEPRECATED: We are controlling the API surface and the dependencies between endpoints, and enabling or disabling a connected account is covered by existing endpoints. To stop a connected account from being used, delete it with `DELETE /api/v3/connected_accounts/{nanoid}` (pass `?revoke_on_delete=true` to also revoke its upstream credentials); to use the account again, create a new connection. This endpoint still works for existing integrations but may be removed in a future release. It sets the connected account to ACTIVE (`enabled: true`) or INACTIVE (`enabled: false`); inactive accounts cannot be used for API calls. Disabling an account also disables its triggers, and Composio attempts to remove their webhooks at the provider in the background.",
+        "deprecated": true,
         "tags": [
           "Connected Accounts"
         ],
@@ -20832,10 +21366,12 @@
                 "all",
                 "project"
               ],
-              "description": "Entity responsible for managing the toolkits"
+              "description": "Deprecated: Entity responsible for managing the toolkits",
+              "deprecated": true
             },
             "required": false,
-            "description": "Filter toolkits by who manages them",
+            "description": "Deprecated: Filter toolkits by who manages them",
+            "deprecated": true,
             "name": "managed_by",
             "in": "query"
           },
@@ -20885,7 +21421,7 @@
           {
             "schema": {
               "type": "string",
-              "description": "Search query to filter toolkits by name, slug, or description (minimum 3 characters)",
+              "description": "Search query to filter toolkits by name, slug, or description (minimum 1 character)",
               "example": "gmail"
             },
             "required": false,
@@ -20944,6 +21480,23 @@
                             ],
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
+                          },
+                          "access": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "all"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 256
+                              }
+                            ],
+                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -21281,7 +21834,7 @@
     "/api/v3.1/custom/toolkits/upsert": {
       "post": {
         "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Prefer POST /api/v3.1/custom/toolkits (which sets which users can use a toolkit) and PATCH /api/v3.1/custom/toolkits/{slug}. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
         "tags": [
           "Toolkits"
         ],
@@ -21765,6 +22318,23 @@
                       "type": "boolean",
                       "description": "Indicates if this toolkit is currently enabled and available for use",
                       "example": true
+                    },
+                    "access": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "all"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256
+                        }
+                      ],
+                      "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                      "example": "all"
                     },
                     "composio_managed_auth_schemes": {
                       "type": "array",
@@ -22429,6 +22999,23 @@
                             ],
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
+                          },
+                          "access": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "all"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 256
+                              }
+                            ],
+                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -23330,7 +23917,7 @@
     "/api/v3.1/trigger_instances/manage/{triggerId}": {
       "delete": {
         "summary": "Delete a trigger",
-        "description": "Permanently deletes a trigger instance. This stops the trigger from listening for events and removes it from your project. Use the PATCH endpoint with status \"disable\" if you want to temporarily pause a trigger instead.",
+        "description": "Permanently deletes a trigger instance. This stops the trigger from listening for events and removes it from your project. When a webhook trigger is deleted, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Use the PATCH endpoint with status \"disable\" if you want to temporarily pause a trigger instead.",
         "tags": [
           "Triggers"
         ],
@@ -23442,7 +24029,7 @@
       },
       "patch": {
         "summary": "Update a trigger",
-        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
+        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. When a webhook trigger is disabled, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Re-enabling a webhook trigger sets it up with the provider again. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
         "tags": [
           "Triggers"
         ],
