@@ -185,7 +185,7 @@ export const invalidateToolInputDefinition = (slug: string) =>
   });
 
 // One `get_latest_version` round trip per tool per process. `composio execute`
-// asks twice on every call: the background version check forked from the
+// asks twice on every call: the validation that gates the tool call in the
 // command, and `getOrFetchToolInputDefinition` on the executor's file-upload
 // path. Both want the same answer within the same second.
 const fetchLatestToolVersionOnce = memoizeInProcess({
@@ -331,15 +331,6 @@ const refreshAndFetchToolInputDefinitionIfVersionChanged = (
 
     return { isStale, latestVersion, definition, skipped: false as const };
   });
-
-export const refreshToolInputDefinitionIfVersionChanged = (
-  slug: string,
-  cachedVersion: string | null,
-  params?: { readonly orgId?: string; readonly projectId?: string }
-) =>
-  refreshAndFetchToolInputDefinitionIfVersionChanged(slug, cachedVersion, params).pipe(
-    Effect.map(({ isStale, latestVersion, skipped }) => ({ isStale, latestVersion, skipped }))
-  );
 
 export class ToolInputValidationError extends Data.TaggedError('ToolInputValidationError')<{
   readonly toolSlug: string;
