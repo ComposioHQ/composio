@@ -51,6 +51,7 @@ const approvalContext = (
   toolName: string,
   toolInput: Record<string, unknown>
 ): ApprovalContext<Record<string, unknown>> => ({
+  abortSignal: new AbortController().signal,
   approvedTools: new Set<string>(),
   callId: 'call-1',
   getSandbox: vi.fn<ApprovalContext['getSandbox']>(),

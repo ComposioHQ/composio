@@ -1,4 +1,5 @@
 import Ajv from 'ajv';
+import { format } from '@cfworker/json-schema';
 import { describe, expect, it } from 'vitest';
 
 import { z } from 'zod/v3';
@@ -321,6 +322,108 @@ describe('whole-schema semantic regressions', () => {
 
     expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
     expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
+  });
+
+  it('keeps a guarded object root a ZodObject with its shape', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        q: { type: 'string' },
+        limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+      },
+      required: ['q'],
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed).toBeInstanceOf(z.ZodObject);
+    expect(Object.keys((parsed as z.AnyZodObject).shape)).toEqual(['q', 'limit']);
+    expect(parsed.safeParse({ q: 'cats', limit: null }).success).toBe(true);
+    expect(parsed.safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
+    expect(parsed.describe('Search').safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
+  });
+
+  it('accepts patterns with identity escapes that Unicode mode refuses', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', pattern: '^[a-z\\_]+$' },
+        ref: { $ref: '#/$defs/handle' },
+        limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+      },
+      $defs: { handle: { type: 'string', pattern: '^\\@[a-z\\-]+$' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ slug: 'a_b', ref: '@a-b' }).success).toBe(true);
+    expect(parsed.safeParse({ slug: 'A' }).success).toBe(false);
+    expect(parsed.safeParse({ ref: 'a-b' }).success).toBe(false);
+  });
+
+  it.each([
+    { name: 'a legacy identity escape', pattern: '^\\k_$', valid: 'k_', invalid: 'wrong' },
+    { name: 'a quantified lookahead', pattern: '^(?=a){2}ab$', valid: 'ab', invalid: 'b' },
+  ])('enforces $name in a pattern only the guard sees', ({ pattern, valid, invalid }) => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: { handle: { $ref: '#/$defs/handle' } },
+      $defs: { handle: { type: 'string', pattern } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ handle: valid }).success).toBe(true);
+    expect(parsed.safeParse({ handle: invalid }).success).toBe(false);
+  });
+
+  it('leaves no pattern formats in the interpreter format table', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: { handle: { $ref: '#/$defs/handle' } },
+      $defs: { handle: { type: 'string', pattern: '^leak-check-\\d+$' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ handle: 'leak-check-1' }).success).toBe(true);
+    expect(parsed.safeParse({ handle: 'wrong' }).success).toBe(false);
+    expect(Object.keys(format).filter(name => name.includes('leak-check'))).toEqual([]);
+  });
+
+  it('enforces every patternProperties key, including keys that differ only in escapes', () => {
+    const schema: JsonSchema = {
+      patternProperties: {
+        '^a\\_b$': { type: 'integer', minimum: 10 },
+        '^a_b$': { type: 'integer' },
+        '^\\k_$': { type: 'string' },
+      },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ a_b: 12, k_: 'ok' }).success).toBe(true);
+    expect(parsed.safeParse({ a_b: 2 }).success).toBe(false);
+    expect(parsed.safeParse({ k_: 1 }).success).toBe(false);
+  });
+
+  it('resolves references nested under a patternProperties key that needs a rewrite', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      patternProperties: { '^x\\_': { $ref: '#/$defs/label' } },
+      $defs: { label: { type: 'string' } },
+    };
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ x_1: 'ok' }).success).toBe(true);
+    expect(parsed.safeParse({ x_1: 1 }).success).toBe(false);
+  });
+
+  it('does not mistake a definition named patternProperties for the keyword', () => {
+    const schema = {
+      type: 'object',
+      properties: { v: { $ref: `#/$defs/patternProperties/${encodeURI('^a\\_b$')}` } },
+      $defs: { patternProperties: { '^a\\_b$': { type: 'string', minLength: 2 } } },
+    } as unknown as JsonSchema;
+    const parsed = jsonSchemaToZod(schema);
+
+    expect(parsed.safeParse({ v: 'ok' }).success).toBe(true);
+    expect(parsed.safeParse({ v: 'x' }).success).toBe(false);
   });
 
   it('compares decimal multiples by their JSON number spelling', () => {

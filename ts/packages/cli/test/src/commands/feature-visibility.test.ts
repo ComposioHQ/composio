@@ -26,9 +26,7 @@ const getSubcommandNames = (visibility: typeof stableVisibility) =>
 describe('CLI experimental feature visibility', () => {
   it('hides experimental root commands from the stable root command graph', () => {
     expect(getSubcommandNames(stableVisibility)).not.toContain('listen');
-    expect(getSubcommandNames(stableVisibility)).not.toContain('local-tools');
     expect(getSubcommandNames(betaVisibility)).toContain('listen');
-    expect(getSubcommandNames(betaVisibility)).toContain('local-tools');
   });
 
   it('hides listen help when the feature is disabled', () => {
@@ -45,15 +43,6 @@ describe('CLI experimental feature visibility', () => {
     expect(matchCommandFromArgv(['bun', 'composio', 'listen'], betaVisibility)).toBe('listen');
     expect(getCommandHelpText('listen', stableVisibility)).toBe(undefined);
     expect(getCommandHelpText('listen', betaVisibility)).toContain('composio listen');
-
-    expect(matchCommandFromArgv(['bun', 'composio', 'local-tools'], stableVisibility)).toBe(
-      undefined
-    );
-    expect(matchCommandFromArgv(['bun', 'composio', 'local-tools'], betaVisibility)).toBe(
-      'local-tools'
-    );
-    expect(getCommandHelpText('local-tools', stableVisibility)).toBe(undefined);
-    expect(getCommandHelpText('local-tools', betaVisibility)).toContain('composio local-tools');
   });
 
   it('shows stable account selection for execute and proxy', () => {

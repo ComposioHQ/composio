@@ -19,12 +19,7 @@ import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, Referen
 import { ChildProcess as Command } from 'effect/unstable/process';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import {
-  buildCompanionModules,
-  copyLocalToolBinaryAssets,
-  posthogBakeArgs,
-  teardown,
-} from './_shared';
+import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
 import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
@@ -117,7 +112,6 @@ export function buildBinaryCross() {
 
     const companionOutputDir = './dist/binaries/companions';
     yield* buildCompanionModules(companionOutputDir);
-    yield* copyLocalToolBinaryAssets('./dist/binaries');
 
     yield* Console.log(`Binary cross-compiled: ${outfile}`);
   });

@@ -1,5 +1,20 @@
 # tool-router-example
 
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [f478a3d]
+- Updated dependencies [f478a3d]
+- Updated dependencies [485c09d]
+- Updated dependencies [e7580cf]
+- Updated dependencies [ae3c069]
+- Updated dependencies [e182bc8]
+  - @composio/core@0.22.0
+  - @composio/claude-agent-sdk@0.12.1
+  - @composio/openai-agents@0.11.1
+  - @composio/vercel@0.12.1
+
 ## 1.0.15
 
 ### Patch Changes

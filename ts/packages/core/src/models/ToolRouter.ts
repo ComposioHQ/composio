@@ -44,19 +44,21 @@ import type {
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
+  type SessionCreateBody,
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
   transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
-  transformToolRouterPremiumUsageParams,
+  transformToolRouterInstantParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
+import { transformSessionConfig } from '../utils/transformers/toolRouterResponseTransform';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -75,7 +77,7 @@ function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
   const metadata: ToolRouterSessionMetadata = {
-    config: session.config,
+    config: transformSessionConfig(session.config),
     preload: session.config.preload,
     workbench: session.config.workbench,
     configVersion: session.config_version,
@@ -267,13 +269,13 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
-      ...(routerConfig.premiumUsage !== undefined && {
-        premium_usage: transformToolRouterPremiumUsageParams(routerConfig.premiumUsage),
+      ...(routerConfig.instant !== undefined && {
+        instant: transformToolRouterInstantParams(routerConfig.instant),
       }),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),

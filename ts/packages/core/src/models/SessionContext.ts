@@ -27,6 +27,7 @@ import { transformExecuteResponse } from '../utils/transformers/toolRouterRespon
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 
 /**
  * Concrete implementation of SessionContext.
@@ -100,7 +101,12 @@ export class SessionContextImpl implements SessionContext {
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          this.sessionId,
+          executeParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
     return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
@@ -124,7 +130,11 @@ export class SessionContextImpl implements SessionContext {
     const clientParams = transformProxyParams(validated.data);
     const response = await withCancellation(
       () =>
-        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+        this.client.toolRouter.session.proxyExecute(
+          this.sessionId,
+          clientParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 

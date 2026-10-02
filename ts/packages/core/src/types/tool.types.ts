@@ -347,7 +347,7 @@ export type CustomAuthParams = z.infer<typeof CustomAuthParamsSchema>;
  * Parameters for tool execution.
  *
  * @property {boolean} [allowTracing] - Enable tracing for this tool execution
- * @property {string} [connectedAccountId] - The connected account ID to use for authenticated tools
+ * @property {string} [connectedAccountId] - Connected account ID, or `instant_account` to explicitly use the Composio Instant account
  * @property {CustomAuthParams} [customAuthParams] - Custom authentication parameters
  * @property {CustomConnectionData} [customConnectionData] - Custom connection data (takes priority over customAuthParams)
  * @property {Record<string, unknown>} [arguments] - The arguments to pass to the tool
@@ -407,8 +407,8 @@ export const ToolExecuteResponseSchema = z.object({
   successful: z.boolean(),
   logId: z.string().optional(),
   sessionInfo: z.unknown().optional(),
-  /** Actual premium usage charge when the Session opts into returning it. */
-  premiumCharge: z.unknown().optional(),
+  /** Actual Instant usage charge when the Session opts into returning it. */
+  instantCharge: z.unknown().optional(),
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;
 

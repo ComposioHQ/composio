@@ -370,7 +370,7 @@ describe('ToolRouterSession execution routing', () => {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'test@test.com' },
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(localExecute).not.toHaveBeenCalled();
     });
@@ -404,7 +404,7 @@ describe('ToolRouterSession execution routing', () => {
           method: 'GET',
           parameters: [{ name: 'X-Test', type: 'header', value: '1' }],
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual({
         status: 200,
@@ -452,7 +452,7 @@ describe('ToolRouterSession execution routing', () => {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'test@test.com' },
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 

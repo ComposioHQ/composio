@@ -5,6 +5,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
+import { APIError } from '@composio/client';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -141,37 +142,11 @@ describe('CLI: composio execute', () => {
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
   let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
+  let recordedExecuteOptions: Array<{ maxRetries?: number } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
     recordedProjectToolkitScopes = [];
-  });
-
-  layer(
-    TestLive({
-      stdin: { isTTY: true, data: '' },
-      toolsExecutor: {
-        respondWith: {
-          successful: true,
-          data: { ok: true, echoed: 'local' },
-          error: null,
-          logId: '',
-        },
-      },
-    })
-  )('[Given] a local tool slug without auth [Then] it executes locally', it => {
-    it.effect('does not require login or Tool Router context', () =>
-      Effect.gen(function* () {
-        yield* cli(['execute', 'LOCAL_BEEPER_IMESSAGE_VERSION', '-d', '{ value: 1 }']);
-
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
-        expect(output).toMatchObject({
-          successful: true,
-          data: { ok: true, echoed: 'local' },
-          error: null,
-        });
-      })
-    );
+    recordedExecuteOptions = [];
   });
 
   layer(
@@ -364,11 +339,22 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_gmail_default',
-        }),
+        execute: async (_sessionId, params, options) => {
+          recordedExecuteOptions.push(options);
+          return {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_default',
+          };
+        },
+        executeMeta: async (_sessionId, params, options) => {
+          recordedExecuteOptions.push(options);
+          return {
+            data: { slug: params.slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_meta_default',
+          };
+        },
       },
     })
   )('[Given] default alias exists [Then] execute pins the default connected account', it => {
@@ -385,6 +371,17 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
+        // An execution is never retried: a retry after the backend already
+        // acted would duplicate the side effect.
+        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+      })
+    );
+
+    it.effect('never retries a meta tool execution', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
+
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
       })
     );
 
@@ -2447,15 +2444,20 @@ describe('CLI: composio execute', () => {
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async () => {
-          throw Object.assign(new Error("No active connection found for toolkit(s) 'gmail'"), {
-            error: {
-              message: "No active connection found for toolkit(s) 'gmail' in this session",
-              code: 4302,
-              slug: 'ToolRouterV2_NoActiveConnection',
-              status: 400,
-              request_id: 'test-request-id',
+          throw APIError.generate(
+            400,
+            {
+              error: {
+                message: "No active connection found for toolkit(s) 'gmail' in this session",
+                code: 4302,
+                slug: 'ToolRouterV2_NoActiveConnection',
+                status: 400,
+                request_id: 'test-request-id',
+              },
             },
-          });
+            undefined,
+            new Headers()
+          );
         },
       },
     })
@@ -2543,11 +2545,23 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: { error: { message: 'API error: invalid input' } },
+        failWith: APIError.generate(
+          400,
+          {
+            error: {
+              message: 'API error: invalid input',
+              code: 1001,
+              slug: 'Validation_Failed',
+              status: 400,
+            },
+          },
+          undefined,
+          new Headers()
+        ),
       },
     })
-  )('[Given] executor throws object error [Then] prints message and details', it => {
-    it.effect('prints object error message and details', () =>
+  )('[Given] executor throws an API error [Then] prints message and details', it => {
+    it.effect('prints API error message and details', () =>
       Effect.gen(function* () {
         yield* cli([
           'execute',

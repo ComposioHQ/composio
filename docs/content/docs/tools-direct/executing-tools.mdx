@@ -534,6 +534,15 @@ console.log(result);
   </Tab>
 </Tabs>
 
+Python names each downloaded file after the name in the tool response, made safe to write first:
+characters Windows reserves become `_`, an over-long name is truncated with its extension kept, and
+trailing dots and spaces are dropped. A name any of those rules changed also carries a short digest
+of the original, so two names that clean up the same way stay distinct. A name that can't be
+written at all, one containing a NUL byte or with nothing usable left, fails the download instead.
+An existing file in the download directory is never replaced — the new download gets a number
+before its extension, so a second `report.pdf` lands as `report-1.pdf`. TypeScript names automatic downloads after the tool
+slug and a timestamp instead, so its names are already unique.
+
 Automatic S3 downloads stop at 100 MiB, even when the server omits or reports an incorrect
 `Content-Length`. Python removes partial files for transport and filesystem failures and raises
 `ErrorDownloadingFile`; oversized responses raise `ResponseTooLargeError`. In TypeScript, failed

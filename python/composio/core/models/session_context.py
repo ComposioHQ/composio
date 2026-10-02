@@ -82,7 +82,9 @@ def proxy_execute_impl(
                 )
             )
 
-    response = client.tool_router.session.proxy_execute(
+    # Disable retries: a proxied call is a non-idempotent write, and a silent
+    # retry after a read timeout can duplicate the side effect.
+    response = client.without_retries.tool_router.session.proxy_execute(
         session_id=session_id,
         toolkit_slug=toolkit,
         endpoint=endpoint,
@@ -165,7 +167,9 @@ class SessionContextImpl:
         # Serialize any Pydantic model instances before sending to remote API
         serialized = _serialize_arguments(arguments)
 
-        return self._client.tool_router.session.execute(
+        # Disable retries: a session execution is a non-idempotent write, and a
+        # silent retry after a read timeout can duplicate the side effect.
+        return self._client.without_retries.tool_router.session.execute(
             session_id=self._session_id,
             tool_slug=tool_slug,
             arguments=serialized,

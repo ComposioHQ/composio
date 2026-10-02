@@ -19,7 +19,6 @@
     // The docs site has its own Bun dependency tree and nested oxlint config.
     "docs/**",
     "ts/vendor/**",
-    "ts/packages/cli-local-tools/vendor/**",
     "ts/packages/core/generated/**",
     "ts/packages/core/pack/generated/**",
     "ts/packages/slim/generated/**",

@@ -62,6 +62,7 @@ import {
 import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
@@ -120,11 +121,6 @@ export class Tools<
    */
   private readonly warnedAutoUploadDisabledForTool = new Set<string>();
 
-  /**
-   * Lazily-built sibling client with retries disabled; see `clientWithoutRetries`.
-   */
-  private clientWithoutRetriesCache?: ComposioClient;
-
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
@@ -155,27 +151,6 @@ export class Tools<
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
 
     telemetry.instrument(this, 'Tools');
-  }
-
-  /**
-   * A cached sibling client that never retries requests, mirroring Python's
-   * `client.without_retries`.
-   *
-   * Used for non-idempotent writes (`tools.execute` / `tools.proxy`), where a
-   * silent retry after a read timeout can duplicate a side effect (e.g. send an
-   * email twice). Reads keep the default retry behaviour, and so do other writes
-   * (`toolRouter.session.execute`, auth-config and connected-account mutations):
-   * the durable fix there is backend-honoured idempotency keys, tracked
-   * separately.
-   *
-   * Cached rather than rebuilt per call because `withOptions` constructs a fresh
-   * client; its options never change, so one per `Tools` instance suffices.
-   */
-  private get clientWithoutRetries(): ComposioClient {
-    if (!this.clientWithoutRetriesCache) {
-      this.clientWithoutRetriesCache = this.client.withOptions({ maxRetries: 0 });
-    }
-    return this.clientWithoutRetriesCache;
   }
 
   /**
@@ -1022,9 +997,7 @@ export class Tools<
         text: body.text,
       };
       const result = await withCancellation(
-        // Disable retries: tool execution is a non-idempotent write, and a
-        // silent retry after a read timeout can duplicate the side effect.
-        () => this.clientWithoutRetries.tools.execute(tool.slug, executeBody, requestOptions),
+        () => this.client.tools.execute(tool.slug, executeBody, withoutRetries(requestOptions)),
         requestOptions?.signal
       );
       // transform the response to the ToolExecuteResponse format
@@ -1256,17 +1229,22 @@ export class Tools<
     const response = await withCancellation(
       // Disable retries: tool router session execution is a non-idempotent write,
       // and a silent retry after a read timeout can duplicate the side effect.
-      () => this.clientWithoutRetries.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          body.sessionId,
+          executePayload,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
-    const { data, error, logId, premiumCharge } = transformExecuteResponse(response);
+    const { data, error, logId, instantCharge } = transformExecuteResponse(response);
     let result: ToolExecuteResponse = {
       data,
       error,
       successful: !error,
       logId,
-      ...(premiumCharge !== undefined && { premiumCharge }),
+      ...(instantCharge !== undefined && { instantCharge }),
     };
 
     // Apply afterExecute modifier if provided
@@ -1411,9 +1389,7 @@ export class Tools<
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(
-      // Disable retries: a proxied call is a non-idempotent write, and a silent
-      // retry after a read timeout can duplicate the side effect.
-      () => this.clientWithoutRetries.tools.proxy(proxyBody, requestOptions),
+      () => this.client.tools.proxy(proxyBody, withoutRetries(requestOptions)),
       requestOptions?.signal
     );
   }

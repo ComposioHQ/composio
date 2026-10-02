@@ -1,7 +1,6 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { Readable } from 'node:stream';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect } from 'effect';
 import { afterEach, describe, expect, it, vi } from '@effect/vitest';
@@ -9,7 +8,6 @@ import {
   BufferedChunkLogger,
   createStructuredOutputMcpContext,
   MissingAcpAdapterAssetsError,
-  readableStreamFromNode,
   resolveAcpAdapterCommand,
   selectPermissionOutcome,
 } from 'src/services/run-subagent-acp';
@@ -19,27 +17,6 @@ import { AcpInvokeError, isAcpInvokeError } from 'src/services/run-subagent-shar
 describe('run-subagent-acp', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it('pauses a Node producer while the Web Stream queue is full', async () => {
-    const input = new Readable({ read: () => undefined });
-    const stream = readableStreamFromNode(input);
-
-    input.push(new TextEncoder().encode('first'));
-    input.push(new TextEncoder().encode('second'));
-    await new Promise<void>(resolve => setImmediate(resolve));
-
-    expect(input.isPaused()).toBe(true);
-
-    const reader = stream.getReader();
-    const first = await reader.read();
-    const second = await reader.read();
-
-    expect(new TextDecoder().decode(first.value)).toBe('first');
-    expect(new TextDecoder().decode(second.value)).toBe('second');
-
-    await reader.cancel();
-    expect(input.destroyed).toBe(true);
   });
 
   it.effect(

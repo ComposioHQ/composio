@@ -115,6 +115,8 @@ for interpreter in "${interpreters[@]}"; do
   mkdir -p "$home_main/.config/fish" "$home_main/.composio/services" "$home_main/.local/bin"
   printf 'binary\n' >"$home_main/.composio/composio"
   printf 'service\n' >"$home_main/.composio/services/example.txt"
+  mkdir -p "$home_main/.composio/local-tools-binaries/peekaboo"
+  printf 'sidecar\n' >"$home_main/.composio/local-tools-binaries/peekaboo/peekaboo"
   printf 'keep me\n' >"$home_main/.composio/user-data.json"
   ln -s "$home_main/.composio/composio" "$home_main/.local/bin/composio"
   cat >"$home_main/.zshrc" <<'EOF'
@@ -165,6 +167,7 @@ EOF
   [[ ! -e "$home_main/.local/bin/composio" ]] || fail "$interpreter_name kept the bin entry point"
   [[ ! -e "$home_main/.composio/composio" ]] || fail "$interpreter_name kept the installed binary"
   [[ ! -e "$home_main/.composio/services" ]] || fail "$interpreter_name kept the services directory"
+  [[ ! -e "$home_main/.composio/local-tools-binaries" ]] || fail "$interpreter_name kept legacy sidecars"
   [[ -f "$home_main/.composio/user-data.json" ]] || fail "$interpreter_name deleted user state"
   assert_no_predictable_tmp "$home_main" "$interpreter_name main case"
 
