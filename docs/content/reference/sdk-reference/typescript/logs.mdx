@@ -20,7 +20,7 @@ Retrieve one tool-execution log with its full detail (timings, context,
 source and raw `data`).
 
 ```typescript
-async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ context: { requestId?: string; sessionId?: string; traceId?: string }; data: Record<string, unknown>; id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: { logId: string; toolSlug: string } | null; source: { framework?: string; host?: string; language?: string }; status: 'success' | 'failed'; timestamp: string; timings?: { endTime: number; startTime: number }; type: string }>
+async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ context: { requestId?: string; sessionId?: string; traceId?: string }; data: Record<string, unknown>; id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: { instant_charge?: string } & object; metrics: Record<string, unknown>; parent: { logId: string; toolSlug: string } | null; source: { framework?: string; host?: string; language?: string }; status: 'success' | 'failed'; timestamp: string; timings?: { endTime: number; startTime: number }; type: string }>
 ```
 
 **Parameters**
@@ -32,7 +32,7 @@ async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ contex
 
 **Returns**
 
-`Promise<\{ context: \{ requestId?: string; sessionId?: string; traceId?: string \}; data: Record<string, unknown>; id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: \{ logId: string; toolSlug: string \} \| null; source: \{ framework?: string; host?: string; language?: string \}; status: 'success' \| 'failed'; timestamp: string; timings?: \{ endTime: number; startTime: number \}; type: string \}>` — The log detail
+`Promise<\{ context: \{ requestId?: string; sessionId?: string; traceId?: string \}; data: Record<string, unknown>; id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: \{ instant_charge?: string \} & object; metrics: Record<string, unknown>; parent: \{ logId: string; toolSlug: string \} \| null; source: \{ framework?: string; host?: string; language?: string \}; status: 'success' \| 'failed'; timestamp: string; timings?: \{ endTime: number; startTime: number \}; type: string \}>` — The log detail, with an optional exact USD charge in `metadata.instant_charge`
 
 **Example**
 
@@ -49,7 +49,7 @@ Search tool-execution logs with filters, a time range and cursor
 pagination.
 
 ```typescript
-async search(params?: { cursor?: string | null; filters?: { field: 'status' | 'tool_slug' | 'toolkit_slug' | 'connected_account_id' | 'auth_config_id' | 'user_id' | 'session_id' | 'sandbox_id' | 'request_id' | 'log_id'; operator: '==' | '!=' | 'contains' | 'not_contains'; value: string }[]; limit?: number; timeRange?: { from: number; to: number } }, requestOptions?: ComposioRequestOptions): Promise<{ logs: { id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: { logId: ...; toolSlug: ... } | null; status: 'success' | 'failed'; timestamp: string; type: string }[]; nextCursor: string | null }>
+async search(params?: { cursor?: string | null; filters?: { field: 'status' | 'tool_slug' | 'toolkit_slug' | 'connected_account_id' | 'auth_config_id' | 'user_id' | 'session_id' | 'sandbox_id' | 'request_id' | 'log_id'; operator: '==' | '!=' | 'contains' | 'not_contains'; value: string }[]; limit?: number; timeRange?: { from: number; to: number } }, requestOptions?: ComposioRequestOptions): Promise<{ logs: { id: string; level: 'error' | 'warn' | 'info'; message?: string; metadata: { instant_charge?: ... } & object; metrics: Record<string, unknown>; parent: { logId: ...; toolSlug: ... } | null; status: 'success' | 'failed'; timestamp: string; type: string }[]; nextCursor: string | null }>
 ```
 
 **Parameters**
@@ -61,7 +61,7 @@ async search(params?: { cursor?: string | null; filters?: { field: 'status' | 't
 
 **Returns**
 
-`Promise<\{ logs: \{ id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: Record<string, unknown>; metrics: Record<string, unknown>; parent: \{ logId: ...; toolSlug: ... \} \| null; status: 'success' \| 'failed'; timestamp: string; type: string \}[]; nextCursor: string \| null \}>` — Matching logs and the next cursor
+`Promise<\{ logs: \{ id: string; level: 'error' \| 'warn' \| 'info'; message?: string; metadata: \{ instant_charge?: ... \} & object; metrics: Record<string, unknown>; parent: \{ logId: ...; toolSlug: ... \} \| null; status: 'success' \| 'failed'; timestamp: string; type: string \}[]; nextCursor: string \| null \}>` — Matching logs and the next cursor. Charged calls include `metadata.instant_charge` as an exact USD string.
 
 **Example**
 

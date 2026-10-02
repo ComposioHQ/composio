@@ -1,10 +1,6 @@
 import { Data, Effect, Option } from 'effect';
 import type { Composio } from '@composio/client';
 import {
-  createLocalToolRouterExperimentalPayload,
-  getAllLocalToolkitSlugs,
-} from '@composio/cli-local-tools';
-import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
   getFreshConsumerToolRouterConnectedAccountsFromCache,
   writeConsumerConnectedToolkitsCache,
@@ -13,8 +9,6 @@ import {
   resolveToolRouterSessionConnections,
   type ToolRouterSessionConnectionContext,
 } from 'src/services/tool-router-session-connections';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import {
   ENHANCED_LINK_URL_OVERWRITE,
   getConsumerPermissionSnapshot,
@@ -42,27 +36,14 @@ export interface CreateToolRouterSessionOptions {
     readonly maxAccountsPerToolkit?: number;
     readonly requireExplicitSelection?: boolean;
   };
-  /** Include bundled local CLI toolkits as Tool Router custom toolkits. Default: true. */
-  readonly localTools?: {
-    readonly enable?: boolean;
-  };
 }
 
 export interface CreatedToolRouterSession {
   readonly sessionId: string;
-  /** Inline local-tool custom definitions that should be forwarded to v3.1 search/execute calls. */
-  readonly localExperimentalPayload?: ReturnType<typeof createLocalToolRouterExperimentalPayload>;
   readonly permissionSnapshot?: ConsumerPermissionSnapshot;
   readonly connectedAccounts?: Record<string, string>;
   readonly connectedAccountWordIds?: Record<string, string>;
 }
-
-export class LocalToolRouterDisabledError extends Data.TaggedError(
-  'effects/LocalToolRouterDisabledError'
-)<{
-  readonly message: string;
-  readonly requestedToolkits: ReadonlyArray<string>;
-}> {}
 
 export class ToolRouterSessionCreateError extends Data.TaggedError(
   'effects/ToolRouterSessionCreateError'
@@ -73,7 +54,7 @@ export class ToolRouterSessionCreateError extends Data.TaggedError(
 
 /**
  * Create an ephemeral Tool Router session for the given user ID.
- * Returns the session id plus any local-tool custom payload bound to the session.
+ * Returns the session id plus the permission and connected-account context bound to it.
  *
  * Accepts a pre-resolved client instance (from ComposioClientSingleton)
  * so callers can resolve the dependency at layer construction time.
@@ -90,33 +71,6 @@ export const createToolRouterSessionContext = (
       return Object.keys(merged).length > 0 ? merged : undefined;
     };
     const requestedToolkits = options?.toolkits ?? [];
-    const cliConfig = yield* ComposioCliUserConfig;
-    const localToolsEnabled =
-      options?.localTools?.enable ??
-      cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS);
-    const localToolkitSlugs = new Set(getAllLocalToolkitSlugs());
-    const requestedLocalToolkits = requestedToolkits.filter(toolkit =>
-      localToolkitSlugs.has(toolkit.toLowerCase())
-    );
-    const remoteToolkits = requestedToolkits.filter(
-      toolkit => !localToolkitSlugs.has(toolkit.toLowerCase())
-    );
-    const shouldIncludeLocalToolkits =
-      requestedToolkits.length === 0 || requestedLocalToolkits.length > 0;
-    if (!localToolsEnabled && requestedLocalToolkits.length > 0) {
-      return yield* Effect.fail(
-        new LocalToolRouterDisabledError({
-          message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before using toolkit filter(s): ${requestedLocalToolkits.join(', ')}.`,
-          requestedToolkits: requestedLocalToolkits,
-        })
-      );
-    }
-    const localExperimentalPayload =
-      !localToolsEnabled || !shouldIncludeLocalToolkits
-        ? undefined
-        : createLocalToolRouterExperimentalPayload({
-            toolkits: requestedToolkits.length > 0 ? requestedLocalToolkits : undefined,
-          });
     const excludedToolkits = new Set(
       (options?.excludeConnectedAccountsForToolkits ?? []).map(toolkit => toolkit.toLowerCase())
     );
@@ -147,20 +101,20 @@ export const createToolRouterSessionContext = (
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
         })
       : Option.none();
     const cachedConnectedAccounts = options?.cacheScope
       ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
         })
       : Option.none();
 
     const connectionContext = Option.isSome(cachedAuthConfigs)
       ? {
-          connectedToolkits: remoteToolkits,
+          connectedToolkits: requestedToolkits,
           authConfigs: cachedAuthConfigs.value.authConfigs,
           connectedAccounts: mergeConnectedAccounts(
             filterConnectedAccounts(
@@ -175,7 +129,7 @@ export const createToolRouterSessionContext = (
             : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
         }).pipe(
           Effect.map(connectionContext => ({
             ...connectionContext,
@@ -212,13 +166,6 @@ export const createToolRouterSessionContext = (
           connectedAccountIds,
         })
       : undefined;
-    const experimentalPayload = {
-      ...(localExperimentalPayload ?? {}),
-      ...(permissionSnapshot?.enhancedControlsEnabled
-        ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
-        : {}),
-    };
-
     return yield* Effect.tryPromise({
       try: () =>
         client.toolRouter.session.create({
@@ -233,9 +180,10 @@ export const createToolRouterSessionContext = (
                 require_explicit_selection: options.multiAccount.requireExplicitSelection,
               }
             : undefined,
-          toolkits: remoteToolkits.length > 0 ? { enable: [...remoteToolkits] } : undefined,
-          experimental:
-            Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
+          toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+          experimental: permissionSnapshot?.enhancedControlsEnabled
+            ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
+            : undefined,
         }),
       catch: cause =>
         new ToolRouterSessionCreateError({
@@ -245,7 +193,6 @@ export const createToolRouterSessionContext = (
     }).pipe(
       Effect.map((session): CreatedToolRouterSession => ({
         sessionId: session.session_id,
-        localExperimentalPayload,
         permissionSnapshot,
         connectedAccounts: connectionContext.connectedAccounts,
         connectedAccountWordIds: resolveConnectedAccountWordIds(

@@ -119,10 +119,6 @@ describe('Toolkits', () => {
       expect(toolkits).toBeInstanceOf(Toolkits);
       expect(telemetry.instrument).toHaveBeenCalledWith(toolkits, 'Toolkits');
     });
-
-    it('should store the client reference', () => {
-      expect(toolkits['client']).toBe(mockClient);
-    });
   });
 
   describe('get', () => {

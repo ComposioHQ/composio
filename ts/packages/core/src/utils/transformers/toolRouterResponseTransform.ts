@@ -1,6 +1,24 @@
 /**
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
+import { z } from 'zod/v3';
+import {
+  ToolRouterInstantResponseSchema,
+  type ToolRouterInstantResponse,
+} from '../../types/toolRouter.types';
+
+const SessionConfigInstantSchema = z.object({
+  instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional(),
+});
+
+/** Session config retains its API casing, including `instant.return_instant_charge`. */
+export function transformSessionConfig<Config extends { premium_usage?: unknown }>(
+  raw: Config
+): Omit<Config, 'premium_usage'> & { instant?: false | ToolRouterInstantResponse } {
+  const { instant } = SessionConfigInstantSchema.parse(raw);
+  const { premium_usage: _previousPolicy, ...config } = raw;
+  return { ...config, ...(instant !== undefined && { instant }) };
+}
 
 interface RawSearchResult {
   index: number;
@@ -51,7 +69,7 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
-  hosted_account?: { allowed_tool_slugs: string[] };
+  instant_account?: { allowed_tool_slugs: string[] };
 }
 
 interface RawSearchResponse {
@@ -69,7 +87,7 @@ interface RawExecuteResponse {
   data: Record<string, unknown>;
   error: string | null;
   log_id: string;
-  premium_charge?: unknown;
+  instant_charge?: unknown;
 }
 
 function transformSearchResult(raw: RawSearchResult) {
@@ -116,8 +134,8 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     statusMessage: raw.status_message,
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
-    ...(raw.hosted_account !== undefined && {
-      hostedAccount: { allowedToolSlugs: raw.hosted_account.allowed_tool_slugs },
+    ...(raw.instant_account !== undefined && {
+      instantAccount: { allowedToolSlugs: raw.instant_account.allowed_tool_slugs },
     }),
   };
 }
@@ -161,6 +179,6 @@ export function transformExecuteResponse(raw: RawExecuteResponse) {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
-    ...(raw.premium_charge !== undefined && { premiumCharge: raw.premium_charge }),
+    ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
   };
 }

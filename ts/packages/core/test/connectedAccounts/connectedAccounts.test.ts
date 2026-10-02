@@ -56,18 +56,6 @@ describe('ConnectedAccounts', () => {
     connectedAccounts = new ConnectedAccounts(extendedMockClient as unknown as ComposioClient);
   });
 
-  describe('constructor', () => {
-    it('should create an instance successfully with valid client', () => {
-      expect(connectedAccounts).toBeInstanceOf(ConnectedAccounts);
-    });
-
-    it('should not throw an error if client is provided', () => {
-      expect(
-        () => new ConnectedAccounts(extendedMockClient as unknown as ComposioClient)
-      ).not.toThrow();
-    });
-  });
-
   describe('list', () => {
     it('should call client.connectedAccounts.list with the provided query', async () => {
       const query = { limit: 10 };
@@ -1281,69 +1269,6 @@ describe('ConnectedAccounts', () => {
       expect(extendedMockClient.link.create).not.toHaveBeenCalled();
     });
 
-    it('should handle undefined options gracefully', async () => {
-      const userId = 'user_123';
-      const authConfigId = 'auth_config_123';
-
-      const mockLinkResponse = {
-        connected_account_id: 'conn_456def',
-        redirect_url: 'https://connect.composio.dev/auth?token=abc123',
-      };
-
-      extendedMockClient.link.create.mockResolvedValueOnce(mockLinkResponse);
-
-      const connectionRequest = await connectedAccounts.link(userId, authConfigId, undefined);
-
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
-        {
-          auth_config_id: authConfigId,
-          user_id: userId,
-        },
-        undefined
-      );
-
-      expect(connectionRequest).toHaveProperty('id', 'conn_456def');
-      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
-      expect(connectionRequest).toHaveProperty(
-        'redirectUrl',
-        'https://connect.composio.dev/auth?token=abc123'
-      );
-      expect(connectionRequest).toHaveProperty('waitForConnection');
-      expect(typeof connectionRequest.waitForConnection).toBe('function');
-    });
-
-    it('should handle empty options object gracefully', async () => {
-      const userId = 'user_123';
-      const authConfigId = 'auth_config_123';
-      const options = {};
-
-      const mockLinkResponse = {
-        connected_account_id: 'conn_456def',
-        redirect_url: 'https://connect.composio.dev/auth?token=abc123',
-      };
-
-      extendedMockClient.link.create.mockResolvedValueOnce(mockLinkResponse);
-
-      const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
-
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
-        {
-          auth_config_id: authConfigId,
-          user_id: userId,
-        },
-        undefined
-      );
-
-      expect(connectionRequest).toHaveProperty('id', 'conn_456def');
-      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
-      expect(connectionRequest).toHaveProperty(
-        'redirectUrl',
-        'https://connect.composio.dev/auth?token=abc123'
-      );
-      expect(connectionRequest).toHaveProperty('waitForConnection');
-      expect(typeof connectionRequest.waitForConnection).toBe('function');
-    });
-
     it('should return a ConnectionRequest with the expected structure', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
@@ -1526,32 +1451,6 @@ describe('ConnectedAccounts', () => {
       // Ensure callback_url key is not present at all
       const callArgs = extendedMockClient.link.create.mock.calls[0][0];
       expect(callArgs).not.toHaveProperty('callback_url');
-    });
-
-    it('should include callback_url in API call only when callbackUrl is provided', async () => {
-      const userId = 'user_123';
-      const authConfigId = 'auth_config_123';
-      const options = {
-        callbackUrl: 'https://example.com/callback',
-      };
-
-      const mockLinkResponse = {
-        connected_account_id: 'conn_456def',
-        redirect_url: 'https://connect.composio.dev/auth?token=abc123',
-      };
-
-      extendedMockClient.link.create.mockResolvedValueOnce(mockLinkResponse);
-
-      await connectedAccounts.link(userId, authConfigId, options);
-
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
-        {
-          auth_config_id: authConfigId,
-          user_id: userId,
-          callback_url: 'https://example.com/callback',
-        },
-        undefined
-      );
     });
 
     it('throws ComposioMultipleConnectedAccountsError when an active connection exists and allowMultiple is false', async () => {

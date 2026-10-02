@@ -85,6 +85,9 @@ export interface Platform {
   writeFileSync(filePath: string, content: Uint8Array, encoding?: never): void;
   writeFileSync(filePath: string, content: string, encoding: Uint8ArrayEncoding): void;
 
+  /** Writes a new file, failing if its path already exists. A failed write removes the file. */
+  writeFileExclusiveSync(filePath: string, content: Uint8Array): void;
+
   /**
    * Indicates whether this platform supports file system operations.
    * Edge runtimes like Cloudflare Workers return false.

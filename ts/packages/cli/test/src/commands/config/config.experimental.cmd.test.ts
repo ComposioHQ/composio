@@ -116,7 +116,7 @@ describe('config experimental skill discovery', () => {
 layer(TestLive())('config experimental state validation', it => {
   it.effect('reports an invalid state as a structured domain failure', () =>
     Effect.gen(function* () {
-      const exit = yield* Effect.exit(cli(['config', 'experimental', 'local_tools', 'sometimes']));
+      const exit = yield* Effect.exit(cli(['config', 'experimental', 'listen', 'sometimes']));
 
       expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {

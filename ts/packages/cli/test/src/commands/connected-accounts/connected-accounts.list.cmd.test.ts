@@ -257,4 +257,33 @@ describe('CLI: composio dev connected-accounts list', () => {
       })
     );
   });
+
+  // Credential-bearing fields the API may send must never reach stdout.
+  const credentialBearingAccounts = [
+    {
+      ...testConnectedAccounts[0],
+      state: { authScheme: 'OAUTH2', val: { access_token: 'tok_secret_state' } },
+      data: { access_token: 'tok_secret_data' },
+      params: { refresh_token: 'tok_secret_params' },
+    },
+  ];
+
+  layer(
+    TestLive({
+      baseConfigProvider: testDevConfigProvider,
+      connectedAccountsData: { items: credentialBearingAccounts },
+    })
+  )('[Given] an account payload with tokens [Then] prints it without them', it => {
+    it.effect('keeps state, data, and params out of the output', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['dev', 'connected-accounts', 'list']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('con_gmail_active');
+        expect(output).not.toContain('tok_secret');
+      })
+    );
+  });
 });

@@ -8,6 +8,7 @@ import {
   getSessionInfo,
   getSessionInfoByUserApiKey,
   listOrganizations,
+  sessionUserIdOf,
   type OrganizationSummary,
   type SessionInfoResponse,
 } from 'src/services/composio-clients';
@@ -328,14 +329,13 @@ const completeAgentLogin = (identity: AgentIdentity) =>
 
 const resolveDirectLoginOrganization = (params: {
   apiKey: string;
-  baseURL: string;
   requestedOrg?: string;
   fallbackOrgId: string;
   fallbackOrgName?: string;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { apiKey, baseURL, requestedOrg, fallbackOrgId, fallbackOrgName } = params;
+    const { apiKey, requestedOrg, fallbackOrgId, fallbackOrgName } = params;
 
     if (!requestedOrg) {
       return {
@@ -344,10 +344,7 @@ const resolveDirectLoginOrganization = (params: {
       };
     }
 
-    const organizations = yield* listOrganizations({
-      baseURL,
-      apiKey,
-    });
+    const organizations = yield* listOrganizations({ apiKey });
     const match = organizations.data.find(
       org => org.id === requestedOrg || org.name === requestedOrg
     );
@@ -367,19 +364,17 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
     const sessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
       userApiKey: params.userApiKey,
     });
 
     const selectedOrg = yield* resolveDirectLoginOrganization({
       apiKey: params.userApiKey,
-      baseURL: ctx.data.baseURL,
       requestedOrg: params.org,
       fallbackOrgId: sessionInfo.project.org.id,
       fallbackOrgName: sessionInfo.project.org.name,
     });
 
-    const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
+    const sessionUserId = sessionUserIdOf(sessionInfo);
     const testUserId = sessionUserId
       ? `pg-test-${sessionUserId}`
       : Option.getOrUndefined(ctx.data.testUserId);
@@ -387,7 +382,6 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
     yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
     yield* linkAnalyticsIdentityForOrg({
       apiKey: params.userApiKey,
-      baseURL: ctx.data.baseURL,
       orgId: selectedOrg.id,
       knownIdentity: {
         orgId: sessionInfo.project.org.id,
@@ -412,7 +406,6 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
  * data and avoids hand-rolled structural types.
  */
 const storeCredentials = (params: {
-  baseURL: string;
   uakApiKey: string;
   initialOrgId: string;
   initialProjectId: string;
@@ -428,7 +421,6 @@ const storeCredentials = (params: {
     const ctx = yield* ComposioUserContext;
 
     const {
-      baseURL,
       uakApiKey,
       initialOrgId,
       initialProjectId,
@@ -441,20 +433,16 @@ const storeCredentials = (params: {
     // Call session/info to enrich the login with org/project metadata.
     // All errors are non-fatal (browser login) since the linked session is already authenticated.
     const sessionInfo: SessionInfoResponse | undefined = yield* getSessionInfo({
-      baseURL,
       apiKey: uakApiKey,
       orgId: initialOrgId,
       projectId: initialProjectId,
     }).pipe(
-      Effect.catchTag('services/HttpServerError', e =>
+      // Catch-all rather than per-tag: the linked session is already
+      // authenticated, so no way this enrichment can fail may stop the
+      // credential from being stored.
+      Effect.catch(e =>
         Effect.gen(function* () {
-          yield* Effect.logDebug(`Session info fetch failed (HTTP ${e.status ?? '?'}):`, e);
-          return undefined;
-        })
-      ),
-      Effect.catchTag('services/HttpDecodingError', e =>
-        Effect.gen(function* () {
-          yield* Effect.logDebug('Session info decoding error:', e);
+          yield* Effect.logDebug('Session info fetch failed:', e);
           return undefined;
         })
       )
@@ -464,7 +452,7 @@ const storeCredentials = (params: {
     // The initial IDs come from the linked session response (which may use session-level
     // identifiers rather than the actual org/project IDs).
     const orgId = sessionInfo?.project.org.id ?? initialOrgId;
-    const sessionUserId = sessionInfo?.org_member.user_id ?? sessionInfo?.org_member.id;
+    const sessionUserId = sessionInfo ? sessionUserIdOf(sessionInfo) : undefined;
     const testUserId = sessionUserId
       ? `pg-test-${sessionUserId}`
       : Option.getOrUndefined(ctx.data.testUserId);
@@ -480,7 +468,6 @@ const storeCredentials = (params: {
     if (!deferAnalyticsIdentity) {
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL,
         orgId,
         knownIdentity: sessionInfo
           ? {
@@ -583,13 +570,11 @@ const loginWithKey = (params: {
     const uakApiKey = linkedSession.api_key;
 
     const uakSessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
       userApiKey: uakApiKey,
     });
 
     const organizations = params.defaultToFirstOrg
       ? yield* listOrganizations({
-          baseURL: ctx.data.baseURL,
           apiKey: uakApiKey,
         }).pipe(
           Effect.map(response => response.data),
@@ -608,7 +593,6 @@ const loginWithKey = (params: {
 
     const willRunPicker = !params.skipOrgProjectPicker;
     yield* storeCredentials({
-      baseURL: ctx.data.baseURL,
       uakApiKey,
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
@@ -621,7 +605,6 @@ const loginWithKey = (params: {
     if (willRunPicker) {
       const result = yield* runOrgSelection({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
       }).pipe(
         Effect.catch(error =>
           Effect.gen(function* () {
@@ -632,7 +615,7 @@ const loginWithKey = (params: {
         )
       );
       if (result) {
-        const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
+        const sessionUserId = sessionUserIdOf(uakSessionInfo);
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
         yield* ctx.login(
           uakApiKey,
@@ -647,7 +630,6 @@ const loginWithKey = (params: {
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
         orgId: finalOrgId,
         knownIdentity: {
           orgId: uakSessionInfo.project.org.id,
@@ -802,7 +784,6 @@ export const browserLogin = (params: {
     const uakApiKey = linkedSession.api_key;
 
     const uakSessionInfo = yield* getSessionInfoByUserApiKey({
-      baseURL: ctx.data.baseURL,
       userApiKey: uakApiKey,
     });
 
@@ -815,7 +796,6 @@ export const browserLogin = (params: {
 
     const willRunPicker = params.scope === 'user' && !params.skipOrgProjectPicker;
     yield* storeCredentials({
-      baseURL: ctx.data.baseURL,
       uakApiKey,
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
@@ -828,7 +808,6 @@ export const browserLogin = (params: {
     if (willRunPicker) {
       const result = yield* runOrgSelection({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
       }).pipe(
         Effect.catch(error =>
           Effect.gen(function* () {
@@ -839,7 +818,7 @@ export const browserLogin = (params: {
         )
       );
       if (result) {
-        const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
+        const sessionUserId = sessionUserIdOf(uakSessionInfo);
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
         yield* ctx.login(
           uakApiKey,
@@ -854,7 +833,6 @@ export const browserLogin = (params: {
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* linkAnalyticsIdentityForOrg({
         apiKey: uakApiKey,
-        baseURL: ctx.data.baseURL,
         orgId: finalOrgId,
         knownIdentity: {
           orgId: uakSessionInfo.project.org.id,

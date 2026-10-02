@@ -1,8 +1,8 @@
 {
-  "effect": "4.0.0-rc.115",
-  "@effect/platform-bun": "4.0.0-rc.115",
-  "@effect/vitest": "4.0.0-rc.115",
-  "@types/node": "26.6.0",
+  "effect": "4.0.0-rc.117",
+  "@effect/platform-bun": "4.0.0-rc.117",
+  "@effect/vitest": "4.0.0-rc.117",
+  "@types/node": "26.6.2",
   "typescript": "6.0.2",
   "vitest": "5.0.1"
 }

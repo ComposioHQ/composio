@@ -1,5 +1,18 @@
 # @e2e-tests/node-mastra-tool-router-zod-v4
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [f478a3d]
+- Updated dependencies [f478a3d]
+- Updated dependencies [485c09d]
+- Updated dependencies [e7580cf]
+- Updated dependencies [ae3c069]
+- Updated dependencies [e182bc8]
+  - @composio/core@0.22.0
+  - @composio/mastra@0.10.5
+
 ## 0.0.5
 
 ### Patch Changes
