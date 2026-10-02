@@ -1,10 +1,37 @@
 ---
 title: Configuring Sessions
-description: Enable toolkits, set auth configs, and select connected accounts
-keywords: [session, toolkits, auth configs, connected accounts]
+description: Choose tool access, discovery, authentication, and runtime settings for your agent
+keywords: [session, toolkits, auth configs, connected accounts, preload, session config]
 ---
 
-## Creating a session
+Your agent may need broad access to apps, a small set of tools for one job, or a policy you can reuse across users. Start with the default session, then configure only what your use case needs.
+
+## What do you want to do?
+
+### Set policy and governance
+
+Decide what the agent may access. You can skip these filters for a broad agent; the default keeps the catalog available.
+
+- [Limit apps, individual actions, or behavior](#set-the-access-boundary) with `toolkits`, `tools`, and `tags`.
+- [Change a running session](#change-a-running-session) when the policy needs to change. Check replacement and clearing rules before widening access.
+
+### Simplify repeated session configuration
+
+Use [a saved Session config](#reuse-an-access-policy) when you want to reuse a Dashboard-managed access policy. The policy resolves when you create or apply it and is stored in that session; later Dashboard edits do not change it.
+
+### Choose the agent's tool-loading flow
+
+[Compare discovery, preload, and direct tools](#choose-how-the-agent-gets-tools): discover tools for broad tasks, preload a few known actions, or give a specialized agent a fixed tool list.
+
+### Choose accounts and runtime
+
+- [Select credentials and connected accounts](#choose-credentials-and-accounts) when the agent must use your OAuth configuration or a particular user connection.
+- [Configure the sandbox](#choose-the-sandbox-runtime) when the agent needs code execution, more compute, or no sandbox at all.
+
+## Start with a default session
+
+<a id="creating-a-session" />
+
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -26,7 +53,7 @@ By default, a session has access to every toolkit in the Composio catalog. Your 
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
-### API key permissions
+#### API key permissions
 
 If you use a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), grant permissions for the session operations your application needs:
 
@@ -35,95 +62,12 @@ If you use a [scoped project API key](/reference/authenticating-to-composio/proj
 
 Enable both permissions if your application manages sessions and executes tools through them.
 
-## Using a saved Session config
+## Set the access boundary
 
-A **Session config** is a saved, named access policy (`sc_…`) that you build in the Composio Dashboard under Sessions → Configs. Start a session from one instead of repeating `toolkits`, `tools`, and `tags` in your code:
+Choose the narrowest filter that expresses the job: apps with `toolkits`, individual actions with `tools`, or behavior with `tags`. Omitting `toolkits` leaves the catalog available; a per-toolkit rule is not a global app allowlist.
 
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const { items } = await composio.sessionConfigs.list({ search: "support" });
+### Enabling toolkits
 
-const session = await composio.sessions.create("user_123", {
-  authConfigs: { github: "ac_123" },
-  experimental: { sessionConfigId: items[0].id },
-});
-
-console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
-```
-
-The backend resolves the config when it creates the session, so the session gets exactly the access the config grants. Later edits to the config in the Dashboard don't change sessions that already exist.
-
-<Callout type="info">
-The top-level `composio.sessionConfigs` read methods are available in TypeScript. Applying a config and reading its source metadata use `experimental`. Reads require Session configs enabled for your project; otherwise they return `403`. With a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions#session-management), they need the **Session management** read permission.
-</Callout>
-
-### Finding a config
-
-`composio.sessionConfigs.list()` returns summaries (`id`, `name`, `archived`, `createdAt`, `updatedAt`) and a `nextCursor`. It returns active configs unless you pass `archived: true`, which returns only archived ones. Pass `search` to match names and `limit` and `cursor` to page; the backend returns 20 per page by default and at most 100.
-
-`composio.sessionConfigs.get(id)` adds the `description` and the stored policy under `config`:
-
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const sessionConfig = await composio.sessionConfigs.get("sc_123");
-
-console.log(sessionConfig.config);
-// { toolkits: { enable: ["github"] }, tags: { disable: ["destructiveHint"] } }
-```
-
-A saved policy uses `enable` and `disable`, the same shape you send on create. `session.config` is the server's snapshot of a live session and names the same lists `enabled` and `disabled`.
-
-### What you can combine with a config
-
-The config owns the session's toolkit, tool, and tag access. On `create()`, you can't pass `sessionConfigId` together with `toolkits`, `tools`, `tags`, `experimental.customTools`, or `experimental.customToolkits`. TypeScript reports the mix at compile time, and the SDK throws `ValidationError` before it sends a request. An empty list such as `toolkits: []` counts as set.
-
-Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
-
-`SessionPreset.DIRECT_TOOLS` defaults to `preload: { tools: "all" }` when you omit `preload`. With a saved config, the backend resolves its policy before validating that preload. The policy must select toolkits with `enable`, enable specific tools, or enable tags within a named toolkit's tool rule. An unrestricted policy, a denylist-only policy, or top-level tags alone returns `400`. The resolved tool set must also contain at most 1,000 tools.
-
-Live verification accepted `DIRECT_TOOLS` with a saved config that provided a positive toolkit/tool scope. The no-positive-scope case was not exercised in that run; its `400` behavior is enforced by the API's preload validation. The SDK passes these API errors through unchanged.
-
-### Applying a config to an existing session
-
-Pass `sessionConfigId` in the `experimental` block of `session.update()` to replace the session's toolkit, tool, and tag access with the config's policy. Other settings are preserved.
-
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.sessions.use("session_id");
-
-await session.update({ experimental: { sessionConfigId: "sc_123" } });
-```
-
-The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, or `tags`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
-
-A `409` while applying a config means the session or the config changed during the update. The SDK raises `ComposioSessionConfigConflictError`, and nothing was written: re-fetch the session with `sessions.use()` and retry.
-
-### Which config a session came from
-
-`session.experimental.sourceSessionConfig` holds `{ id }` of the last config applied to the session. The SDK sets it after `create()`, `sessions.use()`, and a successful `update()`. It stays set after later inline updates such as `update({ toolkits: [...] })`, and it's `undefined` when no config was applied. It reflects the last response this session object saw, so an update from another process leaves it stale until you call `sessions.use()` again.
-
-### When a config can't be used
-
-The SDK never retries without the config or falls back to an unrestricted session. A missing, archived, or cross-project config fails with the backend's `404`, and a project without Session configs fails with `403`. A failed `update()` leaves the session object unchanged.
-
-## Reading and updating session configuration
-
-In TypeScript, `session.config` exposes the configuration returned by the server. Call `session.update()` to change selected fields. It preserves omitted fields, updates `session.config` in place, and returns the updated configuration. See [Updating a session](/docs/how-composio-works#how-sessions-behave) for an example.
-
-<Callout>
-If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
-</Callout>
-
-## Enabling toolkits
 
 To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
 
@@ -161,7 +105,8 @@ const session2 = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-## Disabling toolkits
+### Disabling toolkits
+
 
 To keep every toolkit discoverable except a few, use the `disable` syntax. This is useful when you want broad access but need to exclude specific toolkits.
 
@@ -186,7 +131,8 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-## Denying every app toolkit
+### Denying every app toolkit
+
 
 An explicit empty allowlist means no app toolkits at all. Omitting `toolkits` keeps the unrestricted default, and an empty `disable` list is also unrestricted. The three requests are different:
 
@@ -225,154 +171,8 @@ Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (
 
 The session API rejects unknown root keys with a `400` before it creates anything. A typo such as a singular `toolkit` fails the request instead of silently creating an unrestricted session.
 
-## Direct tools preset
+### Enabling or disabling specific tools
 
-The direct tools preset preloads every tool allowed by session filters into the session's tool list and disables session meta tools by default. Use it for specialized agents with a narrow tool set that don't need dynamic tool discovery, in-chat auth, or workbench helpers.
-
-This is not the default mode for broad agents. The default session behavior keeps meta tools available so the agent can search for relevant tools and avoid context bloat.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
-from composio_openai_agents import OpenAIAgentsProvider
-
-composio = Composio(
-    api_key="your_api_key",
-    provider=OpenAIAgentsProvider(),
-)
-
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["gmail"],
-    tools={
-        "gmail": {
-            "enable": [
-                "GMAIL_FETCH_EMAILS",
-                "GMAIL_CREATE_EMAIL_DRAFT",
-            ],
-        },
-    },
-    session_preset=SESSION_PRESET_DIRECT_TOOLS,
-)
-
-tools = session.tools()
-print([tool.name for tool in tools])
-# GMAIL_FETCH_EMAILS
-# GMAIL_CREATE_EMAIL_DRAFT
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio, SessionPreset } from '@composio/core';
-import { OpenAIAgentsProvider } from '@composio/openai-agents';
-
-const composio = new Composio({
-  apiKey: 'your_api_key',
-  provider: new OpenAIAgentsProvider(),
-});
-// ---cut---
-const session = await composio.create("user_123", {
-  toolkits: ["gmail"],
-  tools: {
-    gmail: {
-      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
-    },
-  },
-  sessionPreset: SessionPreset.DIRECT_TOOLS,
-});
-
-const tools = await session.tools();
-console.log(tools.map((tool) => tool.name));
-// GMAIL_FETCH_EMAILS
-// GMAIL_CREATE_EMAIL_DRAFT
-```
-</Tab>
-</Tabs>
-
-### Enable selected meta tools
-
-With the direct tools preset, you can re-enable supported meta tool groups that your agent still needs. This session loads Gmail tools upfront while keeping connection management and workbench support available:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
-from composio_openai_agents import OpenAIAgentsProvider
-
-composio = Composio(
-    api_key="your_api_key",
-    provider=OpenAIAgentsProvider(),
-)
-
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["gmail"],
-    tools={
-        "gmail": {
-            "enable": [
-                "GMAIL_FETCH_EMAILS",
-                "GMAIL_CREATE_EMAIL_DRAFT",
-            ],
-        },
-    },
-    session_preset=SESSION_PRESET_DIRECT_TOOLS,
-    manage_connections={
-        "enable": True,
-    },
-    sandbox={
-        "enable": True,
-    },
-)
-
-tools = session.tools()
-print([tool.name for tool in tools])
-# GMAIL_FETCH_EMAILS
-# GMAIL_CREATE_EMAIL_DRAFT
-# COMPOSIO_MANAGE_CONNECTIONS
-# COMPOSIO_REMOTE_WORKBENCH
-# COMPOSIO_REMOTE_BASH_TOOL
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio, SessionPreset } from '@composio/core';
-import { OpenAIAgentsProvider } from '@composio/openai-agents';
-
-const composio = new Composio({
-  apiKey: 'your_api_key',
-  provider: new OpenAIAgentsProvider(),
-});
-// ---cut---
-const session = await composio.create("user_123", {
-  toolkits: ["gmail"],
-  tools: {
-    gmail: {
-      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
-    },
-  },
-  sessionPreset: SessionPreset.DIRECT_TOOLS,
-  manageConnections: {
-    enable: true,
-  },
-  sandbox: {
-    enable: true,
-  },
-});
-
-const tools = await session.tools();
-console.log(tools.map((tool) => tool.name));
-// GMAIL_FETCH_EMAILS
-// GMAIL_CREATE_EMAIL_DRAFT
-// COMPOSIO_MANAGE_CONNECTIONS
-// COMPOSIO_REMOTE_WORKBENCH
-// COMPOSIO_REMOTE_BASH_TOOL
-```
-</Tab>
-</Tabs>
-
-## Enabling or disabling specific tools
 
 To control which individual tools are available within a toolkit, use the `tools` configuration. The key is the toolkit slug and the value specifies which tools to enable or disable.
 
@@ -471,7 +271,8 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-## Filtering tools by tags
+### Filtering tools by tags
+
 
 Tools carry behavior tags that you can filter on. Every tool carries at least one of these four:
 
@@ -569,7 +370,121 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-## Preloading tools
+## Reuse an access policy
+
+<a id="using-a-saved-session-config" />
+
+Use inline filters when the access policy belongs in application code. Use a saved Session config when you want to reuse a Dashboard-managed policy across sessions. It replaces inline toolkit, tool, and tag filters rather than adding another layer.
+
+
+A **Session config** is a saved, named access policy (`sc_…`) that you build in the Composio Dashboard under Sessions → Configs. Start a session from one instead of repeating `toolkits`, `tools`, and `tags` in your code:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const { items } = await composio.sessionConfigs.list({ search: "support" });
+
+const session = await composio.sessions.create("user_123", {
+  authConfigs: { github: "ac_123" },
+  experimental: { sessionConfigId: items[0].id },
+});
+
+console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
+```
+
+The backend resolves the saved config when you create the session and stores the resolved policy in that session. Later Dashboard edits do not change existing sessions. Apply a config again with `session.update()` to replace an existing session's access policy.
+
+<Callout type="info">
+The top-level `composio.sessionConfigs` read methods are available in TypeScript. Applying a config and reading its source metadata use `experimental`. Reads require Session configs enabled for your project; otherwise they return `403`. With a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions#session-management), they need the **Session management** read permission.
+</Callout>
+
+#### Finding a config
+
+`composio.sessionConfigs.list()` returns summaries (`id`, `name`, `archived`, `createdAt`, `updatedAt`) and a `nextCursor`. It returns active configs unless you pass `archived: true`, which returns only archived ones. Pass `search` to match names and `limit` and `cursor` to page; the backend returns 20 per page by default and at most 100.
+
+`composio.sessionConfigs.get(id)` adds the `description` and the stored policy under `config`:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const sessionConfig = await composio.sessionConfigs.get("sc_123");
+
+console.log(sessionConfig.config);
+// { toolkits: { enable: ["github"] }, tags: { disable: ["destructiveHint"] } }
+```
+
+A saved policy uses `enable` and `disable`, the same shape you send on create. `session.config` is the server's snapshot of a live session and names the same lists `enabled` and `disabled`.
+
+#### What you can combine with a config
+
+The config owns the session's toolkit, tool, and tag access. On `create()`, you can't pass `sessionConfigId` together with `toolkits`, `tools`, `tags`, `experimental.customTools`, or `experimental.customToolkits`. TypeScript reports the mix at compile time, and the SDK throws `ValidationError` before it sends a request. An empty list such as `toolkits: []` counts as set.
+
+Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
+
+`SessionPreset.DIRECT_TOOLS` defaults to `preload: { tools: "all" }` when you omit `preload`. With a saved config, the backend resolves its policy before validating that preload. The policy must select toolkits with `enable`, enable specific tools, or enable tags within a named toolkit's tool rule. An unrestricted policy, a denylist-only policy, or top-level tags alone returns `400`. The resolved tool set must also contain at most 1,000 tools.
+
+The SDK passes these API errors through unchanged.
+
+#### Applying a config to an existing session
+
+Pass `sessionConfigId` in the `experimental` block of `session.update()` to replace the session's toolkit, tool, and tag access with the config's policy. Other settings are preserved.
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.sessions.use("session_id");
+
+await session.update({ experimental: { sessionConfigId: "sc_123" } });
+```
+
+The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, or `tags`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
+
+A `409` while applying a config means the session or the config changed during the update. The SDK raises `ComposioSessionConfigConflictError`, and nothing was written: re-fetch the session with `sessions.use()` and retry.
+
+#### Which config a session came from
+
+`session.experimental.sourceSessionConfig` holds `{ id }` of the last config applied to the session. The SDK sets it after `create()`, `sessions.use()`, and a successful `update()`. It stays set after later inline updates such as `update({ toolkits: [...] })`, and it's `undefined` when no config was applied. It reflects the last response this session object saw, so an update from another process leaves it stale until you call `sessions.use()` again.
+
+#### When a config can't be used
+
+The SDK never retries without the config or falls back to an unrestricted session. A missing, archived, or cross-project config fails with the backend's `404`, and a project without Session configs fails with `403`. A failed `update()` leaves the session object unchanged.
+
+## Choose how the agent gets tools
+
+Access filters decide what the agent can use. The options below decide which tools it sees upfront.
+
+<Tabs groupId="session-tool-loading" items={['Discover as needed', 'Preload known tools', 'Direct tools only']}>
+<Tab value="Discover as needed">
+
+**Use for:** general-purpose agents whose next task may need a different app.
+
+Keep the default session. It exposes meta tools such as `COMPOSIO_SEARCH_TOOLS`, so the agent can find app tools without loading the full catalog into context.
+
+</Tab>
+<Tab value="Preload known tools">
+
+**Use for:** agents that need a small known set immediately, but still benefit from runtime discovery.
+
+Set `preload.tools` for the known actions. Keep the set small, generally fewer than 20 tools. Preload is not supported with multi-account mode enabled.
+
+</Tab>
+<Tab value="Direct tools only">
+
+**Use for:** specialized agents with a narrow, known tool set that do not need dynamic discovery, in-chat auth, or workbench helpers.
+
+Set the direct tools preset. It preloads tools allowed by your filters and disables meta tools by default. Re-enable connection management or sandbox helpers explicitly if the job needs them.
+
+</Tab>
+</Tabs>
+
+### Preloading tools
+
 
 Return a known set of tools directly from `session.tools()` and the session MCP tool list, without the agent searching for them first.
 
@@ -649,7 +564,160 @@ For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. 
 
 To preload every tool allowed by the session filters, use the `preload.tools = "all"` shortcut (`preload={"tools": "all"}` in Python, `preload: { tools: "all" }` in TypeScript). The `all` shorthand works for both Composio tools and SDK custom tools.
 
-## Custom auth configs
+### Direct tools preset
+
+
+The direct tools preset preloads every tool allowed by session filters into the session's tool list and disables session meta tools by default. Use it for specialized agents with a narrow tool set that don't need dynamic tool discovery, in-chat auth, or workbench helpers.
+
+This is not the default mode for broad agents. The default session behavior keeps meta tools available so the agent can search for relevant tools and avoid context bloat.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": [
+                "GMAIL_FETCH_EMAILS",
+                "GMAIL_CREATE_EMAIL_DRAFT",
+            ],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  tools: {
+    gmail: {
+      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+</Tabs>
+
+#### Enable selected meta tools
+
+With the direct tools preset, you can re-enable supported meta tool groups that your agent still needs. This session loads Gmail tools upfront while keeping connection management and workbench support available:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": [
+                "GMAIL_FETCH_EMAILS",
+                "GMAIL_CREATE_EMAIL_DRAFT",
+            ],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    manage_connections={
+        "enable": True,
+    },
+    sandbox={
+        "enable": True,
+    },
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+# COMPOSIO_MANAGE_CONNECTIONS
+# COMPOSIO_REMOTE_WORKBENCH
+# COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  tools: {
+    gmail: {
+      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+  manageConnections: {
+    enable: true,
+  },
+  sandbox: {
+    enable: true,
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+// COMPOSIO_MANAGE_CONNECTIONS
+// COMPOSIO_REMOTE_WORKBENCH
+// COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+</Tabs>
+
+## Choose credentials and accounts
+
+These settings answer different questions: `authConfigs` selects the OAuth configuration; `connectedAccounts` selects the user's existing connection. Set an account override when a tool must act on a particular account rather than the default selection.
+
+### Custom auth configs
+
 
 Use your own OAuth credentials instead of Composio's defaults. Pass an auth config ID per toolkit:
 
@@ -682,7 +750,8 @@ const session = await composio.create("user_123", {
 
 See [White-labeling authentication](/docs/authentication/white-labeling-authentication) for branding, or [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for toolkits that require your own credentials.
 
-## Account selection
+### Account selection
+
 
 When a user has multiple connected accounts for the same toolkit, specify which one the session uses:
 
@@ -717,7 +786,7 @@ const session = await composio.create("user_123", {
 Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/authentication/managing-multiple-connected-accounts) is disabled.
 </Callout>
 
-### Precedence
+#### Precedence
 
 When executing a tool, the session selects the connected account in this order:
 
@@ -729,7 +798,12 @@ When executing a tool, the session selects the connected account in this order:
 
 When a user has multiple connected accounts for a toolkit, the session uses the most recently connected one.
 
-## Disabling the sandbox
+## Choose the sandbox runtime
+
+Keep the sandbox when the agent needs code execution. Disable it when it does not, or when the session handles data that requires Zero Data Retention. Choose a larger tier only when the workload needs more compute or memory.
+
+### Disabling the sandbox
+
 
 By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
 
@@ -772,7 +846,8 @@ To keep the sandbox but block raw HTTP calls from it, set `enable_proxy_executio
 `sandbox` is the preferred config key. `workbench` still works as a fully supported alias and isn't deprecated, so existing code keeps running unchanged.
 </Callout>
 
-## Sandbox compute tier
+### Sandbox compute tier
+
 
 The sandbox runs per session. Pick a compute tier to match the workload: heavier code execution or larger in-memory data benefits from a bigger sandbox. Pass the tier via `sandbox.sandbox_size` (snake_case on the wire, `sandboxSize` in the TypeScript SDK).
 
@@ -823,7 +898,19 @@ const session = await composio.create("user_123", {
 
 Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts) survives the restart.
 
-## Updating a session
+## Change a running session
+
+### Reading and updating session configuration
+
+
+In TypeScript, `session.config` exposes the configuration returned by the server. Call `session.update()` to change selected fields. It preserves omitted fields, updates `session.config` in place, and returns the updated configuration. See [Updating a session](#updating-a-session) for an example.
+
+<Callout>
+If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
+</Callout>
+
+### Updating a session
+
 
 `session.update()` patches the stored configuration in place. Fields you omit are preserved, so you can widen or narrow one part of a session without restating the rest. The SDK refreshes `session.config` and the session's config version only after the API accepts the change.
 
@@ -851,7 +938,7 @@ await session.update({ toolkits: { enable: ["gmail", "github"] } });
 The update behavior below requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python).
 </Callout>
 
-### Maps replace, they don't merge
+#### Maps replace, they don't merge
 
 A `tools`, `authConfigs`, or `connectedAccounts` map you send replaces the stored map entirely. The API does not merge entries, so a Slack-only `tools` map removes a Gmail entry that was stored before it.
 
@@ -903,7 +990,7 @@ To change one entry, send the whole map with every entry you want to keep. An em
 
 The same rule applies to `toolkits`, `tags`, and `preload`: a value replaces the stored policy. `manageConnections`, `sandbox`, and `multiAccount` merge the subfields you send, and an empty object changes nothing.
 
-### Narrowing an existing session to no app toolkits
+#### Narrowing an existing session to no app toolkits
 
 An empty allowlist on update denies every app toolkit, exactly as it does on create. The SDK sends `{ "enable": [] }` as-is instead of dropping it from the request.
 
@@ -924,7 +1011,7 @@ await session.update({ toolkits: { enable: [] } });
 </Tab>
 </Tabs>
 
-### Removing a callback URL
+#### Removing a callback URL
 
 `manageConnections.callbackUrl: null` removes only the stored callback URL. `enable` and the other connection settings stay as they are. An empty string is rejected.
 
@@ -946,7 +1033,7 @@ await session.update({ manageConnections: { callbackUrl: null } });
 </Tab>
 </Tabs>
 
-### Clearing a block with null
+#### Clearing a block with null
 
 Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `multiAccount`, `search`, `execute`, and `experimental`.
 
@@ -969,7 +1056,7 @@ await session.update({ manageConnections: null, multiAccount: null });
 
 Clearing a policy can widen access. `toolkits: null` removes the toolkit policy and restores the unrestricted default, which is the opposite of `{ "enable": [] }`; clearing `preload` does the same for preloaded tools, so the agent can reach more than before the update. Send `toolkits: []` when you want to deny every app toolkit. Clearing `multiAccount` resolves to disabled, while omitting it preserves the stored setting.
 
-### Blocks you can set only on update
+#### Blocks you can set only on update
 
 `search`, `execute`, and `experimental` are not part of `create()`. Reach them with `session.update()` on an existing session.
 
@@ -1001,11 +1088,11 @@ Both blocks are on by default. `search` controls the session's search helper, so
 
 The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, or `tags`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
 
-### Multi-account mode after an update
+#### Multi-account mode after an update
 
 The canonical disabled state is `{ "enable": false, "require_explicit_selection": false }` with no maximum. Sending `enable: false` resets a stale maximum or selection setting, and reapplying that disabled configuration is accepted. Combining `enable: false` with `maxAccountsPerToolkit` or `requireExplicitSelection: true` is rejected with a `400`.
 
-### Preload must stay inside the policy
+#### Preload must stay inside the policy
 
 An update that narrows `toolkits`, `tools`, or `tags` while leaving an explicitly preloaded tool outside the new policy is rejected with a `400`, and nothing changes. Fix `preload` in the same update:
 
@@ -1032,7 +1119,7 @@ await session.update({
 </Tab>
 </Tabs>
 
-### Concurrent updates
+#### Concurrent updates
 
 Every session response carries a config version (`session.configVersion` in TypeScript, `session.config_version` in Python, `config_version` on the wire). By default, `session.update()` sends no precondition, so the last writer wins. To make an update conditional, pass the version you read as `expectedConfigVersion` (`expected_config_version` in Python). The API then applies the update only when the stored version still matches. Otherwise it answers `409` and writes nothing: no config change, no history entry, no cache update. The SDK never retries that request, so a conflict is reported exactly once.
 
@@ -1095,11 +1182,14 @@ Raw HTTP callers set `expected_config_version` in the `PATCH` body themselves; w
 
 To roll a session back, read a previous configuration from its config history (`GET /api/v3.1/tool_router/session/{session_id}/config_history`) and convert it into an update request. A history entry is not a request body: it carries metadata and version fields, and it names toolkits and tools as `enabled` and `disabled`, which map to `enable` and `disable` in the update.
 
-## Session methods
+## Inspect and manage the session
+
+### Session methods
+
 
 For framework examples, see provider-specific documentation like [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel). To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
 
-### tools()
+#### tools()
 
 Get the tools the session exposes for your AI framework. By default these are the session's [meta tools](/toolkits/meta-tools), formatted for your configured provider.
 
@@ -1120,7 +1210,7 @@ const tools = await session.tools();
 </Tab>
 </Tabs>
 
-### authorize()
+#### authorize()
 
 Manually authenticate a user to a toolkit outside of the chat flow.
 
@@ -1153,7 +1243,7 @@ const connectedAccount = await connectionRequest.waitForConnection();
 
 For more details, see [Manually authenticating users](/docs/authentication/manually-authenticating).
 
-### toolkits()
+#### toolkits()
 
 List the toolkits enabled for the session and their connection status, sorted by popularity. Use it to build a UI showing which apps are connected. Each toolkit includes its `slug`, `name`, `logo`, and connection status, and the call returns the first 20 by default.
 
@@ -1235,7 +1325,7 @@ do {
 </Tab>
 </Tabs>
 
-### update()
+#### update()
 
 Patch the session configuration in place. See [Updating a session](#updating-a-session) for what omitted fields, replaced maps, `null`, and `expectedConfigVersion` do.
 
@@ -1256,13 +1346,13 @@ const config = await session.update({ toolkits: { enable: ["gmail", "github"] } 
 </Tab>
 </Tabs>
 
-### Configuration history
+#### Configuration history
 
 Inspect the configurations a session has used with `session.list_config_history(limit=10)` in Python or `await session.listConfigHistory({ limit: 10 })` in TypeScript. Results are newest first, with the live configuration first. Each `session.update()` archives the previous configuration.
 
 The response contains `items` with each version's `config` and an `is_current` (Python) or `isCurrent` (TypeScript) flag. Pass the response's `next_cursor` (Python) or `nextCursor` (TypeScript) as `cursor` to fetch another page; `limit` supports up to 100 items per page.
 
-### delete()
+#### delete()
 
 Delete a session when you're done with it. Deleted sessions immediately stop being retrievable or executable, and the call returns the deleted `session_id`. Deleting a missing or already-deleted session surfaces the backend `404`.
 
@@ -1289,7 +1379,8 @@ console.log(result.sessionId, result.deleted);
 </Tab>
 </Tabs>
 
-## Browsing the catalog
+### Browsing the catalog
+
 
 Before configuring a session, explore the toolkits and tools available. Browse them visually at [dashboard.composio.dev](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-configuring-sessions) or in the [docs catalog](/toolkits), or fetch them programmatically:
 
