@@ -77,6 +77,16 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse('invalid-date')).toThrow();
     });
 
+    it('should validate time format with and without an offset', () => {
+      const zodSchema = jsonSchemaToZod({ type: 'string', format: 'time' });
+      for (const value of ['10:30:00Z', '10:30:00+05:30', '10:30:00.250-08:00', '10:30:00']) {
+        expect(zodSchema.parse(value)).toBe(value);
+      }
+      for (const value of ['25:00:00', '10:30:00+5:30', '10:30:00 UTC', '10:30Z', 'noon']) {
+        expect(() => zodSchema.parse(value)).toThrow();
+      }
+    });
+
     it('should validate uuid format', () => {
       const schema: JsonSchema = {
         type: 'string',

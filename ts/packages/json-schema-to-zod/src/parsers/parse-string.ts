@@ -4,6 +4,9 @@ import type { JsonSchemaObject, Refs } from '../types';
 import { compilePattern } from '../utils/compile-pattern';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 
+const RFC3339_TIME =
+  /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?([Zz]|[+-]([01]\d|2[0-3]):[0-5]\d)?)?$/;
+
 export const parseString = (
   jsonSchema: JsonSchemaObject & { type: 'string' },
   refs: Pick<Refs, 'path'>
@@ -27,7 +30,7 @@ export const parseString = (
       case 'date-time':
         return zs.datetime({ offset: true, message: errorMsg });
       case 'time':
-        return zs.time(errorMsg);
+        return zs.regex(RFC3339_TIME, errorMsg ?? 'Invalid time');
       case 'date':
         return zs.date(errorMsg);
       case 'binary':
