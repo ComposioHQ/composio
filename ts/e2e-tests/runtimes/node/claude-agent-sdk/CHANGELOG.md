@@ -1,5 +1,17 @@
 # @e2e-tests/node-claude-agent-sdk
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [67e80e3]
+- Updated dependencies [a7b4943]
+- Updated dependencies [077ceb3]
+- Updated dependencies [e3999c4]
+- Updated dependencies [8c7e40a]
+  - @composio/core@0.22.1
+  - @composio/claude-agent-sdk@0.12.1
+
 ## 0.0.6
 
 ### Patch Changes

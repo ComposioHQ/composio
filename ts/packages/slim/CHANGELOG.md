@@ -1,5 +1,14 @@
 # @composio/slim
 
+## 0.22.1
+
+### Patch Changes
+
+- 67e80e3: Update the owned API client to `@composio/client@2.0.0-rc.9`.
+- a7b4943: Send product identity, product version, language, and runtime version with API requests. Identify installed core and slim packages separately while preserving existing telemetry headers.
+- Updated dependencies [077ceb3]
+  - @composio/json-schema-to-zod@0.3.4
+
 ## 0.22.0
 
 ### Patch Changes

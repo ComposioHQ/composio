@@ -1,5 +1,17 @@
 # @composio/core
 
+## 0.22.1
+
+### Patch Changes
+
+- 67e80e3: Update the owned API client to `@composio/client@2.0.0-rc.9`.
+- a7b4943: Send product identity, product version, language, and runtime version with API requests. Identify installed core and slim packages separately while preserving existing telemetry headers.
+- 077ceb3: Fix tool schemas rejected by OpenAI and Anthropic when a parameter uses `anyOf`, `oneOf`, `allOf`, `$ref`, or similar keywords. The converted schema is a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send tool parameters with a top-level `type: "object"`. Patterns with escapes such as `\_` or `\:` no longer fail every call to the tool.
+- e3999c4: Stop retrying session tool executions and proxied calls. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools no longer retry after a timeout, connection error, or 408/409/429/5xx response, so a retry can no longer repeat a side effect such as sending the same email twice. This matches `tools.execute()` and `tools.proxyExecute()`.
+- 8c7e40a: `RemoteFile.save()` without a path no longer rejects ordinary file names. Names with characters Windows reserves, such as `report_2026-09-29T10:30:00.csv` or `What is this?.png`, are saved with those characters replaced by `_`. Names longer than 128 bytes are truncated with their extension kept, and reserved device names such as `NUL` get a `_` prefix. A name changed this way also gets a short digest of the original before its extension (`What is this_-9c68adf2da8b6e8d.png`). Default saves create a new file exclusively; if the destination exists, a copy number is added before its extension. Repeated default saves therefore return distinct paths and preserve earlier downloads. Names with a NUL byte or no usable basename are still refused.
+- Updated dependencies [077ceb3]
+  - @composio/json-schema-to-zod@0.3.4
+
 ## 0.22.0
 
 ### Minor Changes
