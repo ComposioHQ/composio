@@ -98,7 +98,11 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * Creates a new instance of the AnthropicProvider.
    *
    * @param {Object} [options] - Configuration options for the provider
-   * @param {boolean} [options.cacheTools=false] - Whether to cache tools using Anthropic's ephemeral cache
+   * @param {boolean} [options.cacheTools=false] - Whether to cache tools using Anthropic's ephemeral
+   *   cache. Anthropic allows at most 4 cache_control breakpoints per request, shared across the
+   *   system prompt, tools, and messages, and a breakpoint caches everything up to and including
+   *   it — so {@link wrapTools} places a single breakpoint on the last tool, covering the whole
+   *   tool list with one breakpoint.
    *
    * @example
    * ```typescript
@@ -237,7 +241,18 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
-    return tools.map(tool => this.wrapTool(tool));
+    const wrapped = tools.map(tool => this.wrapTool(tool));
+    // A cache_control breakpoint caches every block up to and including it,
+    // so one breakpoint on the last tool covers the entire tool list.
+    // Anthropic caps breakpoints at 4 per request (shared with the system
+    // prompt and messages); a breakpoint on every tool would exceed that
+    // limit as soon as a caller passes 5+ tools.
+    if (this.cacheTools) {
+      for (const tool of wrapped.slice(0, -1)) {
+        tool.cache_control = undefined;
+      }
+    }
+    return wrapped;
   }
 
   /**
@@ -402,8 +417,17 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
+    }
+
+    // Same breakpoint-overflow hazard as wrapTools: a model that calls
+    // several tools in one turn (parallel tool calls) produces one
+    // tool_result per call here. One breakpoint on the last result covers
+    // the whole batch, since a breakpoint caches everything up to and
+    // including it.
+    const lastOutput = outputs[outputs.length - 1];
+    if (this.cacheTools && lastOutput) {
+      lastOutput.cache_control = { type: 'ephemeral' };
     }
 
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
