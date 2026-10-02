@@ -3,6 +3,7 @@
   "pages": [
     "../authentication/custom-app-vs-managed-app",
     "[Rate limits](/reference/rate-limits)",
-    "stream-logs-to-a-siem"
+    "stream-logs-to-a-siem",
+    "usage-and-billing"
   ]
 }
