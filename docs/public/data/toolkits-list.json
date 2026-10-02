@@ -236,7 +236,7 @@
     "name": "Reddit",
     "logo": "https://logos.composio.dev/api/reddit",
     "category": "social media accounts",
-    "toolCount": 23,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -596,7 +596,7 @@
     "name": "Ahrefs",
     "logo": "https://logos.composio.dev/api/ahrefs",
     "category": "marketing automation",
-    "toolCount": 40,
+    "toolCount": 46,
     "triggerCount": 0
   },
   {
@@ -3296,6 +3296,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "callback24",
+    "name": "Callback24",
+    "logo": "https://logos.composio.dev/api/callback24",
+    "category": "call tracking",
+    "toolCount": 27,
+    "triggerCount": 0
+  },
+  {
     "slug": "callerapi",
     "name": "Callerapi",
     "logo": "https://logos.composio.dev/api/callerapi",
@@ -3441,9 +3449,9 @@
   },
   {
     "slug": "cashfree_payments_mcp",
-    "name": "Cashfree Payments MCP",
+    "name": "Cashfree MCP",
     "logo": "https://logos.composio.dev/api/cashfree_payments_mcp",
-    "category": "payment processing",
+    "category": "model context protocol",
     "toolCount": 38,
     "triggerCount": 0
   },
@@ -3756,7 +3764,7 @@
     "name": "Cloro",
     "logo": "https://logos.composio.dev/api/cloro",
     "category": "ai web scraping",
-    "toolCount": 10,
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -3924,7 +3932,7 @@
     "name": "CoinGecko",
     "logo": "https://logos.composio.dev/api/coingecko",
     "category": "analytics",
-    "toolCount": 18,
+    "toolCount": 60,
     "triggerCount": 0
   },
   {
@@ -4004,7 +4012,7 @@
     "name": "Companyenrich",
     "logo": "https://logos.composio.dev/api/companyenrich",
     "category": "developer tools",
-    "toolCount": 32,
+    "toolCount": 48,
     "triggerCount": 0
   },
   {
@@ -5528,6 +5536,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "financial_datasets_ai",
+    "name": "Financial Datasets",
+    "logo": "https://logos.composio.dev/api/financial_datasets_ai",
+    "category": "analytics",
+    "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
     "slug": "financial_datasets_ai_mcp",
     "name": "Financial Datasets AI MCP",
     "logo": "https://logos.composio.dev/api/financial_datasets_ai_mcp",
@@ -5732,7 +5748,7 @@
     "name": "Follow Up Boss",
     "logo": "https://logos.composio.dev/api/follow_up_boss",
     "category": "crm",
-    "toolCount": 111,
+    "toolCount": 112,
     "triggerCount": 0
   },
   {
@@ -5804,7 +5820,7 @@
     "name": "Fullenrich",
     "logo": "https://gravatar.com/avatar/0d4b0c4b0c4b0c4b0c4b0c4b0c4b0c4b0",
     "category": "contact management",
-    "toolCount": 9,
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
@@ -6020,7 +6036,7 @@
     "name": "Gitea",
     "logo": "https://logos.composio.dev/api/gitea",
     "category": "developer tools",
-    "toolCount": 24,
+    "toolCount": 30,
     "triggerCount": 0
   },
   {
@@ -7548,7 +7564,7 @@
     "name": "Lemlist",
     "logo": "https://logos.composio.dev/api/lemlist",
     "category": "marketing automation",
-    "toolCount": 54,
+    "toolCount": 55,
     "triggerCount": 0
   },
   {
@@ -7700,7 +7716,7 @@
     "name": "Logo.dev",
     "logo": "https://logos.composio.dev/api/logo_dev",
     "category": "images & design",
-    "toolCount": 2,
+    "toolCount": 8,
     "triggerCount": 0
   },
   {
@@ -8836,7 +8852,7 @@
     "name": "OpenAlex",
     "logo": "https://logos.composio.dev/api/openalex",
     "category": "databases",
-    "toolCount": 14,
+    "toolCount": 19,
     "triggerCount": 0
   },
   {
@@ -8892,7 +8908,7 @@
     "name": "Openrouter",
     "logo": "https://logos.composio.dev/api/openrouter",
     "category": "artificial intelligence",
-    "toolCount": 13,
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -9204,7 +9220,7 @@
     "name": "PDF.co",
     "logo": "https://logos.composio.dev/api/pdf_co",
     "category": "documents",
-    "toolCount": 35,
+    "toolCount": 49,
     "triggerCount": 0
   },
   {
@@ -9549,6 +9565,14 @@
     "logo": "https://logos.composio.dev/api/polymarket_us",
     "category": "commerce",
     "toolCount": 44,
+    "triggerCount": 0
+  },
+  {
+    "slug": "poma_grill",
+    "name": "POMA Grill",
+    "logo": "https://logos.composio.dev/api/poma_grill",
+    "category": "ai agents",
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -9988,7 +10012,7 @@
     "name": "Re:amaze",
     "logo": "https://logos.composio.dev/api/re_amaze",
     "category": "customer support",
-    "toolCount": 2,
+    "toolCount": 5,
     "triggerCount": 0
   },
   {
@@ -10140,7 +10164,7 @@
     "name": "Replicate",
     "logo": "https://logos.composio.dev/api/replicate",
     "category": "artificial intelligence",
-    "toolCount": 31,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -10752,11 +10776,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "servicetitan",
+    "name": "ServiceTitan",
+    "logo": "https://logos.composio.dev/api/servicetitan",
+    "category": "scheduling & booking",
+    "toolCount": 585,
+    "triggerCount": 0
+  },
+  {
     "slug": "sevdesk",
     "name": "Sevdesk",
     "logo": "https://logos.composio.dev/api/sevdesk",
     "category": "accounting",
-    "toolCount": 122,
+    "toolCount": 125,
     "triggerCount": 0
   },
   {
@@ -11576,6 +11608,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "templatefox",
+    "name": "TemplateFox",
+    "logo": "https://logos.composio.dev/api/templatefox",
+    "category": "documents",
+    "toolCount": 24,
+    "triggerCount": 0
+  },
+  {
     "slug": "temporal",
     "name": "Temporal",
     "logo": "https://logos.composio.dev/api/temporal",
@@ -11612,7 +11652,7 @@
     "name": "The Companies API",
     "logo": "https://logos.composio.dev/api/thecompaniesapi",
     "category": "business intelligence",
-    "toolCount": 10,
+    "toolCount": 29,
     "triggerCount": 0
   },
   {
@@ -12524,7 +12564,7 @@
     "name": "WordPress.com",
     "logo": "https://logos.composio.dev/api/wordpress_com",
     "category": "content & files",
-    "toolCount": 10,
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
