@@ -786,6 +786,26 @@
           "toolkitId": "550e8400-e29b-41d4-a716-446655440000"
         }
       },
+      "InstantAccount": {
+        "type": "object",
+        "properties": {
+          "supported": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "price": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Published pricing from the selected tool row, unchanged."
+          }
+        },
+        "required": [
+          "supported"
+        ],
+        "description": "Present only when the tool supports an Instant account and its selected toolkit version is the latest. Missing for older toolkit versions or ineligible tools."
+      },
       "Tool": {
         "type": "object",
         "properties": {
@@ -868,6 +888,9 @@
             "type": "string",
             "description": "Current version of the tool",
             "example": "20250905_00"
+          },
+          "instant": {
+            "$ref": "#/components/schemas/InstantAccount"
           },
           "output_parameters": {
             "type": "object",
@@ -1152,7 +1175,7 @@
             "description": "Pricing unit, such as per call or per second."
           }
         },
-        "description": "Current published pricing, independent of the requested tool version. Omitted when unspecified; absence does not mean free.",
+        "description": "Published pricing for the tool; absence does not mean free. Display metadata, not a billing calculation.",
         "additionalProperties": false
       },
       "ToolDetails": {
@@ -1237,6 +1260,9 @@
             "type": "string",
             "description": "Current version of the tool",
             "example": "20250905_00"
+          },
+          "instant": {
+            "$ref": "#/components/schemas/InstantAccount"
           },
           "output_parameters": {
             "type": "object",
@@ -3141,8 +3167,9 @@
     },
     "/api/v3/auth_configs/{nanoid}/{status}": {
       "patch": {
-        "summary": "Enable or disable an authentication configuration",
-        "description": "Updates the status of an authentication configuration to either enabled or disabled. Disabled configurations cannot be used for new connections.",
+        "summary": "Enable or disable an authentication configuration (DEPRECATED)",
+        "description": "DEPRECATED: We are controlling the API surface and the dependencies between endpoints, and enabling or disabling an auth config is covered by existing endpoints. To stop new connections through an auth config, stop creating connected accounts with it; to remove it, delete it with `DELETE /api/v3/auth_configs/{nanoid}` (pass `?revoke_on_delete=true` to also revoke the upstream credentials of its connections). This endpoint still works for existing integrations but may be removed in a future release. It sets the auth config to ENABLED or DISABLED; disabled auth configs cannot be used for new connections.",
+        "deprecated": true,
         "tags": [
           "Auth Configs"
         ],
@@ -5212,8 +5239,9 @@
     },
     "/api/v3/connected_accounts/{nanoId}/status": {
       "patch": {
-        "summary": "Enable or disable a connected account",
-        "description": "Updates the status of a connected account to either enabled (active) or disabled (inactive). Disabled accounts cannot be used for API calls but remain in the database.",
+        "summary": "Enable or disable a connected account (DEPRECATED)",
+        "description": "DEPRECATED: We are controlling the API surface and the dependencies between endpoints, and enabling or disabling a connected account is covered by existing endpoints. To stop a connected account from being used, delete it with `DELETE /api/v3/connected_accounts/{nanoid}` (pass `?revoke_on_delete=true` to also revoke its upstream credentials); to use the account again, create a new connection. This endpoint still works for existing integrations but may be removed in a future release. It sets the connected account to ACTIVE (`enabled: true`) or INACTIVE (`enabled: false`); inactive accounts cannot be used for API calls. Disabling an account also disables its triggers, and Composio attempts to remove their webhooks at the provider in the background.",
+        "deprecated": true,
         "tags": [
           "Connected Accounts"
         ],
@@ -8793,10 +8821,12 @@
                 "all",
                 "project"
               ],
-              "description": "Entity responsible for managing the toolkits"
+              "description": "Deprecated: Entity responsible for managing the toolkits",
+              "deprecated": true
             },
             "required": false,
-            "description": "Filter toolkits by who manages them",
+            "description": "Deprecated: Filter toolkits by who manages them",
+            "deprecated": true,
             "name": "managed_by",
             "in": "query"
           },
@@ -8846,7 +8876,7 @@
           {
             "schema": {
               "type": "string",
-              "description": "Search query to filter toolkits by name, slug, or description (minimum 3 characters)",
+              "description": "Search query to filter toolkits by name, slug, or description (minimum 1 character)",
               "example": "gmail"
             },
             "required": false,
@@ -8905,6 +8935,23 @@
                             ],
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
+                          },
+                          "access": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "all"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 256
+                              }
+                            ],
+                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -9242,7 +9289,7 @@
     "/api/v3/custom/toolkits/upsert": {
       "post": {
         "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Prefer POST /api/v3.1/custom/toolkits (which sets which users can use a toolkit) and PATCH /api/v3.1/custom/toolkits/{slug}. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
         "tags": [
           "Toolkits"
         ],
@@ -9726,6 +9773,23 @@
                       "type": "boolean",
                       "description": "Indicates if this toolkit is currently enabled and available for use",
                       "example": true
+                    },
+                    "access": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "all"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256
+                        }
+                      ],
+                      "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                      "example": "all"
                     },
                     "composio_managed_auth_schemes": {
                       "type": "array",
@@ -10859,6 +10923,23 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "access": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "all"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 256
+                              }
+                            ],
+                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
+                            "example": "all"
+                          },
                           "auth_schemes": {
                             "type": "array",
                             "items": {
@@ -11701,8 +11782,9 @@
     },
     "/api/v3/tools/execute/{tool_slug}/input": {
       "post": {
-        "summary": "Generate tool inputs from natural language",
-        "description": "Uses AI to translate a natural language description into structured arguments for a specific tool. This endpoint is useful when you want to let users describe what they want to do in plain language instead of providing structured parameters.",
+        "summary": "Generate tool inputs from natural language (DEPRECATED)",
+        "description": "DEPRECATED: This endpoint is no longer maintained. It still works for existing integrations but may be removed in a future release. To build tool arguments, fetch the tool's input schema with `GET /api/v3/tools/{tool_slug}` and generate the arguments in your own application. Uses AI to translate a natural language description into structured arguments for a specific tool.",
+        "deprecated": true,
         "tags": [
           "Tools"
         ],
@@ -13079,7 +13161,7 @@
     "/api/v3/trigger_instances/manage/{triggerId}": {
       "delete": {
         "summary": "Delete a trigger",
-        "description": "Permanently deletes a trigger instance. This stops the trigger from listening for events and removes it from your project. Use the PATCH endpoint with status \"disable\" if you want to temporarily pause a trigger instead.",
+        "description": "Permanently deletes a trigger instance. This stops the trigger from listening for events and removes it from your project. When a webhook trigger is deleted, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Use the PATCH endpoint with status \"disable\" if you want to temporarily pause a trigger instead.",
         "tags": [
           "Triggers"
         ],
@@ -13191,7 +13273,7 @@
       },
       "patch": {
         "summary": "Update a trigger",
-        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
+        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. When a webhook trigger is disabled, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Re-enabling a webhook trigger sets it up with the provider again. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
         "tags": [
           "Triggers"
         ],

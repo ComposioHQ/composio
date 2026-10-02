@@ -92,7 +92,7 @@
     "name": "Google Drive",
     "logo": "https://logos.composio.dev/api/googledrive",
     "category": "file management & storage",
-    "toolCount": 104,
+    "toolCount": 105,
     "triggerCount": 7
   },
   {
@@ -764,7 +764,7 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 495,
+    "toolCount": 496,
     "triggerCount": 48
   },
   {
@@ -1989,6 +1989,14 @@
     "logo": "https://logos.composio.dev/api/adrapid",
     "category": "images & design",
     "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "adroll",
+    "name": "AdRoll",
+    "logo": "https://logos.composio.dev/api/adroll",
+    "category": "marketing",
+    "toolCount": 51,
     "triggerCount": 0
   },
   {
@@ -4272,6 +4280,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "crew_ai",
+    "name": "CrewAI",
+    "logo": "https://logos.composio.dev/api/crewai",
+    "category": "ai agents",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
     "slug": "crisp",
     "name": "Crisp",
     "logo": "https://logos.composio.dev/api/crisp",
@@ -4685,6 +4701,14 @@
     "logo": "https://logos.composio.dev/api/directiq",
     "category": "transactional email",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "disqus",
+    "name": "Disqus",
+    "logo": "https://logos.composio.dev/api/disqus",
+    "category": "social media accounts",
+    "toolCount": 148,
     "triggerCount": 0
   },
   {
@@ -7120,6 +7144,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "job_search",
+    "name": "Job Search (Rapid API)",
+    "logo": "https://logos.composio.dev/api/job-search",
+    "category": "human resources",
+    "toolCount": 94,
+    "triggerCount": 0
+  },
+  {
     "slug": "jobber",
     "name": "Jobber",
     "logo": "https://logos.composio.dev/api/jobber",
@@ -8669,6 +8701,14 @@
     "logo": "https://logos.composio.dev/api/octagon_mcp",
     "category": "model context protocol",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "odata",
+    "name": "OData",
+    "logo": "https://logos.composio.dev/api/odata",
+    "category": "databases",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -10624,6 +10664,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "send_pulse",
+    "name": "SendPulse",
+    "logo": "https://logos.composio.dev/api/sendpulse",
+    "category": "marketing automation",
+    "toolCount": 617,
+    "triggerCount": 0
+  },
+  {
     "slug": "sendspark",
     "name": "Sendspark",
     "logo": "https://logos.composio.dev/api/sendspark",
@@ -10676,7 +10724,7 @@
     "name": "Serper",
     "logo": "https://logos.composio.dev/api/serper",
     "category": "ai web scraping",
-    "toolCount": 11,
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -10821,6 +10869,14 @@
     "logo": "https://logos.composio.dev/api/signaturely",
     "category": "signatures",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "sign_now",
+    "name": "SignNow",
+    "logo": "https://logos.composio.dev/api/signnow",
+    "category": "signatures",
+    "toolCount": 333,
     "triggerCount": 0
   },
   {
@@ -11524,7 +11580,7 @@
     "name": "Temporal",
     "logo": "https://logos.composio.dev/api/temporal",
     "category": "developer tools",
-    "toolCount": 49,
+    "toolCount": 63,
     "triggerCount": 0
   },
   {
@@ -11652,7 +11708,7 @@
     "name": "TikTok Ads",
     "logo": "https://logos.composio.dev/api/tiktok_ads",
     "category": "marketing",
-    "toolCount": 142,
+    "toolCount": 403,
     "triggerCount": 0
   },
   {
@@ -12180,7 +12236,7 @@
     "name": "vidIQ MCP",
     "logo": "https://logos.composio.dev/api/vidiq_mcp",
     "category": "model context protocol",
-    "toolCount": 61,
+    "toolCount": 67,
     "triggerCount": 0
   },
   {
@@ -12484,7 +12540,7 @@
     "name": "Workday",
     "logo": "https://logos.composio.dev/api/workday",
     "category": "human resources",
-    "toolCount": 587,
+    "toolCount": 588,
     "triggerCount": 13
   },
   {
