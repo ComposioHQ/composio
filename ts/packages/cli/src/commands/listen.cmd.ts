@@ -724,5 +724,29 @@ export const listenCmd = Command.make(
 ).pipe(
   Command.withDescription(
     'Listen to consumer-project realtime events. Trigger slugs create a temporary trigger; top-level composio.* event types subscribe directly.'
-  )
+  ),
+  Command.withExamples([
+    {
+      command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE',
+    },
+    {
+      command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5',
+    },
+    {
+      command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE --account work --timeout 5m',
+    },
+    {
+      command: "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
+    },
+    {
+      command:
+        'composio listen SLACK_CHANNEL_MESSAGE_RECEIVED -p \'{ trigger_config: { channel_id: "C123" } }\'',
+    },
+    {
+      command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
+    },
+    {
+      command: "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
+    },
+  ])
 );

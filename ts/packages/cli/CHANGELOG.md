@@ -4,6 +4,16 @@
 
 ### Patch Changes
 
+- Generate help from the command definitions, including every supported flag and
+  nested command. Remove help levels and the nonexistent `files` help topic.
+  Install agent skills with `composio setup skill <claude|codex|openclaw>`
+  (optionally `--name <skill-name>`) instead of `--install-skill`.
+  Internal diagnostics are hidden framework commands. `--dangerously-allow`
+  applies only to `dev triggers disable`; refused developer commands exit nonzero.
+  Debug flags after the `run` script boundary now reach the script unchanged.
+  `composio execute <slug> --help` now shows command options. Use
+  `composio execute <slug> --get-schema` to print that tool's input schema as JSON.
+
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
   acted cannot repeat a side effect such as sending the same email twice.
