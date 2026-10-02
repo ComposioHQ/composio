@@ -113,6 +113,7 @@ def tst(session: Session):
     session.install("./providers/google")
     session.install("./providers/openai_agents")
     session.install("./providers/claude_agent_sdk")
+    session.install("./providers/anthropic")
     if session.posargs:
         session.run("pytest", *session.posargs, "-v", "--tb=short")
         return
@@ -122,6 +123,7 @@ def tst(session: Session):
         "tests/",
         "providers/openai_agents/tests",
         "providers/claude_agent_sdk/tests",
+        "providers/anthropic/tests",
     ):
         session.run("pytest", test_path, "-v", "--tb=short")
 

@@ -1,6 +1,7 @@
 import typing as t
 
 from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
+from anthropic.types.cache_control_ephemeral_param import CacheControlEphemeralParam
 from anthropic.types.message import Message as ToolsBetaMessage
 from anthropic.types.tool_param import ToolParam
 from anthropic.types.tool_use_block import ToolUseBlock
@@ -22,21 +23,46 @@ class AnthropicProvider(
     Composio toolset for Anthropic Claude platform.
     """
 
-    def __init__(self, **kwargs: t.Any) -> None:
+    def __init__(self, cache_tools: bool = False, **kwargs: t.Any) -> None:
+        """
+        :param cache_tools: Attach Anthropic's ephemeral cache_control to the
+            tool definitions so Claude can reuse the cached tool schemas
+            across requests. Anthropic allows at most 4 cache_control
+            breakpoints per request, shared across the system prompt, tools,
+            and messages, and a breakpoint caches everything up to and
+            including it — so :meth:`wrap_tools` places a single breakpoint
+            on the last tool, covering the whole tool list with one
+            breakpoint. Mirrors the TypeScript
+            ``AnthropicProvider({ cacheTools: true })`` option. Defaults to
+            ``False``.
+        """
         super().__init__(**kwargs)
+        self.cache_tools = cache_tools
         self._aliases: dict[str, ToolSchemaAliases] = {}
 
     def wrap_tool(self, tool: Tool) -> ToolParam:
         aliases = alias_tool_input_schema(tool.input_parameters or {})
         self._aliases[tool.slug] = aliases
-        return ToolParam(
+        wrapped = ToolParam(
             input_schema=aliases.schema,
             name=tool.slug,
             description=tool.description,
         )
+        if self.cache_tools:
+            wrapped["cache_control"] = CacheControlEphemeralParam(type="ephemeral")
+        return wrapped
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[ToolParam]:
-        return [self.wrap_tool(tool) for tool in tools]
+        wrapped = [self.wrap_tool(tool) for tool in tools]
+        # A cache_control breakpoint caches every block up to and including
+        # it, so one breakpoint on the last tool covers the entire tool list.
+        # Anthropic caps breakpoints at 4 per request (shared with the system
+        # prompt and messages); a breakpoint on every tool would exceed that
+        # limit as soon as a caller passes 5+ tools.
+        if self.cache_tools:
+            for tool_param in wrapped[:-1]:
+                tool_param.pop("cache_control", None)
+        return wrapped
 
     @t.overload
     def execute_tool_call(
