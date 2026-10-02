@@ -5,6 +5,7 @@ import { ConnectionRequest } from './connectionRequest.types';
 import type { ComposioRequestOptions } from './requestOptions.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
 import { ConnectedAccountExperimentalSchema } from './connectedAccounts.types';
+import type { ConnectedAccountExperimental } from './connectedAccounts.types';
 import type {
   SessionConfigHistoryResponse,
   SessionCreateResponse,
@@ -532,7 +533,7 @@ export type ToolRouterToolsFn<
 
 export type ToolRouterAuthorizeFn = (
   toolkit: string,
-  options?: { callbackUrl?: string; alias?: string }
+  options?: { callbackUrl?: string; alias?: string; experimental?: ConnectedAccountExperimental }
 ) => Promise<ConnectionRequest>;
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
