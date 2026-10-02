@@ -1,5 +1,6 @@
 """Tests for the OpenAI Agents provider."""
 
+import asyncio
 import copy
 from unittest.mock import MagicMock
 
@@ -110,3 +111,132 @@ def test_wrap_tool_preserves_array_item_schemas(items_schema):
         wrapped_tool.params_json_schema["properties"]["records"]["items"]
         == items_schema
     )
+
+
+def test_strict_mode_registers_a_strict_schema_with_optional_params_nullable():
+    """Optional properties become required-nullable under strict mode.
+
+    Mirrors the TypeScript OpenAIAgentsProvider's own strict-mode test.
+    """
+    tool = MagicMock(
+        slug="CONFIGURE",
+        description="Configure something",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "input": {"type": "string"},
+                "cfg": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "note": {"type": "string"},
+                    },
+                    "required": ["url"],
+                },
+            },
+            "required": ["input"],
+        },
+    )
+
+    wrapped_tool = OpenAIAgentsProvider(strict=True).wrap_tool(
+        tool, lambda **kwargs: {}
+    )
+
+    assert wrapped_tool.strict_json_schema is True
+    assert wrapped_tool.params_json_schema == {
+        "type": "object",
+        "properties": {
+            "input": {"type": "string"},
+            "cfg": {
+                "type": ["object", "null"],
+                "properties": {
+                    "url": {"type": "string"},
+                    "note": {"type": ["string", "null"]},
+                },
+                "required": ["url", "note"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["input", "cfg"],
+        "additionalProperties": False,
+    }
+
+
+def test_strict_mode_falls_back_when_schema_cannot_be_expressed_strict():
+    """A schema strict mode can't express (arbitrary-key object) is
+    registered without strict mode instead, using the existing non-strict
+    schema-building path.
+    """
+    tool = MagicMock(
+        slug="SET_HEADERS",
+        description="Set request headers",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {"type": "string"},
+                }
+            },
+            "required": ["headers"],
+        },
+    )
+
+    wrapped_tool = OpenAIAgentsProvider(strict=True).wrap_tool(
+        tool, lambda **kwargs: {}
+    )
+
+    assert wrapped_tool.strict_json_schema is False
+    assert wrapped_tool.params_json_schema == {
+        "type": "object",
+        "properties": {
+            "headers": {"type": "object", "additionalProperties": {"type": "string"}}
+        },
+        "required": ["headers"],
+        "additionalProperties": False,
+    }
+
+
+def test_strict_mode_omits_null_arguments_the_tool_schema_rejects():
+    """Under strict mode, a null the tool's own schema doesn't accept is
+    treated as omitted before the tool actually executes.
+    """
+    tool = MagicMock(
+        slug="CONFIGURE",
+        description="Configure something",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "input": {"type": "string"},
+                "label": {"type": "string"},
+                "clearable": {"type": ["string", "null"]},
+            },
+            "required": ["input"],
+        },
+    )
+    execute_tool = MagicMock(return_value={})
+
+    wrapped_tool = OpenAIAgentsProvider(strict=True).wrap_tool(tool, execute_tool)
+
+    asyncio.run(
+        wrapped_tool.on_invoke_tool(
+            MagicMock(), '{"input": "x", "label": null, "clearable": null}'
+        )
+    )
+
+    execute_tool.assert_called_once_with(
+        slug="CONFIGURE", arguments={"input": "x", "clearable": None}
+    )
+
+
+def test_strict_defaults_to_false():
+    """The default constructor keeps today's non-strict behavior."""
+    tool = MagicMock(
+        slug="GITHUB_GET_REPO",
+        description="Get a repository",
+        input_parameters={"type": "object", "properties": {}, "required": []},
+    )
+
+    wrapped_tool = OpenAIAgentsProvider().wrap_tool(tool, lambda **kwargs: {})
+
+    assert wrapped_tool.strict_json_schema is False
