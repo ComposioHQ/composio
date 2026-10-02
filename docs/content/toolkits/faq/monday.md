@@ -4,11 +4,9 @@ Monday.com requires a workspace admin to install the OAuth2 app before any user 
 
 ## How do I install the Composio OAuth2 app for Monday.com?
 
-A workspace admin needs to visit the following URL and approve the app installation:
+A workspace admin must install the same Monday app used by the Composio auth config. Use the installation route provided for that app in the current connection flow. An older install link may point to a different app with different permissions.
 
-`https://auth.monday.com/oauth2/authorize?client_id=96b038435fc029e045f9ba800e66fefa&response_type=install`
-
-Once the admin has installed the app, users in that workspace can authorize their accounts using OAuth2 as usual.
+If Monday says the app is private or does not offer an install option, contact Composio support with the auth config ID. The managed app must be available to the target Monday account before its users can authorize it. The admin should review the permissions shown by Monday before installing.
 
 ## Do I need to install the app for each user?
 
