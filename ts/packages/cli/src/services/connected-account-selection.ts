@@ -291,9 +291,15 @@ export const resolveConnectedAccountForToolkit = (params: {
       )
     );
 
+    // A selector that is empty or all-whitespace (e.g. `--account=`) is
+    // treated as "no selector" by resolveConnectedAccountSelection below; the
+    // ambiguity guard below it must agree, or an empty --account value would
+    // silently reach the "exactly one choice" fallback instead of failing.
+    const effectiveSelector = Option.filter(params.selector, value => value.trim().length > 0);
+
     const selected = resolveConnectedAccountSelection(
       selectableAccounts,
-      Option.getOrUndefined(params.selector)
+      Option.getOrUndefined(effectiveSelector)
     );
 
     if (selected) {
@@ -301,7 +307,7 @@ export const resolveConnectedAccountForToolkit = (params: {
       // is the explicit alias=default, picking one silently is dangerous
       // (e.g. an agent reading/writing the wrong mailbox). Fail the same way
       // an unmatched selector already does, instead of guessing.
-      if (Option.isNone(params.selector)) {
+      if (Option.isNone(effectiveSelector)) {
         const usable = selectableAccounts.filter(isUsableConnectedAccount);
         const hasExplicitDefault = usable.some(
           item => normalizeSelector(item.alias ?? '') === 'default'
@@ -316,7 +322,7 @@ export const resolveConnectedAccountForToolkit = (params: {
       }
       return selected.id;
     }
-    if (Option.isNone(params.selector)) return undefined;
+    if (Option.isNone(effectiveSelector)) return undefined;
 
     const choices = formatConnectedAccountChoices(selectableAccounts);
     const hint =
@@ -324,7 +330,7 @@ export const resolveConnectedAccountForToolkit = (params: {
         ? ` Available accounts: ${choices.join(', ')}.`
         : ' No active connected accounts were found for that toolkit.';
     return yield* new ConnectedAccountResolutionError({
-      message: `No connected account matched "${params.selector.value}" for toolkit "${toolkitSlug}".${hint}`,
+      message: `No connected account matched "${effectiveSelector.value}" for toolkit "${toolkitSlug}".${hint}`,
       toolkitSlug,
     });
   });

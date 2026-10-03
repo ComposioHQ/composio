@@ -331,14 +331,16 @@ export const proxyCmd = Command.make('proxy', {
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
-          const selectedConnectedAccountId = Option.isSome(account)
-            ? yield* resolveConnectedAccountForToolkit({
-                client,
-                toolkitSlug: normalizedToolkit,
-                userId: consumerUserId,
-                selector: account,
-              })
-            : undefined;
+          // Always resolve through here, even with no --account: this is what
+          // makes the "multiple accounts, none aliased default" case fail
+          // loudly instead of resolveToolRouterSession silently picking one
+          // via resolveDefaultConnectedAccountsByToolkit.
+          const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
+            client,
+            toolkitSlug: normalizedToolkit,
+            userId: consumerUserId,
+            selector: account,
+          });
           const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
             toolkits: [normalizedToolkit],
             connectedAccounts: selectedConnectedAccountId

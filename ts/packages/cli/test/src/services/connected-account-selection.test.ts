@@ -226,6 +226,33 @@ describe('resolveConnectedAccountForToolkit', () => {
         expect(selected).toBe('con_personal');
       }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
   );
+
+  effectIt.effect(
+    'an empty or whitespace-only --account value is treated as no selector, not a bypass',
+    () =>
+      Effect.gen(function* () {
+        const items = [
+          makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+          makeAccount({
+            id: 'con_personal',
+            alias: 'personal',
+            toolkit: { slug: 'gmail' },
+            updated_at: '2026-01-02T00:00:00.000Z',
+          }),
+        ];
+        const { client } = makeListClient(items);
+
+        const error = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.some('   '),
+        }).pipe(Effect.flip);
+
+        expect(error).toBeInstanceOf(ConnectedAccountResolutionError);
+        expect(error.message).toContain('Multiple connected accounts exist');
+      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
+  );
 });
 
 describe('listConnectedAccountsForToolkit', () => {
