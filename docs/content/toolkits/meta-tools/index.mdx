@@ -14,6 +14,8 @@ This keeps your context window small: you load a handful of meta tools, not a ca
 
 A typical workflow runs in order: call `COMPOSIO_SEARCH_TOOLS` to discover tools and open a session, call `COMPOSIO_MANAGE_CONNECTIONS` if a toolkit is not yet connected, then run the tools with `COMPOSIO_MULTI_EXECUTE_TOOL`. Reach for the workbench and bash tools when responses are large enough to process out of context.
 
+`COMPOSIO_PROXY_EXECUTE` is opt-in: a session lists it only when it is created with `proxy_execute.enable` set to `true`. See [Proxy execute](/docs/extending-sessions/proxy-execute#let-the-agent-call-the-proxy).
+
 | Tool | What it does |
 |------|--------------|
 | [`COMPOSIO_GET_TOOL_SCHEMAS`](/toolkits/meta-tools/get_tool_schemas) | Returns the full input schema for tools you already know the slug for, so you can build schema-compliant arguments before executing |
