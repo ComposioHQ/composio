@@ -15,6 +15,7 @@ function getGalleryItems(): GalleryItem[] {
           title: page.data.title,
           description: page.data.description ?? '',
           href: page.url,
+          section: gallery.section,
           categories: gallery.categories,
           logos: gallery.logos,
           featured: gallery.featured,
