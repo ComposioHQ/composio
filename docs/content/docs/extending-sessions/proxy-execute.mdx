@@ -108,7 +108,7 @@ const tools = await session.tools();
 </Tab>
 </Tabs>
 
-The tool is off by default. When `proxy_execute.enable` is unset or `false`, the session doesn't list it and refuses any call to it. Updating a session to turn it off takes effect on the agent's next call.
+The tool is off by default. When `proxy_execute.enable` is unset or `false`, the session doesn't list it and refuses any call to it. Updating a session to turn it off takes effect on the agent's next call. This setting controls only the agent's tool: `session.proxyExecute()` follows the sandbox's `enable_proxy_execution`, which is on by default.
 
 The agent's calls follow the same rules as `session.proxyExecute()`: the session's connected account for the toolkit, its [session restrictions](#session-restrictions), and the same-domain check. Two things differ:
 
