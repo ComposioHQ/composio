@@ -27,7 +27,32 @@ In the dashboard, open **Toolkits** and select the filter for instant tools. An 
 
 <Figure src="/images/instant-tool-eligibility.png" alt="Firecrawl toolkit page with Instant badges on Map multiple URLs, Scrape URL, and Search, but not on other tools" caption="Check individual tools before using an Instant account." />
 
-Instant eligibility and pricing discovery in the catalog APIs are coming soon. The public [toolkit listing API](/reference/api-reference/toolkits/getToolkits) does not yet return Instant availability or offer an Instant filter. Do not infer Instant support from `no_auth` or `composio_managed_auth_schemes`; they describe different access routes. During experimental access, ask [support@composio.dev](mailto:support@composio.dev) to confirm supported tools and rates.
+Use `instant_account_available` in the public catalog to find Instant Tools. For example, list Exa's tools and read the boolean on each item:
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=exa&limit=100' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+The field is available on toolkit list, multi-fetch, and detail responses, and tool list and detail responses, through both `/api/v3` and `/api/v3.1`. Session tool-list responses expose the same field on each returned tool.
+
+| Catalog item | Meaning of `instant_account_available: true` |
+|---|---|
+| Toolkit | At least one tool in this toolkit supports an Instant account. Check the individual tools before selecting one. |
+| Tool | This tool's slug is on its toolkit's Instant allowlist. |
+
+Follow `next_cursor` to read subsequent pages. To check a specific tool, use the [tool detail API](/reference/api-reference/tools/getToolsByToolSlug):
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/tools/EXA_SEARCH' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+Catalog support is independent of your project's Instant setting and Session policy. A value of `true` does not enable execution or authorize charges. Custom toolkits and tools return `false`, even if they share a slug with a supported native resource.
+
+Catalog and Session tool-list responses fall back to `instant_account_available: false` if availability metadata cannot be read.
+
+The catalog has no Instant-only filter. Use the boolean to identify supported items in your results. `no_auth` and `composio_managed_auth_schemes` describe different authentication properties and do not indicate Instant Tools support. During Experimental access, ask [support@composio.dev](mailto:support@composio.dev) to enable your project and confirm current rates before allowing Instant usage in a production Session.
 
 ## Create a Session
 
@@ -133,7 +158,7 @@ const result = await session.execute("EXA_SEARCH", { query: "Composio documentat
 </Tab>
 </Tabs>
 
-Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. A tool appearing in a toolkit does not mean Instant account access is available for that tool. Confirm supported tools and rates during Experimental access.
+Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments. Check `instant_account_available` on the individual tool; support on its parent toolkit does not imply support for every tool. Confirm current rates during Experimental access.
 
 ### Read charge details
 
