@@ -66,7 +66,7 @@ Jump to each permission area to see the routes it covers.
 | Tools                   | No access, Read only                             | [View routes](#tools)                  |
 | Session management      | No access, Read only, Write only, Read and write | [View routes](#session-management)     |
 | Session tool execution  | No access, Write only                            | [View routes](#session-tool-execution) |
-| Toolkits                | No access, Read only                             | [View routes](#toolkits)               |
+| Toolkits                | No access, Read only, Write only, Read and write | [View routes](#toolkits)               |
 | Triggers                | No access, Read only, Write only, Read and write | [View routes](#triggers)               |
 | Webhooks                | No access, Read only, Write only, Read and write | [View routes](#webhooks)               |
 | Observability           | No access, Read only                             | [View routes](#observability)          |
@@ -155,7 +155,7 @@ For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` a
 
 ## Toolkits
 
-View toolkits.
+View and install toolkits.
 
 | Access | Method | Route                                           |
 | ------ | ------ | ----------------------------------------------- |
@@ -166,6 +166,9 @@ View toolkits.
 | Read   | `POST` | `/toolkits/{toolkit_slug}/scopes/recommended`   |
 | Read   | `GET`  | `/toolkits/{toolkit_slug}/scopes/grant_context` |
 | Read   | `POST` | `/toolkits/multi`                               |
+| Write  | `POST` | `/toolkits/multi`                               |
+
+`POST /toolkits/multi` only fetches toolkits, so Read only access is enough to call it. It was previously listed as a write route, so keys with Write only access can still call it.
 
 ## Triggers
 
