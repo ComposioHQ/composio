@@ -94,6 +94,8 @@ async function createSession(): Promise<string> {
         recipesEnabled: true,
         enableWaitForConnections: true,
       },
+      // Opt-in meta tools are listed only in sessions that enable them.
+      proxy_execute: { enable: true },
     }),
   });
 
@@ -200,6 +202,8 @@ Every Composio [session](/docs/how-composio-works) hands your agent a small set 
 This keeps your context window small: you load a handful of meta tools, not a catalog of 500+ apps. The agent searches for what it needs when it needs it.
 
 A typical workflow runs in order: call \`COMPOSIO_SEARCH_TOOLS\` to discover tools and open a session, call \`COMPOSIO_MANAGE_CONNECTIONS\` if a toolkit is not yet connected, then run the tools with \`COMPOSIO_MULTI_EXECUTE_TOOL\`. Reach for the workbench and bash tools when responses are large enough to process out of context.
+
+\`COMPOSIO_PROXY_EXECUTE\` is opt-in: a session lists it only when it is created with \`proxy_execute.enable\` set to \`true\`. See [Proxy execute](/docs/extending-sessions/proxy-execute#let-the-agent-call-the-proxy).
 
 | Tool | What it does |
 |------|--------------|
