@@ -75,6 +75,46 @@ The `endpoint` is appended to the base URL, and many base URLs already include a
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>
 
+## Let the agent call the proxy
+
+`session.proxyExecute()` is for your own code. To let the agent send these requests itself, create the session with `proxy_execute.enable` set to `true`. The session then gives the agent the `COMPOSIO_PROXY_EXECUTE` [meta tool](/toolkits/meta-tools). Its arguments mirror `session.proxyExecute()`, except that the toolkit is `toolkit_slug` and each parameter names its location in `type` instead of `in`.
+
+The SDKs don't accept this option, so create the session through the API:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}, "proxy_execute": {"enable": true}}'
+```
+
+Then load the session by the `session_id` it returns. Its tools include `COMPOSIO_PROXY_EXECUTE`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.use("session_id")
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.sessions.use("session_id");
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+The tool is off by default. When `proxy_execute.enable` is unset or `false`, the session doesn't list it and refuses any call to it. Updating a session to turn it off takes effect on the agent's next call.
+
+The agent's calls follow the same rules as `session.proxyExecute()`: the session's connected account for the toolkit, its [session restrictions](#session-restrictions), and the same-domain check. Two things differ:
+
+- **Large responses go to the sandbox.** When the session's sandbox is enabled and a response is larger than the offload threshold (the sandbox's `auto_offload_threshold`, or a default when that isn't set), Composio saves the full response to a file in the sandbox and returns a preview with the file path. With the sandbox off, the full response comes back inline.
+- **Failures come back as a tool result.** If Composio can't send the request, the result has `successful: false` and an `error` message. An upstream error is not a failure: its `status` and body come back in `data` like any other response.
+
 ## Session restrictions
 
 Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.
