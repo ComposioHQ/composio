@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { it as effectIt } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import type { Composio } from '@composio/client';
 import {
+  ConnectedAccountResolutionError,
   formatConnectedAccountChoices,
   groupCachedConnectedAccountsByToolkit,
   listConnectedAccountsForToolkit,
+  resolveConnectedAccountForToolkit,
   resolveConnectedAccountSelection,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { terminalUITestImpl } from '../../__utils__/services/terminal-ui-test';
 
 const makeAccount = (overrides: Partial<ConnectedAccountItem>): ConnectedAccountItem => ({
   id: 'con_default',
@@ -134,6 +138,95 @@ const makeListClient = (
   } as unknown as Composio;
   return { client, calls };
 };
+
+describe('resolveConnectedAccountForToolkit', () => {
+  effectIt.effect(
+    'fails instead of silently picking one, when several accounts are connected and none is alias=default',
+    () =>
+      Effect.gen(function* () {
+        const items = [
+          makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+          makeAccount({
+            id: 'con_personal',
+            alias: 'personal',
+            toolkit: { slug: 'gmail' },
+            updated_at: '2026-01-02T00:00:00.000Z',
+          }),
+        ];
+        const { client } = makeListClient(items);
+
+        const error = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.none(),
+        }).pipe(Effect.flip);
+
+        expect(error).toBeInstanceOf(ConnectedAccountResolutionError);
+        expect(error.message).toContain('Multiple connected accounts exist');
+        expect(error.message).toContain('work');
+        expect(error.message).toContain('personal');
+      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
+  );
+
+  effectIt.effect(
+    'still picks the alias=default account automatically when one exists, even with several accounts connected',
+    () =>
+      Effect.gen(function* () {
+        const items = [
+          makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+          makeAccount({ id: 'con_main', alias: 'default', toolkit: { slug: 'gmail' } }),
+        ];
+        const { client } = makeListClient(items);
+
+        const selected = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.none(),
+        });
+
+        expect(selected).toBe('con_main');
+      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
+  );
+
+  effectIt.effect('still picks the only account automatically when exactly one is connected', () =>
+    Effect.gen(function* () {
+      const items = [makeAccount({ id: 'con_only', toolkit: { slug: 'gmail' } })];
+      const { client } = makeListClient(items);
+
+      const selected = yield* resolveConnectedAccountForToolkit({
+        client,
+        toolkitSlug: 'gmail',
+        userId: 'default',
+        selector: Option.none(),
+      });
+
+      expect(selected).toBe('con_only');
+    }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
+  );
+
+  effectIt.effect(
+    'an explicit --account selector still matches as before, even with several accounts',
+    () =>
+      Effect.gen(function* () {
+        const items = [
+          makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+          makeAccount({ id: 'con_personal', alias: 'personal', toolkit: { slug: 'gmail' } }),
+        ];
+        const { client } = makeListClient(items);
+
+        const selected = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.some('personal'),
+        });
+
+        expect(selected).toBe('con_personal');
+      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
+  );
+});
 
 describe('listConnectedAccountsForToolkit', () => {
   effectIt.effect('matches toolkit slugs the way the grouping helpers do, on both paths', () =>

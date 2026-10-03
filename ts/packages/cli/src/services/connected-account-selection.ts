@@ -295,7 +295,27 @@ export const resolveConnectedAccountForToolkit = (params: {
       selectableAccounts,
       Option.getOrUndefined(params.selector)
     );
-    if (selected) return selected.id;
+
+    if (selected) {
+      // No --account given: if more than one usable account exists and none
+      // is the explicit alias=default, picking one silently is dangerous
+      // (e.g. an agent reading/writing the wrong mailbox). Fail the same way
+      // an unmatched selector already does, instead of guessing.
+      if (Option.isNone(params.selector)) {
+        const usable = selectableAccounts.filter(isUsableConnectedAccount);
+        const hasExplicitDefault = usable.some(
+          item => normalizeSelector(item.alias ?? '') === 'default'
+        );
+        if (!hasExplicitDefault && usable.length > 1) {
+          const choices = formatConnectedAccountChoices(selectableAccounts);
+          return yield* new ConnectedAccountResolutionError({
+            message: `Multiple connected accounts exist for toolkit "${toolkitSlug}" and no --account was given. Available accounts: ${choices.join(', ')}.`,
+            toolkitSlug,
+          });
+        }
+      }
+      return selected.id;
+    }
     if (Option.isNone(params.selector)) return undefined;
 
     const choices = formatConnectedAccountChoices(selectableAccounts);
