@@ -27,14 +27,12 @@ export function EveChat() {
     prepareSend: (input) => ({ ...input, clientContext: { route: pathname } }),
   });
 
+  const [retriedTurnIds, setRetriedTurnIds] = useState<ReadonlySet<string>>(new Set());
+
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming';
-  // Recoverable model failures park the session (status back to `ready`), so
-  // read them from the event log. Terminal failures keep the `error` status.
-  const failedTurnIds = getFailedTurnIds(agent.events);
-  const lastTurnId = agent.data.messages.at(-1)?.metadata?.turnId;
-  // Hide failed turns once a newer turn exists, so a retried question doesn't appear twice.
+  // Hide only turns the user retried, so the resent question doesn't appear twice.
   const messages = agent.data.messages.filter(
-    ({ metadata }) => !failedTurnIds.has(metadata?.turnId ?? '') || metadata?.turnId === lastTurnId
+    (message) => !retriedTurnIds.has(message.metadata?.turnId ?? '')
   );
   const lastMessage = messages[messages.length - 1];
   const lastHasAssistantText =
@@ -43,8 +41,12 @@ export function EveChat() {
   // Show the loading indicator from submit through retrieval/model synthesis,
   // until the assistant's text actually starts streaming, so it doesn't flicker off.
   const thinking = isBusy && !lastHasAssistantText;
+  // Recoverable model failures park the session (status back to `ready`), so
+  // read them from the event log. Terminal failures keep the `error` status.
   const failedTurn =
-    agent.status === 'ready' ? findRetryableFailedTurn(messages, failedTurnIds) : undefined;
+    agent.status === 'ready'
+      ? findRetryableFailedTurn(messages, getFailedTurnIds(agent.events))
+      : undefined;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
@@ -122,6 +124,7 @@ export function EveChat() {
               onClick={() => {
                 if (isBusy) agent.stop();
                 clearEagerPreview();
+                setRetriedTurnIds(new Set());
                 agent.reset();
                 inputRef.current?.focus();
               }}
@@ -209,7 +212,10 @@ export function EveChat() {
                   <span>Couldn&apos;t get an answer. The docs assistant may be busy.</span>
                   <button
                     type="button"
-                    onClick={() => submit(failedTurn.question)}
+                    onClick={() => {
+                      setRetriedTurnIds((prev) => new Set(prev).add(failedTurn.turnId));
+                      submit(failedTurn.question);
+                    }}
                     className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-fd-border bg-fd-card px-2.5 py-1 text-[12px] text-fd-foreground/80 transition-colors hover:border-[var(--composio-brand)]/40 hover:text-fd-foreground"
                   >
                     <RotateCcw className="size-3" aria-hidden="true" />
