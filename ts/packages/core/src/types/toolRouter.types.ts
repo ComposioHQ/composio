@@ -530,9 +530,20 @@ export type ToolRouterToolsFn<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > = (modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>;
 
+/**
+ * Authorize function type surfaced on the Session interface.
+ *
+ * Pass `experimental: { accountType: 'SHARED' }` to create a SHARED
+ * connection (one install for the whole workspace). Default behaviour
+ * (omit the block) creates a PRIVATE connection.
+ */
 export type ToolRouterAuthorizeFn = (
   toolkit: string,
-  options?: { callbackUrl?: string; alias?: string }
+  options?: {
+    callbackUrl?: string;
+    alias?: string;
+    experimental?: z.infer<typeof ConnectedAccountExperimentalSchema>;
+  }
 ) => Promise<ConnectionRequest>;
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
