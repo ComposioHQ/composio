@@ -176,6 +176,24 @@ describe('AnthropicProvider', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
     });
+
+    it('adds one cache breakpoint to the final tool when tool caching is enabled', () => {
+      const cachedProvider = new AnthropicProvider({ cacheTools: true });
+      const tools = Array.from({ length: 5 }, (_, index) => ({
+        ...mockTool,
+        slug: `tool-${index}`,
+      }));
+
+      const wrapped = cachedProvider.wrapTools(tools);
+
+      expect(wrapped.map(tool => tool.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { type: 'ephemeral' },
+      ]);
+    });
   });
 
   describe('executeToolCall', () => {

@@ -237,7 +237,14 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
-    return tools.map(tool => this.wrapTool(tool));
+    const wrapped: AnthropicToolCollection = tools.map(tool => ({
+      ...this.wrapTool(tool),
+      cache_control: undefined,
+    }));
+    if (this.cacheTools && wrapped.length > 0) {
+      wrapped[wrapped.length - 1].cache_control = { type: 'ephemeral' };
+    }
+    return wrapped;
   }
 
   /**
