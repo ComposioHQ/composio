@@ -8,7 +8,6 @@ import {
   groupCachedConnectedAccountsByToolkit,
   listConnectedAccountsForToolkit,
   resolveConnectedAccountForToolkit,
-  resolveConnectedAccountForToolkitOrSkip,
   resolveConnectedAccountSelection,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
@@ -248,54 +247,6 @@ describe('resolveConnectedAccountForToolkit', () => {
           toolkitSlug: 'gmail',
           userId: 'default',
           selector: Option.some('   '),
-        }).pipe(Effect.flip);
-
-        expect(error).toBeInstanceOf(ConnectedAccountResolutionError);
-        expect(error.message).toContain('Multiple connected accounts exist');
-      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
-  );
-});
-
-describe('resolveConnectedAccountForToolkitOrSkip', () => {
-  const makeThrowingClient = () =>
-    ({
-      connectedAccounts: {
-        list: async () => {
-          throw new Error('simulated transient network failure');
-        },
-      },
-    }) as unknown as Composio;
-
-  effectIt.effect(
-    'resolves to undefined instead of failing, when the accounts list call itself fails (caller has another way to pick an account, e.g. a warm session cache)',
-    () =>
-      Effect.gen(function* () {
-        const selected = yield* resolveConnectedAccountForToolkitOrSkip({
-          client: makeThrowingClient(),
-          toolkitSlug: 'gmail',
-          userId: 'default',
-          selector: Option.none(),
-        });
-
-        expect(selected).toBeUndefined();
-      }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
-  );
-
-  effectIt.effect(
-    'still fails loudly on a genuine ambiguous selection, once the list call succeeds',
-    () =>
-      Effect.gen(function* () {
-        const items = [
-          makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
-          makeAccount({ id: 'con_personal', alias: 'personal', toolkit: { slug: 'gmail' } }),
-        ];
-        const { client } = makeListClient(items);
-
-        const error = yield* resolveConnectedAccountForToolkitOrSkip({
-          client,
-          toolkitSlug: 'gmail',
-          userId: 'default',
-          selector: Option.none(),
         }).pipe(Effect.flip);
 
         expect(error).toBeInstanceOf(ConnectedAccountResolutionError);

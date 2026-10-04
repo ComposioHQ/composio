@@ -22,7 +22,7 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { resolveConnectedAccountForToolkitOrSkip } from 'src/services/connected-account-selection';
+import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Argument.String('url').pipe(
   Argument.withDescription('Absolute or relative API endpoint to call through proxy execute.')
@@ -334,13 +334,8 @@ export const proxyCmd = Command.make('proxy', {
           // Always resolve through here, even with no --account: this is what
           // makes the "multiple accounts, none aliased default" case fail
           // loudly instead of resolveToolRouterSession silently picking one
-          // via resolveDefaultConnectedAccountsByToolkit. Uses the
-          // "OrSkip" variant so a failure of this check's own accounts list
-          // call (rather than a genuine ambiguous/not_found outcome) falls
-          // back to letting resolveToolRouterSession resolve the account as
-          // it did before this guard existed, so a warm session cache still
-          // works without depending on this extra network round trip.
-          const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkitOrSkip({
+          // via resolveDefaultConnectedAccountsByToolkit.
+          const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
             client,
             toolkitSlug: normalizedToolkit,
             userId: consumerUserId,
