@@ -452,6 +452,33 @@ describe('AnthropicProvider', () => {
       expect(executeToolCallSpy).not.toHaveBeenCalled();
       expect(results).toEqual([]);
     });
+
+    it('adds one cache breakpoint to the final tool result when caching is enabled', async () => {
+      const cachedProvider = new AnthropicProvider({ cacheTools: true });
+      const message = {
+        id: 'msg_123',
+        content: Array.from({ length: 4 }, (_, index) => ({
+          type: 'tool_use' as const,
+          id: `tu_${index}`,
+          name: `test-tool-${index}`,
+          input: { input: `test-value-${index}` },
+        })),
+      } as Anthropic.Message;
+      vi.spyOn(cachedProvider, 'executeToolCall').mockResolvedValue(
+        JSON.stringify({ result: 'success' })
+      );
+
+      const results = await cachedProvider.handleToolCalls('test-user', message);
+      const content = results[0]?.content;
+
+      expect(Array.isArray(content)).toBe(true);
+      expect(content?.map(block => block.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        { type: 'ephemeral' },
+      ]);
+    });
   });
 
   describe('MCP functionality', () => {

@@ -409,8 +409,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
+        cache_control: undefined,
       });
+    }
+
+    if (this.cacheTools && outputs.length > 0) {
+      outputs[outputs.length - 1].cache_control = { type: 'ephemeral' };
     }
 
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
