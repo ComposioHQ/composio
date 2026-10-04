@@ -38,12 +38,14 @@ export const parseString = (
   });
 
   // Only base64 is checked: OpenAPI `format: binary` is raw octets, and other
-  // encodings (base16, quoted-printable, ...) are not base64.
+  // encodings (base16, quoted-printable, ...) are not base64. Encoding names
+  // are case-insensitive (RFC 2045).
   zodSchema = extendSchemaWithMessage(
     zodSchema,
     jsonSchema,
     'contentEncoding',
-    (zs, encoding, errorMsg) => (encoding === 'base64' ? zs.base64(errorMsg) : zs)
+    (zs, encoding, errorMsg) =>
+      typeof encoding === 'string' && encoding.toLowerCase() === 'base64' ? zs.base64(errorMsg) : zs
   );
   zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'pattern', (zs, pattern, errorMsg) =>
     zs.regex(compilePattern('pattern', pattern, refs), errorMsg)
