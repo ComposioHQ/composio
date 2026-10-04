@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as hex in a
+  `base16` field. OpenAPI `binary` is raw bytes, not base64; only
+  `contentEncoding: "base64"` is still checked as base64.
+
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
   acted cannot repeat a side effect such as sending the same email twice.

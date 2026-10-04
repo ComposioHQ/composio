@@ -163,7 +163,9 @@ const normalizeFormats = (schema: JsonObject): void => {
     return;
   }
 
-  if (schema.format === 'binary' || schema.contentEncoding !== undefined) {
+  // Only base64 is checked: OpenAPI `format: binary` is raw octets, and other
+  // encodings (base16, quoted-printable, ...) are not base64.
+  if (schema.contentEncoding === 'base64') {
     if (schema.pattern === undefined) {
       schema.pattern = BASE64_PATTERN;
     } else {
