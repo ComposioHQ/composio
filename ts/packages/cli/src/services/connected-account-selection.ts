@@ -254,6 +254,16 @@ export class ConnectedAccountResolutionError extends Data.TaggedError(
   readonly message: string;
   readonly toolkitSlug: string;
   readonly cause?: unknown;
+  /**
+   * `'list_failed'`: accounts could not even be listed (network error,
+   * malformed response) — selection was never reached, so a caller with
+   * another way to proceed (e.g. a warm session cache) may fall back
+   * instead of failing the command. `'ambiguous'` and `'not_found'`: the
+   * list loaded fine and selection itself failed; those must always
+   * surface, since silently proceeding is the exact bug this guard exists
+   * to prevent.
+   */
+  readonly reason: 'list_failed' | 'ambiguous' | 'not_found';
 }> {}
 
 export const resolveConnectedAccountForToolkit = (params: {
@@ -277,6 +287,7 @@ export const resolveConnectedAccountForToolkit = (params: {
             message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
             toolkitSlug,
             cause,
+            reason: 'list_failed',
           })
       )
     );
@@ -287,6 +298,7 @@ export const resolveConnectedAccountForToolkit = (params: {
             message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
             toolkitSlug,
             cause,
+            reason: 'list_failed',
           })
       )
     );
@@ -317,6 +329,7 @@ export const resolveConnectedAccountForToolkit = (params: {
           return yield* new ConnectedAccountResolutionError({
             message: `Multiple connected accounts exist for toolkit "${toolkitSlug}" and no --account was given. Available accounts: ${choices.join(', ')}.`,
             toolkitSlug,
+            reason: 'ambiguous',
           });
         }
       }
@@ -332,5 +345,28 @@ export const resolveConnectedAccountForToolkit = (params: {
     return yield* new ConnectedAccountResolutionError({
       message: `No connected account matched "${effectiveSelector.value}" for toolkit "${toolkitSlug}".${hint}`,
       toolkitSlug,
+      reason: 'not_found',
     });
   });
+
+/**
+ * `resolveConnectedAccountForToolkit`, but a `'list_failed'` outcome (the
+ * accounts list call itself failed — selection was never reached) resolves
+ * to `undefined` instead of failing the caller. Use this where the caller
+ * has another way to pick an account when this check can't run — e.g.
+ * `composio proxy` falling back to `resolveToolRouterSession`'s own
+ * resolution so a warm session cache still works without depending on this
+ * extra network round trip succeeding. A genuine `'ambiguous'` or
+ * `'not_found'` outcome still always fails: that's the behavior this check
+ * exists to add, and must surface regardless of what the caller can do
+ * without it.
+ */
+export const resolveConnectedAccountForToolkitOrSkip = (
+  params: Parameters<typeof resolveConnectedAccountForToolkit>[0]
+): Effect.Effect<string | undefined, ConnectedAccountResolutionError, TerminalUI> =>
+  resolveConnectedAccountForToolkit(params).pipe(
+    Effect.catchIf(
+      error => error.reason === 'list_failed',
+      () => Effect.succeed(undefined)
+    )
+  );
