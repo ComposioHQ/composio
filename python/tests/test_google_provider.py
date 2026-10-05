@@ -59,6 +59,8 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                     "anyOf": [{"type": "string", "examples": ["abc"]}, {"type": "null"}]
                 },
                 "direction": {"type": "null"},
+                "label": {"type": ["string", "null"]},
+                "value": {"type": ["string", "integer"]},
                 "format": {"type": "integer", "enum": [0, 1], "exclusiveMinimum": -1},
                 "target": {
                     "oneOf": [
@@ -82,7 +84,12 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
         {"nullable": True},
     ]
     assert properties["direction"] == {"nullable": True}
-    assert properties["format"] == {"type": "INTEGER"}
+    assert properties["label"] == {"type": "STRING", "nullable": True}
+    assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
+    assert properties["format"] == {
+        "type": "INTEGER",
+        "description": "Allowed values: 0, 1.",
+    }
     assert len(properties["target"]["any_of"]) == 2
     assert properties["description"] == {"type": "STRING"}
 
