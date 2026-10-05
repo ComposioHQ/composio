@@ -19,6 +19,14 @@
   string, or fragment (`http://` is accepted only for localhost); otherwise
   `composio execute` fails before sending anything.
 
+- When telemetry is enabled, `composio execute` sends the CLI's anonymous
+  analytics install ID (the random UUID in `~/.composio/analytics.json`) to the
+  Composio Dashboard in an `x-cli-install-id` header, so Dashboard-side product
+  analytics can be joined with the CLI's own events. It follows the existing
+  telemetry opt-outs (`COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
+  ID is stored, the header is not sent. It is never sent to the backend API.
+
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
   acted cannot repeat a side effect such as sending the same email twice.
