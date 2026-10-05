@@ -50,6 +50,49 @@ describe('toStrictJsonSchema', () => {
     expect(changes).toEqual([]);
   });
 
+  it.each([
+    { type: 'string', enum: ['asc', 'desc'] },
+    { type: ['string', 'null'], enum: ['asc', 'desc'] },
+    { type: 'string', const: 'asc' },
+    { type: ['string', 'null'], const: 'asc' },
+    { type: 'string', enum: ['asc', null] },
+  ])('widens the whole optional typed enum or const schema: %j', property => {
+    const source = { type: 'object', properties: { direction: property } };
+    const snapshot = JSON.parse(JSON.stringify(source));
+    const result = toStrictJsonSchema(source);
+
+    expect(result.unsupported).toEqual([]);
+    expect(propertyOf(result.schema, 'direction')).toEqual({
+      anyOf: [property, { type: 'null' }],
+    });
+    expect(result.schema.required).toEqual(['direction']);
+    expect(source).toEqual(snapshot);
+    const again = toStrictJsonSchema(result.schema);
+    expect(again.schema).toEqual(result.schema);
+    expect(again.changes).toEqual([]);
+  });
+
+  it.each([
+    [{ const: null }, 'object'],
+    [{ enum: [null] }, 'object'],
+    [{ const: null }, undefined],
+    [{ enum: [null] }, undefined],
+  ])('resolves root refs beside nullable constraints against the tool: %j', (constraint, type) => {
+    const property = {
+      ...constraint,
+      anyOf: [{ $ref: '#' }, ...(type ? [{ type: 'null' }] : [])],
+    };
+    const source = { ...(type ? { type } : {}), properties: { value: property } };
+    const result = toStrictJsonSchema(source);
+
+    expect(result.unsupported).toEqual([]);
+    expect(propertyOf(result.schema, 'value')).toEqual({
+      anyOf: [property, { type: 'null' }],
+    });
+    expect(omitNullToolArguments({ value: null }, result.source)).toEqual({ value: null });
+    expect(toStrictJsonSchema(result.schema).schema).toEqual(result.schema);
+  });
+
   it('keeps optional properties, requires them and widens them to accept null', () => {
     const { schema, changes } = toStrictJsonSchema({
       type: 'object',
@@ -445,6 +488,18 @@ describe('omitNullToolArguments', () => {
     },
     $defs: { Str: { type: 'string' }, NullableStr: { type: ['string', 'null'] } },
   };
+
+  it.each([
+    [{ type: ['string', 'null'], enum: ['asc', 'desc'] }, {}],
+    [{ type: ['string', 'null'], const: 'asc' }, {}],
+    [{ type: ['string', 'null'], enum: ['asc', null] }, { value: null }],
+    [{ type: ['string', 'null'], const: null }, { value: null }],
+  ])('checks type and value constraints together: %j', (property, expected) => {
+    const source = { type: 'object', properties: { value: property } };
+    const input = { value: null };
+    expect(omitNullToolArguments(input, source)).toEqual(expected);
+    expect(input).toEqual({ value: null });
+  });
 
   it('drops nulls the schema does not accept and keeps the ones it does', () => {
     const input = {

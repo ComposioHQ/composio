@@ -50,6 +50,63 @@ class TestToStrictJsonSchema:
         assert result.schema == schema
         assert result.changes == []
 
+    @pytest.mark.parametrize(
+        "property_schema",
+        [
+            {"type": "string", "enum": ["asc", "desc"]},
+            {"type": ["string", "null"], "enum": ["asc", "desc"]},
+            {"type": "string", "const": "asc"},
+            {"type": ["string", "null"], "const": "asc"},
+            {"type": "string", "enum": ["asc", None]},
+        ],
+    )
+    def test_optional_typed_enum_and_const_accept_omission(self, property_schema):
+        from jsonschema import Draft202012Validator
+
+        source = {"type": "object", "properties": {"direction": property_schema}}
+        snapshot = copy.deepcopy(source)
+        result = to_strict_json_schema(source)
+        validator = Draft202012Validator(result.schema)
+        original = Draft202012Validator(source)
+
+        assert result.unsupported == []
+        validator.validate({"direction": None})
+        assert not validator.is_valid({})
+        assert original.is_valid({})
+        for value in ("asc", "desc", "invalid", 1):
+            assert validator.is_valid({"direction": value}) == original.is_valid(
+                {"direction": value}
+            )
+        assert source == snapshot
+        again = to_strict_json_schema(result.schema)
+        assert again.schema == result.schema
+        assert again.changes == []
+
+    @pytest.mark.parametrize("constraint", [{"const": None}, {"enum": [None]}])
+    @pytest.mark.parametrize("root_type", [None, "object"])
+    def test_nullable_constraint_resolves_root_refs_against_the_tool(
+        self, constraint, root_type
+    ):
+        from jsonschema import Draft202012Validator
+
+        source = {
+            "type": "object",
+            "properties": {
+                "value": {**constraint, "anyOf": [{"$ref": "#"}, {"type": "null"}]}
+            },
+        }
+        if root_type is None:
+            source.pop("type")
+            source["properties"]["value"]["anyOf"] = [{"$ref": "#"}]
+        Draft202012Validator(source).validate({"value": None})
+        result = to_strict_json_schema(source)
+        assert result.unsupported == []
+        Draft202012Validator(result.schema).validate({"value": None})
+        assert omit_null_tool_arguments({"value": None}, result.source) == {
+            "value": None
+        }
+        assert to_strict_json_schema(result.schema).schema == result.schema
+
     def test_keeps_optional_properties_required_and_nullable(self):
         result = to_strict_json_schema(
             {
@@ -460,6 +517,26 @@ _OMIT_SCHEMA = {
 
 
 class TestOmitNullToolArguments:
+    @pytest.mark.parametrize(
+        "property_schema, expected",
+        [
+            ({"type": ["string", "null"], "enum": ["asc", "desc"]}, {}),
+            ({"type": ["string", "null"], "const": "asc"}, {}),
+            ({"type": ["string", "null"], "enum": ["asc", None]}, {"value": None}),
+            ({"type": ["string", "null"], "const": None}, {"value": None}),
+        ],
+    )
+    def test_checks_type_and_value_constraints_together(
+        self, property_schema, expected
+    ):
+        from jsonschema import Draft202012Validator
+
+        schema = {"type": "object", "properties": {"value": property_schema}}
+        arguments = {"value": None}
+        assert omit_null_tool_arguments(arguments, schema) == expected
+        Draft202012Validator(schema).validate(expected)
+        assert arguments == {"value": None}
+
     def test_drops_nulls_the_schema_rejects_and_keeps_the_ones_it_accepts(self):
         arguments = {
             "cfg": {"url": "https://example.com", "note": None},
@@ -604,6 +681,46 @@ class TestOpenAIResponsesProviderStrict:
 
         assert wrapped["strict"] is False
         assert wrapped["parameters"] == {}
+
+    def test_strict_typed_enum_and_const_survive_wrap_and_execute(self):
+        from jsonschema import Draft202012Validator
+        from openai.types.responses.response_output_item import ResponseFunctionToolCall
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "direction": {"type": ["string", "null"], "enum": ["asc", "desc"]},
+                "mode": {"type": ["string", "null"], "const": "asc"},
+                "clearable": {"type": ["string", "null"], "enum": ["asc", None]},
+                "limit": {"type": "integer"},
+            },
+            "required": ["limit"],
+        }
+        received = {}
+
+        def execute_tool(slug, arguments, **kwargs):
+            Draft202012Validator(schema).validate(arguments)
+            received.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        provider = OpenAIResponsesProvider(strict=True)
+        provider.set_execute_tool_fn(execute_tool)
+        wrapped = provider.wrap_tool(self._tool(schema))
+        arguments = {"direction": None, "mode": None, "clearable": None, "limit": 1}
+        assert wrapped["strict"] is True
+        Draft202012Validator(wrapped["parameters"]).validate(arguments)
+        provider.execute_tool_call(
+            user_id="user",
+            tool_call=ResponseFunctionToolCall(
+                type="function_call",
+                call_id="call_1",
+                name="TEST_TOOL",
+                arguments=json.dumps(arguments),
+            ),
+        )
+        assert received == {"clearable": None, "limit": 1}
 
     def test_execute_tool_call_omits_null_arguments_in_strict_mode(self):
         from openai.types.responses.response_output_item import ResponseFunctionToolCall

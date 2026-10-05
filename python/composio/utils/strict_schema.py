@@ -125,21 +125,28 @@ def _join_path(parent: str, key: str) -> str:
     return f"{parent}.{key}" if parent else key
 
 
-def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
+def _widen_to_nullable(
+    node: dict[str, t.Any], root: dict[str, t.Any]
+) -> dict[str, t.Any]:
     """Accept ``null`` without placing ``type`` beside ``anyOf``."""
-    any_of = node.get("anyOf")
-    if isinstance(any_of, list):
-        if any(isinstance(b, dict) and b.get("type") == "null" for b in any_of):
-            return node
-        return {**node, "anyOf": [*any_of, {"type": "null"}]}
-    node_type = node.get("type")
-    if isinstance(node_type, str):
-        return node if node_type == "null" else {**node, "type": [node_type, "null"]}
-    if isinstance(node_type, list):
-        return node if "null" in node_type else {**node, "type": [*node_type, "null"]}
-    if (isinstance(node.get("enum"), list) and None in node["enum"]) or (
-        "const" in node and node["const"] is None
-    ):
+    if not isinstance(node.get("enum"), list) and "const" not in node:
+        any_of = node.get("anyOf")
+        if isinstance(any_of, list):
+            if any(isinstance(b, dict) and b.get("type") == "null" for b in any_of):
+                return node
+            return {**node, "anyOf": [*any_of, {"type": "null"}]}
+        node_type = node.get("type")
+        if isinstance(node_type, str):
+            return (
+                node if node_type == "null" else {**node, "type": [node_type, "null"]}
+            )
+        if isinstance(node_type, list):
+            return (
+                node if "null" in node_type else {**node, "type": [*node_type, "null"]}
+            )
+    elif not any(
+        key in node for key in ("$ref", "anyOf", "oneOf")
+    ) and _schema_accepts_null(node, root):
         return node
     annotations: dict[str, t.Any] = {
         k: node[k] for k in ("description", "title") if k in node
@@ -169,14 +176,14 @@ def _schema_accepts_null(schema: t.Any, root: dict[str, t.Any]) -> bool:
     if not isinstance(node, dict):
         return True
     node_type = node.get("type")
-    if isinstance(node_type, str):
-        return node_type == "null"
-    if isinstance(node_type, list):
-        return "null" in node_type
-    if isinstance(node.get("enum"), list):
-        return None in node["enum"]
-    if "const" in node:
-        return node["const"] is None
+    if isinstance(node_type, str) and node_type != "null":
+        return False
+    if isinstance(node_type, list) and "null" not in node_type:
+        return False
+    if isinstance(node.get("enum"), list) and None not in node["enum"]:
+        return False
+    if "const" in node and node["const"] is not None:
+        return False
     for keyword in ("anyOf", "oneOf"):
         branches = node.get(keyword)
         if isinstance(branches, list):
@@ -326,7 +333,7 @@ class _Walker:
                 continue
             if name in declared_required or not isinstance(property_schema, dict):
                 continue
-            properties[name] = _widen_to_nullable(property_schema)
+            properties[name] = _widen_to_nullable(property_schema, self.root)
             self.record(
                 _join_path(path, f"properties.{name}"),
                 "optional-property-nullable",

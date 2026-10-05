@@ -606,22 +606,33 @@ function setOwn(target: Record<string, unknown>, key: string, value: unknown): v
  * Widens a property schema so that `null` is an accepted value, without
  * placing `type` beside `anyOf` (the API rejects that combination).
  */
-function widenToNullable(node: Record<string, unknown>): Record<string, unknown> {
-  if (Array.isArray(node.anyOf)) {
-    const alreadyNullable = node.anyOf.some(
-      branch => isPlainObject(branch) && branch.type === 'null'
-    );
-    return alreadyNullable ? node : { ...node, anyOf: [...node.anyOf, { type: 'null' }] };
+function widenToNullable(
+  node: Record<string, unknown>,
+  root: Record<string, unknown>
+): Record<string, unknown> {
+  if (!Array.isArray(node.enum) && !('const' in node)) {
+    if (Array.isArray(node.anyOf)) {
+      const alreadyNullable = node.anyOf.some(
+        branch => isPlainObject(branch) && branch.type === 'null'
+      );
+      return alreadyNullable ? node : { ...node, anyOf: [...node.anyOf, { type: 'null' }] };
+    }
+    if (typeof node.type === 'string') {
+      return node.type === 'null' ? node : { ...node, type: [node.type, 'null'] };
+    }
+    if (Array.isArray(node.type)) {
+      return node.type.includes('null') ? node : { ...node, type: [...node.type, 'null'] };
+    }
+  } else if (
+    !('$ref' in node) &&
+    !('anyOf' in node) &&
+    !('oneOf' in node) &&
+    schemaAcceptsNull(node, root)
+  ) {
+    return node;
   }
-  if (typeof node.type === 'string') {
-    return node.type === 'null' ? node : { ...node, type: [node.type, 'null'] };
-  }
-  if (Array.isArray(node.type)) {
-    return node.type.includes('null') ? node : { ...node, type: [...node.type, 'null'] };
-  }
-  if ((Array.isArray(node.enum) && node.enum.includes(null)) || node.const === null) return node;
-  // No `type` at all: an empty schema already accepts null; anything else
-  // (enum-only, const, composition) is wrapped so the annotation stays outside.
+  // An empty schema already accepts null; other constraints are wrapped
+  // together so enum and const cannot exclude the null branch.
   const { description, title, ...rest } = node;
   if (Object.keys(rest).length === 0) return node;
   return {
@@ -650,10 +661,10 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
 function schemaAcceptsNull(schema: unknown, root: Record<string, unknown>): boolean {
   const node = resolveLocalRefs(schema, root);
   if (!isPlainObject(node)) return true;
-  if (typeof node.type === 'string') return node.type === 'null';
-  if (Array.isArray(node.type)) return node.type.includes('null');
-  if (Array.isArray(node.enum)) return node.enum.includes(null);
-  if ('const' in node) return node.const === null;
+  if (typeof node.type === 'string' && node.type !== 'null') return false;
+  if (Array.isArray(node.type) && !node.type.includes('null')) return false;
+  if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
+  if ('const' in node && node.const !== null) return false;
   for (const keyword of ['anyOf', 'oneOf']) {
     const branches = node[keyword];
     if (Array.isArray(branches)) return branches.some(branch => schemaAcceptsNull(branch, root));
@@ -834,7 +845,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
         continue;
       }
       if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
-      setOwn(properties, name, widenToNullable(propertySchema));
+      setOwn(properties, name, widenToNullable(propertySchema, root));
       recordChange({
         path: joinPath(path, `properties.${name}`),
         reason: 'optional-property-nullable',
