@@ -2,6 +2,7 @@ import path from 'node:path';
 import * as tempy from 'tempy';
 import {
   APIConnectionError,
+  APIError,
   Composio as RawComposioClient,
   NotFoundError,
   type RequestOptions,
@@ -66,6 +67,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
@@ -93,7 +95,12 @@ import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,
 } from 'src/services/setup-skill-installer';
-import { FetchHttpClient } from 'effect/unstable/http';
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientError,
+  HttpClientResponse,
+} from 'effect/unstable/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 
 /**
@@ -125,6 +132,37 @@ export interface MockAccountRequest {
   readonly params?: unknown;
   readonly options?: RequestOptions;
 }
+
+/** One request the CLI sent to the test Dashboard. */
+export interface DashboardTestRequest {
+  readonly method: string;
+  readonly url: string;
+  readonly headers: Readonly<Record<string, string>>;
+  /** The decoded JSON body, or `undefined` when there is none. */
+  readonly body: unknown;
+}
+
+/** A Dashboard procedure answer in the wire envelope the CLI decodes. */
+export const dashboardProcedureResult = (outcome: unknown, status = 200): Response =>
+  Response.json({ result: { data: { json: outcome } } }, { status });
+
+/** A Dashboard-level failure in the wire envelope the CLI decodes. */
+export const dashboardProcedureError = (params: {
+  readonly code: string;
+  readonly httpStatus: number;
+  readonly message: string;
+}): Response =>
+  Response.json(
+    {
+      error: {
+        json: {
+          message: params.message,
+          data: { code: params.code, httpStatus: params.httpStatus },
+        },
+      },
+    },
+    { status: params.httpStatus }
+  );
 
 export interface TestLiveInput {
   /**
@@ -304,6 +342,20 @@ export interface TestLiveInput {
       sessionId: string,
       params?: SessionToolkitsParams | null
     ) => Promise<SessionToolkitsResponse>;
+  };
+
+  /**
+   * Stand in for the Dashboard endpoints `composio execute` sends consumer
+   * executions to.
+   *
+   * By default the test Dashboard does what the real one does with a request:
+   * it creates a Tool Router session from the session settings it was sent and
+   * executes on the mock client's `toolRouter.session.*` handlers, relaying
+   * their answer or their `APIError`. Set `respond` to answer yourself; a
+   * rejection is delivered to the CLI as a network failure.
+   */
+  dashboard?: {
+    respond?: (request: DashboardTestRequest) => Response | Promise<Response>;
   };
 
   /**
@@ -1496,6 +1548,82 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepositoryTest
     );
 
+    // --- Dashboard execution endpoints ---
+    // The real `DashboardToolExecution` runs over this client, so the request
+    // the CLI builds and the reply it decodes are both exercised.
+    const relayThroughToolRouter = async (request: DashboardTestRequest): Promise<Response> => {
+      const { session, ...call } = (
+        request.body as {
+          json: {
+            tool_slug?: string;
+            slug?: string;
+            arguments: Record<string, unknown>;
+            session?: Omit<SessionCreateParams, 'user_id'>;
+          };
+        }
+      ).json;
+      try {
+        const created = await mockComposioClient.toolRouter.session.create({
+          ...session,
+          user_id: 'user_resolved_by_dashboard',
+        });
+        const response = request.url.endsWith('/executeMeta')
+          ? await mockComposioClient.toolRouter.session.executeMeta(created.session_id, {
+              slug: call.slug as SessionExecuteMetaParams['slug'],
+              arguments: call.arguments,
+            })
+          : await mockComposioClient.toolRouter.session.execute(created.session_id, {
+              tool_slug: call.tool_slug ?? '',
+              arguments: call.arguments,
+            });
+        return dashboardProcedureResult({ ok: true, response });
+      } catch (error) {
+        if (error instanceof APIError && typeof error.status === 'number') {
+          return dashboardProcedureResult({
+            ok: false,
+            status: error.status,
+            error: error.details ?? { message: error.message },
+          });
+        }
+        return dashboardProcedureError({
+          code: 'INTERNAL_SERVER_ERROR',
+          httpStatus: 500,
+          message: error instanceof Error ? error.message : `${error}`,
+        });
+      }
+    };
+    const respondAsDashboard = input?.dashboard?.respond ?? relayThroughToolRouter;
+    const DashboardToolExecutionTest = Layer.provide(
+      DashboardToolExecution.Default,
+      Layer.mergeAll(
+        ComposioUserContextTest,
+        Layer.succeed(
+          HttpClient.HttpClient,
+          HttpClient.make((request, url) =>
+            Effect.tryPromise({
+              try: async () =>
+                HttpClientResponse.fromWeb(
+                  request,
+                  await respondAsDashboard({
+                    method: request.method,
+                    url: url.toString(),
+                    headers: { ...request.headers },
+                    body:
+                      request.body._tag === 'Uint8Array'
+                        ? JSON.parse(new TextDecoder().decode(request.body.body))
+                        : undefined,
+                  })
+                ),
+              catch: cause =>
+                new HttpClientError.HttpClientError({
+                  reason: new HttpClientError.TransportError({ request, cause }),
+                }),
+            })
+          )
+        )
+      )
+    );
+
     // --- ToolsExecutor ---
     // When `input.toolsExecutor` is set, use a canned mock (bypasses Tool Router).
     // Otherwise, use the real ToolsExecutorLive which flows through the mock ComposioClientSingleton.
@@ -1521,7 +1649,11 @@ export const TestLayer = (input?: TestLiveInput) =>
         )
       : Layer.provide(
           ToolsExecutorLive,
-          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+          Layer.mergeAll(
+            ComposioClientSingletonTest,
+            ToolkitSlugCatalogTest,
+            DashboardToolExecutionTest
+          )
         );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);

@@ -142,11 +142,9 @@ describe('CLI: composio execute', () => {
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
   let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
-  let recordedExecuteOptions: Array<{ maxRetries?: number } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
     recordedProjectToolkitScopes = [];
-    recordedExecuteOptions = [];
   });
 
   layer(
@@ -207,7 +205,7 @@ describe('CLI: composio execute', () => {
         const output = parseLastJson(lines);
 
         expect(outputText).not.toContain('Response\n{');
-        // Response flows through real ToolsExecutorLive → mock session.execute
+        // Response flows through real ToolsExecutorLive → test Dashboard → mock session.execute
         expect(output.successful).toBe(true);
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
@@ -339,22 +337,11 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params, options) => {
-          recordedExecuteOptions.push(options);
-          return {
-            data: { tool_slug: params.tool_slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_gmail_default',
-          };
-        },
-        executeMeta: async (_sessionId, params, options) => {
-          recordedExecuteOptions.push(options);
-          return {
-            data: { slug: params.slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_meta_default',
-          };
-        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_gmail_default',
+        }),
       },
     })
   )('[Given] default alias exists [Then] execute pins the default connected account', it => {
@@ -371,17 +358,6 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
-        // An execution is never retried: a retry after the backend already
-        // acted would duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
-      })
-    );
-
-    it.effect('never retries a meta tool execution', () =>
-      Effect.gen(function* () {
-        yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
-
-        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
       })
     );
 

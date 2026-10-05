@@ -291,6 +291,56 @@ describe('CLI: composio run', () => {
     );
   });
 
+  const webURLForwarding = [
+    {
+      name: 'no URL overrides',
+      env: {},
+      forwarded: true,
+    },
+    {
+      name: 'a custom backend URL with no web URL',
+      env: { COMPOSIO_BASE_URL: 'https://composio.internal.example' },
+      forwarded: false,
+    },
+    {
+      name: 'a custom backend URL and a web URL',
+      env: {
+        COMPOSIO_BASE_URL: 'https://composio.internal.example',
+        COMPOSIO_WEB_URL: 'https://dashboard.internal.example',
+      },
+      forwarded: true,
+    },
+  ] as const;
+
+  for (const testCase of webURLForwarding) {
+    layer(
+      RunTestLive({
+        baseConfigProvider: ConfigProvider.fromEnv({ env: testCase.env }).pipe(
+          extendConfigProvider
+        ),
+      })
+    )(it => {
+      // A forwarded web URL is what moves a script's `execute()` onto the
+      // Dashboard, so it must not appear when this process stays on the backend.
+      it.effect(
+        `[Given] ${testCase.name} [Then] the web URL is ${testCase.forwarded ? '' : 'not '}forwarded to helpers`,
+        () =>
+          Effect.gen(function* () {
+            let preloadSource = '';
+            commandRuns.mockImplementation(command => {
+              preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+              return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+            });
+
+            yield* cli(['run', 'console.log("hi")']);
+
+            expect(preloadSource).toContain('"baseURL":');
+            expect(preloadSource.includes('"webURL":')).toBe(testCase.forwarded);
+          })
+      );
+    });
+  }
+
   layer(Layer.merge(RunTestLive(), telemetryDebugModeLayer(true)))(it => {
     it.effect(
       '[Given] --telemetry-debug [Then] the spawned script and its children observe it',
