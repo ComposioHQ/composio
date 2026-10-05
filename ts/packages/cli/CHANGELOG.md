@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- `composio execute` now sends the execution itself (single, `--parallel`, and
+  meta tools) through the Composio Dashboard instead of calling the backend
+  directly. Output, exit codes, error details, connection tips, and `--json`
+  shapes are unchanged, and no new login or configuration is needed.
+  `composio dev playground-execute` and every other command still call the
+  backend. A `COMPOSIO_BASE_URL` override without `COMPOSIO_WEB_URL` keeps
+  `composio execute` on that backend; set both to use that deployment's
+  Dashboard. The request is sent once, with no retry and no redirect following.
+
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,
