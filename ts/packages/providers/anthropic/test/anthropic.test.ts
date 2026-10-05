@@ -453,7 +453,7 @@ describe('AnthropicProvider', () => {
       expect(results).toEqual([]);
     });
 
-    it('adds one cache breakpoint to the final tool result when caching is enabled', async () => {
+    it('does not add cache breakpoints to tool results when caching is enabled', async () => {
       const cachedProvider = new AnthropicProvider({ cacheTools: true });
       const message = {
         id: 'msg_123',
@@ -476,7 +476,18 @@ describe('AnthropicProvider', () => {
         undefined,
         undefined,
         undefined,
-        { type: 'ephemeral' },
+        undefined,
+      ]);
+
+      const nextResults = await cachedProvider.handleToolCalls('test-user', message);
+      const nextContent = nextResults[0]?.content;
+
+      expect(Array.isArray(nextContent)).toBe(true);
+      expect(nextContent?.map(block => block.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       ]);
     });
   });

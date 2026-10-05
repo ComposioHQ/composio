@@ -413,10 +413,6 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       });
     }
 
-    if (this.cacheTools && outputs.length > 0) {
-      outputs[outputs.length - 1].cache_control = { type: 'ephemeral' };
-    }
-
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
   }
 
