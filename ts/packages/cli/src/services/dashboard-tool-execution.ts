@@ -1,5 +1,5 @@
 import { APIError } from '@composio/client';
-import { Config, Context, Data, Effect, Layer, Option, Schema } from 'effect';
+import { Config, Context, Data, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/unstable/http';
 import * as constants from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -34,8 +34,11 @@ export class DashboardToolExecutionError extends Data.TaggedError(
    * - `dashboard`: the Dashboard reported a failure of its own.
    * - `request`: no response arrived.
    * - `response`: the response was not one the CLI understands.
+   * - `timeout`: no complete response arrived within the deadline.
+   * - `configuration`: the Dashboard URL is not one the CLI will send a key to.
    */
-  readonly reason: 'unauthorized' | 'dashboard' | 'request' | 'response';
+  readonly reason:
+    'unauthorized' | 'dashboard' | 'request' | 'response' | 'timeout' | 'configuration';
   readonly status?: number;
   /** The Dashboard's error code, e.g. `UNAUTHORIZED`. */
   readonly code?: string;
@@ -95,6 +98,51 @@ const withoutTrailingSlashes = (url: string) => url.replace(/\/+$/, '');
 const LOGIN_HINT = 'Run `composio login`, then retry.';
 
 /**
+ * Covers the POST and reading its body. The Dashboard allows a tool up to 800
+ * seconds, so anything still pending after this is not coming.
+ */
+const DASHBOARD_REQUEST_TIMEOUT = Duration.minutes(15);
+
+const LOOPBACK_HOSTNAMES: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+// Fixed text: the configured value may itself hold a secret, so it is never echoed.
+const INVALID_DASHBOARD_URL_MESSAGE =
+  'The Composio Dashboard URL (COMPOSIO_WEB_URL) must be an https:// URL with no credentials, query string, or fragment; http:// is accepted only for localhost. Nothing was sent.';
+
+/**
+ * The Dashboard base the user API key may be sent to: `origin` for messages,
+ * `base` for building request URLs. Rejects a URL that would put the key on
+ * the wire in clear text, or that carries anything beyond scheme, host and path.
+ */
+const resolveDashboardBase = (webURL: string) =>
+  Result.try({
+    try: () => new URL(webURL),
+    catch: () => undefined,
+  }).pipe(
+    Result.filterOrFail(
+      url =>
+        url.username === '' &&
+        url.password === '' &&
+        !webURL.includes('?') &&
+        !webURL.includes('#') &&
+        (url.protocol === 'https:' ||
+          (url.protocol === 'http:' && LOOPBACK_HOSTNAMES.has(url.hostname))),
+      () => undefined
+    ),
+    Result.map(url => ({
+      origin: url.origin,
+      base: `${url.origin}${withoutTrailingSlashes(url.pathname)}`,
+    })),
+    Result.mapError(
+      () =>
+        new DashboardToolExecutionError({
+          reason: 'configuration',
+          message: INVALID_DASHBOARD_URL_MESSAGE,
+        })
+    )
+  );
+
+/**
  * Which transport a consumer execution uses. The Dashboard is the default; a
  * backend URL that was overridden without a matching `COMPOSIO_WEB_URL` keeps
  * the backend transport, so a key for one deployment is never sent to another
@@ -137,8 +185,9 @@ const makeDashboardToolExecution = Effect.gen(function* () {
         });
       }
 
-      const dashboardURL = withoutTrailingSlashes(webURL);
-      const request = HttpClientRequest.post(`${dashboardURL}/api/cli/trpc/${procedure}`).pipe(
+      // Checked before the key is attached to anything.
+      const dashboard = yield* Effect.fromResult(resolveDashboardBase(webURL));
+      const request = HttpClientRequest.post(`${dashboard.base}/api/cli/trpc/${procedure}`).pipe(
         HttpClientRequest.setHeaders({
           ...cliRequestHeaders(),
           accept: 'application/json',
@@ -150,29 +199,43 @@ const makeDashboardToolExecution = Effect.gen(function* () {
 
       // Sent exactly once: a retry, or a redirect followed by re-posting, could
       // run a tool that already acted.
-      const response = yield* httpClient.execute(request).pipe(
-        Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
-        Effect.mapError(
-          cause =>
-            new DashboardToolExecutionError({
-              reason: 'request',
-              message: `Could not reach the Composio Dashboard at ${dashboardURL}. The request was not retried; if the tool may have already run, check before running it again.`,
-              cause,
-            })
-        )
-      );
-
-      const unexpectedResponse = (cause: unknown) =>
-        new DashboardToolExecutionError({
-          reason: 'response',
-          status: response.status,
-          message: `The Composio Dashboard at ${dashboardURL} returned an unexpected response (HTTP ${response.status}). The request was not retried.`,
-          cause,
-        });
-
-      const reply = yield* response.text.pipe(
-        Effect.flatMap(decodeProcedureReply),
-        Effect.mapError(unexpectedResponse)
+      const { response, reply } = yield* Effect.gen(function* () {
+        const response = yield* httpClient.execute(request).pipe(
+          Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
+          Effect.mapError(
+            cause =>
+              new DashboardToolExecutionError({
+                reason: 'request',
+                message: `Could not reach the Composio Dashboard at ${dashboard.origin}. The request was not retried; if the tool may have already run, check before running it again.`,
+                cause,
+              })
+          )
+        );
+        const reply = yield* response.text.pipe(
+          Effect.flatMap(decodeProcedureReply),
+          Effect.mapError(
+            cause =>
+              new DashboardToolExecutionError({
+                reason: 'response',
+                status: response.status,
+                message: `The Composio Dashboard at ${dashboard.origin} returned an unexpected response (HTTP ${response.status}). The request was not retried.`,
+                cause,
+              })
+          )
+        );
+        return { response, reply };
+      }).pipe(
+        // Expiry interrupts the request, which aborts it; nothing is resent.
+        Effect.timeoutOrElse({
+          duration: DASHBOARD_REQUEST_TIMEOUT,
+          orElse: () =>
+            Effect.fail(
+              new DashboardToolExecutionError({
+                reason: 'timeout',
+                message: `The Composio Dashboard at ${dashboard.origin} did not answer within ${Duration.toMinutes(DASHBOARD_REQUEST_TIMEOUT)} minutes. The tool may still have run; check before running it again. The request was not retried.`,
+              })
+            ),
+        })
       );
 
       if ('error' in reply) {
