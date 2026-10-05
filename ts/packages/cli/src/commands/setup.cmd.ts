@@ -1,3 +1,4 @@
+import { setupSkillCmd } from './setup-skill.cmd';
 import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
@@ -311,5 +312,20 @@ const setupBaseCmd = Command.make(
 );
 
 export const setupCmd = setupBaseCmd.pipe(
-  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.')
+  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.'),
+  Command.withExamples([
+    {
+      command: 'composio setup',
+    },
+    {
+      command: 'composio setup --target auto --yes',
+    },
+    {
+      command: 'composio setup --uninstall --target auto --yes',
+    },
+    {
+      command: 'composio setup --target all',
+    },
+  ]),
+  Command.withSubcommands([setupSkillCmd])
 );

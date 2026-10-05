@@ -25,7 +25,6 @@ describe('CLI: composio dev triggers mutations', () => {
             'GMAIL_NEW_GMAIL_MESSAGE',
             '--connected-account-id',
             'con_123',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -49,7 +48,6 @@ describe('CLI: composio dev triggers mutations', () => {
             'GMAIL_NEW_GMAIL_MESSAGE',
             '--trigger-config',
             '{',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -63,7 +61,7 @@ describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive(dangerousDevConfig))('[Given] enable with ID [Then] enables trigger', it => {
     it.effect('enables trigger successfully', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'enable', 'trg_123', '--dangerously-allow']);
+        yield* cli(['dev', 'triggers', 'enable', 'trg_123']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
         expect(output).toContain('enabled');
@@ -94,7 +92,6 @@ describe('CLI: composio dev triggers mutations', () => {
             'GMAIL_NEW_GMAIL_MESSAGE',
             '--trigger-config',
             '[1,2,3]',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -112,7 +109,6 @@ describe('CLI: composio dev triggers mutations', () => {
             'GMAIL_NEW_GMAIL_MESSAGE',
             '--trigger-config',
             '42',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -128,7 +124,7 @@ describe('CLI: composio dev triggers mutations', () => {
     it => {
       it.effect('shows missing id warning', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'enable', '--dangerously-allow']);
+          yield* cli(['dev', 'triggers', 'enable']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('Missing required argument');
