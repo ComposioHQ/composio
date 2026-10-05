@@ -35,7 +35,8 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
     ``const`` becomes a one-value ``enum``, ``null`` in ``type`` becomes
     ``nullable``, several types become ``anyOf``, and the values of a
     non-string ``enum`` move into the description because Vertex only accepts
-    string enums. Property names are kept as-is.
+    string enums. ``anyOf`` is left as the only field of its node, as Vertex
+    requires. Property names are kept as-is.
 
     Explicit loops keep each nesting level to one stack frame, so the depth cap
     in ``dereference_json_schema`` stays the binding limit.
@@ -77,6 +78,19 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         node["description"] = (
             f"{node.get('description', '')} Allowed values: {allowed}.".strip()
         )
+    if "anyOf" in node:
+        # Vertex rejects anyOf next to any other field: fold a single option
+        # into the node, or copy the node's other fields into each option.
+        options = []
+        for option in node.pop("anyOf"):
+            if isinstance(option, dict) and option.get("type") == "null":
+                node["nullable"] = True
+            elif isinstance(option, dict):
+                options.append(option)
+        if len(options) == 1:
+            return _to_vertex_schema({**options[0], **node})
+        if options:
+            node = {"anyOf": [{**node, **option} for option in options]}
 
     result: t.Dict[str, t.Any] = {}
     for key, value in node.items():

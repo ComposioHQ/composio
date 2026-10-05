@@ -56,7 +56,15 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                 },
                 "kind": {"type": "string", "const": "message"},
                 "page_token": {
-                    "anyOf": [{"type": "string", "examples": ["abc"]}, {"type": "null"}]
+                    "description": "Next page",
+                    "anyOf": [
+                        {"type": "string", "examples": ["abc"]},
+                        {"type": "null"},
+                    ],
+                },
+                "amount": {
+                    "description": "Amount",
+                    "anyOf": [{"type": "string"}, {"type": "integer"}],
                 },
                 "direction": {"type": "null"},
                 "label": {"type": ["string", "null"]},
@@ -79,24 +87,44 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
         },
     )
 
-    properties = GoogleProvider().wrap_tool(tool).to_dict()["parameters"]["properties"]
+    parameters = GoogleProvider().wrap_tool(tool).to_dict()["parameters"]
+    properties = parameters["properties"]
 
     assert properties["query"] == {"type": "STRING"}
     assert properties["kind"] == {"type": "STRING", "enum": ["message"]}
-    assert properties["page_token"]["any_of"] == [
-        {"type": "STRING"},
-        {"nullable": True},
-    ]
+    assert properties["page_token"] == {
+        "type": "STRING",
+        "description": "Next page",
+        "nullable": True,
+    }
+    assert properties["amount"] == {
+        "any_of": [
+            {"type": "STRING", "description": "Amount"},
+            {"type": "INTEGER", "description": "Amount"},
+        ]
+    }
     assert properties["direction"] == {"nullable": True}
     assert properties["label"] == {"type": "STRING", "nullable": True}
     assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
-    assert properties["id"]["any_of"] == [{"type": "STRING"}]
+    assert properties["id"] == {"type": "STRING"}
     assert properties["format"] == {
         "type": "INTEGER",
         "description": "Allowed values: 0, 1.",
     }
     assert len(properties["target"]["any_of"]) == 2
     assert properties["description"] == {"type": "STRING"}
+
+    # Vertex rejects a schema that sets any other field next to any_of.
+    def any_of_stands_alone(node: Any) -> bool:
+        if isinstance(node, list):
+            return all(any_of_stands_alone(item) for item in node)
+        if not isinstance(node, dict):
+            return True
+        if "any_of" in node and len(node) > 1:
+            return False
+        return all(any_of_stands_alone(value) for value in node.values())
+
+    assert any_of_stands_alone(parameters)
 
 
 def _function_call_response() -> Any:
