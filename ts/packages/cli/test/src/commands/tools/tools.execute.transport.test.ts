@@ -10,6 +10,7 @@ import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
+import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import {
   dashboardProcedureError,
@@ -34,6 +35,28 @@ const configProvider = (env: Record<string, string> = {}) =>
   ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env } }).pipe(
     extendConfigProvider
   );
+
+/**
+ * A cache directory whose `user_data.json` stores the given URLs, as a login
+ * made under other `COMPOSIO_*_URL` values would have left it.
+ */
+const cacheDirWithStoredURLs = (stored: { base_url?: string; web_url?: string }) => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-cache-'));
+  fs.writeFileSync(
+    path.join(cacheDir, 'user_data.json'),
+    JSON.stringify({
+      api_key: 'test_api_key',
+      // Distinct from every fixture, so a request carrying it proves this file was read.
+      org_id: 'org_stored',
+      project_id: null,
+      test_user_id: 'global-default',
+      base_url: null,
+      web_url: null,
+      ...stored,
+    })
+  );
+  return cacheDir;
+};
 
 /** A custom backend with no web URL: the one consumer setup that stays on the backend. */
 const backendOnlyEnv = { COMPOSIO_BASE_URL: 'https://composio.internal.example' };
@@ -99,12 +122,17 @@ const makeWorld = (options: {
     ...options.input,
   });
 
-  /** Runs the CLI and returns everything it printed, plus how it exited. */
+  /**
+   * Runs the CLI and returns everything it printed, how it exited, and the
+   * URLs in effect: `baseURL` is what the backend client is built with,
+   * `webURL` what the Dashboard request is built from.
+   */
   const run = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const exit = yield* cli(args).pipe(Effect.exit);
       const lines = yield* MockConsole.getLines({ stripAnsi: true });
-      return { exit, lines, output: lines.join('\n') };
+      const { baseURL, webURL } = (yield* ComposioUserContext).data;
+      return { exit, lines, output: lines.join('\n'), baseURL, webURL };
     }).pipe(Effect.provide(layer), Effect.scoped);
 
   return { run, dashboardRequests, toolRouterCalls };
@@ -513,6 +541,80 @@ describe('CLI: composio execute transport', () => {
       expect(world.toolRouterCalls).toEqual([]);
     })
   );
+
+  // Stored URLs never take effect: the backend client and the Dashboard request
+  // both use the environment (or the defaults), which is also what the
+  // transport choice reads. These pin that the three cannot disagree.
+  const STORED_BACKEND = 'https://stored-backend.internal.example';
+  const STORED_DASHBOARD = 'https://stored-dashboard.internal.example';
+  const storedURLCases: ReadonlyArray<{
+    readonly name: string;
+    readonly stored: { base_url?: string; web_url?: string };
+    readonly env: Record<string, string>;
+    readonly baseURL: string;
+    /** The one Dashboard origin that receives the key, or none on the backend transport. */
+    readonly dashboard: string | undefined;
+  }> = [
+    {
+      name: 'a stored custom backend URL and no environment override',
+      stored: { base_url: STORED_BACKEND },
+      env: {},
+      baseURL: 'https://backend.composio.dev',
+      dashboard: DEFAULT_DASHBOARD,
+    },
+    {
+      name: 'stored custom backend and web URLs and no environment override',
+      stored: { base_url: STORED_BACKEND, web_url: STORED_DASHBOARD },
+      env: {},
+      baseURL: 'https://backend.composio.dev',
+      dashboard: DEFAULT_DASHBOARD,
+    },
+    {
+      name: 'a custom backend URL in the environment and a stored default web URL',
+      stored: { web_url: 'https://dashboard.composio.dev/' },
+      env: backendOnlyEnv,
+      baseURL: backendOnlyEnv.COMPOSIO_BASE_URL,
+      dashboard: undefined,
+    },
+    {
+      name: 'a stored web URL that differs from the one in the environment',
+      stored: { web_url: STORED_DASHBOARD },
+      env: { COMPOSIO_WEB_URL: 'https://env-dashboard.internal.example' },
+      baseURL: 'https://backend.composio.dev',
+      dashboard: 'https://env-dashboard.internal.example',
+    },
+  ];
+
+  for (const testCase of storedURLCases) {
+    it.effect(`sends the key to one consistent environment given ${testCase.name}`, () =>
+      Effect.gen(function* () {
+        const world = makeWorld({
+          env: { ...testCase.env, COMPOSIO_CACHE_DIR: cacheDirWithStoredURLs(testCase.stored) },
+        });
+
+        const { exit, baseURL, webURL } = yield* world.run(EXECUTE_GMAIL);
+
+        expect(Exit.isSuccess(exit)).toBe(true);
+        expect(baseURL).toBe(testCase.baseURL);
+        expect(webURL).not.toContain('stored-dashboard');
+        if (testCase.dashboard === undefined) {
+          expect(world.dashboardRequests).toEqual([]);
+          expect(world.toolRouterCalls.map(call => call.method)).toEqual(['create', 'execute']);
+        } else {
+          expect(
+            world.dashboardRequests.map(request => [
+              request.url,
+              request.headers['authorization'],
+              request.headers['x-org-id'],
+            ])
+          ).toEqual([
+            [`${testCase.dashboard}/api/cli/trpc/execute`, 'Bearer test_api_key', 'org_stored'],
+          ]);
+          expect(world.toolRouterCalls).toEqual([]);
+        }
+      })
+    );
+  }
 
   const unsafeWebURLs: ReadonlyArray<{ readonly name: string; readonly webURL: string }> = [
     { name: 'plain http to a remote host', webURL: 'http://dashboard.internal.example' },
