@@ -249,7 +249,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     // limit as soon as a caller passes 5+ tools.
     if (this.cacheTools) {
       for (const tool of wrapped.slice(0, -1)) {
-        tool.cache_control = undefined;
+        delete tool.cache_control;
       }
     }
     return wrapped;
