@@ -64,7 +64,14 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                 },
                 "amount": {
                     "description": "Amount",
-                    "anyOf": [{"type": "string"}, {"type": "integer"}],
+                    "anyOf": [
+                        {"type": "string"},
+                        {"anyOf": [{"type": "integer"}, {"type": "number"}]},
+                    ],
+                },
+                "flag": {
+                    "type": ["string", "null"],
+                    "anyOf": [{"type": "string"}, {"type": "boolean"}],
                 },
                 "direction": {"type": "null"},
                 "label": {"type": ["string", "null"]},
@@ -104,8 +111,10 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
         "any_of": [
             {"type": "STRING", "description": "Amount"},
             {"type": "INTEGER", "description": "Amount"},
+            {"type": "NUMBER", "description": "Amount"},
         ]
     }
+    assert properties["flag"] == {"type": "STRING", "nullable": True}
     assert properties["direction"] == {"nullable": True}
     assert properties["label"] == {"type": "STRING", "nullable": True}
     assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
