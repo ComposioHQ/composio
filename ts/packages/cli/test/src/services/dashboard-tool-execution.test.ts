@@ -1,4 +1,10 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
+import { afterEach, vi } from 'vitest';
 import { APIError } from '@composio/client';
 import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from 'effect';
 import { TestClock } from 'effect/testing';
@@ -14,7 +20,9 @@ import {
   DashboardToolExecutionError,
   resolveConsumerExecutionTransport,
 } from 'src/services/dashboard-tool-execution';
+import { cliRequestHeaders } from 'src/services/client-provenance';
 import { extendConfigProvider } from 'src/services/config';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ComposioUserContext } from 'src/services/user-context';
 import { extractApiErrorDetails } from 'src/utils/api-error-extraction';
 
@@ -46,7 +54,20 @@ const requestBody = (request: HttpClientRequest.HttpClientRequest): unknown =>
     ? JSON.parse(new TextDecoder().decode(request.body.body))
     : null;
 
-const userContext = (overrides: { webURL?: string; apiKey?: Option.Option<string> } = {}) =>
+/** The filesystem the service reads the analytics state from, rooted at `home`. */
+const platform = (home: string) =>
+  Layer.mergeAll(
+    BunFileSystem.layer,
+    BunPath.layer,
+    Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
+  );
+type Platform = Layer.Success<ReturnType<typeof platform>>;
+
+const emptyHome = () => fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+
+const userContext = (
+  overrides: { webURL?: string; apiKey?: Option.Option<string>; home?: string } = {}
+) =>
   Layer.succeed(
     ComposioUserContext,
     ComposioUserContext.of({
@@ -71,7 +92,7 @@ const withDashboard = <A, E>(
   use: (
     dashboard: DashboardToolExecution['Service'],
     requests: ReadonlyArray<RecordedRequest>
-  ) => Effect.Effect<A, E>,
+  ) => Effect.Effect<A, E, Platform>,
   overrides?: Parameters<typeof userContext>[0]
 ) => {
   const requests: Array<RecordedRequest> = [];
@@ -98,7 +119,8 @@ const withDashboard = <A, E>(
           Layer.mergeAll(Layer.succeed(HttpClient.HttpClient, httpClient), userContext(overrides))
         )
       )
-    )
+    ),
+    Effect.provide(platform(overrides?.home ?? emptyHome()))
   );
 };
 
@@ -133,6 +155,8 @@ describe('DashboardToolExecution', () => {
         expect(request?.headers['content-type']).toBe('application/json');
         expect(request?.headers['x-source']).toBe('CLI');
         expect(request?.headers['x-user-api-key']).toBeUndefined();
+        // Telemetry is off under test unless a case turns it on.
+        expect(request?.headers['x-cli-install-id']).toBeUndefined();
         expect(request?.body).toEqual({
           json: {
             tool_slug: 'GMAIL_SEND_EMAIL',
@@ -335,7 +359,8 @@ describe('DashboardToolExecution', () => {
             Layer.provide(Layer.mergeAll(FetchHttpClient.layer, userContext()))
           )
         ),
-        Effect.provideService(FetchHttpClient.Fetch, fetchStub)
+        Effect.provideService(FetchHttpClient.Fetch, fetchStub),
+        Effect.provide(platform(emptyHome()))
       );
 
       expect(inits).toHaveLength(1);
@@ -451,6 +476,99 @@ describe('DashboardToolExecution', () => {
       );
     })
   );
+});
+
+describe('DashboardToolExecution install ID header', () => {
+  const INSTALL_ID = '6f1d2c1e-8a4b-4c0e-9f55-2f0d6d1b7a31';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /** The environment in which the CLI sends its own analytics events. */
+  const enableTelemetry = () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('CI', 'false');
+    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
+  };
+
+  const analyticsStatePath = (home: string) => path.join(home, '.composio', 'analytics.json');
+
+  const homeWithAnalyticsState = (contents: string) => {
+    const home = emptyHome();
+    fs.mkdirSync(path.join(home, '.composio'), { recursive: true });
+    fs.writeFileSync(analyticsStatePath(home), contents);
+    return home;
+  };
+
+  const sentInstallId = (home: string) =>
+    withDashboard(
+      succeedWith(successOutcome),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const response = yield* dashboard.execute(executeRequest);
+          yield* dashboard.executeMeta({ ...executeRequest, slug: 'COMPOSIO_SEARCH_TOOLS' });
+          expect(response.log_id).toBe('log_dashboard');
+          expect(requests).toHaveLength(2);
+          return requests.map(request => request.headers['x-cli-install-id']);
+        }),
+      { home }
+    );
+
+  it.effect('sends the stored install ID verbatim on both procedures when telemetry is on', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = homeWithAnalyticsState(
+        JSON.stringify({ install_id: INSTALL_ID, apollo_user_id: 'user_linked' })
+      );
+
+      expect(yield* sentInstallId(home)).toEqual([INSTALL_ID, INSTALL_ID]);
+    })
+  );
+
+  for (const optOut of [
+    'COMPOSIO_CLI_TELEMETRY_DISABLED',
+    'TELEMETRY_DISABLED',
+    'COMPOSIO_DISABLE_TELEMETRY',
+    'CI',
+  ]) {
+    it.effect(`omits the header when ${optOut} opts out of telemetry`, () =>
+      Effect.gen(function* () {
+        enableTelemetry();
+        vi.stubEnv(optOut, 'true');
+        const home = homeWithAnalyticsState(JSON.stringify({ install_id: INSTALL_ID }));
+
+        expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+      })
+    );
+  }
+
+  it.effect('omits the header and creates no install ID when none is stored', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = emptyHome();
+
+      expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+      expect(fs.existsSync(analyticsStatePath(home))).toBe(false);
+    })
+  );
+
+  it.effect('still executes, without the header, when the analytics state is unreadable', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = homeWithAnalyticsState('{ not json');
+
+      expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+    })
+  );
+
+  it('is not part of the headers shared with backend requests', () => {
+    enableTelemetry();
+    expect(Object.keys(cliRequestHeaders())).not.toContain('x-cli-install-id');
+  });
 });
 
 describe('resolveConsumerExecutionTransport', () => {
