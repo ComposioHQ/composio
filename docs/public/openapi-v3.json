@@ -9325,12 +9325,12 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 200,
-                        "description": "Human readable name for your application"
+                        "description": "Display name of the toolkit"
                       },
                       "app_url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "App URL for the toolkit. For MCP apps, please provide the MCP URL here"
+                        "description": "MCP server URL"
                       },
                       "logo_file": {
                         "type": "object",
@@ -9340,7 +9340,7 @@
                             "minLength": 1,
                             "maxLength": 4000000,
                             "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                            "description": "Base64-encoded image bytes, max 3MB decoded"
+                            "description": "Base64-encoded image, max 3MB decoded"
                           },
                           "mime_type": {
                             "type": "string",
@@ -9348,7 +9348,7 @@
                               "image/png",
                               "image/jpeg"
                             ],
-                            "description": "Image MIME type of the encoded bytes"
+                            "description": "Image MIME type"
                           }
                         },
                         "required": [
@@ -9356,7 +9356,7 @@
                           "mime_type"
                         ],
                         "additionalProperties": false,
-                        "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                        "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
                       },
                       "auth_schemes": {
                         "type": "array",
@@ -9391,7 +9391,7 @@
                                   "additionalProperties": {
                                     "type": "string"
                                   },
-                                  "description": "Headers to be used for the API key authentication. Please replace your actual api key with {{generic_api_key}}"
+                                  "description": "Headers sent to the MCP server. Use {{generic_api_key}} where the API key goes."
                                 },
                                 "api_key_field": {
                                   "type": "object",
@@ -9400,17 +9400,17 @@
                                       "type": "string",
                                       "minLength": 1,
                                       "maxLength": 100,
-                                      "description": "Label shown to end users for the API key input on the connect page"
+                                      "description": "Label for the API key input"
                                     },
                                     "description": {
                                       "type": "string",
                                       "minLength": 1,
                                       "maxLength": 500,
-                                      "description": "Help text shown to end users below the API key input on the connect page"
+                                      "description": "Help text below the API key input"
                                     }
                                   },
                                   "additionalProperties": false,
-                                  "description": "End-user-facing copy for the API key input on the connect page"
+                                  "description": "Label and help text for the API key input on the connect page"
                                 }
                               },
                               "required": [
@@ -9431,7 +9431,7 @@
                                 "discovery_url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "URL to fetch the full auth scheme from, usually the /.well-known/oauth-authorization-server path of your MCP URL"
+                                  "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
                                 }
                               },
                               "required": [
@@ -9443,7 +9443,7 @@
                           ]
                         },
                         "minItems": 1,
-                        "description": "Authentication schemes for the toolkit"
+                        "description": "How users authenticate to the MCP server"
                       }
                     },
                     "required": [
@@ -17599,11 +17599,25 @@
                       }
                     },
                     "default": {
-                      "enable": true,
-                      "enable_proxy_execution": true
+                      "enable": true
                     },
                     "additionalProperties": false,
                     "description": "Configuration for workbench behavior"
+                  },
+                  "proxy_execute": {
+                    "type": "object",
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "description": "When true, the agent can make authenticated HTTP requests to connected app APIs outside the workbench. When false, proxy execution is also disabled inside the workbench, regardless of workbench.enable_proxy_execution. When not set, proxy execute is disabled outside the workbench.",
+                        "example": true
+                      }
+                    },
+                    "required": [
+                      "enable"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Configure proxy execute. Omitted from responses when not set. Session creation fails when enable is false and workbench.enable_proxy_execution is explicitly true."
                   },
                   "multi_account": {
                     "type": "object",
@@ -18486,6 +18500,19 @@
                             }
                           },
                           "description": "Multi-account configuration for this session."
+                        },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "preload": {
                           "type": "object",
@@ -19688,6 +19715,19 @@
                           },
                           "description": "Multi-account configuration for this session."
                         },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
                         "preload": {
                           "type": "object",
                           "properties": {
@@ -20444,6 +20484,21 @@
                     },
                     "additionalProperties": false
                   },
+                  "proxy_execute": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "description": "When true, the agent can make authenticated HTTP requests to connected app APIs outside the workbench. When false, proxy execution is also disabled inside the workbench, regardless of workbench.enable_proxy_execution. When not set, proxy execute is disabled outside the workbench.",
+                        "example": true
+                      }
+                    },
+                    "required": [
+                      "enable"
+                    ],
+                    "additionalProperties": false
+                  },
                   "preload": {
                     "type": "object",
                     "properties": {
@@ -20934,6 +20989,19 @@
                             }
                           },
                           "description": "Multi-account configuration for this session."
+                        },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "preload": {
                           "type": "object",
