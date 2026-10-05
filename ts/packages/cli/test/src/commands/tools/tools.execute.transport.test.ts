@@ -4,7 +4,8 @@ import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { APIError } from '@composio/client';
-import { ConfigProvider, Effect, Exit, Option, Schema } from 'effect';
+import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
+import { TestClock } from 'effect/testing';
 import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
@@ -508,6 +509,53 @@ describe('CLI: composio execute transport', () => {
       expect(output).toContain('Authentication failed: Invalid API key');
       expect(output).toContain('composio login');
       expect(lastJson(lines)).toMatchObject({ successful: false });
+      expect(world.dashboardRequests).toHaveLength(1);
+      expect(world.toolRouterCalls).toEqual([]);
+    })
+  );
+
+  const unsafeWebURLs: ReadonlyArray<{ readonly name: string; readonly webURL: string }> = [
+    { name: 'plain http to a remote host', webURL: 'http://dashboard.internal.example' },
+    {
+      name: 'credentials, a query string and a fragment',
+      webURL: 'https://user:s3cret-pass@dashboard.internal.example/?token=s3cret-token#s3cret-frag',
+    },
+  ];
+
+  for (const testCase of unsafeWebURLs) {
+    it.effect(`refuses a web URL with ${testCase.name} without sending or echoing it`, () =>
+      Effect.gen(function* () {
+        const world = makeWorld({ env: { COMPOSIO_WEB_URL: testCase.webURL } });
+
+        const { exit, lines, output } = yield* world.run(EXECUTE_GMAIL);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(world.dashboardRequests).toEqual([]);
+        expect(world.toolRouterCalls).toEqual([]);
+        // Covers both the human lines and the JSON summary.
+        expect(output).toContain('COMPOSIO_WEB_URL');
+        expect(output).not.toContain('s3cret');
+        expect(output).not.toContain('dashboard.internal.example');
+        expect(lastJson(lines)).toMatchObject({ successful: false });
+      })
+    );
+  }
+
+  it.effect('reports a Dashboard timeout once, saying the tool may still have run', () =>
+    Effect.gen(function* () {
+      const world = makeWorld({ dashboard: () => new Promise<Response>(() => undefined) });
+
+      const fiber = yield* Effect.forkChild(world.run(EXECUTE_GMAIL));
+      // Let the command reach the Dashboard call, then pass the deadline.
+      yield* Effect.promise(() =>
+        vi.waitFor(() => expect(world.dashboardRequests).toHaveLength(1))
+      );
+      yield* TestClock.adjust('15 minutes');
+      const { exit, output } = yield* Fiber.join(fiber);
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      expect(output).toContain('did not answer within 15 minutes');
+      expect(output).toContain('The tool may still have run; check before running it again.');
       expect(world.dashboardRequests).toHaveLength(1);
       expect(world.toolRouterCalls).toEqual([]);
     })

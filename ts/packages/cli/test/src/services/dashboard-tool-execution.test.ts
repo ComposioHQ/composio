@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest';
 import { APIError } from '@composio/client';
 import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from 'effect';
+import { TestClock } from 'effect/testing';
 import {
   FetchHttpClient,
   HttpClient,
@@ -341,6 +342,92 @@ describe('DashboardToolExecution', () => {
       expect(inits[0]?.redirect).toBe('error');
       expect(inits[0]?.method).toBe('POST');
       expect(failure).toMatchObject({ reason: 'request' });
+    })
+  );
+
+  const rejectedURLs: ReadonlyArray<{ readonly name: string; readonly webURL: string }> = [
+    { name: 'plain http to a remote host', webURL: 'http://dashboard.example.test' },
+    { name: 'embedded credentials', webURL: 'https://user:s3cret-pass@dashboard.example.test' },
+    { name: 'a query string', webURL: 'https://dashboard.example.test/?token=s3cret-token' },
+    { name: 'a fragment', webURL: 'https://dashboard.example.test/#s3cret-fragment' },
+    { name: 'a non-http scheme', webURL: 'ftp://dashboard.example.test' },
+    { name: 'an unparseable value', webURL: 'not a url s3cret-value' },
+  ];
+
+  for (const testCase of rejectedURLs) {
+    it.effect(`sends nothing to a Dashboard URL with ${testCase.name}`, () =>
+      withDashboard(
+        succeedWith(successOutcome),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+            expect(failure).toMatchObject({ reason: 'configuration' });
+            expect(failure.message).toContain('COMPOSIO_WEB_URL');
+            expect(failure.message).not.toContain('s3cret');
+            expect(failure.message).not.toContain('example.test');
+            expect(requests).toHaveLength(0);
+          }),
+        { webURL: testCase.webURL }
+      )
+    );
+  }
+
+  for (const webURL of ['http://localhost:3000', 'http://127.0.0.1:3000/', 'http://[::1]:3000']) {
+    it.effect(`allows plain http for the loopback host in ${webURL}`, () =>
+      withDashboard(
+        succeedWith(successOutcome),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            yield* dashboard.execute(executeRequest);
+            expect(requests.map(request => request.url)).toEqual([
+              `${webURL.replace(/\/$/, '')}/api/cli/trpc/execute`,
+            ]);
+          }),
+        { webURL }
+      )
+    );
+  }
+
+  it.effect('names only the origin of the Dashboard in a transport error', () =>
+    withDashboard(
+      () => Effect.succeed(new Response('<html>Bad gateway</html>', { status: 502 })),
+      dashboard =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure.message).toContain('https://dashboard.example.test ');
+          expect(failure.message).not.toContain('tenant-path');
+        }),
+      { webURL: 'https://dashboard.example.test/tenant-path/' }
+    )
+  );
+
+  it.effect('gives up after the deadline, aborts the request and does not resend it', () =>
+    Effect.gen(function* () {
+      const started = yield* Deferred.make<void>();
+
+      yield* withDashboard(
+        () => Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never)),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            const fiber = yield* Effect.forkChild(
+              dashboard.execute(executeRequest).pipe(Effect.flip)
+            );
+            yield* Deferred.await(started);
+
+            yield* TestClock.adjust('14 minutes');
+            expect(requests[0]?.signal.aborted).toBe(false);
+            yield* TestClock.adjust('1 minute');
+            const failure = yield* Fiber.join(fiber);
+
+            expect(failure).toMatchObject({ reason: 'timeout' });
+            expect(failure.message).toContain('may still have run');
+            expect(failure.message).toContain('check before running it again');
+            expect(requests).toHaveLength(1);
+            expect(requests[0]?.signal.aborted).toBe(true);
+          })
+      );
     })
   );
 
