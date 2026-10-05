@@ -170,11 +170,19 @@ def _resolve_local_refs(node: t.Any, root: dict[str, t.Any]) -> t.Any:
     return current
 
 
-def _schema_accepts_null(schema: t.Any, root: dict[str, t.Any]) -> bool:
+def _schema_accepts_null(
+    schema: t.Any, root: dict[str, t.Any], seen: set[int] | None = None
+) -> bool:
     """Whether a schema node accepts ``null`` as an instance."""
     node = _resolve_local_refs(schema, root)
     if not isinstance(node, dict):
         return True
+    # 2026-10-05
+    if seen is None:
+        seen = set()
+    node_id = id(node)
+    if node_id in seen:
+        return False
     node_type = node.get("type")
     if isinstance(node_type, str) and node_type != "null":
         return False
@@ -187,7 +195,11 @@ def _schema_accepts_null(schema: t.Any, root: dict[str, t.Any]) -> bool:
     for keyword in ("anyOf", "oneOf"):
         branches = node.get(keyword)
         if isinstance(branches, list):
-            return any(_schema_accepts_null(b, root) for b in branches)
+            seen.add(node_id)
+            try:
+                return any(_schema_accepts_null(b, root, seen) for b in branches)
+            finally:
+                seen.remove(node_id)
     return True
 
 

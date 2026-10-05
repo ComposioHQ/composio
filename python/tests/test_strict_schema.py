@@ -517,6 +517,54 @@ _OMIT_SCHEMA = {
 
 
 class TestOmitNullToolArguments:
+    # 2026-10-05
+    @pytest.mark.parametrize("keyword", ["anyOf", "oneOf"])
+    @pytest.mark.parametrize("mutual", [False, True])
+    @pytest.mark.parametrize("node_type", ["null", ["string", "null"]])
+    def test_omits_null_for_unproductive_recursive_constraints(
+        self, keyword, mutual, node_type
+    ):
+        definitions = {
+            "a": {
+                "type": node_type,
+                keyword: [{"$ref": "#/$defs/b" if mutual else "#/$defs/a"}],
+            }
+        }
+        if mutual:
+            definitions["b"] = {keyword: [{"$ref": "#/$defs/a"}]}
+        schema = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#/$defs/a"}},
+            "$defs": definitions,
+        }
+        arguments = {"value": None}
+        result = to_strict_json_schema(schema)
+        assert result.unsupported == []
+        assert omit_null_tool_arguments(arguments, result.source) == {}
+        assert arguments == {"value": None}
+
+    @pytest.mark.parametrize("keyword", ["anyOf", "oneOf"])
+    def test_keeps_null_from_non_recursive_branch_after_a_cycle(self, keyword):
+        schema = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#/$defs/a"}},
+            "$defs": {
+                "a": {
+                    "type": "null",
+                    keyword: [{"$ref": "#/$defs/a"}, {"type": "null"}],
+                }
+            },
+        }
+        assert omit_null_tool_arguments({"value": None}, schema) == {"value": None}
+
+    def test_checks_shared_non_recursive_nodes_in_each_branch(self):
+        shared = {"anyOf": [{"type": "null"}]}
+        schema = {
+            "type": "object",
+            "properties": {"value": {"anyOf": [shared, shared]}},
+        }
+        assert omit_null_tool_arguments({"value": None}, schema) == {"value": None}
+
     @pytest.mark.parametrize(
         "property_schema, expected",
         [

@@ -468,6 +468,47 @@ describe('toStrictJsonSchema', () => {
 });
 
 describe('omitNullToolArguments', () => {
+  // 2026-10-05
+  for (const keyword of ['anyOf', 'oneOf']) {
+    for (const mutual of [false, true]) {
+      for (const nodeType of ['null', ['string', 'null']]) {
+        it(`omits null for recursive ${keyword}, mutual=${mutual}, type=${nodeType}`, () => {
+          const definitions: Record<string, unknown> = {
+            a: {
+              type: nodeType,
+              [keyword]: [{ $ref: mutual ? '#/$defs/b' : '#/$defs/a' }],
+            },
+          };
+          if (mutual) definitions.b = { [keyword]: [{ $ref: '#/$defs/a' }] };
+          const source = {
+            type: 'object',
+            properties: { value: { $ref: '#/$defs/a' } },
+            $defs: definitions,
+          };
+          const input = { value: null };
+          const result = toStrictJsonSchema(source);
+          expect(result.unsupported).toEqual([]);
+          expect(omitNullToolArguments(input, result.source)).toEqual({});
+          expect(input).toEqual({ value: null });
+        });
+      }
+    }
+    it(`keeps a nullable ${keyword} branch after a cycle`, () => {
+      const source = {
+        type: 'object',
+        properties: { value: { $ref: '#/$defs/a' } },
+        $defs: { a: { type: 'null', [keyword]: [{ $ref: '#/$defs/a' }, { type: 'null' }] } },
+      };
+      expect(omitNullToolArguments({ value: null }, source)).toEqual({ value: null });
+    });
+  }
+
+  it('checks shared non-recursive nodes in each branch', () => {
+    const shared = { anyOf: [{ type: 'null' }] };
+    const source = { type: 'object', properties: { value: { anyOf: [shared, shared] } } };
+    expect(omitNullToolArguments({ value: null }, source)).toEqual({ value: null });
+  });
+
   const schema = {
     type: 'object',
     properties: {

@@ -658,16 +658,29 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
 }
 
 /** Whether a schema node accepts `null` as an instance. */
-function schemaAcceptsNull(schema: unknown, root: Record<string, unknown>): boolean {
+function schemaAcceptsNull(
+  schema: unknown,
+  root: Record<string, unknown>,
+  seen = new Set<unknown>()
+): boolean {
   const node = resolveLocalRefs(schema, root);
   if (!isPlainObject(node)) return true;
+  // 2026-10-05
+  if (seen.has(node)) return false;
   if (typeof node.type === 'string' && node.type !== 'null') return false;
   if (Array.isArray(node.type) && !node.type.includes('null')) return false;
   if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
   if ('const' in node && node.const !== null) return false;
   for (const keyword of ['anyOf', 'oneOf']) {
     const branches = node[keyword];
-    if (Array.isArray(branches)) return branches.some(branch => schemaAcceptsNull(branch, root));
+    if (Array.isArray(branches)) {
+      seen.add(node);
+      try {
+        return branches.some(branch => schemaAcceptsNull(branch, root, seen));
+      } finally {
+        seen.delete(node);
+      }
+    }
   }
   return true;
 }
