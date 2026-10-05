@@ -22,7 +22,7 @@ import {
   dereferenceJsonSchema,
   ensureObjectTypeOnProperties,
 } from '@composio/core';
-import { FunctionDeclaration, Schema } from '@google/genai';
+import { FunctionDeclaration } from '@google/genai';
 
 /**
  * Interface for Google GenAI function declaration
@@ -143,12 +143,15 @@ export class GoogleProvider extends BaseNonAgenticProvider<
     return {
       name: tool.slug,
       description: tool.description || '',
-      parameters: {
+      // Composio schemas are JSON Schema and carry keywords such as `examples`
+      // and `const`. The OpenAPI-subset `parameters` field rejects those with a
+      // 400, so send them through `parametersJsonSchema` instead.
+      parametersJsonSchema: {
         type: 'object',
         description: tool.description || '',
         properties: inputParameters?.properties || {},
         required: inputParameters?.required || [],
-      } as unknown as Schema,
+      },
     };
   }
 

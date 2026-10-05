@@ -17,6 +17,52 @@ from composio.types import Modifiers, Tool, ToolExecutionResponse
 from composio.utils.json_schema import dereference_json_schema
 from composio.utils.shared import normalize_tool_arguments
 
+# Fields of the Vertex AI ``Schema`` message. ``FunctionDeclaration`` raises a
+# ``ParseError`` for any other keyword, and Composio schemas carry several, such
+# as ``examples``, ``const``, and ``human_parameter_name``.
+_VERTEX_SCHEMA_FIELDS = frozenset(
+    "type format title description nullable default items minItems maxItems enum"
+    " properties propertyOrdering required minProperties maxProperties minimum"
+    " maximum minLength maxLength pattern example anyOf additionalProperties".split()
+)
+
+
+def _to_vertex_schema(schema: t.Any) -> t.Any:
+    """Reduce a JSON Schema node to the subset the Vertex AI ``Schema`` accepts.
+
+    Unsupported keywords are dropped, ``oneOf`` becomes ``anyOf``, a string
+    ``const`` becomes a one-value ``enum``, a ``null`` type becomes
+    ``nullable``, and an ``enum`` with non-string values is dropped because
+    Vertex only accepts string enums. Property names are kept as-is.
+    """
+    if isinstance(schema, list):
+        return [_to_vertex_schema(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+    node = dict(schema)
+    if "oneOf" in node and "anyOf" not in node:
+        node["anyOf"] = node.pop("oneOf")
+    if isinstance(node.get("const"), str) and "enum" not in node:
+        node["enum"] = [node["const"]]
+    if node.get("type") == "null":
+        del node["type"]
+        node["nullable"] = True
+
+    result: t.Dict[str, t.Any] = {}
+    for key, value in node.items():
+        if key not in _VERTEX_SCHEMA_FIELDS:
+            continue
+        if key == "properties" and isinstance(value, dict):
+            value = {name: _to_vertex_schema(prop) for name, prop in value.items()}
+        elif key in ("items", "additionalProperties", "anyOf"):
+            value = _to_vertex_schema(value)
+        elif key == "enum" and not (
+            isinstance(value, list) and all(isinstance(v, str) for v in value)
+        ):
+            continue
+        result[key] = value
+    return result
+
 
 def _convert_map_composite(obj):
     if isinstance(obj, MapComposite):
@@ -40,23 +86,16 @@ class GoogleProvider(
             tool.input_parameters,
             on_unresolved="sentinel",
         )
-        # Clean up properties by removing 'examples' field
-        properties = t.cast(
-            dict[str, dict],
-            input_parameters.get("properties", {}),
-        )
-        cleaned_properties = {
-            prop_name: {k: v for k, v in prop_schema.items() if k != "examples"}
-            for prop_name, prop_schema in properties.items()
-        }
         return FunctionDeclaration(
             name=tool.slug,
             description=tool.description,
-            parameters={
-                "type": "object",
-                "properties": cleaned_properties,
-                "required": input_parameters.get("required", []),
-            },
+            parameters=_to_vertex_schema(
+                {
+                    "type": "object",
+                    "properties": input_parameters.get("properties", {}),
+                    "required": input_parameters.get("required", []),
+                }
+            ),
         )
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[FunctionDeclaration]:
