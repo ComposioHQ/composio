@@ -70,8 +70,10 @@ Top-level `toolkits` controls which tools the Session can discover and run. Omit
 
 ## Run a search with an agent
 
-Install `composio`, `openai-agents`, and `python-dotenv`, then put `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart). This small agent can choose when to search. The wrapper prints the Instant charge after each search call:
+Install `composio`, `openai-agents`, and `python-dotenv` for Python, or `@composio/core`, `@openai/agents`, `zod`, and `dotenv` for TypeScript. Put `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in a `.env` file as in the [Quickstart](/docs/quickstart). This small agent can choose when to search. The wrapper prints the Instant charge after each search call:
 
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
 ```python
 from agents import Agent, Runner, function_tool
 from composio import Composio
@@ -90,6 +92,49 @@ agent = Agent(name="Researcher", instructions="Use search when you need current 
 while prompt := input("You: "):
     print(Runner.run_sync(agent, prompt).final_output)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { Composio } from "@composio/core";
+import { Agent, run, tool } from "@openai/agents";
+import { createInterface } from "node:readline/promises";
+import { z } from "zod";
+
+const session = await new Composio().create("user_123", {
+  toolkits: ["exa"],
+  instant: { returnInstantCharge: true },
+});
+
+const search = tool({
+  name: "search",
+  description: "Search the web for current information.",
+  parameters: z.object({ query: z.string() }),
+  execute: async ({ query }) => {
+    const result = await session.execute("EXA_SEARCH", { query });
+    console.log("Instant charge:", result.instantCharge ?? "none");
+    return JSON.stringify(result.data);
+  },
+});
+
+const agent = new Agent({
+  name: "Researcher",
+  instructions: "Use search when you need current information.",
+  tools: [search],
+});
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+try {
+  while (true) {
+    const prompt = await readline.question("You: ");
+    if (!prompt) break;
+    console.log((await run(agent, prompt)).finalOutput);
+  }
+} finally {
+  readline.close();
+}
+```
+</Tab>
+</Tabs>
 
 The charge is present only if an Instant account served the call. A connected-account call prints `none`. Check the [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) if you change tools or arguments.
 
@@ -137,18 +182,17 @@ Check the current [tool input schema](/reference/api-reference/tools/getToolsByT
 
 ### Read charge details
 
-With `instant.return_instant_charge` enabled, the response from `session.execute()` includes `instant_charge` when an Instant account runs the tool. Read it from the result above:
+With `instant.return_instant_charge` enabled (`instant.returnInstantCharge` in TypeScript), the response from `session.execute()` includes `instant_charge` (`instantCharge` in TypeScript) when an Instant account runs the tool. Read it from the result above:
 
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
 ```python
 charge = result.instant_charge
 if charge is not None:
     print(charge["amount"], charge["currency"], charge["charged_by"])
 ```
-
-The `InstantCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
-
-In TypeScript, read `instantCharge` from the result:
-
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 // @noErrors
 import { Composio } from "@composio/core";
@@ -159,8 +203,13 @@ const session = await composio.create("user_123", {
   instant: { returnInstantCharge: true },
 });
 const result = await session.execute("EXA_SEARCH", { query: "Composio documentation" });
+// ---cut---
 console.log(result.instantCharge ?? "No Instant charge");
 ```
+</Tab>
+</Tabs>
+
+The `InstantCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
 
 ## Control Instant usage
 
