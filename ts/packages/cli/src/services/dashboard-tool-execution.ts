@@ -49,7 +49,6 @@ const ExecutionResponse = Schema.Struct({
   error: Schema.NullOr(Schema.String),
   log_id: Schema.String,
 });
-export type DashboardExecutionResponse = typeof ExecutionResponse.Type;
 
 // Fields beyond the named ones (a validation failure's `errors`, say) are kept,
 // so the rebuilt `APIError` carries the same body the backend sent.

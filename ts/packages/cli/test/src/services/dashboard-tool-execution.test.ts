@@ -2,6 +2,7 @@ import { describe, expect, it } from '@effect/vitest';
 import { APIError } from '@composio/client';
 import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from 'effect';
 import {
+  FetchHttpClient,
   HttpClient,
   HttpClientError,
   HttpClientResponse,
@@ -310,6 +311,37 @@ describe('DashboardToolExecution', () => {
         }),
       { apiKey: Option.none() }
     )
+  );
+
+  it.effect('tells fetch to fail on a redirect instead of re-posting the execution', () =>
+    Effect.gen(function* () {
+      const inits: Array<RequestInit | undefined> = [];
+      const fetchStub: typeof globalThis.fetch = Object.assign(
+        (_input: RequestInfo | URL, init?: RequestInit) => {
+          inits.push(init);
+          // What fetch does with `redirect: 'error'` when the server answers 307.
+          return Promise.reject(new TypeError('unexpected redirect'));
+        },
+        { preconnect: () => undefined }
+      );
+
+      const failure = yield* Effect.gen(function* () {
+        const dashboard = yield* DashboardToolExecution;
+        return yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+      }).pipe(
+        Effect.provide(
+          DashboardToolExecution.Default.pipe(
+            Layer.provide(Layer.mergeAll(FetchHttpClient.layer, userContext()))
+          )
+        ),
+        Effect.provideService(FetchHttpClient.Fetch, fetchStub)
+      );
+
+      expect(inits).toHaveLength(1);
+      expect(inits[0]?.redirect).toBe('error');
+      expect(inits[0]?.method).toBe('POST');
+      expect(failure).toMatchObject({ reason: 'request' });
+    })
   );
 
   it.effect('aborts the in-flight request when the calling fiber is interrupted', () =>
