@@ -192,7 +192,11 @@ export const ToolsExecutorLive = Layer.effect(
           // already acted duplicates the side effect (e.g. sends the same email twice).
           const send: (
             arguments_: Record<string, unknown>
-          ) => Effect.Effect<SessionExecuteResponse | SessionExecuteMetaResponse, unknown> =
+          ) => Effect.Effect<
+            SessionExecuteResponse | SessionExecuteMetaResponse,
+            unknown,
+            FileSystem.FileSystem | Path.Path | NodeOs
+          > =
             target.kind === 'dashboard'
               ? arguments_ => {
                   // The Dashboard creates the session and resolves its user. It

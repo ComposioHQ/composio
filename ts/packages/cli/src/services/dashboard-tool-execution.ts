@@ -2,6 +2,7 @@ import { APIError } from '@composio/client';
 import { Config, Context, Data, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/unstable/http';
 import * as constants from 'src/constants';
+import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -187,12 +188,16 @@ const makeDashboardToolExecution = Effect.gen(function* () {
 
       // Checked before the key is attached to anything.
       const dashboard = yield* Effect.fromResult(resolveDashboardBase(webURL));
+      // Lets the Dashboard's product analytics join the CLI's own events. Sent
+      // only while telemetry is enabled, and only on these requests.
+      const installId = yield* readInstallIdWhenTelemetryEnabled;
       const request = HttpClientRequest.post(`${dashboard.base}/api/cli/trpc/${procedure}`).pipe(
         HttpClientRequest.setHeaders({
           ...cliRequestHeaders(),
           accept: 'application/json',
           authorization: `Bearer ${apiKey.value}`,
           'x-org-id': orgId,
+          ...(Option.isSome(installId) ? { 'x-cli-install-id': installId.value } : {}),
         }),
         HttpClientRequest.bodyJsonUnsafe({ json: input })
       );
