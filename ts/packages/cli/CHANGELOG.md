@@ -13,7 +13,11 @@
   `composio dev playground-execute` and every other command still call the
   backend. A `COMPOSIO_BASE_URL` override without `COMPOSIO_WEB_URL` keeps
   `composio execute` on that backend; set both to use that deployment's
-  Dashboard. The request is sent once, with no retry and no redirect following.
+  Dashboard. The request is sent once, with no retry and no redirect following,
+  and gives up after 15 minutes with a message that the tool may still have run.
+  `COMPOSIO_WEB_URL` must be an `https://` URL with no credentials, query
+  string, or fragment (`http://` is accepted only for localhost); otherwise
+  `composio execute` fails before sending anything.
 
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
