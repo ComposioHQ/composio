@@ -59,9 +59,7 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         non_null = [name for name in types if name != "null"]
         if len(non_null) < len(types):
             node["nullable"] = True
-        if len(non_null) == 1:
-            node["type"] = non_null[0]
-        elif non_null and "anyOf" in node:
+        if "anyOf" in node:
             # Vertex has no allOf: drop the branches whose single type the list
             # rules out, and keep the rest as they are.
             node["anyOf"] = [
@@ -71,7 +69,9 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
                 or not isinstance(branch.get("type"), str)
                 or branch["type"] in types
             ] or node["anyOf"]
-        elif non_null:
+        if len(non_null) == 1:
+            node["type"] = non_null[0]
+        elif non_null and "anyOf" not in node:
             node["anyOf"] = [{"type": name} for name in non_null]
     enum = node.get("enum")
     if isinstance(enum, list) and not all(isinstance(v, str) for v in enum):
@@ -93,7 +93,10 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
             return _to_vertex_schema({**options[0], **node})
         if options:
             rest = _to_vertex_schema(node)
-            return {"anyOf": [{**rest, **o} for o in _to_vertex_schema(options)]}
+            flat = []  # a converted option may itself be a lone anyOf: inline it
+            for option in _to_vertex_schema(options):
+                flat.extend(option.get("anyOf", [option]))
+            return {"anyOf": [{**rest, **option} for option in flat]}
 
     result: t.Dict[str, t.Any] = {}
     for key, value in node.items():
