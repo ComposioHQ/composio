@@ -1257,6 +1257,19 @@
                       },
                       "description": "Multi-account configuration for this session."
                     },
+                    "proxy_execute": {
+                      "type": "object",
+                      "properties": {
+                        "enable": {
+                          "type": "boolean",
+                          "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                        }
+                      },
+                      "required": [
+                        "enable"
+                      ],
+                      "description": "Proxy execute configuration for this session. Omitted when not set."
+                    },
                     "preload": {
                       "type": "object",
                       "properties": {
@@ -5657,7 +5670,7 @@
     "/api/v3.1/custom/toolkits": {
       "post": {
         "summary": "Create a custom toolkit",
-        "description": "Experimental: custom toolkit access control is in pilot and this contract may change. Creates a custom MCP toolkit for the project and returns its slug, derived from app_url (CUSTOM_NOTION for a toolkit shared with all users, CUSTOM_NOTION_K7F2Q for a private one). user_id decides who can use it: \"all\" shares it with every user in the project, a user_id makes it private to that user. Access cannot be changed after create. For a private toolkit the response carries connect_link, a hosted connect page for that user (callback_url sets where it returns them); it is null for a shared toolkit, a NO_AUTH toolkit, or when the link could not be made. Returns 409 when the user_id can already use another private toolkit for the same MCP URL; the error names that toolkit. Change the name, logo or API key input copy later with PATCH /api/v3.1/custom/toolkits/{slug}.",
+        "description": "Experimental: this endpoint may change. Creates a custom MCP toolkit and returns its slug. Set user_id to \"all\" to share the toolkit with every user in the project, or to a user ID to make it private to that user. Access cannot be changed later. For a private toolkit, the response can include a connect_link to send that user to.",
         "tags": [
           "Toolkits"
         ],
@@ -5682,12 +5695,12 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 200,
-                    "description": "Human readable name for your application"
+                    "description": "Display name of the toolkit"
                   },
                   "app_url": {
                     "type": "string",
                     "format": "uri",
-                    "description": "App URL for the toolkit. For MCP apps, please provide the MCP URL here"
+                    "description": "MCP server URL"
                   },
                   "logo_file": {
                     "type": "object",
@@ -5697,7 +5710,7 @@
                         "minLength": 1,
                         "maxLength": 4000000,
                         "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                        "description": "Base64-encoded image bytes, max 3MB decoded"
+                        "description": "Base64-encoded image, max 3MB decoded"
                       },
                       "mime_type": {
                         "type": "string",
@@ -5705,7 +5718,7 @@
                           "image/png",
                           "image/jpeg"
                         ],
-                        "description": "Image MIME type of the encoded bytes"
+                        "description": "Image MIME type"
                       }
                     },
                     "required": [
@@ -5713,7 +5726,7 @@
                       "mime_type"
                     ],
                     "additionalProperties": false,
-                    "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                    "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
                   },
                   "auth_schemes": {
                     "type": "array",
@@ -5748,7 +5761,7 @@
                               "additionalProperties": {
                                 "type": "string"
                               },
-                              "description": "Headers to be used for the API key authentication. Please replace your actual api key with {{generic_api_key}}"
+                              "description": "Headers sent to the MCP server. Use {{generic_api_key}} where the API key goes."
                             },
                             "api_key_field": {
                               "type": "object",
@@ -5757,17 +5770,17 @@
                                   "type": "string",
                                   "minLength": 1,
                                   "maxLength": 100,
-                                  "description": "Label shown to end users for the API key input on the connect page"
+                                  "description": "Label for the API key input"
                                 },
                                 "description": {
                                   "type": "string",
                                   "minLength": 1,
                                   "maxLength": 500,
-                                  "description": "Help text shown to end users below the API key input on the connect page"
+                                  "description": "Help text below the API key input"
                                 }
                               },
                               "additionalProperties": false,
-                              "description": "End-user-facing copy for the API key input on the connect page"
+                              "description": "Label and help text for the API key input on the connect page"
                             }
                           },
                           "required": [
@@ -5788,7 +5801,7 @@
                             "discovery_url": {
                               "type": "string",
                               "format": "uri",
-                              "description": "URL to fetch the full auth scheme from, usually the /.well-known/oauth-authorization-server path of your MCP URL"
+                              "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
                             }
                           },
                           "required": [
@@ -5800,7 +5813,7 @@
                       ]
                     },
                     "minItems": 1,
-                    "description": "Authentication schemes for the toolkit"
+                    "description": "How users authenticate to the MCP server"
                   },
                   "user_id": {
                     "anyOf": [
@@ -5816,13 +5829,13 @@
                         "maxLength": 256
                       }
                     ],
-                    "description": "Who can use the toolkit: \"all\" shares it with every user in the project, a user_id makes it private to that user. Cannot be changed after create.",
+                    "description": "\"all\" to share the toolkit with every user in the project, or a user ID to make it private to that user. Cannot be changed after create.",
                     "example": "all"
                   },
                   "callback_url": {
                     "type": "string",
                     "format": "uri",
-                    "description": "Where the connect page sends the user after they connect, e.g. back to your app. Only used for a private toolkit's connect_link; defaults to Composio's connected page."
+                    "description": "URL to send the user to after they connect. Used only for connect_link."
                   }
                 },
                 "required": [
@@ -5855,16 +5868,16 @@
                       "properties": {
                         "redirect_url": {
                           "type": "string",
-                          "description": "Composio's hosted connect page for the toolkit's user; send them here to connect"
+                          "description": "Hosted connect page. Send the user here."
                         },
                         "expires_at": {
                           "type": "string",
-                          "description": "ISO timestamp when the link expires"
+                          "description": "When the link expires (ISO 8601)"
                         },
                         "connected_account_id": {
                           "type": "string",
                           "format": "connectedAccountId",
-                          "description": "The connected account the link creates for the user; it becomes ACTIVE once they connect"
+                          "description": "Connected account for the user. It becomes ACTIVE once they connect."
                         }
                       },
                       "required": [
@@ -5872,7 +5885,7 @@
                         "expires_at",
                         "connected_account_id"
                       ],
-                      "description": "Connect link for the user a private toolkit is for. Null when the toolkit is shared with \"all\", has a NO_AUTH scheme, or the link could not be made; create one later with POST /api/v3/connected_accounts/link."
+                      "description": "Link for a private toolkit's user to connect. Null for shared or no-auth toolkits, or if the link could not be created. To retry, call POST /api/v3/connected_accounts/link with an auth config for the toolkit, creating one with POST /api/v3/auth_configs if needed."
                     }
                   },
                   "required": [
@@ -5904,7 +5917,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - The caller cannot write custom toolkits",
+            "description": "Forbidden - Your role cannot create custom toolkits",
             "content": {
               "application/json": {
                 "schema": {
@@ -5924,7 +5937,7 @@
             }
           },
           "409": {
-            "description": "Conflict - The user_id can already use another private toolkit for this MCP URL",
+            "description": "Conflict - This user already has a private toolkit for this MCP URL",
             "content": {
               "application/json": {
                 "schema": {
@@ -6111,7 +6124,7 @@
       },
       "patch": {
         "summary": "Update a custom toolkit",
-        "description": "Experimental: custom toolkit access control is in pilot and this contract may change. Updates a custom MCP toolkit owned by the project: its name, logo and API key input copy on the connect page (api_key_field). Omitted fields keep their current value. app_url, auth_schemes and who can use the toolkit (user_id) cannot be changed; delete and re-create the toolkit instead. Composio-managed toolkits and toolkits of other projects return 404.",
+        "description": "Experimental: this endpoint may change. Updates a custom toolkit's name, logo, or API key field text. Omitted fields keep their current value. To change app_url, auth_schemes, or user_id, delete and re-create the toolkit.",
         "tags": [
           "Toolkits"
         ],
@@ -6131,11 +6144,11 @@
               "minLength": 1,
               "maxLength": 37,
               "pattern": "^[a-zA-Z0-9_]+$",
-              "description": "Slug of the project-owned custom toolkit to update, as returned when it was created",
+              "description": "Slug returned when the toolkit was created",
               "example": "CUSTOM_NOTION_K7F2Q"
             },
             "required": true,
-            "description": "Custom toolkit slug to update",
+            "description": "Custom toolkit slug",
             "name": "slug",
             "in": "path"
           }
@@ -6152,7 +6165,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 200,
-                    "description": "Human readable name for your application"
+                    "description": "Display name of the toolkit"
                   },
                   "logo_file": {
                     "type": "object",
@@ -6162,7 +6175,7 @@
                         "minLength": 1,
                         "maxLength": 4000000,
                         "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                        "description": "Base64-encoded image bytes, max 3MB decoded"
+                        "description": "Base64-encoded image, max 3MB decoded"
                       },
                       "mime_type": {
                         "type": "string",
@@ -6170,7 +6183,7 @@
                           "image/png",
                           "image/jpeg"
                         ],
-                        "description": "Image MIME type of the encoded bytes"
+                        "description": "Image MIME type"
                       }
                     },
                     "required": [
@@ -6178,7 +6191,7 @@
                       "mime_type"
                     ],
                     "additionalProperties": false,
-                    "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                    "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
                   },
                   "api_key_field": {
                     "type": "object",
@@ -6187,17 +6200,17 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 100,
-                        "description": "Label shown to end users for the API key input on the connect page"
+                        "description": "Label for the API key input"
                       },
                       "description": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 500,
-                        "description": "Help text shown to end users below the API key input on the connect page"
+                        "description": "Help text below the API key input"
                       }
                     },
                     "additionalProperties": false,
-                    "description": "End-user-facing copy for the API key input on the connect page; only for toolkits with an API_KEY auth scheme"
+                    "description": "Label and help text for the API key input on the connect page. API_KEY toolkits only."
                   }
                 },
                 "additionalProperties": false
@@ -6249,7 +6262,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - The caller cannot write custom toolkits",
+            "description": "Forbidden - Your role cannot update custom toolkits",
             "content": {
               "application/json": {
                 "schema": {
@@ -6279,7 +6292,7 @@
             }
           },
           "409": {
-            "description": "Conflict - The toolkit cannot be updated in its current state",
+            "description": "Conflict - The toolkit cannot be updated right now",
             "content": {
               "application/json": {
                 "schema": {
@@ -7295,11 +7308,25 @@
                       }
                     },
                     "default": {
-                      "enable": true,
-                      "enable_proxy_execution": true
+                      "enable": true
                     },
                     "additionalProperties": false,
                     "description": "Configuration for workbench behavior"
+                  },
+                  "proxy_execute": {
+                    "type": "object",
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "description": "When true, the agent can make authenticated HTTP requests to connected app APIs outside the workbench. When false, proxy execution is also disabled inside the workbench, regardless of workbench.enable_proxy_execution. When not set, proxy execute is disabled outside the workbench.",
+                        "example": true
+                      }
+                    },
+                    "required": [
+                      "enable"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Configure proxy execute. Omitted from responses when not set. Session creation fails when enable is false and workbench.enable_proxy_execution is explicitly true."
                   },
                   "multi_account": {
                     "type": "object",
@@ -8198,6 +8225,19 @@
                           },
                           "description": "Multi-account configuration for this session."
                         },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
                         "preload": {
                           "type": "object",
                           "properties": {
@@ -8952,6 +8992,19 @@
                             }
                           },
                           "description": "Multi-account configuration for this session."
+                        },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "preload": {
                           "type": "object",
@@ -9769,6 +9822,21 @@
                     },
                     "additionalProperties": false
                   },
+                  "proxy_execute": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "description": "When true, the agent can make authenticated HTTP requests to connected app APIs outside the workbench. When false, proxy execution is also disabled inside the workbench, regardless of workbench.enable_proxy_execution. When not set, proxy execute is disabled outside the workbench.",
+                        "example": true
+                      }
+                    },
+                    "required": [
+                      "enable"
+                    ],
+                    "additionalProperties": false
+                  },
                   "preload": {
                     "type": "object",
                     "properties": {
@@ -10269,6 +10337,19 @@
                             }
                           },
                           "description": "Multi-account configuration for this session."
+                        },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "preload": {
                           "type": "object",
@@ -11322,6 +11403,19 @@
                             }
                           },
                           "description": "Multi-account configuration for this session."
+                        },
+                        "proxy_execute": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench."
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "preload": {
                           "type": "object",
@@ -21870,12 +21964,12 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 200,
-                        "description": "Human readable name for your application"
+                        "description": "Display name of the toolkit"
                       },
                       "app_url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "App URL for the toolkit. For MCP apps, please provide the MCP URL here"
+                        "description": "MCP server URL"
                       },
                       "logo_file": {
                         "type": "object",
@@ -21885,7 +21979,7 @@
                             "minLength": 1,
                             "maxLength": 4000000,
                             "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                            "description": "Base64-encoded image bytes, max 3MB decoded"
+                            "description": "Base64-encoded image, max 3MB decoded"
                           },
                           "mime_type": {
                             "type": "string",
@@ -21893,7 +21987,7 @@
                               "image/png",
                               "image/jpeg"
                             ],
-                            "description": "Image MIME type of the encoded bytes"
+                            "description": "Image MIME type"
                           }
                         },
                         "required": [
@@ -21901,7 +21995,7 @@
                           "mime_type"
                         ],
                         "additionalProperties": false,
-                        "description": "Square logo image (PNG or JPEG, 256-1024px, max 3MB) shown for this toolkit in the dashboard and on connect pages. Uploaded to Composio-hosted storage; defaults to the Composio logo when omitted."
+                        "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
                       },
                       "auth_schemes": {
                         "type": "array",
@@ -21936,7 +22030,7 @@
                                   "additionalProperties": {
                                     "type": "string"
                                   },
-                                  "description": "Headers to be used for the API key authentication. Please replace your actual api key with {{generic_api_key}}"
+                                  "description": "Headers sent to the MCP server. Use {{generic_api_key}} where the API key goes."
                                 },
                                 "api_key_field": {
                                   "type": "object",
@@ -21945,17 +22039,17 @@
                                       "type": "string",
                                       "minLength": 1,
                                       "maxLength": 100,
-                                      "description": "Label shown to end users for the API key input on the connect page"
+                                      "description": "Label for the API key input"
                                     },
                                     "description": {
                                       "type": "string",
                                       "minLength": 1,
                                       "maxLength": 500,
-                                      "description": "Help text shown to end users below the API key input on the connect page"
+                                      "description": "Help text below the API key input"
                                     }
                                   },
                                   "additionalProperties": false,
-                                  "description": "End-user-facing copy for the API key input on the connect page"
+                                  "description": "Label and help text for the API key input on the connect page"
                                 }
                               },
                               "required": [
@@ -21976,7 +22070,7 @@
                                 "discovery_url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "URL to fetch the full auth scheme from, usually the /.well-known/oauth-authorization-server path of your MCP URL"
+                                  "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
                                 }
                               },
                               "required": [
@@ -21988,7 +22082,7 @@
                           ]
                         },
                         "minItems": 1,
-                        "description": "Authentication schemes for the toolkit"
+                        "description": "How users authenticate to the MCP server"
                       }
                     },
                     "required": [
