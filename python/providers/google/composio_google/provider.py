@@ -60,8 +60,16 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
             node["nullable"] = True
         if len(non_null) == 1:
             node["type"] = non_null[0]
-        elif non_null and "anyOf" not in node:
-            node["anyOf"] = [{"type": name} for name in non_null]
+        elif non_null:
+            # Vertex has no allOf, so intersect the types with any anyOf branches.
+            branches = node.get("anyOf") or [{}]
+            node["anyOf"] = [
+                {**branch, "type": name}
+                for branch in branches
+                if isinstance(branch, dict)
+                for name in non_null
+                if branch.get("type", name) == name
+            ] or [{"type": name} for name in non_null]
     enum = node.get("enum")
     if isinstance(enum, list) and not all(isinstance(v, str) for v in enum):
         del node["enum"]
