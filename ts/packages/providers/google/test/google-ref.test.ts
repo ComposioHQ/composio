@@ -1,9 +1,7 @@
 /**
  * Regression test: `GoogleProvider.wrapTool` rebuilds the root schema from
  * `properties`/`required`, which used to discard the `$defs` block while
- * `$ref` pointers inside `properties` stayed dangling. The Google GenAI
- * `Schema` type has no `ref`/`defs` field, so a `$ref` on the `parameters`
- * path is unrepresentable and the API answers 400. `wrapTool` now
+ * `$ref` pointers inside `properties` stayed dangling. `wrapTool` now
  * dereferences `$ref`/`$defs` before the rebuild.
  */
 
@@ -91,8 +89,8 @@ describe('GoogleProvider regression: $ref in JSON Schema', () => {
   it('inlines internal $ref/$defs instead of stranding a dangling pointer', () => {
     const wrapped = provider.wrapTool(refTool);
 
-    expect(containsInternalRef(wrapped.parameters)).toBe(false);
-    expect(wrapped.parameters?.required).toContain('message');
+    expect(containsInternalRef(wrapped.parametersJsonSchema)).toBe(false);
+    expect((wrapped.parametersJsonSchema as { required: string[] }).required).toContain('message');
   });
 
   it('does not throw when $ref points into an undeclared $defs block', () => {

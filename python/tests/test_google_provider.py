@@ -40,6 +40,53 @@ def test_wrap_tool_dereferences_internal_refs() -> None:
     assert message_schema["properties"]["subject"]["type"] == "STRING"
 
 
+def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
+    """Composio schema keywords outside the Vertex ``Schema`` must not raise."""
+    tool = Tool.model_construct(
+        slug="TEST_KEYWORDS",
+        description="test",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "examples": ["is:unread"],
+                    "human_parameter_name": "Search query",
+                    "human_parameter_description": "What to search for",
+                },
+                "kind": {"type": "string", "const": "message"},
+                "page_token": {
+                    "anyOf": [{"type": "string", "examples": ["abc"]}, {"type": "null"}]
+                },
+                "direction": {"type": "null"},
+                "format": {"type": "integer", "enum": [0, 1], "exclusiveMinimum": -1},
+                "target": {
+                    "oneOf": [
+                        {"type": "object", "properties": {"id": {"type": "string"}}},
+                        {"type": "string"},
+                    ]
+                },
+                # A property may be named like a schema keyword.
+                "description": {"type": "string", "file_uploadable": True},
+            },
+            "required": ["query"],
+        },
+    )
+
+    properties = GoogleProvider().wrap_tool(tool).to_dict()["parameters"]["properties"]
+
+    assert properties["query"] == {"type": "STRING"}
+    assert properties["kind"] == {"type": "STRING", "enum": ["message"]}
+    assert properties["page_token"]["any_of"] == [
+        {"type": "STRING"},
+        {"nullable": True},
+    ]
+    assert properties["direction"] == {"nullable": True}
+    assert properties["format"] == {"type": "INTEGER"}
+    assert len(properties["target"]["any_of"]) == 2
+    assert properties["description"] == {"type": "STRING"}
+
+
 def _function_call_response() -> Any:
     return GenerationResponse.from_dict(
         {
