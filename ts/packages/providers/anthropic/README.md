@@ -68,7 +68,7 @@ Building on the Claude Agent SDK instead? Use [`@composio/claude-agent-sdk`](../
 
 ## Provider options
 
-- `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to the final tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests without exceeding Anthropic's cache-breakpoint limit when you send a large tool set on every turn. It is the only constructor option.
+- `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to the final tool definition. This lets Claude reuse cached tool schemas across requests without exceeding Anthropic's cache-breakpoint limit when you send a large tool set on every turn. Tool-result blocks are left uncached so repeated tool-call turns cannot accumulate extra cache breakpoints from message history. It is the only constructor option.
 - `handleToolCalls(session, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. Pass a user ID instead of a session for tools fetched with `tools.get()`. For finer control, `executeToolCall(session, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
 - Claude occasionally emits a tool's `input` as a JSON string instead of an object; the provider normalizes this before execution.
 
