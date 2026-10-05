@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { APIError } from '@composio/client';
-import { ConfigProvider, Effect, Exit, Option } from 'effect';
+import { ConfigProvider, Effect, Exit, Option, Schema } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
@@ -109,17 +109,20 @@ const makeWorld = (options: {
   return { run, dashboardRequests, toolRouterCalls };
 };
 
+const JsonRecord = Schema.Record(Schema.String, Schema.Unknown);
+const decodeJsonRecord = Schema.decodeUnknownSync(Schema.fromJsonString(JsonRecord));
+const decodeProcedureBody = Schema.decodeUnknownSync(Schema.Struct({ json: JsonRecord }));
+
 const lastJson = (lines: ReadonlyArray<string>): Record<string, unknown> => {
   for (const line of [...lines].reverse()) {
     if (!line.trimStart().startsWith('{')) continue;
-    const parsed: unknown = JSON.parse(line);
-    return parsed as Record<string, unknown>;
+    return decodeJsonRecord(line);
   }
   throw new Error('Expected JSON output but none found');
 };
 
 const requestJson = (request: DashboardTestRequest | undefined) =>
-  (request?.body as { json: Record<string, unknown> } | undefined)?.json;
+  request === undefined ? undefined : decodeProcedureBody(request.body).json;
 
 const EXECUTE_GMAIL = [
   'execute',

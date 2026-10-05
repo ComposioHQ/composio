@@ -29,6 +29,7 @@ import {
   Path,
   References,
   Schedule,
+  Schema,
   String,
 } from 'effect';
 import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
@@ -141,6 +142,22 @@ export interface DashboardTestRequest {
   /** The decoded JSON body, or `undefined` when there is none. */
   readonly body: unknown;
 }
+
+const DashboardProcedureInput = Schema.Struct({
+  json: Schema.Struct({
+    tool_slug: Schema.optional(Schema.String),
+    slug: Schema.optional(Schema.String),
+    arguments: Schema.Record(Schema.String, Schema.Unknown),
+    session: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
+  }),
+});
+
+const DASHBOARD_SESSION_KEYS: ReadonlySet<string> = new Set([
+  'auth_configs',
+  'connected_accounts',
+  'manage_connections',
+  'experimental',
+]);
 
 /** A Dashboard procedure answer in the wire envelope the CLI decodes. */
 export const dashboardProcedureResult = (outcome: unknown, status = 200): Response =>
@@ -1552,16 +1569,20 @@ export const TestLayer = (input?: TestLiveInput) =>
     // The real `DashboardToolExecution` runs over this client, so the request
     // the CLI builds and the reply it decodes are both exercised.
     const relayThroughToolRouter = async (request: DashboardTestRequest): Promise<Response> => {
-      const { session, ...call } = (
-        request.body as {
-          json: {
-            tool_slug?: string;
-            slug?: string;
-            arguments: Record<string, unknown>;
-            session?: Omit<SessionCreateParams, 'user_id'>;
-          };
-        }
+      const { session, ...call } = Schema.decodeUnknownSync(DashboardProcedureInput)(
+        request.body
       ).json;
+      // The real endpoint accepts exactly four session settings.
+      const unknownSessionKeys = Object.keys(session ?? {}).filter(
+        key => !DASHBOARD_SESSION_KEYS.has(key)
+      );
+      if (unknownSessionKeys.length > 0) {
+        return dashboardProcedureError({
+          code: 'BAD_REQUEST',
+          httpStatus: 400,
+          message: `Unrecognized session key(s): ${unknownSessionKeys.join(', ')}`,
+        });
+      }
       try {
         const created = await mockComposioClient.toolRouter.session.create({
           ...session,
@@ -1578,7 +1599,8 @@ export const TestLayer = (input?: TestLiveInput) =>
             });
         return dashboardProcedureResult({ ok: true, response });
       } catch (error) {
-        if (error instanceof APIError && typeof error.status === 'number') {
+        // A backend 4xx is relayed as data; anything else is the Dashboard's own failure.
+        if (error instanceof APIError && typeof error.status === 'number' && error.status < 500) {
           return dashboardProcedureResult({
             ok: false,
             status: error.status,
