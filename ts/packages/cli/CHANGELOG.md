@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- `composio execute` now sends the execution itself (single, `--parallel`, and
+  meta tools) through the Composio Dashboard instead of calling the backend
+  directly. Output, exit codes, error details, connection tips, and `--json`
+  shapes are unchanged, and no new login or configuration is needed.
+  `composio dev playground-execute` and every other command still call the
+  backend. A `COMPOSIO_BASE_URL` override without `COMPOSIO_WEB_URL` keeps
+  `composio execute` on that backend; set both to use that deployment's
+  Dashboard. The request is sent once, with no retry and no redirect following.
+
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
   acted cannot repeat a side effect such as sending the same email twice.
