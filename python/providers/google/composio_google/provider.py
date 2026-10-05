@@ -61,16 +61,18 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
             node["nullable"] = True
         if len(non_null) == 1:
             node["type"] = non_null[0]
-        elif non_null:
-            # Vertex has no allOf, so intersect the types with any anyOf branches.
-            branches = node.get("anyOf") or [{}]
+        elif non_null and "anyOf" in node:
+            # Vertex has no allOf: drop the branches whose single type the list
+            # rules out, and keep the rest as they are.
             node["anyOf"] = [
-                {**branch, "type": name}
-                for branch in branches
-                if isinstance(branch, dict)
-                for name in non_null
-                if branch.get("type", name) == name
-            ] or [{"type": name} for name in non_null]
+                branch
+                for branch in node["anyOf"]
+                if not isinstance(branch, dict)
+                or not isinstance(branch.get("type"), str)
+                or branch["type"] in types
+            ] or node["anyOf"]
+        elif non_null:
+            node["anyOf"] = [{"type": name} for name in non_null]
     enum = node.get("enum")
     if isinstance(enum, list) and not all(isinstance(v, str) for v in enum):
         del node["enum"]
@@ -90,7 +92,8 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         if len(options) == 1:
             return _to_vertex_schema({**options[0], **node})
         if options:
-            node = {"anyOf": [{**node, **option} for option in options]}
+            rest = _to_vertex_schema(node)
+            return {"anyOf": [{**rest, **o} for o in _to_vertex_schema(options)]}
 
     result: t.Dict[str, t.Any] = {}
     for key, value in node.items():

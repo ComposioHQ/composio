@@ -71,7 +71,10 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                 "value": {"type": ["string", "integer"]},
                 "id": {
                     "type": ["string", "integer"],
-                    "anyOf": [{"type": "string"}, {"type": "boolean"}],
+                    "anyOf": [
+                        {"type": ["string"], "enum": ["yes"]},
+                        {"type": "boolean"},
+                    ],
                 },
                 "format": {"type": "integer", "enum": [0, 1], "exclusiveMinimum": -1},
                 "target": {
@@ -106,7 +109,7 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
     assert properties["direction"] == {"nullable": True}
     assert properties["label"] == {"type": "STRING", "nullable": True}
     assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
-    assert properties["id"] == {"type": "STRING"}
+    assert properties["id"] == {"type": "STRING", "enum": ["yes"]}
     assert properties["format"] == {
         "type": "INTEGER",
         "description": "Allowed values: 0, 1.",
