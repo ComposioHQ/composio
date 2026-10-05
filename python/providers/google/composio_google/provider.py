@@ -2,6 +2,7 @@
 Google AI Python Gemini tool spec.
 """
 
+import json
 import typing as t
 
 from proto.marshal.collections.maps import MapComposite
@@ -31,12 +32,19 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
     """Reduce a JSON Schema node to the subset the Vertex AI ``Schema`` accepts.
 
     Unsupported keywords are dropped, ``oneOf`` becomes ``anyOf``, a string
-    ``const`` becomes a one-value ``enum``, a ``null`` type becomes
-    ``nullable``, and an ``enum`` with non-string values is dropped because
-    Vertex only accepts string enums. Property names are kept as-is.
+    ``const`` becomes a one-value ``enum``, ``null`` in ``type`` becomes
+    ``nullable``, several types become ``anyOf``, and the values of a
+    non-string ``enum`` move into the description because Vertex only accepts
+    string enums. Property names are kept as-is.
+
+    Explicit loops keep each nesting level to one stack frame, so the depth cap
+    in ``dereference_json_schema`` stays the binding limit.
     """
     if isinstance(schema, list):
-        return [_to_vertex_schema(item) for item in schema]
+        items = []
+        for item in schema:
+            items.append(_to_vertex_schema(item))
+        return items
     if not isinstance(schema, dict):
         return schema
     node = dict(schema)
@@ -44,22 +52,35 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         node["anyOf"] = node.pop("oneOf")
     if isinstance(node.get("const"), str) and "enum" not in node:
         node["enum"] = [node["const"]]
-    if node.get("type") == "null":
-        del node["type"]
-        node["nullable"] = True
+    if "type" in node:
+        types = node.pop("type")
+        types = types if isinstance(types, list) else [types]
+        non_null = [name for name in types if name != "null"]
+        if len(non_null) < len(types):
+            node["nullable"] = True
+        if len(non_null) == 1:
+            node["type"] = non_null[0]
+        elif non_null and "anyOf" not in node:
+            node["anyOf"] = [{"type": name} for name in non_null]
+    enum = node.get("enum")
+    if isinstance(enum, list) and not all(isinstance(v, str) for v in enum):
+        del node["enum"]
+        allowed = ", ".join(json.dumps(v) for v in enum)
+        node["description"] = (
+            f"{node.get('description', '')} Allowed values: {allowed}.".strip()
+        )
 
     result: t.Dict[str, t.Any] = {}
     for key, value in node.items():
         if key not in _VERTEX_SCHEMA_FIELDS:
             continue
         if key == "properties" and isinstance(value, dict):
-            value = {name: _to_vertex_schema(prop) for name, prop in value.items()}
+            properties = {}
+            for name, prop in value.items():
+                properties[name] = _to_vertex_schema(prop)
+            value = properties
         elif key in ("items", "additionalProperties", "anyOf"):
             value = _to_vertex_schema(value)
-        elif key == "enum" and not (
-            isinstance(value, list) and all(isinstance(v, str) for v in value)
-        ):
-            continue
         result[key] = value
     return result
 
