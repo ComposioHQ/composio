@@ -32,7 +32,7 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
     """Reduce a JSON Schema node to the subset the Vertex AI ``Schema`` accepts.
 
     Unsupported keywords are dropped, ``oneOf`` becomes ``anyOf``, a string
-    ``const`` becomes a one-value ``enum``, ``null`` in ``type`` becomes
+    ``const`` becomes a one-value ``enum``, ``null`` in ``type`` or ``enum`` becomes
     ``nullable``, several types become ``anyOf``, and the values of a
     non-string ``enum`` move into the description because Vertex only accepts
     string enums. ``anyOf`` is left as the only field of its node, as Vertex
@@ -74,6 +74,9 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         elif non_null and "anyOf" not in node:
             node["anyOf"] = [{"type": name} for name in non_null]
     enum = node.get("enum")
+    if isinstance(enum, list) and None in enum:
+        node["nullable"] = True
+        enum = node["enum"] = [v for v in enum if v is not None]
     if isinstance(enum, list) and not all(isinstance(v, str) for v in enum):
         del node["enum"]
         allowed = ", ".join(json.dumps(v) for v in enum)
