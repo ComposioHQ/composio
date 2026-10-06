@@ -55,6 +55,10 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                     "human_parameter_description": "What to search for",
                 },
                 "kind": {"type": "string", "const": "message"},
+                "status": {
+                    "type": ["string", "null"],
+                    "enum": ["open", "closed", None],
+                },
                 "page_token": {
                     "description": "Next page",
                     "anyOf": [
@@ -102,6 +106,11 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
 
     assert properties["query"] == {"type": "STRING"}
     assert properties["kind"] == {"type": "STRING", "enum": ["message"]}
+    assert properties["status"] == {
+        "type": "STRING",
+        "nullable": True,
+        "enum": ["open", "closed"],
+    }
     assert properties["page_token"] == {
         "type": "STRING",
         "description": "Next page",
