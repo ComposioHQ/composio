@@ -74,7 +74,7 @@ export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
     whenToUse:
       'Use `COMPOSIO_PROXY_EXECUTE` only when no tool from `COMPOSIO_SEARCH_TOOLS` covers the endpoint you need. The toolkit needs an active connection first; call `COMPOSIO_MANAGE_CONNECTIONS` if it has none.',
     usageNote:
-      "Off by default: a session lists it only when created with `proxy_execute.enable` set to `true`. Never put tokens or API keys in `parameters` or `body`, because Composio attaches the credentials. A non-2xx `status` is the app's own response, not a tool failure. With the sandbox enabled, a large response is saved to a sandbox file and the tool returns a preview with the file path.",
+      "Off by default: a session lists it only when created with `proxy_execute.enable` set to `true`. Never put tokens or API keys in `parameters` or `body`, because Composio attaches the credentials. A non-2xx `status` is the app's own response, not a tool failure.",
   },
 };
 

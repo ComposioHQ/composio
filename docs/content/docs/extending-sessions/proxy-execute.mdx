@@ -77,23 +77,16 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 
 ## Let the agent call the proxy
 
-`session.proxyExecute()` is for your own code. To let the agent send these requests itself, create the session with `proxy_execute.enable` set to `true`. The session then gives the agent the `COMPOSIO_PROXY_EXECUTE` [meta tool](/toolkits/meta-tools). Its arguments mirror `session.proxyExecute()`, except that the toolkit is `toolkit_slug` and each parameter names its location in `type` instead of `in`.
-
-The SDKs don't accept this option, so create the session through the API:
-
-```bash
-curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}, "proxy_execute": {"enable": true}}'
-```
-
-Then load the session by the `session_id` it returns. Its tools include `COMPOSIO_PROXY_EXECUTE`:
+`session.proxyExecute()` is for your own code. To let the agent send these requests itself, enable `proxy_execute` when you create the session:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.sessions.use("session_id")
+session = composio.create(
+    "user_123",
+    toolkits=["github"],
+    proxy_execute={"enable": True},
+)
 tools = session.tools()
 ```
 </Tab>
@@ -102,11 +95,16 @@ tools = session.tools()
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.sessions.use("session_id");
+const session = await composio.create("user_123", {
+  toolkits: ["github"],
+  proxyExecute: { enable: true },
+});
 const tools = await session.tools();
 ```
 </Tab>
 </Tabs>
+
+The session's tools now include the [`COMPOSIO_PROXY_EXECUTE`](/toolkits/meta-tools/proxy_execute) meta tool. Its arguments mirror `session.proxyExecute()`, with three differences: the toolkit is `toolkit_slug`, each parameter names its location in `type` instead of `in`, and `method` also accepts `HEAD`.
 
 The tool is off by default. When `proxy_execute.enable` is unset or `false`, the session doesn't list it and refuses any call to it. Updating a session to turn it off takes effect on the agent's next call. This setting controls only the agent's tool: `session.proxyExecute()` follows the sandbox's `enable_proxy_execution`, which is on by default.
 
