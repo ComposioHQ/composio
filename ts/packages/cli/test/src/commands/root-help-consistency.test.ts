@@ -1,31 +1,11 @@
-import { layer } from '@effect/vitest';
+import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { teardown } from 'src/cli-main';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach } from 'vitest';
 import { buildRootCommand } from 'src/commands';
-import {
-  getCommandHelpText,
-  matchSubcommandHelp,
-  printSubcommandHelp,
-} from 'src/commands/root-help';
+import { teardown } from 'src/cli-main';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
-const stableVisibility = {
-  isDevModeEnabled: true,
-  isExperimentalFeatureEnabled: () => false,
-};
-
-// Beta builds expose experimental commands, so the registry check covers that surface too.
-const allFeaturesVisibility = {
-  isDevModeEnabled: true,
-  isExperimentalFeatureEnabled: () => true,
-};
-
-const getVisibleRootCommandNames = (visibility: typeof stableVisibility) =>
-  buildRootCommand(visibility).subcommands.flatMap(group => group.commands.map(cmd => cmd.name));
-
-/** Runs the CLI and returns the exit code `cli-main` would hand the process, plus split streams. */
-const runCapturingExit = (args: ReadonlyArray<string>) =>
+const capture = (args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const exit = yield* Effect.exit(cli(args));
     let exitCode = 0;
@@ -35,250 +15,142 @@ const runCapturingExit = (args: ReadonlyArray<string>) =>
     const stdout = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' })).join('\n');
     const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join('\n');
     return { exitCode, stdout, stderr };
-  });
+  }).pipe(Effect.provide(TestLive()));
 
-describe('subcommand help registry consistency', () => {
+const commandPaths = (
+  command: ReturnType<typeof buildRootCommand> | import('effect/unstable/cli').Command.Command.Any,
+  prefix: ReadonlyArray<string> = []
+): ReadonlyArray<ReadonlyArray<string>> =>
+  command.subcommands
+    .flatMap(group => group.commands)
+    .filter(child => child.name !== 'help' && !child.unlisted)
+    .flatMap(child => {
+      const path = [...prefix, child.name];
+      return [path, ...commandPaths(child, path)];
+    });
+
+describe('framework command help', () => {
   afterEach(() => {
     process.exitCode = undefined;
   });
 
-  it.each([
-    ['stable', stableVisibility],
-    ['all experimental features', allFeaturesVisibility],
-  ])('has a curated help entry for every visible root command (%s)', (_, visibility) => {
-    for (const name of getVisibleRootCommandNames(visibility)) {
-      const matched = matchSubcommandHelp(['bun', 'composio', name, '--help'], visibility);
-      expect(matched, `missing curated help for \`composio ${name}\``).toBe(name);
-    }
-  });
-
-  it('matches every orgs family invocation', () => {
-    expect(matchSubcommandHelp(['bun', 'composio', 'orgs', '--help'], stableVisibility)).toBe(
-      'orgs'
-    );
-    expect(
-      matchSubcommandHelp(['bun', 'composio', 'orgs', 'list', '--help'], stableVisibility)
-    ).toBe('orgs list');
-    expect(
-      matchSubcommandHelp(['bun', 'composio', 'orgs', 'switch', '--help'], stableVisibility)
-    ).toBe('orgs switch');
-    expect(
-      matchSubcommandHelp(['bun', 'composio', 'orgs', '--help', 'full'], stableVisibility)
-    ).toBe('orgs');
-  });
-
-  it('matches every agent family invocation', () => {
-    expect(matchSubcommandHelp(['bun', 'composio', 'agent', '--help'], stableVisibility)).toBe(
-      'agent'
-    );
-    for (const child of ['signup', 'login', 'whoami', 'inbox', 'claim']) {
-      expect(
-        matchSubcommandHelp(['bun', 'composio', 'agent', child, '--help'], stableVisibility),
-        `missing curated help for \`composio agent ${child}\``
-      ).toBe(`agent ${child}`);
-    }
-  });
-
-  it('uses the current orgs description in contextual help', () => {
-    expect(getCommandHelpText('orgs', stableVisibility)).toContain(
-      'Manage default global organization/project context.'
-    );
-  });
-
   layer(TestLive())(it => {
-    it.effect('renders the curated orgs page', () =>
+    it.effect('renders every visible command from the same definitions used by parsing', () =>
       Effect.gen(function* () {
-        yield* printSubcommandHelp('orgs', stableVisibility);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-        expect(output).toContain('USAGE');
-        expect(output).toContain('composio orgs <subcommand>');
-        expect(output).toContain('SEE ALSO');
-        expect(output).toContain('composio orgs list');
-        expect(output).toContain('composio orgs switch');
-      })
-    );
-  });
-
-  layer(TestLive())(it => {
-    it.effect('renders curated pages for formerly raw-fallback groups', () =>
-      Effect.gen(function* () {
-        for (const cmd of ['connections', 'triggers', 'tools', 'artifacts', 'install']) {
-          // MockConsole accumulates across renders; inspect only this page's lines.
-          const before = (yield* MockConsole.getLines()).length;
-          yield* printSubcommandHelp(cmd, stableVisibility);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true }))
-            .slice(before)
-            .join('\n');
-          expect(output, `\`composio ${cmd}\` help page`).toContain('USAGE');
-          expect(output, `\`composio ${cmd}\` help page`).toContain(`composio ${cmd}`);
+        const root = buildRootCommand({
+          isDevModeEnabled: true,
+          isExperimentalFeatureEnabled: () => true,
+        });
+        for (const path of commandPaths(root)) {
+          // Experimental commands in the test config must be enabled independently of the graph.
+          if (path[0] === 'listen') continue;
+          const flag = yield* capture([...path, '--help']);
+          const alias = yield* capture(['help', ...path]);
+          expect(flag.exitCode, path.join(' ')).toBe(0);
+          expect(alias.exitCode, path.join(' ')).toBe(0);
+          expect(alias.stdout, path.join(' ')).toBe(flag.stdout);
+          expect(flag.stdout).toContain('USAGE');
+          expect(flag.stderr).toBe('');
+          expect(alias.stderr).toBe('');
         }
       })
     );
-  });
 
-  layer(TestLive())(it => {
-    it.effect('renders the curated agent signup page', () =>
+    it.effect('includes flags previously missing from the hand-written pages', () =>
       Effect.gen(function* () {
-        yield* printSubcommandHelp('agent signup', stableVisibility);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-        expect(output).toContain('USAGE');
-        expect(output).toContain('composio agent signup');
-        expect(output).toContain('--no-wait');
-        expect(output).toContain('Sign up and optionally log in as a Composio agent.');
+        expect((yield* capture(['version', '--help'])).stdout).toContain('--check');
+        const run = yield* capture(['run', '--help']);
+        expect(run.stdout).toContain('--skip-checks');
+        expect(run.stdout).toContain('--logs-off');
+        expect(run.stdout).not.toContain('--perf-debug');
       })
     );
-  });
 
-  describe('composio help routing', () => {
-    layer(TestLive())(it => {
-      it.effect('bare `composio help` prints the root help page', () =>
-        Effect.gen(function* () {
-          yield* cli(['help']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+    it.effect('keeps errors and suggestions on stderr with a failing exit code', () =>
+      Effect.gen(function* () {
+        for (const args of [
+          ['help', 'frobnicate'],
+          ['help', 'orgz'],
+          ['tools', 'frobnicate'],
+        ]) {
+          const output = yield* capture(args);
+          expect(output.exitCode).toBe(1);
+          expect(output.stdout).toBe('');
+          expect(output.stderr).toContain('Unknown subcommand');
+        }
+        expect((yield* capture(['help', 'orgz'])).stderr).toContain('Did you mean');
+      })
+    );
 
-          expect(output).toContain('USAGE');
-          expect(output).toContain('LEARN MORE');
-        })
-      );
-    });
+    it.effect('supports bare help, help aliases, and redundant help flags', () =>
+      Effect.gen(function* () {
+        for (const args of [[], ['help'], ['help', '--help'], ['--help'], ['-h']]) {
+          const output = yield* capture(args);
+          expect(output.exitCode).toBe(0);
+          expect(output.stdout).toContain('Documentation:');
+          expect(output.stderr).toBe('');
+        }
+      })
+    );
 
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs` matches `composio orgs --help`', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+    it.effect('documents the actual flags on previously unreachable nested pages', () =>
+      Effect.gen(function* () {
+        for (const [path, flags] of [
+          [['login'], ['--agent']],
+          [['search'], ['--json']],
+          [
+            ['dev', 'connected-accounts', 'link'],
+            ['--auth-config', '--user-id'],
+          ],
+          [
+            ['dev', 'triggers', 'listen'],
+            ['--user-id', '--forward', '--max-events'],
+          ],
+          [['dev', 'triggers', 'disable'], ['--dangerously-allow']],
+        ] as const) {
+          const output = yield* capture([...path, '--help']);
+          expect(output.exitCode).toBe(0);
+          for (const flag of flags) expect(output.stdout, path.join(' ')).toContain(flag);
+        }
+        const projectSwitch = yield* capture(['dev', 'projects', 'switch', '--help']);
+        expect(projectSwitch.stdout).toContain('composio dev projects switch');
+        expect(projectSwitch.stdout).toContain('Switch the developer project');
+        const root = yield* capture(['--help']);
+        expect(root.stdout).not.toContain('composio files');
+        expect(root.stdout).not.toContain('MODE');
+        expect(root.stdout).not.toContain('api-info');
+        expect(root.stdout).not.toContain('--tool-debug');
+      })
+    );
 
-          expect(output).toContain('USAGE');
-          expect(output).toContain('composio orgs <subcommand>');
-          expect(output).toContain('composio orgs list');
-        })
-      );
-    });
+    it.effect('renders parallel help through the framework before executing any tools', () =>
+      Effect.gen(function* () {
+        for (const path of [['execute'], ['dev', 'playground-execute']]) {
+          const help = yield* capture([
+            ...path,
+            '--parallel',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            '{}',
+            'GITHUB_CREATE_ISSUE',
+            '--help',
+          ]);
+          expect(help.exitCode).toBe(0);
+          expect(help.stdout).toContain('--parallel');
+          expect(help.stdout).toContain('--get-schema');
+          expect(help.stderr).toBe('');
+        }
+      })
+    );
 
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs list` prints the orgs list page', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs', 'list']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('composio orgs list [--limit integer]');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help agent signup` prints the agent signup page', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'agent', 'signup']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('composio agent signup');
-          expect(output).toContain('--no-wait');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs simple` applies the simple level', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs', 'simple']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('USAGE');
-          expect(output).not.toContain('SEE ALSO');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs full` applies the full level', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs', 'full']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('composio orgs <subcommand>');
-          expect(output).toContain('SEE ALSO');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs --help` tolerates a trailing help flag', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs', '--help']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('composio orgs <subcommand>');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help dev toolkits` falls back to the curated dev page', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'dev', 'toolkits']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('GUARDED');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help <unknown>` fails like any unknown command', () =>
-        Effect.gen(function* () {
-          const { exitCode, stdout, stderr } = yield* runCapturingExit(['help', 'frobnicate']);
-
-          // The framework renders its unknown-subcommand failure (stderr channel,
-          // "Did you mean?", exit 1 via CliError.ShowHelp) instead of an exit-0
-          // "Unknown command" line on the stdout data channel.
-          expect(exitCode).toBe(1);
-          expect(stdout).toBe('');
-          expect(stderr).toContain('generate');
-          expect(stderr).toContain('Unknown subcommand "frobnicate"');
-          expect(stderr).not.toContain('Unknown subcommand "help"');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help <typo>` suggests the closest command', () =>
-        Effect.gen(function* () {
-          const { exitCode, stdout, stderr } = yield* runCapturingExit(['help', 'orgz']);
-
-          expect(exitCode).toBe(1);
-          expect(stdout).toBe('');
-          expect(stderr).toContain('Unknown subcommand "orgz"');
-          expect(stderr).toContain('Did you mean this?');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help --help` renders the curated root help', () =>
-        Effect.gen(function* () {
-          const { exitCode, stdout, stderr } = yield* runCapturingExit(['help', '--help']);
-
-          expect(exitCode).toBe(0);
-          expect(stdout).toContain('LEARN MORE');
-          expect(stdout).not.toContain('--log-level');
-          expect(stderr).not.toContain('Unknown subcommand');
-        })
-      );
-    });
-
-    layer(TestLive())(it => {
-      it.effect('`composio help orgs full --help` keeps the requested level', () =>
-        Effect.gen(function* () {
-          yield* cli(['help', 'orgs', 'full', '--help']);
-          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-          expect(output).toContain('composio orgs <subcommand>');
-          expect(output).toContain('SEE ALSO');
-        })
-      );
-    });
+    it.effect('preserves native help after a value-taking option', () =>
+      Effect.gen(function* () {
+        const output = yield* capture(['orgs', '--log-level', 'Debug', 'list', '--help']);
+        expect(output.exitCode).toBe(0);
+        expect(output.stdout).toContain('composio orgs list');
+        expect(output.stdout).toContain('--limit');
+        expect(output.stderr).toBe('');
+      })
+    );
   });
 });
