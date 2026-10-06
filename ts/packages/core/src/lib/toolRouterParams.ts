@@ -84,14 +84,12 @@ export const transformToolRouterTagsParams = (
   if (!params) {
     return undefined;
   }
-  if (Array.isArray(params)) {
-    return { enable: params };
-  } else if (typeof params === 'object') {
-    return {
-      enable: params.enable,
-      disable: params.disable,
-    };
-  }
+  const tags = Array.isArray(params)
+    ? { enable: params }
+    : { enable: params.enable, disable: params.disable };
+  // The generated client still narrows tags to the four MCP hints. The API also
+  // accepts createHint and updateHint, so cast until it is regenerated.
+  return tags as SessionCreateParams.Tags['tags'];
 };
 
 export const transformToolRouterManageConnectionsParams = (
