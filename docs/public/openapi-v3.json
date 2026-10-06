@@ -9289,7 +9289,7 @@
     "/api/v3/custom/toolkits/upsert": {
       "post": {
         "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Prefer POST /api/v3.1/custom/toolkits (which sets which users can use a toolkit) and PATCH /api/v3.1/custom/toolkits/{slug}. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
         "tags": [
           "Toolkits"
         ],
@@ -9330,7 +9330,7 @@
                       "app_url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "MCP server URL"
+                        "description": "MCP server URL. Must use https."
                       },
                       "logo_file": {
                         "type": "object",
@@ -9431,7 +9431,8 @@
                                 "discovery_url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
+                                  "description": "OAuth authorization server metadata URL, for example https://<auth server host>/.well-known/oauth-authorization-server. Use the URL your authorization server publishes; it can be on a different host from the MCP server or include a path.",
+                                  "example": "https://mcp.example.com/.well-known/oauth-authorization-server"
                                 }
                               },
                               "required": [
@@ -9649,6 +9650,16 @@
           },
           "401": {
             "description": "Unauthorized - Invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - The caller cannot write custom toolkits",
             "content": {
               "application/json": {
                 "schema": {
@@ -19090,7 +19101,8 @@
                       "COMPOSIO_REMOTE_WORKBENCH",
                       "COMPOSIO_REMOTE_BASH_TOOL",
                       "COMPOSIO_GET_TOOL_SCHEMAS",
-                      "COMPOSIO_SUBMIT_FEEDBACK"
+                      "COMPOSIO_SUBMIT_FEEDBACK",
+                      "COMPOSIO_PROXY_EXECUTE"
                     ],
                     "description": "The unique slug identifier of the meta tool to execute",
                     "example": "COMPOSIO_MANAGE_CONNECTIONS"
