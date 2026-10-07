@@ -1,3 +1,5 @@
+import type { Instant } from '../lib/instant';
+
 // Parameter schema for tool inputs/outputs
 export interface ParameterSchema {
   type: string;
@@ -17,6 +19,7 @@ export interface ParameterSchema {
 }
 
 export interface Tool {
+  instant?: Instant;
   slug: string;
   name: string;
   description: string;
@@ -67,6 +70,7 @@ export interface AuthConfigDetail {
 
 // Light version for landing page (only fields needed for listing)
 export interface ToolkitSummary {
+  instant?: Instant;
   slug: string;
   name: string;
   logo: string | null;

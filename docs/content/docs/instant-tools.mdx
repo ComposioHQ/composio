@@ -13,6 +13,8 @@ Instant Tools were previously called Premium Tools.
 
 In [project Settings](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=instant-tools), turn on **Instant Toolkits**. Developer projects start with this setting off. A Session cannot override a project where Instant is off.
 
+<Figure src="/images/instant-project-setting.jpg" alt="Instant Toolkits toggle in developer project settings, with a note that calls charge the organization's balance" caption="Enable Instant Toolkits for the project before creating a Session." />
+
 Once enabled, new Sessions can use eligible Instant tools by default, even if `instant` is omitted. Session restrictions can narrow this access. Set `instant=False` in Python or `instant: false` in TypeScript when creating a Session that must not incur Instant usage charges.
 
 <Callout type="info" title="Experimental access">
@@ -61,11 +63,11 @@ Top-level `toolkits` controls which tools the Session can discover and run. Omit
 
 Instant coverage is per tool, not per toolkit. A toolkit may support instant tools without every tool in it being eligible. Composio's provider account can be shared across customers, so only reviewed actions can run through it. Actions that could reveal shared account history or send arbitrary proxy requests are excluded. Use a connected account for actions Instant does not support.
 
-In the dashboard, open **Toolkits** and select the filter for instant tools. An **Instant** badge on a toolkit means at least one of its tools supports Instant access. Open the toolkit to find the **Instant** badge beside each eligible tool.
+In the dashboard, open **Toolkits** and select **Instant Toolkits**. A lightning icon marks toolkits with Instant support. Open a toolkit's **Instant tools** tab to see its eligible tools.
 
-<Figure src="/images/instant-toolkit-filter.png" alt="Toolkits dashboard with the instant tools filter selected and Instant badges on matching toolkits" caption="Filter the toolkit catalog to find Instant support." />
+<Figure src="/images/instant-toolkit-filter.jpg" alt="Developer toolkit catalog with the Instant Toolkits filter selected and lightning icons beside eligible toolkits" caption="Filter the toolkit catalog to find Instant support." />
 
-<Figure src="/images/instant-tool-eligibility.png" alt="Firecrawl toolkit page with Instant badges on Map multiple URLs, Scrape URL, and Search, but not on other tools" caption="Check individual tools before using an Instant account." />
+<Figure src="/images/instant-tool-eligibility.jpg" alt="Firecrawl's Instant tools tab lists Map multiple URLs, Scrape URL, and Search separately from its 29 total tools" caption="Open the Instant tools tab to see which tools support an Instant account." />
 
 ### List supported toolkits
 

@@ -86,8 +86,13 @@ const config = {
         permanent: true,
       },
       {
-        source: '/toolkits/premium-tools',
-        destination: '/toolkits/pro-tools',
+        source: '/toolkits/:legacy(pro-tools|premium-tools)',
+        destination: '/docs/instant-tools',
+        permanent: true,
+      },
+      {
+        source: '/toolkits/:legacy(pro-tools|premium-tools).:format(md|mdx)',
+        destination: '/docs/instant-tools.md',
         permanent: true,
       },
       // Deleted/merged pages -> closest surviving page (semantically resolved + verified)

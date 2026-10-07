@@ -1,5 +1,7 @@
 'use client';
 
+import { InstantBadge } from './instant-badge';
+
 import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
@@ -78,6 +80,7 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
         <ToolkitIcon toolkit={toolkit} lazy={lazy} />
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <span className="truncate text-sm font-medium text-fd-foreground">{toolkit.name.trim()}</span>
+          {toolkit.instant?.supported === true && <InstantBadge />}
           <CopySlugButton slug={toolkit.slug} />
         </div>
       </div>
@@ -182,7 +185,7 @@ export function ToolkitsLanding() {
       {/* Cards */}
       <Cards>
         <Card icon={<ShieldCheck />} title="Managed OAuth apps" href="/toolkits/managed-auth" description="Check which toolkits have managed OAuth" />
-        <Card icon={<Sparkles />} title="Premium Tools" href="/toolkits/pro-tools" description="Learn about pricing and limits" />
+        <Card icon={<Sparkles />} title="Instant Tools" href="/docs/instant-tools" description="Run supported tools on Composio accounts" />
         <Card icon={<Wrench />} title="Meta Tools" href="/toolkits/meta-tools" description="The system tools every session gives your agent" />
       </Cards>
 
