@@ -87,8 +87,14 @@ export class ComposioSessionConfigConflictError extends ComposioError {
 export class ComposioToolInputRequiredError extends ComposioError {
   /** Questions for the user, keyed by the ID the answers must reuse. */
   public readonly inputRequests: Record<string, ToolRouterInputRequest>;
-  /** Opaque `request_state` from the API, to be sent back unchanged with the answers. */
-  public readonly requestState?: string;
+  /**
+   * Opaque `request_state` from the API, to be sent back unchanged with the answers.
+   *
+   * It is continuation state, so it is kept out of logs: the property is
+   * non-enumerable. Read it as `error.requestState`; `console.error(error)`,
+   * `util.inspect(error)`, `JSON.stringify(error)` and object spread leave it out.
+   */
+  declare public readonly requestState?: string;
 
   constructor(
     subject: string,
@@ -110,6 +116,11 @@ export class ComposioToolInputRequiredError extends ComposioError {
     );
     this.name = 'ComposioToolInputRequiredError';
     this.inputRequests = details.inputRequests;
-    this.requestState = details.requestState;
+    Object.defineProperty(this, 'requestState', {
+      value: details.requestState,
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
   }
 }

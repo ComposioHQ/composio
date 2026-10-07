@@ -4,7 +4,9 @@ import { z } from 'zod/v3';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
-import { ComposioToolInputRequiredError } from '../../src/errors';
+import { inspect, format } from 'node:util';
+import { ComposioError, ComposioToolInputRequiredError } from '../../src/errors';
+import logger from '../../src/utils/logger';
 import { buildCustomToolsMap, createCustomTool } from '../../src/models/CustomTool';
 import type { CustomToolsMap, SessionContext } from '../../src/types/customTool.types';
 import { MockProvider } from '../utils/mocks/provider.mock';
@@ -142,6 +144,43 @@ describe('execution that requires user input', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     }
   );
+
+  // `request_state` is continuation state. It stays readable for the code that
+  // answers the request and out of everything an error is routinely dumped into.
+  it('keeps requestState out of inspection, serialization and pretty printing', async () => {
+    const { client } = createClient(inputRequired);
+    const logged = vi.spyOn(logger, 'error').mockImplementation(() => {});
+
+    const error = await createSession(client)
+      .execute('GMAIL_SEND_EMAIL', {})
+      .catch((caught: unknown) => caught);
+
+    assert(error instanceof ComposioToolInputRequiredError);
+    expect(error.requestState).toBe('opaque-state-token');
+
+    const inspected = inspect(error, { depth: null });
+    expect(inspected).toContain('ComposioToolInputRequiredError');
+    expect(inspected).toContain('approval_1');
+    expect(inspected).not.toContain('opaque-state-token');
+    // The message names the property; the property itself is not printed.
+    expect(inspected).not.toMatch(/requestState:/);
+    // What `console.error(error)` writes.
+    expect(format(error)).not.toContain('opaque-state-token');
+
+    const serialized = JSON.stringify(error);
+    expect(serialized).toContain('approval_1');
+    expect(serialized).not.toContain('opaque-state-token');
+    expect(JSON.parse(serialized)).not.toHaveProperty('requestState');
+
+    expect(Object.keys(error)).not.toContain('requestState');
+    expect({ ...error }).not.toHaveProperty('requestState');
+
+    error.prettyPrint(true);
+    ComposioError.handle(error, { includeStack: true });
+    expect(logged).toHaveBeenCalled();
+    expect(JSON.stringify(logged.mock.calls)).not.toContain('opaque-state-token');
+    logged.mockRestore();
+  });
 
   it('leaves requestState undefined when the API returns none', async () => {
     const { client } = createClient({ ...inputRequired, request_state: undefined });
