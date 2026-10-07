@@ -13,9 +13,9 @@ Instant Tools were previously called Premium Tools.
 
 In [project Settings](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=instant-tools), turn on **Instant Toolkits**. Developer projects start with this setting off. A Session cannot override a project where Instant is off.
 
-<Figure src="/images/instant-project-setting.jpg" alt="Instant Toolkits toggle in developer project settings, with a note that calls charge the organization's balance" caption="Enable Instant Toolkits for the project before creating a Session." />
+<Figure src="/images/instant-project-setting.jpg" alt="Instant Toolkits toggle in developer project settings, with a note that calls charge the organization's balance" caption="Enable Instant Toolkits for all Sessions in the project." />
 
-Once enabled, new Sessions can use eligible Instant tools by default, even if `instant` is omitted. Session restrictions can narrow this access. Set `instant=False` in Python or `instant: false` in TypeScript when creating a Session that must not incur Instant usage charges.
+Once enabled, all Sessions in the project can use eligible Instant tools by default, including existing Sessions, even if `instant` is omitted. Session restrictions still apply. Set `instant=False` in Python or `instant: false` in TypeScript for a Session that must not incur Instant usage charges.
 
 <Callout type="info" title="Experimental access">
   If the setting is unavailable, contact [support@composio.dev](mailto:support@composio.dev) to request access.
