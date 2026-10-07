@@ -2597,6 +2597,97 @@ class TestExecutionRequiresUserInput:
         }
 
 
+class _NoInput(BaseModel):
+    pass
+
+
+def _custom_tool_calling(call: t.Callable[[t.Any], t.Any]) -> t.Any:
+    """A custom tools map with one local tool whose body runs ``call(ctx)``."""
+    from composio.core.models.custom_tool import build_custom_tools_map
+
+    @experimental_api.tool()
+    def send_welcome_email(input: _NoInput, ctx: t.Any) -> t.Dict[str, t.Any]:
+        """Sends the welcome email through a session helper."""
+        return {"sent": call(ctx)}
+
+    return build_custom_tools_map([send_welcome_email])
+
+
+def _session_with_custom_tools(
+    client: HttpClient, custom_tools_map: t.Any
+) -> ToolRouterSession:
+    return ToolRouterSession(
+        client=client,
+        provider=MagicMock(),
+        dangerously_allow_auto_upload_download_files=False,
+        session_id="session_123",
+        mcp=MagicMock(),
+        experimental=MagicMock(),
+        custom_tools_map=custom_tools_map,
+        user_id="user_123",
+    )
+
+
+def _raise_boom(ctx: t.Any) -> t.Any:
+    raise RuntimeError("boom")
+
+
+class TestCustomToolBodyRequiresUserInput:
+    """A local custom tool reaches the API through ``ctx.execute()`` and
+    ``ctx.proxy_execute()``. The wrapper that runs the tool turns whatever it
+    raises into a failed result, which must not happen to an input request: the
+    caller needs the questions and the request state, not a message.
+    """
+
+    _BODIES = [
+        pytest.param(
+            lambda ctx: ctx.execute("GMAIL_SEND_EMAIL", {"to": "test@test.com"}),
+            "Tool GMAIL_SEND_EMAIL",
+            id="ctx.execute",
+        ),
+        pytest.param(
+            lambda ctx: ctx.proxy_execute(**_PROXY_PARAMS),
+            "POST proxy call for toolkit github",
+            id="ctx.proxy_execute",
+        ),
+    ]
+
+    @pytest.mark.parametrize(("call", "subject"), _BODIES)
+    def test_session_execute_of_a_custom_tool_raises(self, call, subject):
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+        session = _session_with_custom_tools(client, _custom_tool_calling(call))
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            session.execute("SEND_WELCOME_EMAIL", arguments={})
+
+        error = raised.value
+        assert f"{subject} requires user input" in error.message
+        assert error.request_state == "opaque-state-token"
+        assert list(error.input_requests) == ["approval_1"]
+        assert len(requests) == 1
+
+    @pytest.mark.parametrize(("call", "subject"), _BODIES)
+    def test_sibling_custom_tool_raises_through_ctx_execute(self, call, subject):
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+        context = SessionContextImpl(
+            client, "user_123", "session_123", _custom_tool_calling(call)
+        )
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            context.execute("SEND_WELCOME_EMAIL", {})
+
+        assert raised.value.request_state == "opaque-state-token"
+
+    def test_any_other_error_is_still_a_failed_result(self):
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+        session = _session_with_custom_tools(client, _custom_tool_calling(_raise_boom))
+
+        result = session.execute("SEND_WELCOME_EMAIL", arguments={})
+
+        assert result.error == "boom"
+        assert result.result_type == "failed"
+
+
 _EXECUTED_ANSWERS = [
     pytest.param("failed", None, False, id="failed with a null error"),
     pytest.param("failed", "", False, id="failed with an empty error"),
