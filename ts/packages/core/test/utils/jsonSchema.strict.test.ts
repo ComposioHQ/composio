@@ -470,3 +470,114 @@ describe('omitNullToolArguments', () => {
     expect(input).toEqual(snapshot);
   });
 });
+
+describe('null acceptance', () => {
+  const NULL_BRANCH = { type: 'null' };
+  const DIRECTION = { enum: ['asc', null] };
+  const wrapped = (schema: unknown) => ({ anyOf: [schema, NULL_BRANCH] });
+  const toolSchema = (property: unknown, definitions: unknown = { Direction: DIRECTION }) => ({
+    type: 'object',
+    properties: { value: property },
+    $defs: definitions,
+  });
+
+  it.each<[Record<string, unknown>, Record<string, unknown>]>([
+    [{ type: 'string', enum: ['asc', 'desc'] }, wrapped({ type: 'string', enum: ['asc', 'desc'] })],
+    [
+      { type: ['string', 'null'], enum: ['asc', 'desc'] },
+      wrapped({ type: ['string', 'null'], enum: ['asc', 'desc'] }),
+    ],
+    [{ type: 'string', const: 'asc' }, wrapped({ type: 'string', const: 'asc' })],
+    [
+      { type: 'integer', enum: [1, 2], description: 'page size' },
+      { description: 'page size', ...wrapped({ type: 'integer', enum: [1, 2] }) },
+    ],
+    [
+      { type: 'string', anyOf: [{ minLength: 1 }] },
+      wrapped({ type: 'string', anyOf: [{ minLength: 1 }] }),
+    ],
+    [
+      { enum: ['asc'], anyOf: [{ type: 'string' }, NULL_BRANCH] },
+      wrapped({ enum: ['asc'], anyOf: [{ type: 'string' }, NULL_BRANCH] }),
+    ],
+    [
+      { $ref: '#/$defs/Direction', type: 'string' },
+      wrapped({ $ref: '#/$defs/Direction', type: 'string' }),
+    ],
+    // Already nullable: left alone.
+    [
+      { type: ['string', 'null'], enum: ['asc', null] },
+      { type: ['string', 'null'], enum: ['asc', null] },
+    ],
+    [{ $ref: '#/$defs/Direction' }, { $ref: '#/$defs/Direction' }],
+    [{ anyOf: [{ type: ['string', 'null'] }] }, { anyOf: [{ type: ['string', 'null'] }] }],
+    // `type` or `anyOf` as the only obstacle: widened in place.
+    [
+      { type: 'string', minLength: 1 },
+      { type: ['string', 'null'], minLength: 1 },
+    ],
+    [
+      { anyOf: [{ type: 'string' }], description: 'd' },
+      { anyOf: [{ type: 'string' }, NULL_BRANCH], description: 'd' },
+    ],
+  ])('widening keeps every constraint: %j', (property, expected) => {
+    const source = toolSchema(property);
+    const snapshot = structuredClone(source);
+    const result = toStrictJsonSchema(source);
+
+    expect(result.unsupported).toEqual([]);
+    expect(propertyOf(result.schema, 'value')).toEqual(expected);
+    expect(result.schema.required).toEqual(['value']);
+    expect(source).toEqual(snapshot);
+    const again = toStrictJsonSchema(result.schema);
+    expect(again.schema).toEqual(result.schema);
+    expect(again.changes).toEqual([]);
+  });
+
+  it.each<[unknown, boolean]>([
+    [{ type: ['string', 'null'], enum: ['asc', 'desc'] }, false],
+    [{ type: ['string', 'null'], const: 'asc' }, false],
+    [{ type: ['string', 'null'], enum: ['asc', null] }, true],
+    [{ type: ['string', 'null'], const: null }, true],
+    [{ $ref: '#/$defs/Direction' }, true],
+    [{ $ref: '#/$defs/Direction', type: 'string' }, false],
+    [{ $ref: '#/$defs/Direction', enum: ['asc'] }, false],
+    [{ $ref: '#/$defs/Missing' }, false],
+    [{ $ref: 1 }, false],
+    [{ allOf: [{ type: ['string', 'null'] }, { enum: ['asc'] }] }, false],
+    [{ allOf: [{ type: ['string', 'null'] }, DIRECTION] }, true],
+    [{ oneOf: [NULL_BRANCH, { type: 'string' }] }, true],
+    [{ oneOf: [NULL_BRANCH, { enum: [null] }] }, false],
+    [{ not: NULL_BRANCH }, false],
+    [{ not: { type: 'string' } }, true],
+    [{ if: NULL_BRANCH, then: { type: 'string' } }, false],
+    [{ if: { type: 'string' }, then: { type: 'string' } }, true],
+    [{ if: { type: 'string' }, else: { type: 'string' } }, false],
+    [true, true],
+    [false, false],
+  ])('null is kept only when every keyword accepts it: %j', (property, kept) => {
+    const input = { value: null };
+    expect(omitNullToolArguments(input, toolSchema(property))).toEqual(kept ? { value: null } : {});
+    expect(input).toEqual({ value: null });
+  });
+
+  it.each<[Record<string, unknown>, boolean]>([
+    [{ a: { $ref: '#/$defs/a' } }, false],
+    [{ a: { $ref: '#/$defs/b' }, b: { $ref: '#/$defs/a' } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { type: 'null', oneOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/b' }] }, b: { anyOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/a' }, NULL_BRANCH] } }, true],
+    [{ a: { oneOf: [{ $ref: '#/$defs/a' }, NULL_BRANCH] } }, true],
+  ])('reference cycles terminate: %j', (definitions, kept) => {
+    const source = toolSchema({ $ref: '#/$defs/a' }, definitions);
+    expect(omitNullToolArguments({ value: null }, source)).toEqual(kept ? { value: null } : {});
+    expect(toStrictJsonSchema(source).unsupported).toEqual([]);
+  });
+
+  it('checks a node reached twice outside a cycle each time', () => {
+    const shared = { anyOf: [NULL_BRANCH] };
+    const source = { type: 'object', properties: { value: { allOf: [shared, shared] } } };
+    expect(omitNullToolArguments({ value: null }, source)).toEqual({ value: null });
+  });
+});

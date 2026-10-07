@@ -1382,6 +1382,12 @@ importers:
       '@types/semver':
         specifier: ^7.8.0
         version: 7.8.0
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
       hono:
         specifier: 'catalog:'
         version: 4.13.9

@@ -125,28 +125,45 @@ def _join_path(parent: str, key: str) -> str:
     return f"{parent}.{key}" if parent else key
 
 
-def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
-    """Accept ``null`` without placing ``type`` beside ``anyOf``."""
-    any_of = node.get("anyOf")
-    if isinstance(any_of, list):
-        if any(isinstance(b, dict) and b.get("type") == "null" for b in any_of):
-            return node
-        return {**node, "anyOf": [*any_of, {"type": "null"}]}
-    node_type = node.get("type")
-    if isinstance(node_type, str):
-        return node if node_type == "null" else {**node, "type": [node_type, "null"]}
-    if isinstance(node_type, list):
-        return node if "null" in node_type else {**node, "type": [*node_type, "null"]}
-    if (isinstance(node.get("enum"), list) and None in node["enum"]) or (
-        "const" in node and node["const"] is None
-    ):
+# The only keywords that can reject a ``null`` instance; every other keyword
+# constrains strings, numbers, arrays or objects and ignores ``null``.
+NULL_CONSTRAINT_KEYWORDS = (
+    "type",
+    "enum",
+    "const",
+    "$ref",
+    "anyOf",
+    "oneOf",
+    "allOf",
+    "not",
+    "if",
+    "then",
+    "else",
+)
+
+
+def _widen_to_nullable(
+    node: dict[str, t.Any], root: dict[str, t.Any]
+) -> dict[str, t.Any]:
+    """Accept ``null`` while keeping every other constraint the node declares.
+
+    A node whose only obstacle is ``type`` or ``anyOf`` is widened in place.
+    Anything else is wrapped whole, because JSON Schema keywords apply
+    together: adding ``null`` to ``type`` does not lift a sibling ``enum``.
+    """
+    if _schema_accepts_null(node, root):
         return node
+    constraints = [key for key in NULL_CONSTRAINT_KEYWORDS if key in node]
+    if constraints == ["type"]:
+        node_type = node["type"]
+        members = node_type if isinstance(node_type, list) else [node_type]
+        return {**node, "type": [*members, "null"]}
+    if constraints == ["anyOf"]:
+        return {**node, "anyOf": [*node["anyOf"], {"type": "null"}]}
     annotations: dict[str, t.Any] = {
         k: node[k] for k in ("description", "title") if k in node
     }
     rest = {k: v for k, v in node.items() if k not in annotations}
-    if not rest:
-        return node
     return {**annotations, "anyOf": [rest, {"type": "null"}]}
 
 
@@ -163,24 +180,63 @@ def _resolve_local_refs(node: t.Any, root: dict[str, t.Any]) -> t.Any:
     return current
 
 
-def _schema_accepts_null(schema: t.Any, root: dict[str, t.Any]) -> bool:
-    """Whether a schema node accepts ``null`` as an instance."""
-    node = _resolve_local_refs(schema, root)
-    if not isinstance(node, dict):
+def _schema_accepts_null(
+    schema: t.Any, root: dict[str, t.Any], path: set[int] | None = None
+) -> bool:
+    """Whether a schema accepts ``null`` as an instance.
+
+    Every keyword in :data:`NULL_CONSTRAINT_KEYWORDS` that is present must
+    accept it. This is the single definition of null acceptance: the strict
+    rewrite and :func:`omit_null_tool_arguments` both decide with it.
+    """
+    if isinstance(schema, bool):
+        return schema
+    if not isinstance(schema, dict):
         return True
+    path = set() if path is None else path
+    if id(schema) in path:
+        # A reference cycle never yields a null by itself.
+        return False
+    path.add(id(schema))
+    try:
+        return _keywords_accept_null(schema, root, path)
+    finally:
+        path.discard(id(schema))
+
+
+def _keywords_accept_null(
+    node: dict[str, t.Any], root: dict[str, t.Any], path: set[int]
+) -> bool:
+    def accepts(schema: t.Any) -> bool:
+        return _schema_accepts_null(schema, root, path)
+
     node_type = node.get("type")
-    if isinstance(node_type, str):
-        return node_type == "null"
-    if isinstance(node_type, list):
-        return "null" in node_type
-    if isinstance(node.get("enum"), list):
-        return None in node["enum"]
-    if "const" in node:
-        return node["const"] is None
-    for keyword in ("anyOf", "oneOf"):
-        branches = node.get(keyword)
-        if isinstance(branches, list):
-            return any(_schema_accepts_null(b, root) for b in branches)
+    if isinstance(node_type, str) and node_type != "null":
+        return False
+    if isinstance(node_type, list) and "null" not in node_type:
+        return False
+    if isinstance(node.get("enum"), list) and None not in node["enum"]:
+        return False
+    if "const" in node and node["const"] is not None:
+        return False
+    if "$ref" in node:
+        ref = node["$ref"]
+        resolution = _try_resolve_pointer(root, ref) if isinstance(ref, str) else None
+        if resolution is None or not resolution.ok or not accepts(resolution.value):
+            return False
+    any_of, one_of, all_of = node.get("anyOf"), node.get("oneOf"), node.get("allOf")
+    if isinstance(any_of, list) and not any(accepts(b) for b in any_of):
+        return False
+    if isinstance(one_of, list) and sum(accepts(b) for b in one_of) != 1:
+        return False
+    if isinstance(all_of, list) and not all(accepts(b) for b in all_of):
+        return False
+    if "not" in node and accepts(node["not"]):
+        return False
+    if "if" in node:
+        branch = "then" if accepts(node["if"]) else "else"
+        if branch in node and not accepts(node[branch]):
+            return False
     return True
 
 
@@ -326,7 +382,7 @@ class _Walker:
                 continue
             if name in declared_required or not isinstance(property_schema, dict):
                 continue
-            properties[name] = _widen_to_nullable(property_schema)
+            properties[name] = _widen_to_nullable(property_schema, self.root)
             self.record(
                 _join_path(path, f"properties.{name}"),
                 "optional-property-nullable",

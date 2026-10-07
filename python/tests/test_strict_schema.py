@@ -657,3 +657,161 @@ class TestOpenAIResponsesProviderStrict:
 
         assert received["slug"] == "TEST_TOOL"
         assert received["arguments"] == {"cfg": {"url": "u"}, "clearable": None}
+
+
+NULL_BRANCH = {"type": "null"}
+DIRECTION = {"enum": ["asc", None]}
+
+
+def _wrapped(schema):
+    return {"anyOf": [schema, NULL_BRANCH]}
+
+
+class TestNullAcceptance:
+    """Null widening and null omission decide with every keyword, not the first."""
+
+    @pytest.mark.parametrize(
+        "property_schema, expected",
+        [
+            (
+                {"type": "string", "enum": ["asc", "desc"]},
+                _wrapped({"type": "string", "enum": ["asc", "desc"]}),
+            ),
+            (
+                {"type": ["string", "null"], "enum": ["asc", "desc"]},
+                _wrapped({"type": ["string", "null"], "enum": ["asc", "desc"]}),
+            ),
+            (
+                {"type": "string", "const": "asc"},
+                _wrapped({"type": "string", "const": "asc"}),
+            ),
+            (
+                {"type": "integer", "enum": [1, 2], "description": "page size"},
+                {
+                    "description": "page size",
+                    **_wrapped({"type": "integer", "enum": [1, 2]}),
+                },
+            ),
+            (
+                {"type": "string", "anyOf": [{"minLength": 1}]},
+                _wrapped({"type": "string", "anyOf": [{"minLength": 1}]}),
+            ),
+            (
+                {"enum": ["asc"], "anyOf": [{"type": "string"}, NULL_BRANCH]},
+                _wrapped({"enum": ["asc"], "anyOf": [{"type": "string"}, NULL_BRANCH]}),
+            ),
+            (
+                {"$ref": "#/$defs/Direction", "type": "string"},
+                _wrapped({"$ref": "#/$defs/Direction", "type": "string"}),
+            ),
+            # Already nullable: left alone.
+            (
+                {"type": ["string", "null"], "enum": ["asc", None]},
+                {"type": ["string", "null"], "enum": ["asc", None]},
+            ),
+            ({"$ref": "#/$defs/Direction"}, {"$ref": "#/$defs/Direction"}),
+            (
+                {"anyOf": [{"type": ["string", "null"]}]},
+                {"anyOf": [{"type": ["string", "null"]}]},
+            ),
+            # `type` or `anyOf` as the only obstacle: widened in place.
+            (
+                {"type": "string", "minLength": 1},
+                {"type": ["string", "null"], "minLength": 1},
+            ),
+            (
+                {"anyOf": [{"type": "string"}], "description": "d"},
+                {"anyOf": [{"type": "string"}, NULL_BRANCH], "description": "d"},
+            ),
+        ],
+    )
+    def test_widening_keeps_every_constraint(self, property_schema, expected):
+        source = {
+            "type": "object",
+            "properties": {"value": property_schema},
+            "$defs": {"Direction": DIRECTION},
+        }
+        snapshot = copy.deepcopy(source)
+        result = to_strict_json_schema(source)
+
+        assert result.unsupported == []
+        assert result.schema["properties"]["value"] == expected
+        assert result.schema["required"] == ["value"]
+        assert source == snapshot
+        again = to_strict_json_schema(result.schema)
+        assert again.schema == result.schema
+        assert again.changes == []
+
+    @pytest.mark.parametrize(
+        "property_schema, kept",
+        [
+            ({"type": ["string", "null"], "enum": ["asc", "desc"]}, False),
+            ({"type": ["string", "null"], "const": "asc"}, False),
+            ({"type": ["string", "null"], "enum": ["asc", None]}, True),
+            ({"type": ["string", "null"], "const": None}, True),
+            ({"$ref": "#/$defs/Direction"}, True),
+            ({"$ref": "#/$defs/Direction", "type": "string"}, False),
+            ({"$ref": "#/$defs/Direction", "enum": ["asc"]}, False),
+            ({"$ref": "#/$defs/Missing"}, False),
+            ({"$ref": 1}, False),
+            ({"allOf": [{"type": ["string", "null"]}, {"enum": ["asc"]}]}, False),
+            ({"allOf": [{"type": ["string", "null"]}, DIRECTION]}, True),
+            ({"oneOf": [NULL_BRANCH, {"type": "string"}]}, True),
+            ({"oneOf": [NULL_BRANCH, {"enum": [None]}]}, False),
+            ({"not": NULL_BRANCH}, False),
+            ({"not": {"type": "string"}}, True),
+            ({"if": NULL_BRANCH, "then": {"type": "string"}}, False),
+            ({"if": {"type": "string"}, "then": {"type": "string"}}, True),
+            ({"if": {"type": "string"}, "else": {"type": "string"}}, False),
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_null_is_kept_only_when_every_keyword_accepts_it(
+        self, property_schema, kept
+    ):
+        schema = {
+            "type": "object",
+            "properties": {"value": property_schema},
+            "$defs": {"Direction": DIRECTION},
+        }
+        arguments = {"value": None}
+        expected = {"value": None} if kept else {}
+        assert omit_null_tool_arguments(arguments, schema) == expected
+        assert arguments == {"value": None}
+
+    @pytest.mark.parametrize(
+        "definitions, kept",
+        [
+            ({"a": {"$ref": "#/$defs/a"}}, False),
+            ({"a": {"$ref": "#/$defs/b"}, "b": {"$ref": "#/$defs/a"}}, False),
+            ({"a": {"anyOf": [{"$ref": "#/$defs/a"}]}}, False),
+            ({"a": {"type": "null", "oneOf": [{"$ref": "#/$defs/a"}]}}, False),
+            (
+                {
+                    "a": {"anyOf": [{"$ref": "#/$defs/b"}]},
+                    "b": {"anyOf": [{"$ref": "#/$defs/a"}]},
+                },
+                False,
+            ),
+            ({"a": {"anyOf": [{"$ref": "#/$defs/a"}, NULL_BRANCH]}}, True),
+            ({"a": {"oneOf": [{"$ref": "#/$defs/a"}, NULL_BRANCH]}}, True),
+        ],
+    )
+    def test_reference_cycles_terminate(self, definitions, kept):
+        schema = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#/$defs/a"}},
+            "$defs": definitions,
+        }
+        expected = {"value": None} if kept else {}
+        assert omit_null_tool_arguments({"value": None}, schema) == expected
+        assert to_strict_json_schema(schema).unsupported == []
+
+    def test_a_node_reached_twice_outside_a_cycle_is_checked_each_time(self):
+        shared = {"anyOf": [NULL_BRANCH]}
+        schema = {
+            "type": "object",
+            "properties": {"value": {"allOf": [shared, shared]}},
+        }
+        assert omit_null_tool_arguments({"value": None}, schema) == {"value": None}

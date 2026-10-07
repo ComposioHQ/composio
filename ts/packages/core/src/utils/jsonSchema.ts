@@ -603,27 +603,44 @@ function setOwn(target: Record<string, unknown>, key: string, value: unknown): v
 }
 
 /**
- * Widens a property schema so that `null` is an accepted value, without
- * placing `type` beside `anyOf` (the API rejects that combination).
+ * The only keywords that can reject a `null` instance; every other keyword
+ * constrains strings, numbers, arrays or objects and ignores `null`.
  */
-function widenToNullable(node: Record<string, unknown>): Record<string, unknown> {
-  if (Array.isArray(node.anyOf)) {
-    const alreadyNullable = node.anyOf.some(
-      branch => isPlainObject(branch) && branch.type === 'null'
-    );
-    return alreadyNullable ? node : { ...node, anyOf: [...node.anyOf, { type: 'null' }] };
+const NULL_CONSTRAINT_KEYWORDS = [
+  'type',
+  'enum',
+  'const',
+  '$ref',
+  'anyOf',
+  'oneOf',
+  'allOf',
+  'not',
+  'if',
+  'then',
+  'else',
+] as const;
+
+/**
+ * Widens a property schema so that `null` is an accepted value while keeping
+ * every other constraint it declares. A node whose only obstacle is `type` or
+ * `anyOf` is widened in place. Anything else is wrapped whole, because JSON
+ * Schema keywords apply together: adding `null` to `type` does not lift a
+ * sibling `enum`.
+ */
+function widenToNullable(
+  node: Record<string, unknown>,
+  root: Record<string, unknown>
+): Record<string, unknown> {
+  if (schemaAcceptsNull(node, root)) return node;
+  const constraints = NULL_CONSTRAINT_KEYWORDS.filter(key => key in node);
+  if (constraints.length === 1 && constraints[0] === 'type') {
+    const members = Array.isArray(node.type) ? node.type : [node.type];
+    return { ...node, type: [...members, 'null'] };
   }
-  if (typeof node.type === 'string') {
-    return node.type === 'null' ? node : { ...node, type: [node.type, 'null'] };
+  if (constraints.length === 1 && constraints[0] === 'anyOf' && Array.isArray(node.anyOf)) {
+    return { ...node, anyOf: [...node.anyOf, { type: 'null' }] };
   }
-  if (Array.isArray(node.type)) {
-    return node.type.includes('null') ? node : { ...node, type: [...node.type, 'null'] };
-  }
-  if ((Array.isArray(node.enum) && node.enum.includes(null)) || node.const === null) return node;
-  // No `type` at all: an empty schema already accepts null; anything else
-  // (enum-only, const, composition) is wrapped so the annotation stays outside.
   const { description, title, ...rest } = node;
-  if (Object.keys(rest).length === 0) return node;
   return {
     ...(description !== undefined ? { description } : {}),
     ...(title !== undefined ? { title } : {}),
@@ -646,17 +663,53 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
   return current;
 }
 
-/** Whether a schema node accepts `null` as an instance. */
-function schemaAcceptsNull(schema: unknown, root: Record<string, unknown>): boolean {
-  const node = resolveLocalRefs(schema, root);
-  if (!isPlainObject(node)) return true;
-  if (typeof node.type === 'string') return node.type === 'null';
-  if (Array.isArray(node.type)) return node.type.includes('null');
-  if (Array.isArray(node.enum)) return node.enum.includes(null);
-  if ('const' in node) return node.const === null;
-  for (const keyword of ['anyOf', 'oneOf']) {
-    const branches = node[keyword];
-    if (Array.isArray(branches)) return branches.some(branch => schemaAcceptsNull(branch, root));
+/**
+ * Whether a schema accepts `null` as an instance: every keyword in
+ * `NULL_CONSTRAINT_KEYWORDS` that is present must accept it. This is the
+ * single definition of null acceptance; the strict rewrite and
+ * `omitNullToolArguments` both decide with it.
+ */
+function schemaAcceptsNull(
+  schema: unknown,
+  root: Record<string, unknown>,
+  path = new Set<object>()
+): boolean {
+  if (typeof schema === 'boolean') return schema;
+  if (!isPlainObject(schema)) return true;
+  // A reference cycle never yields a null by itself.
+  if (path.has(schema)) return false;
+  path.add(schema);
+  try {
+    return keywordsAcceptNull(schema, root, path);
+  } finally {
+    path.delete(schema);
+  }
+}
+
+function keywordsAcceptNull(
+  node: Record<string, unknown>,
+  root: Record<string, unknown>,
+  path: Set<object>
+): boolean {
+  const accepts = (schema: unknown): boolean => schemaAcceptsNull(schema, root, path);
+
+  if (typeof node.type === 'string' && node.type !== 'null') return false;
+  if (Array.isArray(node.type) && !node.type.includes('null')) return false;
+  if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
+  if ('const' in node && node.const !== null) return false;
+  if ('$ref' in node) {
+    const resolution =
+      typeof node.$ref === 'string' ? tryResolvePointer(root, node.$ref) : undefined;
+    if (resolution === undefined || resolution.kind === 'unresolved') return false;
+    if (!accepts(resolution.value)) return false;
+  }
+  if (Array.isArray(node.anyOf) && !node.anyOf.some(accepts)) return false;
+  if (Array.isArray(node.oneOf) && node.oneOf.filter(accepts).length !== 1) return false;
+  if (Array.isArray(node.allOf) && !node.allOf.every(accepts)) return false;
+  if ('not' in node && accepts(node.not)) return false;
+  if ('if' in node) {
+    const branch = accepts(node.if) ? 'then' : 'else';
+    if (branch in node && !accepts(node[branch])) return false;
   }
   return true;
 }
@@ -834,7 +887,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
         continue;
       }
       if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
-      setOwn(properties, name, widenToNullable(propertySchema));
+      setOwn(properties, name, widenToNullable(propertySchema, root));
       recordChange({
         path: joinPath(path, `properties.${name}`),
         reason: 'optional-property-nullable',
