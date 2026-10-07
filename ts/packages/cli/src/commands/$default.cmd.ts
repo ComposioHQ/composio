@@ -2,7 +2,7 @@ import { LogLevel, type Option } from 'effect';
 import { Command, Flag } from 'effect/unstable/cli';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
 
-const logLevel = Flag.choice('log-level', LogLevel.values).pipe(
+const logLevel = Flag.Literals('log-level', LogLevel.values).pipe(
   Flag.withDescription('Define log level'),
   Flag.optional
 );
@@ -24,8 +24,16 @@ const logLevel = Flag.choice('log-level', LogLevel.values).pipe(
 export const $defaultCmd = Command.make('composio').pipe(
   Command.withSharedFlags({ logLevel }),
   Command.withDescription(
-    `Composio CLI - A tool for managing Python and TypeScript composio.dev projects.`
-  )
+    `Connect AI agents to external tools. Start with search, execute, and link.`
+  ),
+  Command.withExamples([
+    { command: 'composio search "send an email"', description: 'Find tools for a task.' },
+    { command: 'composio link gmail', description: 'Connect an app account.' },
+    {
+      command: 'composio execute GMAIL_SEND_EMAIL --get-schema',
+      description: 'Inspect tool inputs.',
+    },
+  ])
 );
 
 /**

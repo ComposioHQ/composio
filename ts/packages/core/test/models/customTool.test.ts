@@ -812,7 +812,7 @@ describe('SessionContextImpl', () => {
         tool_slug: 'GMAIL_SEND_EMAIL',
         arguments: { to: 'test@test.com' },
       },
-      undefined
+      { maxRetries: 0 }
     );
     expect(result).toEqual({
       data: { result: 'ok' },
@@ -849,7 +849,7 @@ describe('SessionContextImpl', () => {
           custom_tools: [expect.objectContaining({ slug: 'GREP' })],
         },
       },
-      undefined
+      { maxRetries: 0 }
     );
   });
 
@@ -889,7 +889,7 @@ describe('SessionContextImpl', () => {
         method: 'GET',
         parameters: [{ name: 'X-Custom', type: 'header', value: 'val' }],
       },
-      undefined
+      { maxRetries: 0 }
     );
     expect(result).toEqual({
       status: 200,
@@ -949,7 +949,7 @@ describe('SessionContextImpl', () => {
           tool_slug: 'REMOTE_TOOL',
           arguments: { key: 'val' },
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual({ data: { remote: true }, error: null, logId: 'log_3' });
     });

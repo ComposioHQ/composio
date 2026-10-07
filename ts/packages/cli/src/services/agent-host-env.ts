@@ -31,7 +31,7 @@ export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined
 }
 
 const optionalRawEnv = (name: string) =>
-  Config.option(Config.string(name)).pipe(Config.map(Option.getOrUndefined));
+  Config.option(Config.String(name)).pipe(Config.map(Option.getOrUndefined));
 
 // Host-owned variables must bypass the CLI ConfigProvider, which prefixes
 // application keys with COMPOSIO_. loadHostConfig builds a fresh

@@ -114,10 +114,22 @@ def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return {k: _serialize_value(v) for k, v in arguments.items()}
 
 
+class InstantCharge(te.TypedDict):
+    """Instant usage charge reported for a Session tool execution."""
+
+    amount: str
+    """Exact non-negative USD decimal string, e.g. ``"0.01"``."""
+    currency: str
+    charged_by: str
+
+
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
+    instant_charge: te.NotRequired[InstantCharge]
+    """Present only when the Session sets
+    ``instant.return_instant_charge`` and a charge is available."""
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -250,7 +262,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tools_list.extend(
                 self._client.tools.list(
                     toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
-                    search=none_to_omit(search),
+                    query=none_to_omit(search),
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
@@ -553,7 +565,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Serialize any Pydantic model instances before sending to the API
             processed_arguments = _serialize_arguments(processed_arguments)
 
-            response = self._client.tool_router.session.execute(
+            # Disable retries: a session execution is a non-idempotent write, and a
+            # silent retry after a read timeout can duplicate the side effect.
+            response = self._client.without_retries.tool_router.session.execute(
                 session_id=session_id,
                 tool_slug=slug,
                 arguments=processed_arguments,
@@ -571,6 +585,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 "error": response.error if hasattr(response, "error") else None,
                 "successful": not (hasattr(response, "error") and response.error),
             }
+            instant_charge = getattr(response, "instant_charge", None)
+            if isinstance(instant_charge, dict):
+                result["instant_charge"] = t.cast(InstantCharge, instant_charge)
 
             # Apply after_execute modifiers
             if modifiers is not None:
@@ -663,7 +680,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         :param slug: The slug of the tool to execute.
         :param arguments: The arguments to pass to the tool.
-        :param connected_account_id: The ID of the connected account to use for the tool.
+        :param connected_account_id: The connected account ID, or ``instant_account``
+                                     to explicitly use the Composio Instant account.
         :param custom_auth_params: The custom auth params to use for the tool.
         :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
         :param user_id: The ID of the user to execute the tool for.
@@ -801,6 +819,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
 __all__ = [
     "Tools",
+    "InstantCharge",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "Modifiers",

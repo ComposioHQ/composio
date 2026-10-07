@@ -12,39 +12,39 @@ import {
 } from '../format';
 import { parseCsv } from '../parse-csv';
 
-const userIds = Flag.string('user-ids').pipe(
+const userIds = Flag.String('user-ids').pipe(
   Flag.withDescription('Filter by user IDs, comma-separated'),
   Flag.optional
 );
 
-const connectedAccountIds = Flag.string('connected-account-ids').pipe(
+const connectedAccountIds = Flag.String('connected-account-ids').pipe(
   Flag.withDescription('Filter by connected account IDs, comma-separated'),
   Flag.optional
 );
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
   Flag.optional
 );
 
-const triggerIds = Flag.string('trigger-ids').pipe(
+const triggerIds = Flag.String('trigger-ids').pipe(
   Flag.withDescription('Filter by trigger instance IDs, comma-separated'),
   Flag.optional
 );
 
-const triggerNames = Flag.string('trigger-names').pipe(
+const triggerNames = Flag.String('trigger-names').pipe(
   Flag.withDescription(
     'Filter by trigger names, comma-separated (case-insensitive; normalized to uppercase)'
   ),
   Flag.optional
 );
 
-const showDisabled = Flag.boolean('show-disabled').pipe(
+const showDisabled = Flag.Boolean('show-disabled').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Include disabled triggers in the response')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );

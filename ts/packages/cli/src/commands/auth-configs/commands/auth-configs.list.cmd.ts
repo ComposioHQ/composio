@@ -7,17 +7,17 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigsTable, formatAuthConfigsJson } from '../format';
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
   Flag.optional
 );
 
-const query = Flag.string('query').pipe(
+const query = Flag.String('query').pipe(
   Flag.withDescription('Search by auth config name'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );

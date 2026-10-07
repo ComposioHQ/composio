@@ -44,15 +44,21 @@ import type {
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
+  type SessionCreateBody,
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
   transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
+  transformToolRouterInstantParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+import { buildMCPServerConfig } from '../lib/toolRouterMcp';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
+import { transformSessionConfig } from '../utils/transformers/toolRouterResponseTransform';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -71,7 +77,7 @@ function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
   const metadata: ToolRouterSessionMetadata = {
-    config: session.config,
+    config: transformSessionConfig(session.config),
     preload: session.config.preload,
     workbench: session.config.workbench,
     configVersion: session.config_version,
@@ -131,20 +137,30 @@ export class ToolRouter<
     telemetry.instrument(this, 'ToolRouter');
   }
 
-  private createMCPServerConfig({
-    type,
-    url,
-  }: {
-    type: MCPServerType;
-    url: string;
-  }): ToolRouterMCPServerConfig {
-    return {
+  /**
+   * Derives the MCP config for a session from the auth context the session
+   * request was made with: the project key when one is configured, otherwise
+   * the resolved user API key, plus the org/project scope when configured.
+   * Headers are only attached when the MCP URL shares the client's API
+   * origin. Any other destination throws when the caller passed `mcp: true`
+   * and otherwise yields empty headers plus a warning; see
+   * `buildMCPServerConfig`.
+   */
+  private createMCPServerConfig(
+    { type, url }: { type: MCPServerType; url: string },
+    mcpRequested: boolean
+  ): ToolRouterMCPServerConfig {
+    return buildMCPServerConfig({
       type,
       url,
-      headers: {
-        ...(this.config?.apiKey ? { 'x-api-key': this.config.apiKey } : {}),
-      },
-    };
+      apiBaseURL: this.client.baseURL,
+      apiKey: this.config?.apiKey,
+      userApiKey: this.config?.userApiKey,
+      defaultHeaders: this.config?.defaultHeaders,
+      orgId: this.config?.orgId,
+      projectId: this.config?.projectId,
+      mcpRequested,
+    });
   }
 
   /**
@@ -152,9 +168,17 @@ export class ToolRouter<
    * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
    * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
+   * The session's MCP config carries the session credential only when the
+   * MCP URL shares the origin of the configured API base URL. When it does
+   * not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+   * (naming both origins, never a key); without `mcp: true` the session is
+   * returned with `session.mcp.headers` empty and a warning naming both
+   * origins is logged, so native tools keep working.
+   *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
    *
    * @example
    * ```typescript
@@ -169,6 +193,12 @@ export class ToolRouter<
    *     customTools: [myCustomTool],
    *     customToolkits: [myToolkit],
    *   },
+   * });
+   *
+   * // Start from a saved Session config instead of inline access fields
+   * const configured = await composio.sessions.create('user_123', {
+   *   authConfigs: { github: 'ac_123' },
+   *   experimental: { sessionConfigId: 'sc_123' },
    * });
    * ```
    */
@@ -190,7 +220,7 @@ export class ToolRouter<
     config?: ToolRouterCreateSessionConfig,
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+    const routerConfig = parseSessionConfigInput(ToolRouterCreateSessionConfigSchema, config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
     // Extract custom tools/toolkits from experimental config
@@ -206,6 +236,10 @@ export class ToolRouter<
 
     // Build the typed experimental payload for the backend
     const experimentalPayload: SessionCreateParams['experimental'] = {};
+
+    if (routerConfig.experimental?.sessionConfigId !== undefined) {
+      experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
+    }
 
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
@@ -235,11 +269,14 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
+      ...(routerConfig.instant !== undefined && {
+        instant: transformToolRouterInstantParams(routerConfig.instant),
+      }),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),
       manage_connections: transformToolRouterManageConnectionsParams(
@@ -282,8 +319,8 @@ export class ToolRouter<
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp),
-      { assistivePrompt },
+      this.createMCPServerConfig(session.mcp, routerConfig.mcp === true),
+      { assistivePrompt, sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata
@@ -292,8 +329,17 @@ export class ToolRouter<
 
   /**
    * Use an existing session
+   *
+   * The session's MCP config carries the session credential only when the
+   * MCP URL shares the origin of the configured API base URL. When it does
+   * not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+   * (naming both origins, never a key); without `mcp: true` the session is
+   * returned with `session.mcp.headers` empty and a warning naming both
+   * origins is logged, so native tools keep working.
+   *
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
    *
    * @example
    * ```typescript
@@ -384,8 +430,8 @@ export class ToolRouter<
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp),
-      undefined,
+      this.createMCPServerConfig(session.mcp, options?.mcp === true),
+      { sourceSessionConfig: getSourceSessionConfig(session) },
       customToolsMap,
       userId,
       metadata

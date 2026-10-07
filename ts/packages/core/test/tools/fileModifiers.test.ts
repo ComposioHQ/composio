@@ -2135,7 +2135,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { file: staged },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
   });
@@ -2217,7 +2217,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           user_id: 'test-user',
           version: 'latest',
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -2349,7 +2349,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           dangerouslyAllowAutoUploadDownloadFiles: false,
         },
         'session-123',
-        { type: 'http', url: 'https://mcp.example.com/session-123' }
+        { type: 'http', url: 'https://api.composio.dev/api/v3/tool_router/session/session-123' }
       );
       mockClient.toolRouter.session.tools.mockResolvedValueOnce({
         items: [mockRawToolWithFileUpload],
@@ -2394,7 +2394,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { text: 'keep' },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 

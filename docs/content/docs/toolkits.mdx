@@ -1,0 +1,91 @@
+---
+title: Toolkits
+description: How toolkits group app tools, and how your agent discovers, authenticates, and uses them in a session
+keywords: [toolkits, tools, toolkit slug, tool slug, sessions, connected accounts]
+---
+
+A **toolkit** is a collection of related tools for an app or service, such as GitHub, Gmail, or Slack. A **tool** is one action your agent can execute, such as creating a GitHub issue or fetching emails from Gmail.
+
+You choose which toolkits a session can access. Your agent discovers the individual tools it needs for the task.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github", "gmail"],
+)
+
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123", {
+  toolkits: ["github", "gmail"],
+});
+
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+This session can discover and use GitHub and Gmail tools. By default, `session.tools()` returns the session's meta tools for discovery, authentication, and execution, rather than every tool in those toolkits. If you omit `toolkits`, every toolkit in the catalog is discoverable.
+
+## Toolkits and tools
+
+Each toolkit has a **slug**, a short identifier you use in configuration. A toolkit can contain many tools, and each tool has its own slug that identifies the action to execute.
+
+| Toolkit | Toolkit slug | Example tool slug | Action |
+| --- | --- | --- | --- |
+| GitHub | `github` | `GITHUB_CREATE_AN_ISSUE` | Create an issue in a repository |
+| GitHub | `github` | `GITHUB_LIST_PULL_REQUESTS` | List pull requests in a repository |
+| GitHub | `github` | `GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER` | Star a repository |
+| Gmail | `gmail` | `GMAIL_FETCH_EMAILS` | Fetch emails from a mailbox |
+| Slack | `slack` | `SLACK_SEND_MESSAGE` | Send a message to a channel |
+
+Tool slugs follow the `{TOOLKIT}_{ACTION}` naming pattern. A tool defines an input schema for its parameters and an output schema for its result. For example, creating an issue takes repository details and issue content, then returns information about the created issue.
+
+Use toolkit slugs when choosing which apps your agent can work with. Use tool slugs when selecting or executing specific actions. Browse the [toolkit catalog](/toolkits) to find available tools and their schemas.
+
+## How your agent uses a toolkit
+
+In a default [session](/docs/how-composio-works), your agent works through meta tools:
+
+1. **Discover.** The agent describes its task to `COMPOSIO_SEARCH_TOOLS`, which finds relevant tools within the session's allowed toolkits and returns their schemas.
+2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
+3. **Execute.** The agent calls the discovered tools through `COMPOSIO_MULTI_EXECUTE_TOOL` with the required arguments.
+
+Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
+
+If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to load them into `session.tools()` without a search step.
+
+## Toolkits and connected accounts
+
+Enabling a toolkit makes its tools available to the session. It doesn't connect an account or grant access to an app's data.
+
+A **connected account** stores a specific user's authenticated connection to a toolkit. For example, `gmail` is the toolkit, while your user's work Gmail account is a connected account. Tools that require authentication execute using that account's credentials and permissions.
+
+Connections persist across sessions for the same user. A user can also connect multiple accounts for one toolkit, such as work and personal Gmail, and you can select which account a session uses.
+
+See [Authentication](/docs/authentication) for connection flows and [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for account selection.
+
+## Control which tools are available
+
+Toolkit filters choose the apps a session can access. Tool filters narrow that access to specific actions within an app. For example, you can enable Gmail but limit your agent to fetching emails and creating drafts.
+
+Use [session configuration](/docs/configuring-sessions) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
+
+You can also attach your own local, in-process tools with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
+
+## Related concepts
+
+- [Sessions](/docs/how-composio-works) tie toolkits, connected accounts, and execution state to a user.
+- [Skills](/docs/skills) provide task-specific guidance about which tools to call and in what order. A skill can span multiple toolkits.
+- [Triggers](/docs/triggers) notify your app when an event happens in a connected service, so you can start an agent run in response.

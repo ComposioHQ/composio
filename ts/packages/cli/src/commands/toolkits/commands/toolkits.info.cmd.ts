@@ -14,19 +14,19 @@ class ToolkitsInfoRequestError extends Data.TaggedError('commands/ToolkitsInfoRe
   readonly cause: unknown;
 }> {}
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Toolkit slug (e.g. "gmail")'),
   Argument.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription(
     'User ID for connection status (falls back to project/global test_user_id, then "default")'
   )
 );
 
-const allDetails = Flag.boolean('all').pipe(
+const allDetails = Flag.Boolean('all').pipe(
   Flag.withAlias('a'),
   Flag.withDefault(false),
   Flag.withDescription('Show all available toolkit details, including auth config fields')

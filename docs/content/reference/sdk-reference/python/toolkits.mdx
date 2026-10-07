@@ -48,6 +48,121 @@ def get(slug: str | None = ..., query: toolkit_list_params.ToolkitListParams | N
 
 ---
 
+### get_many()
+
+Fetch several toolkits by slug in one request.
+
+```python
+def get_many(slugs: Sequence[str], category: str | None = ..., managed_by: Literal['composio', 'all', 'project' | None] = ..., sort_by: Literal['usage', 'alphabetically' | None] = ..., limit: float | None = ..., cursor: str | None = ...) -> List[Any]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slugs` | `Sequence[str]` |
+| `category?` | `str \| None` |
+| `managed_by?` | `Literal['composio', 'all', 'project' \| None]` |
+| `sort_by?` | `Literal['usage', 'alphabetically' \| None]` |
+| `limit?` | `float \| None` |
+| `cursor?` | `str \| None` |
+
+**Returns**
+
+`List[Any]` — The matching toolkits.
+
+**Example**
+
+```python
+toolkits = composio.toolkits.get_many(["github", "slack"])
+for toolkit in toolkits:
+    print(toolkit.slug, toolkit.name)
+```
+
+---
+
+### changelog()
+
+Retrieve the toolkit changelog (the last 10 versions per toolkit).
+
+```python
+def changelog() -> toolkit_retrieve_changelog_response.ToolkitRetrieveChange...
+```
+
+**Returns**
+
+`toolkit_retrieve_changelog_response.ToolkitRetrieveChange...` — The changelog entries under `.items`.
+
+**Example**
+
+```python
+changelog = composio.toolkits.changelog()
+for entry in changelog.items:
+    print(entry.slug, [v.version for v in entry.versions])
+```
+
+---
+
+### recommend_scopes()
+
+Recommend the OAuth scopes to request so a connection can run the given tools. Experimental — the API marks this endpoint beta.
+
+```python
+def recommend_scopes(toolkit_slug: str, params: toolkit_recommend_scopes_params.ToolkitRecommendScopesParams = ...) -> toolkit_recommend_scopes_response.ToolkitRecommendScopesR...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit_slug` | `str` |
+| `params?` | `toolkit_recommend_scopes_params.ToolkitRecommendScopesParams` |
+
+**Returns**
+
+`toolkit_recommend_scopes_response.ToolkitRecommendScopesR...` — The `least_privilege` and `fewest` scope sets plus the `conditional` scopes, under `.scopes`.
+
+**Example**
+
+```python
+recommendation = composio.toolkits.recommend_scopes(
+    "gmail",
+    tools=["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+)
+print(recommendation.scopes.least_privilege)
+```
+
+---
+
+### list_grant_contexts()
+
+List the grant-context dimensions a toolkit's scope recommendation depends on, with their allowed values and the default the API assumes. Experimental — the API marks this endpoint beta.
+
+```python
+def list_grant_contexts(toolkit_slug: str, params: toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams = ...) -> toolkit_retrieve_scopes_grant_context_response.ToolkitRet...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit_slug` | `str` |
+| `params?` | `toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams` |
+
+**Returns**
+
+`toolkit_retrieve_scopes_grant_context_response.ToolkitRet...` — `grant_context_dimensions` and `default_grant_context`.
+
+**Example**
+
+```python
+contexts = composio.toolkits.list_grant_contexts("gmail")
+for dimension in contexts.grant_context_dimensions:
+    print(dimension.dimension, dimension.values)
+```
+
+---
+
 ### list_categories()
 
 List all categories of toolkits.
@@ -119,4 +234,4 @@ def get_auth_config_creation_fields(toolkit: str, auth_scheme: AuthSchemeL, requ
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/toolkits.py#L26)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/toolkits.py#L33)

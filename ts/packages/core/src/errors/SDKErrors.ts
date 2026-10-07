@@ -3,6 +3,8 @@ import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const SDKErrorCodes = {
   NO_API_KEY_PROVIDED: 'NO_API_KEY_PROVIDED',
+  API_KEY_KIND_MISMATCH: 'API_KEY_KIND_MISMATCH',
+  SCOPE_CONFIG_INVALID: 'SCOPE_CONFIG_INVALID',
   REQUEST_CANCELLED: 'REQUEST_CANCELLED',
 };
 
@@ -26,6 +28,56 @@ export class ComposioNoAPIKeyError extends ComposioError {
       statusCode: 401,
     });
     this.name = 'ComposioNoAPIKeyError';
+  }
+}
+
+/**
+ * Thrown when the organization/project scope of an SDK instance is
+ * inconsistent: only one of `orgId` / `projectId` was supplied, or a scope
+ * option disagrees with the same header placed in `defaultHeaders`.
+ */
+export class ComposioScopeConfigError extends ComposioError {
+  constructor(
+    message: string = 'Invalid organization/project scope configuration',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: SDKErrorCodes.SCOPE_CONFIG_INVALID,
+      possibleFixes: options.possibleFixes || [
+        'Pass both `orgId` and `projectId` (the organization and consumer project nano IDs), or neither',
+        'Supply the scope through the options or through the `x-org-id` / `x-project-id` default headers, not both with different values',
+      ],
+    });
+    this.name = 'ComposioScopeConfigError';
+  }
+}
+
+/**
+ * Thrown when the only API key the SDK could find is a Composio user key
+ * (`uak_...`, as stored by `composio login`) rather than a project key.
+ * User keys authenticate a person, not a project, so the SDK refuses to send
+ * one as `x-api-key`. The error never includes the key value.
+ */
+export class ComposioAPIKeyKindError extends ComposioError {
+  constructor(
+    message: string = 'The stored Composio API key is a user API key, not a project API key',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: SDKErrorCodes.API_KEY_KIND_MISMATCH,
+      cause:
+        options.cause ||
+        'The user config file holds a user API key written by the Composio CLI; it cannot authenticate SDK requests as a project',
+      possibleFixes: options.possibleFixes || [
+        'Pass a project API key via `apiKey` or the COMPOSIO_API_KEY environment variable',
+        'Create a project API key in the Composio dashboard at https://platform.composio.dev',
+        'To authenticate with the user API key instead, pass `apiKey: null` together with `userApiKey`',
+      ],
+      statusCode: 401,
+    });
+    this.name = 'ComposioAPIKeyKindError';
   }
 }
 

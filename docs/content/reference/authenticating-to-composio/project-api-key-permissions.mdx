@@ -66,7 +66,7 @@ Jump to each permission area to see the routes it covers.
 | Tools                   | No access, Read only                             | [View routes](#tools)                  |
 | Session management      | No access, Read only, Write only, Read and write | [View routes](#session-management)     |
 | Session tool execution  | No access, Write only                            | [View routes](#session-tool-execution) |
-| Toolkits                | No access, Read only, Write only, Read and write | [View routes](#toolkits)               |
+| Toolkits                | No access, Read only                             | [View routes](#toolkits)               |
 | Triggers                | No access, Read only, Write only, Read and write | [View routes](#triggers)               |
 | Webhooks                | No access, Read only, Write only, Read and write | [View routes](#webhooks)               |
 | Observability           | No access, Read only                             | [View routes](#observability)          |
@@ -143,20 +143,19 @@ The Session config read routes below are experimental and require Session config
 
 ## Session tool execution
 
-Search and execute tools through sessions and session-linked MCP servers. This includes session proxy execution, so it grants every execution capability exposed through a session.
+Search and execute tools through sessions and session-linked MCP servers. Session proxy execution is not included; grant [Proxy execute](#proxy-execute-legacy) for that.
 
-| Access | Method | Route                                             |
-| ------ | ------ | ------------------------------------------------- |
-| Write  | `POST` | `/tool_router/session/{session_id}/execute`       |
-| Write  | `POST` | `/tool_router/session/{session_id}/execute_meta`  |
-| Write  | `POST` | `/tool_router/session/{session_id}/search`        |
-| Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
+| Access | Method | Route                                            |
+| ------ | ------ | ------------------------------------------------ |
+| Write  | `POST` | `/tool_router/session/{session_id}/execute`      |
+| Write  | `POST` | `/tool_router/session/{session_id}/execute_meta` |
+| Write  | `POST` | `/tool_router/session/{session_id}/search`       |
 
 For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
 
 ## Toolkits
 
-View and install toolkits.
+View toolkits.
 
 | Access | Method | Route                                           |
 | ------ | ------ | ----------------------------------------------- |
@@ -166,7 +165,7 @@ View and install toolkits.
 | Read   | `GET`  | `/toolkits/changelog`                           |
 | Read   | `POST` | `/toolkits/{toolkit_slug}/scopes/recommended`   |
 | Read   | `GET`  | `/toolkits/{toolkit_slug}/scopes/grant_context` |
-| Write  | `POST` | `/toolkits/multi`                               |
+| Read   | `POST` | `/toolkits/multi`                               |
 
 ## Triggers
 
@@ -253,7 +252,7 @@ Execute predefined Composio tools.
 
 Execute raw proxy requests against connected accounts.
 
-Proxy execute is separate from tool execution. Grant it only when your application needs to call a connected account API through the raw proxy path.
+Proxy execute is separate from tool execution and from Session tool execution. It is the only permission that grants the session proxy route below, whether the call comes from `session.proxyExecute()` or from code running in that session's sandbox. Grant it only when your application needs to call a connected account API through the raw proxy path.
 
 | Access | Method | Route                                             |
 | ------ | ------ | ------------------------------------------------- |

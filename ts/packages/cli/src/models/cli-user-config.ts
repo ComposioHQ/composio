@@ -1,4 +1,4 @@
-import { Effect, Schema } from 'effect';
+import { Effect, Schema, SchemaGetter } from 'effect';
 import { OptionFromOptionalNullOr } from 'effect/Schema';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
@@ -40,7 +40,7 @@ export const DeveloperConfig = Schema.Struct({
 }).pipe(Schema.encodeKeys({ destructiveActions: 'destructive_actions' }));
 export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
 
-export const CliUserConfig = Schema.Struct({
+const CliUserConfigStruct = Schema.Struct({
   developer: DeveloperConfig.pipe(
     Schema.withDecodingDefaultType(
       Effect.succeed(
@@ -70,12 +70,61 @@ export const CliUserConfig = Schema.Struct({
   security: SecurityBackend.pipe(
     Schema.withDecodingDefaultType(Effect.succeed<SecurityBackend>('auto'))
   ),
-}).pipe(
+});
+
+const CliUserConfigWithEncodedKeys = CliUserConfigStruct.pipe(
   Schema.encodeKeys({
     experimentalFeatures: 'experimental_features',
     artifactDirectory: 'artifact_directory',
     experimentalSubagent: 'experimental_subagent',
-  }),
+  })
+);
+
+const unknownCliUserConfigFields = [Schema.Record(Schema.String, Schema.Unknown)] as const;
+
+export const CliUserConfig = Schema.StructWithRest(
+  CliUserConfigWithEncodedKeys.from,
+  unknownCliUserConfigFields
+).pipe(
+  Schema.decodeTo(
+    Schema.StructWithRest(CliUserConfigWithEncodedKeys.to, unknownCliUserConfigFields),
+    {
+      decode: SchemaGetter.transform(
+        ({
+          developer,
+          experimental_features,
+          artifact_directory,
+          experimental_subagent,
+          security,
+          ...rest
+        }) => ({
+          ...rest,
+          developer,
+          experimentalFeatures: experimental_features,
+          artifactDirectory: artifact_directory,
+          experimentalSubagent: experimental_subagent,
+          security,
+        })
+      ),
+      encode: SchemaGetter.transform(
+        ({
+          developer,
+          experimentalFeatures,
+          artifactDirectory,
+          experimentalSubagent,
+          security,
+          ...rest
+        }) => ({
+          ...rest,
+          developer,
+          experimental_features: experimentalFeatures,
+          artifact_directory: artifactDirectory,
+          experimental_subagent: experimentalSubagent,
+          security,
+        })
+      ),
+    }
+  ),
   Schema.annotate({
     identifier: 'CliUserConfig',
     description: 'Named user configuration storage for the Composio CLI',
@@ -86,7 +135,6 @@ export type CliUserConfig = Schema.Schema.Type<typeof CliUserConfig>;
 
 export const CliUserConfigJSON = JSONTransformSchema(CliUserConfig);
 export const cliUserConfigFromJSON = Schema.decodeEffect(CliUserConfigJSON, {
-  propertyOrder: 'original',
-  onExcessProperty: 'preserve',
+  onExcessProperty: 'ignore',
 });
 export const cliUserConfigToJSON = Schema.encodeEffect(CliUserConfigJSON);

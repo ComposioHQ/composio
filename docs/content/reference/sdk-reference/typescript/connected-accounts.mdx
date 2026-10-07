@@ -14,6 +14,48 @@ const result = await composio.connectedAccounts.list();
 
 ## Methods
 
+### completeAuth()
+
+Complete a deferred OAuth connection once you have verified the user's
+identity.
+
+When your project has an OAuth callback verifier configured, Composio
+does not activate a new OAuth connection by itself: it redirects to your
+verifier with a single-use session URI. After confirming who the user is,
+redeem that session URI here; Composio checks that your project owns the
+pending connection and that `userId` is its owner, completes the token
+exchange, and the connection becomes `ACTIVE`.
+
+The session URI is single-use: redeeming it twice, or after it expires,
+fails with a 404 from the API.
+
+```typescript
+async completeAuth(params: { sessionUri: string; userId: string }, requestOptions?: ComposioRequestOptions): Promise<{ connectedAccountId: string; toolkitSlug: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `\{ sessionUri: string; userId: string \}` | `userId` the connection was initiated for and the verifier's `sessionUri` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ connectedAccountId: string; toolkitSlug: string \}>` — The completed connection's ID and toolkit
+
+**Example**
+
+```typescript
+// In your verifier route, after authenticating the user:
+const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
+  userId: 'user_123',
+  sessionUri, // the session URI from the verifier redirect
+});
+```
+
+---
+
 ### delete()
 
 Deletes a connected account.
@@ -117,7 +159,7 @@ This method fetches detailed information about a single connected account
 and transforms the response to the SDK's standardized format.
 
 ```typescript
-async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRetrieveResponse>
+async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<{ alias?: string | null; authConfig: { authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; id: string; isComposioManaged: boolean; isDisabled: boolean }; createdAt: string; data?: Record<string, unknown>; experimental?: { accountType?: 'PRIVATE' | 'SHARED'; aclConfigForShared?: { allowAllUsers: boolean; allowedUserIds: string[]; notAllowedUserIds: string[] } }; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: { authScheme: 'OAUTH1'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'OAUTH2'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'S2S_OAUTH2'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'API_KEY'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BASIC'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BEARER_TOKEN'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'NO_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'CALCOM_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BILLCOM_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'SAML'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'DCR_OAUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> }; status: 'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE' | 'REVOKED'; statusReason: string | null; testRequestEndpoint?: string; toolkit: { slug: string }; updatedAt: string; wordId?: string | null }>
 ```
 
 **Parameters**
@@ -129,7 +171,7 @@ async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<Conn
 
 **Returns**
 
-`Promise<ConnectedAccountRetrieveResponse>` — The connected account details
+`Promise<\{ alias?: string \| null; authConfig: \{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; id: string; isComposioManaged: boolean; isDisabled: boolean \}; createdAt: string; data?: Record<string, unknown>; experimental?: \{ accountType?: 'PRIVATE' \| 'SHARED'; aclConfigForShared?: \{ allowAllUsers: boolean; allowedUserIds: string[]; notAllowedUserIds: string[] \} \}; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: \{ authScheme: 'OAUTH1'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'OAUTH2'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'S2S_OAUTH2'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'API_KEY'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BASIC'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BEARER_TOKEN'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'NO_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'CALCOM_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BILLCOM_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'SAML'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'DCR_OAUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \}; status: 'INITIALIZING' \| 'INITIATED' \| 'ACTIVE' \| 'FAILED' \| 'EXPIRED' \| 'INACTIVE' \| 'REVOKED'; statusReason: string \| null; testRequestEndpoint?: string; toolkit: \{ slug: string \}; updatedAt: string; wordId?: string \| null \}>` — The connected account details
 
 **Example**
 
@@ -165,7 +207,7 @@ bearer token, basic auth) are unaffected and continue to work on
 `initiate()`. See https://docs.composio.dev/docs/changelog/2026/04/24
 
 ```typescript
-async initiate(userId: string, authConfigId: string, options?: CreateConnectedAccountOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
+async initiate(userId: string, authConfigId: string, options?: { alias?: string; allowMultiple?: boolean; callbackUrl?: string; config?: { authScheme: 'OAUTH1'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'OAUTH2'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'S2S_OAUTH2'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'API_KEY'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'BASIC'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'BEARER_TOKEN'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'NO_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'CALCOM_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'BILLCOM_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'SAML'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } | { authScheme: 'DCR_OAUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> | objectOutputType<... & ..., ZodUnknown, 'strip'> } }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -174,7 +216,7 @@ async initiate(userId: string, authConfigId: string, options?: CreateConnectedAc
 |------|------|-------------|
 | `userId` | `string` | User ID of the connected account |
 | `authConfigId` | `string` | Auth config ID of the connected account |
-| `options?` | `CreateConnectedAccountOptions` | Options for creating a new connected account |
+| `options?` | `\{ alias?: string; allowMultiple?: boolean; callbackUrl?: string; config?: \{ authScheme: 'OAUTH1'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'OAUTH2'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'S2S_OAUTH2'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'API_KEY'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'BASIC'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'BEARER_TOKEN'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'NO_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'CALCOM_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'BILLCOM_AUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'SAML'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \| \{ authScheme: 'DCR_OAUTH'; val: objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \| objectOutputType<... & ..., ZodUnknown, 'strip'> \} \}` | Options for creating a new connected account |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -226,7 +268,7 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 ### link()
 
 ```typescript
-async link(userId: string, authConfigId: string, options?: CreateConnectedAccountLinkOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
+async link(userId: string, authConfigId: string, options?: { alias?: string; allowMultiple?: boolean; callbackUrl?: string; experimental?: { accountType?: 'PRIVATE' | 'SHARED'; aclConfigForShared?: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] } } }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -235,7 +277,7 @@ async link(userId: string, authConfigId: string, options?: CreateConnectedAccoun
 |------|------|-------------|
 | `userId` | `string` | \{string\} - The external user ID to create the connected account for. |
 | `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. |
-| `options?` | `CreateConnectedAccountLinkOptions` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link. |
+| `options?` | `\{ alias?: string; allowMultiple?: boolean; callbackUrl?: string; experimental?: \{ accountType?: 'PRIVATE' \| 'SHARED'; aclConfigForShared?: \{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \} \} \}` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link. |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -275,19 +317,19 @@ Lists all connected accounts based on provided filter criteria.
 This method retrieves connected accounts from the Composio API with optional filtering.
 
 ```typescript
-async list(query?: ConnectedAccountListParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountListResponse>
+async list(query?: { accountType?: 'PRIVATE' | 'SHARED' | 'ALL'; authConfigIds?: string[] | null; cursor?: string | null; limit?: number | null; orderBy?: 'created_at' | 'updated_at'; statuses?: 'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE' | 'REVOKED'[] | null; toolkitSlugs?: string[] | null; userIds?: string[] | null }, requestOptions?: ComposioRequestOptions): Promise<{ items: { alias?: string | null; authConfig: { authScheme?: ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ...; id: string; isComposioManaged: boolean; isDisabled: boolean }; createdAt: string; data?: Record<string, unknown>; experimental?: { accountType?: ... | ...; aclConfigForShared?: { allowAllUsers: ...; allowedUserIds: ...; notAllowedUserIds: ... } }; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... } | { authScheme: ...; val: ... }; status: 'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE' | 'REVOKED'; statusReason: string | null; testRequestEndpoint?: string; toolkit: { slug: string }; updatedAt: string; wordId?: string | null }[]; nextCursor?: string | null; totalPages: number }>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `ConnectedAccountListParams` | Optional query parameters for filtering connected accounts |
+| `query?` | `\{ accountType?: 'PRIVATE' \| 'SHARED' \| 'ALL'; authConfigIds?: string[] \| null; cursor?: string \| null; limit?: number \| null; orderBy?: 'created_at' \| 'updated_at'; statuses?: 'INITIALIZING' \| 'INITIATED' \| 'ACTIVE' \| 'FAILED' \| 'EXPIRED' \| 'INACTIVE' \| 'REVOKED'[] \| null; toolkitSlugs?: string[] \| null; userIds?: string[] \| null \}` | Optional query parameters for filtering connected accounts |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<ConnectedAccountListResponse>` — A paginated list of connected accounts
+`Promise<\{ items: \{ alias?: string \| null; authConfig: \{ authScheme?: ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ...; id: string; isComposioManaged: boolean; isDisabled: boolean \}; createdAt: string; data?: Record<string, unknown>; experimental?: \{ accountType?: ... \| ...; aclConfigForShared?: \{ allowAllUsers: ...; allowedUserIds: ...; notAllowedUserIds: ... \} \}; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \} \| \{ authScheme: ...; val: ... \}; status: 'INITIALIZING' \| 'INITIATED' \| 'ACTIVE' \| 'FAILED' \| 'EXPIRED' \| 'INACTIVE' \| 'REVOKED'; statusReason: string \| null; testRequestEndpoint?: string; toolkit: \{ slug: string \}; updatedAt: string; wordId?: string \| null \}[]; nextCursor?: string \| null; totalPages: number \}>` — A paginated list of connected accounts
 
 **Example**
 
@@ -308,7 +350,14 @@ const githubAccounts = await composio.connectedAccounts.list({
 
 ---
 
-### refresh()
+### refresh() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+The `POST /connected_accounts/\{id\}/refresh` endpoint is deprecated by the
+  Composio API. Re-initiate authentication instead: `composio.connectedAccounts.link(userId, authConfigId)`
+  for a fresh connection, or `session.authorize(toolkit)` from a session. Behaviour is unchanged
+  while the endpoint remains available; do not generate new code against `refresh`.
+</Callout>
 
 Refreshes a connected account's authentication credentials.
 
@@ -316,7 +365,7 @@ This method attempts to refresh OAuth tokens or other credentials associated wit
 the connected account. This is useful when a token has expired or is about to expire.
 
 ```typescript
-async refresh(nanoid: string, options?: ConnectedAccountRefreshOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRefreshResponse>
+async refresh(nanoid: string, options?: { redirectUrl?: string; validateCredentials?: boolean }, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRefreshResponse>
 ```
 
 **Parameters**
@@ -324,7 +373,7 @@ async refresh(nanoid: string, options?: ConnectedAccountRefreshOptions, requestO
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account to refresh |
-| `options?` | `ConnectedAccountRefreshOptions` |  |
+| `options?` | `\{ redirectUrl?: string; validateCredentials?: boolean \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -340,6 +389,40 @@ const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123')
 
 ---
 
+### revoke()
+
+Revoke a connected account at the upstream provider.
+
+Best-effort upstream revocation of the stored tokens/credentials; on
+success the connection status becomes `REVOKED`. Revoking an already
+revoked connection returns an empty `revokedTokens` list without an
+upstream call.
+
+```typescript
+async revoke(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<{ connectedAccount: { id: string; status: 'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE' | 'REVOKED' }; revokedTokens: 'access_token' | 'refresh_token' | 'credential'[] }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `string` | The unique identifier of the connected account to revoke |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ connectedAccount: \{ id: string; status: 'INITIALIZING' \| 'INITIATED' \| 'ACTIVE' \| 'FAILED' \| 'EXPIRED' \| 'INACTIVE' \| 'REVOKED' \}; revokedTokens: 'access_token' \| 'refresh_token' \| 'credential'[] \}>` — Which tokens were revoked and the resulting status
+
+**Example**
+
+```typescript
+const result = await composio.connectedAccounts.revoke('conn_abc123');
+console.log(result.connectedAccount.status); // 'REVOKED'
+console.log(result.revokedTokens); // e.g. ['access_token', 'refresh_token']
+```
+
+---
+
 ### update()
 
 Enable or disable a connected account. Accepts `{ enabled: boolean }`.
@@ -347,7 +430,7 @@ Enable or disable a connected account. Accepts `{ enabled: boolean }`.
 Use `updateAcl()` for ACL writes on SHARED connections.
 
 ```typescript
-async update(nanoid: string, params: UpdateConnectedAccountParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
+async update(nanoid: string, params: ConnectedAccountUpdateStatusParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
 **Parameters**
@@ -355,7 +438,7 @@ async update(nanoid: string, params: UpdateConnectedAccountParams, requestOption
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account |
-| `params` | `UpdateConnectedAccountParams` | The update parameters |
+| `params` | `ConnectedAccountUpdateStatusParams` | The update parameters |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -385,7 +468,7 @@ array to clear an allow/deny list. At least one field must be
 provided.
 
 ```typescript
-async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
+async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -393,7 +476,7 @@ async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promis
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account |
-| `params` | `UpdateConnectedAccountAclParams` | The ACL fields to patch |
+| `params` | `\{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \}` | The ACL fields to patch |
 
 **Returns**
 
@@ -461,7 +544,7 @@ This method continuously polls the Composio API to check the status of a connect
 until it either becomes active, enters a terminal error state, or times out.
 
 ```typescript
-async waitForConnection(connectedAccountId: string, timeout?: number): Promise<ConnectedAccountRetrieveResponse>
+async waitForConnection(connectedAccountId: string, timeout?: number): Promise<{ alias?: string | null; authConfig: { authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; id: string; isComposioManaged: boolean; isDisabled: boolean }; createdAt: string; data?: Record<string, unknown>; experimental?: { accountType?: 'PRIVATE' | 'SHARED'; aclConfigForShared?: { allowAllUsers: boolean; allowedUserIds: string[]; notAllowedUserIds: string[] } }; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: { authScheme: 'OAUTH1'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'OAUTH2'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'S2S_OAUTH2'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'API_KEY'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BASIC'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BEARER_TOKEN'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'NO_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'CALCOM_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BILLCOM_AUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'SAML'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> } | { authScheme: 'DCR_OAUTH'; val: objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> | objectOutputType<..., ..., ...> }; status: 'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE' | 'REVOKED'; statusReason: string | null; testRequestEndpoint?: string; toolkit: { slug: string }; updatedAt: string; wordId?: string | null }>
 ```
 
 **Parameters**
@@ -473,7 +556,7 @@ async waitForConnection(connectedAccountId: string, timeout?: number): Promise<C
 
 **Returns**
 
-`Promise<ConnectedAccountRetrieveResponse>` — The finalized connected account data
+`Promise<\{ alias?: string \| null; authConfig: \{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; id: string; isComposioManaged: boolean; isDisabled: boolean \}; createdAt: string; data?: Record<string, unknown>; experimental?: \{ accountType?: 'PRIVATE' \| 'SHARED'; aclConfigForShared?: \{ allowAllUsers: boolean; allowedUserIds: string[]; notAllowedUserIds: string[] \} \}; id: string; isDisabled: boolean; params?: Record<string, unknown>; state?: \{ authScheme: 'OAUTH1'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'OAUTH2'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'S2S_OAUTH2'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'API_KEY'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BASIC'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BEARER_TOKEN'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'GOOGLE_SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'NO_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'CALCOM_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BILLCOM_AUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'BASIC_WITH_JWT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'SERVICE_ACCOUNT'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'SAML'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \} \| \{ authScheme: 'DCR_OAUTH'; val: objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \| objectOutputType<..., ..., ...> \}; status: 'INITIALIZING' \| 'INITIATED' \| 'ACTIVE' \| 'FAILED' \| 'EXPIRED' \| 'INACTIVE' \| 'REVOKED'; statusReason: string \| null; testRequestEndpoint?: string; toolkit: \{ slug: string \}; updatedAt: string; wordId?: string \| null \}>` — The finalized connected account data
 
 **Example**
 

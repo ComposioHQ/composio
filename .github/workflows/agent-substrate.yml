@@ -56,3 +56,6 @@ jobs:
 
       - name: Validate skill routing
         run: pnpm validate:skill-routing
+
+      - name: Verify issue triage security boundary
+        run: pnpm test:issue-triage

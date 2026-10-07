@@ -12,6 +12,18 @@ You control scopes on an [auth config](/docs/authentication#behind-the-scenes), 
 Scopes apply to OAuth toolkits. Toolkits that authenticate with API keys or bearer tokens don't have scopes to set.
 </Callout>
 
+## Choose scopes for your tools
+
+Use `composio.toolkits.recommend_scopes("gmail", tools=["GMAIL_SEND_EMAIL"])` in Python or `await composio.toolkits.recommendScopes('gmail', { tools: ['GMAIL_SEND_EMAIL'] })` in TypeScript to find scopes for the tools your agent needs. The response includes a least-privilege set, a set with the fewest scopes, and conditional scopes. Pass `available_scopes` (Python) or `availableScopes` (TypeScript) to constrain recommendations to scopes your OAuth app can request.
+
+Recommendations can depend on account type or other grant contexts. Inspect the supported dimensions and defaults with `composio.toolkits.list_grant_contexts("gmail")` in Python or `await composio.toolkits.listGrantContexts('gmail')` in TypeScript, then pass your selections as `grant_context` or `grantContext` when requesting scopes.
+
+<Callout>
+Scope recommendations and grant-context APIs are experimental. Review the recommendation before using it in your auth config.
+</Callout>
+
+Toolkit auth details also expose `required_scopes` (Python) or `requiredScopes` (TypeScript): scopes the auth method always requests, regardless of tool-specific scopes. Auth fields expose `user_visible` or `userVisible` to indicate whether the hosted connection flow displays them. These fields may be absent when the API does not provide them.
+
 ## Set scopes with Composio managed auth
 
 Pass a `scopes` field in `credentials` to override the defaults while still using Composio's managed OAuth app. Give scopes as a comma-separated string.

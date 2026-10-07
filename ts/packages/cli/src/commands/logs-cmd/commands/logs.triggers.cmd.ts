@@ -15,67 +15,67 @@ class TriggerLogsRequestError extends Data.TaggedError('commands/TriggerLogsRequ
   readonly cause: unknown;
 }> {}
 
-const cursor = Flag.string('cursor').pipe(
+const cursor = Flag.String('cursor').pipe(
   Flag.withDescription('Cursor for pagination'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user id'),
   Flag.optional
 );
 
-const connectedAccountId = Flag.string('connected-account-id').pipe(
+const connectedAccountId = Flag.String('connected-account-id').pipe(
   Flag.withDescription('Filter by connected account id'),
   Flag.optional
 );
 
-const trigger = Flag.string('trigger').pipe(
+const trigger = Flag.String('trigger').pipe(
   Flag.withDescription('Filter by trigger name'),
   Flag.optional
 );
 
-const triggerId = Flag.string('trigger-id').pipe(
+const triggerId = Flag.String('trigger-id').pipe(
   Flag.withDescription('Filter by trigger id'),
   Flag.optional
 );
 
-const logIdFilter = Flag.string('log-id').pipe(
+const logIdFilter = Flag.String('log-id').pipe(
   Flag.withDescription('Filter by log id'),
   Flag.optional
 );
 
-const logId = Argument.string('log_id').pipe(
+const logId = Argument.String('log_id').pipe(
   Argument.withDescription('Trigger log ID'),
   Argument.optional
 );
 
-const from = Flag.integer('from').pipe(
+const from = Flag.Int('from').pipe(
   Flag.withDescription('Start timestamp (epoch milliseconds)'),
   Flag.optional
 );
 
-const to = Flag.integer('to').pipe(
+const to = Flag.Int('to').pipe(
   Flag.withDescription('End timestamp (epoch milliseconds)'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of logs to fetch (1-1000)')
 );
 
-const time = Flag.choice('time', ['5m', '30m', '6h', '1d', '1w', '1month', '1y'] as const).pipe(
+const time = Flag.Literals('time', ['5m', '30m', '6h', '1d', '1w', '1month', '1y'] as const).pipe(
   Flag.optional,
   Flag.withDescription('Show logs from a relative time window')
 );
 
-const search = Flag.string('search').pipe(
+const search = Flag.String('search').pipe(
   Flag.withDescription('Full-text search query'),
   Flag.optional
 );
 
-const includePayload = Flag.boolean('include-payload').pipe(
+const includePayload = Flag.Boolean('include-payload').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Include payload fields in response')
 );

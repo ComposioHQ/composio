@@ -12,6 +12,13 @@ const composio = new Composio({ apiKey: 'your-api-key' });
 const result = await composio.experimental.list();
 ```
 
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `customToolkits` | `CustomToolkits` | Register and manage project-owned custom toolkits (`upsert()` / `sync()` / `delete()`). **Experimental — custom toolkits are in pilot; shape may change.** |
+| `usage` | `Usage` | Project-scoped usage metering (`summary()` / `breakdown()`). **Experimental — shape may change in future releases.** |
+
 ## Methods
 
 ### updateAcl() (deprecated)
@@ -39,7 +46,7 @@ Resolution rule (deny wins):
  4. otherwise → DENY
 
 ```typescript
-async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
+async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -47,7 +54,7 @@ async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promis
 | Name | Type |
 |------|------|
 | `nanoid` | `string` |
-| `params` | `UpdateConnectedAccountAclParams` |
+| `params` | `\{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \}` |
 
 **Returns**
 

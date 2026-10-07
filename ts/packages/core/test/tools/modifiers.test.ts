@@ -99,7 +99,7 @@ describe('Tools Modifiers', () => {
         expect.objectContaining({
           arguments: { limit: 10 },
         }),
-        undefined
+        { maxRetries: 0 }
       );
     });
 

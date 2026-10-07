@@ -3,12 +3,7 @@ import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, Referen
 import { ChildProcess as Command } from 'effect/unstable/process';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import {
-  buildCompanionModules,
-  copyLocalToolBinaryAssets,
-  posthogBakeArgs,
-  teardown,
-} from './_shared';
+import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
 import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
@@ -88,16 +83,11 @@ export function buildBinary() {
     yield* buildCompanionModules('./dist');
 
     yield* Effect.logDebug('', 'Companion modules built successfully');
-
-    // Copy local-tool executable/library assets next to the standalone CLI so
-    // command and FFI local tools can resolve platform-specific bundled binaries
-    // at runtime.
-    yield* copyLocalToolBinaryAssets('./dist');
   });
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
+  const logLevel = yield* Config.LogLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
   return Layer.succeed(References.MinimumLogLevel, logLevel);
 }).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));

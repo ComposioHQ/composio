@@ -80,7 +80,7 @@ describe('MCP', () => {
           name: 'test-server',
           toolkits: ['gmail'],
           auth_config_ids: [],
-          custom_tools: [],
+          allowed_tools: [],
           managed_auth_via_composio: true,
         },
         undefined
@@ -111,8 +111,8 @@ describe('MCP', () => {
         {
           name: 'test-server',
           toolkits: ['gmail'],
-          auth_config_ids: [],
-          custom_tools: [],
+          auth_config_ids: ['auth_456'],
+          allowed_tools: [],
           managed_auth_via_composio: true,
         },
         undefined
@@ -280,10 +280,116 @@ describe('MCP', () => {
         'mcp_123',
         {
           name: 'updated-server',
-          custom_tools: undefined,
           toolkits: ['slack'],
           auth_config_ids: [],
         },
+        undefined
+      );
+    });
+
+    it('should send tool-only updates through allowed_tools without toolkits', async () => {
+      const mockResponse = {
+        id: 'mcp_123',
+        name: 'test-server',
+        allowed_tools: ['GITHUB_CREATE_ISSUE'],
+        auth_config_ids: ['auth_456'],
+        commands: {
+          claude: 'cmd',
+          cursor: 'cmd',
+          windsurf: 'cmd',
+        },
+        mcp_url: 'https://mcp.example.com',
+        toolkit_icons: {},
+        server_instance_count: 1,
+        toolkits: ['github'],
+      };
+
+      mockClient.mcp.update.mockResolvedValueOnce(mockResponse);
+
+      await mcp.update('mcp_123', { allowedTools: ['GITHUB_CREATE_ISSUE'] });
+
+      expect(mockClient.mcp.update).toHaveBeenCalledWith(
+        'mcp_123',
+        { allowed_tools: ['GITHUB_CREATE_ISSUE'] },
+        undefined
+      );
+    });
+
+    it('should send allowed_tools alongside toolkits when both are provided', async () => {
+      const mockResponse = {
+        id: 'mcp_123',
+        name: 'test-server',
+        allowed_tools: ['GITHUB_CREATE_ISSUE'],
+        auth_config_ids: ['auth_456'],
+        commands: {
+          claude: 'cmd',
+          cursor: 'cmd',
+          windsurf: 'cmd',
+        },
+        mcp_url: 'https://mcp.example.com',
+        toolkit_icons: {},
+        server_instance_count: 1,
+        toolkits: ['github'],
+      };
+
+      mockClient.mcp.update.mockResolvedValueOnce(mockResponse);
+
+      await mcp.update('mcp_123', {
+        toolkits: [{ toolkit: 'github', authConfigId: 'auth_456' }],
+        allowedTools: ['GITHUB_CREATE_ISSUE'],
+      });
+
+      expect(mockClient.mcp.update).toHaveBeenCalledWith(
+        'mcp_123',
+        {
+          toolkits: ['github'],
+          auth_config_ids: ['auth_456'],
+          allowed_tools: ['GITHUB_CREATE_ISSUE'],
+        },
+        undefined
+      );
+    });
+
+    it('should invert manuallyManageConnections into managed_auth_via_composio', async () => {
+      const mockResponse = {
+        id: 'mcp_123',
+        name: 'test-server',
+        allowed_tools: [],
+        auth_config_ids: [],
+        commands: {
+          claude: 'cmd',
+          cursor: 'cmd',
+          windsurf: 'cmd',
+        },
+        mcp_url: 'https://mcp.example.com',
+        toolkit_icons: {},
+        server_instance_count: 1,
+        toolkits: [],
+      };
+
+      mockClient.mcp.update.mockResolvedValue(mockResponse);
+
+      // manuallyManageConnections: true means Composio does NOT manage auth
+      await mcp.update('mcp_123', { manuallyManageConnections: true });
+      expect(mockClient.mcp.update).toHaveBeenLastCalledWith(
+        'mcp_123',
+        { managed_auth_via_composio: false },
+        undefined
+      );
+
+      // manuallyManageConnections: false means Composio DOES manage auth
+      await mcp.update('mcp_123', { manuallyManageConnections: false });
+      expect(mockClient.mcp.update).toHaveBeenLastCalledWith(
+        'mcp_123',
+        { managed_auth_via_composio: true },
+        undefined
+      );
+
+      // Omitting the flag must not send the field at all (sparse PATCH)
+      await mcp.update('mcp_123', { name: 'same-name' });
+      expect(mockClient.mcp.update).toHaveBeenLastCalledWith(
+        'mcp_123',
+        { name: 'same-name' },
         undefined
       );
     });

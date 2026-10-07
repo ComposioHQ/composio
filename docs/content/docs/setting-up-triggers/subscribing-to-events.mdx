@@ -145,6 +145,12 @@ console.log(`Delivering events to ${subscription.webhookUrl}`);
 
 Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
 
+### Manage project subscriptions
+
+Use `composio.webhooks.subscriptions` to manage outbound delivery from your project. Both SDKs provide `list()`, `get()`, `set()`, `update()`, and `delete()`. Rotate signing secrets with `rotate_secret()` in Python or `rotateSecret()` in TypeScript, and discover supported events with `list_event_types()` or `listEventTypes()`.
+
+For inbound events from a provider's OAuth app, use [webhook endpoints](/docs/setting-up-triggers/custom-oauth-webhooks).
+
 ## Handling events
 
 In your handler, pass the incoming request to `parse()`. It returns the typed, normalized payload. Pass `verifySecret` and it verifies the signature first, so one call both authenticates and parses.

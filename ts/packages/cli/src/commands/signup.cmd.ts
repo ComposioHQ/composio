@@ -10,17 +10,17 @@ import {
 } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const noWait = Flag.boolean('no-wait').pipe(
+const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Start agent signup and exit without waiting for credentials')
 );
 
-const noLogin = Flag.boolean('no-login').pipe(
+const noLogin = Flag.Boolean('no-login').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Create or verify the agent identity without logging the CLI in')
 );
 
-const force = Flag.boolean('force').pipe(
+const force = Flag.Boolean('force').pipe(
   Flag.withAlias('f'),
   Flag.withDefault(false),
   Flag.withDescription('Create a new agent identity even if ~/.composio/agent.json already exists')

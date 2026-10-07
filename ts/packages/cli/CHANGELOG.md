@@ -4,6 +4,47 @@
 
 ### Patch Changes
 
+- `composio execute` now validates the arguments before it sends the tool
+  call, so a call that fails local validation is never run. Validation used to
+  race the request, and the tool could execute while the CLI reported a
+  validation failure. The cached schema named in the validation error is now
+  kept on disk instead of being deleted. A schema the CLI cannot compile no
+  longer blocks the call; the server still validates it.
+
+- Generate help from the command definitions, including every supported flag and
+  nested command. Remove help levels and the nonexistent `files` help topic.
+  Install agent skills with `composio setup skill <claude|codex|openclaw>`
+  (optionally `--name <skill-name>`) instead of `--install-skill`.
+  Internal diagnostics are hidden framework commands. `--dangerously-allow`
+  applies only to `dev triggers disable`; refused developer commands exit nonzero.
+  Debug flags after the `run` script boundary now reach the script unchanged.
+  `composio execute <slug> --help` now shows command options. Use
+  `composio execute <slug> --get-schema` to print that tool's input schema as JSON.
+
+- `composio execute` (including meta tools) and `composio proxy` are never
+  retried, so a request that timed out or failed after the backend already
+  acted cannot repeat a side effect such as sending the same email twice.
+
+- API requests and command analytics now report CLI product/version, language,
+  runtime/version, and the installed API client version separately.
+
+- Remove the experimental local-tools stack: the `local-tools` command group,
+  the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
+  and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
+  Release archives no longer ship `local-tools-binaries/`; `composio upgrade`
+  and the installer delete one left by an older install. CI no longer installs
+  Swift. Permission prompts always use the browser approval page. A
+  stored `local_tools` setting is now listed as an unknown feature and has no
+  effect.
+- Every Composio API call now goes through the `@composio/client` 2.0 runtime,
+  the same client `@composio/core` uses. Org, project, session-info, and
+  consumer lookups gain the client's retries and redirect handling, and API
+  error messages now keep a server message even when it carries no suggested
+  fix. Creating a project API key during `composio dev init` is never retried,
+  so a timed-out request cannot mint a second key.
+- Ambient `COMPOSIO_CUSTOM_HEADERS` and `COMPOSIO_LOG_LEVEL` values no longer
+  leak into CLI requests or output. Custom HTTP base URLs remain supported
+  without an additional environment flag.
 - `composio run` now validates binary download URLs returned by the proxy API
   before fetching them. Private, loopback, link-local, and redirect-based SSRF
   targets are blocked, DNS resolutions are pinned to prevent rebinding, and the

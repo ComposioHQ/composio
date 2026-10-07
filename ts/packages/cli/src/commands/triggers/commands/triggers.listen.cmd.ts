@@ -20,56 +20,56 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
   Flag.optional
 );
 
-const triggerId = Flag.string('trigger-id').pipe(
+const triggerId = Flag.String('trigger-id').pipe(
   Flag.withDescription('Filter by trigger id'),
   Flag.optional
 );
 
-const connectedAccountId = Flag.string('connected-account-id').pipe(
+const connectedAccountId = Flag.String('connected-account-id').pipe(
   Flag.withDescription('Filter by connected account id'),
   Flag.optional
 );
 
-const triggerSlug = Flag.string('trigger-slug').pipe(
+const triggerSlug = Flag.String('trigger-slug').pipe(
   Flag.withDescription('Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user id'),
   Flag.optional
 );
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Show raw event payload as JSON in interactive mode')
 );
 
-const table = Flag.boolean('table').pipe(
+const table = Flag.Boolean('table').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'Show compact table rows: timestamp, trigger_id, trigger_slug, toolkit, user_id, connected_account_id'
   )
 );
 
-const maxEvents = Flag.integer('max-events').pipe(
+const maxEvents = Flag.Int('max-events').pipe(
   Flag.withDescription('Stop after receiving N matching events'),
   Flag.optional
 );
 
-const forward = Flag.string('forward').pipe(
+const forward = Flag.String('forward').pipe(
   Flag.withDescription(
     'Forward each matching event to the given URL (signed with COMPOSIO_WEBHOOK_SECRET)'
   ),
   Flag.optional
 );
 
-const out = Flag.string('out').pipe(
+const out = Flag.String('out').pipe(
   Flag.withDescription('Append each matching event to this file'),
   Flag.optional
 );

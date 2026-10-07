@@ -1,5 +1,4 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
-import { isLocalToolkitSlug } from '@composio/cli-local-tools';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -17,6 +16,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -27,39 +27,39 @@ import {
   getOrFetchToolInputDefinition,
 } from 'src/services/tool-input-validation';
 
-const query = Argument.string('query').pipe(
+const query = Argument.String('query').pipe(
   Argument.variadic(),
   Argument.withDescription(
     'One or more semantic use-case queries (e.g. "onboard a new GitHub repo", "notify Slack").'
   )
 );
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(10),
   Flag.withDescription('Number of results per page (1-1000)')
 );
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print the full search response as JSON (default behavior)')
 );
 
-const human = Flag.boolean('human').pipe(
+const human = Flag.Boolean('human').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Show formatted human-readable search output')
 );
@@ -95,8 +95,6 @@ const stripSearchResultMetadata = <
 };
 
 const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
-
-const isRemoteCustomToolSlug = (slug: string): boolean => slug.toUpperCase().startsWith('CUSTOM_');
 
 const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
   absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
@@ -148,7 +146,7 @@ const buildSearchNextSteps = (params: {
   rootOnly: boolean;
 }) => {
   const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit && !isLocalToolkitSlug(params.firstToolkit)) {
+  if (params.firstToolkit) {
     steps.push({
       action: 'Link a user account',
       command: params.rootOnly
@@ -361,24 +359,19 @@ const runToolsSearch = (params: {
           consumerUserId: resolvedUserId.value,
         });
       }
-      const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
-        client,
-        resolvedUserId.value,
-        {
-          toolkits: toolkitList,
-          cacheScope:
-            resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
-              ? {
-                  orgId: resolvedProject.orgId,
-                  projectId: resolvedProject.projectId,
-                  consumerUserId: resolvedProject.consumerUserId,
-                }
-              : undefined,
-        }
-      );
+      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
+        toolkits: toolkitList,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
+      });
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
-        ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
       };
       const searchResponse = yield* Effect.tryPromise({
         try: () => client.toolRouter.session.search(sessionId, searchPayload),
@@ -578,20 +571,38 @@ export const rootToolsCmd$Search = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.',
-      '',
-      'Examples:',
-      '  composio search "send an email"',
-      '  composio search "send an email" "create a github issue"',
-      '  composio search "create issue" --toolkits github',
-      '  composio search "send an email" --human',
-      '  composio search "list calendar events" --limit 5',
-      '',
-      'Next steps:',
-      '  composio link <toolkit>                  Connect an account before executing tools',
-      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
-      "  composio tools info <slug>               Inspect a tool's schema before executing",
-    ].join('\n')
-  )
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withShortDescription(
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withExamples([
+    {
+      command: 'composio search "send an email"',
+      description: 'Find tools for a use case',
+    },
+    {
+      command: 'composio search "send an email" "create github issue"',
+    },
+    {
+      command: 'composio search "my emails" "my github issues" --toolkits gmail,github',
+    },
+    {
+      command: 'composio search "create issue" --toolkits github',
+    },
+    {
+      command: 'composio search "send an email" --human',
+    },
+    {
+      command: 'composio search "post a message to a slack channel"',
+      description: 'Cross-app workflow discovery',
+    },
+    {
+      command: 'composio search "add a row to google sheet"',
+    },
+    {
+      command: 'composio search "list calendar events" --toolkits google_calendar --limit 5',
+      description: 'Narrow results to a specific toolkit',
+    },
+  ])
 );

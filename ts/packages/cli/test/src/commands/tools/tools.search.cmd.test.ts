@@ -542,6 +542,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
+                premium_usage: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
@@ -610,8 +611,6 @@ describe('CLI: composio search', () => {
 
   {
     let createParams: SessionCreateParams | undefined;
-    let searchParams:
-      (SessionSearchParams & { experimental?: SessionCreateParams['experimental'] }) | undefined;
 
     layer(
       TestLive({
@@ -628,90 +627,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
-              },
-              config_version: 1,
-              mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
-              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
-            };
-          },
-          search: async (_sessionId, params) => {
-            searchParams = params;
-            return {
-              success: true,
-              error: null,
-              results: [
-                {
-                  index: 1,
-                  use_case: params.queries[0]?.use_case ?? '',
-                  primary_tool_slugs: ['LOCAL_CHROME_DEVTOOLS_LIST_PAGES'],
-                  related_tool_slugs: [],
-                  toolkits: ['CHROME_DEVTOOLS'],
-                },
-              ],
-              tool_schemas: {
-                LOCAL_CHROME_DEVTOOLS_LIST_PAGES: {
-                  tool_slug: 'LOCAL_CHROME_DEVTOOLS_LIST_PAGES',
-                  toolkit: 'CHROME_DEVTOOLS',
-                  description: 'List local Chrome pages',
-                  hasFullSchema: true,
-                  input_schema: { type: 'object', properties: {} },
-                  output_schema: { type: 'object', properties: {} },
-                },
-              },
-              toolkit_connection_statuses: [
-                {
-                  toolkit: 'CHROME_DEVTOOLS',
-                  description: 'Chrome DevTools local toolkit',
-                  has_active_connection: true,
-                  status_message: 'Local toolkit available',
-                },
-              ],
-              next_steps_guidance: [],
-              session: {
-                id: 'trs_test_session',
-                generate_id: false,
-                instructions: 'Reuse this session id for follow-up calls.',
-              },
-              time_info: {
-                current_time_utc: '2026-01-01T00:00:00.000Z',
-                current_time_utc_epoch_seconds: 1767225600,
-                message: 'UTC time',
-              },
-            };
-          },
-        },
-      })
-    )('[Given] local toolkit filter [Then] it is sent as a custom toolkit', it => {
-      it.effect('injects and forwards local custom toolkit payloads', () =>
-        Effect.gen(function* () {
-          yield* cli(['search', 'browser page', '--toolkits', 'chrome_devtools']);
-
-          expect(createParams?.toolkits).toBeUndefined();
-          expect(createParams?.experimental?.custom_toolkits?.[0]?.slug).toBe('CHROME_DEVTOOLS');
-          expect(searchParams?.experimental?.custom_toolkits?.[0]?.slug).toBe('CHROME_DEVTOOLS');
-        })
-      );
-    });
-  }
-
-  {
-    let createParams: SessionCreateParams | undefined;
-
-    layer(
-      TestLive({
-        baseConfigProvider: testConfigProvider,
-        toolkitsData,
-        fixture: 'global-test-user-id',
-        toolRouter: {
-          create: async params => {
-            createParams = params;
-            return {
-              session_id: 'trs_test_session',
-              config: {
-                user_id: params.user_id,
-                execute: {},
-                search: {},
-                preload: { tools: [] },
+                premium_usage: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
@@ -907,6 +823,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
+                premium_usage: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },

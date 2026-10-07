@@ -21,6 +21,11 @@ import { NodeOs } from './node-os';
  * this file can only cost a fetch, never an answer: an unknown slug falls
  * through to the catalog, and the backend never removes a toolkit, so a slug
  * recorded here never stops being real.
+ *
+ * Custom toolkits are the exception: they belong to a project, can be deleted,
+ * and this file is shared by every project on the machine. The resolver checks
+ * custom matches against the active project's catalog before accepting them.
+ * Learned custom slugs are only a best-effort fallback when that lookup fails.
  */
 
 export const KNOWN_TOOLKIT_SLUGS_FILE = 'known-toolkit-slugs.json';
@@ -72,17 +77,19 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
 );
 
 /**
- * Records `slugs`, sorted and deduped, stamped with the current time.
+ * Records `slugs`, sorted and deduped, with the last full catalog refresh time.
  *
  * Never fails: this is an optimization, and a machine that cannot write to its
  * own cache directory should still be able to run tools. Concurrent CLI
  * processes are safe by construction — the write is atomic, and since slugs
  * are only ever added, whichever writer lands last leaves a usable file.
  */
-export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
+export const writeKnownToolkitSlugs = (
+  slugs: ReadonlyArray<string>,
+  refreshedAt: DateTime.Utc
+): Effect.Effect<void> =>
   Effect.gen(function* () {
     const filePath = yield* knownToolkitSlugsPath;
-    const refreshedAt = yield* DateTime.now;
 
     const content = yield* Schema.encodeEffect(KnownToolkitSlugsJSON)({
       slugs: [...new Set(slugs.map(slug => slug.toLowerCase()))].sort(),

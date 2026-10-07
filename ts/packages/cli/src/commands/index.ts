@@ -1,5 +1,5 @@
-import { Array as Arr, Console, Data, Effect, HashSet, Layer, Option } from 'effect';
-import { Command } from 'effect/unstable/cli';
+import { Array as Arr, Console, Effect, Layer } from 'effect';
+import { CliOutput, Command } from 'effect/unstable/cli';
 import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -10,28 +10,19 @@ import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import {
-  RUN_KNOWN_BOOLEAN_FLAGS,
-  RUN_KNOWN_VALUE_FLAGS,
-  RunPassthroughArgs,
-  runCmd,
-} from './run.cmd';
+import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
-import { localToolsCmd } from './local-tools/local-tools.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
+import { ExecuteInvocationArgs } from './tools/commands/tools.execute.cmd';
 import {
-  runParallelToolsExecuteFromArgv,
-  showToolsExecuteInputHelp,
-  TOOLS_EXECUTE_VALUE_OPTIONS,
-} from './tools/commands/tools.execute.cmd';
-import {
-  printRootHelp,
-  matchSubcommandHelp,
-  parseHelpLevel,
-  printSubcommandHelp,
+  buildHelpCommand,
+  RootHelpMarker,
+  helpFormatter,
+  RootHelpContext,
+  showCommandHelp,
 } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
@@ -42,24 +33,18 @@ import { orgsCmd } from './orgs/orgs.cmd';
 import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
-import { renderCommandHintGraph } from 'src/services/command-hints';
-import { cliDebugFlagsLayer, type CliDebugFlagOverrides } from 'src/services/runtime-flags';
+import { cliDebugFlagsLayer, CLI_DEBUG_GLOBAL_FLAGS } from 'src/services/runtime-flags';
 import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { ComposioUserContext } from 'src/services/user-context';
-import { TerminalUI } from 'src/services/terminal-ui';
-import { detectMasterFromHost } from 'src/services/master-detector';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
 import { withBackgroundUpdateCheck } from './background-update-check';
+import { debugCmd } from './debug.cmd';
+import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 
 const ROOT_COMMANDS = [
+  tagged(debugCmd),
   tagged(versionCmd),
   tagged(upgradeCmd),
   tagged(whoamiCmd),
@@ -73,7 +58,6 @@ const ROOT_COMMANDS = [
   tagged(proxyCmd),
   tagged(artifactsCmd),
   tagged(installCmd),
-  experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, localToolsCmd),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
   tagged(rootToolsCmd$Search),
@@ -93,422 +77,21 @@ const getVisibleRootCommands = (visibility: CommandVisibility) => {
   );
 };
 
-export const buildRootCommand = (visibility: CommandVisibility) =>
-  $defaultCmd.pipe(Command.withSubcommands(getVisibleRootCommands(visibility)), withRootLogLevel);
-
-const ROOT_INSTALL_SKILL_FLAGS = HashSet.make('--install-skill', '--instal-skill');
-const SKILL_INSTALL_TARGETS: ReadonlyArray<SkillInstallTarget> = ['claude', 'codex', 'openclaw'];
-
-class RootCommandError extends Data.TaggedError('commands/RootCommandError')<{
-  readonly message: string;
-}> {}
-
-type RootInstallSkillRequest = {
-  readonly skillName?: string;
-  readonly target: SkillInstallTarget;
-};
-
-const isSkillInstallTarget = (value: string): value is SkillInstallTarget =>
-  SKILL_INSTALL_TARGETS.some(target => target === value);
-
-const rootCommandError = (message: string) => Effect.fail(new RootCommandError({ message }));
-
-const findRootInstallSkillValues = (
-  args: ReadonlyArray<string>
-): Option.Option<ReadonlyArray<string>> =>
-  Arr.matchLeft(args, {
-    onEmpty: Option.none,
-    onNonEmpty: (token, tail) => {
-      if (HashSet.has(ROOT_INSTALL_SKILL_FLAGS, token)) {
-        return Option.some(Arr.takeWhile(tail, value => !value.startsWith('-')));
-      }
-      if (token === '--log-level') {
-        return findRootInstallSkillValues(Arr.drop(tail, 1));
-      }
-      if (token.startsWith('--log-level=') || token.startsWith('-')) {
-        return findRootInstallSkillValues(tail);
-      }
-      return Option.none();
-    },
-  });
-
-const parseRootInstallSkillValues = (
-  rawValues: ReadonlyArray<string>
-): Effect.Effect<RootInstallSkillRequest, RootCommandError> =>
-  Arr.match(rawValues, {
-    onEmpty: () =>
-      rootCommandError(
-        'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>'
-      ),
-    onNonEmpty: ([first, second, ...rest]) => {
-      if (rest.length > 0) {
-        return rootCommandError(
-          'Too many arguments for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>'
-        );
-      }
-      const target = second ?? first;
-      if (!isSkillInstallTarget(target)) {
-        return rootCommandError(
-          'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.'
-        );
-      }
-      return Effect.succeed(second === undefined ? { target } : { skillName: first, target });
-    },
-  });
-
-export const parseRootInstallSkillRequest = (
-  argv: ReadonlyArray<string>
-): Effect.Effect<Option.Option<RootInstallSkillRequest>, RootCommandError> =>
-  Option.match(findRootInstallSkillValues(Arr.drop(argv, 2)), {
-    onNone: () => Effect.succeed(Option.none()),
-    onSome: values => Effect.map(parseRootInstallSkillValues(values), Option.some),
-  });
-
-// v4 note: v3 pre-flight parsed `argv` to rewrite `ValidationError.CommandMismatch` messages
-// (`scopeCommandMismatch` / `refineRootCommandMismatch`) before `Command.run` rendered them, using
-// the private `CommandDescriptor` tree. `effect/unstable/cli`'s
-// `Command.runWith` renders its own unknown-subcommand messaging (naming the resolved command's
-// actual subcommands) internally before re-failing with `CliError.ShowHelp`, so `routeRootCommand`
-// below now always delegates straight to `run` instead of pre-flight parsing and rewriting errors.
-
-export const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
-  const args = Arr.drop(argv, 2);
-  const isRootExecute = args[0] === 'execute';
-  const isDevExecute = args[0] === 'dev' && args[1] === 'playground-execute';
-  if (!isRootExecute && !isDevExecute) return undefined;
-
-  const hasHelp = args.includes('--help') || args.includes('-h');
-  if (!hasHelp) return undefined;
-
-  const findSlug = (tail: ReadonlyArray<string>): string | undefined =>
-    Arr.matchLeft(tail, {
-      onEmpty: () => undefined,
-      onNonEmpty: (token, rest) => {
-        if (token === '--') {
-          return Option.getOrUndefined(
-            Option.filter(Arr.head(rest), candidate => !candidate.startsWith('-'))
-          );
-        }
-        if (token === '--help' || token === '-h') {
-          return findSlug(rest);
-        }
-        if (HashSet.has(TOOLS_EXECUTE_VALUE_OPTIONS, token)) {
-          return findSlug(Arr.drop(rest, 1));
-        }
-        if (token.startsWith('-')) {
-          return findSlug(rest);
-        }
-        return token;
-      },
-    });
-
-  return findSlug(Arr.drop(args, isRootExecute ? 1 : 2));
-};
-
-const VERSION_FLAGS: ReadonlySet<string> = new Set(['--version', '-v']);
-
-/**
- * `composio --version` and `composio -v` are spellings of the `version` command: the flag is
- * rewritten before parsing so all three share one handler and print byte-identical output,
- * independent of how the CLI framework renders its own built-in version flag.
- */
-const normalizeVersionFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
-  const [first, ...rest] = argv.slice(2);
-  return first !== undefined && VERSION_FLAGS.has(first)
-    ? [...argv.slice(0, 2), 'version', ...rest]
-    : argv;
-};
-
-const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
-  const head = Arr.take(argv, 2);
-  const args = Arr.drop(argv, 2);
-  const isListen = args[0] === 'listen';
-  if (!isListen) {
-    return argv;
-  }
-
-  // `--stream` is documented as taking an optional value, but @effect/cli text options always
-  // require one. A bare `--stream` therefore has to be rewritten. `--stream=` cannot be used for
-  // that: @effect/cli only recognizes `--flag=value` when the value is non-empty, so `--stream=`
-  // surfaces as "Received unknown argument". Passing an explicit empty string as the next token
-  // parses cleanly and the listen command treats an empty path as "stream the whole payload".
-  return Arr.appendAll(
-    head,
-    Arr.flatMap(args, (token, index) => {
-      const next = args[index + 1];
-      return token === '--stream' && (next === undefined || next.startsWith('-'))
-        ? ['--stream', '']
-        : [token];
-    })
+export const buildRootCommand = (visibility: CommandVisibility) => {
+  const commands = getVisibleRootCommands(visibility);
+  return withBackgroundUpdateCheck($defaultCmd.pipe(Command.withHandler(() => showCommandHelp())), [
+    ...commands,
+    buildHelpCommand(commands),
+  ]).pipe(
+    Command.annotate(RootHelpMarker, true),
+    Command.withGlobalFlags(CLI_DEBUG_GLOBAL_FLAGS),
+    withRootLogLevel
   );
 };
-
-// `composio run` forwards arbitrary flag-looking tokens straight through to
-// the user's script (`composio run 'code' --flag value`, or
-// `--file s.ts -- --flag value`), but v4's CLI lexer
-// (`effect/unstable/cli/internal/lexer.ts`) treats every `-`-prefixed token
-// as an option candidate unless it follows a literal `--`, and (see
-// `internal/parser.ts`'s `parseArgs`) that `--` split is computed once for
-// the whole argv and only reaches the *first* command level parsed — a
-// subcommand's own recursive `parseArgs` call is always given
-// `trailingOperands: []`, so trailing operands after `--` never reach a
-// subcommand's `Argument.variadic()` no matter how the tokens are escaped.
-//
-// So rather than smuggle passthrough tokens through the parser, the split
-// below removes them from the argv handed to the CLI parser entirely and
-// returns them out-of-band as `tail`. `runWithConfig` provides `tail` to
-// `run.cmd.ts`'s `RunPassthroughArgs` reference for the scope of a single
-// invocation; the `run` handler reads it directly instead of relying on its
-// own `Argument.variadic()`, which never sees these tokens for a real CLI
-// invocation. Only direct programmatic/test invocations that bypass this
-// front door fall back to the parsed value (see `RunPassthroughArgs`'s doc
-// comment in `run.cmd.ts`).
-
-type RunPassthroughSplit = {
-  readonly argv: ReadonlyArray<string>;
-  readonly tail: ReadonlyArray<string> | undefined;
-};
-
-const splitRunPassthroughArgs = (argv: ReadonlyArray<string>): RunPassthroughSplit => {
-  const args = Arr.drop(argv, 2);
-  if (args[0] !== 'run') {
-    return { argv, tail: undefined };
-  }
-
-  const normalized: Array<string> = [];
-  const tail: Array<string> = [];
-  let sawPositional = false;
-  let droppedSeparator = false;
-  let index = 1;
-  while (index < args.length) {
-    const token = args[index];
-    if (!sawPositional) {
-      // A `--flag=value` token must be recognized by its name, not the whole
-      // token: `--file=script.ts` is a `run` option, and treating it as the
-      // first positional would demote every later flag (including safety
-      // flags like `--dry-run`) to the passthrough tail.
-      const equalsIndex = token.indexOf('=');
-      const flagName = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
-      if (RUN_KNOWN_VALUE_FLAGS.has(flagName)) {
-        normalized.push(token);
-        if (equalsIndex === -1) {
-          const value = args[index + 1];
-          if (value !== undefined) {
-            normalized.push(value);
-          }
-          index += 2;
-          continue;
-        }
-        index += 1;
-        continue;
-      }
-      if (RUN_KNOWN_BOOLEAN_FLAGS.has(flagName)) {
-        normalized.push(token);
-        index += 1;
-        continue;
-      }
-      // First token that isn't a `run`-recognized flag: everything from here
-      // on is the passthrough tail, not a `run` option. A literal `--` here
-      // is just the (now unnecessary) boundary marker itself.
-      sawPositional = true;
-      if (token === '--') {
-        droppedSeparator = true;
-      } else {
-        tail.push(token);
-      }
-      index += 1;
-      continue;
-    }
-    if (token === '--') {
-      // Only the first `--` is the run/script boundary; later ones are script
-      // arguments and must reach the script verbatim (matches v3's
-      // forwarding behavior).
-      if (!droppedSeparator) {
-        droppedSeparator = true;
-        index += 1;
-        continue;
-      }
-      tail.push('--');
-      index += 1;
-      continue;
-    }
-    tail.push(token);
-    index += 1;
-  }
-
-  return { argv: [...Arr.take(argv, 2), 'run', ...normalized], tail };
-};
-
-const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean> => {
-  if (argument === name || argument === `${name}=true`) {
-    return Option.some(true);
-  }
-  return argument === `${name}=false` ? Option.some(false) : Option.none();
-};
-
-/**
- * Splits the hidden debug flags off argv and returns their parsed values.
- *
- * The values are inputs to the command that follows — `src/commands/index.ts` provides them as
- * `CliDebugFlags` — rather than process-wide state, so an explicit `--perf-debug=false` on one
- * invocation cannot leak into the next.
- */
-const normalizeHiddenDebugFlags = (
-  argv: ReadonlyArray<string>
-): { readonly argv: ReadonlyArray<string>; readonly overrides: CliDebugFlagOverrides } => {
-  const retainedArgs: Array<string> = [];
-  let perfDebug: boolean | undefined;
-  let toolDebug: boolean | undefined;
-  let acpOnly: boolean | undefined;
-
-  for (const argument of Arr.drop(argv, 2)) {
-    const parsedPerfDebug = Option.getOrUndefined(parseBooleanFlag(argument, '--perf-debug'));
-    if (parsedPerfDebug !== undefined) {
-      perfDebug = parsedPerfDebug;
-      continue;
-    }
-    const parsedToolDebug = Option.getOrUndefined(parseBooleanFlag(argument, '--tool-debug'));
-    if (parsedToolDebug !== undefined) {
-      toolDebug = parsedToolDebug;
-      continue;
-    }
-    const parsedAcpOnly = Option.getOrUndefined(parseBooleanFlag(argument, '--acp-only'));
-    if (parsedAcpOnly !== undefined) {
-      acpOnly = parsedAcpOnly;
-      continue;
-    }
-    retainedArgs.push(argument);
-  }
-
-  return {
-    argv: Arr.appendAll(Arr.take(argv, 2), retainedArgs),
-    overrides: { perfDebug, toolDebug, acpOnly },
-  };
-};
-
-const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
-  const args = argv.slice(2);
-  return (
-    args.length === 0 ||
-    (args.length >= 1 &&
-      args.length <= 2 &&
-      (args[0] === '--help' || args[0] === '-h') &&
-      (args.length === 1 || parseHelpLevel(args[1]) !== undefined))
-  );
-};
-
-const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
-  const args = argv.slice(2);
-  return args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph';
-};
-
-const isDebugApiInfo = (argv: ReadonlyArray<string>): boolean => {
-  const args = argv.slice(2);
-  return args.length === 2 && args[0] === 'debug' && args[1] === 'api-info';
-};
-
-const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
-  const args = argv.slice(2);
-  return args.length === 2 && args[0] === 'debug' && args[1] === 'who-is-my-master';
-};
-
-const normalizeDangerouslyAllowFlag = (argv: ReadonlyArray<string>) => {
-  const retainedArgs: Array<string> = [];
-  let dangerouslyAllow = false;
-  for (const argument of Arr.drop(argv, 2)) {
-    if (argument === '--dangerously-allow') {
-      dangerouslyAllow = true;
-    } else {
-      retainedArgs.push(argument);
-    }
-  }
-
-  return {
-    argv: Arr.appendAll(Arr.take(argv, 2), retainedArgs),
-    dangerouslyAllow,
-  };
-};
-
-const isHelpRequest = (args: ReadonlyArray<string>) =>
-  args.includes('--help') || args.includes('-h');
-
-const isDevModeOnlyInvocation = (args: ReadonlyArray<string>) => {
-  if (args[0] !== 'dev') return false;
-  if (isHelpRequest(args)) return true;
-  if (args.length === 1) return true;
-  if (args.length === 2 && (args[1] === '--mode' || args[1].startsWith('--mode='))) return true;
-  if (args.length === 3 && args[1] === '--mode') return true;
-  return false;
-};
-
-const isDangerousDevCommand = (args: ReadonlyArray<string>): boolean => {
-  if (args[0] !== 'dev' || isHelpRequest(args)) return false;
-
-  if (args[1] === 'triggers') {
-    return args[2] === 'disable';
-  }
-
-  return false;
-};
-
-const printCommandHintGraph = Effect.suspend(() =>
-  Effect.flatMap(TerminalUI, ui =>
-    ui.output(JSON.stringify(renderCommandHintGraph(), null, 2), { force: true })
-  )
-);
-
-const printDebugApiInfo = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
-  const confirmed = yield* ui.confirm(
-    'This will print your current CLI API key and scoped identifiers to stdout. Continue?',
-    { defaultValue: false }
-  );
-  if (!confirmed) {
-    return yield* rootCommandError('Aborted printing API credentials.');
-  }
-  const ctx = yield* ComposioUserContext;
-  const apiKey = Option.getOrUndefined(ctx.data.apiKey);
-  if (!apiKey) {
-    return yield* rootCommandError('No user API key found in the current CLI session.');
-  }
-  const orgId = Option.getOrUndefined(ctx.data.orgId);
-  const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-    Effect.mapError(formatResolveCommandProjectError),
-    Effect.option
-  );
-  return yield* ui.output(
-    JSON.stringify(
-      {
-        apiKey,
-        orgId: orgId ?? null,
-        consumerUserId:
-          Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
-            ? (consumerProject.value.consumerUserId ?? null)
-            : null,
-      },
-      null,
-      2
-    ),
-    { force: true }
-  );
-});
-
-const printDetectedMaster = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
-  const master = yield* detectMasterFromHost;
-  yield* ui.output(JSON.stringify({ master }, null, 2), { force: true });
-});
-
-const printDevModeDisabled = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
-  yield* ui.log.error('Developer mode is off.');
-  yield* ui.log.step('Run `composio dev --mode on` in an interactive terminal to enable it.');
-});
 
 /**
  * Values the CLI bootstrap resolved before the root command runs and that the command tree needs
- * as an input. Empty for callers that drive the root command on their own (tests, `--install-skill`
- * style entry points), which is why every field is optional.
+ * as an input. Optional for callers that drive the root command directly in tests.
  */
 export type RootCommandBootstrap = {
   /** Run id minted for a `composio run` invocation, shared with its telemetry events. */
@@ -523,29 +106,19 @@ export const runWithConfig = Effect.gen(function* () {
   };
   const version = yield* getVersion;
   configureCliAnalyticsReleaseVersion(version);
-  const rootCommand = withRootLogLevel(
-    withBackgroundUpdateCheck($defaultCmd, getVisibleRootCommands(visibility))
-  );
+  const rootCommand = buildRootCommand(visibility);
   // v4's `Command.runWith` (unlike v3's `Command.run`) takes explicit arguments rather than
   // pulling them from `Stdio`, and expects them *without* the node/bun executable + script path
   // prefix — see `cli-main.ts` module docs for the full contract at this boundary.
-  const run = Command.runWith(rootCommand, { version });
+  const run = (args: ReadonlyArray<string>) => {
+    return Command.runWith(rootCommand, { version })(args).pipe(
+      Effect.provideService(RootHelpContext, { command: rootCommand, version }),
+      Effect.provideService(CliOutput.Formatter, helpFormatter())
+    );
+  };
 
-  // `Command.runWith` renders the help document for a failed parse through the
-  // ambient Console's `log` (stdout) before re-failing with `ShowHelp` (see
-  // the vendored `Command.ts` `showHelp`, ~line 1453). Verified this Console
-  // swap is the best available seam, not just the easiest: v4's
-  // `CliOutput.Formatter` only formats to strings and cannot choose a stream,
-  // and `showHelp` hardcodes `Console.log` with no parameter to override it,
-  // so the only alternative would be reimplementing `runWith` itself.
-  // Composio's output contract reserves stdout for data: help belongs there
-  // only when the user explicitly asked for it (`--help`/`-h`; `--version`/`-v`
-  // never reach the parser, `normalizeVersionFlag` rewrites them to the
-  // `version` command). For every other invocation the framework's rendering is
-  // decoration, so the runner gets a Console whose `log` writes through
-  // `error`. No CLI code emits data via the Effect Console service (handlers
-  // write through `TerminalUI`), so this only affects the framework's own
-  // help/error rendering.
+  // Effect renders help through Console.log. Route implicit help to stderr so stdout
+  // stays available for command data; explicit help and version requests use stdout.
   const runWithDecorationOnStderr = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const base = yield* Console.Console;
@@ -558,109 +131,19 @@ export const runWithConfig = Effect.gen(function* () {
       });
     });
 
-  const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h']);
+  const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h', '--version', '-v']);
 
   const runCli = (args: ReadonlyArray<string>) =>
-    args.some(arg => EXPLICIT_STDOUT_FLAGS.has(arg)) ? run(args) : runWithDecorationOnStderr(args);
-
-  const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
-    const args = normalizedArgv.slice(2);
-    if (isRootHelp(normalizedArgv)) {
-      return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
-    }
-    // `composio help [command] [level]` — the framework has no builtin help command, so
-    // route it through the same curated pages as `composio <command> --help`.
-    if (args[0] === 'help') {
-      // `help` already asks for help, so a redundant `--help`/`-h` (`composio help --help`,
-      // `composio help orgs full --help`) must not reach the framework parser.
-      const rest = args.slice(1).filter(arg => !EXPLICIT_STDOUT_FLAGS.has(arg));
-      const last = rest[rest.length - 1];
-      const helpLevel = parseHelpLevel(last) ?? 'default';
-      const cmdParts = parseHelpLevel(last) !== undefined ? rest.slice(0, -1) : rest;
-      if (cmdParts.length === 0) {
-        return printRootHelp(visibility, helpLevel);
-      }
-      // Resolve with the same longest-prefix scan the `--help` spelling uses, so
-      // `composio help dev toolkits` renders the curated dev page instead of an
-      // unknown-command line for a path that exists. `matchSubcommandHelp` reads a
-      // full argv with a trailing --help token, hence the synthetic prefix.
-      const subHelp = matchSubcommandHelp(
-        ['composio', 'composio', ...cmdParts, '--help'],
-        visibility
-      );
-      if (subHelp) {
-        return printSubcommandHelp(subHelp, visibility, helpLevel);
-      }
-      // Unknown target: fall through to the framework parser so the failure
-      // matches every other unknown command (stderr rendering, "Did you mean?",
-      // exit 1) instead of an exit-0 stdout line scripts would read as success. The
-      // `help` token is dropped so the error and suggestion name the mistyped command.
-      return runCli(cmdParts);
-    }
-    const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
-    if (subHelp) {
-      const helpLevel = parseHelpLevel(normalizedArgv[normalizedArgv.length - 1]) ?? 'default';
-      return printSubcommandHelp(subHelp, visibility, helpLevel);
-    }
-    const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
-    if (parallelExecute) {
-      return parallelExecute;
-    }
-    if (isGenerateGraph(normalizedArgv)) {
-      return printCommandHintGraph;
-    }
-    if (isDebugApiInfo(normalizedArgv)) {
-      return printDebugApiInfo;
-    }
-    if (isDebugWhoIsMyMaster(normalizedArgv)) {
-      return printDetectedMaster;
-    }
-    const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
-    if (executeHelpSlug) {
-      return showToolsExecuteInputHelp(executeHelpSlug);
-    }
-    if (!visibility.isDevModeEnabled && args[0] === 'dev' && !isDevModeOnlyInvocation(args)) {
-      return printDevModeDisabled;
-    }
-    if (isDangerousDevCommand(args)) {
-      return Effect.gen(function* () {
-        const ui = yield* TerminalUI;
-        if (!cliUserConfig.areDeveloperDangerousCommandsEnabled()) {
-          yield* ui.log.error('This developer command is disabled by config.');
-          yield* ui.log.step(
-            'Set `developer.destructive_actions` to `true` in `~/.composio/config.json` to allow dangerous developer commands.'
-          );
-          return;
-        }
-        if (!dangerouslyAllow) {
-          yield* ui.log.error('This developer command requires explicit acknowledgement.');
-          yield* ui.log.step('Re-run the command with `--dangerously-allow`.');
-          return;
-        }
-        return yield* runCli(args);
-      });
-    }
-    return runCli(args);
-  };
+    args.length === 0 ||
+    Arr.takeWhile(args, arg => arg !== '--').some(arg => EXPLICIT_STDOUT_FLAGS.has(arg))
+      ? run(args)
+      : runWithDecorationOnStderr(args);
 
   return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
-    const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
-      normalizeDangerouslyAllowFlag(argv);
-    const { argv: argvWithoutDebugFlags, overrides } = normalizeHiddenDebugFlags(
-      normalizeListenStreamFlag(normalizeVersionFlag(argvWithoutDangerouslyAllow))
-    );
-    const { argv: normalizedArgv, tail: runPassthroughTail } =
-      splitRunPassthroughArgs(argvWithoutDebugFlags);
-
-    return parseRootInstallSkillRequest(normalizedArgv).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => routeRootCommand(normalizedArgv, dangerouslyAllow),
-          onSome: installSkill,
-        })
-      ),
-      Effect.provide(Layer.merge(cliDebugFlagsLayer(overrides), cliRunIdLayer(bootstrap.runId))),
-      Effect.provideService(RunPassthroughArgs, runPassthroughTail)
+    const parsedArgv = normalizeRunScriptArgs(normalizeListenStreamFlag(argv));
+    return runCli(parsedArgv.slice(2)).pipe(
+      Effect.provideService(ExecuteInvocationArgs, parsedArgv.slice(2)),
+      Effect.provide(Layer.merge(cliDebugFlagsLayer(), cliRunIdLayer(bootstrap.runId)))
     );
   };
 });

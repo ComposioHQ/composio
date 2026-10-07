@@ -28,8 +28,13 @@ export const ToolkitSlug = Schema.Trim.check(
 export const Toolkit = Schema.Struct({
   name: Schema.String, // "Gmail"
   slug: ToolkitSlug, // "gmail"
-  auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2", "BEARER_TOKEN" ]
-  composio_managed_auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2" ]
+  // The API marks the auth fields optional; project custom toolkits may omit them.
+  auth_schemes: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([]))
+  ), // [ "OAUTH2", "BEARER_TOKEN" ]
+  composio_managed_auth_schemes: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([]))
+  ), // [ "OAUTH2" ]
   is_local_toolkit: Schema.Boolean,
   meta: Schema.Struct({
     description: Schema.String,
@@ -42,7 +47,7 @@ export const Toolkit = Schema.Struct({
     tools_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
     triggers_count: Schema.Int.pipe(Schema.withDecodingDefaultType(Effect.succeed(0))),
   }),
-  no_auth: Schema.Boolean,
+  no_auth: Schema.Boolean.pipe(Schema.withDecodingDefaultType(Effect.succeed(false))),
 }).annotate({ identifier: 'Toolkit' });
 export type Toolkit = Schema.Schema.Type<typeof Toolkit>;
 

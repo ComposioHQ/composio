@@ -20,6 +20,13 @@ Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`.
 
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
+
 **Overload 1**
 
 ```typescript
@@ -71,6 +78,12 @@ const session = await composio.sessions.create('user_123', {
     customToolkits: [myToolkit],
   },
 });
+
+// Start from a saved Session config instead of inline access fields
+const configured = await composio.sessions.create('user_123', {
+  authConfigs: { github: 'ac_123' },
+  experimental: { sessionConfigId: 'sc_123' },
+});
 ```
 
 ---
@@ -83,7 +96,7 @@ Deleted sessions immediately stop being retrievable or executable. Deleting
 a missing or already-deleted session surfaces the backend 404.
 
 ```typescript
-async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; sessionId: string }>
 ```
 
 **Parameters**
@@ -95,7 +108,7 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolR
 
 **Returns**
 
-`Promise<ToolRouterSessionDeleteResponse>`
+`Promise<\{ deleted: true; sessionId: string \}>`
 
 ---
 
@@ -103,10 +116,17 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolR
 
 Use an existing session
 
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
+
 **Overload 1**
 
 ```typescript
-async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -114,7 +134,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true \}` |  |
+| `options` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -124,7 +144,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 **Overload 2**
 
 ```typescript
-async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -132,7 +152,7 @@ async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: C
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options?` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean \}` |  |
+| `options?` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

@@ -172,7 +172,7 @@ the expression is** — an Effect value or a function — and **what the tracer 
   return {
     get: Effect.fn(function* () {
       // ...
-    }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementError, never>,
+    }),
     getFor: Effect.fn(function* (params: {
       userApiKey?: string;
       orgId?: string;

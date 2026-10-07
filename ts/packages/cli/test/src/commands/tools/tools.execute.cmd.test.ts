@@ -5,6 +5,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
+import { APIError } from '@composio/client';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -17,7 +18,6 @@ import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import {
   parseParallelExecuteArgs,
-  showToolsExecuteInputHelp,
   type ParallelExecuteArgumentError,
 } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -39,6 +39,26 @@ vi.hoisted(() => {
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 }).pipe(extendConfigProvider);
+
+// `testConfigProvider` pins its env, so it bypasses the per-test
+// `COMPOSIO_CACHE_DIR` stub, and the learned toolkit slugs resolve against the
+// developer's real `~/.composio`. Suites that assert how a toolkit is learned
+// need a cache directory of their own, seeded with the fixture's user data.
+const isolatedCacheConfigProvider = (fixture: string) => {
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-cache-'));
+  fs.cpSync(new URL(`../../../__fixtures__/${fixture}/.composio`, import.meta.url), cacheDir, {
+    recursive: true,
+  });
+  // Fresh learned slugs keep the background catalog refresh from running, so
+  // every toolkit lookup a suite observes comes from the command itself.
+  fs.writeFileSync(
+    path.join(cacheDir, 'known-toolkit-slugs.json'),
+    JSON.stringify({ slugs: [], refreshedAt: new Date().toISOString() })
+  );
+  return ConfigProvider.fromEnv({
+    env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_CACHE_DIR: cacheDir },
+  }).pipe(extendConfigProvider);
+};
 
 const runInvocationConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_USER_API_KEY: 'test_api_key',
@@ -120,36 +140,12 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
+  let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
+  let recordedExecuteOptions: Array<{ maxRetries?: number } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
-  });
-
-  layer(
-    TestLive({
-      stdin: { isTTY: true, data: '' },
-      toolsExecutor: {
-        respondWith: {
-          successful: true,
-          data: { ok: true, echoed: 'local' },
-          error: null,
-          logId: '',
-        },
-      },
-    })
-  )('[Given] a local tool slug without auth [Then] it executes locally', it => {
-    it.effect('does not require login or Tool Router context', () =>
-      Effect.gen(function* () {
-        yield* cli(['execute', 'LOCAL_BEEPER_IMESSAGE_VERSION', '-d', '{ value: 1 }']);
-
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
-        expect(output).toMatchObject({
-          successful: true,
-          data: { ok: true, echoed: 'local' },
-          error: null,
-        });
-      })
-    );
+    recordedProjectToolkitScopes = [];
+    recordedExecuteOptions = [];
   });
 
   layer(
@@ -335,17 +331,29 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
+              premium_usage: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_gmail_default',
-        }),
+        execute: async (_sessionId, params, options) => {
+          recordedExecuteOptions.push(options);
+          return {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_default',
+          };
+        },
+        executeMeta: async (_sessionId, params, options) => {
+          recordedExecuteOptions.push(options);
+          return {
+            data: { slug: params.slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_meta_default',
+          };
+        },
       },
     })
   )('[Given] default alias exists [Then] execute pins the default connected account', it => {
@@ -362,6 +370,17 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
+        // An execution is never retried: a retry after the backend already
+        // acted would duplicate the side effect.
+        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+      })
+    );
+
+    it.effect('never retries a meta tool execution', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
+
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
       })
     );
 
@@ -450,6 +469,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
+              premium_usage: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -507,6 +527,41 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
           expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
         );
+      })
+    );
+
+    it.effect('keeps every repeated --data and --account with its own parallel tool', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"repeat-first@example.com"}',
+          '--account',
+          'forest',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"repeat-second@example.com"}',
+          '--account',
+          'castle',
+        ]);
+
+        // Read this invocation's own aggregate: the console is shared with the
+        // sibling tests in this layer.
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          results: Array<{ data: { arguments: Record<string, unknown> } }>;
+        };
+        expect(output.results.map(result => result.data.arguments)).toEqual([
+          { recipient: 'repeat-first@example.com' },
+          { recipient: 'repeat-second@example.com' },
+        ]);
+        expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
+          expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
+        );
+        expect(recordedSessionCreateParams).toHaveLength(2);
       })
     );
   });
@@ -576,6 +631,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
+              premium_usage: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -629,6 +685,154 @@ describe('CLI: composio execute', () => {
 
   layer(
     TestLive({
+      baseConfigProvider: isolatedCacheConfigProvider('global-test-user-id'),
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        // Custom toolkits belong to the project: the Composio-managed catalog
+        // never lists them, and the baked one cannot.
+        toolkits: [makeToolkitFixture('gmail', 'Gmail')],
+        projectToolkits: [makeToolkitFixture('custom_grain', 'Grain')],
+        // The consumer project execute resolves, not the fixture's developer
+        // project that the project context would pick without a scope.
+        projectToolkitsScope: { orgId: 'org_test', projectId: 'consumer_project_test' },
+        onGetProjectToolkits: scope => recordedProjectToolkitScopes.push(scope),
+      },
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'ca_1',
+            alias: 'grain-work',
+            word_id: 'lantern',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'custom_grain' },
+            auth_config: {
+              id: 'ac_custom_grain',
+              auth_scheme: 'API_KEY',
+              is_composio_managed: false,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_custom_grain_session',
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+              premium_usage: false,
+            },
+            config_version: 1,
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_custom_grain',
+        }),
+      },
+    })
+  )('[Given] a project custom toolkit [Then] execute resolves it from the project list', it => {
+    const connectedToolkitsCache = (toolkits: ReadonlyArray<string>) => {
+      vi.spyOn(
+        consumerShortTermCache,
+        'getFreshConsumerConnectedToolkitsFromCache'
+      ).mockReturnValue(Effect.succeed(Option.some([...toolkits])));
+    };
+
+    it.effect.each(['ca_1', 'grain-work', 'lantern'])(
+      'pins the custom_grain connected account selected by %s',
+      selector =>
+        Effect.gen(function* () {
+          connectedToolkitsCache(['gmail', 'custom_grain']);
+
+          yield* cli([
+            'execute',
+            'CUSTOM_GRAIN_SEARCH_PERSONS',
+            '--account',
+            selector,
+            '-d',
+            '{"query":"ada"}',
+          ]);
+
+          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
+            custom_grain: 'ca_1',
+          });
+          // Every lookup — account selection, the permission gate, error
+          // mapping — must ask for the project execute resolved.
+          expect(recordedProjectToolkitScopes.length).toBeGreaterThan(0);
+          expect(recordedProjectToolkitScopes).toEqual(
+            recordedProjectToolkitScopes.map(() => ({
+              orgId: 'org_test',
+              projectId: 'consumer_project_test',
+            }))
+          );
+        })
+    );
+
+    it.effect('names the custom toolkit when the selector matches no account', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli([
+          'execute',
+          'CUSTOM_GRAIN_SEARCH_PERSONS',
+          '--account',
+          'nope',
+          '--skip-connection-check',
+          '-d',
+          '{"query":"ada"}',
+        ]).pipe(Effect.flip);
+
+        expect(String((failure as { message?: unknown }).message)).toContain(
+          'No connected account matched "nope" for toolkit "custom_grain". Available accounts:'
+        );
+        expect(String((failure as { message?: unknown }).message)).toContain('ca_1');
+        expect(recordedSessionCreateParams).toHaveLength(0);
+      })
+    );
+
+    it.effect('fails the connection pre-check under the custom toolkit slug', () =>
+      Effect.gen(function* () {
+        connectedToolkitsCache(['gmail']);
+
+        yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']).pipe(
+          Effect.flip
+        );
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('Toolkit "custom_grain" is not connected for this user');
+        expect(output).toContain('composio link custom_grain');
+        expect(recordedSessionCreateParams).toHaveLength(0);
+      })
+    );
+
+    it.effect('uses the default custom_grain account without --account', () =>
+      Effect.gen(function* () {
+        connectedToolkitsCache(['gmail', 'custom_grain']);
+
+        yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']);
+
+        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
+          custom_grain: 'ca_1',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
@@ -663,6 +867,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
+              premium_usage: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -720,6 +925,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
+              premium_usage: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -1045,6 +1251,9 @@ describe('CLI: composio execute', () => {
             }),
             'utf8'
           );
+          vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
+            Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
+          );
 
           yield* cli([
             'execute',
@@ -1062,12 +1271,12 @@ describe('CLI: composio execute', () => {
             version: string | null;
             inputSchema: Record<string, unknown>;
           };
-          expect(['20260101_00', '20260115_00']).toContain(refreshed.version);
+          expect(refreshed.version).toBe('20260115_00');
           expect(refreshed.inputSchema.type).toBe('object');
           const propertyKeys = Object.keys(
             (refreshed.inputSchema.properties ?? {}) as Record<string, unknown>
           );
-          expect(propertyKeys.some(key => key === 'recipient_email' || key === 'to')).toBe(true);
+          expect(propertyKeys).toContain('recipient_email');
         })
       );
     }
@@ -1147,6 +1356,141 @@ describe('CLI: composio execute', () => {
     );
   });
 
+  const executedToolSlugs: Array<string> = [];
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260101_00'],
+            input_parameters: {
+              type: 'object',
+              required: ['recipient_email'],
+              properties: {
+                recipient_email: { type: 'string', description: 'Recipient email' },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+      toolsExecutor: {
+        onExecute: slug => {
+          executedToolSlugs.push(slug);
+        },
+      },
+    })
+  )('[Given] invalid tool input [Then] validation gates the tool call and keeps the schema', it => {
+    // The schema lookup answers after the mock executor would have finished,
+    // so a tool call that does not wait for validation always gets through.
+    const slowSchemaLookup = () =>
+      vi
+        .spyOn(composioClients, 'getLatestToolVersion')
+        .mockImplementation(({ toolSlug }) =>
+          Effect.promise(() => new Promise<void>(resolve => setTimeout(resolve, 25))).pipe(
+            Effect.as({ tool_slug: toolSlug, version: '20260101_00' })
+          )
+        );
+
+    const executeWithInvalidInput = cli([
+      'execute',
+      'GMAIL_SEND_EMAIL',
+      '--skip-connection-check',
+      '-d',
+      '{"recipient":42}',
+    ]).pipe(
+      Effect.flip,
+      Effect.map(error => (error instanceof Error ? error.message : String(error)))
+    );
+
+    it.effect('never sends the tool call on a schema cache miss', () =>
+      Effect.gen(function* () {
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        const failure = yield* executeWithInvalidInput;
+
+        expect(failure).toContain('Input validation failed for GMAIL_SEND_EMAIL');
+        expect(executedToolSlugs).toEqual([]);
+        const cacheDir = yield* setupCacheDir;
+        const schemaPath = `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`;
+        expect(failure).toContain(schemaPath);
+        expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+
+    it.effect('never sends the tool call on a schema cache hit', () =>
+      Effect.gen(function* () {
+        yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
+        clearInProcessMemos();
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        const failure = yield* executeWithInvalidInput;
+
+        expect(failure).toContain('Input validation failed for GMAIL_SEND_EMAIL');
+        expect(executedToolSlugs).toEqual([]);
+        const cacheDir = yield* setupCacheDir;
+        const schemaPath = `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`;
+        expect(failure).toContain(schemaPath);
+        expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+
+    it.effect('sends the tool call when the cached schema cannot be compiled', () =>
+      Effect.gen(function* () {
+        const cacheDir = yield* setupCacheDir;
+        fs.mkdirSync(`${cacheDir}/tool_definitions`, { recursive: true });
+        fs.writeFileSync(
+          `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`,
+          JSON.stringify({
+            version: '20260101_00',
+            inputSchema: {
+              type: 'object',
+              properties: { recipient_email: { type: 'string' } },
+              // Not a JavaScript regular expression, so the validator cannot be built.
+              patternProperties: { '(?i)^x-': { type: 'string' } },
+            },
+          }),
+          'utf8'
+        );
+        clearInProcessMemos();
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]);
+
+        expect(executedToolSlugs).toEqual(['GMAIL_SEND_EMAIL']);
+
+        const dryRunFailure = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--dry-run',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]).pipe(
+          Effect.flip,
+          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+        );
+        expect(dryRunFailure).toContain('Could not compile the cached JSON schema');
+      })
+    );
+  });
+
   layer(
     TestLive({
       baseConfigProvider: largeOutputConfigProvider,
@@ -1185,7 +1529,7 @@ describe('CLI: composio execute', () => {
         expect(output.tokenCount).toBe(Math.ceil(output.sizeBytes / 4));
         // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
         // vitest setup pins to a per-test temp directory.
-        const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
+        const cacheDir = yield* Config.String('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
         expect(output.outputFilePath).toMatch(/\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/);
         expect(output.outputFilePath.startsWith(`${cacheDir}/`)).toBe(true);
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
@@ -1266,8 +1610,11 @@ describe('CLI: composio execute', () => {
     it.effect('aggregates results from multiple tool calls', () =>
       Effect.gen(function* () {
         yield* cli([
+          '--tool-debug=false',
           'execute',
           '--parallel',
+          '--log-level',
+          'Info',
           '--skip-checks',
           'GMAIL_SEND_EMAIL',
           '-d',
@@ -2144,51 +2491,6 @@ describe('CLI: composio execute', () => {
       } satisfies TestLiveInput['toolkitsData'],
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] execute-help helper [Then] prints input parameters only', it => {
-    it.effect('prints execute input schema help for the provided slug', () =>
-      Effect.gen(function* () {
-        yield* showToolsExecuteInputHelp('GMAIL_SEND_EMAIL');
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('Data Parameters:');
-        expect(output).toContain('recipient');
-        expect(output).toContain('subject');
-        expect(output).not.toContain('Output Parameters:');
-      })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      toolkitsData: {
-        tools: [
-          {
-            name: 'Send Email',
-            slug: 'GMAIL_SEND_EMAIL',
-            description: 'Send an email',
-            tags: ['email'],
-            available_versions: ['20260101_00'],
-            input_parameters: {
-              type: 'object',
-              required: ['recipient'],
-              properties: {
-                recipient: { type: 'string', description: 'Recipient email' },
-                subject: { type: 'string', description: 'Subject line' },
-              },
-            },
-            output_parameters: {
-              type: 'object',
-              properties: {
-                message_id: { type: 'string' },
-              },
-            },
-          },
-        ],
-      } satisfies TestLiveInput['toolkitsData'],
-      stdin: { isTTY: true, data: '' },
-    })
   )('[Given] execute --help with a slug [Then] it shows command help', it => {
     it.effect('shows the root execute help text', () =>
       Effect.gen(function* () {
@@ -2197,12 +2499,12 @@ describe('CLI: composio execute', () => {
         const output = lines.join('\n');
 
         expect(output).toContain('USAGE');
-        expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--account selector] [--file path] [--dry-run] [--get-schema] [--parallel]'
-        );
+        expect(output).toContain('composio execute');
+        expect(output).toContain('--get-schema');
+        expect(output).not.toContain('Fetching input parameters');
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
         expect(output).toContain('--parallel');
-        expect(output).toContain('--account <selector>');
+        expect(output).toContain('--account');
         expect(output).toContain('GITHUB_CREATE_AN_ISSUE');
       })
     );
@@ -2272,15 +2574,20 @@ describe('CLI: composio execute', () => {
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async () => {
-          throw Object.assign(new Error("No active connection found for toolkit(s) 'gmail'"), {
-            error: {
-              message: "No active connection found for toolkit(s) 'gmail' in this session",
-              code: 4302,
-              slug: 'ToolRouterV2_NoActiveConnection',
-              status: 400,
-              request_id: 'test-request-id',
+          throw APIError.generate(
+            400,
+            {
+              error: {
+                message: "No active connection found for toolkit(s) 'gmail' in this session",
+                code: 4302,
+                slug: 'ToolRouterV2_NoActiveConnection',
+                status: 400,
+                request_id: 'test-request-id',
+              },
             },
-          });
+            undefined,
+            new Headers()
+          );
         },
       },
     })
@@ -2368,11 +2675,23 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: { error: { message: 'API error: invalid input' } },
+        failWith: APIError.generate(
+          400,
+          {
+            error: {
+              message: 'API error: invalid input',
+              code: 1001,
+              slug: 'Validation_Failed',
+              status: 400,
+            },
+          },
+          undefined,
+          new Headers()
+        ),
       },
     })
-  )('[Given] executor throws object error [Then] prints message and details', it => {
-    it.effect('prints object error message and details', () =>
+  )('[Given] executor throws an API error [Then] prints message and details', it => {
+    it.effect('prints API error message and details', () =>
       Effect.gen(function* () {
         yield* cli([
           'execute',

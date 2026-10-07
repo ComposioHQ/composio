@@ -6,17 +6,17 @@ import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const triggerName = Argument.string('trigger-name').pipe(
+const triggerName = Argument.String('trigger-name').pipe(
   Argument.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
   Argument.optional
 );
 
-const connectedAccountId = Flag.string('connected-account-id').pipe(
+const connectedAccountId = Flag.String('connected-account-id').pipe(
   Flag.withDescription('Connected account ID (nanoid)'),
   Flag.optional
 );
 
-const triggerConfig = Flag.string('trigger-config').pipe(
+const triggerConfig = Flag.String('trigger-config').pipe(
   Flag.withDescription('Trigger config as JSON string'),
   Flag.optional
 );

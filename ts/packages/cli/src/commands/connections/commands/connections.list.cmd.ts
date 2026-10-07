@@ -25,7 +25,7 @@ class ConnectionsListRequestError extends Data.TaggedError('commands/Connections
   readonly cause: unknown;
 }> {}
 
-const toolkit = Flag.string('toolkit').pipe(
+const toolkit = Flag.String('toolkit').pipe(
   Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
   Flag.optional
 );
@@ -118,5 +118,13 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
 ).pipe(
   Command.withDescription(
     'List connection statuses as JSON. Includes aliases for duplicate toolkits and word_ids when available.'
-  )
+  ),
+  Command.withExamples([
+    {
+      command: 'composio connections list',
+    },
+    {
+      command: 'composio connections list --toolkit gmail',
+    },
+  ])
 );

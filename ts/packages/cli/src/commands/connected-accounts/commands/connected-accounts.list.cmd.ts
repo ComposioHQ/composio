@@ -1,6 +1,5 @@
 import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
-import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
@@ -20,17 +19,17 @@ class ConnectedAccountsListRequestError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const toolkits = Flag.string('toolkits').pipe(
+const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user ID'),
   Flag.optional
 );
 
-const status = Flag.choice('status', [
+const status = Flag.Literals('status', [
   'INITIALIZING',
   'INITIATED',
   'ACTIVE',
@@ -40,7 +39,7 @@ const status = Flag.choice('status', [
   'REVOKED',
 ] as const).pipe(Flag.withDescription('Filter by connection status'), Flag.optional);
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );
@@ -83,11 +82,7 @@ export const connectedAccountsCmd$List = Command.make(
             client.connectedAccounts.list({
               toolkit_slugs: toolkitSlugs,
               user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-              // Bypass the stale Stainless union (still missing 'REVOKED')
-              // until @composio/client is regenerated.
-              statuses: Option.isSome(status)
-                ? ([status.value] as ConnectedAccountListParams['statuses'])
-                : undefined,
+              statuses: Option.isSome(status) ? [status.value] : undefined,
               limit: clampLimit(limit),
             }),
           catch: cause =>

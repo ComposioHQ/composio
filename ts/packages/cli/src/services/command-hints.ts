@@ -35,7 +35,11 @@ type CommandHintNode = {
 
 export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   'root.search': {
-    example: params => `composio search "${getParam(params, 'query', '<query>')}"`,
+    example: params => {
+      const toolkits = params?.toolkits?.trim();
+      const search = `composio search "${getParam(params, 'query', '<query>')}"`;
+      return toolkits ? `${search} --toolkits ${toolkits}` : search;
+    },
     links: ['root.execute', 'root.link', 'root.tools.list'],
   },
   'root.tools.list': {

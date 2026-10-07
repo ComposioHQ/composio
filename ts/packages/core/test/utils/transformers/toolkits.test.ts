@@ -29,6 +29,7 @@ const rawToolkit = {
       name: 'API Key',
       mode: 'API_KEY',
       auth_hint_url: 'https://shopify.dev/api-keys',
+      required_scopes: ['offline_access'],
       fields: {
         auth_config_creation: {
           required: [
@@ -65,6 +66,7 @@ const rawToolkit = {
               required: true,
               is_secret: true,
               legacy_template_name: 'apiKey',
+              user_visible: true,
             },
           ],
           optional: [
@@ -76,6 +78,7 @@ const rawToolkit = {
               required: false,
               is_secret: false,
               default: 'example.myshopify.com',
+              user_visible: false,
             },
           ],
         },
@@ -141,6 +144,7 @@ describe('transformToolkitRetrieveResponse', () => {
       required: true,
       isSecret: true,
       legacyTemplateName: 'apiKey',
+      userVisible: true,
     });
   });
 
@@ -151,6 +155,19 @@ describe('transformToolkitRetrieveResponse', () => {
 
     expect(field?.default).toBeNull();
     expect(field?.isSecret).toBe(false);
+  });
+
+  it('maps user_visible to userVisible, keeping false', () => {
+    const fields = transformToolkitRetrieveResponse(rawToolkit).authConfigDetails?.[0].fields;
+
+    expect(fields?.connectedAccountInitiation.required[0].userVisible).toBe(true);
+    expect(fields?.connectedAccountInitiation.optional[0].userVisible).toBe(false);
+  });
+
+  it('maps required_scopes to requiredScopes', () => {
+    const details = transformToolkitRetrieveResponse(rawToolkit).authConfigDetails?.[0];
+
+    expect(details?.requiredScopes).toEqual(['offline_access']);
   });
 
   it('maps auth_hint_url to authHintUrl', () => {
@@ -170,9 +187,11 @@ describe('transformToolkitRetrieveResponse', () => {
     expect(field).not.toHaveProperty('default');
     expect(field).not.toHaveProperty('isSecret');
     expect(field).not.toHaveProperty('legacyTemplateName');
-    expect(
-      transformToolkitRetrieveResponse(rawToolkitWithoutOptionalKeys).authConfigDetails?.[0]
-    ).not.toHaveProperty('authHintUrl');
+    expect(field).not.toHaveProperty('userVisible');
+    const details = transformToolkitRetrieveResponse(rawToolkitWithoutOptionalKeys)
+      .authConfigDetails?.[0];
+    expect(details).not.toHaveProperty('authHintUrl');
+    expect(details).not.toHaveProperty('requiredScopes');
   });
 
   /**

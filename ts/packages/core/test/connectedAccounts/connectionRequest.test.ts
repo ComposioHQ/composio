@@ -46,6 +46,21 @@ describe('ConnectionRequest', () => {
 
       expect(connectionRequest).toHaveProperty('redirectUrl', undefined);
     });
+
+    it('should keep its fields assignable and reflected in toJSON()', () => {
+      connectionRequest = createConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId
+      );
+
+      connectionRequest.redirectUrl = redirectUrl;
+
+      expect(connectionRequest.toJSON()).toEqual({
+        id: connectedAccountId,
+        status: ConnectedAccountStatuses.INITIATED,
+        redirectUrl,
+      });
+    });
   });
 
   describe('waitForConnection', () => {
@@ -96,6 +111,41 @@ describe('ConnectionRequest', () => {
       expect(result).toHaveProperty('id', connectedAccountId);
       expect(result).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
       expect(result).toHaveProperty('state.authScheme', 'OAUTH2');
+    });
+
+    it('should report ACTIVE on the request once waitForConnection resolves', async () => {
+      connectionRequest = createConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED,
+        redirectUrl
+      );
+      mockClient.connectedAccounts.retrieve.mockResolvedValueOnce({
+        id: connectedAccountId,
+        status: ConnectedAccountStatuses.ACTIVE,
+        auth_config: {
+          id: 'auth_config_123',
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        user_id: 'user_123',
+        data: {},
+        params: {},
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+      });
+
+      await connectionRequest.waitForConnection();
+
+      expect(connectionRequest.status).toBe(ConnectedAccountStatuses.ACTIVE);
+      expect(connectionRequest.toJSON().status).toBe(ConnectedAccountStatuses.ACTIVE);
+      expect(JSON.parse(connectionRequest.toString()).status).toBe(ConnectedAccountStatuses.ACTIVE);
     });
 
     it('should poll until status becomes ACTIVE', async () => {
@@ -158,6 +208,7 @@ describe('ConnectionRequest', () => {
       expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
       expect(result).toHaveProperty('id', connectedAccountId);
       expect(result).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
+      expect(connectionRequest.status).toBe(ConnectedAccountStatuses.ACTIVE);
     });
 
     it('should throw ConnectionRequestTimeoutError if the request times out', async () => {
@@ -242,6 +293,8 @@ describe('ConnectionRequest', () => {
       await expect(connectionRequest.waitForConnection(3000)).rejects.toThrow(
         ConnectionRequestFailedError
       );
+      expect(connectionRequest.status).toBe(ConnectedAccountStatuses.REVOKED);
+      expect(connectionRequest.toJSON().status).toBe(ConnectedAccountStatuses.REVOKED);
     });
   });
 

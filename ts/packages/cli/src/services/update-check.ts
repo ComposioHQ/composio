@@ -101,7 +101,7 @@ const defaultConfig = (stateFile: string) =>
     const os = yield* NodeOs;
     const currentVersion = yield* resolveRunningCliVersion(process.execPath, APP_VERSION);
     const accessToken = yield* Effect.orDie(
-      Config.option(Config.string('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
+      Config.option(Config.String('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
         Config.map(Option.getOrUndefined)
       )
     );

@@ -4,13 +4,13 @@ import { APP_VERSION } from 'src/constants';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { installSkillSafe } from 'src/effects/install-skill';
 
-const betaOpt = Flag.boolean('beta').pipe(
+const betaOpt = Flag.Boolean('beta').pipe(
   Flag.withAlias('b'),
   Flag.withDefault(false),
   Flag.withDescription('Upgrade to the latest beta CLI release instead of the stable channel')
 );
 
-const versionArg = Argument.string('version').pipe(
+const versionArg = Argument.String('version').pipe(
   Argument.withDescription(
     'Install a specific CLI release (e.g. "0.13.1", "0.13.1-beta.42", or full tag "@composio/cli@0.13.1"). If omitted, installs the latest release.'
   ),

@@ -2,9 +2,31 @@ import { describe, it, expect } from 'vitest';
 import {
   transformSearchResponse,
   transformExecuteResponse,
+  transformSessionConfig,
 } from '../../src/utils/transformers/toolRouterResponseTransform';
 
 describe('toolRouterResponseTransform', () => {
+  it('preserves the new Instant policy in server-side session config', () => {
+    const config = {
+      user_id: 'user_1',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+      instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+      premium_usage: false as const,
+    };
+    expect(transformSessionConfig(config)).toEqual({
+      user_id: 'user_1',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+      instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
+    });
+    expect(transformSessionConfig({ ...config, instant: false }).instant).toBe(false);
+    expect(() =>
+      transformSessionConfig({ ...config, instant: { return_instant_charge: 'yes' } })
+    ).toThrow();
+  });
   describe('transformSearchResponse', () => {
     it('should transform snake_case search response to camelCase', () => {
       const raw = {
@@ -131,6 +153,46 @@ describe('toolRouterResponseTransform', () => {
         tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
       });
     });
+
+    it('maps the Instant account allowlist only when the API sends one', () => {
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+          },
+          {
+            toolkit: 'gmail',
+            description: 'Gmail',
+            has_active_connection: false,
+            status_message: 'No connection',
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_1',
+          generate_id: false,
+          instructions: 'Use session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const [instantAccount, notInstantAccount] =
+        transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(instantAccount.instantAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(notInstantAccount).not.toHaveProperty('instantAccount');
+    });
   });
 
   describe('transformExecuteResponse', () => {
@@ -159,6 +221,20 @@ describe('toolRouterResponseTransform', () => {
 
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
+    });
+
+    it('preserves the optional Instant charge without inventing one', () => {
+      expect(
+        transformExecuteResponse({
+          data: {},
+          error: null,
+          log_id: 'log_paid',
+          instant_charge: { amount: '0.01', currency: 'USD' },
+        }).instantCharge
+      ).toEqual({ amount: '0.01', currency: 'USD' });
+      expect(
+        transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
+      ).not.toHaveProperty('instantCharge');
     });
   });
 });

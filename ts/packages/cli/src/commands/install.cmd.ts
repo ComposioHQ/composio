@@ -15,19 +15,19 @@ import { atomicWriteFileString } from 'src/utils/atomic-write';
 // Options
 // ---------------------------------------------------------------------------
 
-const completionsOpt = Flag.boolean('completions').pipe(
+const completionsOpt = Flag.Boolean('completions').pipe(
   Flag.withDescription('Install shell completions.'),
   Flag.withDefault(false)
 );
 
-const noCompletionsOpt = Flag.boolean('no-completions').pipe(
+const noCompletionsOpt = Flag.Boolean('no-completions').pipe(
   Flag.withDescription('Deprecated: shell completions are skipped by default.'),
   Flag.withDefault(false)
 );
 
 const SHELLS = ['zsh', 'bash', 'fish'] as const;
 
-const shellOpt = Flag.choice('shell', SHELLS).pipe(
+const shellOpt = Flag.Literals('shell', SHELLS).pipe(
   Flag.withDescription('Override automatic shell detection.'),
   Flag.optional
 );
@@ -90,7 +90,7 @@ const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 // `ConfigProvider.fromEnv` snapshots the environment when constructed.
 const readEnvWithDefault = (name: string, fallback: string): Effect.Effect<string> =>
   Effect.orDie(
-    Config.string(name).pipe(Config.withDefault(fallback)).parse(ConfigProvider.fromEnv())
+    Config.String(name).pipe(Config.withDefault(fallback)).parse(ConfigProvider.fromEnv())
   );
 
 const detectShellFromEnv = (path: Path.Path, shellEnv: string): Shell | undefined => {

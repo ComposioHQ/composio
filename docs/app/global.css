@@ -601,8 +601,9 @@ textarea:focus-visible {
   gap: 0.5rem;
 }
 
-/* GitHub icon link */
-#nd-nav a[href*="github.com"] {
+/* Social icon links */
+#nd-nav a[href^="https://github.com/"],
+#nd-nav a[href^="https://x.com/"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -613,12 +614,14 @@ textarea:focus-visible {
   transition: color var(--header-transition), background var(--header-transition);
 }
 
-#nd-nav a[href*="github.com"]:hover {
+#nd-nav a[href^="https://github.com/"]:hover,
+#nd-nav a[href^="https://x.com/"]:hover {
   color: var(--color-fd-foreground);
   background: var(--color-fd-accent);
 }
 
-#nd-nav a[href*="github.com"]:focus-visible {
+#nd-nav a[href^="https://github.com/"]:focus-visible,
+#nd-nav a[href^="https://x.com/"]:focus-visible {
   outline: 2px solid var(--composio-orange);
   outline-offset: 2px;
 }
@@ -1250,5 +1253,96 @@ html.docs-product-transition .docs-product-shell {
     animation: none;
     clip-path: none;
     mask-image: none;
+  }
+}
+
+/* ZdrLogVisual: the request and response dissolve to "not stored" as the ZDR switch turns on. */
+.zdr-log-payload,
+.zdr-log-state-off {
+  animation: zdr-log-show-when-off 10s ease-in-out infinite;
+}
+
+.zdr-log-not-stored,
+.zdr-log-state-on {
+  opacity: 0;
+  animation: zdr-log-show-when-on 10s ease-in-out infinite;
+}
+
+.zdr-log-thumb {
+  animation: zdr-log-thumb 10s ease-in-out infinite;
+}
+
+.zdr-log-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in oklab, currentColor 12%, transparent) 6px 7px
+  );
+}
+
+@keyframes zdr-log-show-when-off {
+  0%,
+  38% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  48%,
+  88% {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  98%,
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes zdr-log-show-when-on {
+  0%,
+  38% {
+    opacity: 0;
+  }
+  48%,
+  88% {
+    opacity: 1;
+  }
+  98%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes zdr-log-thumb {
+  0%,
+  38% {
+    transform: translateX(0);
+  }
+  48%,
+  88% {
+    transform: translateX(12px);
+  }
+  98%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zdr-log-payload,
+  .zdr-log-state-off {
+    animation: none;
+    opacity: 0;
+  }
+
+  .zdr-log-not-stored,
+  .zdr-log-state-on {
+    animation: none;
+    opacity: 1;
+  }
+
+  .zdr-log-thumb {
+    animation: none;
+    transform: translateX(12px);
   }
 }

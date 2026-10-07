@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Schema, SchemaGetter } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 import { OptionFromOptionalNullOr } from 'effect/Schema';
 
@@ -44,8 +44,38 @@ const userDataKeyMapping = {
   testUserId: 'test_user_id',
 } as const;
 
-export const UserData = Schema.Struct(userDataFields).pipe(
-  Schema.encodeKeys(userDataKeyMapping),
+const UserDataStruct = Schema.Struct(userDataFields);
+const UserDataWithEncodedKeys = UserDataStruct.pipe(Schema.encodeKeys(userDataKeyMapping));
+const unknownUserDataFields = [Schema.Record(Schema.String, Schema.Unknown)] as const;
+
+export const UserData = Schema.StructWithRest(
+  UserDataWithEncodedKeys.from,
+  unknownUserDataFields
+).pipe(
+  Schema.decodeTo(Schema.StructWithRest(UserDataWithEncodedKeys.to, unknownUserDataFields), {
+    decode: SchemaGetter.transform(
+      ({ api_key, base_url, web_url, org_id, project_id, test_user_id, ...rest }) => ({
+        ...rest,
+        apiKey: api_key,
+        baseURL: base_url,
+        webURL: web_url,
+        orgId: org_id,
+        projectId: project_id,
+        testUserId: test_user_id,
+      })
+    ),
+    encode: SchemaGetter.transform(
+      ({ apiKey, baseURL, webURL, orgId, projectId, testUserId, ...rest }) => ({
+        ...rest,
+        api_key: apiKey,
+        base_url: baseURL,
+        web_url: webURL,
+        org_id: orgId,
+        project_id: projectId,
+        test_user_id: testUserId,
+      })
+    ),
+  }),
   Schema.annotate({
     identifier: 'UserData',
     description: 'User data storage for the Composio CLI',
@@ -73,7 +103,6 @@ export type UserDataWithDefaults = Schema.Schema.Type<typeof UserDataWithDefault
 
 export const UserDataJSON = JSONTransformSchema(UserData);
 export const userDataFromJSON = Schema.decodeEffect(UserDataJSON, {
-  propertyOrder: 'original',
-  onExcessProperty: 'preserve',
+  onExcessProperty: 'ignore',
 });
 export const userDataToJSON = Schema.encodeEffect(UserDataJSON);

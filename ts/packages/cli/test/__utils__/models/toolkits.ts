@@ -1,5 +1,5 @@
-import { FastCheck } from 'effect/testing';
-import { Schema, DateTime } from 'effect';
+import { DateTime, Effect } from 'effect';
+import * as Arbitrary from 'effect/unstable/arbitrary/Arbitrary';
 import { Toolkit } from 'src/models/toolkits';
 
 /**
@@ -25,16 +25,17 @@ export const makeToolkitFixture = (slug: string, name: string = slug): Toolkit =
   },
 });
 
-const ToolkitArbitary = Schema.toArbitrary(Toolkit)(FastCheck);
+const ToolkitArbitrary = Arbitrary.schema(Toolkit);
+
+const sampleToolkits = (count: number) =>
+  Effect.runSync(Arbitrary.sampleEffect(ToolkitArbitrary, { count }));
 
 /**
  * Creates multiple test toolkit instances by merging arbitrary generated toolkit data with the provided subset values.
  * Useful for generating test data that maintains consistent identifiers while having realistic randomized properties.
  */
 export function makeTestToolkits(inputs: Array<Pick<Toolkit, 'name' | 'slug'>>) {
-  const samples = FastCheck.sample(ToolkitArbitary, {
-    numRuns: inputs.length,
-  });
+  const samples = sampleToolkits(inputs.length);
 
   const testToolkits = samples.map((sample, i) => ({ ...sample, ...inputs[i] }));
   return testToolkits;
@@ -45,7 +46,7 @@ export function makeTestToolkits(inputs: Array<Pick<Toolkit, 'name' | 'slug'>>) 
  * Useful for generating test data that maintains consistent identifiers while having realistic randomized properties.
  */
 export function makeTestToolkit(input: Pick<Toolkit, 'name' | 'slug'>) {
-  const samples = FastCheck.sample(ToolkitArbitary, { numRuns: 1 });
+  const samples = sampleToolkits(1);
 
   const testToolkits = samples.map((sample, i) => ({ ...sample, ...input }));
   return testToolkits[0];

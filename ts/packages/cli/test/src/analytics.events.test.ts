@@ -1,3 +1,4 @@
+import { VERSION as clientLibraryVersion } from '@composio/client';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import * as tempy from 'tempy';
@@ -58,6 +59,23 @@ describe('CLI analytics execute failure events', () => {
     expect(event?.properties).toMatchObject({
       stdout_is_tty: true,
       stderr_is_tty: false,
+    });
+  });
+
+  it('keeps CLI product and installed library separate on tool-router command events', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'execute', 'GITHUB_GET_ME'],
+      '0.4.2',
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    expect(getPrimaryLifecycleSucceededEvent(context)?.properties).toMatchObject({
+      client_name: '@composio/cli',
+      client_version: '0.4.2',
+      client_library: '@composio/client',
+      client_library_version: clientLibraryVersion,
+      execution_channel: 'tool_router',
+      duration_ms: expect.any(Number),
     });
   });
 
@@ -355,6 +373,15 @@ describe('CLI analytics setup runtime-context events', () => {
         cli_version: APP_VERSION,
         command_path: 'whoami',
         agent_host: 'claude',
+        client_name: '@composio/cli',
+        client_version: APP_VERSION,
+        client_language: 'typescript',
+        client_runtime: 'nodejs',
+        client_runtime_version: process.versions.node,
+        client_library: '@composio/client',
+        client_library_version: clientLibraryVersion,
+        client_framework: 'cli',
+        execution_channel: 'unknown',
         journey_stage: 'setup',
         cli_channel: inferSkillReleaseChannel(APP_VERSION),
       },
@@ -601,6 +628,31 @@ describe('CLI analytics journey taxonomy', () => {
     ).toMatchObject({
       invocation_origin: 'installer',
       journey_stage: 'install',
+    });
+  });
+
+  it.each([
+    { flags: ['--telemetry-debug'] },
+    { flags: ['--telemetry-debug=false'] },
+    { flags: ['--no-telemetry-debug'] },
+    { flags: ['--tool-debug', '--perf-debug'] },
+    { flags: ['--log-level', 'Debug'] },
+    { flags: ['--log-level=Debug', '--telemetry-debug'] },
+  ])('identifies run and execute after shared options: $flags', ({ flags }) => {
+    const runArgs = [...flags, 'run', 'console.log("hi")'];
+    const run = contextFor(runArgs);
+    expect(run.argv).toEqual(['bun', 'composio', ...runArgs]);
+    expect(run.commandPath).toBe('run');
+    expect(run.runId).toEqual(expect.any(String));
+    expect(getPrimaryLifecycleInvokedEvent(run)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
+      properties: { run_id: run.runId, command_path: 'run' },
+    });
+
+    const execute = contextFor([...flags, 'execute', 'GMAIL_SEND_EMAIL', '--get-schema']);
+    expect(getPrimaryLifecycleInvokedEvent(execute)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
+      properties: { command_path: 'execute', tool_slug: 'GMAIL_SEND_EMAIL' },
     });
   });
 

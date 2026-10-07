@@ -1,0 +1,102 @@
+---
+title: TypeSafe
+description: Choose Composio tools with TypeSafe's Jev model, complete missing arguments, and execute the resulting decision.
+keywords: [typesafe, jev, tool selection, confidence, partial calls]
+llmGuardrails: direct-execution
+---
+
+The TypeSafe provider lets [Jev](https://docs.typesafe.ai/introduction) choose a Composio tool from a request. Jev answers typed questions. The provider turns those answers into a tool call, a partial call that needs more arguments, or a decision to abstain.
+
+## Install
+
+<Tabs items={['Python', 'TypeScript']}>
+<Tab value="Python">
+
+<PackageInstall packages="composio composio-typesafe typesafe-sdk==0.6.0" ecosystem="python" />
+
+</Tab>
+<Tab value="TypeScript">
+
+Use Node.js 24.17 or newer.
+
+<PackageInstall packages="@composio/core @composio/typesafe @typesafe-ai/sdk@0.6.0 zod" />
+
+</Tab>
+</Tabs>
+
+Keep the TypeSafe SDK pinned to `0.6.0`. The provider supports the `0.6.x` SDK API.
+
+Set `COMPOSIO_API_KEY` from [your project settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-typesafe) and `TYPESAFE_API_KEY` from [TypeSafe](https://docs.typesafe.ai/introduction/quickstart).
+
+```bash
+export COMPOSIO_API_KEY="your-composio-key"
+export TYPESAFE_API_KEY="your-typesafe-key"
+```
+
+## Ask for a decision
+
+Fetch the tools you want Jev to choose between, then pass a request to `decide`. These Hacker News tools need no connected account.
+
+<Tabs items={['Python', 'TypeScript']}>
+<Tab value="Python">
+
+```python
+from composio import Composio
+from composio_typesafe import TypesafeProvider
+
+provider = TypesafeProvider()
+composio = Composio(provider=provider)
+
+tool_set = composio.tools.get(
+    user_id="example-user",
+    tools=["HACKERNEWS_GET_USER", "HACKERNEWS_GET_TOP_STORIES"],
+)
+decision = provider.decide(tool_set, "Look up the Hacker News user 'pg'")
+print(decision)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```typescript
+import { Composio } from '@composio/core';
+import { TypesafeProvider } from '@composio/typesafe';
+
+const provider = new TypesafeProvider();
+const composio = new Composio({ provider });
+
+const toolSet = await composio.tools.get('example-user', {
+  tools: ['HACKERNEWS_GET_USER', 'HACKERNEWS_GET_TOP_STORIES'],
+});
+const decision = await provider.decide(toolSet, "Look up the Hacker News user 'pg'");
+console.log(decision);
+```
+
+</Tab>
+</Tabs>
+
+`decide` does not execute a tool. Inspect `kind` before you call `execute`:
+
+| `kind` | What your code does next |
+| --- | --- |
+| `call` | Inspect the selected tool and arguments, then execute the call. |
+| `partial` | Supply the required arguments listed in `missing`, then execute the call. |
+| `abstain` | Stop without executing. Read `reason` and `candidates` to explain the result. |
+
+Jev can fill enums, booleans, and arrays of enum values. Your code supplies free text, numbers, dates, IDs, and objects. For the request above, expect a partial call because `username` is free text. The [tool selection example](/examples/typesafe-tool-selection) completes and executes that call.
+
+## Provider specifics
+
+**Confidence.** `confidence` is the score of the least certain judgement required for the decision. It is not a probability that the whole tool call is correct. Low routing confidence can produce `abstain`. Network failures and malformed responses throw errors instead.
+
+**Arguments.** Arguments you pass to `execute` override Jev's values. Get missing values from trusted application state or a user input, and validate them for the tool you selected. Do not silently replace missing values with guesses from `suggestions`.
+
+**Request and context.** Pass a string, or an object with `request` and `context`. By default, tool selection sees `request` only. Argument questions can also see `context`, such as an email or a retrieved record.
+
+**Execution.** Use `composio.tools.get` for concrete tool selection. Session meta tools have mostly open-ended arguments, so they leave more work for your code. Destructive decisions require explicit confirmation at execution: `confirm: true` in TypeScript or `confirm=True` in Python. Request that confirmation in your application before setting the flag.
+
+**Data sent to TypeSafe.** The provider sends your request, context, tool names, descriptions, and enum values to TypeSafe. It does not add your Composio API key or connected account IDs to those requests.
+
+## Next
+
+[Choose and execute a Hacker News tool](/examples/typesafe-tool-selection), or use Jev to [shortlist tools for an OpenAI agent](/examples/typesafe-tool-selection#shortlist-tools-for-another-provider).

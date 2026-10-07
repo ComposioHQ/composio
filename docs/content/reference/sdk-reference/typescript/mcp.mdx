@@ -33,7 +33,7 @@ const result = await composio.mcp.list();
 Create a new MCP configuration.
 
 ```typescript
-async create(name: string, mcpConfig: MCPConfigCreationParams, requestOptions?: ComposioRequestOptions): Promise<MCPConfigCreateResponse>
+async create(name: string, mcpConfig: { allowedTools?: string[]; manuallyManageConnections?: boolean; toolkits: string | { authConfigId?: string; toolkit?: string }[] }, requestOptions?: ComposioRequestOptions): Promise<MCPConfigCreateResponse>
 ```
 
 **Parameters**
@@ -41,7 +41,7 @@ async create(name: string, mcpConfig: MCPConfigCreationParams, requestOptions?: 
 | Name | Type |
 |------|------|
 | `name` | `string` |
-| `mcpConfig` | `MCPConfigCreationParams` |
+| `mcpConfig` | `\{ allowedTools?: string[]; manuallyManageConnections?: boolean; toolkits: string \| \{ authConfigId?: string; toolkit?: string \}[] \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
@@ -73,7 +73,7 @@ const server = await composio.mcpConfig.create("personal-mcp-server", {
 Delete an MCP server configuration permanently
 
 ```typescript
-async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise<{ id: string; deleted: boolean }>
+async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise<{ deleted: boolean; id: string }>
 ```
 
 **Parameters**
@@ -85,7 +85,7 @@ async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise
 
 **Returns**
 
-`Promise<\{ id: string; deleted: boolean \}>` — Confirmation object with server ID and deletion status
+`Promise<\{ deleted: boolean; id: string \}>` — Confirmation object with server ID and deletion status
 
 **Example**
 
@@ -122,7 +122,7 @@ Get server URLs for an existing MCP server.
 The response is wrapped according to the provider's specifications.
 
 ```typescript
-async generate(userId: string, mcpConfigId: string, options?: MCPGetInstanceParams, requestOptions?: ComposioRequestOptions): Promise<MCPServerInstance>
+async generate(userId: string, mcpConfigId: string, options?: { manuallyManageConnections?: boolean }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -131,12 +131,12 @@ async generate(userId: string, mcpConfigId: string, options?: MCPGetInstancePara
 |------|------|-------------|
 | `userId` | `string` | \{string\} external user id from your database for whom you want the server for |
 | `mcpConfigId` | `string` | \{string\} config id of the MCPConfig for which you want to create a server for |
-| `options?` | `MCPGetInstanceParams` | \{object\} additional options |
+| `options?` | `\{ manuallyManageConnections?: boolean \}` | \{object\} additional options |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<MCPServerInstance>`
+`Promise<...>`
 
 **Example**
 
@@ -154,7 +154,7 @@ const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>
 Retrieve detailed information about a specific MCP server by its ID
 
 ```typescript
-async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MCPItem>
+async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<{ allowedTools: string[]; authConfigIds: string[]; commands: { claude: string; cursor: string; windsurf: string }; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] }>
 ```
 
 **Parameters**
@@ -166,7 +166,7 @@ async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MC
 
 **Returns**
 
-`Promise<MCPItem>` — Complete MCP server details including configuration, tools, and metadata
+`Promise<\{ allowedTools: string[]; authConfigIds: string[]; commands: \{ claude: string; cursor: string; windsurf: string \}; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] \}>` — Complete MCP server details including configuration, tools, and metadata
 
 **Example**
 
@@ -195,19 +195,19 @@ const mcpUrl = server.MCPUrl;
 List the MCP servers with optional filtering and pagination
 
 ```typescript
-async list(options: MCPListParams, requestOptions?: ComposioRequestOptions): Promise<MCPListResponse>
+async list(options: { authConfigs: string[]; limit: number; name?: string; page: number; toolkits: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ currentPage: number; items: { allowedTools: string[]; authConfigIds: string[]; commands: { claude: string; cursor: string; windsurf: string }; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] }[]; totalPages: number }>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `options` | `MCPListParams` | Filtering and pagination options |
+| `options` | `\{ authConfigs: string[]; limit: number; name?: string; page: number; toolkits: string[] \}` | Filtering and pagination options |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<MCPListResponse>` — Paginated list of MCP servers with metadata
+`Promise<\{ currentPage: number; items: \{ allowedTools: string[]; authConfigIds: string[]; commands: \{ claude: string; cursor: string; windsurf: string \}; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] \}[]; totalPages: number \}>` — Paginated list of MCP servers with metadata
 
 **Example**
 
@@ -239,7 +239,7 @@ const namedServers = await composio.experimental.mcp.list({
 Update an existing MCP server configuration with new settings
 
 ```typescript
-async update(serverId: string, config: MCPUpdateParams, requestOptions?: ComposioRequestOptions): Promise<MCPItem>
+async update(serverId: string, config: { allowedTools?: string[]; manuallyManageConnections?: boolean; name?: string; toolkits?: string | { authConfigId?: string; toolkit?: string }[] }, requestOptions?: ComposioRequestOptions): Promise<{ allowedTools: string[]; authConfigIds: string[]; commands: { claude: string; cursor: string; windsurf: string }; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] }>
 ```
 
 **Parameters**
@@ -247,12 +247,12 @@ async update(serverId: string, config: MCPUpdateParams, requestOptions?: Composi
 | Name | Type | Description |
 |------|------|-------------|
 | `serverId` | `string` | The unique identifier of the MCP server to update |
-| `config` | `MCPUpdateParams` | Update configuration parameters |
+| `config` | `\{ allowedTools?: string[]; manuallyManageConnections?: boolean; name?: string; toolkits?: string \| \{ authConfigId?: string; toolkit?: string \}[] \}` | Update configuration parameters |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<MCPItem>` — Updated MCP server configuration with all details
+`Promise<\{ allowedTools: string[]; authConfigIds: string[]; commands: \{ claude: string; cursor: string; windsurf: string \}; id: string; MCPUrl: string; name: string; serverInstanceCount: number; toolkitIcons: Record<string, string>; toolkits: string[] \}>` — Updated MCP server configuration with all details
 
 **Example**
 

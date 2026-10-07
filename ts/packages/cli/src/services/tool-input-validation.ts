@@ -1,7 +1,6 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Schema, SchemaIssue } from 'effect';
-import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
   jsonSchemaToEffectSchema,
   type JsonSchemaValidationIssue,
@@ -186,7 +185,7 @@ export const invalidateToolInputDefinition = (slug: string) =>
   });
 
 // One `get_latest_version` round trip per tool per process. `composio execute`
-// asks twice on every call: the background version check forked from the
+// asks twice on every call: the validation that gates the tool call in the
 // command, and `getOrFetchToolInputDefinition` on the executor's file-upload
 // path. Both want the same answer within the same second.
 const fetchLatestToolVersionOnce = memoizeInProcess({
@@ -197,9 +196,7 @@ const fetchLatestToolVersionOnce = memoizeInProcess({
   }) => `${input.slug}\u0000${input.params?.orgId ?? ''}\u0000${input.params?.projectId ?? ''}`,
   make: ({ slug, apiKey, params }) =>
     Effect.gen(function* () {
-      const userContext = yield* ComposioUserContext;
       const latest = yield* getLatestToolVersion({
-        baseURL: userContext.data.baseURL,
         apiKey,
         toolSlug: slug,
         orgId: params?.orgId,
@@ -240,24 +237,8 @@ const fetchAndCacheToolInputDefinition = (
     const path = yield* Path.Path;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
-    const localDefinition = getLocalToolInputDefinition(slug);
-    const schemaPath = toolDefinitionPath(path, cacheDir, localDefinition?.finalSlug ?? slug);
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
     yield* ensureToolDefinitionsDir(fs, path, cacheDir);
-
-    if (localDefinition) {
-      yield* fs.writeFileString(
-        schemaPath,
-        serializeCachedToolDefinition({
-          version: localDefinition.version,
-          inputSchema: localDefinition.schema,
-        })
-      );
-      return {
-        schemaPath,
-        schema: localDefinition.schema,
-        version: localDefinition.version,
-      };
-    }
 
     const [tool, latestVersion] = yield* Effect.all(
       [
@@ -351,15 +332,6 @@ const refreshAndFetchToolInputDefinitionIfVersionChanged = (
     return { isStale, latestVersion, definition, skipped: false as const };
   });
 
-export const refreshToolInputDefinitionIfVersionChanged = (
-  slug: string,
-  cachedVersion: string | null,
-  params?: { readonly orgId?: string; readonly projectId?: string }
-) =>
-  refreshAndFetchToolInputDefinitionIfVersionChanged(slug, cachedVersion, params).pipe(
-    Effect.map(({ isStale, latestVersion, skipped }) => ({ isStale, latestVersion, skipped }))
-  );
-
 export class ToolInputValidationError extends Data.TaggedError('ToolInputValidationError')<{
   readonly toolSlug: string;
   readonly schemaPath: string;
@@ -371,6 +343,21 @@ export class ToolInputValidationError extends Data.TaggedError('ToolInputValidat
       `Input validation failed for ${this.toolSlug}.`,
       `Schema: ${this.schemaPath}`,
       ...this.issues.map(issue => `- ${issue}`),
+    ].join('\n');
+  }
+}
+
+// The schema itself is unusable, which says nothing about the arguments. Kept
+// apart from `ToolInputValidationError` so it never blocks a tool call.
+export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSchemaCompileError')<{
+  readonly toolSlug: string;
+  readonly schemaPath: string;
+  readonly cause?: unknown;
+}> {
+  override get message(): string {
+    return [
+      `Could not compile the cached JSON schema for ${this.toolSlug} into a validator.`,
+      `Schema: ${this.schemaPath}`,
     ].join('\n');
   }
 }
@@ -495,13 +482,7 @@ export const validateToolInputArgumentsWithDefinition = (
 
     const inputSchema = yield* Effect.try({
       try: () => compileToolInputSchema(normalizedSchema, allowedKeys),
-      catch: error =>
-        new ToolInputValidationError({
-          toolSlug: slug,
-          schemaPath,
-          issues: ['Could not compile the cached JSON schema into a validator.'],
-          cause: error,
-        }),
+      catch: error => new ToolInputSchemaCompileError({ toolSlug: slug, schemaPath, cause: error }),
     });
 
     yield* Schema.decodeUnknownEffect(inputSchema, { errors: 'all' })(args).pipe(

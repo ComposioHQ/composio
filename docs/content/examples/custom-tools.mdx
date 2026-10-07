@@ -1,0 +1,189 @@
+---
+title: Combine your own tools with Composio
+description: Enrich a public Hacker News profile with an internal research note using remote and local tools in one agent.
+keywords: [custom tools, preload, direct tools, python, typescript, hackernews]
+gallery:
+  categories: [General agents]
+  logos: [hackernews]
+  featured: true
+  order: 10
+---
+
+Build an agent that retrieves a Hacker News profile and adds a note from your own application. Composio executes the public lookup remotely. Your custom tool reads the internal note in your process.
+
+This follows the [TypeScript](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/direct-tools-preset.ts) and [Python](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/direct_tools_preset.py) direct-tools examples. The task needs no connected account.
+
+## Install and configure
+
+Use Python 3.12 or Node.js 24.17 or newer. Install in a new project, using a virtual environment for Python:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+<PackageInstall packages="composio composio-openai-agents openai-agents pydantic" ecosystem="python" />
+</Tab>
+<Tab value="TypeScript">
+<PackageInstall packages="@composio/core @composio/openai-agents @openai/agents zod" />
+</Tab>
+</Tabs>
+
+Set your [Composio project key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-custom-tools) and [OpenAI key](https://platform.openai.com/api-keys):
+
+```bash
+export COMPOSIO_API_KEY="your-composio-api-key"
+export OPENAI_API_KEY="your-openai-api-key"
+```
+
+## Define the local tool and run the agent
+
+The `HN_RESEARCH` toolkit contains one local tool. The direct-tools preset puts that tool and `HACKERNEWS_GET_USER` directly in the agent's tool list.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+
+Save as `research.py`:
+
+```python title="research.py"
+from agents import Agent, Runner
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+from pydantic import BaseModel, Field
+
+composio = Composio(provider=OpenAIAgentsProvider())
+
+
+class UserNoteInput(BaseModel):
+    username: str = Field(description="Hacker News username, for example pg")
+
+
+research = composio.experimental.Toolkit(
+    slug="HN_RESEARCH",
+    name="Hacker News research",
+    description="Internal research notes for Hacker News users.",
+)
+
+
+@research.tool(slug="GET_USER_NOTE", name="Get internal research note")
+def get_user_note(input: UserNoteInput, ctx):
+    """Return the internal research note for a Hacker News username."""
+    notes = {"pg": "Paul Graham; YC co-founder and essayist."}
+    return {"note": notes.get(input.username.lower(), "No internal note found.")}
+
+
+session = composio.create(
+    user_id="custom-tools-demo",
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    toolkits=["hackernews"],
+    tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+    experimental={"custom_toolkits": [research]},
+)
+try:
+    tools = session.tools()
+    print("Available tools:", [tool.name for tool in tools])
+    agent = Agent(
+        name="Research agent",
+        model="gpt-5.2",
+        instructions="Use both tools. Distinguish public facts from internal notes.",
+        tools=tools,
+    )
+    result = Runner.run_sync(
+        agent,
+        "Look up pg on Hacker News and include our internal research note.",
+        max_turns=10,
+    )
+    print(result.final_output)
+finally:
+    session.delete()
+```
+
+```bash
+python research.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+Save as `research.ts`:
+
+```typescript title="research.ts"
+import {
+  Composio, SessionPreset, experimental_createTool, experimental_createToolkit,
+} from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+import { Agent, run } from '@openai/agents';
+import { z } from 'zod/v3';
+
+const getUserNote = experimental_createTool('GET_USER_NOTE', {
+  name: 'Get internal research note',
+  description: 'Return the internal research note for a Hacker News username.',
+  inputParams: z.object({ username: z.string() }),
+  execute: async ({ username }) => {
+    const notes: Record<string, string> = {
+      pg: 'Paul Graham; YC co-founder and essayist.',
+    };
+    return { note: notes[username.toLowerCase()] ?? 'No internal note found.' };
+  },
+});
+const research = experimental_createToolkit('HN_RESEARCH', {
+  name: 'Hacker News research',
+  description: 'Internal research notes for Hacker News users.',
+  tools: [getUserNote],
+});
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
+const session = await composio.create('custom-tools-demo', {
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+  toolkits: ['hackernews'],
+  tools: { hackernews: { enable: ['HACKERNEWS_GET_USER'] } },
+  experimental: { customToolkits: [research] },
+});
+try {
+  const tools = await session.tools();
+  console.log('Available tools:', tools.map(tool => tool.name));
+  const agent = new Agent({
+    name: 'Research agent',
+    model: 'gpt-5.2',
+    instructions: 'Use both tools. Distinguish public facts from internal notes.',
+    tools,
+  });
+  const result = await run(
+    agent,
+    'Look up pg on Hacker News and include our internal research note.',
+    { maxTurns: 10 },
+  );
+  console.log(result.finalOutput);
+} finally {
+  await session.delete();
+}
+```
+
+```bash
+node research.ts
+```
+
+</Tab>
+</Tabs>
+
+The tool list should include `HACKERNEWS_GET_USER` and `LOCAL_HN_RESEARCH_GET_USER_NOTE`. It should not include `COMPOSIO_SEARCH_TOOLS`: the direct-tools preset exposes the allowed tools without a discovery step.
+
+The answer should combine live profile information with the internal note about Paul Graham. Change `pg` to another username to see the local tool return `No internal note found.`
+
+## Preload selected tools while keeping discovery
+
+Use the direct-tools preset when the agent's allowed tool set is small and known ahead of time. For a larger catalog, keep the default session behavior and preload only the tools you expect to need immediately.
+
+The repository's [TypeScript preload example](https://github.com/ComposioHQ/composio/blob/next/ts/examples/tool-router/src/preload.ts) and [Python preload example](https://github.com/ComposioHQ/composio/blob/next/python/examples/tool_router/preload.py) demonstrate that alternative:
+
+- `preload.tools` selects remote tools to expose immediately.
+- `preload: true` on a custom tool or toolkit exposes its local tools immediately.
+- Other allowed tools remain discoverable through search.
+
+See [preloading tools](/docs/configuring-sessions#preloading-tools) for the configuration in both languages. Preloading controls initial visibility; use the session's tool filters to restrict what the agent can access.
+
+## Replace the demo note with your application data
+
+The local callback runs in your application process. It can query your database or call an internal service. Use the callback's `ctx.userId` in TypeScript or `ctx.user_id` in Python to enforce your application's access rules before returning records. An ID supplied by the model is not proof of authorization.
+
+Keep the SDK tool execution in your process for this pattern. The [hosted MCP endpoint](/docs/sessions-via-mcp#trade-offs) can't invoke these in-process callbacks. Tool results still become model context, so return only the fields the model needs.
+
+<Callout>
+Custom tools and toolkits are experimental. See [custom tools](/docs/extending-sessions/custom-tools-and-toolkits) for extension tools, authenticated API calls, and callback context.
+</Callout>

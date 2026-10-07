@@ -6,7 +6,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
-import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
+import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
@@ -74,44 +74,44 @@ class LinkInputError extends Data.TaggedError('commands/LinkInputError')<{
 
 const invalidOptionValue = (message: string) => new LinkInputError({ message });
 
-const toolkit = Argument.string('toolkit').pipe(
+const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
   Argument.optional
 );
 
-const authConfig = Flag.string('auth-config').pipe(
+const authConfig = Flag.String('auth-config').pipe(
   Flag.withDescription('Auth config ID (e.g. "ac_..."). Uses legacy flow (no Tool Router).'),
   Flag.optional
 );
 
-const userId = Flag.string('user-id').pipe(
+const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Developer-project user ID override'),
   Flag.optional
 );
 
-const projectName = Flag.string('project-name').pipe(
+const projectName = Flag.String('project-name').pipe(
   Flag.optional,
   Flag.withDescription('Developer project name override for this command')
 );
 
-const noWait = Flag.boolean('no-wait').pipe(
+const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Do not wait for authorization; only print link info')
 );
 
-const noBrowser = Flag.boolean('no-browser').pipe(
+const noBrowser = Flag.Boolean('no-browser').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Do not open the browser automatically; print the URL to open manually')
 );
 
-const alias = Flag.string('alias').pipe(
+const alias = Flag.String('alias').pipe(
   Flag.withDescription(
     'Alias to assign to the connected account. Required when creating an additional account for the same toolkit/auth config.'
   ),
   Flag.optional
 );
 
-const list = Flag.boolean('list').pipe(
+const list = Flag.Boolean('list').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
     'List existing connected accounts for the toolkit instead of creating a new link'
@@ -254,7 +254,6 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
     let orgName = '~';
     if (apiKey) {
       const sessionInfo = yield* getSessionInfoByUserApiKey({
-        baseURL: userContext.data.baseURL,
         userApiKey: apiKey,
         orgId: Option.getOrUndefined(userContext.data.orgId),
       }).pipe(Effect.catch(() => Effect.succeed(null)));
@@ -921,7 +920,7 @@ const runConnectedAccountsLink = (params: {
         Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
-            const slug = extractSlug(error);
+            const slug = extractApiErrorDetails(error)?.slug;
 
             if (slug === 'ToolRouterV2_NoManagedAuth') {
               yield* handleNoManagedAuth(ui, toolkitSlug, params.noBrowser);
@@ -1000,6 +999,18 @@ const runConnectedAccountsLink = (params: {
     }
   });
 
+const linkExamples = [
+  {
+    command: 'composio link github',
+  },
+  {
+    command: 'composio link gmail --alias work',
+  },
+  {
+    command: 'composio link github --list',
+  },
+];
+
 export const connectedAccountsCmd$Link = Command.make(
   'link',
   { toolkit, authConfig, userId, projectName, noWait, noBrowser, alias, list },
@@ -1017,19 +1028,16 @@ export const connectedAccountsCmd$Link = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
-      'Opens a browser for OAuth authorization and waits for confirmation.',
-      '',
-      'Examples:',
-      '  composio link github',
-      '  composio link gmail --alias work',
-      '  composio link github --list',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Find tools to use after linking',
-      "  composio execute <slug> -d '{ ... }'      Execute a tool with your connected account",
-    ].join('\n')
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
+  ),
+  Command.withShortDescription(
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
+  ),
+  Command.withExamples(
+    linkExamples.map(example => ({
+      ...example,
+      command: example.command.replace('composio link', 'composio dev connected-accounts link'),
+    }))
   )
 );
 
@@ -1050,18 +1058,10 @@ export const rootConnectedAccountsCmd$Link = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
-      'Opens a browser for OAuth authorization and waits for confirmation.',
-      '',
-      'Examples:',
-      '  composio link github',
-      '  composio link gmail --alias work',
-      '  composio link github --list',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Find tools to use after linking',
-      "  composio execute <slug> -d '{ ... }'      Execute a tool with your connected account",
-    ].join('\n')
-  )
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
+  ),
+  Command.withShortDescription(
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
+  ),
+  Command.withExamples(linkExamples)
 );

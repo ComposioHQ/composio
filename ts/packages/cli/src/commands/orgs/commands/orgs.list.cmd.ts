@@ -6,7 +6,7 @@ import { listOrganizations } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(50),
   Flag.withDescription('Max organizations to fetch from API (default: 50)')
 );
@@ -31,7 +31,6 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
     const organizations = yield* ui.withSpinner(
       'Loading organizations...',
       listOrganizations({
-        baseURL: ctx.data.baseURL,
         apiKey,
         limit: clampedLimit,
       }),

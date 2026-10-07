@@ -7,12 +7,33 @@ import {
   escapeTableTextForMdx,
   escapeTextForMdx,
   escapeTypeForMdx,
+  generateClassMdx,
   isParameterRequired,
   parseSourceSignatureTypesAtLine,
   runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
+
+describe('generate-docs usage examples', () => {
+  it('uses the public get method in the Toolkits usage block', () => {
+    const mdx = generateClassMdx({
+      name: 'Toolkits',
+      description: 'Toolkits API',
+      constructor: undefined,
+      methods: [],
+      properties: [],
+    });
+
+    expect(mdx).toContain(
+      '```typescript\n' +
+        "const composio = new Composio({ apiKey: 'your-api-key' });\n" +
+        'const result = await composio.toolkits.get({});\n' +
+        '```'
+    );
+    expect(mdx).not.toContain('composio.toolkits.list()');
+  });
+});
 
 describe('generate-docs type rendering', () => {
   it('preserves inline object shapes in signatures', () => {

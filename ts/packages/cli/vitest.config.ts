@@ -8,7 +8,6 @@ const coreDir = path.resolve(__dirname, '../core');
 const tsBuildersDir = path.resolve(__dirname, '../ts-builders');
 const jsonSchemaToEffectSchemaDir = path.resolve(__dirname, '../json-schema-to-effect-schema');
 const jsonSchemaToZodDir = path.resolve(__dirname, '../json-schema-to-zod');
-const cliLocalToolsDir = path.resolve(__dirname, '../cli-local-tools');
 
 export default defineConfig({
   resolve: {
@@ -25,7 +24,6 @@ export default defineConfig({
         'src/index.ts'
       ),
       '@composio/json-schema-to-zod': path.join(jsonSchemaToZodDir, 'src/index.ts'),
-      '@composio/cli-local-tools': path.join(cliLocalToolsDir, 'src/index.ts'),
       'effect-errors': path.resolve(__dirname, './src/effect-errors'),
       // @composio/core uses package.json "imports" (#config_defaults, #platform, etc.)
       // Vitest/Vite does not resolve these for workspace deps, so alias them explicitly

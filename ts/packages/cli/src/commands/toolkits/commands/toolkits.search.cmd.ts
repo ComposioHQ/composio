@@ -8,11 +8,11 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
 
-const query = Argument.string('query').pipe(
+const query = Argument.String('query').pipe(
   Argument.withDescription('Search query (e.g. "send emails")')
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(10),
   Flag.withDescription('Number of results per page (1-1000)')
 );

@@ -18,7 +18,7 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
+import { teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -34,7 +34,6 @@ import {
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
-const LOCAL_TOOLS_BINARY_ASSETS_DIR = path.join(BINARIES_DIR, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
 const RELEASE_TAG = process.env.RELEASE_TAG?.trim();
 
 export function packageBinaries() {
@@ -99,12 +98,6 @@ export function packageBinaries() {
           }
           await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${destinationPath}`.quiet();
         }
-        const hasLocalToolsBinaryAssets = await stat(LOCAL_TOOLS_BINARY_ASSETS_DIR)
-          .then(stats => stats.isDirectory())
-          .catch(() => false);
-        if (hasLocalToolsBinaryAssets) {
-          await $`cp -R ${LOCAL_TOOLS_BINARY_ASSETS_DIR} ${path.join(nestedDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`.quiet();
-        }
         if (RELEASE_TAG) {
           await writeFile(path.join(nestedDir, 'release-tag.txt'), `${RELEASE_TAG}\n`, 'utf8');
         }
@@ -128,7 +121,7 @@ export function packageBinaries() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
+  const logLevel = yield* Config.LogLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
   return Layer.succeed(References.MinimumLogLevel, logLevel);
 }).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));

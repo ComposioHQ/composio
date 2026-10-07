@@ -3,24 +3,26 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
+import { commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolkitSlug } from 'src/utils/remote-custom-toolkit';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatToolsTable, formatToolsJson } from '../format';
 
-const toolkit = Argument.string('toolkit').pipe(
+const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list tools for (e.g. "gmail")')
 );
 
-const query = Flag.string('query').pipe(
+const query = Flag.String('query').pipe(
   Flag.withDescription('Text search by name, slug, or description'),
   Flag.optional
 );
 
-const tags = Flag.string('tags').pipe(
+const tags = Flag.String('tags').pipe(
   Flag.withDescription('Filter by tags (e.g. "important")'),
   Flag.optional
 );
 
-const limit = Flag.integer('limit').pipe(
+const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
   Flag.withDescription('Number of results per page (1-1000)')
 );
@@ -59,7 +61,9 @@ export const toolsCmd$List = Command.make(
 
       if (result.items.length === 0) {
         yield* ui.log.warn(
-          `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`
+          isRemoteCustomToolkitSlug(toolkit)
+            ? `No tools found in toolkit "${toolkit}". Custom toolkit tools are served by the Tool Router. ${commandHintStep('Discover them with', 'root.search', { toolkits: toolkit })}`
+            : `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`
         );
         return;
       }

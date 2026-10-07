@@ -97,7 +97,7 @@ const createMockClient = () => ({
           user_id: 'user_1',
         },
         config_version: 1,
-        mcp: { type: 'http', url: 'https://mcp.example.com/sess_123' },
+        mcp: { type: 'http', url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123' },
         tool_router_tools: [],
       }),
       retrieve: vi.fn(),
@@ -158,7 +158,7 @@ const createSessionWithProvider = (
     client as unknown as ComposioClient,
     { apiKey: 'key', provider },
     'sess_123',
-    { type: 'http' as const, url: 'https://mcp.example.com/sess_123' },
+    { type: 'http' as const, url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123' },
     undefined,
     buildCustomToolsMap(customTools),
     'user_1'
@@ -298,7 +298,10 @@ describe('ToolRouterSession execution routing', () => {
       client as unknown as ComposioClient,
       { apiKey: 'key', provider: new MockProvider() },
       'sess_123',
-      { type: 'http' as const, url: 'https://mcp.example.com/sess_123' },
+      {
+        type: 'http' as const,
+        url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123',
+      },
       undefined,
       customToolsMap,
       'user_1'
@@ -367,7 +370,7 @@ describe('ToolRouterSession execution routing', () => {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'test@test.com' },
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(localExecute).not.toHaveBeenCalled();
     });
@@ -401,7 +404,7 @@ describe('ToolRouterSession execution routing', () => {
           method: 'GET',
           parameters: [{ name: 'X-Test', type: 'header', value: '1' }],
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual({
         status: 200,
@@ -449,7 +452,7 @@ describe('ToolRouterSession execution routing', () => {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'test@test.com' },
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -637,7 +640,10 @@ describe('ToolRouterSession execution routing', () => {
         mockClient as unknown as ComposioClient,
         { apiKey: 'key', provider: new MockProvider() },
         'sess_123',
-        { type: 'http' as const, url: 'https://mcp.example.com/sess_123' }
+        {
+          type: 'http' as const,
+          url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123',
+        }
       );
 
       const result = await session.tools();
@@ -1102,7 +1108,10 @@ describe('ToolRouterSession execution routing', () => {
         mockClient as unknown as ComposioClient,
         { apiKey: 'key' } as unknown as ComposioConfig<MockProvider>,
         'sess_123',
-        { type: 'http' as const, url: 'https://mcp.example.com/sess_123' },
+        {
+          type: 'http' as const,
+          url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123',
+        },
         undefined,
         customToolsMap,
         'user_1'

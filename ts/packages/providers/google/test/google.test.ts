@@ -249,39 +249,73 @@ describe('GoogleProvider', () => {
     });
   });
 
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
+  describe('executeToolCall with a Tool Router session', () => {
+    it('keeps user ID calls working on @composio/core releases without session helpers', async () => {
+      // The peer range admits cores that predate executeToolForTarget.
+      Object.defineProperty(provider, 'executeToolForTarget', { value: undefined });
+
+      await provider.executeToolCall('test-user', { name: 'test-tool', args: {} });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ userId: 'test-user' }),
+        undefined
+      );
+    });
+
+    it('executes through the session instead of the direct tools API', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { result: 'session-success' },
+          error: null,
+          logId: 'log-session',
+        }),
       };
 
-      const result = await provider.executeTool(toolSlug, toolParams);
+      const result = await provider.executeToolCall(session, {
+        name: 'COMPOSIO_SEARCH_TOOLS',
+        args: { query: 'send an email' },
+      });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
+      expect(session.execute).toHaveBeenCalledWith('COMPOSIO_SEARCH_TOOLS', {
+        query: 'send an email',
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(JSON.parse(result)).toEqual({
+        data: { result: 'session-success' },
         error: null,
+        logId: 'log-session',
         successful: true,
       });
     });
 
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
+    it('reports a failed session execution in the result', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({ data: {}, error: 'Tool failed', logId: 'log-fail' }),
       };
 
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
+      const result = await provider.executeToolCall(session, {
+        name: 'COMPOSIO_SEARCH_TOOLS',
+        args: {},
+      });
 
-      await provider.executeTool(toolSlug, toolParams, modifiers);
+      expect(JSON.parse(result)).toMatchObject({ error: 'Tool failed', successful: false });
+    });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
+    it('rejects direct execution options with a session', async () => {
+      const session = { execute: vi.fn() };
+
+      await expect(
+        provider.executeToolCall(
+          // @ts-expect-error direct execution options are not accepted with a session
+          session,
+          { name: 'COMPOSIO_SEARCH_TOOLS', args: {} },
+          { connectedAccountId: 'conn-123' }
+        )
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
+      expect(session.execute).not.toHaveBeenCalled();
     });
   });
 });

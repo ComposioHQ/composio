@@ -162,6 +162,8 @@ See [Configuring sessions](/docs/configuring-sessions#custom-auth-configs) for h
 
 ## Find auth configs
 
+You can fetch up to 200 auth configs per request. Set `limit` to `200` when listing auth configs to retrieve up to that many at once. Paginate through the results if you have more than 200 matching configs.
+
 In TypeScript, filter `authConfigs.list()` by name or ID with `search`. Disabled configs are excluded by default; set `showDisabled` to include them. Auth config responses use `id` as their canonical identifier.
 
 ```typescript

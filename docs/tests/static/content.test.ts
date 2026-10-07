@@ -5,9 +5,11 @@
  * and changelog entries use valid date formats.
  */
 import { describe, test, expect } from "bun:test";
+import { compile } from "@mdx-js/mdx";
 import { readdir, readFile, stat } from "fs/promises";
 import { join, relative } from "path";
 
+const CONTENT_DIR = join(import.meta.dir, "../../content");
 const DOCS_DIR = join(import.meta.dir, "../../content/docs");
 const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
@@ -99,6 +101,51 @@ describe("Content - no empty pages", () => {
 
     expect(empty).toEqual([]);
   });
+});
+
+/** A node in the tree MDX renders: markdown elements and JSX elements. */
+type RenderedNode = {
+  type: string;
+  tagName?: string;
+  name?: string | null;
+  children?: RenderedNode[];
+  position?: { start: { line: number } };
+};
+
+function isParagraph(node: RenderedNode): boolean {
+  if (node.type === "element") return node.tagName === "p";
+  return (
+    (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") && node.name === "p"
+  );
+}
+
+describe("Content - valid HTML nesting", () => {
+  test("no page renders a <p> inside a <p>", async () => {
+    // MDX wraps the lines inside a block-level <p> in a markdown paragraph,
+    // rendering <p><p>…</p></p>. Browsers split that apart, so React hydration
+    // fails and the page re-renders on the client. Checking the compiled tree
+    // skips code examples and catches tags that span several lines.
+    const files = await findMdxFiles(CONTENT_DIR);
+    const nested: string[] = [];
+
+    for (const file of files) {
+      // Blank out frontmatter so reported line numbers match the file.
+      const source = (await readFile(file, "utf-8")).replace(/^---\n[\s\S]*?\n---\n/, fm =>
+        fm.replace(/[^\n]/g, ""),
+      );
+      const visit = (node: RenderedNode, insideParagraph: boolean) => {
+        if (insideParagraph && isParagraph(node)) {
+          nested.push(`${relative(CONTENT_DIR, file)}:${node.position?.start.line}`);
+        }
+        for (const child of node.children ?? []) {
+          visit(child, insideParagraph || isParagraph(node));
+        }
+      };
+      await compile(source, { rehypePlugins: [() => (tree: RenderedNode) => visit(tree, false)] });
+    }
+
+    expect(nested).toEqual([]);
+  }, 30_000);
 });
 
 describe("Content - provider compatibility", () => {

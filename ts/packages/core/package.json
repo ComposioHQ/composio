@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "version": "0.18.1",
+  "version": "0.22.0",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -42,7 +42,8 @@
       "edge-light": "./dist/utils/ssrfGuard.workerd.mjs",
       "node": "./dist/utils/ssrfGuard.node.mjs",
       "default": "./dist/utils/ssrfGuard.node.mjs"
-    }
+    },
+    "#client_identity": "./package.json"
   },
   "exports": {
     ".": {
@@ -119,8 +120,10 @@
   ],
   "license": "ISC",
   "devDependencies": {
+    "@hono/node-server": "^2.1.1",
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.8.0",
+    "hono": "catalog:",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
@@ -140,7 +143,7 @@
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
-    "undici": "^7.29.0",
+    "undici": "^7.29.1",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

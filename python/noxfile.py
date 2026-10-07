@@ -29,8 +29,8 @@ modules_for_ruff = [
 # langchain-openai) is sourced from the `dev` group in pyproject.toml via
 # `--group dev`, so every package is declared in exactly one place.
 type_stubs = [
-    "types-requests==2.33.0.20260712",
-    "types-protobuf==7.34.1.20260518",
+    "types-requests==2.33.0.20260906",
+    "types-protobuf==7.35.1.20260906",
     "types-jsonschema==4.26.0.20260518",
     "anthropic==0.120.0",
     # Keep this aligned with the CrewAI provider dependency metadata.
@@ -44,7 +44,7 @@ type_stubs = [
     "typesafe-sdk==0.6.0",
 ]
 
-mypy = "mypy==2.3.0"
+mypy = "mypy==2.3.1"
 
 ruff = [
     "ruff",
@@ -109,8 +109,21 @@ def tst(session: Session):
     session.install("./providers/crewai")
     session.install("./providers/langchain")
     session.install("./providers/langgraph")
-    test_paths = session.posargs or ["tests/"]
-    session.run("pytest", *test_paths, "-v", "--tb=short")
+    session.install("./providers/gemini")
+    session.install("./providers/google")
+    session.install("./providers/openai_agents")
+    session.install("./providers/claude_agent_sdk")
+    if session.posargs:
+        session.run("pytest", *session.posargs, "-v", "--tb=short")
+        return
+    # Separate runs: the provider packages' `test_provider.py` files share a
+    # basename with tests/, which pytest cannot collect in a single session.
+    for test_path in (
+        "tests/",
+        "providers/openai_agents/tests",
+        "providers/claude_agent_sdk/tests",
+    ):
+        session.run("pytest", test_path, "-v", "--tb=short")
 
 
 @nox.session

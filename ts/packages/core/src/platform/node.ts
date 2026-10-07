@@ -108,4 +108,20 @@ export const platform = {
       fs.writeFileSync(filePath, content);
     }
   },
+
+  writeFileExclusiveSync(filePath: string, content: Uint8Array): void {
+    const fd = fs.openSync(filePath, 'wx');
+    try {
+      try {
+        fs.writeFileSync(fd, content);
+      } finally {
+        fs.closeSync(fd);
+      }
+    } catch (error) {
+      // The path was created here, so a failed write or close must not leave
+      // a partial file that a retry would treat as an existing download.
+      fs.rmSync(filePath, { force: true });
+      throw error;
+    }
+  },
 } as Platform;

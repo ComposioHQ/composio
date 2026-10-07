@@ -12,7 +12,7 @@ type TriggersInfoCommandConfig = {
   readonly listCommandPlaceholder: string;
 };
 
-const slug = Argument.string('slug').pipe(
+const slug = Argument.String('slug').pipe(
   Argument.withDescription('Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
   Argument.optional
 );

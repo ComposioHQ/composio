@@ -88,6 +88,10 @@ To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execu
 
 ## Refresh credentials
 
+<Callout type="warn">
+`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated. Re-initiate authentication with `link()` or `composio.toolkits.authorize()` instead. The refresh endpoint no longer validates credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
+</Callout>
+
 Manually refresh credentials for a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -160,6 +164,16 @@ console.log('Account enabled status:', enabled.success);
 <Callout type="warn">
 INACTIVE accounts cannot execute tools. Tool execution will fail until the status is changed.
 </Callout>
+
+## Revoke accounts
+
+To revoke upstream tokens and mark a connection `REVOKED`, call `composio.connected_accounts.revoke(connected_account_id)` in Python or `await composio.connectedAccounts.revoke(connectedAccountId)` in TypeScript. Upstream token revocation is best effort. The call fails if the toolkit does not support programmatic revocation or the account is not in a revokable state.
+
+## Complete deferred OAuth
+
+If your project has an OAuth callback verifier configured, Composio redirects to your verifier with a single-use session URI before activating the connection. Verify the person's identity in your application, then redeem the URI with `composio.connected_accounts.complete_auth(user_id=user_id, session_uri=session_uri)` in Python or `await composio.connectedAccounts.completeAuth({ userId, sessionUri })` in TypeScript.
+
+Composio checks project ownership and the connection's user ID before completing the token exchange. An expired or already redeemed URI returns a `404`.
 
 ## Delete accounts
 

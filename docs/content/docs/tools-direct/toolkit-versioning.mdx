@@ -197,6 +197,10 @@ console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
   </Tab>
 </Tabs>
 
+### Retrieve toolkit changelogs
+
+Call `composio.toolkits.changelog()` in Python or `await composio.toolkits.changelog()` in TypeScript to retrieve the last 10 versions for each toolkit. The response's `items` contain each toolkit's slug and version entries, which you can review before changing a pinned version.
+
 ## Next
 
 <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />

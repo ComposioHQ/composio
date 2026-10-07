@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - next
+      - main
     paths:
       - 'python/**/*.py'
       - 'python/pyproject.toml'

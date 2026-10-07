@@ -14,6 +14,16 @@ This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `pyth
 4. Do not edit generated SDK surfaces or vendor trees — see [Generated And Vendored Paths](#generated-and-vendored-paths).
 5. Verify every command you write against the current `package.json`, `Makefile`, `noxfile.py`, or workflow file.
 
+## Contribution Policy
+
+Follow the [Contribution Policy in `CONTRIBUTING.md`](CONTRIBUTING.md#contribution-policy). When helping an author prepare a PR:
+
+- Composio team members and designated maintainers can open PRs directly. External contributors need an existing, open issue; if none is linked, tell the author to open one first. For large external changes, get maintainer agreement on the approach before implementation.
+- [@jkomyno](mailto:alberto@composio.dev) is the designated PR reviewer. Involve the relevant owner when the change needs their expertise.
+- Keep the change focused on meaningful improvements to the SDKs, CLI, or docs. Don't produce cosmetic, speculative, or drive-by edits.
+- The author is responsible for every line. Keep diffs small enough to read, report the checks you actually ran, and tell the author to review the full diff before submitting.
+- Follow the [third-party links policy](CONTRIBUTING.md#third-party-links-in-docs). Authoritative technical references needed to use or contribute to Composio are allowed; other third-party links and promotional content must fit the listed exceptions. Route partnership requests to https://composio.dev/contact.
+
 ## Skill Routing
 
 Use the smallest relevant skill:
@@ -51,7 +61,6 @@ docs/decisions/             Neutral docs decisions and ADR-style records
 Do not hand-edit these. They are regenerated or vendored, and edits will be overwritten. They are also marked `linguist-generated`/`linguist-vendored` in `.gitattributes`.
 
 - `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
-- `ts/packages/cli-local-tools/vendor/**` — vendored local-tool sources (git submodules).
 - `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
 - `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
 
@@ -90,7 +99,7 @@ make build
 ## Release And Package Notes
 
 - TypeScript package releases use Changesets. Add a changeset only when published TypeScript packages change.
-- `@composio/cli` and `@composio/cli-local-tools` are excluded from Changesets; use `cli-release` for CLI binaries and never target those packages in a changeset while they remain ignored.
+- `@composio/cli` is excluded from Changesets; use `cli-release` for CLI binaries and never target that package in a changeset while it remains ignored.
 - Documentation-only and agent-guidance-only changes do not need a changeset.
 - Python release metadata lives in `python/pyproject.toml`, `python/setup.py`, and `uv.lock`.
 - Bumping generated clients is manual. Verify the package version is published before changing pins.

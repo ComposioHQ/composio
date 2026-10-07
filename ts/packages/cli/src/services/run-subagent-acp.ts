@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import type { Readable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import {
@@ -67,46 +66,6 @@ const getLegacySetSessionModel = (
   }
   const method = connection.unstable_setSessionModel;
   return Predicate.isFunction(method) ? async params => method.call(connection, params) : undefined;
-};
-
-export const readableStreamFromNode = (input: Readable): ReadableStream<Uint8Array> => {
-  let cleanup = () => undefined;
-
-  return new ReadableStream<Uint8Array>({
-    start: controller => {
-      const onData = (chunk: Buffer | string) => {
-        controller.enqueue(
-          typeof chunk === 'string' ? new TextEncoder().encode(chunk) : Uint8Array.from(chunk)
-        );
-        if ((controller.desiredSize ?? 1) <= 0) {
-          input.pause();
-        }
-      };
-      const onEnd = () => {
-        cleanup();
-        controller.close();
-      };
-      const onError = (error: Error) => {
-        cleanup();
-        controller.error(error);
-      };
-      cleanup = () => {
-        input.off('data', onData);
-        input.off('end', onEnd);
-        input.off('error', onError);
-      };
-      input.on('data', onData);
-      input.once('end', onEnd);
-      input.once('error', onError);
-    },
-    pull: () => {
-      input.resume();
-    },
-    cancel: reason => {
-      cleanup();
-      input.destroy(reason instanceof Error ? reason : undefined);
-    },
-  });
 };
 
 // Bridges the ACP connection's outgoing ndjson writes into an Effect Queue that
@@ -849,7 +808,7 @@ const invokeAcpSubAgentEffect = ({
     // platform Command executor inherits the parent environment, so the
     // variable cannot be dropped; mask it with an empty string instead —
     // falsy and distinct from the guarded "1" — only when the parent has it set.
-    const claudeCode = yield* Config.option(Config.string('CLAUDECODE'));
+    const claudeCode = yield* Config.option(Config.String('CLAUDECODE'));
     const childEnv: Record<string, string> = {
       ...(Option.isSome(claudeCode) ? { CLAUDECODE: '' } : {}),
       ...(resolved.env ?? {}),

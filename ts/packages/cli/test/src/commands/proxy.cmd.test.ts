@@ -1,3 +1,4 @@
+import { APIError } from '@composio/client';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
@@ -46,6 +47,7 @@ describe('CLI: composio proxy', () => {
       it.effect('forwards proxy execute params and prints the response', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
+          let proxyOptions: { maxRetries?: number } | undefined;
           let proxyParams:
             | {
                 sessionId: string;
@@ -109,14 +111,20 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
+                    premium_usage: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: [],
                 };
               },
-              proxyExecute: async (sessionId: string, params: SessionProxyExecuteParams) => {
+              proxyExecute: async (
+                sessionId: string,
+                params: SessionProxyExecuteParams,
+                options?: { maxRetries?: number }
+              ) => {
                 proxyParams = { sessionId, params };
+                proxyOptions = options;
                 return {
                   status: 200,
                   data: {
@@ -171,6 +179,9 @@ describe('CLI: composio proxy', () => {
               ],
             },
           });
+          // A proxied call is never retried: a retry after the upstream API
+          // already acted would duplicate the side effect.
+          expect(proxyOptions).toEqual({ maxRetries: 0 });
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');
@@ -205,6 +216,7 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
+                    premium_usage: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -251,14 +263,19 @@ describe('CLI: composio proxy', () => {
             fixture: 'global-test-user-id',
             toolRouter: {
               proxyExecute: async () => {
-                throw {
-                  message: 'raw backend error',
-                  details: {
-                    code: 4302,
-                    slug: 'ToolRouterV2_NoActiveConnection',
-                    message: 'No active connection',
+                throw APIError.generate(
+                  400,
+                  {
+                    error: {
+                      code: 4302,
+                      slug: 'ToolRouterV2_NoActiveConnection',
+                      message: 'No active connection',
+                      status: 400,
+                    },
                   },
-                };
+                  undefined,
+                  new Headers()
+                );
               },
             },
           });

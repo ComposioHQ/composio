@@ -10,7 +10,7 @@ import {
 } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const composioAgentKey = Argument.string('composio_agent_key').pipe(
+const composioAgentKey = Argument.String('composio_agent_key').pipe(
   Argument.withDescription('Composio agent key for an existing agent identity')
 );
 
