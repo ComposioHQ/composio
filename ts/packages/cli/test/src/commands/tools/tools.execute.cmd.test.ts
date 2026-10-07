@@ -2655,6 +2655,40 @@ describe('CLI: composio execute', () => {
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async () => ({
+          result_type: 'failed' as const,
+          data: {},
+          error: null,
+          log_id: 'log_failed',
+        }),
+      },
+    })
+  )('[Given] Tool Router reports a failed execution with no error text', it => {
+    it.effect('[Then] execute fails instead of reporting success', () =>
+      Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GITHUB_STAR_REPO',
+          '-d',
+          '{"owner":"composio","repo":"composio"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(output.successful).toBe(false);
+        expect(output.error).toBeNull();
+        expect(output.logId).toBe('log_failed');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async () => ({
           result_type: 'input_required' as const,
           input_requests: {
             approval_1: {
