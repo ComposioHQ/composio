@@ -186,7 +186,7 @@ class TestToolRouter:
         policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
         tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["extra_body"]["instant"] == policy
+        assert kwargs["instant"] == policy
         assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
@@ -198,10 +198,7 @@ class TestToolRouter:
 
         tool_router.create(user_id="user_123", instant=False)
         assert (
-            mock_client.tool_router.session.create.call_args.kwargs["extra_body"][
-                "instant"
-            ]
-            is False
+            mock_client.tool_router.session.create.call_args.kwargs["instant"] is False
         )
 
     def test_create_session_default_returns_base_session(self, tool_router):
@@ -2335,7 +2332,8 @@ class TestInstantContractTransport:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
-        assert session.config.instant == {"return_instant_charge": True}
+        assert not isinstance(session.config.instant, bool)
+        assert session.config.instant.return_instant_charge is True
         assert "premium_usage" not in session.config.model_dump()
 
         if policy is None:
@@ -2349,11 +2347,13 @@ class TestInstantContractTransport:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
-        assert session.config.instant == {"return_instant_charge": True}
+        assert not isinstance(session.config.instant, bool)
+        assert session.config.instant.return_instant_charge is True
         assert "premium_usage" not in session.config.model_dump()
 
         attached = router.use(session_id="session_123")
-        assert attached.config.instant == {"return_instant_charge": True}
+        assert not isinstance(attached.config.instant, bool)
+        assert attached.config.instant.return_instant_charge is True
 
     def test_execute_selector_charge_and_search_coverage(self):
         requests: t.List[httpx.Request] = []
@@ -2386,7 +2386,9 @@ class TestInstantContractTransport:
         )
         result = session.execute("EXA_SEARCH", arguments={}, account="instant_account")
         assert json.loads(requests[-1].content)["account"] == "instant_account"
-        assert result.instant_charge == charge
+        assert result.instant_charge is not None
+        assert result.instant_charge.amount == "0.012"
+        assert result.instant_charge.model_dump() == charge
         assert "premium_charge" not in result.model_dump()
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
@@ -2913,7 +2915,7 @@ class TestSessionUpdateContract:
             }
         )
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["extra_body"]["instant"] == {
+        assert kwargs["instant"] == {
             "toolkits": {"enable": ["exa"]},
             "return_instant_charge": True,
         }
@@ -2922,10 +2924,7 @@ class TestSessionUpdateContract:
     def test_instant_can_be_disabled(self, session, mock_client):
         session.update(instant=False)
         assert (
-            mock_client.tool_router.session.patch.call_args.kwargs["extra_body"][
-                "instant"
-            ]
-            is False
+            mock_client.tool_router.session.patch.call_args.kwargs["instant"] is False
         )
 
     def test_instant_rejects_none(self, session, mock_client):

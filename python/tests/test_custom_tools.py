@@ -1005,7 +1005,8 @@ class TestToolRouterSessionCustomTools:
 
         assert isinstance(result, ToolRouterSessionExecuteResponse)
         assert isinstance(result, SessionExecuteResponse)
-        assert result.instant_charge == charge
+        assert result.instant_charge is not None
+        assert result.instant_charge.model_dump() == charge
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 

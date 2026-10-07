@@ -633,8 +633,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 "successful": not (hasattr(response, "error") and response.error),
             }
             instant_charge = getattr(response, "instant_charge", None)
-            if isinstance(instant_charge, dict):
-                result["instant_charge"] = t.cast(InstantCharge, instant_charge)
+            if isinstance(instant_charge, PydanticBaseModel):
+                result["instant_charge"] = t.cast(
+                    InstantCharge, instant_charge.model_dump()
+                )
 
             # Apply after_execute modifiers
             if modifiers is not None:
