@@ -799,8 +799,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         custom_connection_data: t.Optional[
             tool_proxy_params.CustomConnectionData
         ] = None,
+        user_id: t.Optional[str] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
-        """Proxy a tool call to the Composio API"""
+        """Proxy a tool call to the Composio API.
+
+        ``user_id`` is the user the connected account belongs to. Projects with
+        2FA enabled check it against the connected account and may require it.
+        """
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.
         return self._client.without_retries.tools.proxy(
@@ -814,6 +819,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
+            # TODO: pass `user_id` natively once composio-client is regenerated
+            # with it on the proxy endpoint.
+            extra_body={"user_id": user_id} if user_id is not None else None,
         )
 
 

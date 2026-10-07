@@ -1330,6 +1330,7 @@ export class Tools<
    * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
    * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
    * @param {string} [body.connectedAccountId] - The connected account to authenticate as
+   * @param {string} [body.userId] - The user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it
    * @param {unknown} [body.body] - JSON request body
    * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
    * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
@@ -1377,6 +1378,7 @@ export class Tools<
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
+      user_id: toolProxyParams.data.userId,
       parameters: parameters,
       /**
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
