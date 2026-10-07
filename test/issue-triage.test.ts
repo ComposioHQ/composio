@@ -45,7 +45,6 @@ const classification = {
   is_bug: true,
   reason: 'SDK regression',
   should_comment: false,
-  comment_body: '',
 };
 
 async function runClassifier({
@@ -184,6 +183,15 @@ for (const [label, result] of [
     {
       stop_reason: 'end_turn',
       content: [{ type: 'text', text: JSON.stringify({ ...classification, command: 'env' }) }],
+    },
+  ],
+  [
+    'model-written comment',
+    {
+      stop_reason: 'end_turn',
+      content: [
+        { type: 'text', text: JSON.stringify({ ...classification, comment_body: 'Click here' }) },
+      ],
     },
   ],
   ['invalid JSON', { stop_reason: 'end_turn', content: [{ type: 'text', text: '{' }] }],
@@ -412,17 +420,24 @@ test('an SDK bug is labeled and assigned on the classified issue, with no commen
   expect(plainRequests).toEqual([]);
 });
 
-test('a non-actionable report gets the trimmed triage comment', async () => {
+// A reply from before the schema change, or one that slipped past `classify`,
+// must not get its text published either.
+const modelText = { comment_body: 'Model-written text', reason: 'Model-written reason' };
+
+const expectMissingDetailsNote = (comments: Record<string, unknown>[]) => {
+  expect(comments).toHaveLength(1);
+  expect(comments[0]).toMatchObject(target);
+  expect(comments[0].body).toStartWith('🤖 Automated Claude triage note:');
+  expect(comments[0].body).toContain('steps to reproduce');
+  expect(comments[0].body).not.toContain('Model-written');
+};
+
+test('a non-actionable report gets the fixed missing-details note', async () => {
   const { named } = await runApply({
-    result: {
-      ...classification,
-      category: 'other',
-      should_comment: true,
-      comment_body: '  Please share repro steps.\n',
-    },
+    result: { ...classification, ...modelText, category: 'other', should_comment: true },
   });
   expect(named('addLabels')).toEqual([{ ...target, labels: ['bug'] }]);
-  expect(named('createComment')).toEqual([{ ...target, body: 'Please share repro steps.' }]);
+  expectMissingDetailsNote(named('createComment'));
   expect(named('update')).toEqual([]);
 });
 
@@ -431,7 +446,7 @@ const toolRequest = {
   category: 'tool-request',
   is_bug: false,
   should_comment: true,
-  comment_body: 'Model-written text',
+  ...modelText,
 };
 
 test('an open tool request is labeled, pointed at the request board, and closed', async () => {
@@ -440,7 +455,7 @@ test('an open tool request is labeled, pointed at the request board, and closed'
   const comments = named('createComment');
   expect(comments).toHaveLength(1);
   expect(comments[0].body).toContain('https://request.composio.dev/boards/tool-requests');
-  expect(comments[0].body).not.toContain('Model-written text');
+  expect(comments[0].body).not.toContain('Model-written');
   expect(named('update')).toEqual([{ ...target, state: 'closed' }]);
 });
 
@@ -454,7 +469,7 @@ test('an already closed tool request is labeled but not commented on or closed a
 test('a tool request classified as a bug is never closed', async () => {
   const { named } = await runApply({ result: { ...toolRequest, is_bug: true } });
   expect(named('addLabels')).toEqual([{ ...target, labels: ['bug'] }]);
-  expect(named('createComment')).toEqual([{ ...target, body: 'Model-written text' }]);
+  expectMissingDetailsNote(named('createComment'));
   expect(named('update')).toEqual([]);
 });
 
@@ -462,7 +477,7 @@ const support = {
   ...classification,
   category: 'support',
   should_comment: true,
-  comment_body: 'Model-written text',
+  ...modelText,
 };
 
 test('a support issue drops SDK routing, is forwarded to Plain, and gets the fixed note', async () => {
@@ -484,7 +499,7 @@ test('a support issue drops SDK routing, is forwarded to Plain, and gets the fix
   const comments = named('createComment');
   expect(comments).toHaveLength(1);
   expect(comments[0].body).toContain('forwarded it to Plain');
-  expect(comments[0].body).not.toContain('Model-written text');
+  expect(comments[0].body).not.toContain('Model-written');
   expect(JSON.stringify(comments)).not.toContain('plain-secret-sentinel');
   expect(named('update')).toEqual([]);
 });
