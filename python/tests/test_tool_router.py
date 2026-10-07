@@ -2597,6 +2597,78 @@ class TestExecutionRequiresUserInput:
         }
 
 
+_EXECUTED_ANSWERS = [
+    pytest.param("failed", None, False, id="failed with a null error"),
+    pytest.param("failed", "", False, id="failed with an empty error"),
+    pytest.param("failed", "Boom", False, id="failed with a message"),
+    pytest.param("completed", None, True, id="completed"),
+    pytest.param(None, None, True, id="no result_type and no error"),
+    pytest.param(None, "Boom", False, id="no result_type and an error"),
+]
+
+
+def _executed_json(
+    result_type: t.Optional[str], error: t.Optional[str]
+) -> t.Dict[str, t.Any]:
+    body: t.Dict[str, t.Any] = {"data": {}, "error": error, "log_id": "log"}
+    if result_type is not None:
+        body["result_type"] = result_type
+    return body
+
+
+class TestSessionExecutionSuccess:
+    """``result_type`` says whether a tool that ran succeeded. A failed
+    execution can carry a ``None`` or empty ``error``, so success is read from
+    ``result_type`` and only falls back to the error text when the API sent no
+    ``result_type``.
+    """
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_provider_wrapped_session_tool(self, result_type, error, successful):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        # The error is passed through as the API sent it.
+        assert result == {"data": {}, "error": error, "successful": successful}
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_provider_tool_call_bound_to_a_session(
+        self, result_type, error, successful
+    ):
+        from composio.core.provider._openai import OpenAIProvider
+
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = OpenAIProvider().execute_tool_for_target(
+            target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
+        )
+
+        assert result == {"data": {}, "error": error, "successful": successful}
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_session_execute_exposes_result_type(self, result_type, error, successful):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert result.result_type == result_type
+        assert result.error == error
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_custom_tool_context_execute_exposes_result_type(
+        self, result_type, error, successful
+    ):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = SessionContextImpl(client, "user_123", "session_123").execute(
+            "GMAIL_SEND_EMAIL", {}
+        )
+
+        assert result.result_type == result_type
+        assert result.error == error
+
+
 def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
     """The execute function providers wrap session tools with."""
     from composio.core.models.tools import Tools

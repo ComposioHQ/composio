@@ -158,6 +158,24 @@ def require_executed(
     )
 
 
+def is_execution_successful(
+    result_type: t.Optional[str], error: t.Optional[str]
+) -> bool:
+    """Whether a session tool execution succeeded.
+
+    ``result_type`` decides when the API sent one: a ``failed`` execution is
+    not successful even when its ``error`` is ``None`` or empty. Without a
+    known ``result_type``, for example from a server that predates it, an
+    execution is successful when it carries no error text. The TypeScript SDK
+    applies the same rule.
+    """
+    if result_type == "completed":
+        return True
+    if result_type == "failed":
+        return False
+    return not error
+
+
 class InstantCharge(te.TypedDict):
     """Instant usage charge reported for a Session tool execution."""
 
@@ -627,10 +645,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Convert response to standard format
+            error = response.error if hasattr(response, "error") else None
             result: ToolExecutionResponse = {
                 "data": response.data if hasattr(response, "data") else {},
-                "error": response.error if hasattr(response, "error") else None,
-                "successful": not (hasattr(response, "error") and response.error),
+                "error": error,
+                "successful": is_execution_successful(
+                    getattr(response, "result_type", None), error
+                ),
             }
             instant_charge = getattr(response, "instant_charge", None)
             if isinstance(instant_charge, PydanticBaseModel):

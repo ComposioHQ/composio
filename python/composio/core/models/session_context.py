@@ -163,6 +163,7 @@ class SessionContextImpl:
                 data=result["data"],
                 error=result["error"],
                 log_id="",
+                result_type="completed" if result["successful"] else "failed",
             )
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)

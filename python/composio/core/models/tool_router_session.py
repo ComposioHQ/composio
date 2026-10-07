@@ -720,21 +720,25 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             remote_error = (
                 str(raw_remote_error) if raw_remote_error is not None else None
             )
-        has_any_error = any(r.get("error") for _, r in local_results) or bool(
-            remote_error
+        # A failed execution can carry no error text, so success is read from
+        # each result's own verdict and not from the absence of an error message.
+        has_any_failure = (
+            any(not r["successful"] for _, r in local_results)
+            or (remote_result is not None and remote_result.get("successful") is False)
+            or bool(remote_error)
         )
         error_message = None
-        if has_any_error:
+        if has_any_failure:
             error_message = (
-                remote_error
-                if remote_error is not None and failed == 0
-                else f"{failed} out of {len(all_results)} tools failed"
+                f"{failed} out of {len(all_results)} tools failed"
+                if failed > 0
+                else remote_error
             )
 
         merged: t.Dict[str, t.Any] = {
             "data": merged_data,
             "error": error_message,
-            "successful": not has_any_error,
+            "successful": not has_any_failure,
         }
         if remote_result and remote_result.get("instant_charge") is not None:
             merged["instant_charge"] = remote_result["instant_charge"]
@@ -907,7 +911,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             top-level field or define their own account-selection fields.
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
-        ``error``, ``log_id``, and ``instant_charge`` attributes.
+        ``error``, ``log_id``, ``result_type``, and ``instant_charge``
+        attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
+        execution can carry a ``None`` or empty ``error``, so read
+        ``result_type`` to tell the two apart. It is ``None`` when the API sent
+        none.
 
         :raises ToolInputRequiredError: If the tool needs input from the user
             (for example an approval) before it can run. Nothing was executed.
@@ -920,6 +928,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 data=result["data"],
                 error=result["error"],
                 log_id="",
+                result_type="completed" if result["successful"] else "failed",
             )
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)

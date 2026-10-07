@@ -954,6 +954,28 @@ def _session(deps, **overrides):
 
 
 class TestToolRouterSessionCustomTools:
+    def test_execute_local_failure_without_message_is_failed(self):
+        @exp.tool()
+        def silent(input: GrepInput, ctx):
+            """Raises an error with no message."""
+            raise RuntimeError("")
+
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=build_custom_tools_map([silent]),
+            user_id="u",
+        )
+
+        result = s.execute("SILENT", arguments={"pattern": "x"})
+
+        assert result.error == ""
+        assert result.result_type == "failed"
+
     def test_execute_local(self, mock_session_deps):
         s = _session(mock_session_deps)
         result = s.execute("GREP", arguments={"pattern": "x"})
@@ -961,6 +983,7 @@ class TestToolRouterSessionCustomTools:
         assert isinstance(result, SessionExecuteResponse)
         assert result.error is None
         assert result.log_id == ""
+        assert result.result_type == "completed"
         assert result.data["matches"] == ["x"]
         mock_session_deps["client"].tool_router.session.execute.assert_not_called()
 
@@ -1475,6 +1498,23 @@ class TestMultiExecuteRouting:
         )
         assert result["successful"] is False
         assert result["data"]["results"][1]["error"] == "Remote tool execution failed"
+
+    def test_failed_remote_batch_without_error_text_is_unsuccessful(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+        remote = {"data": {}, "error": None, "successful": False}
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["error"] is None
 
     def test_remote_batch_error_without_item_errors_uses_batch_message(self, grep_tool):
         s = self._make_session(grep_tool)
