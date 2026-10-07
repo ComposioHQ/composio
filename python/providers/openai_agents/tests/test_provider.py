@@ -162,6 +162,32 @@ def test_strict_mode_registers_a_strict_schema_with_optional_params_nullable():
     }
 
 
+def test_strict_mode_optional_enum_param_can_still_be_omitted():
+    """An optional enum is widened to accept null, so the model can leave it out."""
+    tool = MagicMock(
+        slug="SORT",
+        description="Sort something",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "order": {"type": "string", "enum": ["asc", "desc"]},
+            },
+            "required": ["query"],
+        },
+    )
+
+    wrapped_tool = OpenAIAgentsProvider(strict=True).wrap_tool(
+        tool, lambda **kwargs: {}
+    )
+
+    assert wrapped_tool.strict_json_schema is True
+    assert wrapped_tool.params_json_schema["properties"]["order"] == {
+        "type": ["string", "null"],
+        "enum": ["asc", "desc", None],
+    }
+
+
 def test_strict_mode_falls_back_when_schema_cannot_be_expressed_strict():
     """A schema strict mode can't express (arbitrary-key object) is
     registered without strict mode instead, using the existing non-strict

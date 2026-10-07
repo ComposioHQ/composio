@@ -3,6 +3,7 @@
 import copy
 import json
 
+import jsonschema
 import pytest
 
 from composio.utils.strict_schema import omit_null_tool_arguments, to_strict_json_schema
@@ -165,6 +166,62 @@ class TestToStrictJsonSchema:
         }
         assert properties["multi"] == {"type": ["string", "number", "null"]}
         assert_strict_shape(result.schema)
+
+    def test_widened_typed_enum_and_const_still_accept_null(self):
+        result = to_strict_json_schema(
+            {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["a", "b"]},
+                    "level": {"type": "integer", "enum": [1, 2]},
+                    "kind": {"type": "string", "const": "x"},
+                    "multi": {"type": ["string", "integer"], "enum": ["a", 1]},
+                },
+            }
+        )
+
+        properties = result.schema["properties"]
+        assert properties["mode"] == {
+            "type": ["string", "null"],
+            "enum": ["a", "b", None],
+        }
+        assert properties["level"] == {
+            "type": ["integer", "null"],
+            "enum": [1, 2, None],
+        }
+        assert properties["kind"] == {"type": ["string", "null"], "enum": ["x", None]}
+        assert properties["multi"] == {
+            "type": ["string", "integer", "null"],
+            "enum": ["a", 1, None],
+        }
+        assert_strict_shape(result.schema)
+
+        # Omitting every optional property is valid, a real value still is checked.
+        jsonschema.validate(
+            {"mode": None, "level": None, "kind": None, "multi": None}, result.schema
+        )
+        jsonschema.validate(
+            {"mode": "a", "level": 2, "kind": "x", "multi": 1}, result.schema
+        )
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(
+                {"mode": "c", "level": None, "kind": None, "multi": None},
+                result.schema,
+            )
+
+    def test_required_typed_enum_is_not_widened(self):
+        result = to_strict_json_schema(
+            {
+                "type": "object",
+                "properties": {"mode": {"type": "string", "enum": ["a", "b"]}},
+                "required": ["mode"],
+            }
+        )
+
+        assert result.schema["properties"]["mode"] == {
+            "type": "string",
+            "enum": ["a", "b"],
+        }
 
     def test_normalizes_composition_branches_and_array_items_recursively(self):
         result = to_strict_json_schema(
