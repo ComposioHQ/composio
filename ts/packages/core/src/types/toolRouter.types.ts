@@ -630,6 +630,13 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
+  /**
+   * Whether the tool ran and succeeded (`completed`) or ran and failed
+   * (`failed`). A failed execution can carry a `null` or empty `error`, so
+   * read this rather than `error` to tell the two apart. Absent when the API
+   * sent no `result_type`.
+   */
+  resultType: z.enum(['completed', 'failed']).optional(),
   /** Actual Instant usage charge when the Session opts into returning it. */
   instantCharge: z.unknown().optional(),
 });

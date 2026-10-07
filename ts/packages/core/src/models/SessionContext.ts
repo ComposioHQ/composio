@@ -88,6 +88,7 @@ export class SessionContextImpl implements SessionContext {
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       });
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);

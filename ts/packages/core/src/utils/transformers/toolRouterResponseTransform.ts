@@ -5,7 +5,32 @@ import type {
   SessionExecuteResponse,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
+import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
+import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
+
+/**
+ * The `result_type` values that describe a call that ran. A server that
+ * predates `result_type` sends none, and a value this SDK does not know is
+ * treated the same way, so both fall back to the error-based rule in
+ * {@link isExecutionSuccessful}.
+ */
+const ExecutedResultTypeSchema = z.enum(['completed', 'failed']).optional().catch(undefined);
+
+/**
+ * Whether a session tool execution succeeded.
+ *
+ * `resultType` decides when the API sent one: a `failed` execution is not
+ * successful even when its `error` is `null` or empty. Without it, for example
+ * from a server that predates `result_type`, an execution is successful when
+ * it carries no error text.
+ */
+export function isExecutionSuccessful(
+  result: Pick<ToolRouterSessionExecuteResponse, 'resultType' | 'error'>
+): boolean {
+  if (result.resultType !== undefined) return result.resultType === 'completed';
+  return !result.error;
+}
 
 type InputRequiredResponse = Extract<
   SessionExecuteResponse | SessionProxyExecuteResponse,
@@ -189,10 +214,12 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  */
 export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
+  const resultType = ExecutedResultTypeSchema.parse(raw.result_type);
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
+    ...(resultType !== undefined && { resultType }),
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
   };
 }

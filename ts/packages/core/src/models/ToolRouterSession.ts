@@ -706,6 +706,7 @@ export class ToolRouterSession<
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       };
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -1125,16 +1126,21 @@ export class ToolRouterSession<
     }
     const remoteError =
       remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
+    // A failed execution can carry no error text, so success is read from each
+    // result's own verdict and not from the absence of an error message.
+    const hasAnyFailure =
+      localResults.some(r => !r.result.successful) ||
+      remoteResult?.successful === false ||
+      !!remoteError;
 
     return {
       data: mergedData,
-      error: hasAnyError
-        ? remoteError && failedCount === 0
-          ? remoteError
-          : `${failedCount} out of ${allResults.length} tools failed`
+      error: hasAnyFailure
+        ? failedCount > 0
+          ? `${failedCount} out of ${allResults.length} tools failed`
+          : remoteError
         : null,
-      successful: !hasAnyError,
+      successful: !hasAnyFailure,
       ...(remoteResult?.instantCharge !== undefined && {
         instantCharge: remoteResult.instantCharge,
       }),

@@ -152,8 +152,8 @@ describe('execution that requires user input', () => {
   });
 
   it.each([
-    { name: 'completed', result_type: 'completed', error: null },
-    { name: 'failed', result_type: 'failed', error: 'Connection not found' },
+    { name: 'completed', result_type: 'completed' as const, error: null },
+    { name: 'failed', result_type: 'failed' as const, error: 'Connection not found' },
   ])('session.execute still returns a $name result', async ({ result_type, error }) => {
     const { client } = createClient({ result_type, data: { id: 'msg_1' }, error, log_id: 'log_1' });
 
@@ -161,6 +161,7 @@ describe('execution that requires user input', () => {
       data: { id: 'msg_1' },
       error,
       logId: 'log_1',
+      resultType: result_type,
     });
   });
 
@@ -177,5 +178,106 @@ describe('execution that requires user input', () => {
       data: { id: 1 },
       headers: { 'x-request-id': 'req_1' },
     });
+  });
+});
+
+// `result_type` says whether a tool that ran succeeded. A failed execution can
+// carry a `null` or empty `error`, so success is read from `result_type` and
+// only falls back to the error text when the API sent no `result_type`.
+const executedAnswers: Array<{
+  name: string;
+  result_type?: 'completed' | 'failed';
+  error: string | null;
+  successful: boolean;
+}> = [
+  { name: 'failed with a null error', result_type: 'failed', error: null, successful: false },
+  { name: 'failed with an empty error', result_type: 'failed', error: '', successful: false },
+  { name: 'failed with a message', result_type: 'failed', error: 'Boom', successful: false },
+  { name: 'completed', result_type: 'completed', error: null, successful: true },
+  { name: 'no result_type and no error', error: null, successful: true },
+  { name: 'no result_type and an error', error: 'Boom', successful: false },
+];
+
+const wireBody = ({ result_type, error }: (typeof executedAnswers)[number]) => ({
+  ...(result_type !== undefined && { result_type }),
+  data: {},
+  error,
+  log_id: 'log',
+});
+
+class TargetProvider extends MockProvider {
+  executeFor(session: ToolRouterSession) {
+    return this.executeToolForTarget(session, 'GMAIL_SEND_EMAIL', {});
+  }
+}
+
+describe('session execution success', () => {
+  it.each(executedAnswers)(
+    'provider-wrapped session tool: $name is successful=$successful',
+    async answer => {
+      const { client } = createClient(wireBody(answer));
+
+      const result = await new Tools(client, { provider: new MockProvider() }).executeSessionTool(
+        'GMAIL_SEND_EMAIL',
+        { sessionId: SESSION_ID, arguments: {} }
+      );
+
+      expect(result).toEqual({
+        data: {},
+        // The error is passed through as the API sent it.
+        error: answer.error,
+        successful: answer.successful,
+        logId: 'log',
+      });
+    }
+  );
+
+  it.each(executedAnswers)(
+    'provider tool call bound to a session: $name is successful=$successful',
+    async answer => {
+      const { client } = createClient(wireBody(answer));
+
+      const result = await new TargetProvider().executeFor(createSession(client));
+
+      expect(result.successful).toBe(answer.successful);
+      expect(result.error).toBe(answer.error);
+    }
+  );
+
+  it.each(executedAnswers)('session.execute: $name exposes resultType', async answer => {
+    const { client } = createClient(wireBody(answer));
+
+    const result = await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+
+    expect(result.resultType).toBe(answer.result_type);
+    expect(result.error).toBe(answer.error);
+  });
+
+  it.each(executedAnswers)(
+    'custom tool context execute: $name exposes resultType',
+    async answer => {
+      const { client } = createClient(wireBody(answer));
+
+      const result = await new SessionContextImpl(client, 'test-user', SESSION_ID).execute(
+        'GMAIL_SEND_EMAIL',
+        {}
+      );
+
+      expect(result.resultType).toBe(answer.result_type);
+      expect(result.error).toBe(answer.error);
+    }
+  );
+
+  it('falls back to the error text when result_type is a value the SDK does not know', async () => {
+    const { client } = createClient({
+      result_type: 'deferred',
+      data: {},
+      error: null,
+      log_id: 'l',
+    });
+
+    const result = await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+
+    expect(result.resultType).toBeUndefined();
   });
 });
