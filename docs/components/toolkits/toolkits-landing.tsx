@@ -1,5 +1,7 @@
 'use client';
 
+import { InstantBadge } from './instant-badge';
+
 import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
@@ -78,6 +80,7 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
         <ToolkitIcon toolkit={toolkit} lazy={lazy} />
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <span className="truncate text-sm font-medium text-fd-foreground">{toolkit.name.trim()}</span>
+          {toolkit.instant?.supported === true && <InstantBadge />}
           <CopySlugButton slug={toolkit.slug} />
         </div>
       </div>

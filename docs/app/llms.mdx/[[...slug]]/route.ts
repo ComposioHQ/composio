@@ -1,3 +1,4 @@
+import { instantDiscount, instantPricingDescription } from '@/lib/instant';
 import {
   source,
   getReferenceSource,
@@ -55,7 +56,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=${API_FETCH_LIMIT}`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=${API_FETCH_LIMIT}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -870,6 +871,10 @@ function toolkitToMarkdown(
     lines.push(`- **Version:** ${toolkit.version}`);
   }
 
+  if (toolkit.instant?.supported === true) {
+    lines.push('- **Instant:** Supported on the latest version. Support varies by tool.');
+  }
+
   if (faqMarkdown && faqMarkdown.trim()) {
     lines.push('', '## Frequently Asked Questions', '');
     // Bump ## headings to ### so FAQ questions are children of the FAQ section
@@ -882,6 +887,12 @@ function toolkitToMarkdown(
       lines.push(`### ${tool.name}`, '');
       lines.push(`**Slug:** \`${tool.slug}\``, '');
       lines.push(tool.description, '');
+      if (tool.instant?.supported === true) {
+        lines.push('**Instant:** Supported on the latest version.', '',
+          `**Instant pricing:** ${instantPricingDescription(tool.instant)}`, '');
+        const discount = instantDiscount(tool.instant);
+        if (discount !== undefined) lines.push(`**Discount:** ${discount}`, '');
+      }
 
       // Input parameters
       if (tool.input_parameters && Object.keys(tool.input_parameters).length > 0) {
