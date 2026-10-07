@@ -1,74 +1,7 @@
 /**
- * Composio CLI runner: composes the top-level Effect layers and drives the
- * root command through `effect/unstable/cli`'s `Command.runWith`.
- *
- * ## v4 runner design (read before touching this file)
- *
- * v3's `@effect/cli` `Command.run`/`runWith` returned a `ValidationError` on
- * parse/validation failure and left rendering (help text, "did you mean"
- * tips) entirely to the caller. This module used to inspect
- * `ValidationError.error` (a `HelpDoc`), render it by hand, and separately
- * look up help text for the resolved command via `root-help.ts`.
- *
- * v4's `Command.runWith` (see
- * `ts/vendor/effect/packages/effect/src/unstable/cli/Command.ts`,
- * `runWith`/`showHelp`) is different in a load-bearing way: it *renders
- * help and errors itself* — `Console.log`ing the formatted `HelpDoc` and
- * `Console.error`ing formatted `CliError`s for the resolved `commandPath` —
- * and only then re-fails with a `CliError.ShowHelp`. By the time that
- * failure reaches this module, the correct output (respecting whatever
- * command tree/visibility was passed to `Command.runWith`, using v4's own
- * `CliOutput.defaultFormatter()` — see `cli-config.ts` for why Composio no
- * longer overrides it) has already been printed once, to the correct
- * stream.
- *
- * `CliError.ShowHelp` (see `ts/vendor/.../unstable/cli/CliError.ts`) carries
- * two `effect/Runtime` markers set on the class itself:
- * `[Runtime.errorExitCode] = errors.length ? 1 : 0` and
- * `[Runtime.errorReported] = false`. Those markers are how `ShowHelp` tells
- * the runtime "I already printed my own output; don't log me again, and here
- * is the exit code to use." Consequently, this module's job for `ShowHelp`
- * is to do *nothing* — not render, not intercept — and simply let it
- * propagate to `BunRuntime.runMain`: `errorReported = false` suppresses
- * `runMain`'s automatic `Effect.logError(cause)` (see `Runtime.makeRunMain`),
- * and the custom `teardown` below reads `errorExitCode` off the squashed
- * error to pick the process exit code (0 for a bare `--help`/`--version`
- * request, 1 when help was shown alongside parse/validation errors). The
- * sandboxed catch-all handler further down special-cases `ShowHelp` for
- * exactly this reason: it re-fails with the original `Cause` via
- * `Effect.failCause` instead of swallowing it like every other error.
- * `collectValueOptionNames` and the "Tip: --flag requires a value" logic
- * that used to run in a dedicated `ShowHelp` branch here are gone for a
- * related reason: v4's `CliError.InvalidValue` already renders that exact
- * tip natively ("Missing value for flag --x. Expected: ...") as part of
- * `Command.runWith`'s own error output.
- *
- * `matchCommandFromArgv` / `getCommandHelpText` are still used lower down,
- * in the catch-all defect handler — that is a genuinely different path
- * (real command-handler failures captured by `effect-errors`, not CLI
- * parse/validation failures), and `Command.runWith` never renders anything
- * for it, so appending the resolved command's help text there is not a
- * double-print.
- *
- * v3's `CliConfig` also configured `autoCorrectLimit: 0` and
- * `isCaseSensitive: true`. Neither has a v4 config equivalent, and neither
- * is reproduced anymore: v4's parser is always exact-match (no case-folding,
- * so `isCaseSensitive` needs no knob), and "Did you mean?" suggestions on
- * `UnrecognizedOption`/`UnknownSubcommand` now render as-is — see
- * `cli-config.ts` for the full rationale. `CliConfigLive` below narrows the
- * active built-in global flags to just `--help`/`-h` and `--version`/root
- * `-v`, per `ComposioCliConfig`; that narrowing is the only `CliConfig`
- * customization left.
- *
- * `runWithConfig` (from `src/commands`) still receives the *full*
- * `process.argv`, including the node/bun executable and script path
- * prefix, exactly as before. That module slices the prefix off internally
- * for its own routing/help logic. The `effect/unstable/cli` `Command.runWith`
- * (unlike v3's `Command.run`) expects args *without* that prefix, so
- * whatever `commands/index.ts` binds as its own `run` helper is
- * responsible for slicing `argv.slice(2)` immediately before invoking
- * `Command.runWith` — this module does not do that slicing itself, so the
- * contract at the `runWithConfig` boundary must not change.
+ * Composes the CLI layers and runs Effect's command parser. Command.runWith renders
+ * help and parse errors once; preserve ShowHelp so its runtime markers control logging
+ * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
 import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
@@ -80,7 +13,6 @@ import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
-import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { getBaseConfigProvider, ConfigLive, extendConfigProvider } from 'src/services/config';
@@ -93,7 +25,7 @@ import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
-import { ComposioCliUserConfigLive, ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
@@ -124,7 +56,8 @@ import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { MissingRunSourceError } from 'src/commands/run.cmd';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
-import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
+import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
+import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -310,10 +243,8 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
  * Values `src/bin.ts` resolved before the Effect runtime existed and hands to it here.
  */
 export type CliBootstrapOptions = {
-  /** The full process argv (executable and script included) with `--telemetry-debug` stripped. */
+  /** The full, unchanged process argv (executable and script included). */
   readonly argv: ReadonlyArray<string>;
-  /** `--telemetry-debug` was on the command line, and was stripped from argv before parsing. */
-  readonly telemetryDebug: boolean;
 };
 
 const cliProgram = (argv: ReadonlyArray<string>) =>
@@ -400,21 +331,6 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           if (message.length > 0) {
             const ui = yield* TerminalUI;
             yield* ui.error(message);
-            const cliUserConfig = yield* ComposioCliUserConfig;
-            const visibility = {
-              isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
-              isExperimentalFeatureEnabled: (feature: string) =>
-                cliUserConfig.isExperimentalFeatureEnabled(feature),
-            };
-            // This handles genuine command-execution failures (business errors captured by
-            // effect-errors), a different path from the `ShowHelp` branch above: those are CLI
-            // parse/validation failures that `Command.runWith` already rendered itself. Appending
-            // the resolved command's help text here is not a double-print of that.
-            const cmdName = matchCommandFromArgv(argv, visibility);
-            const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-            if (helpText) {
-              yield* ui.error(helpText);
-            }
             process.exitCode = 1;
           }
         }
@@ -427,11 +343,10 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {
+  const debug = readTelemetryDebugOverride(normalizeRunScriptArgs(options.argv));
   cliProgram(options.argv).pipe(
-    // Only provided when the flag was actually present: without it telemetry debugging falls back
-    // to `COMPOSIO_CLI_TELEMETRY_DEBUG`.
     effect =>
-      options.telemetryDebug ? Effect.provide(effect, telemetryDebugModeLayer(true)) : effect,
+      debug === undefined ? effect : Effect.provide(effect, telemetryDebugModeLayer(debug)),
     BunRuntime.runMain({ teardown })
   );
 };
