@@ -429,6 +429,13 @@ export class Tools<
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
    * });
    *
+   * // Request published pricing for eligible Instant tools
+   * const pricedTools = await composio.tools.getRawComposioTools({
+   *   tools: ['EXA_SEARCH'],
+   *   includePricing: true
+   * });
+   * console.log(pricedTools[0].instant?.price);
+   *
    * // Get tools from specific toolkits
    * const githubTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
@@ -524,6 +531,7 @@ export class Tools<
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
       ...(effectiveImportant ? { important: 'true' } : {}),
+      ...(queryParams.data.includePricing ? { include_pricing: true } : {}),
       ...{ toolkit_versions: this.toolkitVersions },
     };
 
@@ -631,6 +639,7 @@ export class Tools<
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
    * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval
+   * @param {boolean} [options.includePricing] - Include published pricing in instant.price when available
    * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
    * @returns {Promise<Tool>} The requested tool with its complete schema and metadata
    *
@@ -680,9 +689,13 @@ export class Tools<
       const retrieveParams = options?.version
         ? { version: options.version } // Explicit version → use 'version' param
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
+      const queryParams = {
+        ...retrieveParams,
+        ...(options?.includePricing ? { include_pricing: true } : {}),
+      };
 
       tool = await withCancellation(
-        () => this.client.tools.retrieve(slug, retrieveParams, requestOptions),
+        () => this.client.tools.retrieve(slug, queryParams, requestOptions),
         requestOptions?.signal
       );
     } catch (error) {
