@@ -8,6 +8,7 @@ import {
   ToolCallExecutionTarget,
 } from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
+import { isExecutionSuccessful } from '../utils/transformers/toolRouterResponseTransform';
 
 /**
  * @internal
@@ -108,7 +109,7 @@ abstract class BaseProvider<TMcpResponse> {
     const result = await target.execute(toolSlug, arguments_);
     return {
       ...result,
-      successful: result.error === null,
+      successful: isExecutionSuccessful(result),
     };
   }
 

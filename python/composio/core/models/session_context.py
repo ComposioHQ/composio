@@ -27,7 +27,7 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
-from composio.core.models.tools import _serialize_arguments
+from composio.core.models.tools import _serialize_arguments, require_executed
 from composio.exceptions import ValidationError
 
 
@@ -84,13 +84,16 @@ def proxy_execute_impl(
 
     # Disable retries: a proxied call is a non-idempotent write, and a silent
     # retry after a read timeout can duplicate the side effect.
-    response = client.without_retries.tool_router.session.proxy_execute(
-        session_id=session_id,
-        toolkit_slug=toolkit,
-        endpoint=endpoint,
-        method=method,
-        body=body if body is not None else omit,
-        parameters=api_params if api_params else omit,
+    response = require_executed(
+        client.without_retries.tool_router.session.proxy_execute(
+            session_id=session_id,
+            toolkit_slug=toolkit,
+            endpoint=endpoint,
+            method=method,
+            body=body if body is not None else omit,
+            parameters=api_params if api_params else omit,
+        ),
+        f"{method} proxy call for toolkit {toolkit}",
     )
 
     # ``status`` and ``size`` are ``float`` on the generated model and pydantic
@@ -160,6 +163,7 @@ class SessionContextImpl:
                 data=result["data"],
                 error=result["error"],
                 log_id="",
+                result_type="completed" if result["successful"] else "failed",
             )
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
@@ -169,13 +173,16 @@ class SessionContextImpl:
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return self._client.without_retries.tool_router.session.execute(
-            session_id=self._session_id,
-            tool_slug=tool_slug,
-            arguments=serialized,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
+        return require_executed(
+            self._client.without_retries.tool_router.session.execute(
+                session_id=self._session_id,
+                tool_slug=tool_slug,
+                arguments=serialized,
+                experimental=inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
             ),
+            f"Tool {tool_slug}",
         )
 
     def proxy_execute(
