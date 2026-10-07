@@ -1251,6 +1251,9 @@ describe('CLI: composio execute', () => {
             }),
             'utf8'
           );
+          vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
+            Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
+          );
 
           yield* cli([
             'execute',
@@ -1268,12 +1271,12 @@ describe('CLI: composio execute', () => {
             version: string | null;
             inputSchema: Record<string, unknown>;
           };
-          expect(['20260101_00', '20260115_00']).toContain(refreshed.version);
+          expect(refreshed.version).toBe('20260115_00');
           expect(refreshed.inputSchema.type).toBe('object');
           const propertyKeys = Object.keys(
             (refreshed.inputSchema.properties ?? {}) as Record<string, unknown>
           );
-          expect(propertyKeys.some(key => key === 'recipient_email' || key === 'to')).toBe(true);
+          expect(propertyKeys).toContain('recipient_email');
         })
       );
     }
@@ -1349,6 +1352,141 @@ describe('CLI: composio execute', () => {
         expect(failure).toContain('Use "recipient_email" instead.');
         expect(failure).toContain('Allowed top-level keys: recipient_email, subject, body');
         expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+  });
+
+  const executedToolSlugs: Array<string> = [];
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260101_00'],
+            input_parameters: {
+              type: 'object',
+              required: ['recipient_email'],
+              properties: {
+                recipient_email: { type: 'string', description: 'Recipient email' },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+      toolsExecutor: {
+        onExecute: slug => {
+          executedToolSlugs.push(slug);
+        },
+      },
+    })
+  )('[Given] invalid tool input [Then] validation gates the tool call and keeps the schema', it => {
+    // The schema lookup answers after the mock executor would have finished,
+    // so a tool call that does not wait for validation always gets through.
+    const slowSchemaLookup = () =>
+      vi
+        .spyOn(composioClients, 'getLatestToolVersion')
+        .mockImplementation(({ toolSlug }) =>
+          Effect.promise(() => new Promise<void>(resolve => setTimeout(resolve, 25))).pipe(
+            Effect.as({ tool_slug: toolSlug, version: '20260101_00' })
+          )
+        );
+
+    const executeWithInvalidInput = cli([
+      'execute',
+      'GMAIL_SEND_EMAIL',
+      '--skip-connection-check',
+      '-d',
+      '{"recipient":42}',
+    ]).pipe(
+      Effect.flip,
+      Effect.map(error => (error instanceof Error ? error.message : String(error)))
+    );
+
+    it.effect('never sends the tool call on a schema cache miss', () =>
+      Effect.gen(function* () {
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        const failure = yield* executeWithInvalidInput;
+
+        expect(failure).toContain('Input validation failed for GMAIL_SEND_EMAIL');
+        expect(executedToolSlugs).toEqual([]);
+        const cacheDir = yield* setupCacheDir;
+        const schemaPath = `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`;
+        expect(failure).toContain(schemaPath);
+        expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+
+    it.effect('never sends the tool call on a schema cache hit', () =>
+      Effect.gen(function* () {
+        yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
+        clearInProcessMemos();
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        const failure = yield* executeWithInvalidInput;
+
+        expect(failure).toContain('Input validation failed for GMAIL_SEND_EMAIL');
+        expect(executedToolSlugs).toEqual([]);
+        const cacheDir = yield* setupCacheDir;
+        const schemaPath = `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`;
+        expect(failure).toContain(schemaPath);
+        expect(fs.existsSync(schemaPath)).toBe(true);
+      })
+    );
+
+    it.effect('sends the tool call when the cached schema cannot be compiled', () =>
+      Effect.gen(function* () {
+        const cacheDir = yield* setupCacheDir;
+        fs.mkdirSync(`${cacheDir}/tool_definitions`, { recursive: true });
+        fs.writeFileSync(
+          `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`,
+          JSON.stringify({
+            version: '20260101_00',
+            inputSchema: {
+              type: 'object',
+              properties: { recipient_email: { type: 'string' } },
+              // Not a JavaScript regular expression, so the validator cannot be built.
+              patternProperties: { '(?i)^x-': { type: 'string' } },
+            },
+          }),
+          'utf8'
+        );
+        clearInProcessMemos();
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]);
+
+        expect(executedToolSlugs).toEqual(['GMAIL_SEND_EMAIL']);
+
+        const dryRunFailure = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--dry-run',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]).pipe(
+          Effect.flip,
+          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+        );
+        expect(dryRunFailure).toContain('Could not compile the cached JSON schema');
       })
     );
   });

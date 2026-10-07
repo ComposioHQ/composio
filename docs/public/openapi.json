@@ -5667,309 +5667,6 @@
         "x-api-version": "3.1"
       }
     },
-    "/api/v3.1/custom/toolkits": {
-      "post": {
-        "summary": "Create a custom toolkit",
-        "description": "Experimental: this endpoint may change. Creates a custom MCP toolkit and returns its slug. Set user_id to \"all\" to share the toolkit with every user in the project, or to a user ID to make it private to that user. Access cannot be changed later. For a private toolkit, the response can include a connect_link to send that user to.",
-        "tags": [
-          "Toolkits"
-        ],
-        "operationId": "postCustomToolkits",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Toolkit to create",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200,
-                    "description": "Display name of the toolkit"
-                  },
-                  "app_url": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "MCP server URL"
-                  },
-                  "logo_file": {
-                    "type": "object",
-                    "properties": {
-                      "content": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 4000000,
-                        "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                        "description": "Base64-encoded image, max 3MB decoded"
-                      },
-                      "mime_type": {
-                        "type": "string",
-                        "enum": [
-                          "image/png",
-                          "image/jpeg"
-                        ],
-                        "description": "Image MIME type"
-                      }
-                    },
-                    "required": [
-                      "content",
-                      "mime_type"
-                    ],
-                    "additionalProperties": false,
-                    "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
-                  },
-                  "auth_schemes": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "mode": {
-                              "type": "string",
-                              "enum": [
-                                "NO_AUTH"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "mode"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "mode": {
-                              "type": "string",
-                              "enum": [
-                                "API_KEY"
-                              ]
-                            },
-                            "headers": {
-                              "type": "object",
-                              "additionalProperties": {
-                                "type": "string"
-                              },
-                              "description": "Headers sent to the MCP server. Use {{generic_api_key}} where the API key goes."
-                            },
-                            "api_key_field": {
-                              "type": "object",
-                              "properties": {
-                                "display_name": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 100,
-                                  "description": "Label for the API key input"
-                                },
-                                "description": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 500,
-                                  "description": "Help text below the API key input"
-                                }
-                              },
-                              "additionalProperties": false,
-                              "description": "Label and help text for the API key input on the connect page"
-                            }
-                          },
-                          "required": [
-                            "mode",
-                            "headers"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "mode": {
-                              "type": "string",
-                              "enum": [
-                                "DCR_OAUTH"
-                              ]
-                            },
-                            "discovery_url": {
-                              "type": "string",
-                              "format": "uri",
-                              "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
-                            }
-                          },
-                          "required": [
-                            "mode",
-                            "discovery_url"
-                          ],
-                          "additionalProperties": false
-                        }
-                      ]
-                    },
-                    "minItems": 1,
-                    "description": "How users authenticate to the MCP server"
-                  },
-                  "user_id": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "enum": [
-                          "all"
-                        ]
-                      },
-                      {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 256
-                      }
-                    ],
-                    "description": "\"all\" to share the toolkit with every user in the project, or a user ID to make it private to that user. Cannot be changed after create.",
-                    "example": "all"
-                  },
-                  "callback_url": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "URL to send the user to after they connect. Used only for connect_link."
-                  }
-                },
-                "required": [
-                  "name",
-                  "app_url",
-                  "auth_schemes",
-                  "user_id"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successfully created toolkit",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "slug": {
-                      "type": "string",
-                      "description": "Slug of the created toolkit",
-                      "example": "CUSTOM_NOTION_K7F2Q"
-                    },
-                    "connect_link": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "redirect_url": {
-                          "type": "string",
-                          "description": "Hosted connect page. Send the user here."
-                        },
-                        "expires_at": {
-                          "type": "string",
-                          "description": "When the link expires (ISO 8601)"
-                        },
-                        "connected_account_id": {
-                          "type": "string",
-                          "format": "connectedAccountId",
-                          "description": "Connected account for the user. It becomes ACTIVE once they connect."
-                        }
-                      },
-                      "required": [
-                        "redirect_url",
-                        "expires_at",
-                        "connected_account_id"
-                      ],
-                      "description": "Link for a private toolkit's user to connect. Null for shared or no-auth toolkits, or if the link could not be created. To retry, call POST /api/v3/connected_accounts/link with an auth config for the toolkit, creating one with POST /api/v3/auth_configs if needed."
-                    }
-                  },
-                  "required": [
-                    "slug",
-                    "connect_link"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - Invalid parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Invalid or missing credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Your role cannot create custom toolkits",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "408": {
-            "description": "Request timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict - This user already has a private toolkit for this MCP URL",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests - Retry after a short backoff",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - Failed to create toolkit",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      }
-    },
     "/api/v3.1/custom/toolkits/{slug}": {
       "delete": {
         "summary": "Delete a custom toolkit",
@@ -6111,208 +5808,6 @@
           },
           "500": {
             "description": "Internal server error - Failed to delete toolkit",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      },
-      "patch": {
-        "summary": "Update a custom toolkit",
-        "description": "Experimental: this endpoint may change. Updates a custom toolkit's name, logo, or API key field text. Omitted fields keep their current value. To change app_url, auth_schemes, or user_id, delete and re-create the toolkit.",
-        "tags": [
-          "Toolkits"
-        ],
-        "operationId": "patchCustomToolkitsBySlug",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 37,
-              "pattern": "^[a-zA-Z0-9_]+$",
-              "description": "Slug returned when the toolkit was created",
-              "example": "CUSTOM_NOTION_K7F2Q"
-            },
-            "required": true,
-            "description": "Custom toolkit slug",
-            "name": "slug",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Fields to update",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200,
-                    "description": "Display name of the toolkit"
-                  },
-                  "logo_file": {
-                    "type": "object",
-                    "properties": {
-                      "content": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 4000000,
-                        "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-                        "description": "Base64-encoded image, max 3MB decoded"
-                      },
-                      "mime_type": {
-                        "type": "string",
-                        "enum": [
-                          "image/png",
-                          "image/jpeg"
-                        ],
-                        "description": "Image MIME type"
-                      }
-                    },
-                    "required": [
-                      "content",
-                      "mime_type"
-                    ],
-                    "additionalProperties": false,
-                    "description": "Square PNG or JPEG logo, 256-1024px, max 3MB. Defaults to the Model Context Protocol logo."
-                  },
-                  "api_key_field": {
-                    "type": "object",
-                    "properties": {
-                      "display_name": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 100,
-                        "description": "Label for the API key input"
-                      },
-                      "description": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 500,
-                        "description": "Help text below the API key input"
-                      }
-                    },
-                    "additionalProperties": false,
-                    "description": "Label and help text for the API key input on the connect page. API_KEY toolkits only."
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successfully updated toolkit",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ],
-                      "description": "The toolkit was updated"
-                    }
-                  },
-                  "required": [
-                    "success"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - Invalid parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Invalid or missing credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Your role cannot update custom toolkits",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found - Toolkit not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "408": {
-            "description": "Request timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict - The toolkit cannot be updated right now",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests - Retry after a short backoff",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - Failed to update toolkit",
             "content": {
               "application/json": {
                 "schema": {
@@ -13159,7 +12654,8 @@
                       "COMPOSIO_REMOTE_WORKBENCH",
                       "COMPOSIO_REMOTE_BASH_TOOL",
                       "COMPOSIO_GET_TOOL_SCHEMAS",
-                      "COMPOSIO_SUBMIT_FEEDBACK"
+                      "COMPOSIO_SUBMIT_FEEDBACK",
+                      "COMPOSIO_PROXY_EXECUTE"
                     ],
                     "description": "The unique slug identifier of the meta tool to execute",
                     "example": "COMPOSIO_MANAGE_CONNECTIONS"
@@ -21928,7 +21424,7 @@
     "/api/v3.1/custom/toolkits/upsert": {
       "post": {
         "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Prefer POST /api/v3.1/custom/toolkits (which sets which users can use a toolkit) and PATCH /api/v3.1/custom/toolkits/{slug}. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
         "tags": [
           "Toolkits"
         ],
@@ -21969,7 +21465,7 @@
                       "app_url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "MCP server URL"
+                        "description": "MCP server URL. Must use https."
                       },
                       "logo_file": {
                         "type": "object",
@@ -22070,7 +21566,8 @@
                                 "discovery_url": {
                                   "type": "string",
                                   "format": "uri",
-                                  "description": "OAuth authorization server metadata URL, usually <MCP URL>/.well-known/oauth-authorization-server"
+                                  "description": "OAuth authorization server metadata URL, for example https://<auth server host>/.well-known/oauth-authorization-server. Use the URL your authorization server publishes; it can be on a different host from the MCP server or include a path.",
+                                  "example": "https://mcp.example.com/.well-known/oauth-authorization-server"
                                 }
                               },
                               "required": [
@@ -22288,6 +21785,16 @@
           },
           "401": {
             "description": "Unauthorized - Invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - The caller cannot write custom toolkits",
             "content": {
               "application/json": {
                 "schema": {

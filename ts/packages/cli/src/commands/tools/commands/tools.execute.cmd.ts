@@ -1,16 +1,14 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import util from 'node:util';
-import { Cause, Context, Data, Effect, Exit, Fiber, Option, Result } from 'effect';
+import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
-  getCachedToolInputDefinition,
   getOrFetchToolInputDefinition,
   invalidateToolInputDefinition,
-  refreshToolInputDefinitionIfVersionChanged,
   ToolInputValidationError,
   validateToolInputArguments,
   validateToolInputArgumentsWithDefinition,
@@ -723,144 +721,26 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
-type CachedValidationDecision =
-  { readonly status: 'valid' | 'stale' } | { readonly status: 'fail'; readonly error: unknown };
-
-type ValidationState = {
-  readonly cacheHit: boolean;
-  readonly validationGuard: Effect.Effect<never, unknown>;
-  readonly awaitCachedValidationDecision: Effect.Effect<CachedValidationDecision, never> | null;
-};
-
-type CachedDefinition = {
-  readonly schemaPath: string;
-  readonly schema: Record<string, unknown>;
-  readonly version: string | null;
-} | null;
-
-const validationGuardFromFiber = (validationFiber: Fiber.Fiber<unknown, unknown>) =>
-  Fiber.await(validationFiber).pipe(
-    Effect.flatMap(
-      Exit.match({
-        onFailure: cause => {
-          const fail = Cause.findFail(cause);
-          if (Result.isSuccess(fail) && fail.success.error instanceof ToolInputValidationError) {
-            return Effect.failCause(cause);
-          }
-          return Effect.never;
-        },
-        onSuccess: () => Effect.never,
-      })
+// Gates the tool call: the request is only sent once the arguments pass. A
+// schema that cannot be loaded does not block the call, the server validates too.
+const validateToolInputBeforeExecute = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+  };
+}) =>
+  validateToolInputArguments(params.slug, params.args, {
+    orgId: params.resolvedProject.orgId,
+    projectId: params.resolvedProject.projectId,
+  }).pipe(
+    Effect.asVoid,
+    Effect.catchIf(
+      error => !(error instanceof ToolInputValidationError),
+      () => perfDebugLog('execute.validation.schema_unavailable', { slug: params.slug })
     )
   );
-
-const spawnBackgroundValidationGuard = (params: {
-  readonly slug: string;
-  readonly args: Record<string, unknown>;
-  readonly resolvedProject: {
-    readonly orgId: string;
-    readonly projectId: string;
-  };
-}) =>
-  Effect.gen(function* () {
-    yield* perfDebugLog('execute.validation.background_spawn', { slug: params.slug });
-    const validationFiber = yield* validateToolInputArguments(params.slug, params.args, {
-      orgId: params.resolvedProject.orgId,
-      projectId: params.resolvedProject.projectId,
-    }).pipe(Effect.forkDetach);
-    yield* perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
-    return validationGuardFromFiber(validationFiber);
-  });
-
-const initializeValidationState = (params: {
-  readonly slug: string;
-  readonly args: Record<string, unknown>;
-  readonly cachedDefinition: CachedDefinition;
-  readonly resolvedProject: {
-    readonly orgId: string;
-    readonly projectId: string;
-  };
-}) =>
-  Effect.gen(function* () {
-    if (!params.cachedDefinition) {
-      yield* perfDebugLog('execute.validation.cache_miss', { slug: params.slug });
-      return {
-        cacheHit: false,
-        validationGuard: Effect.never,
-        awaitCachedValidationDecision: null,
-      } satisfies ValidationState;
-    }
-    const cachedDefinition = params.cachedDefinition;
-
-    yield* perfDebugLog('execute.validation.cache_hit', {
-      slug: params.slug,
-      cachedVersion: cachedDefinition.version,
-    });
-    const versionCheckFiber = yield* refreshToolInputDefinitionIfVersionChanged(
-      params.slug,
-      cachedDefinition.version,
-      {
-        orgId: params.resolvedProject.orgId,
-        projectId: params.resolvedProject.projectId,
-      }
-    ).pipe(
-      Effect.tap(result =>
-        perfDebugLog('execute.validation.version_check_done', {
-          slug: params.slug,
-          cachedVersion: cachedDefinition.version,
-          latestVersion: result.latestVersion,
-          isStale: result.isStale,
-        })
-      ),
-      Effect.option,
-      Effect.forkDetach
-    );
-    const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
-      yield* perfDebugLog('execute.validation.cached_start', { slug: params.slug });
-      const validationDecision = yield* validateToolInputArgumentsWithDefinition(
-        params.slug,
-        params.args,
-        cachedDefinition
-      ).pipe(
-        Effect.match({
-          onFailure: error => ({ status: 'fail', error }) satisfies CachedValidationDecision,
-          onSuccess: () => ({ status: 'valid' }) satisfies CachedValidationDecision,
-        })
-      );
-      yield* perfDebugLog('execute.validation.cached_end', {
-        slug: params.slug,
-        successful: validationDecision.status === 'valid',
-      });
-      if (validationDecision.status === 'valid') {
-        return validationDecision;
-      }
-
-      const freshnessResult = yield* Fiber.join(versionCheckFiber);
-      const isStale = Option.isSome(freshnessResult) && freshnessResult.value.isStale;
-      yield* perfDebugLog('execute.validation.cached_failed', {
-        slug: params.slug,
-        cacheStillCurrent: !isStale,
-      });
-      return isStale
-        ? ({ status: 'stale' } satisfies CachedValidationDecision)
-        : validationDecision;
-    }).pipe(Effect.forkDetach);
-    const awaitCachedValidationDecision = Fiber.join(cachedValidationDecisionFiber);
-
-    return {
-      cacheHit: true,
-      awaitCachedValidationDecision,
-      validationGuard: awaitCachedValidationDecision.pipe(
-        Effect.flatMap(decision => {
-          if (decision.status === 'fail') {
-            return Effect.fail(decision.error);
-          }
-
-          return Effect.never;
-        })
-      ),
-    } satisfies ValidationState;
-  });
 
 type DryRunSummary = {
   readonly successful: true;
@@ -1235,38 +1115,13 @@ const runExecuteWithSpinner = (params: {
 }) =>
   Effect.gen(function* () {
     const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
-    const cachedDefinition = verificationDisabled
-      ? null
-      : yield* getCachedToolInputDefinition(params.slug);
-    const validationState: ValidationState = verificationDisabled
-      ? ({
-          cacheHit: false,
-          validationGuard: Effect.never,
-          awaitCachedValidationDecision: null,
-        } satisfies ValidationState)
-      : yield* initializeValidationState({
-          slug: params.slug,
-          args: params.args,
-          cachedDefinition,
-          resolvedProject: params.resolvedProject,
-        });
 
     yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
-        let validationGuard = validationState.validationGuard;
-        if (!verificationDisabled && !validationState.cacheHit) {
-          validationGuard = yield* spawnBackgroundValidationGuard({
-            slug: params.slug,
-            args: params.args,
-            resolvedProject: params.resolvedProject,
-          });
-        }
-
         if (params.dryRun) {
           const definition = verificationDisabled
             ? null
-            : (cachedDefinition ??
-              (yield* getOrFetchToolInputDefinition(params.slug, {
+            : yield* getOrFetchToolInputDefinition(params.slug, {
                 orgId: params.resolvedProject.orgId,
                 projectId: params.resolvedProject.projectId,
               }).pipe(
@@ -1281,7 +1136,7 @@ const runExecuteWithSpinner = (params: {
                     projectScope: toolkitProjectScope(params.resolvedProject),
                   })
                 )
-              )));
+              );
           if (definition) {
             yield* validateToolInputArgumentsWithDefinition(
               params.slug,
@@ -1330,8 +1185,15 @@ const runExecuteWithSpinner = (params: {
         }
 
         yield* perfDebugLog('execute.tool_call.start', { slug: params.slug });
-        const result = yield* params.executor.execute(params.slug, params.executeParams).pipe(
-          Effect.raceFirst(validationGuard),
+        const validateArgs = verificationDisabled
+          ? Effect.void
+          : validateToolInputBeforeExecute({
+              slug: params.slug,
+              args: params.args,
+              resolvedProject: params.resolvedProject,
+            });
+        const result = yield* validateArgs.pipe(
+          Effect.andThen(params.executor.execute(params.slug, params.executeParams)),
           Effect.matchEffect({
             onFailure: error =>
               Effect.gen(function* () {
@@ -1340,9 +1202,13 @@ const runExecuteWithSpinner = (params: {
                   slug: params.slug,
                   successful: false,
                 });
-                yield* invalidateToolInputDefinition(params.slug).pipe(
-                  Effect.catch(() => Effect.void)
-                );
+                // The validation error points the user at the cached schema, so
+                // it has to stay on disk.
+                if (!(error instanceof ToolInputValidationError)) {
+                  yield* invalidateToolInputDefinition(params.slug).pipe(
+                    Effect.catch(() => Effect.void)
+                  );
+                }
                 yield* spinner.error();
                 const summary = yield* handleExecutionError(params.ui, error, {
                   toolSlug: params.slug,
@@ -1383,15 +1249,6 @@ const runExecuteWithSpinner = (params: {
               }),
           })
         );
-        if (validationState.awaitCachedValidationDecision) {
-          const decision = yield* validationState.awaitCachedValidationDecision;
-          if (decision.status === 'fail') {
-            yield* perfDebugLog('execute.validation.post_success_failure_ignored', {
-              slug: params.slug,
-            });
-          }
-        }
-
         if (!result.successful) {
           yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId

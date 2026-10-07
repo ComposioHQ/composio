@@ -9,6 +9,13 @@
   `base16` field. OpenAPI `binary` is raw bytes, not base64; only
   `contentEncoding: "base64"` is still checked as base64.
 
+- `composio execute` now validates the arguments before it sends the tool
+  call, so a call that fails local validation is never run. Validation used to
+  race the request, and the tool could execute while the CLI reported a
+  validation failure. The cached schema named in the validation error is now
+  kept on disk instead of being deleted. A schema the CLI cannot compile no
+  longer blocks the call; the server still validates it.
+
 - Generate help from the command definitions, including every supported flag and
   nested command. Remove help levels and the nonexistent `files` help topic.
   Install agent skills with `composio setup skill <claude|codex|openclaw>`
