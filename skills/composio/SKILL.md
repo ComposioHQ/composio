@@ -7,20 +7,22 @@ description: Route and complete Composio work across Composio For You and Compos
 
 Use this skill as a router. Identify the product and the job, load only the relevant guidance, consult canonical documentation for volatile details, and then answer or do the work the user requested.
 
+For Instant Tools, consult the [current guide](https://docs.composio.dev/docs/instant-tools.md), discover the actual action, and check its per-tool Instant support and the project's and Session's current policy. A toolkit badge does not establish support for every action. If the action needs the user's identity or private data, use the existing Connect Link flow when authentication is required. Keep setup product-specific using the references below. The guide's SDK examples apply to Platform, not For You.
+
 ## 1. Choose the product
 
 Do not blend the products. They use different credentials and setup paths.
 
 | | Composio For You | Composio Platform |
 |---|---|---|
-| Use when | Someone wants their own agent to use their own apps | A developer is building a product whose users connect accounts |
+| Use when | Someone wants tools for their own agent | A developer is building an app using user-connected accounts, Instant Tools, or both |
 | Primary surface | MCP or the Composio CLI | SDK sessions inside an application |
 | Credential | `ck_...` consumer key when the client requires a header | `COMPOSIO_API_KEY` project key |
 | Dashboard | `dashboard.composio.dev` → For You | `dashboard.composio.dev` → Platform |
 
 Ask one short question only when context does not establish the product:
 
-> Is this for your own agent and accounts, or for a product where your users connect their accounts?
+> Is this for your own agent, or an app you are building with user-connected accounts, Instant Tools, or both?
 
 Treat a named personal AI client with no product code as For You. Treat an application codebase, SDK, user or tenant identity, backend, or product agent as Platform.
 
@@ -48,6 +50,10 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 - For setup or integration, inspect the existing environment, preserve its architecture and identity model, make the smallest useful change, and verify it with one safe real tool call when credentials and user authorization are available.
 - For an operational request, connect only the apps the task needs and execute the requested workflow.
 - For debugging, get the Composio log or request ID, identify the failing boundary, fix that boundary, and retry when the user authorized execution.
+
+Read-only verification can still incur charges. Do not enable Instant, change its policy, or incur charges just to pass a setup test unless the developer's authorized scope covers that action. Without spend authorization, stop at non-executing checks and report runtime verification as incomplete.
+
+Preserve explicit account selection and the guide's documented routing. Do not switch a failed connected-account call to Instant. Treat Instant balance or policy errors separately from OAuth failures, and inspect the execution log before a retry that could repeat billable work.
 
 ## Stable rules
 
