@@ -118,5 +118,13 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
 ).pipe(
   Command.withDescription(
     'List connection statuses as JSON. Includes aliases for duplicate toolkits and word_ids when available.'
-  )
+  ),
+  Command.withExamples([
+    {
+      command: 'composio connections list',
+    },
+    {
+      command: 'composio connections list --toolkit gmail',
+    },
+  ])
 );

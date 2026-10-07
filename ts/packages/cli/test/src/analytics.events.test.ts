@@ -631,6 +631,31 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
+  it.each([
+    { flags: ['--telemetry-debug'] },
+    { flags: ['--telemetry-debug=false'] },
+    { flags: ['--no-telemetry-debug'] },
+    { flags: ['--tool-debug', '--perf-debug'] },
+    { flags: ['--log-level', 'Debug'] },
+    { flags: ['--log-level=Debug', '--telemetry-debug'] },
+  ])('identifies run and execute after shared options: $flags', ({ flags }) => {
+    const runArgs = [...flags, 'run', 'console.log("hi")'];
+    const run = contextFor(runArgs);
+    expect(run.argv).toEqual(['bun', 'composio', ...runArgs]);
+    expect(run.commandPath).toBe('run');
+    expect(run.runId).toEqual(expect.any(String));
+    expect(getPrimaryLifecycleInvokedEvent(run)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
+      properties: { run_id: run.runId, command_path: 'run' },
+    });
+
+    const execute = contextFor([...flags, 'execute', 'GMAIL_SEND_EMAIL', '--get-schema']);
+    expect(getPrimaryLifecycleInvokedEvent(execute)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
+      properties: { command_path: 'execute', tool_slug: 'GMAIL_SEND_EMAIL' },
+    });
+  });
+
   it('uses the configured parent run id for nested run telemetry', () => {
     const context = contextFor(['run', 'console.log("hi")'], {
       invocationOrigin: 'run',

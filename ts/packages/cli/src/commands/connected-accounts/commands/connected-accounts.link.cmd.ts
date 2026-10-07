@@ -999,6 +999,18 @@ const runConnectedAccountsLink = (params: {
     }
   });
 
+const linkExamples = [
+  {
+    command: 'composio link github',
+  },
+  {
+    command: 'composio link gmail --alias work',
+  },
+  {
+    command: 'composio link github --list',
+  },
+];
+
 export const connectedAccountsCmd$Link = Command.make(
   'link',
   { toolkit, authConfig, userId, projectName, noWait, noBrowser, alias, list },
@@ -1016,19 +1028,16 @@ export const connectedAccountsCmd$Link = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
-      'Opens a browser for OAuth authorization and waits for confirmation.',
-      '',
-      'Examples:',
-      '  composio link github',
-      '  composio link gmail --alias work',
-      '  composio link github --list',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Find tools to use after linking',
-      "  composio execute <slug> -d '{ ... }'      Execute a tool with your connected account",
-    ].join('\n')
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
+  ),
+  Command.withShortDescription(
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
+  ),
+  Command.withExamples(
+    linkExamples.map(example => ({
+      ...example,
+      command: example.command.replace('composio link', 'composio dev connected-accounts link'),
+    }))
   )
 );
 
@@ -1049,18 +1058,10 @@ export const rootConnectedAccountsCmd$Link = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
-      'Opens a browser for OAuth authorization and waits for confirmation.',
-      '',
-      'Examples:',
-      '  composio link github',
-      '  composio link gmail --alias work',
-      '  composio link github --list',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Find tools to use after linking',
-      "  composio execute <slug> -d '{ ... }'      Execute a tool with your connected account",
-    ].join('\n')
-  )
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
+  ),
+  Command.withShortDescription(
+    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
+  ),
+  Command.withExamples(linkExamples)
 );

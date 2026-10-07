@@ -1,6 +1,6 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import util from 'node:util';
-import { Data, Effect, HashSet, Option, Result } from 'effect';
+import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -17,10 +17,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
-import {
-  ComposioToolkitsRepository,
-  type ToolkitProjectScope,
-} from 'src/services/composio-clients';
+import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
@@ -32,8 +29,6 @@ import {
   isMaybeToolValidationError,
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { formatToolInputParameters } from '../format';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import {
   resolveCommandProject,
@@ -58,9 +53,25 @@ import {
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
+import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
+
+export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(
+  'commands/ExecuteInvocationArgs',
+  { defaultValue: () => [] }
+);
 
 const slug = Argument.String('slug').pipe(
   Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
+);
+
+const additionalSlugs = Argument.String('additional-slugs').pipe(
+  Argument.variadic(),
+  Argument.withDescription('Additional tool slugs for --parallel')
+);
+const parallel = Flag.Boolean('parallel').pipe(
+  Flag.withAlias('p'),
+  Flag.withDefault(false),
+  Flag.withDescription('Execute repeated tool slug/data groups concurrently')
 );
 
 const data = Flag.String('data').pipe(
@@ -77,15 +88,6 @@ const accountOption = Flag.String('account').pipe(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
   Flag.optional
-);
-
-export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
-  '--data',
-  '-d',
-  '--file',
-  '--account',
-  '--user-id',
-  '--project-name'
 );
 
 const userId = Flag.String('user-id').pipe(
@@ -644,50 +646,6 @@ const emitExecuteFailureTelemetry = (params: {
   });
 
 const writeExecuteStdout = (ui: TerminalUI, data: string) => ui.output(data, { force: true });
-
-export const showToolsExecuteInputHelp = (toolSlug: string) =>
-  Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
-    const ui = yield* TerminalUI;
-    const repo = yield* ComposioToolkitsRepository;
-
-    const toolOpt = yield* ui
-      .withSpinner(`Fetching input parameters for "${toolSlug}"...`, repo.getToolDetailed(toolSlug))
-      .pipe(
-        Effect.asSome,
-        Effect.catchTag(
-          'services/HttpServerError',
-          handleHttpServerError(ui, {
-            fallbackMessage: `Tool "${toolSlug}" not found.`,
-            hint: [
-              commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
-              commandHintStep('Then list tools', 'root.tools.list'),
-            ].join('\n'),
-            fallbackValue: Option.none(),
-            searchForSuggestions: () =>
-              repo.searchTools({ search: toolSlug, limit: 3 }).pipe(
-                Effect.map(r =>
-                  r.items.map(s => ({
-                    label: `${s.slug} — ${s.description}`,
-                    command: `> composio execute "${s.slug}" --help`,
-                  }))
-                )
-              ),
-          })
-        )
-      );
-
-    if (Option.isNone(toolOpt)) return;
-    const tool = toolOpt.value;
-
-    yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
-    yield* ui.log.step(`Run:\n> composio execute "${tool.slug}" -d '{"key":"value"}'`);
-    yield* writeExecuteStdout(
-      ui,
-      JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
-    );
-  });
 
 const handleExecutionError = (
   ui: TerminalUI,
@@ -1473,6 +1431,28 @@ export const parseParallelExecuteArgs = (
       const token = args[i];
       if (!token) continue;
 
+      const flagName = token.split('=')[0];
+      if (
+        CLI_DEBUG_FLAG_NAMES.some(name => flagName === `--${name}` || flagName === `--no-${name}`)
+      )
+        continue;
+      if (flagName === '--log-level') {
+        if (!token.includes('=')) i += 1;
+        continue;
+      }
+      // The framework supplies these values; this parser only preserves tool/data grouping.
+      if (
+        [
+          'parallel',
+          'get-schema',
+          'dry-run',
+          'skip-connection-check',
+          'skip-tool-params-check',
+          'skip-checks',
+        ].some(name => flagName === `--${name}` || flagName === `--no-${name}`) &&
+        (token !== flagName || flagName.startsWith('--no-'))
+      )
+        continue;
       if (token === '--parallel' || token === '-p') {
         continue;
       }
@@ -1592,40 +1572,6 @@ export const parseParallelExecuteArgs = (
       account,
     } satisfies ParsedParallelExecuteArgs;
   });
-
-type ParallelExecuteCommand = {
-  readonly matched: boolean;
-  readonly tail: ReadonlyArray<string>;
-  readonly surface: 'root' | 'dev';
-  readonly projectMode: 'consumer' | 'developer';
-  readonly allowUserId: boolean;
-  readonly allowProjectName: boolean;
-};
-
-const isParallelExecuteCommand = (argv: ReadonlyArray<string>): ParallelExecuteCommand | null => {
-  const args = argv.slice(2);
-  if (args[0] === 'execute') {
-    return {
-      matched: args.includes('--parallel') || args.includes('-p'),
-      tail: args.slice(1),
-      surface: 'root',
-      projectMode: 'consumer',
-      allowUserId: false,
-      allowProjectName: false,
-    };
-  }
-  if (args[0] === 'dev' && args[1] === 'playground-execute') {
-    return {
-      matched: args.includes('--parallel') || args.includes('-p'),
-      tail: args.slice(2),
-      surface: 'dev',
-      projectMode: 'developer',
-      allowUserId: true,
-      allowProjectName: true,
-    };
-  }
-  return null;
-};
 
 const checkConnectedToolkitOrFail = (params: {
   readonly slug: string;
@@ -1943,24 +1889,64 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
   });
 
-export const runParallelToolsExecuteFromArgv = (argv: ReadonlyArray<string>) => {
-  const command = isParallelExecuteCommand(argv);
-  if (!command?.matched) {
-    return null;
-  }
+const runParallelFromCommand = (config: {
+  readonly surface: 'root' | 'dev';
+  readonly projectMode: 'consumer' | 'developer';
+  readonly getSchema: boolean;
+  readonly dryRun: boolean;
+  readonly skipConnectionCheck: boolean;
+  readonly skipToolParamsCheck: boolean;
+  readonly skipChecks: boolean;
+}) =>
+  Effect.gen(function* () {
+    const argv = yield* ExecuteInvocationArgs;
+    const name = config.surface === 'root' ? 'execute' : 'playground-execute';
+    const tail = argv.slice(argv.indexOf(name) + 1);
+    const parsed = yield* parseParallelExecuteArgs(tail, {
+      ...config,
+      allowUserId: config.surface === 'dev',
+      allowProjectName: config.surface === 'dev',
+    });
+    return yield* runParallelToolsExecuteFromParsed({ ...parsed, ...config });
+  });
 
-  return parseParallelExecuteArgs(command.tail, {
-    surface: command.surface,
-    projectMode: command.projectMode,
-    allowUserId: command.allowUserId,
-    allowProjectName: command.allowProjectName,
-  }).pipe(Effect.flatMap(runParallelToolsExecuteFromParsed));
-};
+const executeExamples = [
+  {
+    command:
+      'composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", subject: "Hello", body: "World" }\'',
+    description: 'Send an email',
+  },
+  {
+    command:
+      'composio execute GITHUB_CREATE_ISSUE --account work -d \'{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }\'',
+    description: 'Create a GitHub issue with a named account',
+  },
+  {
+    command:
+      'composio execute SLACK_SEND_MESSAGE --dry-run -d \'{ channel: "general", markdown_text: "Hello team" }\'',
+    description: 'Preview what a tool call would send without executing',
+  },
+  {
+    command: 'composio execute GMAIL_SEND_EMAIL --get-schema',
+    description: 'Print the tool input schema as JSON (--help shows command options)',
+  },
+  {
+    command: 'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
+    description: 'Read arguments from a file',
+  },
+  {
+    command:
+      'composio execute -p GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\' GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
+    description: 'Execute multiple tools concurrently',
+  },
+];
 
 export const rootToolsCmd$Execute = Command.make(
   'execute',
   {
     slug,
+    additionalSlugs,
+    parallel,
     data,
     file,
     account: accountOption,
@@ -1972,6 +1958,8 @@ export const rootToolsCmd$Execute = Command.make(
   },
   ({
     slug,
+    additionalSlugs,
+    parallel,
     data,
     file,
     account,
@@ -1981,55 +1969,49 @@ export const rootToolsCmd$Execute = Command.make(
     skipToolParamsCheck,
     skipChecks,
   }) =>
-    runToolsExecute({
-      slug,
-      data,
-      file,
-      account,
-      userId: Option.none(),
-      projectName: Option.none(),
-      surface: 'root',
-      projectMode: 'consumer',
-      getSchema,
-      dryRun,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-    })
+    parallel
+      ? runParallelFromCommand({
+          surface: 'root',
+          projectMode: 'consumer',
+          getSchema,
+          dryRun,
+          skipConnectionCheck,
+          skipToolParamsCheck,
+          skipChecks,
+        })
+      : additionalSlugs.length > 0
+        ? Effect.fail(invalidArguments('Additional tool slugs require --parallel.'))
+        : runToolsExecute({
+            slug,
+            data,
+            file,
+            account,
+            userId: Option.none(),
+            projectName: Option.none(),
+            surface: 'root',
+            projectMode: 'consumer',
+            getSchema,
+            dryRun,
+            skipConnectionCheck,
+            skipToolParamsCheck,
+            skipChecks,
+          })
 ).pipe(
   Command.withDescription(
-    [
-      'Execute a tool by slug. Validates inputs against cached schemas and checks connections',
-      'automatically — just try it and it will tell you what to fix.',
-      '',
-      'Examples:',
-      '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --account default -d \'{ recipient_email: "a@b.com" }\'',
-      '  composio execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
-      '  composio execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
-      "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
-      '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
-      '',
-      'Flags:',
-      '  --file <path>                Inject a local file path into the single file_uploadable input',
-      '  --account <selector>         Select connected account by alias, word_id, or account id',
-      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
-      '  --skip-connection-check     Skip the connected-account check',
-      '  --skip-tool-params-check    Skip input validation against cached schema',
-      '  --skip-checks               Skip both checks above',
-      '',
-      'See also:',
-      '  composio search "<query>"               Find tool slugs by use case',
-      '  composio tools info <slug>              Schema summary with jq hints',
-      '  composio link <toolkit>                 Connect an account for a toolkit',
-    ].join('\n')
-  )
+    'Execute a tool by slug. Validates inputs against cached schemas and checks connections\nautomatically — just try it and it will tell you what to fix.'
+  ),
+  Command.withShortDescription(
+    'Execute a tool by slug. Validates inputs against cached schemas and checks connections'
+  ),
+  Command.withExamples(executeExamples)
 );
 
 export const devToolsCmd$Execute = Command.make(
   'playground-execute',
   {
     slug,
+    additionalSlugs,
+    parallel,
     data,
     file,
     account: accountOption,
@@ -2043,6 +2025,8 @@ export const devToolsCmd$Execute = Command.make(
   },
   ({
     slug,
+    additionalSlugs,
+    parallel,
     data,
     file,
     account,
@@ -2054,39 +2038,44 @@ export const devToolsCmd$Execute = Command.make(
     skipToolParamsCheck,
     skipChecks,
   }) =>
-    runToolsExecute({
-      slug,
-      data,
-      file,
-      account,
-      userId,
-      projectName,
-      surface: 'dev',
-      projectMode: 'developer',
-      getSchema,
-      dryRun,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-    })
+    parallel
+      ? runParallelFromCommand({
+          surface: 'dev',
+          projectMode: 'developer',
+          getSchema,
+          dryRun,
+          skipConnectionCheck,
+          skipToolParamsCheck,
+          skipChecks,
+        })
+      : additionalSlugs.length > 0
+        ? Effect.fail(invalidArguments('Additional tool slugs require --parallel.'))
+        : runToolsExecute({
+            slug,
+            data,
+            file,
+            account,
+            userId,
+            projectName,
+            surface: 'dev',
+            projectMode: 'developer',
+            getSchema,
+            dryRun,
+            skipConnectionCheck,
+            skipToolParamsCheck,
+            skipChecks,
+          })
 ).pipe(
   Command.withDescription(
-    [
-      'Test tool executions against playground users using your developer project auth configs.',
-      'Uses --user-id when provided, otherwise falls back to your local or global playground test user id.',
-      'Arguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.',
-      '',
-      'Examples:',
-      '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio dev playground-execute GMAIL_SEND_EMAIL --account default -d \'{ recipient_email: "a@b.com" }\'',
-      '  composio dev playground-execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
-      '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
-      '',
-      'Flags:',
-      '  --file <path>                Inject a local file path into the single file_uploadable input',
-      '  --account <selector>         Select connected account by alias, word_id, or account id',
-      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
-    ].join('\n')
+    'Test tool executions against playground users using your developer project auth configs.\nUses --user-id when provided, otherwise falls back to your local or global playground test user id.\nArguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.'
+  ),
+  Command.withShortDescription(
+    'Test tool executions against playground users using your developer project auth configs.'
+  ),
+  Command.withExamples(
+    executeExamples.map(example => ({
+      ...example,
+      command: example.command.replace('composio execute', 'composio dev playground-execute'),
+    }))
   )
 );
