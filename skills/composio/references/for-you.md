@@ -1,6 +1,6 @@
 # Composio For You
 
-Use this product when someone wants their own AI client or terminal agent to use Instant Tools, connected apps, or both. Route by task: answer a question, configure an MCP client, operate through the CLI, connect an app, or debug an existing setup.
+Use this product when someone wants their own AI client or terminal agent to use their own connected apps. Route by task: answer a question, configure an MCP client, operate through the CLI, connect an app, or debug an existing setup.
 
 ## Stable product contract
 
@@ -56,16 +56,15 @@ For a real task:
 
 ```bash
 composio search "<what the user wants>"
+composio link <toolkit>
 composio execute <TOOL_SLUG> -d '{...}'
 ```
-
-If the selected tool requires authorization, run `composio link <toolkit>` before executing it.
 
 Use `composio login --no-wait | jq` when the agent cannot open a browser. Give the returned login URL to the user and complete authentication with the returned key. Once installed, prefer the bundled `composio-cli` skill for current command and flag details.
 
 ## Connect apps when the task needs them
 
-Do not pre-connect every app. Start the requested task. When account authorization is required, Composio returns an authorization link and the connection persists for future runs.
+Do not pre-connect every app. Start the requested task. When an integration is required, Composio returns an authorization link and the connection persists for future runs.
 
 For setup or an operational request, verify the selected path with one safe real call when authorization is available. For a question or configuration explanation, answer it without forcing execution.
 
