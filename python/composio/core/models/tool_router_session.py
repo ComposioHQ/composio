@@ -74,6 +74,7 @@ from composio.core.models.tools import (
     InstantCharge,
     ToolExecuteParams,
     ToolExecutionResponse,
+    require_executed,
 )
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -971,6 +972,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
         ``error``, ``log_id``, and ``instant_charge`` attributes.
+
+        :raises ToolInputRequiredError: If the tool needs input from the user
+            (for example an approval) before it can run. Nothing was executed.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
@@ -986,14 +990,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        response = self._client.without_retries.tool_router.session.execute(
-            session_id=self.session_id,
-            tool_slug=tool_slug,
-            arguments=arguments if arguments is not None else omit,
-            account=account if account is not None else omit,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
+        response = require_executed(
+            self._client.without_retries.tool_router.session.execute(
+                session_id=self.session_id,
+                tool_slug=tool_slug,
+                arguments=arguments if arguments is not None else omit,
+                account=account if account is not None else omit,
+                experimental=inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
             ),
+            f"Tool {tool_slug}",
         )
         # The client already validated data/error/log_id and kept the
         # undeclared instant_charge as an extra. Construct without
@@ -1094,6 +1101,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param body: Request body (for POST, PUT, PATCH)
         :param parameters: Query/header parameters
         :returns: Proxied API response
+        :raises ToolInputRequiredError: If the call needs input from the user
+            before it can run. Nothing was executed.
         """
         return proxy_execute_impl(
             self._client,

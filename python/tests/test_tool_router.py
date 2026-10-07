@@ -34,10 +34,12 @@ from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionWithMcp,
 )
+from composio.core.models.session_context import SessionContextImpl
 from composio.exceptions import (
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
+    ToolInputRequiredError,
     ValidationError,
 )
 from tests.conftest import mock_http_client
@@ -2418,6 +2420,193 @@ class TestInstantContractTransport:
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
         assert result.to_dict() == payload
+
+
+_INPUT_REQUIRED_JSON: t.Dict[str, t.Any] = {
+    "result_type": "input_required",
+    "input_requests": {
+        "approval_1": {
+            "type": "elicitation",
+            "mode": "form",
+            "message": "Allow GMAIL_SEND_EMAIL to send this email?",
+            "requested_schema": {
+                "type": "object",
+                "properties": {"approved": {"type": "boolean"}},
+                "required": ["approved"],
+            },
+        }
+    },
+    "request_state": "opaque-state-token",
+}
+
+_PROXY_PARAMS: t.Dict[str, t.Any] = {
+    "toolkit": "github",
+    "endpoint": "https://api.github.com/user/repos?token=secret",
+    "method": "POST",
+    "body": {"name": "repo"},
+}
+
+
+def _answering_client(
+    body: t.Dict[str, t.Any],
+) -> t.Tuple[HttpClient, t.List[httpx.Request]]:
+    """A real client whose execute and proxy calls are answered with ``body``."""
+    requests: t.List[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith(("/execute", "/proxy_execute")):
+            requests.append(request)
+            return httpx.Response(200, json=body)
+        return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+    client = HttpClient(
+        provider="test",
+        api_key="ak_test",
+        base_url="https://backend.composio.dev",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    return client, requests
+
+
+def _created_session(client: HttpClient) -> ToolRouterSession:
+    return ToolRouter(client=client, provider=MagicMock()).create(user_id="user_123")
+
+
+class TestExecutionRequiresUserInput:
+    """``result_type: "input_required"`` carries no data, log ID or HTTP status,
+    so every execution path raises it instead of returning it as a result.
+
+    The cases run a real client over a stub transport so they cover the wire
+    shape the generated client hands to the SDK.
+    """
+
+    @pytest.mark.parametrize(
+        ("run", "subject"),
+        [
+            pytest.param(
+                lambda client: _created_session(client).execute(
+                    "GMAIL_SEND_EMAIL", arguments={"to": "test@test.com"}
+                ),
+                "Tool GMAIL_SEND_EMAIL",
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
+                "POST proxy call for toolkit github",
+                id="session.proxy_execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).execute("GMAIL_SEND_EMAIL", {"to": "test@test.com"}),
+                "Tool GMAIL_SEND_EMAIL",
+                id="custom tool context execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).proxy_execute(**_PROXY_PARAMS),
+                "POST proxy call for toolkit github",
+                id="custom tool context proxy_execute",
+            ),
+            pytest.param(
+                lambda client: _session_tool_execute_fn(client)(
+                    "GMAIL_SEND_EMAIL", {"to": "test@test.com"}
+                ),
+                "Tool GMAIL_SEND_EMAIL",
+                id="provider-wrapped session tool",
+            ),
+        ],
+    )
+    def test_raises_tool_input_required_error(self, run, subject):
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            run(client)
+
+        error = raised.value
+        assert f"{subject} requires user input" in error.message
+        assert "request_state" in error.message
+        # The opaque state and the proxied URL stay out of the message.
+        assert "opaque-state-token" not in error.message
+        assert "secret" not in error.message
+        assert error.request_state == "opaque-state-token"
+        assert error.input_requests == {
+            "approval_1": {
+                "type": "elicitation",
+                "mode": "form",
+                "message": "Allow GMAIL_SEND_EMAIL to send this email?",
+                "requested_schema": {
+                    "type": "object",
+                    "properties": {"approved": {"type": "boolean"}},
+                    "required": ["approved"],
+                },
+            }
+        }
+        # The call is not repeated: answering needs the user.
+        assert len(requests) == 1
+
+    def test_request_state_is_none_when_the_api_returns_none(self):
+        body = {k: v for k, v in _INPUT_REQUIRED_JSON.items() if k != "request_state"}
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert raised.value.request_state is None
+
+    @pytest.mark.parametrize(
+        ("result_type", "error"),
+        [("completed", None), ("failed", "Connection not found")],
+    )
+    def test_execute_still_returns_a_result(self, result_type, error):
+        client, _ = _answering_client(
+            {
+                "result_type": result_type,
+                "data": {"id": "msg_1"},
+                "error": error,
+                "log_id": "log_1",
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert result.result_type == result_type
+        assert result.data == {"id": "msg_1"}
+        assert result.error == error
+        assert result.log_id == "log_1"
+
+    def test_proxy_execute_still_returns_a_completed_result(self):
+        client, _ = _answering_client(
+            {
+                "result_type": "completed",
+                "status": 201,
+                "data": {"id": 1},
+                "headers": {"x-request-id": "req_1"},
+            }
+        )
+
+        result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
+
+        assert result == {
+            "status": 201,
+            "data": {"id": 1},
+            "headers": {"x-request-id": "req_1"},
+        }
+
+
+def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
+    """The execute function providers wrap session tools with."""
+    from composio.core.models.tools import Tools
+
+    tools = Tools(
+        client=client,
+        provider=MagicMock(),
+        dangerously_allow_auto_upload_download_files=False,
+    )
+    # Keep the (read) tool-schema lookup off the transport.
+    tools._tool_schemas["GMAIL_SEND_EMAIL"] = MagicMock()
+    return tools._wrap_execute_tool_for_tool_router(session_id="session_123")
 
 
 def _transport_client(

@@ -5,6 +5,8 @@ Composio exceptions.
 import difflib
 import typing as t
 
+import typing_extensions as te
+
 from composio_client import ComposioDeprecationWarning as ComposioDeprecationWarning
 
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
@@ -380,6 +382,50 @@ class SessionConfigConflictError(ComposioClientError):
         super().__init__(message)
         self.session_id = session_id
         self.expected_config_version = expected_config_version
+
+
+class ToolInputRequest(te.TypedDict):
+    """One question a tool asks the user before it can run."""
+
+    type: str
+    """Kind of input requested, currently ``"elicitation"``."""
+    mode: str
+    """How the client collects the input, currently ``"form"``."""
+    message: str
+    """Message to show the user."""
+    requested_schema: t.Dict[str, t.Any]
+    """JSON Schema for the answer: a flat object with string, number, boolean
+    or enum fields."""
+
+
+class ToolInputRequiredError(ComposioClientError):
+    """Raised when a session tool execution or proxied call did not run
+    because it needs input from the user first, for example an approval. The
+    API answers such a call with ``result_type: "input_required"`` instead of
+    a result.
+
+    ``input_requests`` holds the questions, keyed by the ID the answers must
+    reuse. ``request_state`` is the opaque state the API returned; when present
+    it must be sent back unchanged together with the answers. The SDK does not
+    submit answers yet, so nothing was executed and the call is not retried.
+    """
+
+    def __init__(
+        self,
+        subject: str,
+        *,
+        input_requests: t.Dict[str, ToolInputRequest],
+        request_state: t.Optional[str] = None,
+    ) -> None:
+        count = len(input_requests)
+        super().__init__(
+            f"{subject} requires user input before it can run "
+            f"({count} input request{'' if count == 1 else 's'}) and was not "
+            "executed. The questions are on `input_requests` and the opaque "
+            "`request_state` to send back with the answers is on `request_state`."
+        )
+        self.input_requests = input_requests
+        self.request_state = request_state
 
 
 class ResourceError(ComposioClientError):
