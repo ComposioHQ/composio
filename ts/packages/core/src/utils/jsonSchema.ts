@@ -8,7 +8,7 @@ const MAX_REF_CHAIN_DEPTH = 100;
 const MAX_NODE_DEPTH = 512;
 // Bounds on one null-acceptance check; past either, null is not proven accepted.
 const MAX_NULL_CHECK_DEPTH = 64;
-const MAX_NULL_CHECK_NODES = 10_000;
+const MAX_NULL_CHECK_NODES = 2_000;
 const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as const;
 
 /** Keywords whose value is a single subschema. */
@@ -628,13 +628,13 @@ const NULL_CONSTRAINT_KEYWORDS = [
  * every other constraint it declares. A node whose only obstacle is `type` or
  * `anyOf` is widened in place. Anything else is wrapped whole, because JSON
  * Schema keywords apply together: adding `null` to `type` does not lift a
- * sibling `enum`.
+ * sibling `enum`. `acceptsNull` must answer for the strict output.
  */
 function widenToNullable(
   node: Record<string, unknown>,
-  root: Record<string, unknown>
+  acceptsNull: (schema: unknown) => boolean
 ): Record<string, unknown> {
-  if (createNullCheck(root, true)(node)) return node;
+  if (acceptsNull(node)) return node;
   const constraints = NULL_CONSTRAINT_KEYWORDS.filter(key => key in node);
   if (constraints.length === 1 && constraints[0] === 'type') {
     const members = Array.isArray(node.type) ? node.type : [node.type];
@@ -676,58 +676,93 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
  * the one it was given: the rewrite types every node that declares
  * `properties` as an object, so such a node stops accepting null.
  *
- * Answers are remembered per node, so a definition shared by many branches is
- * evaluated once. A reference cycle never yields a null by itself; an answer
- * that leaned on an unfinished cycle is not remembered. Past the depth or node
- * budget null counts as rejected, which costs at most a redundant null branch
- * or a dropped null.
+ * One check serves a whole document, and an answer is computed once per node.
+ * A reference cycle never yields a null by itself, so a node met again while
+ * it is being evaluated counts as rejecting. An answer that leans on that is
+ * provisional until the node it leans on is done: it is kept if that node
+ * does reject null and discarded otherwise.
+ *
+ * Each check is bounded in depth and in nodes visited. Past a bound null
+ * counts as rejected, which costs at most a redundant null branch or a dropped
+ * null, and nothing learned that way outlives the check.
  */
 function createNullCheck(
   root: Record<string, unknown>,
   strictOutput = false
 ): (schema: unknown) => boolean {
-  const known = new Map<object, boolean>();
+  // Markers for what an answer leans on, besides the depth of a node on the path.
+  const NOTHING = MAX_NULL_CHECK_DEPTH + 1;
+  const A_BOUND = -1;
+  const answers = new Map<object, { answer: boolean; leansOn: number }>();
+  // Nodes whose answer is provisional, oldest first.
+  const provisional: object[] = [];
   // Nodes being evaluated, mapped to their depth on the current path.
   const path = new Map<object, number>();
-  const NOTHING = MAX_NULL_CHECK_DEPTH + 1;
-  let budget = MAX_NULL_CHECK_NODES;
-  // Shallowest path depth a cut-off answer leaned on since it was reset.
-  let leanedOn = NOTHING;
+  // Depths of the path nodes that were met again below themselves.
+  const metAgain = new Set<number>();
+  let budget = 0;
+  // Shallowest thing the answers used since the last reset lean on.
+  let leansOn = NOTHING;
 
   const accepts = (schema: unknown): boolean => {
     if (typeof schema === 'boolean') return schema;
     if (!isPlainObject(schema)) return true;
-    const remembered = known.get(schema);
-    if (remembered !== undefined) return remembered;
+    const remembered = answers.get(schema);
+    if (remembered !== undefined) {
+      leansOn = Math.min(leansOn, remembered.leansOn);
+      return remembered.answer;
+    }
     const onPath = path.get(schema);
     if (onPath !== undefined) {
-      leanedOn = Math.min(leanedOn, onPath);
+      metAgain.add(onPath);
+      leansOn = Math.min(leansOn, onPath);
       return false;
     }
     const depth = path.size;
+    if (depth === 0) budget = MAX_NULL_CHECK_NODES;
     if (depth >= MAX_NULL_CHECK_DEPTH || budget <= 0) {
-      leanedOn = -1;
+      leansOn = A_BOUND;
       return false;
     }
     budget -= 1;
 
-    const outer = leanedOn;
-    leanedOn = NOTHING;
+    const outer = leansOn;
+    leansOn = NOTHING;
+    const mark = provisional.length;
     path.set(schema, depth);
-    let result: boolean;
-    try {
-      result = keywordsAccept(schema);
-    } finally {
-      path.delete(schema);
-    }
-    if (leanedOn >= depth) {
-      // Every cycle met below closes on this node or deeper: final.
-      known.set(schema, result);
-      leanedOn = outer;
+    const answer = keywordsAccept(schema);
+    path.delete(schema);
+
+    const own = leansOn;
+    const settled = own >= depth;
+    const below = provisional.splice(mark);
+    if (answer && metAgain.has(depth)) {
+      // The answers below took this node for rejecting null.
+      for (const other of below) answers.delete(other);
     } else {
-      leanedOn = Math.min(outer, leanedOn);
+      for (const other of below) {
+        const entry = answers.get(other);
+        if (entry === undefined) continue;
+        if (settled) {
+          entry.leansOn = NOTHING;
+        } else {
+          if (entry.leansOn >= depth) entry.leansOn = own;
+          provisional.push(other);
+        }
+      }
     }
-    return result;
+    metAgain.delete(depth);
+
+    answers.set(schema, { answer, leansOn: settled ? NOTHING : own });
+    if (!settled) provisional.push(schema);
+    leansOn = settled ? outer : Math.min(outer, own);
+    if (depth === 0) {
+      // Whatever is still provisional leans on a bound.
+      for (const other of provisional) answers.delete(other);
+      provisional.length = 0;
+      leansOn = NOTHING;
+    }
+    return answer;
   };
 
   const keywordsAccept = (node: Record<string, unknown>): boolean => {
@@ -802,6 +837,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
   };
 
   const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
+  const acceptsNullInOutput = createNullCheck(root, true);
 
   function walkChildren(
     node: Record<string, unknown>,
@@ -937,7 +973,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
         continue;
       }
       if (declaredRequired.has(name) || !isPlainObject(propertySchema)) continue;
-      setOwn(properties, name, widenToNullable(propertySchema, root));
+      setOwn(properties, name, widenToNullable(propertySchema, acceptsNullInOutput));
       recordChange({
         path: joinPath(path, `properties.${name}`),
         reason: 'optional-property-nullable',

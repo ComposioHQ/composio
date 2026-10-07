@@ -15,9 +15,10 @@
  * The Python counterpart is `python/tests/test_strict_schema_properties.py`;
  * keep the generators and invariants aligned.
  *
- * Reference cycles are never generated: a cycle that consumes no input makes
- * the oracle recurse forever. The `null acceptance` suite in
- * `jsonSchema.strict.test.ts` covers them by example.
+ * Those generators never produce reference cycles: a cycle that consumes no
+ * input makes the oracle recurse forever. Cycles are checked separately against
+ * the least fixed point of the definitions, computed by plain iteration: a null
+ * is accepted only when a finite chain of branches proves it.
  */
 import Ajv2020 from 'ajv/dist/2020';
 import fc from 'fast-check';
@@ -123,7 +124,80 @@ const validatorFor = (schema: SchemaRecord) => ajv.compile(schema);
 const RUNS = 300;
 const TIMEOUT_MS = 30_000;
 
+const LEAVES: readonly SchemaRecord[] = [{ type: 'null' }, { type: 'string' }, {}];
+const leaf = fc.constantFrom(...LEAVES).map(schema => ({ ...schema }));
+
+/** Definitions that reference each other freely, cycles included. */
+const referenceGraph: fc.Arbitrary<Record<string, SchemaRecord>> = fc
+  .integer({ min: 1, max: 7 })
+  .chain(count => {
+    const names = Array.from({ length: count }, (_, index) => `d${index}`);
+    const reference = fc.constantFrom(...names).map(name => ({ $ref: `#/$defs/${name}` }));
+    const composed = fc
+      .record({
+        keyword: fc.constantFrom('anyOf', 'allOf'),
+        references: fc.array(reference, { minLength: 1, maxLength: 3 }),
+        extra: fc.option(leaf),
+      })
+      .map(({ keyword, references, extra }) => ({
+        [keyword]: extra === null ? references : [...references, extra],
+      }));
+    const definition = fc.oneof({ arbitrary: leaf, weight: 1 }, { arbitrary: composed, weight: 4 });
+    return fc
+      .tuple(...names.map(() => definition))
+      .map(definitions =>
+        Object.fromEntries(names.map((name, index) => [name, definitions[index]]))
+      );
+  });
+
+function leastFixedPoint(definitions: Record<string, SchemaRecord>): Record<string, boolean> {
+  const accepted: Record<string, boolean> = Object.fromEntries(
+    Object.keys(definitions).map(name => [name, false])
+  );
+  const holds = (node: SchemaRecord): boolean => {
+    if (typeof node.$ref === 'string') return accepted[node.$ref.slice('#/$defs/'.length)];
+    if (Array.isArray(node.anyOf)) return node.anyOf.some(holds);
+    if (Array.isArray(node.allOf)) return node.allOf.every(holds);
+    return node.type !== 'string';
+  };
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const [name, definition] of Object.entries(definitions)) {
+      if (!accepted[name] && holds(definition)) accepted[name] = changed = true;
+    }
+  }
+  return accepted;
+}
+
 describe('strict-mode null semantics', () => {
+  it('cyclic references resolve to the least fixed point', { timeout: TIMEOUT_MS }, () => {
+    fc.assert(
+      fc.property(referenceGraph, definitions => {
+        const names = Object.keys(definitions);
+        const reference = (name: string) => ({ $ref: `#/$defs/${name}` });
+        const source = {
+          type: 'object',
+          properties: Object.fromEntries(names.map(name => [name, reference(name)])),
+          $defs: definitions,
+        };
+        const expected = leastFixedPoint(definitions);
+        const input = Object.fromEntries(names.map(name => [name, null]));
+        expect(omitNullToolArguments(input, source)).toEqual(
+          Object.fromEntries(names.filter(name => expected[name]).map(name => [name, null]))
+        );
+
+        // `allOf` makes the tool unsupported, but its properties are still widened.
+        const properties = toStrictJsonSchema(source).schema.properties as SchemaRecord;
+        for (const name of names) {
+          expect(properties[name]).toEqual(
+            expected[name] ? reference(name) : { anyOf: [reference(name), { type: 'null' }] }
+          );
+        }
+      }),
+      { numRuns: RUNS }
+    );
+  });
+
   it('null stands for omission without changing other values', { timeout: TIMEOUT_MS }, () => {
     fc.assert(
       fc.property(propertySchema(STRICT_COMPOSITIONS), property => {

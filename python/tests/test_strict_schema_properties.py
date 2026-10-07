@@ -15,9 +15,10 @@ The TypeScript counterpart is
 ``ts/packages/core/test/utils/jsonSchema.strict.property.test.ts``; keep the
 generators and invariants aligned.
 
-Reference cycles are never generated: a cycle that consumes no input makes the
-oracle recurse forever. ``TestNullAcceptance`` in ``test_strict_schema.py``
-covers them by example.
+Those generators never produce reference cycles: a cycle that consumes no input
+makes the oracle recurse forever. Cycles are checked separately against the
+least fixed point of the definitions, computed by plain iteration: a null is
+accepted only when a finite chain of branches proves it.
 """
 
 import copy
@@ -147,3 +148,75 @@ def test_null_is_kept_exactly_when_the_tool_schema_accepts_it(
     accepted = Draft202012Validator(source).is_valid({"value": None})
     expected = {"value": None} if accepted else {}
     assert omit_null_tool_arguments({"value": None}, source) == expected
+
+
+LEAVES: tuple[dict[str, t.Any], ...] = ({"type": "null"}, {"type": "string"}, {})
+
+
+@st.composite
+def reference_graphs(draw: st.DrawFn) -> dict[str, dict[str, t.Any]]:
+    """Definitions that reference each other freely, cycles included."""
+    names = [f"d{index}" for index in range(draw(st.integers(1, 7)))]
+    references = st.lists(
+        st.sampled_from(names).map(lambda name: {"$ref": f"#/$defs/{name}"}),
+        min_size=1,
+        max_size=3,
+    )
+    definitions: dict[str, dict[str, t.Any]] = {}
+    for name in names:
+        kind = draw(st.sampled_from(("leaf", "anyOf", "anyOf", "allOf", "allOf")))
+        if kind == "leaf":
+            definitions[name] = dict(draw(st.sampled_from(LEAVES)))
+        else:
+            branches: list[dict[str, t.Any]] = draw(references)
+            if draw(st.booleans()):
+                branches.append(dict(draw(st.sampled_from(LEAVES))))
+            definitions[name] = {kind: branches}
+    return definitions
+
+
+def least_fixed_point(definitions: dict[str, dict[str, t.Any]]) -> dict[str, bool]:
+    accepted = dict.fromkeys(definitions, False)
+
+    def holds(node: dict[str, t.Any]) -> bool:
+        if "$ref" in node:
+            return accepted[node["$ref"].rsplit("/", 1)[1]]
+        if "anyOf" in node:
+            return any(holds(branch) for branch in node["anyOf"])
+        if "allOf" in node:
+            return all(holds(branch) for branch in node["allOf"])
+        return node.get("type") != "string"
+
+    changed = True
+    while changed:
+        changed = False
+        for name, definition in definitions.items():
+            if not accepted[name] and holds(definition):
+                accepted[name] = changed = True
+    return accepted
+
+
+@settings(max_examples=500, deadline=None)
+@given(reference_graphs())
+def test_cyclic_references_resolve_to_the_least_fixed_point(
+    definitions: dict[str, dict[str, t.Any]],
+) -> None:
+    source = {
+        "type": "object",
+        "properties": {name: {"$ref": f"#/$defs/{name}"} for name in definitions},
+        "$defs": definitions,
+    }
+    expected = least_fixed_point(definitions)
+    arguments = dict.fromkeys(definitions)
+    kept = omit_null_tool_arguments(arguments, source)
+    assert kept == {name: None for name in definitions if expected[name]}
+
+    # `allOf` makes the tool unsupported, but its properties are still widened.
+    result = to_strict_json_schema(source)
+    for name in definitions:
+        reference = {"$ref": f"#/$defs/{name}"}
+        widened = result.schema["properties"][name]
+        if expected[name]:
+            assert widened == reference
+        else:
+            assert widened == {"anyOf": [reference, {"type": "null"}]}

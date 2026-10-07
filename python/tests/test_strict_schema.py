@@ -909,3 +909,42 @@ class TestNullAcceptance:
         assert [(e.path, e.keyword) for e in result.unsupported] == [
             ("properties.alias", "$ref")
         ]
+
+    def test_many_properties_share_what_was_learned_about_a_cyclic_definition(self):
+        levels = 20
+        top = f"#/$defs/a{levels}"
+        definitions = {"a0": {"type": "string"}}
+        for i in range(1, levels + 1):
+            lower = f"#/$defs/a{i - 1}"
+            definitions[f"a{i}"] = {
+                "anyOf": [{"$ref": lower}, {"$ref": lower}, {"$ref": top}]
+            }
+        names = [f"p{i}" for i in range(400)]
+        schema = {
+            "type": "object",
+            "properties": {name: {"$ref": top} for name in names},
+            "$defs": definitions,
+        }
+        strict = to_strict_json_schema(schema).schema
+        assert all(
+            strict["properties"][name] == _wrapped({"$ref": top}) for name in names
+        )
+        assert omit_null_tool_arguments(dict.fromkeys(names), schema) == {}
+
+    def test_a_check_that_runs_out_of_budget_does_not_affect_the_next_one(self):
+        schema = {
+            "type": "object",
+            "properties": {
+                "wide": {"anyOf": [{"type": "string"} for _ in range(5000)]},
+                "note": {"type": ["string", "null"]},
+                "same": {"anyOf": [{"type": "string"}, NULL_BRANCH]},
+            },
+        }
+        arguments = {"wide": None, "note": None, "same": None}
+        assert omit_null_tool_arguments(arguments, schema) == {
+            "note": None,
+            "same": None,
+        }
+        strict = to_strict_json_schema(schema).schema["properties"]
+        assert strict["note"] == {"type": ["string", "null"]}
+        assert strict["same"] == {"anyOf": [{"type": "string"}, NULL_BRANCH]}

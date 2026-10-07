@@ -36,7 +36,7 @@ MAX_NODE_DEPTH = 512
 MAX_CHANGES = 50
 # Bounds on one null-acceptance check; past either, null is not proven accepted.
 MAX_NULL_CHECK_DEPTH = 64
-MAX_NULL_CHECK_NODES = 10_000
+MAX_NULL_CHECK_NODES = 2_000
 
 # Annotation-only keywords OpenAI structured outputs rejects; safe to strip.
 STRICT_STRIP_KEYWORDS = frozenset({"examples", "default"})
@@ -146,15 +146,16 @@ NULL_CONSTRAINT_KEYWORDS = (
 
 
 def _widen_to_nullable(
-    node: dict[str, t.Any], root: dict[str, t.Any]
+    node: dict[str, t.Any], null_check: _NullCheck
 ) -> dict[str, t.Any]:
     """Accept ``null`` while keeping every other constraint the node declares.
 
     A node whose only obstacle is ``type`` or ``anyOf`` is widened in place.
     Anything else is wrapped whole, because JSON Schema keywords apply
     together: adding ``null`` to ``type`` does not lift a sibling ``enum``.
+    ``null_check`` must answer for the strict output.
     """
-    if _NullCheck(root, strict_output=True).accepts(node):
+    if null_check.accepts(node):
         return node
     constraints = [key for key in NULL_CONSTRAINT_KEYWORDS if key in node]
     if constraints == ["type"]:
@@ -183,6 +184,11 @@ def _resolve_local_refs(node: t.Any, root: dict[str, t.Any]) -> t.Any:
     return current
 
 
+# Markers for what an answer leans on, besides the depth of a node on the path.
+_NOTHING = MAX_NULL_CHECK_DEPTH + 1
+_A_BOUND = -1
+
+
 class _NullCheck:
     """Decides whether schemas of one document accept ``null`` as an instance.
 
@@ -194,22 +200,32 @@ class _NullCheck:
     emits instead of the one it was given: the rewrite types every node that
     declares ``properties`` as an object, so such a node stops accepting null.
 
-    Answers are remembered per node, so a definition shared by many branches
-    is evaluated once. A reference cycle never yields a null by itself; an
-    answer that leaned on an unfinished cycle is not remembered. Past the
-    depth or node budget null counts as rejected, which costs at most a
-    redundant null branch or a dropped null.
+    One instance serves every check against a document, and an answer is
+    computed once per node. A reference cycle never yields a null by itself,
+    so a node met again while it is being evaluated counts as rejecting. An
+    answer that leans on that is provisional until the node it leans on is
+    done: it is kept if that node does reject null and discarded otherwise.
+
+    Each check is bounded in depth and in nodes visited. Past a bound null
+    counts as rejected, which costs at most a redundant null branch or a
+    dropped null, and nothing learned that way outlives the check.
     """
 
     def __init__(self, root: dict[str, t.Any], strict_output: bool = False) -> None:
         self.root = root
         self.strict_output = strict_output
-        self.known: dict[int, bool] = {}
+        # id(node) -> (node, answer, what it leans on). Holding the node keeps
+        # its id from being reused while the answer is remembered.
+        self.answers: dict[int, tuple[dict[str, t.Any], bool, int]] = {}
+        # Nodes whose answer is provisional, oldest first.
+        self.provisional: list[int] = []
         # Nodes being evaluated, mapped to their depth on the current path.
         self.path: dict[int, int] = {}
-        self.budget = MAX_NULL_CHECK_NODES
-        # Shallowest path depth a cut-off answer leaned on since it was reset.
-        self.leaned_on = MAX_NULL_CHECK_DEPTH + 1
+        # Depths of the path nodes that were met again below themselves.
+        self.met_again: set[int] = set()
+        self.budget = 0
+        # Shallowest thing the answers used since the last reset lean on.
+        self.leans_on = _NOTHING
 
     def accepts(self, schema: t.Any) -> bool:
         if isinstance(schema, bool):
@@ -217,29 +233,57 @@ class _NullCheck:
         if not isinstance(schema, dict):
             return True
         key = id(schema)
-        if key in self.known:
-            return self.known[key]
+        remembered = self.answers.get(key)
+        if remembered is not None:
+            self.leans_on = min(self.leans_on, remembered[2])
+            return remembered[1]
         if key in self.path:
-            self.leaned_on = min(self.leaned_on, self.path[key])
+            self.met_again.add(self.path[key])
+            self.leans_on = min(self.leans_on, self.path[key])
             return False
         depth = len(self.path)
+        if depth == 0:
+            self.budget = MAX_NULL_CHECK_NODES
         if depth >= MAX_NULL_CHECK_DEPTH or self.budget <= 0:
-            self.leaned_on = -1
+            self.leans_on = _A_BOUND
             return False
         self.budget -= 1
 
-        outer, self.leaned_on = self.leaned_on, MAX_NULL_CHECK_DEPTH + 1
+        outer, self.leans_on = self.leans_on, _NOTHING
+        mark = len(self.provisional)
         self.path[key] = depth
-        try:
-            result = self._keywords_accept(schema)
-        finally:
-            del self.path[key]
-        if self.leaned_on >= depth:
-            # Every cycle met below closes on this node or deeper: final.
-            self.known[key] = result
-            self.leaned_on = outer
+        result = self._keywords_accept(schema)
+        del self.path[key]
+
+        leans_on = self.leans_on
+        settled = leans_on >= depth
+        below = self.provisional[mark:]
+        del self.provisional[mark:]
+        if result and depth in self.met_again:
+            # The answers below took this node for rejecting null.
+            for other in below:
+                del self.answers[other]
         else:
-            self.leaned_on = min(outer, self.leaned_on)
+            for other in below:
+                node, answer, inner = self.answers[other]
+                if settled:
+                    inner = _NOTHING
+                else:
+                    inner = inner if inner < depth else leans_on
+                    self.provisional.append(other)
+                self.answers[other] = (node, answer, inner)
+        self.met_again.discard(depth)
+
+        self.answers[key] = (schema, result, _NOTHING if settled else leans_on)
+        if not settled:
+            self.provisional.append(key)
+        self.leans_on = outer if settled else min(outer, leans_on)
+        if depth == 0:
+            # Whatever is still provisional leans on a bound.
+            for other in self.provisional:
+                del self.answers[other]
+            self.provisional.clear()
+            self.leans_on = _NOTHING
         return result
 
     def _keywords_accept(self, node: dict[str, t.Any]) -> bool:
@@ -313,6 +357,7 @@ class _Walker:
         self.changes: list[StrictSchemaChange] = []
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
+        self.null_check = _NullCheck(root, strict_output=True)
         # Resolved references, re-checked against the rewritten schema.
         self.references: list[tuple[str, str]] = []
 
@@ -433,7 +478,7 @@ class _Walker:
                 continue
             if name in declared_required or not isinstance(property_schema, dict):
                 continue
-            properties[name] = _widen_to_nullable(property_schema, self.root)
+            properties[name] = _widen_to_nullable(property_schema, self.null_check)
             self.record(
                 _join_path(path, f"properties.{name}"),
                 "optional-property-nullable",

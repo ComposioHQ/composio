@@ -660,4 +660,42 @@ describe('null acceptance', () => {
       { path: 'properties.alias', keyword: '$ref' },
     ]);
   });
+
+  it('shares what it learned about a cyclic definition across many properties', () => {
+    const levels = 20;
+    const top = `#/$defs/a${levels}`;
+    const definitions: Record<string, unknown> = { a0: { type: 'string' } };
+    for (let i = 1; i <= levels; i++) {
+      const lower = `#/$defs/a${i - 1}`;
+      definitions[`a${i}`] = { anyOf: [{ $ref: lower }, { $ref: lower }, { $ref: top }] };
+    }
+    const names = Array.from({ length: 400 }, (_, i) => `p${i}`);
+    const source = {
+      type: 'object',
+      properties: Object.fromEntries(names.map(name => [name, { $ref: top }])),
+      $defs: definitions,
+    };
+    const { schema } = toStrictJsonSchema(source);
+    for (const name of names) expect(propertyOf(schema, name)).toEqual(wrapped({ $ref: top }));
+    const input = Object.fromEntries(names.map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+  });
+
+  it('keeps a check that runs out of budget from affecting the next one', () => {
+    const source = {
+      type: 'object',
+      properties: {
+        wide: { anyOf: Array.from({ length: 5000 }, () => ({ type: 'string' })) },
+        note: { type: ['string', 'null'] },
+        same: { anyOf: [{ type: 'string' }, NULL_BRANCH] },
+      },
+    };
+    expect(omitNullToolArguments({ wide: null, note: null, same: null }, source)).toEqual({
+      note: null,
+      same: null,
+    });
+    const { schema } = toStrictJsonSchema(source);
+    expect(propertyOf(schema, 'note')).toEqual({ type: ['string', 'null'] });
+    expect(propertyOf(schema, 'same')).toEqual({ anyOf: [{ type: 'string' }, NULL_BRANCH] });
+  });
 });
