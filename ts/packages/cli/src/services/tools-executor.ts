@@ -199,19 +199,14 @@ export const ToolsExecutorLive = Layer.effect(
           > =
             target.kind === 'dashboard'
               ? arguments_ => {
-                  // The Dashboard creates the session and resolves its user. It
-                  // accepts exactly these four settings and rejects any other.
-                  const { auth_configs, connected_accounts, manage_connections, experimental } =
-                    sessionContext.sessionConfig;
-                  const request = {
-                    slug,
-                    arguments: arguments_,
-                    orgId: target.orgId,
-                    session: { auth_configs, connected_accounts, manage_connections, experimental },
-                  };
-                  return isMetaToolSlug(slug)
-                    ? dashboard.executeMeta(request)
-                    : dashboard.execute(request);
+                  // The Dashboard creates its own session and resolves its user;
+                  // it takes no session settings from the CLI.
+                  const request = { slug, arguments: arguments_, orgId: target.orgId };
+                  if (isMetaToolSlug(slug)) return dashboard.executeMeta(request);
+                  // The session cannot be pinned from here, so the account the CLI
+                  // resolved for this tool's toolkit goes with the call itself.
+                  const [account] = Object.values(params.connectedAccounts ?? {});
+                  return dashboard.execute({ ...request, account });
                 }
               : // One session per invocation — CLI runs one tool per process.
                 yield* createToolRouterSessionFromContext(

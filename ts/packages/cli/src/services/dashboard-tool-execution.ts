@@ -7,23 +7,13 @@ import { APP_CONFIG } from 'src/effects/app-config';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
 
-/**
- * The session settings the Dashboard accepts from the CLI. The Dashboard
- * rejects any other key, and resolves the session's user itself.
- */
-export interface DashboardSessionConfig {
-  readonly auth_configs?: Record<string, string>;
-  readonly connected_accounts?: Record<string, string>;
-  readonly manage_connections?: { readonly enable: boolean };
-  readonly experimental?: { readonly link_url_overwrite?: string };
-}
-
 export interface DashboardToolExecutionRequest {
   readonly slug: string;
   readonly arguments: Record<string, unknown>;
   /** Sent as `x-org-id`; the Dashboard resolves the consumer project from it. */
   readonly orgId: string;
-  readonly session?: DashboardSessionConfig;
+  /** Connected account to run an app tool with; the Dashboard's sessions are multi-account. */
+  readonly account?: string;
 }
 
 export class DashboardToolExecutionError extends Data.TaggedError(
@@ -267,23 +257,19 @@ const makeDashboardToolExecution = Effect.gen(function* () {
       return outcome.response;
     });
 
-  const session = (request: DashboardToolExecutionRequest) =>
-    request.session ? { session: request.session } : {};
-
   return {
     /** Runs a tool through the Dashboard. Never retried. */
     execute: (request: DashboardToolExecutionRequest) =>
       call('execute', request.orgId, {
         tool_slug: request.slug,
         arguments: request.arguments,
-        ...session(request),
+        ...(request.account ? { account: request.account } : {}),
       }),
     /** Runs a meta tool through the Dashboard. Never retried. */
     executeMeta: (request: DashboardToolExecutionRequest) =>
       call('executeMeta', request.orgId, {
         slug: request.slug,
         arguments: request.arguments,
-        ...session(request),
       }),
   } as const;
 });

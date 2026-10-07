@@ -141,9 +141,16 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
+  let recordedExecuteParams: Array<Record<string, unknown>> = [];
+  // Records what one execution call carried; the account travels with the call, not the session.
+  const recordExecute = <T>(params: unknown, result: T): T => {
+    recordedExecuteParams.push(params as Record<string, unknown>);
+    return result;
+  };
   let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
+    recordedExecuteParams = [];
     recordedProjectToolkitScopes = [];
   });
 
@@ -337,15 +344,16 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_gmail_default',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_default',
+          }),
       },
     })
-  )('[Given] default alias exists [Then] execute pins the default connected account', it => {
-    it.effect('passes connected_accounts with the default alias account', () =>
+  )('[Given] default alias exists [Then] execute sends the default connected account', it => {
+    it.effect('sends the default alias account with the call', () =>
       Effect.gen(function* () {
         yield* cli([
           'execute',
@@ -355,9 +363,7 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          gmail: 'con_gmail_default',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_gmail_default');
       })
     );
 
@@ -453,14 +459,15 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_gmail_explicit',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_explicit',
+          }),
       },
     })
-  )('[Given] --account selector [Then] execute pins the matched connected account', it => {
+  )('[Given] --account selector [Then] execute sends the matched connected account', it => {
     it.effect('matches even when a stale config disables the former experiment', () =>
       Effect.gen(function* () {
         const cliConfig = yield* ComposioCliUserConfig;
@@ -478,9 +485,7 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          gmail: 'con_gmail_secondary',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_gmail_secondary');
       })
     );
 
@@ -501,8 +506,8 @@ describe('CLI: composio execute', () => {
         ]);
 
         expect(recordedSessionCreateParams).toHaveLength(2);
-        expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
-          expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
+        expect(recordedExecuteParams.map(params => params.account)).toEqual(
+          expect.arrayContaining(['con_gmail_secondary', 'con_gmail_default'])
         );
       })
     );
@@ -580,11 +585,12 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_google_analytics',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_google_analytics',
+          }),
       },
     })
   )('[Given] a multi-word toolkit [Then] execute resolves it from the known toolkit list', it => {
@@ -600,9 +606,7 @@ describe('CLI: composio execute', () => {
           '{"property_id":"1"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
-          google_analytics: 'con_google_analytics_default',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_google_analytics_default');
       })
     );
 
@@ -618,9 +622,7 @@ describe('CLI: composio execute', () => {
           '{"message":"hi"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
-          microsoft_teams: 'con_microsoft_teams_default',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_microsoft_teams_default');
       })
     );
   });
@@ -680,11 +682,12 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_custom_grain',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_custom_grain',
+          }),
       },
     })
   )('[Given] a project custom toolkit [Then] execute resolves it from the project list', it => {
@@ -710,9 +713,7 @@ describe('CLI: composio execute', () => {
             '{"query":"ada"}',
           ]);
 
-          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-            custom_grain: 'ca_1',
-          });
+          expect(recordedExecuteParams[0]?.account).toBe('ca_1');
           // Every lookup — account selection, the permission gate, error
           // mapping — must ask for the project execute resolved.
           expect(recordedProjectToolkitScopes.length).toBeGreaterThan(0);
@@ -766,9 +767,7 @@ describe('CLI: composio execute', () => {
 
         yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          custom_grain: 'ca_1',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('ca_1');
       })
     );
   });
@@ -816,17 +815,18 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_posthog_test',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_posthog_test',
+          }),
       },
     })
   )(
-    '[Given] a non-managed connected account [Then] execute preloads auth configs into the Tool Router session',
+    '[Given] a non-managed connected account [Then] execute leaves the session to the Dashboard',
     it => {
-      it.effect('passes explicit auth_configs for custom auth toolkits', () =>
+      it.effect('sends the connected account and no auth configs for custom auth toolkits', () =>
         Effect.gen(function* () {
           yield* cli([
             'execute',
@@ -841,12 +841,9 @@ describe('CLI: composio execute', () => {
           expect(output.successful).toBe(true);
           expect(recordedSessionCreateParams).toHaveLength(1);
           expect(recordedSessionCreateParams[0]?.user_id).toEqual(expect.any(String));
-          expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
-            posthog: 'ac_posthog_custom',
-          });
-          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-            posthog: 'con_posthog_active',
-          });
+          // The Dashboard owns the session, so the CLI sends it no auth configs.
+          expect(recordedSessionCreateParams[0]?.auth_configs).toBeUndefined();
+          expect(recordedExecuteParams[0]?.account).toBe('con_posthog_active');
         })
       );
     }
@@ -874,15 +871,16 @@ describe('CLI: composio execute', () => {
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
         },
-        execute: async (_sessionId, params) => ({
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_posthog_cached',
-        }),
+        execute: async (_sessionId, params) =>
+          recordExecute(params, {
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_posthog_cached',
+          }),
       },
     })
-  )('[Given] cached auth configs [Then] execute seeds the session from cache', it => {
-    it.effect('uses cached auth_configs for consumer execute sessions', () =>
+  )('[Given] cached auth configs [Then] execute sends no cached session settings', it => {
+    it.effect('sends no cached auth configs on consumer executions', () =>
       Effect.gen(function* () {
         vi.spyOn(
           consumerShortTermCache,
@@ -906,9 +904,8 @@ describe('CLI: composio execute', () => {
         ]);
 
         expect(recordedSessionCreateParams).toHaveLength(1);
-        expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
-          posthog: 'ac_posthog_cached',
-        });
+        // The Dashboard owns the session, so the CLI sends it no auth configs.
+        expect(recordedSessionCreateParams[0]?.auth_configs).toBeUndefined();
       })
     );
   });

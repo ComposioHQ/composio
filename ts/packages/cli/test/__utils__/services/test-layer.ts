@@ -148,16 +148,10 @@ const DashboardProcedureInput = Schema.Struct({
     tool_slug: Schema.optional(Schema.String),
     slug: Schema.optional(Schema.String),
     arguments: Schema.Record(Schema.String, Schema.Unknown),
-    session: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
+    account: Schema.optional(Schema.String),
+    session: Schema.optional(Schema.Unknown),
   }),
 });
-
-const DASHBOARD_SESSION_KEYS: ReadonlySet<string> = new Set([
-  'auth_configs',
-  'connected_accounts',
-  'manage_connections',
-  'experimental',
-]);
 
 /** A Dashboard procedure answer in the wire envelope the CLI decodes. */
 export const dashboardProcedureResult = (outcome: unknown, status = 200): Response =>
@@ -1569,23 +1563,19 @@ export const TestLayer = (input?: TestLiveInput) =>
     // The real `DashboardToolExecution` runs over this client, so the request
     // the CLI builds and the reply it decodes are both exercised.
     const relayThroughToolRouter = async (request: DashboardTestRequest): Promise<Response> => {
-      const { session, ...call } = Schema.decodeUnknownSync(DashboardProcedureInput)(
+      const { session, account, ...call } = Schema.decodeUnknownSync(DashboardProcedureInput)(
         request.body
       ).json;
-      // The real endpoint accepts exactly four session settings.
-      const unknownSessionKeys = Object.keys(session ?? {}).filter(
-        key => !DASHBOARD_SESSION_KEYS.has(key)
-      );
-      if (unknownSessionKeys.length > 0) {
+      // The real endpoint builds the session itself and accepts no session settings.
+      if (session !== undefined) {
         return dashboardProcedureError({
           code: 'BAD_REQUEST',
           httpStatus: 400,
-          message: `Unrecognized session key(s): ${unknownSessionKeys.join(', ')}`,
+          message: "Unrecognized key(s) in object: 'session'",
         });
       }
       try {
         const created = await mockComposioClient.toolRouter.session.create({
-          ...session,
           user_id: 'user_resolved_by_dashboard',
         });
         const response = request.url.endsWith('/executeMeta')
@@ -1596,6 +1586,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           : await mockComposioClient.toolRouter.session.execute(created.session_id, {
               tool_slug: call.tool_slug ?? '',
               arguments: call.arguments,
+              ...(account ? { account } : {}),
             });
         return dashboardProcedureResult({ ok: true, response });
       } catch (error) {

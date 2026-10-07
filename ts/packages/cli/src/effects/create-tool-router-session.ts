@@ -65,7 +65,7 @@ export interface ToolRouterSessionContext {
 /**
  * Resolve the connections, permission snapshot and session settings for the
  * given user ID without creating a session. Callers that execute through the
- * Dashboard send `sessionConfig` there instead of creating a session themselves.
+ * Dashboard use only the connection context; the Dashboard owns the session.
  */
 export const resolveToolRouterSessionContext = (
   client: Composio,
