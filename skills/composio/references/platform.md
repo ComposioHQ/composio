@@ -105,7 +105,7 @@ Pass the session tools to the repository's existing model or agent using its nat
 
 ## Choose tools and authentication behavior
 
-For Instant Tools, read https://docs.composio.dev/docs/instant-tools.md before choosing authentication or usage settings. Use that guide for current eligibility, pricing, project access, Session controls, account routing, and charge reporting; do not duplicate those details here.
+For Instant Tools, read https://docs.composio.dev/docs/instant-tools.md before choosing authentication or usage settings. Use that guide for current eligibility, pricing, project access, Session controls, account routing, and charge reporting.
 
 Sessions expose a small set of meta tools by default so the agent can discover integrations and authenticate at runtime:
 
