@@ -34,6 +34,7 @@ import {
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
+  assertNotInputRequired,
   transformSearchResponse,
   transformExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
@@ -679,6 +680,7 @@ export class ToolRouterSession<
    * @param options - Optional execution options
    * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @returns The tool execution result
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
   async execute(
     toolSlug: string,
@@ -732,7 +734,7 @@ export class ToolRouterSession<
         ),
       requestOptions?.signal
     );
-    const transformed = transformExecuteResponse(response);
+    const transformed = transformExecuteResponse(response, toolSlug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 
@@ -742,6 +744,7 @@ export class ToolRouterSession<
    *
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
    * @returns The proxied API response with status, data, headers
+   * @throws {ComposioToolInputRequiredError} If the call needs input from the user before it can run
    */
   async proxyExecute(
     params: SessionProxyExecuteParams,
@@ -763,6 +766,10 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
 
+    assertNotInputRequired(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
     return {
       status: response.status,
       data: response.data,

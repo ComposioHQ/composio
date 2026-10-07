@@ -1236,7 +1236,7 @@ export class Tools<
       requestOptions?.signal
     );
 
-    const { data, error, logId, instantCharge } = transformExecuteResponse(response);
+    const { data, error, logId, instantCharge } = transformExecuteResponse(response, toolSlug);
     let result: ToolExecuteResponse = {
       data,
       error,

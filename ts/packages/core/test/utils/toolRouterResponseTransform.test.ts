@@ -176,12 +176,13 @@ describe('toolRouterResponseTransform', () => {
   describe('transformExecuteResponse', () => {
     it('should transform snake_case execute response to camelCase', () => {
       const raw = {
+        result_type: 'completed' as const,
         data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
         error: null,
         log_id: 'log_abc',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
@@ -190,12 +191,13 @@ describe('toolRouterResponseTransform', () => {
 
     it('should preserve error in execute response', () => {
       const raw = {
+        result_type: 'failed' as const,
         data: {},
         error: 'Connection not found',
         log_id: 'log_err',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
@@ -203,15 +205,22 @@ describe('toolRouterResponseTransform', () => {
 
     it('preserves the optional Instant charge without inventing one', () => {
       expect(
-        transformExecuteResponse({
-          data: {},
-          error: null,
-          log_id: 'log_paid',
-          instant_charge: { amount: '0.01', currency: 'USD' },
-        }).instantCharge
-      ).toEqual({ amount: '0.01', currency: 'USD' });
+        transformExecuteResponse(
+          {
+            result_type: 'completed',
+            data: {},
+            error: null,
+            log_id: 'log_paid',
+            instant_charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
+          },
+          'EXA_SEARCH'
+        ).instantCharge
+      ).toEqual({ amount: '0.01', currency: 'USD', charged_by: 'composio' });
       expect(
-        transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
+        transformExecuteResponse(
+          { result_type: 'completed', data: {}, error: null, log_id: 'log_free' },
+          'EXA_SEARCH'
+        )
       ).not.toHaveProperty('instantCharge');
     });
   });
