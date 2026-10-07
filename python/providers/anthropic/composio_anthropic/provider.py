@@ -41,6 +41,14 @@ class AnthropicProvider(
         self._aliases: dict[str, ToolSchemaAliases] = {}
 
     def wrap_tool(self, tool: Tool) -> ToolParam:
+        """
+        Wrap a single tool.
+
+        With ``cache_tools`` enabled the returned tool carries its own
+        ``cache_control`` breakpoint. If you build a tool list yourself from
+        several calls, keep the number of breakpoints within Anthropic's
+        limit, or use :meth:`wrap_tools`, which marks only the last tool.
+        """
         aliases = alias_tool_input_schema(tool.input_parameters or {})
         self._aliases[tool.slug] = aliases
         wrapped = ToolParam(
@@ -53,6 +61,14 @@ class AnthropicProvider(
         return wrapped
 
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[ToolParam]:
+        """
+        Wrap a list of tools.
+
+        With ``cache_tools`` enabled only the last tool in the list carries a
+        ``cache_control`` breakpoint. The limit of 4 applies to the whole
+        request, not to one call, so if you concatenate the lists from several
+        calls, each list's last tool keeps its breakpoint.
+        """
         wrapped = [self.wrap_tool(tool) for tool in tools]
         # A cache_control breakpoint caches every block up to and including
         # it, so one breakpoint on the last tool covers the entire tool list.
