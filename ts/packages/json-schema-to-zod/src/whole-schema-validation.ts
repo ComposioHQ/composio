@@ -3,6 +3,8 @@ import type { Schema as InterpreterSchema } from '@cfworker/json-schema';
 import { z } from 'zod/v3';
 
 import type { JsonSchema, JsonSchemaObject } from './types';
+import { InvalidPatternError } from './utils/compile-pattern';
+import { createPatternMatcher, patternMatches, type PatternMatcher } from './utils/linear-pattern';
 import { toUnicodePattern } from './utils/unicode-pattern';
 
 const REQUIRES_WHOLE_SCHEMA_VALIDATION = new Set([
@@ -162,33 +164,203 @@ export const guardSchemaAt = (
       { ...refs.root, $ref: `#/${refs.path.map(part => encodePointer(String(part))).join('/')}` }
     : node;
 
-const patternKeyRenames = new WeakMap<object, ReadonlyMap<string, string>>();
+/** The interpreter spelling of one `patternProperties` key. */
+type PatternKeySpelling = (pattern: string) => string;
+/** The interpreter spelling of every key of one `patternProperties` object. */
+type PatternKeyRenamer = (patternProperties: object) => ReadonlyMap<string, string>;
 
 /**
- * The Unicode spelling of each `patternProperties` key. Two keys that spell
- * the same way (`^a\_b$` and `^a_b$`) stay separate entries: the later one is
- * wrapped in a non-capturing group, which matches the same names, so neither
- * value schema is dropped. A key with no Unicode spelling is kept as is and
- * surfaces as a guard failure rather than an unenforced constraint.
+ * Spells each key of a `patternProperties` object with `spell`. Two keys that
+ * spell the same way (`^a\_b$` and `^a_b$`) stay separate entries: the later
+ * one is wrapped in a non-capturing group, which matches the same names, so
+ * neither value schema is dropped. `renamed` collects every spelling that
+ * differs from its key.
  */
-const renamePatternKeys = (patternProperties: object): ReadonlyMap<string, string> => {
-  const cached = patternKeyRenames.get(patternProperties);
-  if (cached) {
-    return cached;
+const patternKeyRenamer = (
+  spell: PatternKeySpelling,
+  renamed: Map<string, string> = new Map()
+): PatternKeyRenamer => {
+  const cache = new WeakMap<object, ReadonlyMap<string, string>>();
+  return patternProperties => {
+    const cached = cache.get(patternProperties);
+    if (cached) {
+      return cached;
+    }
+
+    const renames = new Map<string, string>();
+    const used = new Set<string>();
+    for (const key of Object.keys(patternProperties)) {
+      let spelling = spell(key);
+      while (used.has(spelling)) {
+        spelling = `(?:${spelling})`;
+      }
+      used.add(spelling);
+      renames.set(key, spelling);
+      if (spelling !== key) {
+        renamed.set(spelling, key);
+      }
+    }
+    cache.set(patternProperties, renames);
+    return renames;
+  };
+};
+
+/**
+ * The interpreter matches `patternProperties` keys itself, with a native
+ * backtracking `RegExp`, against object keys that come from the caller. So a
+ * key never reaches it as written. Instead, each validation spells it as the
+ * literal set of instance keys it matches under RE2 (an anchored trie, which
+ * cannot backtrack beyond the key length). Interpreter matching then agrees
+ * with RE2 on every key it can see.
+ *
+ * Returns the RE2 matcher of each key, or `undefined` for a key that does not
+ * compile in the Unicode grammar: the interpreter throws on it when reached,
+ * which fails the guard closed, as it always has. A key that compiles but
+ * needs a backtracking engine is rejected at conversion, as the native object
+ * parser does.
+ */
+const collectPatternKeyMatchers = (
+  value: unknown,
+  path: ReadonlyArray<string | number>,
+  seen: WeakSet<object>,
+  matchers: Map<string, PatternMatcher | undefined>
+): Map<string, PatternMatcher | undefined> => {
+  if (!isObject(value) || seen.has(value)) {
+    return matchers;
+  }
+  seen.add(value);
+
+  if (isObject(value.patternProperties)) {
+    for (const key of Object.keys(value.patternProperties)) {
+      if (matchers.has(key)) {
+        continue;
+      }
+      let matcher: PatternMatcher | undefined;
+      try {
+        matcher = createPatternMatcher(key);
+      } catch {
+        matcher = undefined;
+      }
+      if (matcher !== undefined && matcher.kind !== 'linear') {
+        if (unicodeSpellingCompiles(key)) {
+          throw new InvalidPatternError(
+            'patternProperties',
+            key,
+            [...path, 'patternProperties', key],
+            'unsupported',
+            'patternProperties keys must not use lookaround or backreferences'
+          );
+        }
+        matcher = undefined;
+      }
+      matchers.set(key, matcher);
+    }
   }
 
-  const renames = new Map<string, string>();
-  const used = new Set<string>();
-  for (const key of Object.keys(patternProperties)) {
-    let renamed = toUnicodePattern(key) ?? key;
-    while (used.has(renamed)) {
-      renamed = `(?:${renamed})`;
+  for (const [key, child] of Object.entries(value)) {
+    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
+      Object.entries(child).forEach(([name, nested]) =>
+        collectPatternKeyMatchers(nested, [...path, key, name], seen, matchers)
+      );
+    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
+      child.forEach((nested, index) =>
+        collectPatternKeyMatchers(nested, [...path, key, index], seen, matchers)
+      );
+    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
+      if (Array.isArray(child)) {
+        child.forEach((nested, index) =>
+          collectPatternKeyMatchers(nested, [...path, key, index], seen, matchers)
+        );
+      } else {
+        collectPatternKeyMatchers(child, [...path, key], seen, matchers);
+      }
     }
-    used.add(renamed);
-    renames.set(key, renamed);
   }
-  patternKeyRenames.set(patternProperties, renames);
-  return renames;
+  return matchers;
+};
+
+/** The Unicode spelling of a key that cannot be matched with RE2. */
+const fallbackKeySpelling = (pattern: string): string => toUnicodePattern(pattern) ?? pattern;
+
+const unicodeSpellingCompiles = (pattern: string): boolean => {
+  try {
+    new RegExp(fallbackKeySpelling(pattern), 'u');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** Every object key anywhere in `value`. */
+const collectInstanceKeys = (
+  value: unknown,
+  keys: Set<string> = new Set(),
+  seen: WeakSet<object> = new WeakSet()
+): Set<string> => {
+  if (typeof value !== 'object' || value === null || seen.has(value)) {
+    return keys;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    value.forEach(item => collectInstanceKeys(item, keys, seen));
+  } else {
+    for (const [key, child] of Object.entries(value)) {
+      keys.add(key);
+      collectInstanceKeys(child, keys, seen);
+    }
+  }
+  return keys;
+};
+
+const UNICODE_SYNTAX_CHARACTER = /[$()*+./?[\\\]^{|}]/g;
+
+type KeyTrie = { end: boolean; children: Map<string, KeyTrie> };
+
+/** Spells a trie node as a Unicode-grammar pattern over its code points. */
+const spellKeyTrie = (node: KeyTrie): string => {
+  const branches = [...node.children].map(([char, child]) => {
+    let spelling = char.replace(UNICODE_SYNTAX_CHARACTER, '\\$&');
+    let next = child;
+    // Collapse single-path runs so nesting grows only at branch points.
+    while (!next.end && next.children.size === 1) {
+      const [[nextChar, grandchild]] = next.children;
+      spelling += nextChar.replace(UNICODE_SYNTAX_CHARACTER, '\\$&');
+      next = grandchild;
+    }
+    return spelling + spellKeyTrie(next);
+  });
+  if (branches.length === 0) {
+    return '';
+  }
+  if (branches.length === 1 && !node.end) {
+    return branches[0];
+  }
+  return `(?:${branches.join('|')}${node.end ? '|' : ''})`;
+};
+
+/**
+ * An anchored Unicode-grammar pattern that matches exactly `keys`. Branches of
+ * a trie start with distinct characters, so matching never backtracks further
+ * than the key being tested. No keys gives `[]`, which matches nothing.
+ */
+const literalKeysPattern = (keys: readonly string[]): string => {
+  if (keys.length === 0) {
+    return '[]';
+  }
+  const root: KeyTrie = { end: false, children: new Map() };
+  for (const key of keys) {
+    let node = root;
+    for (const char of key) {
+      let child = node.children.get(char);
+      if (!child) {
+        child = { end: false, children: new Map() };
+        node.children.set(char, child);
+      }
+      node = child;
+    }
+    node.end = true;
+  }
+  return `^${spellKeyTrie(root)}$`;
 };
 
 const decodePointerSegment = (segment: string): string => {
@@ -228,7 +400,11 @@ const positionAfter = (position: PointerPosition, key: string, child: unknown): 
  * a segment in keyword position is a keyword, so a definition that happens to
  * be named `patternProperties` is not mistaken for one.
  */
-const renameRefThroughPatternKeys = (ref: string, root: unknown): string => {
+const renameRefThroughPatternKeys = (
+  ref: string,
+  root: unknown,
+  renamePatternKeys: PatternKeyRenamer
+): string => {
   if (!ref.startsWith('#/')) {
     return ref;
   }
@@ -265,21 +441,31 @@ const PATTERN_FORMAT_PREFIX = 'composio-pattern:';
 type PatternFormats = Map<string, (value: string) => boolean>;
 
 /**
- * Adds `pattern` to `formats` as an interpreter format that tests it exactly as
- * the native string parser does, without the `u` flag, and returns the format
- * name. Returns `undefined` for a pattern that does not compile at all, which
- * the interpreter then reports as it always has.
+ * Adds `pattern` to `formats` as an interpreter format that tests it as the
+ * native string parser does (legacy grammar, RE2 with a bounded fallback; see
+ * `compilePattern`), and returns the format name. Returns `undefined` for a
+ * pattern that does not compile at all, which the interpreter then reports as
+ * it always has. `matchers` caches compiled patterns across validations.
  */
-const patternFormat = (pattern: string, formats: PatternFormats): string | undefined => {
+const patternFormat = (
+  pattern: string,
+  formats: PatternFormats,
+  matchers: Map<string, PatternMatcher>
+): string | undefined => {
   const name = `${PATTERN_FORMAT_PREFIX}${pattern}`;
   if (!formats.has(name)) {
-    let regex: RegExp;
-    try {
-      regex = new RegExp(pattern);
-    } catch {
-      return undefined;
+    let matcher = matchers.get(pattern);
+    if (matcher === undefined) {
+      try {
+        new RegExp(pattern);
+      } catch {
+        return undefined;
+      }
+      matcher = createPatternMatcher(pattern);
+      matchers.set(pattern, matcher);
     }
-    formats.set(name, value => regex.test(value));
+    const compiled = matcher;
+    formats.set(name, value => patternMatches(compiled, value));
   }
   return name;
 };
@@ -291,19 +477,21 @@ const patternFormat = (pattern: string, formats: PatternFormats): string | undef
  * - OpenAPI 3.0 / Draft 4 spell exclusive bounds as a boolean flag next to
  *   `minimum`/`maximum`. The interpreter ignores the flag, so it receives the
  *   numeric spelling the native number parser already honors.
- * - The interpreter compiles patterns with the `u` flag, which refuses legacy
- *   syntax tool schemas use, such as `\_`. A `pattern` becomes a format that
- *   tests it without the flag, exactly like the native string parser. A
- *   `patternProperties` key cannot leave the interpreter, so it gets its
- *   Unicode spelling (`toUnicodePattern`), and local `$ref`s through a renamed
- *   key follow the rename. `root` is the unmodified document those refs
- *   address. `formats` collects the pattern formats.
+ * - The interpreter compiles patterns natively with the `u` flag, which
+ *   refuses legacy syntax tool schemas use, such as `\_`, and backtracks. A
+ *   `pattern` becomes a format that tests it exactly like the native string
+ *   parser. A `patternProperties` key cannot leave the interpreter, so it is
+ *   respelled by `renamePatternKeys`, and local `$ref`s through a renamed key
+ *   follow the rename. `root` is the unmodified document those refs address.
+ *   `formats` collects the pattern formats.
  */
 const prepareInterpreterSchema = (
   value: unknown,
   seen: WeakSet<object>,
   root: unknown,
-  formats: PatternFormats
+  formats: PatternFormats,
+  patternMatchers: Map<string, PatternMatcher>,
+  renamePatternKeys: PatternKeyRenamer
 ): void => {
   if (!isObject(value) || seen.has(value)) {
     return;
@@ -324,10 +512,12 @@ const prepareInterpreterSchema = (
   }
 
   if (typeof value.$ref === 'string') {
-    value.$ref = renameRefThroughPatternKeys(value.$ref, root);
+    value.$ref = renameRefThroughPatternKeys(value.$ref, root, renamePatternKeys);
   }
   const patternFormatName =
-    typeof value.pattern === 'string' ? patternFormat(value.pattern, formats) : undefined;
+    typeof value.pattern === 'string'
+      ? patternFormat(value.pattern, formats, patternMatchers)
+      : undefined;
   if (patternFormatName !== undefined) {
     delete value.pattern;
     if (value.format === undefined) {
@@ -349,12 +539,16 @@ const prepareInterpreterSchema = (
 
   for (const [key, child] of Object.entries(value)) {
     if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
+      Object.values(child).forEach(nested =>
+        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
+      );
     } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested => prepareInterpreterSchema(nested, seen, root, formats));
+      child.forEach(nested =>
+        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
+      );
     } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
       (Array.isArray(child) ? child : [child]).forEach(nested =>
-        prepareInterpreterSchema(nested, seen, root, formats)
+        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
       );
     }
   }
@@ -403,14 +597,55 @@ const guardedSchemaClass = (Base: ZodSchemaClass): ZodSchemaClass => {
   return Guarded;
 };
 
+type PreparedInterpreter = {
+  validator: Validator;
+  formats: PatternFormats;
+  /** Interpreter spelling of each respelled `patternProperties` key, to its key. */
+  renamed: ReadonlyMap<string, string>;
+};
+
 export const withWholeSchemaValidation = (
   jsonSchema: JsonSchema,
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
-  const interpreterSchema = structuredClone(jsonSchema);
-  const formats: PatternFormats = new Map();
-  prepareInterpreterSchema(interpreterSchema, new WeakSet(), jsonSchema, formats);
-  const validator = new Validator(interpreterSchema as InterpreterSchema, '7', false);
+  const patternMatchers = new Map<string, PatternMatcher>();
+  const keyMatchers = collectPatternKeyMatchers(jsonSchema, [], new WeakSet(), new Map());
+
+  const prepare = (spell: PatternKeySpelling): PreparedInterpreter => {
+    const interpreterSchema = structuredClone(jsonSchema);
+    const formats: PatternFormats = new Map();
+    const renamed = new Map<string, string>();
+    prepareInterpreterSchema(
+      interpreterSchema,
+      new WeakSet(),
+      jsonSchema,
+      formats,
+      patternMatchers,
+      patternKeyRenamer(spell, renamed)
+    );
+    return {
+      validator: new Validator(interpreterSchema as InterpreterSchema, '7', false),
+      formats,
+      renamed,
+    };
+  };
+
+  // Without `patternProperties` the interpreter schema never changes. With
+  // them, it is rebuilt for each value, spelling every key as the instance
+  // keys it matches.
+  const shared = keyMatchers.size === 0 ? prepare(fallbackKeySpelling) : undefined;
+  const prepareFor = (value: unknown): PreparedInterpreter => {
+    if (shared) {
+      return shared;
+    }
+    const instanceKeys = [...collectInstanceKeys(value)];
+    return prepare(pattern => {
+      const matcher = keyMatchers.get(pattern);
+      return matcher === undefined
+        ? fallbackKeySpelling(pattern)
+        : literalKeysPattern(instanceKeys.filter(key => patternMatches(matcher, key)));
+    });
+  };
 
   // Validate the source value before defaults and other Zod transforms run.
   // Otherwise a missing required field can be synthesized and incorrectly
@@ -421,21 +656,28 @@ export const withWholeSchemaValidation = (
     // guard's pattern formats live there only for this synchronous call, so
     // the table does not grow with every distinct pattern ever converted.
     let result: ReturnType<Validator['validate']>;
+    let prepared: PreparedInterpreter | undefined;
     try {
-      formats.forEach((test, name) => {
+      prepared = prepareFor(value);
+      prepared.formats.forEach((test, name) => {
         format[name] = test;
       });
-      result = validator.validate(value);
+      result = prepared.validator.validate(value);
     } catch (cause) {
       return `JSON Schema validation failed: ${String(cause)}`;
     } finally {
-      formats.forEach((_, name) => {
+      prepared?.formats.forEach((_, name) => {
         delete format[name];
       });
     }
 
     if (!result.valid) {
-      return result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.';
+      let error = result.errors[0]?.error ?? 'Input does not satisfy the complete JSON Schema.';
+      // Report the schema's own pattern, not its per-value spelling.
+      prepared.renamed.forEach((key, spelling) => {
+        error = error.split(`"${spelling}"`).join(`"${key}"`);
+      });
+      return error;
     }
     return innerGuard?.(value);
   };
