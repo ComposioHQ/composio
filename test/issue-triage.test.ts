@@ -306,3 +306,207 @@ test('authorization controls every issue event and manual dispatch before exposi
   expect(workflow.jobs.classify.if).toBe("needs.authorize.outputs.allowed == 'true'");
   expect(workflow.jobs.apply.if).toBeUndefined();
 });
+
+const applyStep = workflow.jobs.apply.steps[0];
+type ApplyOptions = {
+  result?: unknown;
+  structuredOutput?: string;
+  state?: 'open' | 'closed';
+  plainApiKey?: string;
+};
+
+async function runApply({
+  result = classification,
+  structuredOutput = JSON.stringify(result),
+  state = 'open',
+  plainApiKey = 'plain-secret-sentinel',
+}: ApplyOptions = {}) {
+  const calls: [string, Record<string, unknown>][] = [];
+  const plainRequests: { url: string; options: RequestOptions }[] = [];
+  const failures: string[] = [];
+  const record = (name: string) => async (args: Record<string, unknown>) => {
+    calls.push([name, args]);
+    return { data: {} };
+  };
+  await runInNewContext(`(async () => {\n${applyStep.with.script}\n})()`, {
+    process: {
+      env: {
+        STRUCTURED_OUTPUT: structuredOutput,
+        ISSUE_NUMBER: '42',
+        PLAIN_API_KEY: plainApiKey,
+      },
+    },
+    // The event's own issue must never be the one that gets mutated.
+    context: {
+      repo: { owner: 'ComposioHQ', repo: 'composio' },
+      payload: { issue: { number: 999 } },
+    },
+    github: {
+      rest: {
+        issues: {
+          get: async (args: Record<string, unknown>) => {
+            calls.push(['get', args]);
+            return {
+              data: {
+                number: 42,
+                state,
+                title: 'Reported title',
+                body: 'Reported body',
+                html_url: 'https://github.com/ComposioHQ/composio/issues/42',
+                user: { login: 'reporter', id: 7 },
+              },
+            };
+          },
+          getLabel: record('getLabel'),
+          createLabel: record('createLabel'),
+          removeLabel: record('removeLabel'),
+          removeAssignees: record('removeAssignees'),
+          addLabels: record('addLabels'),
+          addAssignees: record('addAssignees'),
+          createComment: record('createComment'),
+          update: record('update'),
+        },
+        users: { getByUsername: async () => ({ data: { email: null, name: 'Reporter' } }) },
+      },
+    },
+    core: {
+      setFailed: (message: string) => {
+        failures.push(message);
+      },
+      info: () => {},
+      warning: () => {},
+    },
+    fetch: async (url: string, options: RequestOptions) => {
+      plainRequests.push({ url, options });
+      const data = options.body.includes('upsertCustomer')
+        ? { upsertCustomer: { customer: { id: 'c_1' } } }
+        : { createThread: { thread: { id: 't_1', ref: 'T-1' } } };
+      return { ok: true, json: async () => ({ data }) };
+    },
+  });
+  const named = (name: string) => calls.filter(call => call[0] === name).map(call => call[1]);
+  return { calls, plainRequests, failures, named };
+}
+
+const target = { owner: 'ComposioHQ', repo: 'composio', issue_number: 42 };
+
+test('the mutation job receives only the classification, the issue number, and the Plain key', () => {
+  expect(workflow.jobs.apply.steps).toHaveLength(1);
+  expect(applyStep.uses).toStartWith('actions/github-script@');
+  expect(Object.keys(applyStep.env ?? {}).sort()).toEqual([
+    'ISSUE_NUMBER',
+    'PLAIN_API_KEY',
+    'STRUCTURED_OUTPUT',
+  ]);
+  expect(applyStep.env?.ISSUE_NUMBER).toBe('${{ needs.classify.outputs.issue_number }}');
+});
+
+test('an SDK bug is labeled and assigned on the classified issue, with no comment or close', async () => {
+  const { calls, plainRequests, failures, named } = await runApply();
+  expect(failures).toEqual([]);
+  expect(calls.every(([, args]) => args.issue_number === 42)).toBe(true);
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['bug', 'ts'] }]);
+  expect(named('addAssignees')).toEqual([{ ...target, assignees: ['jkomyno'] }]);
+  expect(named('createComment')).toEqual([]);
+  expect(named('update')).toEqual([]);
+  expect(plainRequests).toEqual([]);
+});
+
+test('a non-actionable report gets the trimmed triage comment', async () => {
+  const { named } = await runApply({
+    result: {
+      ...classification,
+      category: 'other',
+      should_comment: true,
+      comment_body: '  Please share repro steps.\n',
+    },
+  });
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['bug'] }]);
+  expect(named('createComment')).toEqual([{ ...target, body: 'Please share repro steps.' }]);
+  expect(named('update')).toEqual([]);
+});
+
+const toolRequest = {
+  ...classification,
+  category: 'tool-request',
+  is_bug: false,
+  should_comment: true,
+  comment_body: 'Model-written text',
+};
+
+test('an open tool request is labeled, pointed at the request board, and closed', async () => {
+  const { named } = await runApply({ result: toolRequest });
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['tool-request'] }]);
+  const comments = named('createComment');
+  expect(comments).toHaveLength(1);
+  expect(comments[0].body).toContain('https://request.composio.dev/boards/tool-requests');
+  expect(comments[0].body).not.toContain('Model-written text');
+  expect(named('update')).toEqual([{ ...target, state: 'closed' }]);
+});
+
+test('an already closed tool request is labeled but not commented on or closed again', async () => {
+  const { named } = await runApply({ result: toolRequest, state: 'closed' });
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['tool-request'] }]);
+  expect(named('createComment')).toEqual([]);
+  expect(named('update')).toEqual([]);
+});
+
+test('a tool request classified as a bug is never closed', async () => {
+  const { named } = await runApply({ result: { ...toolRequest, is_bug: true } });
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['bug'] }]);
+  expect(named('createComment')).toEqual([{ ...target, body: 'Model-written text' }]);
+  expect(named('update')).toEqual([]);
+});
+
+const support = {
+  ...classification,
+  category: 'support',
+  should_comment: true,
+  comment_body: 'Model-written text',
+};
+
+test('a support issue drops SDK routing, is forwarded to Plain, and gets the fixed note', async () => {
+  const { plainRequests, named } = await runApply({ result: support });
+  expect(named('removeLabel').map(args => args.name)).toEqual(['bug', 'ts']);
+  expect(named('removeAssignees')).toEqual([{ ...target, assignees: ['jkomyno'] }]);
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['support'] }]);
+  expect(named('addAssignees')).toEqual([]);
+  expect(plainRequests.map(request => request.url)).toEqual([
+    'https://core-api.uk.plain.com/graphql/v1',
+    'https://core-api.uk.plain.com/graphql/v1',
+  ]);
+  for (const { options } of plainRequests) {
+    expect(options.headers.Authorization).toBe('Bearer plain-secret-sentinel');
+  }
+  const thread = JSON.parse(plainRequests[1].options.body).variables.input;
+  expect(thread.title).toBe('[GitHub #42] Reported title');
+  expect(thread.externalId).toBe('github:ComposioHQ/composio:issues/42');
+  const comments = named('createComment');
+  expect(comments).toHaveLength(1);
+  expect(comments[0].body).toContain('forwarded it to Plain');
+  expect(comments[0].body).not.toContain('Model-written text');
+  expect(JSON.stringify(comments)).not.toContain('plain-secret-sentinel');
+  expect(named('update')).toEqual([]);
+});
+
+test('a support issue without a Plain key is labeled and noted without any Plain request', async () => {
+  const { plainRequests, named } = await runApply({ result: support, plainApiKey: '' });
+  expect(plainRequests).toEqual([]);
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['support'] }]);
+  const comments = named('createComment');
+  expect(comments).toHaveLength(1);
+  expect(comments[0].body).toContain('for support team follow-up');
+});
+
+for (const [label, structuredOutput] of [
+  ['an empty classification', ''],
+  ['malformed JSON', '{'],
+  ['an unknown category', JSON.stringify({ ...classification, category: 'shell' })],
+] as const) {
+  test(`${label} fails the mutation job before any GitHub or Plain call`, async () => {
+    const { calls, plainRequests, failures } = await runApply({ structuredOutput });
+    expect(failures).toHaveLength(1);
+    expect(calls).toEqual([]);
+    expect(plainRequests).toEqual([]);
+  });
+}
