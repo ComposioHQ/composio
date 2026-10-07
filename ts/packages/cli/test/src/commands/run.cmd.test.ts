@@ -127,7 +127,7 @@ describe('CLI: composio run', () => {
     it.effect('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
       Effect.gen(function* () {
         const telemetryContext = createCliCommandTelemetryContext(
-          ['bun', 'composio', 'run', 'console.log("hi")'],
+          ['bun', 'composio', '--telemetry-debug', 'run', 'console.log("hi")'],
           '0.0.0-test',
           { stdoutIsTTY: false, stderrIsTTY: false },
           { invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN, parentRunId: undefined }
@@ -143,7 +143,7 @@ describe('CLI: composio run', () => {
 
         // The bootstrap hands the run id it minted for telemetry to the command, the way
         // `cli-main.ts` does, instead of publishing it through process-wide state.
-        yield* cli(['run', 'console.log("hi")'], { runId });
+        yield* cli(['--telemetry-debug', 'run', 'console.log("hi")'], { runId });
 
         expect(commandRuns).toHaveBeenCalledTimes(1);
       })
@@ -536,6 +536,40 @@ describe('CLI: composio run', () => {
 
   layer(RunTestLive())(it => {
     it.effect(
+      'forwards script flags with or without a delimiter without enabling them in the CLI',
+      () =>
+        Effect.gen(function* () {
+          const script = 'console.log("hi")';
+          const tail = [
+            '--perf-debug',
+            '--tool-debug',
+            '--acp-only',
+            '--telemetry-debug',
+            '--help',
+            '--version',
+          ];
+          for (const args of [
+            [script, ...tail],
+            [script, '--', ...tail],
+            ['--', script, ...tail],
+          ]) {
+            yield* cli(['--perf-debug=false', 'run', ...args]);
+            const spawned = inspectRunCommand(commandRuns.mock.calls.at(-1)![0]);
+            expect(spawned.cmd.slice(5)).toEqual(['--', ...tail]);
+            expect(spawned.env).toMatchObject({
+              COMPOSIO_PERF_DEBUG: '0',
+              COMPOSIO_TOOL_DEBUG: '0',
+              COMPOSIO_RUN_ACP_ONLY: '0',
+              COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
+            });
+          }
+          expect(commandRuns).toHaveBeenCalledTimes(3);
+        })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
       '[Given] a second literal -- in passthrough args [Then] it is forwarded to the script',
       () =>
         Effect.gen(function* () {
@@ -556,9 +590,6 @@ describe('CLI: composio run', () => {
       '[Given] a script arg literally starting with the old escape-marker string [Then] it reaches the script untouched',
       () =>
         Effect.gen(function* () {
-          // The passthrough tail is now handed off out-of-band instead of being
-          // smuggled through the parser with a marker string, so a user token
-          // that happens to look like the old marker is never mangled.
           yield* cli(['run', 'console.log("hi")', '@@composio-run-raw@@literal']);
 
           expect(commandRuns).toHaveBeenCalledTimes(1);
@@ -586,8 +617,8 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--logs-off');
           expect(output).toContain('experimental_subAgent');
           expect(output).toContain('schema: z.object');
-          expect(output).toContain('INJECTED HELPERS');
-          expect(output).toContain('Global from zod');
+          expect(output).toContain('Injected helpers');
+          expect(output).toContain('Injected global from `zod`');
           expect(output).toContain('composio search "<query>"');
           expect(output).toContain('composio execute <slug> --get-schema');
           expect(output).not.toContain('--acp-only');
