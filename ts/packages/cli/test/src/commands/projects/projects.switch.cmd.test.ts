@@ -6,9 +6,7 @@ describe('CLI: composio dev projects switch', () => {
   layer(TestLive({ cliUserConfig: { developerDangerousCommandsEnabled: true } }))(it => {
     it.effect('[Then] it reports global developer project switching is deprecated', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'projects', 'switch', '--dangerously-allow']).pipe(
-          Effect.catch(() => Effect.void)
-        );
+        yield* cli(['dev', 'projects', 'switch']).pipe(Effect.catch(() => Effect.void));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toMatch(/composio dev init/);
       })
