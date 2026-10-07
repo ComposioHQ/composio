@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, assert } from 'vitest';
 import ComposioClient from '@composio/client';
+import { z } from 'zod/v3';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
 import { ComposioToolInputRequiredError } from '../../src/errors';
+import { buildCustomToolsMap, createCustomTool } from '../../src/models/CustomTool';
+import type { CustomToolsMap, SessionContext } from '../../src/types/customTool.types';
 import { MockProvider } from '../utils/mocks/provider.mock';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -177,6 +180,108 @@ describe('execution that requires user input', () => {
       status: 201,
       data: { id: 1 },
       headers: { 'x-request-id': 'req_1' },
+    });
+  });
+});
+
+// A local custom tool reaches the API through the `ctx.execute()` and
+// `ctx.proxyExecute()` helpers. The wrapper that runs the tool turns whatever
+// it throws into a failed result, which must not happen to an input request:
+// the caller needs the questions and the request state, not a message.
+const customToolCalling = (call: (ctx: SessionContext) => Promise<unknown>) =>
+  buildCustomToolsMap([
+    createCustomTool('SEND_WELCOME_EMAIL', {
+      name: 'Send welcome email',
+      description: 'Sends the welcome email through a session helper',
+      inputParams: z.object({}),
+      execute: async (_input, ctx) => ({ sent: await call(ctx) }),
+    }),
+  ]);
+
+const enclosingToolBodies: Array<{
+  name: string;
+  subject: string;
+  call: (ctx: SessionContext) => Promise<unknown>;
+}> = [
+  {
+    name: 'ctx.execute()',
+    subject: 'Tool GMAIL_SEND_EMAIL',
+    call: ctx => ctx.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' }),
+  },
+  {
+    name: 'ctx.proxyExecute()',
+    subject: 'POST proxy call for toolkit github',
+    call: ctx => ctx.proxyExecute(proxyParams),
+  },
+];
+
+const createSessionWithCustomTools = (client: ComposioClient, customToolsMap: CustomToolsMap) =>
+  new ToolRouterSession(
+    client,
+    { apiKey: 'key', provider: new MockProvider() },
+    SESSION_ID,
+    {
+      type: 'http' as const,
+      url: `https://backend.invalid/api/v3/tool_router/session/${SESSION_ID}`,
+    },
+    undefined,
+    customToolsMap,
+    'test-user'
+  );
+
+describe('custom tool whose body requires user input', () => {
+  it.each(enclosingToolBodies)(
+    'session.execute of a custom tool calling $name raises ComposioToolInputRequiredError',
+    async ({ call, subject }) => {
+      const { client, fetch } = createClient(inputRequired);
+      const session = createSessionWithCustomTools(client, customToolCalling(call));
+
+      const error = await session
+        .execute('SEND_WELCOME_EMAIL', {})
+        .catch((caught: unknown) => caught);
+
+      assert(error instanceof ComposioToolInputRequiredError);
+      expect(error.message).toContain(`${subject} requires user input`);
+      expect(error.requestState).toBe('opaque-state-token');
+      expect(Object.keys(error.inputRequests)).toEqual(['approval_1']);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it.each(enclosingToolBodies)(
+    'a sibling custom tool calling $name raises through ctx.execute()',
+    async ({ call }) => {
+      const { client } = createClient(inputRequired);
+      const context = new SessionContextImpl(
+        client,
+        'test-user',
+        SESSION_ID,
+        customToolCalling(call)
+      );
+
+      const error = await context
+        .execute('SEND_WELCOME_EMAIL', {})
+        .catch((caught: unknown) => caught);
+
+      assert(error instanceof ComposioToolInputRequiredError);
+      expect(error.requestState).toBe('opaque-state-token');
+    }
+  );
+
+  it('still turns any other error thrown by the tool into a failed result', async () => {
+    const { client } = createClient(inputRequired);
+    const session = createSessionWithCustomTools(
+      client,
+      customToolCalling(async () => {
+        throw new Error('boom');
+      })
+    );
+
+    await expect(session.execute('SEND_WELCOME_EMAIL', {})).resolves.toEqual({
+      data: {},
+      error: 'boom',
+      logId: '',
+      resultType: 'failed',
     });
   });
 });
