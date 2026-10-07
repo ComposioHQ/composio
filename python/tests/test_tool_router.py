@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import traceback
 import typing as t
 from unittest.mock import MagicMock, patch
 
@@ -2547,6 +2548,27 @@ class TestExecutionRequiresUserInput:
         }
         # The call is not repeated: answering needs the user.
         assert len(requests) == 1
+
+    def test_request_state_stays_out_of_str_repr_and_args(self):
+        """``request_state`` is continuation state: readable as an attribute
+        for the code that answers the request, absent from what an exception
+        is routinely logged as."""
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        error = raised.value
+        assert error.request_state == "opaque-state-token"
+        assert "opaque-state-token" not in str(error)
+        assert "opaque-state-token" not in repr(error)
+        assert "opaque-state-token" not in repr(error.args)
+        assert error.args == (error.message,)
+        formatted = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        assert "ToolInputRequiredError" in formatted
+        assert "opaque-state-token" not in formatted
 
     def test_request_state_is_none_when_the_api_returns_none(self):
         body = {k: v for k, v in _INPUT_REQUIRED_JSON.items() if k != "request_state"}

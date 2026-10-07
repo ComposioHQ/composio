@@ -408,6 +408,10 @@ class ToolInputRequiredError(ComposioClientError):
     reuse. ``request_state`` is the opaque state the API returned; when present
     it must be sent back unchanged together with the answers. The SDK does not
     submit answers yet, so nothing was executed and the call is not retried.
+
+    ``request_state`` is continuation state, so it is kept out of logs: read it
+    as an attribute. ``str()``, ``repr()``, ``args`` and a formatted traceback
+    do not include it.
     """
 
     def __init__(
