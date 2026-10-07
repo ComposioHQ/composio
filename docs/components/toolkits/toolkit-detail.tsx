@@ -6,7 +6,7 @@ import { Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucid
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
-import { instantDiscount, instantPricingDescription } from '@/lib/instant';
+import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
 import { InstantBadge } from './instant-badge';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
@@ -275,6 +275,7 @@ function ToolItem({ item, toolkitVersion, instant }: { item: Tool | Trigger; too
 }
 
 export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDetailProps) {
+  const instantSupported = toolkitSupportsInstant(toolkit.instant, tools);
   const [copied, setCopied] = useState(false);
   const [versionCopied, setVersionCopied] = useState(false);
   const [toolSearch, setToolSearch] = useState('');
@@ -335,7 +336,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             {/* Title row */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
-              {toolkit.instant?.supported === true && <InstantBadge />}
+              {instantSupported && <InstantBadge />}
               <button
                 onClick={copySlug}
                 className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
@@ -359,7 +360,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
 
             {/* Description */}
             <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
-            {toolkit.instant?.supported === true && (
+            {instantSupported && (
               <p className="mt-1.5 text-sm text-fd-muted-foreground">
                 <Link href="/docs/instant-tools" className="underline">Instant</Link> is available on the latest version. Check each tool for support and pricing.
               </p>

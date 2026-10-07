@@ -10,6 +10,10 @@ export const instantSchema = z.object({
 
 export type Instant = z.infer<typeof instantSchema>;
 
+export function toolkitSupportsInstant(instant: Instant, tools: { instant?: Instant }[]): boolean {
+  return instant?.supported === true || tools.some(tool => tool.instant?.supported === true);
+}
+
 export function instantPricingDescription(instant: Instant): string | undefined {
   if (instant?.supported !== true) return undefined;
   return instant.price?.description?.trim() || 'Pricing is not available.';

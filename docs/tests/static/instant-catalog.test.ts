@@ -1,16 +1,47 @@
 import { describe, expect, test } from 'bun:test';
-import { instantDiscount, instantPricingDescription, instantSchema } from '../../lib/instant';
+import { instantDiscount, instantPricingDescription, instantSchema, toolkitSupportsInstant } from '../../lib/instant';
 import { readFileSync } from 'node:fs';
 import { toolFromApi } from '../../lib/toolkit-schema';
 import { parseNamedItems, transformToolkit } from '../../scripts/generate-toolkits';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ToolkitDetail } from '../../components/toolkits/toolkit-detail';
+import type { Toolkit } from '../../types/toolkit';
 
 describe('Instant catalog metadata', () => {
+  test('toolkit headers show live tool eligibility when the snapshot lacks Instant metadata', () => {
+    const toolkit: Toolkit = {
+      slug: 'example', name: 'Example', logo: null, category: null,
+      description: 'Example toolkit', authSchemes: [], toolCount: 1,
+      triggerCount: 0, version: null, tools: [], triggers: [],
+    };
+    const html = renderToStaticMarkup(createElement(ToolkitDetail, {
+      toolkit,
+      tools: [toolFromApi({ slug: 'EXAMPLE_SEARCH', instant: { supported: true } })],
+      triggers: [], path: '/toolkits/example',
+    }));
+    expect(html).toContain('is available on the latest version. Check each tool for support and pricing.');
+    expect(html.match(/title="Instant is supported on the latest version"/g)).toHaveLength(2);
+  });
+
   test('missing, false, and partial support never imply eligibility', () => {
     for (const instant of [undefined, null, {}, { supported: false }, { supported: 'true' }, { price: { description: 'A price' } }]) {
       const parsed = instantSchema.parse(instant);
       expect(parsed?.supported === true).toBe(false);
       expect(instantPricingDescription(parsed)).toBeUndefined();
     }
+  });
+
+  test('toolkit support requires explicit eligibility from the toolkit or at least one tool', () => {
+    const tools = [
+      { instant: { supported: false } },
+      {},
+      { instant: { price: { description: '$1 per call' } } },
+    ];
+    expect(toolkitSupportsInstant(undefined, tools)).toBe(false);
+    expect(toolkitSupportsInstant({ supported: false }, tools)).toBe(false);
+    expect(toolkitSupportsInstant(undefined, [...tools, { instant: { supported: true } }])).toBe(true);
+    expect(toolkitSupportsInstant({ supported: true }, [])).toBe(true);
   });
 
   test('missing or malformed pricing is not free', () => {

@@ -1,4 +1,4 @@
-import { instantDiscount, instantPricingDescription } from '@/lib/instant';
+import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
 import {
   source,
   getReferenceSource,
@@ -871,7 +871,7 @@ function toolkitToMarkdown(
     lines.push(`- **Version:** ${toolkit.version}`);
   }
 
-  if (toolkit.instant?.supported === true) {
+  if (toolkitSupportsInstant(toolkit.instant, tools)) {
     lines.push('- **Instant:** Supported on the latest version. Support varies by tool.');
   }
 

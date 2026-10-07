@@ -357,7 +357,7 @@ Without an explicit account selection, Composio prefers the user's own connectio
 
 Session search tells you when an Instant account serves a toolkit. The toolkit's connection status includes `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
 
-If your project has multi-account selection enabled, you can choose the Instant account explicitly. Pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. The project and Session must permit Instant, and the tool must support it. This route does not fall back to another credential if it fails.
+You can choose the Instant account explicitly on any project. Pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. On a single-account project, it must match an active connection for that toolkit in the Session. The project and Session must permit Instant, and the tool must support it. This route does not fall back to another credential if it fails.
 
 ### Shared-account restrictions and privacy
 
