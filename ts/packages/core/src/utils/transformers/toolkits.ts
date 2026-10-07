@@ -18,6 +18,7 @@ type RawToolkitRetrieveScopesGrantContextResponse =
 import {
   ToolKitListResponse,
   ToolKitListResponseSchema,
+  ToolkitInstantSchema,
   ToolkitAuthField,
   ToolkitRetrieveResponse,
   ToolkitRetrieveResponseSchema,
@@ -117,6 +118,7 @@ export const transformToolkitListResponse = (
       response.items.map(item => ({
         name: item.name,
         slug: item.slug,
+        ...('instant' in item && { instant: ToolkitInstantSchema.parse(item.instant) }),
         meta: {
           ...item.meta,
           categories: item.meta.categories?.map(category => ({
