@@ -347,6 +347,21 @@ export class ToolInputValidationError extends Data.TaggedError('ToolInputValidat
   }
 }
 
+// The schema itself is unusable, which says nothing about the arguments. Kept
+// apart from `ToolInputValidationError` so it never blocks a tool call.
+export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSchemaCompileError')<{
+  readonly toolSlug: string;
+  readonly schemaPath: string;
+  readonly cause?: unknown;
+}> {
+  override get message(): string {
+    return [
+      `Could not compile the cached JSON schema for ${this.toolSlug} into a validator.`,
+      `Schema: ${this.schemaPath}`,
+    ].join('\n');
+  }
+}
+
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
   const objectSchema = decodeObjectSchemaWithProperties(schema);
   return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
@@ -467,13 +482,7 @@ export const validateToolInputArgumentsWithDefinition = (
 
     const inputSchema = yield* Effect.try({
       try: () => compileToolInputSchema(normalizedSchema, allowedKeys),
-      catch: error =>
-        new ToolInputValidationError({
-          toolSlug: slug,
-          schemaPath,
-          issues: ['Could not compile the cached JSON schema into a validator.'],
-          cause: error,
-        }),
+      catch: error => new ToolInputSchemaCompileError({ toolSlug: slug, schemaPath, cause: error }),
     });
 
     yield* Schema.decodeUnknownEffect(inputSchema, { errors: 'all' })(args).pipe(

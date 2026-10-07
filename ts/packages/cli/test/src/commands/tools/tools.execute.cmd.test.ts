@@ -1444,6 +1444,51 @@ describe('CLI: composio execute', () => {
         expect(fs.existsSync(schemaPath)).toBe(true);
       })
     );
+
+    it.effect('sends the tool call when the cached schema cannot be compiled', () =>
+      Effect.gen(function* () {
+        const cacheDir = yield* setupCacheDir;
+        fs.mkdirSync(`${cacheDir}/tool_definitions`, { recursive: true });
+        fs.writeFileSync(
+          `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`,
+          JSON.stringify({
+            version: '20260101_00',
+            inputSchema: {
+              type: 'object',
+              properties: { recipient_email: { type: 'string' } },
+              // Not a JavaScript regular expression, so the validator cannot be built.
+              patternProperties: { '(?i)^x-': { type: 'string' } },
+            },
+          }),
+          'utf8'
+        );
+        clearInProcessMemos();
+        slowSchemaLookup();
+        executedToolSlugs.length = 0;
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]);
+
+        expect(executedToolSlugs).toEqual(['GMAIL_SEND_EMAIL']);
+
+        const dryRunFailure = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--dry-run',
+          '-d',
+          '{"recipient_email":"karan"}',
+        ]).pipe(
+          Effect.flip,
+          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+        );
+        expect(dryRunFailure).toContain('Could not compile the cached JSON schema');
+      })
+    );
   });
 
   layer(
