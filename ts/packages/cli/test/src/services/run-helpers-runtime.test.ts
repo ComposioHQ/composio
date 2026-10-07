@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import { Predicate } from 'effect';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 import { installRunHelpers } from 'src/services/run-helpers-runtime';
@@ -120,7 +121,10 @@ describe('run-helpers-runtime', () => {
     expect(error.message).toBe(
       'POST proxy call via "github" requires user input before it can run (1 input request) and was not executed. The CLI cannot answer input requests yet.'
     );
-    expect(error.message).not.toContain('opaque-state-token');
+    // The script is likely to log the error whole, so the continuation state
+    // is not on it.
+    expect(inspect(error, { depth: null })).not.toContain('opaque-state-token');
+    expect(JSON.stringify(error)).not.toContain('opaque-state-token');
     expect(Object.keys(error.inputRequests)).toEqual(['approval_1']);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

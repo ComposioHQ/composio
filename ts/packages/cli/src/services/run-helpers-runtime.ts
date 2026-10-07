@@ -1023,10 +1023,12 @@ const createProxyHelper = (params: {
       // An approval request is not a response from the proxied API: converting
       // it would hand the script an empty 200 for a call that never ran.
       if (isProxyInputRequired(result)) {
-        throw toolInputRequiredError(
-          `${request.method} proxy call via "${normalizedToolkit}"`,
-          result
-        );
+        // The error is thrown into the user's script, where it is likely to be
+        // logged whole. `request_state` is continuation state the CLI cannot
+        // use yet, so it is left off the error.
+        throw toolInputRequiredError(`${request.method} proxy call via "${normalizedToolkit}"`, {
+          input_requests: result.input_requests,
+        });
       }
       return toProxyResponse(result);
     };
