@@ -920,7 +920,12 @@ describe('SessionContextImpl', () => {
       const result = await ctx.execute('SIBLING_TOOL', { key: 'val' });
 
       expect(siblingExecute).toHaveBeenCalledWith({ key: 'val' }, ctx);
-      expect(result).toEqual({ data: { local: true }, error: null, logId: '' });
+      expect(result).toEqual({
+        data: { local: true },
+        error: null,
+        logId: '',
+        resultType: 'completed',
+      });
       // Should NOT call remote
       expect(mockClient.toolRouter.session.execute).not.toHaveBeenCalled();
     });

@@ -27,6 +27,17 @@
   `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
   ID is stored, the header is not sent. It is never sent to the backend API.
 
+- `composio execute` (including meta tools), `composio proxy`, the `proxy()`
+  helper in `composio run` scripts, and the custom tool schema lookup in
+  `composio search` now fail with a clear error when the call needs user input,
+  such as an approval, before it can run. The CLI cannot answer input requests
+  yet, and it no longer treats such an answer as a result. The `proxy()` helper
+  used to return an empty `200` response for a call that never ran.
+
+- `composio execute` now reports a tool that ran and failed as failed even when
+  the API returns no error text. It used to read a failed execution with a
+  `null` error as successful.
+
 - `composio execute` now validates the arguments before it sends the tool
   call, so a call that fails local validation is never run. Validation used to
   race the request, and the tool could execute while the CLI reported a

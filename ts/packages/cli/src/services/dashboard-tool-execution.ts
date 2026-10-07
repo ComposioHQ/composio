@@ -6,6 +6,7 @@ import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 
 export interface DashboardToolExecutionRequest {
   readonly slug: string;
@@ -38,11 +39,29 @@ export class DashboardToolExecutionError extends Data.TaggedError(
 
 const JsonObject = Schema.Record(Schema.String, Schema.Unknown);
 
-const ExecutionResponse = Schema.Struct({
+const ExecutionResult = Schema.Struct({
+  result_type: Schema.optional(Schema.Literals(['completed', 'failed'])),
   data: JsonObject,
   error: Schema.NullOr(Schema.String),
   log_id: Schema.String,
 });
+
+const ExecutionResponse = Schema.Union([
+  ExecutionResult,
+  Schema.Struct({
+    result_type: Schema.Literal('input_required'),
+    input_requests: Schema.Record(
+      Schema.String,
+      Schema.Struct({
+        type: Schema.Literal('elicitation'),
+        mode: Schema.Literal('form'),
+        message: Schema.String,
+        requested_schema: JsonObject,
+      })
+    ),
+    request_state: Schema.optional(Schema.String),
+  }),
+]);
 
 // Fields beyond the named ones (a validation failure's `errors`, say) are kept,
 // so the rebuilt `APIError` carries the same body the backend sent.
@@ -252,6 +271,12 @@ const makeDashboardToolExecution = Effect.gen(function* () {
         // error mapping, connection tips and telemetry need no second code path.
         return yield* Effect.fail(
           APIError.generate(outcome.status, { error: outcome.error }, undefined, new Headers())
+        );
+      }
+      if (outcome.response.result_type === 'input_required') {
+        return yield* toolInputRequiredError(
+          `Tool ${input.tool_slug ?? input.slug}`,
+          outcome.response
         );
       }
       return outcome.response;

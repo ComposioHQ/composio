@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Option, Predicate } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { APIError } from '@composio/client';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
@@ -336,7 +336,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -345,6 +345,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_gmail_default',
@@ -451,7 +452,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -460,6 +461,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_gmail_explicit',
@@ -612,7 +614,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -621,6 +623,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_google_analytics',
@@ -709,7 +712,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -718,6 +721,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_custom_grain',
@@ -842,7 +846,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -851,6 +855,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_posthog_test',
@@ -898,7 +903,7 @@ describe('CLI: composio execute', () => {
               execute: {},
               search: {},
               preload: { tools: [] },
-              premium_usage: false,
+              instant: false,
             },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -907,6 +912,7 @@ describe('CLI: composio execute', () => {
         },
         execute: async (_sessionId, params) =>
           recordExecute(params, {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_posthog_cached',
@@ -1641,6 +1647,7 @@ describe('CLI: composio execute', () => {
             throw new Error('gmail execution failed');
           }
           return {
+            result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
             log_id: 'log_parallel_success',
@@ -2591,6 +2598,7 @@ describe('CLI: composio execute', () => {
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async (_sessionId, params) => ({
+          result_type: 'completed' as const,
           data: { tool_slug: params.tool_slug, custom: 'response' },
           error: null,
           log_id: 'log_custom',
@@ -2608,6 +2616,82 @@ describe('CLI: composio execute', () => {
         expect(output.data.tool_slug).toBe('GITHUB_STAR_REPO');
         expect(output.data.custom).toBe('response');
         expect(output.logId).toBe('log_custom');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async () => ({
+          result_type: 'failed' as const,
+          data: {},
+          error: null,
+          log_id: 'log_failed',
+        }),
+      },
+    })
+  )('[Given] Tool Router reports a failed execution with no error text', it => {
+    it.effect('[Then] execute fails instead of reporting success', () =>
+      Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GITHUB_STAR_REPO',
+          '-d',
+          '{"owner":"composio","repo":"composio"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(output.successful).toBe(false);
+        expect(output.error).toBeNull();
+        expect(output.logId).toBe('log_failed');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async () => ({
+          result_type: 'input_required' as const,
+          input_requests: {
+            approval_1: {
+              type: 'elicitation' as const,
+              mode: 'form' as const,
+              message: 'Allow GITHUB_STAR_REPO to star this repository?',
+              requested_schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+            },
+          },
+          request_state: 'opaque-state-token',
+        }),
+      },
+    })
+  )('[Given] Tool Router asks for user input [Then] execute fails without a result', it => {
+    it.effect('reports that the tool requires user input', () =>
+      Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GITHUB_STAR_REPO',
+          '-d',
+          '{"owner":"composio","repo":"composio"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(output.successful).toBe(false);
+        expect(output.error).toContain(
+          'Tool GITHUB_STAR_REPO requires user input before it can run (1 input request) and was not executed.'
+        );
+        expect(lines.join('\n')).not.toContain('opaque-state-token');
       })
     );
   });

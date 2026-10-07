@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { APIError } from '@composio/client';
+import type { SessionExecuteResponse } from '@composio/client/resources/tool-router';
 import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
 import { TestClock } from 'effect/testing';
 import { extendConfigProvider } from 'src/services/config';
@@ -36,12 +37,15 @@ const configProvider = (env: Record<string, string> = {}) =>
     extendConfigProvider
   );
 
+const temporaryCacheDirs: Array<string> = [];
+
 /**
  * A cache directory whose `user_data.json` stores the given URLs, as a login
  * made under other `COMPOSIO_*_URL` values would have left it.
  */
 const cacheDirWithStoredURLs = (stored: { base_url?: string; web_url?: string }) => {
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-cache-'));
+  temporaryCacheDirs.push(cacheDir);
   fs.writeFileSync(
     path.join(cacheDir, 'user_data.json'),
     JSON.stringify({
@@ -73,17 +77,15 @@ type ToolRouterCall = { readonly method: 'create' | 'execute' | 'executeMeta' } 
 const makeWorld = (options: {
   readonly env?: Record<string, string>;
   readonly dashboard?: (request: DashboardTestRequest) => Response | Promise<Response>;
-  readonly backendExecute?: () => Promise<{
-    data: Record<string, unknown>;
-    error: string | null;
-    log_id: string;
-  }>;
+  readonly backendExecute?: () => Promise<SessionExecuteResponse>;
   readonly input?: Partial<TestLiveInput>;
 }) => {
   const dashboardRequests: Array<DashboardTestRequest> = [];
   const toolRouterCalls: Array<ToolRouterCall> = [];
   const backendResponse = async (data: Record<string, unknown>) =>
-    options.backendExecute ? options.backendExecute() : { data, error: null, log_id: 'log_test' };
+    options.backendExecute
+      ? options.backendExecute()
+      : { result_type: 'completed' as const, data, error: null, log_id: 'log_test' };
 
   const layer = TestLive({
     baseConfigProvider: configProvider(options.env),
@@ -184,6 +186,9 @@ describe('CLI: composio execute transport', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    for (const directory of temporaryCacheDirs)
+      fs.rmSync(directory, { recursive: true, force: true });
+    temporaryCacheDirs.length = 0;
   });
 
   it.effect('sends a consumer execution to the Dashboard and prints what the backend prints', () =>
@@ -217,6 +222,61 @@ describe('CLI: composio execute transport', () => {
       expect(dashboardRun.lines).toEqual(backendRun.lines);
     })
   );
+
+  for (const slug of ['GMAIL_SEND_EMAIL', 'COMPOSIO_SEARCH_TOOLS']) {
+    for (const resultType of ['failed', 'input_required'] as const) {
+      it.effect(`preserves ${resultType} replies for ${slug} on both transports`, () =>
+        Effect.gen(function* () {
+          const response: SessionExecuteResponse =
+            resultType === 'failed'
+              ? { result_type: 'failed', data: {}, error: null, log_id: 'log_failed' }
+              : {
+                  result_type: 'input_required',
+                  input_requests: {
+                    approval: {
+                      type: 'elicitation',
+                      mode: 'form',
+                      message: 'Approve this tool?',
+                      requested_schema: { type: 'object' },
+                    },
+                  },
+                  request_state: 'opaque-state-token',
+                };
+          const viaDashboard = makeWorld({
+            dashboard: () => dashboardProcedureResult({ ok: true, response }),
+          });
+          const viaBackend = makeWorld({
+            env: backendOnlyEnv,
+            backendExecute: async () => response,
+          });
+          const args = ['execute', slug, '--skip-connection-check', '-d', '{}'];
+          const dashboardRun = yield* viaDashboard.run(args);
+          const backendRun = yield* viaBackend.run(args);
+
+          expect(Exit.isFailure(dashboardRun.exit)).toBe(true);
+          expect(Exit.isFailure(backendRun.exit)).toBe(true);
+          expect(dashboardRun.lines).toEqual(backendRun.lines);
+          expect(lastJson(dashboardRun.lines)).toMatchObject({ successful: false });
+          if (resultType === 'input_required') {
+            expect(dashboardRun.output).toContain('requires user input before it can run');
+            expect(dashboardRun.output).not.toContain('opaque-state-token');
+          } else {
+            expect(lastJson(dashboardRun.lines)).toMatchObject({
+              error: null,
+              logId: 'log_failed',
+            });
+          }
+          expect(viaDashboard.dashboardRequests).toHaveLength(1);
+          expect(viaDashboard.toolRouterCalls).toEqual([]);
+          expect(viaBackend.toolRouterCalls.map(call => call.method)).toEqual([
+            'create',
+            slug === 'COMPOSIO_SEARCH_TOOLS' ? 'executeMeta' : 'execute',
+          ]);
+          expect(viaBackend.toolRouterCalls.at(-1)?.requestOptions).toEqual({ maxRetries: 0 });
+        })
+      );
+    }
+  }
 
   it.effect('keeps the backend transport for a custom backend with no web URL', () =>
     Effect.gen(function* () {

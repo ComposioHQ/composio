@@ -18,10 +18,7 @@ import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-lo
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
-import {
-  ComposioToolkitsRepository,
-  type ToolkitProjectScope,
-} from 'src/services/composio-clients';
+import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';

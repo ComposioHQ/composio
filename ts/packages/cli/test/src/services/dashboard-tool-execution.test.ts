@@ -63,7 +63,17 @@ const platform = (home: string) =>
   );
 type Platform = Layer.Success<ReturnType<typeof platform>>;
 
-const emptyHome = () => fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+const temporaryHomes: Array<string> = [];
+const emptyHome = () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+  temporaryHomes.push(home);
+  return home;
+};
+
+afterEach(() => {
+  for (const home of temporaryHomes) fs.rmSync(home, { recursive: true, force: true });
+  temporaryHomes.length = 0;
+});
 
 const userContext = (
   overrides: { webURL?: string; apiKey?: Option.Option<string>; home?: string } = {}

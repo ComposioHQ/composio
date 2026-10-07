@@ -11,7 +11,10 @@ import {
   createToolRouterSessionFromContext,
   resolveToolRouterSessionContext,
 } from 'src/effects/create-tool-router-session';
-import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
+import {
+  DashboardToolExecution,
+  type DashboardToolExecutionShape,
+} from 'src/services/dashboard-tool-execution';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
@@ -23,6 +26,7 @@ import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-fil
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
@@ -111,13 +115,31 @@ export interface ToolsExecutor {
 export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecutor');
 
 /**
+ * Whether an execution answer describes a tool that ran and succeeded.
+ *
+ * `result_type` decides when the API sent one: a `failed` execution is not
+ * successful even when its `error` is `null` or empty. Without a known
+ * `result_type`, for example from a server that predates it, an execution is
+ * successful when it carries no error text. `@composio/core` applies the same
+ * rule to session executions.
+ */
+export const isExecutionSuccessful = (raw: {
+  readonly result_type?: string;
+  readonly error?: string | null;
+}): boolean => {
+  if (raw.result_type === 'completed') return true;
+  if (raw.result_type === 'failed') return false;
+  return !raw.error;
+};
+
+/**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  raw: Effect.Success<ReturnType<DashboardToolExecutionShape['execute']>>,
   permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
-  successful: raw.error === null,
+  successful: isExecutionSuccessful(raw),
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
@@ -193,7 +215,7 @@ export const ToolsExecutorLive = Layer.effect(
           const send: (
             arguments_: Record<string, unknown>
           ) => Effect.Effect<
-            SessionExecuteResponse | SessionExecuteMetaResponse,
+            Effect.Success<ReturnType<DashboardToolExecutionShape['execute']>>,
             unknown,
             FileSystem.FileSystem | Path.Path | NodeOs
           > =
@@ -218,18 +240,22 @@ export const ToolsExecutorLive = Layer.effect(
                     ({ sessionId }) =>
                       (arguments_: Record<string, unknown>) =>
                         Effect.tryPromise({
-                          try: () =>
-                            isMetaToolSlug(slug)
-                              ? resolvedClient.toolRouter.session.executeMeta(
-                                  sessionId,
-                                  { slug, arguments: arguments_ },
-                                  { maxRetries: 0 }
-                                )
-                              : resolvedClient.toolRouter.session.execute(
-                                  sessionId,
-                                  { tool_slug: slug, arguments: arguments_ },
-                                  { maxRetries: 0 }
-                                ),
+                          try: async () => {
+                            const response: SessionExecuteResponse | SessionExecuteMetaResponse =
+                              isMetaToolSlug(slug)
+                                ? await resolvedClient.toolRouter.session.executeMeta(
+                                    sessionId,
+                                    { slug, arguments: arguments_ },
+                                    { maxRetries: 0 }
+                                  )
+                                : await resolvedClient.toolRouter.session.execute(
+                                    sessionId,
+                                    { tool_slug: slug, arguments: arguments_ },
+                                    { maxRetries: 0 }
+                                  );
+                            assertNotInputRequired(`Tool ${slug}`, response);
+                            return response;
+                          },
                           catch: cause => cause,
                         })
                   )
