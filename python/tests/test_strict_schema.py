@@ -948,3 +948,43 @@ class TestNullAcceptance:
         strict = to_strict_json_schema(schema).schema["properties"]
         assert strict["note"] == {"type": ["string", "null"]}
         assert strict["same"] == {"anyOf": [{"type": "string"}, NULL_BRANCH]}
+
+    def test_a_check_that_meets_a_bound_proves_nothing(self):
+        # Both branches accept null, so `oneOf` rejects it; the second is only
+        # reachable past the depth bound and must not count as a rejection.
+        definitions = {"a0": NULL_BRANCH}
+        for i in range(1, 71):
+            definitions[f"a{i}"] = {"$ref": f"#/$defs/a{i - 1}"}
+        deep = {"$ref": "#/$defs/a70"}
+        schema = {
+            "type": "object",
+            "properties": {
+                "one": {"oneOf": [NULL_BRANCH, deep]},
+                "negated": {"not": deep},
+                "guarded": {"if": deep, "else": NULL_BRANCH},
+                # Reaches a node the checks above left unproven.
+                "later": {"not": {"$ref": "#/$defs/a69"}},
+            },
+            "$defs": definitions,
+        }
+        arguments = dict.fromkeys(schema["properties"])
+        assert omit_null_tool_arguments(arguments, schema) == {}
+
+    def test_an_unproven_definition_is_not_evaluated_again_for_each_property(self):
+        # `top` is cyclic and wider than the budget, so nothing about it settles.
+        definitions = {
+            "top": {"anyOf": [{"$ref": f"#/$defs/b{i}"} for i in range(3000)]}
+        }
+        for i in range(3000):
+            definitions[f"b{i}"] = {
+                "anyOf": [{"$ref": "#/$defs/top"}, {"type": "string"}]
+            }
+        names = [f"p{i}" for i in range(2000)]
+        schema = {
+            "type": "object",
+            "properties": {name: {"$ref": "#/$defs/top"} for name in names},
+            "$defs": definitions,
+        }
+        assert omit_null_tool_arguments(dict.fromkeys(names), schema) == {}
+        strict = to_strict_json_schema(schema).schema["properties"]
+        assert all(strict[name] == _wrapped({"$ref": "#/$defs/top"}) for name in names)

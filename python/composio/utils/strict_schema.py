@@ -206,9 +206,11 @@ class _NullCheck:
     answer that leans on that is provisional until the node it leans on is
     done: it is kept if that node does reject null and discarded otherwise.
 
-    Each check is bounded in depth and in nodes visited. Past a bound null
-    counts as rejected, which costs at most a redundant null branch or a
-    dropped null, and nothing learned that way outlives the check.
+    Each check is bounded in depth and in nodes visited. A check that meets a
+    bound proves nothing, so it rejects null whatever its other branches say,
+    which costs at most a redundant null branch or a dropped null. The nodes
+    it went through stay marked as unproven, so a later check that reaches
+    one of them neither repeats the work nor trusts the answer.
     """
 
     def __init__(self, root: dict[str, t.Any], strict_output: bool = False) -> None:
@@ -235,6 +237,8 @@ class _NullCheck:
         key = id(schema)
         remembered = self.answers.get(key)
         if remembered is not None:
+            if not self.path:
+                return remembered[1] and remembered[2] != _A_BOUND
             self.leans_on = min(self.leans_on, remembered[2])
             return remembered[1]
         if key in self.path:
@@ -274,14 +278,14 @@ class _NullCheck:
                 self.answers[other] = (node, answer, inner)
         self.met_again.discard(depth)
 
+        if depth == 0 and leans_on == _A_BOUND:
+            result = False
         self.answers[key] = (schema, result, _NOTHING if settled else leans_on)
         if not settled:
             self.provisional.append(key)
         self.leans_on = outer if settled else min(outer, leans_on)
         if depth == 0:
-            # Whatever is still provisional leans on a bound.
-            for other in self.provisional:
-                del self.answers[other]
+            # Whatever is still provisional leans on a bound, and stays so.
             self.provisional.clear()
             self.leans_on = _NOTHING
         return result

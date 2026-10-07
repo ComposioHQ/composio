@@ -698,4 +698,41 @@ describe('null acceptance', () => {
     expect(propertyOf(schema, 'note')).toEqual({ type: ['string', 'null'] });
     expect(propertyOf(schema, 'same')).toEqual({ anyOf: [{ type: 'string' }, NULL_BRANCH] });
   });
+
+  it('proves nothing in a check that meets a bound', () => {
+    // Both branches accept null, so `oneOf` rejects it; the second is only
+    // reachable past the depth bound and must not count as a rejection.
+    const definitions: Record<string, unknown> = { a0: NULL_BRANCH };
+    for (let i = 1; i <= 70; i++) definitions[`a${i}`] = { $ref: `#/$defs/a${i - 1}` };
+    const deep = { $ref: '#/$defs/a70' };
+    const properties = {
+      one: { oneOf: [NULL_BRANCH, deep] },
+      negated: { not: deep },
+      guarded: { if: deep, else: NULL_BRANCH },
+      // Reaches a node the checks above left unproven.
+      later: { not: { $ref: '#/$defs/a69' } },
+    };
+    const source = { type: 'object', properties, $defs: definitions };
+    const input = Object.fromEntries(Object.keys(properties).map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+  });
+
+  it('does not evaluate an unproven definition again for each property', () => {
+    // `top` is cyclic and wider than the budget, so nothing about it settles.
+    const top = { $ref: '#/$defs/top' };
+    const definitions: Record<string, unknown> = {
+      top: { anyOf: Array.from({ length: 3000 }, (_, i) => ({ $ref: `#/$defs/b${i}` })) },
+    };
+    for (let i = 0; i < 3000; i++) definitions[`b${i}`] = { anyOf: [top, { type: 'string' }] };
+    const names = Array.from({ length: 2000 }, (_, i) => `p${i}`);
+    const source = {
+      type: 'object',
+      properties: Object.fromEntries(names.map(name => [name, { ...top }])),
+      $defs: definitions,
+    };
+    const input = Object.fromEntries(names.map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+    const { schema } = toStrictJsonSchema(source);
+    for (const name of names) expect(propertyOf(schema, name)).toEqual(wrapped(top));
+  });
 });

@@ -682,9 +682,11 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
  * provisional until the node it leans on is done: it is kept if that node
  * does reject null and discarded otherwise.
  *
- * Each check is bounded in depth and in nodes visited. Past a bound null
- * counts as rejected, which costs at most a redundant null branch or a dropped
- * null, and nothing learned that way outlives the check.
+ * Each check is bounded in depth and in nodes visited. A check that meets a
+ * bound proves nothing, so it rejects null whatever its other branches say,
+ * which costs at most a redundant null branch or a dropped null. The nodes it
+ * went through stay marked as unproven, so a later check that reaches one of
+ * them neither repeats the work nor trusts the answer.
  */
 function createNullCheck(
   root: Record<string, unknown>,
@@ -709,6 +711,7 @@ function createNullCheck(
     if (!isPlainObject(schema)) return true;
     const remembered = answers.get(schema);
     if (remembered !== undefined) {
+      if (path.size === 0) return remembered.answer && remembered.leansOn !== A_BOUND;
       leansOn = Math.min(leansOn, remembered.leansOn);
       return remembered.answer;
     }
@@ -730,7 +733,7 @@ function createNullCheck(
     leansOn = NOTHING;
     const mark = provisional.length;
     path.set(schema, depth);
-    const answer = keywordsAccept(schema);
+    let answer = keywordsAccept(schema);
     path.delete(schema);
 
     const own = leansOn;
@@ -753,12 +756,12 @@ function createNullCheck(
     }
     metAgain.delete(depth);
 
+    if (depth === 0 && own === A_BOUND) answer = false;
     answers.set(schema, { answer, leansOn: settled ? NOTHING : own });
     if (!settled) provisional.push(schema);
     leansOn = settled ? outer : Math.min(outer, own);
     if (depth === 0) {
-      // Whatever is still provisional leans on a bound.
-      for (const other of provisional) answers.delete(other);
+      // Whatever is still provisional leans on a bound, and stays so.
       provisional.length = 0;
       leansOn = NOTHING;
     }
