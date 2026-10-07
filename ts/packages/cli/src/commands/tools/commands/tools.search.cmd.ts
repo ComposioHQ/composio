@@ -17,6 +17,7 @@ import {
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -393,6 +394,7 @@ const runToolsSearch = (params: {
                   slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
                   arguments: { tool_slugs: customToolSlugsMissingSchemas },
                 });
+                assertNotInputRequired('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse);
                 if (schemaResponse.error) {
                   throw new Error(schemaResponse.error);
                 }
