@@ -60,7 +60,7 @@ def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
     else:
         normalized = tool
 
-    if not isinstance(normalized, Tool):
+    if isinstance(normalized, PydanticBaseModel) and not isinstance(normalized, Tool):
         normalized = Tool.model_construct(
             _fields_set=normalized.model_fields_set,
             **normalized.__dict__,
@@ -74,7 +74,9 @@ def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
         )
         normalized = normalized.model_copy(update={"toolkit": normalized_toolkit})
 
-    instant = getattr(normalized, "instant", None)
+    instant = (
+        getattr(normalized, "instant", None) if isinstance(normalized, Tool) else None
+    )
     if instant is not None:
         normalized = normalized.model_copy(
             update={"instant": ToolInstant.model_validate(instant)}
