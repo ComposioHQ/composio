@@ -68,9 +68,9 @@ Building on the Claude Agent SDK instead? Use [`@composio/claude-agent-sdk`](../
 
 ## Provider options
 
-- `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to your tool definitions and tool-result blocks, letting Claude reuse cached tool schemas and results across requests. It is the only constructor option.
-  - Anthropic allows at most 4 `cache_control` breakpoints per request, shared across the system prompt, tools, and messages. A breakpoint caches everything up to and including it, so `wrapTools` and `handleToolCalls` each place one breakpoint on the last tool or result instead of one per item.
-  - The cap applies to the whole request, not to a single call. `handleToolCalls` adds a breakpoint to each tool-result message you append, so in a multi-turn loop remove `cache_control` from earlier tool-result messages before sending the next request.
+- `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to your tool definitions, letting Claude reuse the cached tool schemas across requests. It is the only constructor option.
+  - Anthropic allows at most 4 `cache_control` breakpoints per request, shared across the system prompt, tools, and messages. A breakpoint caches everything up to and including it, so `wrapTools` places one breakpoint on the last tool instead of one per tool. Tool-result blocks from `handleToolCalls` are never marked, because you append them to the message list every turn and their breakpoints would pile up.
+  - The cap applies to the whole request, not to a single call. If you merge the results of several `wrapTools` calls (for example from several `tools.get()` calls), each list's last tool carries a breakpoint, so keep the total within the limit.
 - `handleToolCalls(session, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. Pass a user ID instead of a session for tools fetched with `tools.get()`. For finer control, `executeToolCall(session, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
 - Claude occasionally emits a tool's `input` as a JSON string instead of an object; the provider normalizes this before execution.
 

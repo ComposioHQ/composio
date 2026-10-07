@@ -102,7 +102,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    *   cache. Anthropic allows at most 4 cache_control breakpoints per request, shared across the
    *   system prompt, tools, and messages, and a breakpoint caches everything up to and including
    *   it — so {@link wrapTools} places a single breakpoint on the last tool, covering the whole
-   *   tool list with one breakpoint.
+   *   tool list with one breakpoint. Tool results are never marked, since they accumulate in the
+   *   message history across turns.
    *
    * @example
    * ```typescript
@@ -420,16 +421,9 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       });
     }
 
-    // Same breakpoint-overflow hazard as wrapTools: a model that calls
-    // several tools in one turn (parallel tool calls) produces one
-    // tool_result per call here. One breakpoint on the last result covers
-    // the whole batch, since a breakpoint caches everything up to and
-    // including it.
-    const lastOutput = outputs[outputs.length - 1];
-    if (this.cacheTools && lastOutput) {
-      lastOutput.cache_control = { type: 'ephemeral' };
-    }
-
+    // Tool results are not marked as cache breakpoints. The caller appends
+    // every turn's results to the message history, so a breakpoint here would
+    // add one more to each later request until the 4-breakpoint limit is hit.
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
   }
 

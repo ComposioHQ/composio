@@ -187,8 +187,8 @@ describe('AnthropicProvider', () => {
 
       const wrapped = cachingProvider.wrapTools(tools);
 
-      expect(wrapped[0].cache_control).toBeUndefined();
-      expect(wrapped[1].cache_control).toBeUndefined();
+      expect(wrapped[0]).not.toHaveProperty('cache_control');
+      expect(wrapped[1]).not.toHaveProperty('cache_control');
       expect(wrapped[2].cache_control).toEqual({ type: 'ephemeral' });
     });
 
@@ -454,7 +454,7 @@ describe('AnthropicProvider', () => {
       ]);
     });
 
-    it('should place a single cache_control breakpoint on the last tool_result when caching is enabled', async () => {
+    it('should not place cache_control on any tool_result when caching is enabled', async () => {
       const cachingProvider = new AnthropicProvider({ cacheTools: true });
       cachingProvider._setExecuteToolFn(mockExecuteToolFn);
       const userId = 'test-user';
@@ -476,10 +476,13 @@ describe('AnthropicProvider', () => {
 
       const results = await cachingProvider.handleToolCalls(userId, message);
 
+      // Results are appended to the message history every turn, so a breakpoint on them would
+      // pile up across turns and exceed Anthropic's 4-breakpoint limit.
       const outputs = results[0].content as Anthropic.Messages.ToolResultBlockParam[];
-      expect(outputs[0].cache_control).toBeUndefined();
-      expect(outputs[1].cache_control).toBeUndefined();
-      expect(outputs[2].cache_control).toEqual({ type: 'ephemeral' });
+      expect(outputs).toHaveLength(3);
+      for (const output of outputs) {
+        expect(output).not.toHaveProperty('cache_control');
+      }
     });
 
     it('should handle messages without tool calls', async () => {
