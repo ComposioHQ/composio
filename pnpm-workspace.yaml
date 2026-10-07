@@ -43,7 +43,7 @@ catalog:
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.30.0
+  '@modelcontextprotocol/sdk': ^1.31.0
   '@types/bun': ^1.4.2
   ai: ^7.0.111
   dotenv: ^18.0.2
