@@ -4,10 +4,12 @@
 
 ### Patch Changes
 
-- `composio execute` (including meta tools), `composio proxy`, and the custom
-  tool schema lookup in `composio search` now fail with a clear error when the
-  call needs user input, such as an approval, before it can run. The CLI cannot
-  answer input requests yet, and it no longer treats such an answer as a result.
+- `composio execute` (including meta tools), `composio proxy`, the `proxy()`
+  helper in `composio run` scripts, and the custom tool schema lookup in
+  `composio search` now fail with a clear error when the call needs user input,
+  such as an approval, before it can run. The CLI cannot answer input requests
+  yet, and it no longer treats such an answer as a result. The `proxy()` helper
+  used to return an empty `200` response for a call that never ran.
 
 - `composio execute` now validates the arguments before it sends the tool
   call, so a call that fails local validation is never run. Validation used to
