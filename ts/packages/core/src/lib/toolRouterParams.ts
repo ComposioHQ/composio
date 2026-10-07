@@ -195,27 +195,17 @@ export type SessionPatchBody = Omit<
     SessionPatchParams,
     'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
   >,
-  'manage_connections' | 'multi_account' | 'experimental' | 'premium_usage'
+  'manage_connections' | 'multi_account' | 'experimental'
 > & {
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
   expected_config_version?: number;
-  instant?: SessionInstantBody;
 };
 
-/** SDK-owned wire contract until the generated client adopts the Instant names. */
-export type SessionInstantBody =
-  | false
-  | (Omit<Exclude<ToolRouterInstant, false>, 'returnInstantCharge'> & {
-      return_instant_charge?: boolean;
-    });
-
-export type SessionCreateBody = Omit<SessionCreateParams, 'premium_usage'> & {
-  instant?: SessionInstantBody;
-};
-
-export const transformToolRouterInstantParams = (config: ToolRouterInstant): SessionInstantBody => {
+export const transformToolRouterInstantParams = (
+  config: ToolRouterInstant
+): NonNullable<SessionCreateParams['instant']> => {
   if (config === false) return false;
   return {
     ...(config.toolkits !== undefined && { toolkits: config.toolkits }),

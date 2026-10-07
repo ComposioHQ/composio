@@ -29,7 +29,6 @@ from composio_client.types.tool_router import (
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
-from pydantic import BaseModel
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -71,9 +70,9 @@ from composio.core.models.tool_router_session_delete import (
     delete_tool_router_session,
 )
 from composio.core.models.tools import (
-    InstantCharge,
     ToolExecuteParams,
     ToolExecutionResponse,
+    require_executed,
 )
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -99,36 +98,13 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
-class ToolRouterInstantResponseEnable(te.TypedDict):
-    enabled: t.List[str]
-
-
-class ToolRouterInstantResponseDisable(te.TypedDict):
-    disabled: t.List[str]
-
-
-class ToolRouterInstantResponse(te.TypedDict):
-    """Stored Instant policy returned in Session config, using API field casing."""
-
-    toolkits: te.NotRequired[
-        t.Union[ToolRouterInstantResponseEnable, ToolRouterInstantResponseDisable]
-    ]
-    tools: te.NotRequired[
-        t.Dict[
-            str,
-            t.Union[ToolRouterInstantResponseEnable, ToolRouterInstantResponseDisable],
-        ]
-    ]
-    return_instant_charge: bool
-
-
 class ToolRouterSessionConfig(t.Protocol):
-    """Server-side Session config. New Instant fields are retained by the client
-    as Pydantic extras until its generated response types adopt this contract.
-    """
+    """Server-side Session config, as the generated client models it."""
 
     user_id: str
-    instant: t.Union[t.Literal[False], ToolRouterInstantResponse]
+    instant: t.Union[
+        t.Literal[False], session_create_response.CurrentConfigInstantVariant1
+    ]
     auth_configs: t.Optional[t.Dict[str, str]]
     connected_accounts: t.Optional[t.Dict[str, t.List[str]]]
     execute: session_create_response.ConfigExecute
@@ -140,6 +116,7 @@ class ToolRouterSessionConfig(t.Protocol):
     toolkits: t.Union[
         session_create_response.ConfigToolkitsEnabled,
         session_create_response.ConfigToolkitsDisabled,
+        session_create_response.ConfigToolkitsRequireApproval,
         None,
     ]
     tools: t.Optional[
@@ -149,10 +126,12 @@ class ToolRouterSessionConfig(t.Protocol):
                 session_create_response.ConfigToolsEnabled,
                 session_create_response.ConfigToolsDisabled,
                 session_create_response.ConfigToolsTags,
+                session_create_response.ConfigToolsRequireApproval,
             ],
         ]
     ]
     workbench: t.Optional[session_create_response.ConfigWorkbench]
+    proxy_execute: t.Optional[session_create_response.CurrentConfigProxyExecute]
 
     def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
 
@@ -177,45 +156,15 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     return_instant_charge: bool
 
 
-class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
-    """Result of :meth:`ToolRouterSession.execute`."""
+ToolRouterSessionExecuteResponse = SessionExecuteResponse
+"""Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
+only when the Session sets ``instant.return_instant_charge`` and a charge is
+available."""
 
-    instant_charge: t.Optional[InstantCharge] = None
-    """Present only when the Session sets
-    ``instant.return_instant_charge`` and a charge is available."""
-
-
-class ToolRouterInstantAccount(BaseModel):
-    """Tools served by the Composio Instant account for a toolkit."""
-
-    allowed_tool_slugs: t.List[str]
-
-
-class ToolRouterToolkitConnectionStatus(
-    session_search_response.ToolkitConnectionStatus
-):
-    instant_account: t.Optional[ToolRouterInstantAccount] = None
-
-
-class ToolRouterSessionSearchResponse(session_search_response.SessionSearchResponse):
-    """Session search result, including typed Instant account coverage."""
-
-    # Narrows the generated list item type; `list` is invariant for mypy.
-    toolkit_connection_statuses: t.List[ToolRouterToolkitConnectionStatus]  # type: ignore[assignment]
-
-
-def _with_instant_account(status: t.Any) -> t.Any:
-    if not isinstance(status, BaseModel):
-        return status
-    fields = dict(status)
-    account = fields.get("instant_account")
-    if isinstance(account, dict):
-        fields["instant_account"] = ToolRouterInstantAccount.model_construct(
-            _fields_set=set(account), **account
-        )
-    return ToolRouterToolkitConnectionStatus.model_construct(
-        _fields_set=status.model_fields_set, **fields
-    )
+ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
+"""Session search result. A toolkit served by a Composio Instant account
+lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
+connection status."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -771,21 +720,25 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             remote_error = (
                 str(raw_remote_error) if raw_remote_error is not None else None
             )
-        has_any_error = any(r.get("error") for _, r in local_results) or bool(
-            remote_error
+        # A failed execution can carry no error text, so success is read from
+        # each result's own verdict and not from the absence of an error message.
+        has_any_failure = (
+            any(not r["successful"] for _, r in local_results)
+            or (remote_result is not None and remote_result.get("successful") is False)
+            or bool(remote_error)
         )
         error_message = None
-        if has_any_error:
+        if has_any_failure:
             error_message = (
-                remote_error
-                if remote_error is not None and failed == 0
-                else f"{failed} out of {len(all_results)} tools failed"
+                f"{failed} out of {len(all_results)} tools failed"
+                if failed > 0
+                else remote_error
             )
 
         merged: t.Dict[str, t.Any] = {
             "data": merged_data,
             "error": error_message,
-            "successful": not has_any_error,
+            "successful": not has_any_failure,
         }
         if remote_result and remote_result.get("instant_charge") is not None:
             merged["instant_charge"] = remote_result["instant_charge"]
@@ -929,25 +882,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         Returns relevant tools for the given query with schemas and guidance.
         """
-        response = self._client.tool_router.session.search(
+        return self._client.tool_router.session.search(
             session_id=self.session_id,
             queries=[{"use_case": query}],
             model=model if model else omit,
             experimental=inline_custom_tools_search_experimental(
                 self._inline_custom_tools_payload
             ),
-        )
-        # The client already built the response without enforcing its schema.
-        # Construct without revalidating so an unexpected field can't fail a
-        # search; only the Instant account coverage gains a typed model.
-        fields = dict(response)
-        statuses = fields.get("toolkit_connection_statuses")
-        if isinstance(statuses, list):
-            fields["toolkit_connection_statuses"] = [
-                _with_instant_account(status) for status in statuses
-            ]
-        return ToolRouterSessionSearchResponse.model_construct(
-            _fields_set=response.model_fields_set, **fields
         )
 
     def execute(
@@ -970,7 +911,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             top-level field or define their own account-selection fields.
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
-        ``error``, ``log_id``, and ``instant_charge`` attributes.
+        ``error``, ``log_id``, ``result_type``, and ``instant_charge``
+        attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
+        execution can carry a ``None`` or empty ``error``, so read
+        ``result_type`` to tell the two apart. It is ``None`` when the API sent
+        none.
+
+        :raises ToolInputRequiredError: If the tool needs input from the user
+            (for example an approval) before it can run. Nothing was executed.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
@@ -980,25 +928,25 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 data=result["data"],
                 error=result["error"],
                 log_id="",
+                result_type="completed" if result["successful"] else "failed",
             )
 
         assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        response = self._client.without_retries.tool_router.session.execute(
-            session_id=self.session_id,
-            tool_slug=tool_slug,
-            arguments=arguments if arguments is not None else omit,
-            account=account if account is not None else omit,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
+        return require_executed(
+            self._client.without_retries.tool_router.session.execute(
+                session_id=self.session_id,
+                tool_slug=tool_slug,
+                arguments=arguments if arguments is not None else omit,
+                account=account if account is not None else omit,
+                experimental=inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
             ),
+            f"Tool {tool_slug}",
         )
-        # The client already validated data/error/log_id and kept the
-        # undeclared instant_charge as an extra. Construct without
-        # revalidating so a malformed charge can't fail an executed call.
-        return ToolRouterSessionExecuteResponse.model_construct(**dict(response))
 
     def custom_tools(
         self, *, toolkit: t.Optional[str] = None
@@ -1094,6 +1042,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param body: Request body (for POST, PUT, PATCH)
         :param parameters: Query/header parameters
         :returns: Proxied API response
+        :raises ToolInputRequiredError: If the call needs input from the user
+            before it can run. Nothing was executed.
         """
         return proxy_execute_impl(
             self._client,
@@ -1210,9 +1160,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if isinstance(precondition, Omit)
             else {"expected_config_version": precondition}
         )
-        if not isinstance(instant, Omit):
-            # Send the new wire contract without passing the old generated keyword.
-            extra_body = {**(extra_body or {}), "instant": instant}
 
         # The generated client does not type ``None`` for every policy block
         # although the API accepts it (it removes the stored override), nor the
@@ -1228,6 +1175,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Dict[str, session_patch_params.Tools], "Omit"], tools
                 ),
                 tags=t.cast(t.Union[session_patch_params.Tags, "Omit"], tags),
+                instant=t.cast(
+                    t.Union[
+                        t.Literal[False],
+                        session_patch_params.CurrentInstantVariant1,
+                        "Omit",
+                    ],
+                    instant,
+                ),
                 auth_configs=t.cast(t.Union[t.Dict[str, str], "Omit"], auth_configs),
                 connected_accounts=connected_accounts,
                 manage_connections=t.cast(

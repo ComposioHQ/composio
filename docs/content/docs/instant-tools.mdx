@@ -324,7 +324,7 @@ With `instant.return_instant_charge` enabled (`instant.returnInstantCharge` in T
 ```python
 charge = result.instant_charge
 if charge is not None:
-    print(charge["amount"], charge["currency"], charge["charged_by"])
+    print(charge.amount, charge.currency, charge.charged_by)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -343,7 +343,7 @@ console.log(result.instantCharge ?? "No Instant charge");
 </Tab>
 </Tabs>
 
-The charge contains `amount`, `currency`, and `charged_by`. `amount` is an exact USD decimal string. Python exports `InstantCharge` from `composio.types`. TypeScript exposes `instantCharge` as `unknown`.
+The charge contains `amount`, `currency`, and `charged_by`. `amount` is an exact USD decimal string. Python Session execution returns a charge object with these attributes. Python provider integrations and mixed local/remote multi-tool execution preserve the charge as a dictionary typed by `InstantCharge` from `composio.types`. TypeScript exposes `instantCharge` as `unknown`.
 
 `return_instant_charge` defaults to `false`. Connected-account calls do not have an Instant charge. Setting `return_instant_charge` to `false` hides the immediate response charge, but does not prevent billing or remove charges from usage records.
 
