@@ -1,25 +1,6 @@
 /**
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
-import { z } from 'zod/v3';
-import {
-  ToolRouterInstantResponseSchema,
-  type ToolRouterInstantResponse,
-} from '../../types/toolRouter.types';
-
-const SessionConfigInstantSchema = z.object({
-  instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional(),
-});
-
-/** Session config retains its API casing, including `instant.return_instant_charge`. */
-export function transformSessionConfig<Config extends { premium_usage?: unknown }>(
-  raw: Config
-): Omit<Config, 'premium_usage'> & { instant?: false | ToolRouterInstantResponse } {
-  const { instant } = SessionConfigInstantSchema.parse(raw);
-  const { premium_usage: _previousPolicy, ...config } = raw;
-  return { ...config, ...(instant !== undefined && { instant }) };
-}
-
 interface RawSearchResult {
   index: number;
   use_case: string;

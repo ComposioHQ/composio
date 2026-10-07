@@ -725,12 +725,10 @@ export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponse
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
  * allowlists, tags, auth configs, connected accounts, manage_connections,
- * preload, sandbox (`workbench`), search, execute and Instant settings.
- * The generated client still declares the old policy name.
+ * preload, sandbox (`workbench`), search, execute, proxy execute and Instant
+ * settings.
  */
-export type ToolRouterSessionConfig = Omit<SessionCreateResponse.Config, 'premium_usage'> & {
-  instant?: false | ToolRouterInstantResponse;
-};
+export type ToolRouterSessionConfig = SessionCreateResponse.Config;
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -1046,12 +1044,7 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
  * The session configuration at one version, as stored by the API. This is
  * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = Omit<
-  SessionConfigHistoryResponse.Item.Config,
-  'premium_usage'
-> & {
-  instant?: false | ToolRouterInstantResponse;
-};
+export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */

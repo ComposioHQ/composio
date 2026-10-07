@@ -36,7 +36,6 @@ import {
 import {
   transformSearchResponse,
   transformExecuteResponse,
-  transformSessionConfig,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -866,7 +865,7 @@ export class ToolRouterSession<
     }
 
     this.configVersion = response.config_version;
-    this.config = transformSessionConfig(response.config);
+    this.config = response.config;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
@@ -923,7 +922,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: transformSessionConfig(item.config),
+        config: item.config,
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
