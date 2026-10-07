@@ -1,16 +1,18 @@
 'use client';
 
 import { InstantBadge } from './instant-badge';
+import { InstantBolt } from './instant-bolt';
+import { filterToolkits, instantToolkitSlugsSchema, withInstantEligibility } from '@/lib/instant-toolkit-filter';
 
-import { useState, useMemo, useDeferredValue } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
+import { Search, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
 import { PageActions } from '@/components/page-actions';
 
-const toolkits = toolkitsData as ToolkitSummary[];
+const snapshot: ToolkitSummary[] = toolkitsData;
 
 // Popular toolkit slugs (shown at top when no filters)
 const POPULAR_SLUGS = [
@@ -101,6 +103,24 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
 
 export function ToolkitsLanding() {
   const [search, setSearch] = useState('');
+  const [instantOnly, setInstantOnly] = useState(false);
+  const [eligibility, setEligibility] = useState<string[] | null>(null);
+  const [eligibilityFailed, setEligibilityFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/toolkits/instant', { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Availability unavailable');
+        return instantToolkitSlugsSchema.parse(await response.json());
+      })
+      .then(data => setEligibility(data.slugs))
+      .catch(() => { if (!controller.signal.aborted) setEligibilityFailed(true); });
+    return () => controller.abort();
+  }, [retry]);
+  const toolkits = useMemo(() => eligibility === null ? snapshot : withInstantEligibility(snapshot, eligibility), [eligibility]);
+  const instantUnavailable = instantOnly && eligibility === null;
+  const clearFilters = () => { setSearch(''); setInstantOnly(false); };
   const deferredSearch = useDeferredValue(search);
 
   // Get popular toolkits
@@ -108,18 +128,11 @@ export function ToolkitsLanding() {
     return POPULAR_SLUGS
       .map((slug) => toolkits.find((t) => t.slug === slug))
       .filter((t): t is ToolkitSummary => t !== undefined);
-  }, []);
+  }, [toolkits]);
 
   const filteredToolkits = useMemo(() => {
-    if (!deferredSearch) return toolkits;
-
-    const searchLower = deferredSearch.toLowerCase();
-    return toolkits.filter(
-      (toolkit) =>
-        toolkit.name.toLowerCase().includes(searchLower) ||
-        toolkit.slug.toLowerCase().includes(searchLower)
-    );
-  }, [deferredSearch]);
+    return filterToolkits(toolkits, deferredSearch, instantOnly);
+  }, [toolkits, deferredSearch, instantOnly]);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
@@ -185,9 +198,19 @@ export function ToolkitsLanding() {
       {/* Cards */}
       <Cards>
         <Card icon={<ShieldCheck />} title="Managed OAuth apps" href="/toolkits/managed-auth" description="Check which toolkits have managed OAuth" />
-        <Card icon={<Sparkles />} title="Instant Tools" href="/docs/instant-tools" description="Run supported tools on Composio accounts" />
+        <button
+          type="button"
+          aria-pressed={instantOnly}
+          onClick={() => setInstantOnly(value => !value)}
+          className={`not-prose rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${instantOnly ? 'border-blue-500 bg-blue-500/10' : 'border-fd-border bg-fd-card hover:bg-fd-accent'}`}
+        >
+          <InstantBolt filled={instantOnly} className={`mb-2 size-5 ${instantOnly ? 'text-blue-500' : 'text-fd-muted-foreground'}`} />
+          <span className="block font-medium text-fd-card-foreground">Instant Tools</span>
+          <span className="mt-1 block text-sm text-fd-muted-foreground">Show toolkits with Instant tools</span>
+        </button>
         <Card icon={<Wrench />} title="Meta Tools" href="/toolkits/meta-tools" description="The system tools every session gives your agent" />
       </Cards>
+      <Link href="/docs/instant-tools" className="inline-flex text-sm text-fd-primary hover:underline">Read the Instant Tools guide →</Link>
 
       {/* Search */}
       <div className="relative">
@@ -205,13 +228,18 @@ export function ToolkitsLanding() {
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-fd-muted-foreground">
+      {!instantUnavailable && <p className="text-sm text-fd-muted-foreground" role="status">
         {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
+        {instantOnly && ' with Instant tools'}
         {deferredSearch && ` matching "${deferredSearch}"`}
-      </p>
+      </p>}
+      {(instantOnly || search) && <button type="button" onClick={clearFilters} className="text-sm text-fd-primary hover:underline">Clear filters</button>}
+      {instantUnavailable && <div role="status" className="py-8 text-center text-sm text-fd-muted-foreground">
+        {eligibilityFailed ? <><p>Instant toolkit availability could not be loaded.</p><button type="button" onClick={() => { setEligibilityFailed(false); setRetry(value => value + 1); }} className="mt-2 text-fd-primary hover:underline">Try again</button></> : 'Loading Instant toolkits…'}
+      </div>}
 
       {/* Popular Toolkits - only show when no search */}
-      {!deferredSearch && popularToolkits.length > 0 && (
+      {!instantOnly && !deferredSearch && popularToolkits.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
           <div className="divide-y divide-fd-border">
@@ -223,7 +251,7 @@ export function ToolkitsLanding() {
       )}
 
       {/* Alphabetically grouped list - table style */}
-      {groupedToolkits.length > 0 ? (
+      {!instantUnavailable && (groupedToolkits.length > 0 ? (
         <div className="space-y-6">
           {groupedToolkits.map(([letter, items]) => (
             <div key={letter}>
@@ -240,13 +268,13 @@ export function ToolkitsLanding() {
         <div className="py-12 text-center">
           <p className="text-fd-muted-foreground">No toolkits found.</p>
           <button
-            onClick={() => setSearch('')}
+            onClick={clearFilters}
             className="mt-2 text-sm text-fd-primary hover:underline"
           >
-            Clear search
+            Clear filters
           </button>
         </div>
-      )}
+      ))}
     </div>
   );
 }

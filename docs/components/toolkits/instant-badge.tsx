@@ -1,6 +1,9 @@
+import { InstantBolt } from './instant-bolt';
+
 export function InstantBadge() {
   return (
-    <span className="shrink-0 rounded bg-fd-accent px-1.5 py-0.5 text-xs font-medium text-fd-foreground" title="Instant is supported on the latest version">
+    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-fd-muted-foreground" title="Instant is supported on the latest version">
+      <InstantBolt className="size-3.5" />
       Instant
     </span>
   );
