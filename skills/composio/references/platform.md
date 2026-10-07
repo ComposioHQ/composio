@@ -125,7 +125,6 @@ If the application has its own connect UI, use session authorization and connect
 
 Do not force advanced requests through first-time setup. Route them to current documentation:
 
-- Instant Tools eligibility, usage controls, account selection, and charges: `instant-tools.md`. Consult this guide before assuming a tool can run without a user connection or quoting rates.
 - Session scoping, account selection, callbacks, direct tools, and sandbox controls: `configuring-sessions.md`
 - Custom connection UI: `manually-authenticating.md`
 - Triggers and webhooks: `triggers.md` and the setting-up-triggers guides
