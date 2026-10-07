@@ -915,18 +915,32 @@ def _compile_object_policy(
 def _iter_reachable_schemas(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
-    visited: t.Optional[t.Set[int]] = None,
+    visited: t.Optional[t.Set[t.Tuple[int, t.Any]]] = None,
+    validator_class: t.Any = None,
 ) -> t.Iterator[t.Dict[str, t.Any]]:
-    """Yield schema nodes reached through Draft 7 schema-valued keywords."""
+    """Yield schema nodes and local targets under their effective dialect."""
     if visited is None:
         visited = set()
+    if validator_class is None:
+        validator_class = jsonschema_validators.validator_for(
+            root_schema, default=jsonschema_validators.Draft7Validator
+        )
     if isinstance(schema, list):
         for item in schema:
-            yield from _iter_reachable_schemas(item, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                item, root_schema, visited, validator_class
+            )
         return
-    if not isinstance(schema, dict) or id(schema) in visited:
+    if not isinstance(schema, dict):
         return
-    visited.add(id(schema))
+    if "$schema" in schema:
+        validator_class = jsonschema_validators.validator_for(
+            schema, default=validator_class
+        )
+    visit_key = (id(schema), validator_class)
+    if visit_key in visited:
+        return
+    visited.add(visit_key)
     yield schema
 
     reference = schema.get("$ref")
@@ -939,33 +953,52 @@ def _iter_reachable_schemas(
             # validated.
             resolved = None
         if isinstance(resolved, (dict, list)):
-            yield from _iter_reachable_schemas(resolved, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                resolved, root_schema, visited, validator_class
+            )
 
-    for keyword in ("properties", "patternProperties"):
+    for keyword in ("properties", "patternProperties", "dependentSchemas"):
+        if keyword == "dependentSchemas" and keyword not in validator_class.VALIDATORS:
+            continue
         values = schema.get(keyword)
         if isinstance(values, dict):
             for child in values.values():
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
-    for keyword in _SCHEMA_VALUED_KEYWORDS:
+    value_keywords = _SCHEMA_VALUED_KEYWORDS | (
+        {"unevaluatedItems", "unevaluatedProperties"}
+        & validator_class.VALIDATORS.keys()
+    )
+    for keyword in value_keywords:
         child = schema.get(keyword)
         if isinstance(child, (dict, list)):
-            yield from _iter_reachable_schemas(child, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                child, root_schema, visited, validator_class
+            )
 
-    for keyword in _SCHEMA_LIST_KEYWORDS:
+    list_keywords = _SCHEMA_LIST_KEYWORDS | (
+        {"prefixItems"} & validator_class.VALIDATORS.keys()
+    )
+    for keyword in list_keywords:
         children = schema.get(keyword)
         if isinstance(children, list):
-            yield from _iter_reachable_schemas(children, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                children, root_schema, visited, validator_class
+            )
 
     items = schema.get("items")
     if isinstance(items, (dict, list)):
-        yield from _iter_reachable_schemas(items, root_schema, visited)
+        yield from _iter_reachable_schemas(items, root_schema, visited, validator_class)
 
     dependencies = schema.get("dependencies")
     if isinstance(dependencies, dict):
         for child in dependencies.values():
             if isinstance(child, (dict, bool)):
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
 
 def _has_dynamic_object_policy(schema: t.Dict[str, t.Any]) -> bool:
@@ -1858,6 +1891,9 @@ _MAX_FALLBACK_DEGREE = 2
 # Budget for the product of small quantifier spans and alternation widths.
 _MAX_FALLBACK_CHOICES = 64
 
+# Absolute explicit repeat bounds also limit zero-width assertion work.
+_MAX_FALLBACK_REPEAT_COUNT = 64
+
 
 @functools.lru_cache(maxsize=_PATTERN_CACHE_SIZE)
 def _linear_pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
@@ -1953,6 +1989,11 @@ class _FallbackPatternCheck:
                 if in_repeat:
                     raise _BacktrackingRisk("quantified group contains a quantifier")
                 low, high, body = av
+                if low > _MAX_FALLBACK_REPEAT_COUNT or (
+                    high != _REGEX_CONSTANTS.MAXREPEAT
+                    and high > _MAX_FALLBACK_REPEAT_COUNT
+                ):
+                    raise _BacktrackingRisk("repeat count exceeds the work budget")
                 if high == _REGEX_CONSTANTS.MAXREPEAT or (
                     high - low > _LARGE_QUANTIFIER_SPAN
                 ):
@@ -1998,7 +2039,8 @@ def _fallback_pattern_is_safe(pattern: str) -> bool:
     """Whether Python `re` cannot backtrack catastrophically on `pattern`.
 
     Rejects backreferences, quantified groups (look-around included) that
-    contain a quantifier or alternation, nested look-around, more than
+    contain a quantifier or alternation, excessive explicit repeat bounds,
+    nested look-around, more than
     `_MAX_FALLBACK_DEGREE` nested polynomial factors, and more than
     `_MAX_FALLBACK_CHOICES` combined small-quantifier and alternation choices.
 
@@ -2010,11 +2052,16 @@ def _fallback_pattern_is_safe(pattern: str) -> bool:
         large_outside = check.visit(parsed, in_repeat=False, in_lookaround=False)
     except _BacktrackingRisk:
         return False
-    degree = (
-        (0 if pattern.startswith("^") else 1)
-        + large_outside
-        + check.max_large_in_lookaround
+    anchored = (
+        bool(parsed.data)
+        and parsed.data[0]
+        == (
+            _REGEX_CONSTANTS.AT,
+            _REGEX_CONSTANTS.AT_BEGINNING,
+        )
+        and not parsed.state.flags & re.MULTILINE
     )
+    degree = (0 if anchored else 1) + large_outside + check.max_large_in_lookaround
     return degree <= _MAX_FALLBACK_DEGREE
 
 

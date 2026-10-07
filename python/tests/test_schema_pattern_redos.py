@@ -116,6 +116,27 @@ def test_forced_fallback_polynomial_pattern_is_not_enforced(
 
 @pytest.mark.unit
 @pytest.mark.schema
+@pytest.mark.parametrize(
+    "pattern",
+    [
+        "^(?=a){1000000000}a$",
+        "^z|(?=a)" + "(?:a|aa)" * 5 + "a*a*b$",
+    ],
+)
+def test_fixed_repeats_and_unanchored_alternatives_are_not_enforced(
+    pattern: str,
+    warnings: t.List[str],
+) -> None:
+    # Assert rejection before matching, so a regression cannot execute the attack.
+    assert not schema_converter._fallback_pattern_is_safe(pattern)
+    adapter = _adapter({"type": "string", "pattern": pattern})
+    assert any(pattern in message for message in warnings)
+    value = "a" * schema_converter._BACKTRACKING_FALLBACK_MAX_INPUT
+    assert adapter.validate_python(value) == value
+
+
+@pytest.mark.unit
+@pytest.mark.schema
 @pytest.mark.parametrize("entry_point", ["model", "type"])
 @pytest.mark.parametrize("pattern", [LOOKAROUND_CATASTROPHIC, "^(?=a)"])
 def test_lookaround_pattern_property_is_rejected_at_conversion(
@@ -309,6 +330,91 @@ def test_subschema_dialect_switch_keeps_linear_regex() -> None:
 
 @pytest.mark.unit
 @pytest.mark.schema
+@pytest.mark.parametrize("entry_point", ["model", "type"])
+@pytest.mark.parametrize(
+    ("draft", "keyword"),
+    [
+        (draft, keyword)
+        for draft in ["2019-09", "2020-12"]
+        for keyword in [
+            "dependentSchemas",
+            "unevaluatedProperties",
+            "unevaluatedItems",
+            "prefixItems",
+        ]
+        if keyword != "prefixItems" or draft == "2020-12"
+    ],
+)
+def test_switched_dialect_rejects_unsupported_key_patterns_at_conversion(
+    entry_point: str,
+    draft: str,
+    keyword: str,
+) -> None:
+    unsupported = {
+        "type": "object",
+        "patternProperties": {"^(?=a)": {"type": "integer"}},
+    }
+    value: t.Any = unsupported
+    if keyword == "dependentSchemas":
+        value = {"trigger": unsupported}
+    elif keyword == "prefixItems":
+        value = [unsupported]
+    schema = {
+        "type": "object",
+        "properties": {
+            "value": {
+                "$schema": f"https://json-schema.org/draft/{draft}/schema",
+                "type": "array"
+                if keyword in {"prefixItems", "unevaluatedItems"}
+                else "object",
+                keyword: value,
+            }
+        },
+    }
+    convert = json_schema_to_model if entry_point == "model" else _adapter
+    with pytest.raises(ValueError, match="Unsupported patternProperties"):
+        convert(schema)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_draft7_keeps_unsupported_dialect_keywords_as_annotations() -> None:
+    schema = {
+        "type": "object",
+        "dependentSchemas": {
+            "trigger": {"patternProperties": {"^(?=a)": {"type": "integer"}}}
+        },
+    }
+    assert _adapter(schema).validate_python({"trigger": "annotation"}) == {
+        "trigger": "annotation"
+    }
+
+
+@pytest.mark.unit
+@pytest.mark.schema
+def test_shared_reference_is_checked_under_each_effective_dialect() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "old": {"$ref": "#/x"},
+            "new": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$ref": "#/x",
+            },
+        },
+        "x": {
+            "type": "object",
+            "dependentSchemas": {
+                "trigger": {"patternProperties": {"^(?=a)": {"type": "integer"}}}
+            },
+        },
+    }
+    with pytest.raises(ValueError, match="Unsupported patternProperties"):
+        _adapter(schema)
+
+
+@pytest.mark.unit
+@pytest.mark.schema
 @pytest.mark.parametrize(
     "pattern",
     [
@@ -342,6 +448,14 @@ def test_static_check_accepts_bounded_patterns(pattern: str) -> None:
         "(?=a).*.*.*.*.*!",
         "(?=a)" + "a?" * 7,
         "(?<=)" + "(?:a|aa)" * 7 + "b",
+        "^(?=a){1000000000}a$",
+        "^(?=a)a{1000000000}$",
+        "^(?=a)a{1,1000000000}$",
+        "^(?=a)a{1000000000,}$",
+        "^((?=a){64}){64}a$",
+        "^(?=a)b|b+b+c",
+        "^z|(?=a)" + "(?:a|aa)" * 5 + "a*a*b$",
+        "(?m)^a*a*(?=b)b$",
     ],
 )
 def test_static_check_rejects_backtracking_patterns(pattern: str) -> None:

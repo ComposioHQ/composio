@@ -172,6 +172,8 @@ export const compileLinearPattern = (unicodePattern: string): RE2JS | undefined 
 const LARGE_QUANTIFIER_RANGE = 16;
 /** Bound on the product of the ranges of all small variable quantifiers. */
 const MAX_SMALL_QUANTIFIER_PRODUCT = 64;
+/** Absolute explicit repeat bounds, including repetitions of zero-width assertions. */
+const MAX_FALLBACK_REPEAT_COUNT = 64;
 /** Bound on the polynomial degree of the backtracking search in the input length. */
 const MAX_BACKTRACKING_DEGREE = 2;
 const BRACE_QUANTIFIER = /^\{(\d+)(,(\d*))?\}/;
@@ -192,6 +194,7 @@ type Group = {
  * - no quantified group that contains a quantifier or an alternation, the
  *   shapes behind exponential backtracking (`(a+)+`, `(a|a)*`);
  * - no lookaround nested in another lookaround;
+ * - explicit repetition bounds are capped, including fixed assertions;
  * - the search is at most quadratic: one degree for an unanchored start, plus
  *   the number of unbounded quantifiers at the top level, plus the largest
  *   number inside a single lookaround (lookarounds are atomic, so they add
@@ -199,6 +202,7 @@ type Group = {
  * - small variable quantifiers (`?`, `{1,3}`) and alternations multiply the
  *   work by a bounded constant (`(?:a|aa)(?:a|aa)...b` is exponential without
  *   any quantifier).
+ * A leading anchor removes search work only without a top-level alternative.
  *
  * Callers still bound the input length, which keeps the quadratic case cheap.
  */
@@ -240,6 +244,14 @@ export const isSafeForBacktracking = (pattern: string): boolean => {
       const brace = BRACE_QUANTIFIER.exec(pattern.slice(index));
       if (brace) {
         quantifierLength = brace[0].length;
+        const minimum = Number(brace[1]);
+        const maximum = brace[2] === undefined ? minimum : Number(brace[3]);
+        if (
+          minimum > MAX_FALLBACK_REPEAT_COUNT ||
+          (brace[3] !== '' && maximum > MAX_FALLBACK_REPEAT_COUNT)
+        ) {
+          return false;
+        }
         if (brace[2] !== undefined) {
           range = brace[3] === '' ? Infinity : Number(brace[3]) - Number(brace[1]);
         }
@@ -259,9 +271,7 @@ export const isSafeForBacktracking = (pattern: string): boolean => {
       } else if (range > 0 && !multiply(range + 1)) {
         return false;
       }
-      if (range > 0) {
-        current.quantified = true;
-      }
+      current.quantified = true;
       index += quantifierLength;
       if (pattern[index] === '?') {
         index++;
@@ -322,7 +332,7 @@ export const isSafeForBacktracking = (pattern: string): boolean => {
     return false;
   }
 
-  const unanchored = pattern.startsWith('^') ? 0 : 1;
+  const unanchored = pattern.startsWith('^') && stack[0].branches === 1 ? 0 : 1;
   return unanchored + topLevelLarge + maxLookaroundLarge <= MAX_BACKTRACKING_DEGREE;
 };
 

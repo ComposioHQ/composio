@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { InvalidPatternError, jsonSchemaToZod } from '../src/index';
 import type { JsonSchema } from '../src/types';
@@ -121,6 +121,13 @@ describe('isSafeForBacktracking', () => {
     ['a nested lookaround', '^(?=(?=a)a)'],
     ['an unquantified alternation chain', `(?<=)${'(?:a|aa)'.repeat(28)}b`],
     ['many optional atoms', `^(?=x)${'a?'.repeat(30)}${'a'.repeat(30)}$`],
+    ['huge fixed assertion repeats', '^(?=a){1000000000}a$'],
+    ['huge fixed consuming repeats', '^(?=a)a{1000000000}$'],
+    ['huge finite upper bounds', '^(?=a)a{1,1000000000}$'],
+    ['huge unbounded minimums', '^(?=a)a{1000000000,}$'],
+    ['nested fixed assertion repeats', '^((?=a){64}){64}a$'],
+    ['an unanchored alternative', '^(?=a)b|b+b+c'],
+    ['an unanchored alternative with bounded choices', `^z|(?=a)${'(?:a|aa)'.repeat(5)}a*a*b$`],
   ])('rejects %s', (_, pattern) => {
     expect(isSafeForBacktracking(pattern)).toBe(false);
   });
@@ -135,6 +142,106 @@ const finishesQuickly = (run: () => void): void => {
 const ATTACK = `${'a'.repeat(40)}!`;
 
 describe('catastrophic backtracking (SEC-1178)', () => {
+  it.each(['^(?=a){1000000000}a$', `^z|(?=a)${'(?:a|aa)'.repeat(5)}a*a*b$`])(
+    'leaves unsafe fallback pattern %s unenforced',
+    pattern => {
+      expect(createPatternMatcher(pattern).kind).toBe('unenforced');
+      const parsed = jsonSchemaToZod({ type: 'string', pattern });
+      expect(parsed.safeParse('a'.repeat(MAX_BACKTRACKING_INPUT_LENGTH)).success).toBe(true);
+    }
+  );
+
+  it.each(['x', 'components', 'escaped'])('protects regexes referenced through %s', location => {
+    const pattern = '^(a+)+$';
+    let nativeExecutions = 0;
+    const originalExec = RegExp.prototype.exec;
+    const nativeExec = vi.spyOn(RegExp.prototype, 'exec').mockImplementation(function (
+      this: RegExp,
+      input: string
+    ) {
+      if (this.source === pattern) {
+        nativeExecutions++;
+        throw new Error('schema regex reached native matching');
+      }
+      return originalExec.call(this, input);
+    });
+    try {
+      for (const keyword of ['pattern', 'patternProperties']) {
+        const target =
+          keyword === 'pattern'
+            ? { type: 'string', pattern }
+            : {
+                type: 'object',
+                patternProperties: { [pattern]: { type: 'integer' } },
+                additionalProperties: false,
+              };
+        const extension =
+          location === 'components'
+            ? { components: { schemas: { target } } }
+            : { [location === 'escaped' ? 'schema/~target' : 'x']: target };
+        const ref =
+          location === 'components'
+            ? '#/components/schemas/target'
+            : location === 'escaped'
+              ? '#/schema~1~0target'
+              : '#/x';
+        const parsed = jsonSchemaToZod({
+          type: 'object',
+          properties: { value: { $ref: ref } },
+          ...extension,
+        } as JsonSchema);
+        expect(
+          parsed.safeParse({ value: keyword === 'pattern' ? 'aaa' : { aaa: 1 } }).success
+        ).toBe(true);
+        expect(
+          parsed.safeParse({ value: keyword === 'pattern' ? 'a!' : { 'a!': 1 } }).success
+        ).toBe(false);
+        if (keyword === 'patternProperties') {
+          expect(parsed.safeParse({ value: { aaa: 'bad' } }).success).toBe(false);
+        }
+      }
+      expect(nativeExecutions).toBe(0);
+    } finally {
+      nativeExec.mockRestore();
+    }
+  });
+
+  it('rejects unsupported key patterns in extension reference targets during conversion', () => {
+    expect(() =>
+      jsonSchemaToZod({
+        type: 'object',
+        properties: { value: { $ref: '#/x' } },
+        x: { type: 'object', patternProperties: { '^(?=a)': { type: 'integer' } } },
+      } as JsonSchema)
+    ).toThrow(InvalidPatternError);
+  });
+
+  it('keeps references through renamed keys in extension schemas valid', () => {
+    const parsed = jsonSchemaToZod({
+      type: 'object',
+      properties: {
+        keys: { $ref: '#/x' },
+        value: { $ref: '#/x/patternProperties/^k' },
+      },
+      x: { type: 'object', patternProperties: { '^k': { type: 'integer' } } },
+    } as JsonSchema);
+    expect(parsed.safeParse({ keys: { k1: 1 }, value: 2 }).success).toBe(true);
+    expect(parsed.safeParse({ keys: { k1: 1 }, value: 'bad' }).success).toBe(false);
+  });
+
+  it('follows reference cycles without rewriting instance data as schemas', () => {
+    const parsed = jsonSchemaToZod({
+      type: 'object',
+      properties: { value: { $ref: '#/x' } },
+      x: {
+        type: 'object',
+        properties: { next: { $ref: '#/x' } },
+        default: { patternProperties: { '^(?=a)': {} } },
+      },
+    } as JsonSchema);
+    expect(parsed.safeParse({ value: { next: {} } }).success).toBe(true);
+  });
+
   it('runs a nested-quantifier pattern in linear time', () => {
     const parsed = jsonSchemaToZod({ type: 'string', pattern: '^(a+)+$' });
     finishesQuickly(() => expect(parsed.safeParse(ATTACK).success).toBe(false));

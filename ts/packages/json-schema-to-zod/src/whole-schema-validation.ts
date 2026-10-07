@@ -67,6 +67,55 @@ const SCHEMA_VALUE_KEYWORDS = new Set([
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+type SchemaNode = { value: Record<string, unknown>; path: ReadonlyArray<string | number> };
+
+/** Known schema positions and local reference targets, including extension locations. */
+function* reachableSchemaNodes(
+  value: unknown,
+  root: unknown,
+  path: ReadonlyArray<string | number> = [],
+  seen: WeakSet<object> = new WeakSet()
+): Generator<SchemaNode> {
+  if (!isObject(value) || seen.has(value)) {
+    return;
+  }
+  seen.add(value);
+  yield { value, path };
+
+  if (typeof value.$ref === 'string' && (value.$ref === '#' || value.$ref.startsWith('#/'))) {
+    const targetPath =
+      value.$ref === '#' ? [] : value.$ref.slice(2).split('/').map(decodePointerSegment);
+    let target = root;
+    for (const segment of targetPath) {
+      target =
+        (isObject(target) || Array.isArray(target)) && Object.hasOwn(target, segment)
+          ? Reflect.get(target, segment)
+          : undefined;
+    }
+    yield* reachableSchemaNodes(target, root, targetPath, seen);
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
+      for (const [name, nested] of Object.entries(child)) {
+        yield* reachableSchemaNodes(nested, root, [...path, key, name], seen);
+      }
+    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
+      for (const [index, nested] of child.entries()) {
+        yield* reachableSchemaNodes(nested, root, [...path, key, index], seen);
+      }
+    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
+      if (Array.isArray(child)) {
+        for (const [index, nested] of child.entries()) {
+          yield* reachableSchemaNodes(nested, root, [...path, key, index], seen);
+        }
+      } else {
+        yield* reachableSchemaNodes(child, root, [...path, key], seen);
+      }
+    }
+  }
+}
+
 const hasRequiredDefault = (schema: JsonSchemaObject): boolean => {
   if (!Array.isArray(schema.required) || !isObject(schema.properties)) {
     return false;
@@ -220,17 +269,13 @@ const patternKeyRenamer = (
  * parser does.
  */
 const collectPatternKeyMatchers = (
-  value: unknown,
-  path: ReadonlyArray<string | number>,
-  seen: WeakSet<object>,
-  matchers: Map<string, PatternMatcher | undefined>
+  nodes: readonly SchemaNode[]
 ): Map<string, PatternMatcher | undefined> => {
-  if (!isObject(value) || seen.has(value)) {
-    return matchers;
-  }
-  seen.add(value);
-
-  if (isObject(value.patternProperties)) {
+  const matchers = new Map<string, PatternMatcher | undefined>();
+  for (const { value, path } of nodes) {
+    if (!isObject(value.patternProperties)) {
+      continue;
+    }
     for (const key of Object.keys(value.patternProperties)) {
       if (matchers.has(key)) {
         continue;
@@ -257,25 +302,6 @@ const collectPatternKeyMatchers = (
     }
   }
 
-  for (const [key, child] of Object.entries(value)) {
-    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.entries(child).forEach(([name, nested]) =>
-        collectPatternKeyMatchers(nested, [...path, key, name], seen, matchers)
-      );
-    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach((nested, index) =>
-        collectPatternKeyMatchers(nested, [...path, key, index], seen, matchers)
-      );
-    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
-      if (Array.isArray(child)) {
-        child.forEach((nested, index) =>
-          collectPatternKeyMatchers(nested, [...path, key, index], seen, matchers)
-        );
-      } else {
-        collectPatternKeyMatchers(child, [...path, key], seen, matchers);
-      }
-    }
-  }
   return matchers;
 };
 
@@ -403,7 +429,8 @@ const positionAfter = (position: PointerPosition, key: string, child: unknown): 
 const renameRefThroughPatternKeys = (
   ref: string,
   root: unknown,
-  renamePatternKeys: PatternKeyRenamer
+  renamePatternKeys: PatternKeyRenamer,
+  schemaObjects: WeakSet<object>
 ): string => {
   if (!ref.startsWith('#/')) {
     return ref;
@@ -416,6 +443,9 @@ const renameRefThroughPatternKeys = (
     .slice(2)
     .split('/')
     .map(segment => {
+      if (position === 'other' && isObject(node) && schemaObjects.has(node)) {
+        position = 'keyword';
+      }
       const key = decodePointerSegment(segment);
       let result = segment;
       if (position === 'patternKey' && isObject(node)) {
@@ -486,18 +516,13 @@ const patternFormat = (
  *   `formats` collects the pattern formats.
  */
 const prepareInterpreterSchema = (
-  value: unknown,
-  seen: WeakSet<object>,
+  value: Record<string, unknown>,
   root: unknown,
   formats: PatternFormats,
   patternMatchers: Map<string, PatternMatcher>,
-  renamePatternKeys: PatternKeyRenamer
+  renamePatternKeys: PatternKeyRenamer,
+  schemaObjects: WeakSet<object>
 ): void => {
-  if (!isObject(value) || seen.has(value)) {
-    return;
-  }
-  seen.add(value);
-
   if (value.exclusiveMinimum === true && typeof value.minimum === 'number') {
     value.exclusiveMinimum = value.minimum;
     delete value.minimum;
@@ -512,7 +537,7 @@ const prepareInterpreterSchema = (
   }
 
   if (typeof value.$ref === 'string') {
-    value.$ref = renameRefThroughPatternKeys(value.$ref, root, renamePatternKeys);
+    value.$ref = renameRefThroughPatternKeys(value.$ref, root, renamePatternKeys, schemaObjects);
   }
   const patternFormatName =
     typeof value.pattern === 'string'
@@ -535,22 +560,6 @@ const prepareInterpreterSchema = (
         schema,
       ])
     );
-  }
-
-  for (const [key, child] of Object.entries(value)) {
-    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      Object.values(child).forEach(nested =>
-        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
-      );
-    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      child.forEach(nested =>
-        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
-      );
-    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
-      (Array.isArray(child) ? child : [child]).forEach(nested =>
-        prepareInterpreterSchema(nested, seen, root, formats, patternMatchers, renamePatternKeys)
-      );
-    }
   }
 };
 
@@ -609,20 +618,27 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const patternMatchers = new Map<string, PatternMatcher>();
-  const keyMatchers = collectPatternKeyMatchers(jsonSchema, [], new WeakSet(), new Map());
+  const originalNodes = [...reachableSchemaNodes(jsonSchema, jsonSchema)];
+  const schemaObjects = new WeakSet(originalNodes.map(node => node.value));
+  const keyMatchers = collectPatternKeyMatchers(originalNodes);
 
   const prepare = (spell: PatternKeySpelling): PreparedInterpreter => {
     const interpreterSchema = structuredClone(jsonSchema);
     const formats: PatternFormats = new Map();
     const renamed = new Map<string, string>();
-    prepareInterpreterSchema(
-      interpreterSchema,
-      new WeakSet(),
-      jsonSchema,
-      formats,
-      patternMatchers,
-      patternKeyRenamer(spell, renamed)
-    );
+    const renamePatternKeys = patternKeyRenamer(spell, renamed);
+    // Capture targets before key renaming changes the paths that address them.
+    const nodes = [...reachableSchemaNodes(interpreterSchema, interpreterSchema)];
+    for (const { value } of nodes) {
+      prepareInterpreterSchema(
+        value,
+        jsonSchema,
+        formats,
+        patternMatchers,
+        renamePatternKeys,
+        schemaObjects
+      );
+    }
     return {
       validator: new Validator(interpreterSchema as InterpreterSchema, '7', false),
       formats,
@@ -639,11 +655,19 @@ export const withWholeSchemaValidation = (
       return shared;
     }
     const instanceKeys = [...collectInstanceKeys(value)];
+    const spellings = new Map<string, string>();
     return prepare(pattern => {
+      const cached = spellings.get(pattern);
+      if (cached !== undefined) {
+        return cached;
+      }
       const matcher = keyMatchers.get(pattern);
-      return matcher === undefined
-        ? fallbackKeySpelling(pattern)
-        : literalKeysPattern(instanceKeys.filter(key => patternMatches(matcher, key)));
+      const spelling =
+        matcher === undefined
+          ? fallbackKeySpelling(pattern)
+          : literalKeysPattern(instanceKeys.filter(key => patternMatches(matcher, key)));
+      spellings.set(pattern, spelling);
+      return spelling;
     });
   };
 
