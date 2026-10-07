@@ -133,10 +133,6 @@ const executeRequest = {
   slug: 'GMAIL_SEND_EMAIL',
   arguments: { recipient: 'a@example.com' },
   orgId: 'org_test',
-  session: {
-    connected_accounts: { gmail: 'ca_1' },
-    manage_connections: { enable: true },
-  },
 };
 
 describe('DashboardToolExecution', () => {
@@ -161,11 +157,27 @@ describe('DashboardToolExecution', () => {
           json: {
             tool_slug: 'GMAIL_SEND_EMAIL',
             arguments: { recipient: 'a@example.com' },
-            session: {
-              connected_accounts: { gmail: 'ca_1' },
-              manage_connections: { enable: true },
-            },
           },
+        });
+      })
+    )
+  );
+
+  it.effect('sends the selected connected account with the execution, and omits it otherwise', () =>
+    withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
+      Effect.gen(function* () {
+        yield* dashboard.execute({ ...executeRequest, account: 'ca_1' });
+        yield* dashboard.execute(executeRequest);
+
+        expect(requests[0]?.body).toEqual({
+          json: {
+            tool_slug: 'GMAIL_SEND_EMAIL',
+            arguments: { recipient: 'a@example.com' },
+            account: 'ca_1',
+          },
+        });
+        expect(requests[1]?.body).toEqual({
+          json: { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { recipient: 'a@example.com' } },
         });
       })
     )

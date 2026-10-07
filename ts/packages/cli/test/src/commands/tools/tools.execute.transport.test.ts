@@ -203,7 +203,6 @@ describe('CLI: composio execute transport', () => {
       expect(requestJson(request)).toEqual({
         tool_slug: 'GMAIL_SEND_EMAIL',
         arguments: { recipient: 'a' },
-        session: { manage_connections: { enable: true } },
       });
       // The Dashboard owns the session: none is created or executed on the backend.
       expect(viaDashboard.toolRouterCalls).toEqual([]);
