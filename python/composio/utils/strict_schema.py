@@ -34,6 +34,9 @@ from composio.utils.json_schema import MAX_REF_CHAIN_DEPTH, _try_resolve_pointer
 
 MAX_NODE_DEPTH = 512
 MAX_CHANGES = 50
+# Bounds on one null-acceptance check; past either, null is not proven accepted.
+MAX_NULL_CHECK_DEPTH = 64
+MAX_NULL_CHECK_NODES = 10_000
 
 # Annotation-only keywords OpenAI structured outputs rejects; safe to strip.
 STRICT_STRIP_KEYWORDS = frozenset({"examples", "default"})
@@ -151,7 +154,7 @@ def _widen_to_nullable(
     Anything else is wrapped whole, because JSON Schema keywords apply
     together: adding ``null`` to ``type`` does not lift a sibling ``enum``.
     """
-    if _schema_accepts_null(node, root):
+    if _NullCheck(root, strict_output=True).accepts(node):
         return node
     constraints = [key for key in NULL_CONSTRAINT_KEYWORDS if key in node]
     if constraints == ["type"]:
@@ -180,64 +183,108 @@ def _resolve_local_refs(node: t.Any, root: dict[str, t.Any]) -> t.Any:
     return current
 
 
-def _schema_accepts_null(
-    schema: t.Any, root: dict[str, t.Any], path: set[int] | None = None
-) -> bool:
-    """Whether a schema accepts ``null`` as an instance.
+class _NullCheck:
+    """Decides whether schemas of one document accept ``null`` as an instance.
 
     Every keyword in :data:`NULL_CONSTRAINT_KEYWORDS` that is present must
     accept it. This is the single definition of null acceptance: the strict
     rewrite and :func:`omit_null_tool_arguments` both decide with it.
+
+    ``strict_output`` answers for the schema :func:`to_strict_json_schema`
+    emits instead of the one it was given: the rewrite types every node that
+    declares ``properties`` as an object, so such a node stops accepting null.
+
+    Answers are remembered per node, so a definition shared by many branches
+    is evaluated once. A reference cycle never yields a null by itself; an
+    answer that leaned on an unfinished cycle is not remembered. Past the
+    depth or node budget null counts as rejected, which costs at most a
+    redundant null branch or a dropped null.
     """
-    if isinstance(schema, bool):
-        return schema
-    if not isinstance(schema, dict):
+
+    def __init__(self, root: dict[str, t.Any], strict_output: bool = False) -> None:
+        self.root = root
+        self.strict_output = strict_output
+        self.known: dict[int, bool] = {}
+        # Nodes being evaluated, mapped to their depth on the current path.
+        self.path: dict[int, int] = {}
+        self.budget = MAX_NULL_CHECK_NODES
+        # Shallowest path depth a cut-off answer leaned on since it was reset.
+        self.leaned_on = MAX_NULL_CHECK_DEPTH + 1
+
+    def accepts(self, schema: t.Any) -> bool:
+        if isinstance(schema, bool):
+            return schema
+        if not isinstance(schema, dict):
+            return True
+        key = id(schema)
+        if key in self.known:
+            return self.known[key]
+        if key in self.path:
+            self.leaned_on = min(self.leaned_on, self.path[key])
+            return False
+        depth = len(self.path)
+        if depth >= MAX_NULL_CHECK_DEPTH or self.budget <= 0:
+            self.leaned_on = -1
+            return False
+        self.budget -= 1
+
+        outer, self.leaned_on = self.leaned_on, MAX_NULL_CHECK_DEPTH + 1
+        self.path[key] = depth
+        try:
+            result = self._keywords_accept(schema)
+        finally:
+            del self.path[key]
+        if self.leaned_on >= depth:
+            # Every cycle met below closes on this node or deeper: final.
+            self.known[key] = result
+            self.leaned_on = outer
+        else:
+            self.leaned_on = min(outer, self.leaned_on)
+        return result
+
+    def _keywords_accept(self, node: dict[str, t.Any]) -> bool:
+        accepts = self.accepts
+        node_type = node.get("type")
+        if isinstance(node_type, str) and node_type != "null":
+            return False
+        if isinstance(node_type, list) and "null" not in node_type:
+            return False
+        if (
+            self.strict_output
+            and "type" not in node
+            and isinstance(node.get("properties"), dict)
+        ):
+            return False
+        if isinstance(node.get("enum"), list) and None not in node["enum"]:
+            return False
+        if "const" in node and node["const"] is not None:
+            return False
+        if "$ref" in node:
+            ref = node["$ref"]
+            resolution = (
+                _try_resolve_pointer(self.root, ref) if isinstance(ref, str) else None
+            )
+            if resolution is None or not resolution.ok:
+                return False
+            if not accepts(resolution.value):
+                return False
+        any_of, one_of, all_of = node.get("anyOf"), node.get("oneOf"), node.get("allOf")
+        if isinstance(any_of, list) and not any(accepts(b) for b in any_of):
+            return False
+        if isinstance(one_of, list):
+            matches = sum(accepts(b) for b in one_of)
+            # The strict rewrite turns oneOf into anyOf.
+            if matches == 0 or (matches > 1 and not self.strict_output):
+                return False
+        if isinstance(all_of, list) and not all(accepts(b) for b in all_of):
+            return False
+        if "not" in node and accepts(node["not"]):
+            return False
+        if "if" in node:
+            branch = "then" if accepts(node["if"]) else "else"
+            if branch in node and not accepts(node[branch]):
+                return False
         return True
-    path = set() if path is None else path
-    if id(schema) in path:
-        # A reference cycle never yields a null by itself.
-        return False
-    path.add(id(schema))
-    try:
-        return _keywords_accept_null(schema, root, path)
-    finally:
-        path.discard(id(schema))
-
-
-def _keywords_accept_null(
-    node: dict[str, t.Any], root: dict[str, t.Any], path: set[int]
-) -> bool:
-    def accepts(schema: t.Any) -> bool:
-        return _schema_accepts_null(schema, root, path)
-
-    node_type = node.get("type")
-    if isinstance(node_type, str) and node_type != "null":
-        return False
-    if isinstance(node_type, list) and "null" not in node_type:
-        return False
-    if isinstance(node.get("enum"), list) and None not in node["enum"]:
-        return False
-    if "const" in node and node["const"] is not None:
-        return False
-    if "$ref" in node:
-        ref = node["$ref"]
-        resolution = _try_resolve_pointer(root, ref) if isinstance(ref, str) else None
-        if resolution is None or not resolution.ok or not accepts(resolution.value):
-            return False
-    any_of, one_of, all_of = node.get("anyOf"), node.get("oneOf"), node.get("allOf")
-    if isinstance(any_of, list) and not any(accepts(b) for b in any_of):
-        return False
-    if isinstance(one_of, list) and sum(accepts(b) for b in one_of) != 1:
-        return False
-    if isinstance(all_of, list) and not all(accepts(b) for b in all_of):
-        return False
-    if "not" in node and accepts(node["not"]):
-        return False
-    if "if" in node:
-        branch = "then" if accepts(node["if"]) else "else"
-        if branch in node and not accepts(node[branch]):
-            return False
-    return True
 
 
 def _dedupe_required(value: t.Any, is_schema: bool = True, depth: int = 0) -> t.Any:
@@ -266,6 +313,8 @@ class _Walker:
         self.changes: list[StrictSchemaChange] = []
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
+        # Resolved references, re-checked against the rewritten schema.
+        self.references: list[tuple[str, str]] = []
 
     def record(self, path: str, reason: StrictSchemaChangeReason, detail: str) -> None:
         self.total_changes += 1
@@ -353,6 +402,8 @@ class _Walker:
             ).ok
             if not resolved:
                 self.reject(path, "$ref", f'unresolved $ref "{ref}"')
+            else:
+                self.references.append((path, ref))
             # The referenced definition is normalized where it is declared.
             return out
 
@@ -428,6 +479,11 @@ def to_strict_json_schema(schema: t.Any) -> StrictJsonSchemaResult:
     root: dict[str, t.Any] = schema if isinstance(schema, dict) else {}
     walker = _Walker(root)
     normalized = _dedupe_required(walker.walk(root, "schema", 0, ""))
+    if isinstance(normalized, dict):
+        # Wrapping a property in a null branch moves everything nested in it.
+        for path, ref in walker.references:
+            if not _try_resolve_pointer(normalized, ref).ok:
+                walker.reject(path, "$ref", f'$ref "{ref}" target moved by the rewrite')
     if not isinstance(normalized, dict) or not _is_object_type(normalized.get("type")):
         walker.reject("", "type", "root must be a non-nullable object")
     return StrictJsonSchemaResult(
@@ -454,7 +510,9 @@ def omit_null_tool_arguments(
     mutated.
     """
     root: dict[str, t.Any] = schema if isinstance(schema, dict) else {}
-    return t.cast(dict[str, t.Any], _omit_nulls(arguments, root, root, 0))
+    return t.cast(
+        dict[str, t.Any], _omit_nulls(arguments, root, root, 0, _NullCheck(root))
+    )
 
 
 def _select_branch_for(
@@ -486,7 +544,11 @@ def _select_branch_for(
 
 
 def _omit_nulls(
-    value: t.Any, schema: t.Any, root: dict[str, t.Any], depth: int
+    value: t.Any,
+    schema: t.Any,
+    root: dict[str, t.Any],
+    depth: int,
+    null_check: _NullCheck,
 ) -> t.Any:
     if depth > MAX_NODE_DEPTH:
         raise ValueError(
@@ -495,7 +557,7 @@ def _omit_nulls(
     node = _select_branch_for(schema, value, root) or {}
     if isinstance(value, list):
         items = node.get("items") if isinstance(node.get("items"), dict) else None
-        return [_omit_nulls(item, items, root, depth + 1) for item in value]
+        return [_omit_nulls(item, items, root, depth + 1, null_check) for item in value]
     if not isinstance(value, dict):
         return value
     declared = node.get("properties")
@@ -504,8 +566,8 @@ def _omit_nulls(
     for key, child in value.items():
         property_schema = properties.get(key)
         if child is None:
-            if property_schema is None or _schema_accepts_null(property_schema, root):
+            if property_schema is None or null_check.accepts(property_schema):
                 clone[key] = child
             continue
-        clone[key] = _omit_nulls(child, property_schema, root, depth + 1)
+        clone[key] = _omit_nulls(child, property_schema, root, depth + 1, null_check)
     return clone

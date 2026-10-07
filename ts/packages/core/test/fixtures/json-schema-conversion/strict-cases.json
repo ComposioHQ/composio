@@ -3347,6 +3347,123 @@
           }
         }
       ]
+    },
+    {
+      "id": "optional-ref-to-typeless-object-wrapped",
+      "description": "A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config"
+          }
+        },
+        "$defs": {
+          "Config": {
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["url"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Config"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Config": {
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": ["url"],
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {
+            "cfg": null
+          }
+        },
+        {
+          "input": {
+            "cfg": {
+              "url": "u"
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref-into-wrapped-property-unsupported",
+      "description": "Wrapping a property moves what is nested in it; a $ref into it would dangle.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": ["asc"],
+            "$defs": {
+              "Text": {
+                "type": "string"
+              }
+            }
+          },
+          "alias": {
+            "$ref": "#/properties/value/$defs/Text"
+          }
+        },
+        "required": ["alias"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.alias",
+            "keyword": "$ref"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
+        }
+      ]
     }
   ]
 }

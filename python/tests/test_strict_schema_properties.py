@@ -37,7 +37,11 @@ DEFINITIONS: dict[str, t.Any] = {
     "NullableDirection": {"enum": ["asc", None]},
     "Text": {"type": "string"},
     "NullableText": {"type": ["string", "null"]},
+    "Config": {"properties": {"url": {"type": "string"}}},
 }
+# The rewrite types this definition as an object, so the strict schema rejects
+# the non-object values the tool's schema lets through.
+TYPELESS_OBJECT_REF = "#/$defs/Config"
 # Compositions strict mode supports, and the ones only the tool's schema uses.
 STRICT_COMPOSITIONS = ("anyOf", "oneOf")
 ALL_COMPOSITIONS = (*STRICT_COMPOSITIONS, "allOf", "not", "if")
@@ -91,12 +95,15 @@ def tool_schema(property_schema: dict[str, t.Any]) -> dict[str, t.Any]:
     }
 
 
-def uses_one_of(node: t.Any) -> bool:
+def mentions(node: t.Any, keyword: str, value: t.Any = None) -> bool:
+    """Whether any node carries ``keyword`` (with ``value``, when given)."""
     if isinstance(node, list):
-        return any(uses_one_of(item) for item in node)
-    if isinstance(node, dict):
-        return "oneOf" in node or any(uses_one_of(child) for child in node.values())
-    return False
+        return any(mentions(item, keyword, value) for item in node)
+    if not isinstance(node, dict):
+        return False
+    if keyword in node and (value is None or node[keyword] == value):
+        return True
+    return any(mentions(child, keyword, value) for child in node.values())
 
 
 @settings(max_examples=500, deadline=None)
@@ -118,12 +125,13 @@ def test_null_stands_for_omission_without_changing_other_values(
     assert original.is_valid(sent)
     assert sent == ({"value": None} if original.is_valid({"value": None}) else {})
 
-    for sample in SAMPLES:
-        arguments = {"value": sample}
-        if original.is_valid(arguments):
-            assert strict.is_valid(arguments)
-        elif not uses_one_of(property_schema):
-            assert not strict.is_valid(arguments)
+    if not mentions(property_schema, "$ref", TYPELESS_OBJECT_REF):
+        for sample in SAMPLES:
+            arguments = {"value": sample}
+            if original.is_valid(arguments):
+                assert strict.is_valid(arguments)
+            elif not mentions(property_schema, "oneOf"):
+                assert not strict.is_valid(arguments)
 
     again = to_strict_json_schema(result.schema)
     assert again.schema == result.schema

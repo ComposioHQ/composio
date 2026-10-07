@@ -35,7 +35,11 @@ const DEFINITIONS: SchemaRecord = {
   NullableDirection: { enum: ['asc', null] },
   Text: { type: 'string' },
   NullableText: { type: ['string', 'null'] },
+  Config: { properties: { url: { type: 'string' } } },
 };
+// The rewrite types this definition as an object, so the strict schema rejects
+// the non-object values the tool's schema lets through.
+const TYPELESS_OBJECT_REF = '#/$defs/Config';
 // Compositions strict mode supports, and the ones only the tool's schema uses.
 const STRICT_COMPOSITIONS = ['anyOf', 'oneOf'] as const;
 const ALL_COMPOSITIONS = [...STRICT_COMPOSITIONS, 'allOf', 'not', 'if'] as const;
@@ -105,10 +109,13 @@ const toolSchema = (property: SchemaRecord): SchemaRecord => ({
   $defs: structuredClone(DEFINITIONS),
 });
 
-const usesOneOf = (node: unknown): boolean => {
-  if (Array.isArray(node)) return node.some(usesOneOf);
+/** Whether any node carries `keyword` (with `value`, when given). */
+const mentions = (node: unknown, keyword: string, value?: unknown): boolean => {
+  if (Array.isArray(node)) return node.some(item => mentions(item, keyword, value));
   if (typeof node !== 'object' || node === null) return false;
-  return 'oneOf' in node || Object.values(node).some(usesOneOf);
+  const record = node as SchemaRecord;
+  if (keyword in record && (value === undefined || record[keyword] === value)) return true;
+  return Object.values(record).some(child => mentions(child, keyword, value));
 };
 
 const ajv = new Ajv2020({ strict: false });
@@ -134,10 +141,12 @@ describe('strict-mode null semantics', () => {
         expect(original(sent)).toBe(true);
         expect(sent).toEqual(original({ value: null }) ? { value: null } : {});
 
-        for (const sample of SAMPLES) {
-          const args = { value: sample };
-          if (original(args)) expect(strict(args)).toBe(true);
-          else if (!usesOneOf(property)) expect(strict(args)).toBe(false);
+        if (!mentions(property, '$ref', TYPELESS_OBJECT_REF)) {
+          for (const sample of SAMPLES) {
+            const args = { value: sample };
+            if (original(args)) expect(strict(args)).toBe(true);
+            else if (!mentions(property, 'oneOf')) expect(strict(args)).toBe(false);
+          }
         }
 
         const again = toStrictJsonSchema(result.schema);

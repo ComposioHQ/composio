@@ -815,3 +815,97 @@ class TestNullAcceptance:
             "properties": {"value": {"allOf": [shared, shared]}},
         }
         assert omit_null_tool_arguments({"value": None}, schema) == {"value": None}
+
+    @staticmethod
+    def _diamond(levels, keyword, leaf):
+        """``a0`` is the leaf; every ``a(i)`` references ``a(i-1)`` twice."""
+        definitions = {"a0": leaf}
+        for i in range(1, levels + 1):
+            ref = {"$ref": f"#/$defs/a{i - 1}"}
+            definitions[f"a{i}"] = {keyword: [ref, ref]}
+        return {
+            "type": "object",
+            "properties": {"value": {"$ref": f"#/$defs/a{levels}"}},
+            "$defs": definitions,
+        }
+
+    def test_a_definition_shared_by_many_branches_is_evaluated_once(self):
+        rejecting = self._diamond(20, "anyOf", {"type": "string"})
+        strict = to_strict_json_schema(rejecting).schema
+        assert strict["properties"]["value"] == _wrapped({"$ref": "#/$defs/a20"})
+        assert omit_null_tool_arguments({"value": None}, rejecting) == {}
+
+        accepting = self._diamond(20, "allOf", NULL_BRANCH)
+        assert omit_null_tool_arguments({"value": None}, accepting) == {"value": None}
+
+    def test_stays_bounded_when_cycles_keep_answers_from_being_remembered(self):
+        # Every level also points back at the top, so no answer below it is final.
+        levels = 20
+        top = {"$ref": f"#/$defs/a{levels}"}
+        definitions = {"a0": {"type": "string"}}
+        for i in range(1, levels + 1):
+            ref = {"$ref": f"#/$defs/a{i - 1}"}
+            definitions[f"a{i}"] = {"anyOf": [ref, ref, top]}
+        schema = {"type": "object", "properties": {"value": top}, "$defs": definitions}
+        assert omit_null_tool_arguments({"value": None}, schema) == {}
+        strict = to_strict_json_schema(schema).schema
+        assert strict["properties"]["value"] == _wrapped(top)
+
+    def test_null_is_not_proven_through_a_reference_chain_past_the_depth_bound(self):
+        definitions = {"a0": NULL_BRANCH}
+        for i in range(1, 101):
+            definitions[f"a{i}"] = {"$ref": f"#/$defs/a{i - 1}"}
+
+        def schema(name):
+            return {
+                "type": "object",
+                "properties": {"value": {"$ref": f"#/$defs/{name}"}},
+                "$defs": definitions,
+            }
+
+        assert omit_null_tool_arguments({"value": None}, schema("a100")) == {}
+        assert omit_null_tool_arguments({"value": None}, schema("a10")) == {
+            "value": None
+        }
+
+    def test_ref_to_a_target_the_rewrite_types_as_an_object_gets_a_null_branch(self):
+        source = {
+            "type": "object",
+            "properties": {"node": {"$ref": "#/$defs/Node"}},
+            "$defs": {
+                "Node": {
+                    "properties": {
+                        "label": {"type": "string"},
+                        "child": {"$ref": "#/$defs/Node"},
+                    }
+                }
+            },
+        }
+        result = to_strict_json_schema(source)
+        node = result.schema["$defs"]["Node"]
+
+        assert result.unsupported == []
+        assert result.schema["properties"]["node"] == _wrapped({"$ref": "#/$defs/Node"})
+        assert node["type"] == "object"
+        assert node["properties"]["child"] == _wrapped({"$ref": "#/$defs/Node"})
+        # The tool's own schema accepts the null, so it is forwarded.
+        assert omit_null_tool_arguments({"node": None}, source) == {"node": None}
+
+    def test_ref_into_a_property_that_wrapping_moved_is_reported(self):
+        result = to_strict_json_schema(
+            {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "enum": ["asc"],
+                        "$defs": {"Text": {"type": "string"}},
+                    },
+                    "alias": {"$ref": "#/properties/value/$defs/Text"},
+                },
+                "required": ["alias"],
+            }
+        )
+        assert [(e.path, e.keyword) for e in result.unsupported] == [
+            ("properties.alias", "$ref")
+        ]

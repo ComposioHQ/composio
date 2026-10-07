@@ -491,8 +491,30 @@ const cases = [
       $defs: { Note: { type: ['string', 'null'] } },
     }),
   ],
+  [
+    'optional-ref-to-typeless-object-wrapped',
+    'A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.',
+    obj({ cfg: { $ref: '#/$defs/Config' } }, undefined, {
+      $defs: { Config: { properties: { url: { type: 'string' } }, required: ['url'] } },
+    }),
+  ],
+  [
+    'ref-into-wrapped-property-unsupported',
+    'Wrapping a property moves what is nested in it; a $ref into it would dangle.',
+    obj(
+      {
+        value: { type: 'string', enum: ['asc'], $defs: { Text: { type: 'string' } } },
+        alias: { $ref: '#/properties/value/$defs/Text' },
+      },
+      ['alias']
+    ),
+  ],
 ];
 const argumentCases = {
+  'optional-ref-to-typeless-object-wrapped': [
+    { input: { cfg: null }, output: { cfg: null } },
+    { input: { cfg: { url: 'u' } }, output: { cfg: { url: 'u' } } },
+  ],
   'optional-typed-enum-wrapped': [
     { input: { direction: null }, output: {} },
     { input: { direction: 'asc' }, output: { direction: 'asc' } },

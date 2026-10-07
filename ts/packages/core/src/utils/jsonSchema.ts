@@ -6,6 +6,9 @@ import { isPlainObject } from './modifiers/FileToolModifier.utils.neutral';
 
 const MAX_REF_CHAIN_DEPTH = 100;
 const MAX_NODE_DEPTH = 512;
+// Bounds on one null-acceptance check; past either, null is not proven accepted.
+const MAX_NULL_CHECK_DEPTH = 64;
+const MAX_NULL_CHECK_NODES = 10_000;
 const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as const;
 
 /** Keywords whose value is a single subschema. */
@@ -631,7 +634,7 @@ function widenToNullable(
   node: Record<string, unknown>,
   root: Record<string, unknown>
 ): Record<string, unknown> {
-  if (schemaAcceptsNull(node, root)) return node;
+  if (createNullCheck(root, true)(node)) return node;
   const constraints = NULL_CONSTRAINT_KEYWORDS.filter(key => key in node);
   if (constraints.length === 1 && constraints[0] === 'type') {
     const members = Array.isArray(node.type) ? node.type : [node.type];
@@ -664,54 +667,97 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
 }
 
 /**
- * Whether a schema accepts `null` as an instance: every keyword in
- * `NULL_CONSTRAINT_KEYWORDS` that is present must accept it. This is the
- * single definition of null acceptance; the strict rewrite and
- * `omitNullToolArguments` both decide with it.
+ * Creates the check for whether schemas of one document accept `null` as an
+ * instance: every keyword in `NULL_CONSTRAINT_KEYWORDS` that is present must
+ * accept it. This is the single definition of null acceptance; the strict
+ * rewrite and `omitNullToolArguments` both decide with it.
+ *
+ * `strictOutput` answers for the schema `toStrictJsonSchema` emits instead of
+ * the one it was given: the rewrite types every node that declares
+ * `properties` as an object, so such a node stops accepting null.
+ *
+ * Answers are remembered per node, so a definition shared by many branches is
+ * evaluated once. A reference cycle never yields a null by itself; an answer
+ * that leaned on an unfinished cycle is not remembered. Past the depth or node
+ * budget null counts as rejected, which costs at most a redundant null branch
+ * or a dropped null.
  */
-function schemaAcceptsNull(
-  schema: unknown,
+function createNullCheck(
   root: Record<string, unknown>,
-  path = new Set<object>()
-): boolean {
-  if (typeof schema === 'boolean') return schema;
-  if (!isPlainObject(schema)) return true;
-  // A reference cycle never yields a null by itself.
-  if (path.has(schema)) return false;
-  path.add(schema);
-  try {
-    return keywordsAcceptNull(schema, root, path);
-  } finally {
-    path.delete(schema);
-  }
-}
+  strictOutput = false
+): (schema: unknown) => boolean {
+  const known = new Map<object, boolean>();
+  // Nodes being evaluated, mapped to their depth on the current path.
+  const path = new Map<object, number>();
+  const NOTHING = MAX_NULL_CHECK_DEPTH + 1;
+  let budget = MAX_NULL_CHECK_NODES;
+  // Shallowest path depth a cut-off answer leaned on since it was reset.
+  let leanedOn = NOTHING;
 
-function keywordsAcceptNull(
-  node: Record<string, unknown>,
-  root: Record<string, unknown>,
-  path: Set<object>
-): boolean {
-  const accepts = (schema: unknown): boolean => schemaAcceptsNull(schema, root, path);
+  const accepts = (schema: unknown): boolean => {
+    if (typeof schema === 'boolean') return schema;
+    if (!isPlainObject(schema)) return true;
+    const remembered = known.get(schema);
+    if (remembered !== undefined) return remembered;
+    const onPath = path.get(schema);
+    if (onPath !== undefined) {
+      leanedOn = Math.min(leanedOn, onPath);
+      return false;
+    }
+    const depth = path.size;
+    if (depth >= MAX_NULL_CHECK_DEPTH || budget <= 0) {
+      leanedOn = -1;
+      return false;
+    }
+    budget -= 1;
 
-  if (typeof node.type === 'string' && node.type !== 'null') return false;
-  if (Array.isArray(node.type) && !node.type.includes('null')) return false;
-  if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
-  if ('const' in node && node.const !== null) return false;
-  if ('$ref' in node) {
-    const resolution =
-      typeof node.$ref === 'string' ? tryResolvePointer(root, node.$ref) : undefined;
-    if (resolution === undefined || resolution.kind === 'unresolved') return false;
-    if (!accepts(resolution.value)) return false;
-  }
-  if (Array.isArray(node.anyOf) && !node.anyOf.some(accepts)) return false;
-  if (Array.isArray(node.oneOf) && node.oneOf.filter(accepts).length !== 1) return false;
-  if (Array.isArray(node.allOf) && !node.allOf.every(accepts)) return false;
-  if ('not' in node && accepts(node.not)) return false;
-  if ('if' in node) {
-    const branch = accepts(node.if) ? 'then' : 'else';
-    if (branch in node && !accepts(node[branch])) return false;
-  }
-  return true;
+    const outer = leanedOn;
+    leanedOn = NOTHING;
+    path.set(schema, depth);
+    let result: boolean;
+    try {
+      result = keywordsAccept(schema);
+    } finally {
+      path.delete(schema);
+    }
+    if (leanedOn >= depth) {
+      // Every cycle met below closes on this node or deeper: final.
+      known.set(schema, result);
+      leanedOn = outer;
+    } else {
+      leanedOn = Math.min(outer, leanedOn);
+    }
+    return result;
+  };
+
+  const keywordsAccept = (node: Record<string, unknown>): boolean => {
+    if (typeof node.type === 'string' && node.type !== 'null') return false;
+    if (Array.isArray(node.type) && !node.type.includes('null')) return false;
+    if (strictOutput && !('type' in node) && isPlainObject(node.properties)) return false;
+    if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
+    if ('const' in node && node.const !== null) return false;
+    if ('$ref' in node) {
+      const resolution =
+        typeof node.$ref === 'string' ? tryResolvePointer(root, node.$ref) : undefined;
+      if (resolution === undefined || resolution.kind === 'unresolved') return false;
+      if (!accepts(resolution.value)) return false;
+    }
+    if (Array.isArray(node.anyOf) && !node.anyOf.some(accepts)) return false;
+    if (Array.isArray(node.oneOf)) {
+      const matches = node.oneOf.filter(accepts).length;
+      // The strict rewrite turns oneOf into anyOf.
+      if (matches === 0 || (matches > 1 && !strictOutput)) return false;
+    }
+    if (Array.isArray(node.allOf) && !node.allOf.every(accepts)) return false;
+    if ('not' in node && accepts(node.not)) return false;
+    if ('if' in node) {
+      const branch = accepts(node.if) ? 'then' : 'else';
+      if (branch in node && !accepts(node[branch])) return false;
+    }
+    return true;
+  };
+
+  return accepts;
 }
 
 /**
@@ -747,6 +793,8 @@ function keywordsAcceptNull(
 export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
   const changes: StrictSchemaChange[] = [];
   const unsupported: StrictSchemaIncompatibility[] = [];
+  // Resolved references, re-checked against the rewritten schema.
+  const references: { path: string; ref: string }[] = [];
   let totalChanges = 0;
   const recordChange = (change: StrictSchemaChange): void => {
     totalChanges += 1;
@@ -858,6 +906,8 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
           keyword: '$ref',
           detail: `unresolved $ref "${node.$ref}"`,
         });
+      } else {
+        references.push({ path, ref: node.$ref });
       }
       // The referenced definition is normalized where it is declared.
       return out;
@@ -927,6 +977,18 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
   }
 
   const normalized = walk(root, 'schema', 0, '');
+  if (isPlainObject(normalized)) {
+    // Wrapping a property in a null branch moves everything nested in it.
+    for (const { path, ref } of references) {
+      if (tryResolvePointer(normalized, ref).kind === 'unresolved') {
+        unsupported.push({
+          path,
+          keyword: '$ref',
+          detail: `$ref "${ref}" target moved by the rewrite`,
+        });
+      }
+    }
+  }
   if (!isPlainObject(normalized) || !isObjectType(normalized.type)) {
     unsupported.push({
       path: '',
@@ -965,7 +1027,7 @@ export function omitNullToolArguments(
   schema: unknown
 ): Record<string, unknown> {
   const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
-  return omitNulls(args, root, root, 0) as Record<string, unknown>;
+  return omitNulls(args, root, root, 0, createNullCheck(root)) as Record<string, unknown>;
 }
 
 /**
@@ -1002,7 +1064,8 @@ function omitNulls(
   value: unknown,
   schema: unknown,
   root: Record<string, unknown>,
-  depth: number
+  depth: number,
+  acceptsNull: (schema: unknown) => boolean
 ): unknown {
   if (depth > MAX_NODE_DEPTH) {
     throw new RangeError(`Tool arguments exceed maximum nesting depth of ${MAX_NODE_DEPTH}`);
@@ -1010,7 +1073,7 @@ function omitNulls(
   const node = selectBranchFor(schema, value, root);
   if (Array.isArray(value)) {
     const items = node && isPlainObject(node.items) ? node.items : undefined;
-    return value.map(item => omitNulls(item, items, root, depth + 1));
+    return value.map(item => omitNulls(item, items, root, depth + 1, acceptsNull));
   }
   if (!isPlainObject(value)) return value;
 
@@ -1021,12 +1084,12 @@ function omitNulls(
       ? properties[key]
       : undefined;
     if (child === null) {
-      if (propertySchema === undefined || schemaAcceptsNull(propertySchema, root)) {
+      if (propertySchema === undefined || acceptsNull(propertySchema)) {
         setOwn(clone, key, child);
       }
       continue;
     }
-    setOwn(clone, key, omitNulls(child, propertySchema, root, depth + 1));
+    setOwn(clone, key, omitNulls(child, propertySchema, root, depth + 1, acceptsNull));
   }
   return clone;
 }
