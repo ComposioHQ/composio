@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { instantSchema } from './instant';
 import type { ParameterSchema, Tool, Trigger } from '@/types/toolkit';
 
 // Zod schemas for the untyped tool/trigger payloads the Composio API returns.
@@ -122,6 +123,7 @@ export function processSchema(schema: unknown): Record<string, ParameterSchema> 
 // --- Tools ------------------------------------------------------------------
 
 const rawApiToolSchema = z.object({
+  instant: instantSchema,
   slug: lenientString,
   name: optionalString,
   display_name: optionalString,
@@ -147,6 +149,7 @@ function toolFromRaw(raw: RawApiTool): Tool {
     scopes: raw.scopes.length > 0 ? raw.scopes : undefined,
     tags: raw.tags.length > 0 ? raw.tags : undefined,
     is_deprecated: raw.is_deprecated,
+    ...(raw.instant ? { instant: raw.instant } : {}),
   };
 }
 

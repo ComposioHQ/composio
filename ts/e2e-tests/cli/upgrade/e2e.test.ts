@@ -14,6 +14,8 @@ import { beforeAll, describe, expect, it } from 'bun:test';
 // RUN_COMPANION_MODULE_FILENAMES
 const liveCompanionFileNames = ['run-helpers-runtime.mjs', 'generation-runtime.mjs'] as const;
 
+const runOutputMarker = 'composio-upgrade-run-companions-loaded';
+
 // RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS
 const legacyPlaceholderRelativePaths = [
   'run-subagent-shared.mjs',
@@ -68,12 +70,16 @@ fi
 
 version_output=$("$executable_path" version)
 version_status=$?
-printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\n' \
-  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output"
+run_output=$("$executable_path" run 'console.log(z.string().parse("${runOutputMarker}"))')
+run_status=$?
+printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\nrun_status=%s\nrun_output=%s\n' \
+  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output" "$run_status" "$run_output"
 
 if [ "$upgrade_status" -eq 0 ] &&
   [ "$executable_status" -eq 0 ] &&
   [ "$version_status" -eq 0 ] &&
+  [ "$run_status" -eq 0 ] &&
+  [ "$run_output" = "${runOutputMarker}" ] &&
   [ -n "$before_inode" ] &&
   [ -n "$after_inode" ] &&
   [ "$before_inode" != "$after_inode" ]; then
@@ -95,6 +101,8 @@ const expectAtomicUpgrade = (result: E2ETestResult) => {
   expect(outputField(result, 'executable_status')).toBe('0');
   expect(outputField(result, 'version_status')).toBe('0');
   expect(outputField(result, 'version')).toMatch(/\d+\.\d+\.\d+/);
+  expect(outputField(result, 'run_status')).toBe('0');
+  expect(outputField(result, 'run_output')).toBe(runOutputMarker);
   expect(outputField(result, 'after_inode')).not.toBe(outputField(result, 'before_inode'));
 };
 

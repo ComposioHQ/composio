@@ -7,12 +7,13 @@ import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/unstable/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, Option, Result, ManagedRuntime, Predicate, Schema } from 'effect';
+import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
 import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 
 // One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
@@ -51,13 +52,34 @@ type RunCliResult = unknown;
 type HelperDebugLog = (step: string, details?: Record<string, unknown>) => void;
 
 const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
-const ProxyExecuteResponse = Schema.Struct({
+const ProxyExecuteCompletedResponse = Schema.Struct({
+  // Absent when an older server answers; any other value fails the decode
+  // instead of being read as a completed call.
+  result_type: Schema.optional(Schema.Literal('completed')),
   headers: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   binary_data: Schema.optional(Schema.Struct({ url: Schema.optional(Schema.String) })),
   data: Schema.optional(Schema.Unknown),
   status: Schema.optional(Schema.Number),
 });
-type ProxyExecuteResponse = Schema.Schema.Type<typeof ProxyExecuteResponse>;
+type ProxyExecuteCompletedResponse = Schema.Schema.Type<typeof ProxyExecuteCompletedResponse>;
+const ProxyExecuteInputRequiredResponse = Schema.Struct({
+  result_type: Schema.Literal('input_required'),
+  input_requests: Schema.Record(
+    Schema.String,
+    Schema.Struct({
+      type: Schema.Literal('elicitation'),
+      mode: Schema.Literal('form'),
+      message: Schema.String,
+      requested_schema: Schema.Record(Schema.String, Schema.Unknown),
+    })
+  ),
+  request_state: Schema.optional(Schema.String),
+});
+const ProxyExecuteResponse = Schema.Union([
+  ProxyExecuteInputRequiredResponse,
+  ProxyExecuteCompletedResponse,
+]);
+const isProxyInputRequired = Schema.is(ProxyExecuteInputRequiredResponse);
 
 const proxySchema = {
   type: 'function',
@@ -90,7 +112,7 @@ const proxySchema = {
 };
 
 const REMOVED_SUB_AGENT_MESSAGE =
-  'experimental_subAgent() was removed from composio run. To keep using it, install an older CLI version with the installer: curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=<version> sh';
+  'experimental_subAgent() was removed from composio run because its agent transport automatically approved permission requests. Print the tool results and let the calling agent summarize them instead.';
 
 // Rejects instead of throwing synchronously: the removed helper always returned a
 // promise, so scripts that handle its failure with `.catch` or `Promise.allSettled`
@@ -111,20 +133,16 @@ const encodeBase64 = (bytes: Uint8Array): string => {
 // Pure helpers — no run-context captures, hoisted to module scope
 // ---------------------------------------------------------------------------
 
-/**
- * Sync JSON probe for the non-Effect child-process runtime; `Option` is pure
- * data from the already-bundled `effect` package, so it is safe there.
- */
-const parseJsonOption = (text: string): Option.Option<unknown> =>
-  Option.liftThrowable((s: string): unknown => JSON.parse(s))(text);
-
 export const parseJson = (text: string): unknown => {
   const value = text.trim();
   if (!value) {
     return undefined;
   }
   // Non-JSON output is returned verbatim by design.
-  return Option.getOrElse(parseJsonOption(value), (): unknown => value);
+  return Result.getOrElse(
+    Result.try((): unknown => JSON.parse(value)),
+    () => value
+  );
 };
 
 const executeId = () => crypto.randomUUID().slice(0, 8);
@@ -287,7 +305,7 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
   };
 };
 
-const toProxyResponse = async (result: ProxyExecuteResponse) => {
+const toProxyResponse = async (result: ProxyExecuteCompletedResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
     const binaryResponse = await ssrfSafeFetch(
@@ -748,6 +766,16 @@ const createProxyHelper = (params: {
             : {}),
         })
       );
+      // An approval request is not a response from the proxied API: converting
+      // it would hand the script an empty 200 for a call that never ran.
+      if (isProxyInputRequired(result)) {
+        // The error is thrown into the user's script, where it is likely to be
+        // logged whole. `request_state` is continuation state the CLI cannot
+        // use yet, so it is left off the error.
+        throw toolInputRequiredError(`${request.method} proxy call via "${normalizedToolkit}"`, {
+          input_requests: result.input_requests,
+        });
+      }
       return toProxyResponse(result);
     };
     Object.defineProperty(proxyFetch, 'toolkit', { value: normalizedToolkit });

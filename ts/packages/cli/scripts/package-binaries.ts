@@ -72,6 +72,8 @@ export function packageBinaries() {
       const nestedDir = path.join(tempDir, binary);
 
       yield* Effect.tryPromise(async () => {
+        await $`rm -f ${zipPath}`.quiet();
+        await $`rm -rf ${tempDir}`.quiet();
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
         for (const { relativePath, kind } of companionEntries) {

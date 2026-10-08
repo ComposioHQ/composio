@@ -307,8 +307,14 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    for (const flag of ['--acp-only', '--acp-only=false', '--no-acp-only']) {
-      it.effect(`[Given] the removed ${flag} [Then] run rejects it as an unknown flag`, () =>
+    for (const flag of [
+      '--acp-only',
+      '--acp-only=false',
+      '--no-acp-only',
+      '--foo_bar',
+      '--foo_bar=value',
+    ]) {
+      it.effect(`[Given] the unknown ${flag} [Then] run rejects it as an unknown flag`, () =>
         Effect.gen(function* () {
           const exit = yield* cli(['run', flag, 'console.log(1)']).pipe(Effect.exit);
 

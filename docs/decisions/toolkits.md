@@ -21,6 +21,13 @@
 - Landing page shows search + category filter + cards
 - Don't render all 855 cards upfront
 - Filter client-side from pre-generated JSON
+- The Instant Tools card toggles an eligibility filter and intersects with search.
+  The guide remains a separate link. Instant eligibility is refreshed through the
+  server-only `/api/toolkits/instant` route from the paginated production catalog,
+  cached for five minutes and merged only into existing snapshot rows. Missing
+  eligibility or failed requests show a retry state, not a false empty catalog.
+  The API key stays on the server. Neutral Nucleo outline bolts match the
+  dashboard; a filled bolt denotes the selected filter, not project access.
 
 ### Build-Time Generation
 - `bun run generate:toolkits` - separate command

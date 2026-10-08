@@ -23,7 +23,10 @@ import {
   findCustomTool,
   executeCustomTool,
 } from './customToolExecution';
-import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
+import {
+  assertNotInputRequired,
+  transformExecuteResponse,
+} from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { withCancellation } from '../utils/cancellation';
@@ -85,6 +88,7 @@ export class SessionContextImpl implements SessionContext {
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       });
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -109,7 +113,9 @@ export class SessionContextImpl implements SessionContext {
         ),
       requestOptions?.signal
     );
-    return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
+    return ToolRouterSessionExecuteResponseSchema.parse(
+      transformExecuteResponse(response, toolSlug)
+    );
   }
 
   /**
@@ -138,6 +144,10 @@ export class SessionContextImpl implements SessionContext {
       requestOptions?.signal
     );
 
+    assertNotInputRequired(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
     return {
       status: response.status,
       data: response.data,

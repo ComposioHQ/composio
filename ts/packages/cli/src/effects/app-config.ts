@@ -1,4 +1,4 @@
-import { Config, Effect, LogLevel, Option, Schema } from 'effect';
+import { Config, LogLevel, Option, Schema } from 'effect';
 import * as constants from 'src/constants';
 
 type APP_CONFIG = Config.Wrap<{

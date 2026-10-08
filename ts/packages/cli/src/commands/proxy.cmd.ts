@@ -22,6 +22,7 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Argument.String('url').pipe(
@@ -119,7 +120,10 @@ export const parseProxyBody = (raw: string): unknown =>
   Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
-  result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
+  result: Pick<
+    Extract<SessionProxyExecuteResponse, { result_type: 'completed' }>,
+    'status' | 'data' | 'headers' | 'binary_data'
+  >
 ) => {
   if (result.binary_data) {
     return JSON.stringify(
@@ -352,8 +356,8 @@ export const proxyCmd = Command.make('proxy', {
           });
 
           return yield* Effect.tryPromise({
-            try: () =>
-              client.toolRouter.session.proxyExecute(
+            try: async () => {
+              const response = await client.toolRouter.session.proxyExecute(
                 sessionId,
                 {
                   toolkit_slug: normalizedToolkit,
@@ -365,7 +369,13 @@ export const proxyCmd = Command.make('proxy', {
                 // Never retry a proxied call: a retry after the upstream API
                 // already acted duplicates the side effect.
                 { maxRetries: 0 }
-              ),
+              );
+              assertNotInputRequired(
+                `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                response
+              );
+              return response;
+            },
             catch: cause =>
               new ProxyRequestError({
                 message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,

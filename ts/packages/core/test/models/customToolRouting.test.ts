@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, assert } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { createCustomTool, buildCustomToolsMap } from '../../src/models/CustomTool';
+import { ComposioToolInputRequiredError } from '../../src/errors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import ComposioClient from '@composio/client';
 import type { CustomTool, SessionContext } from '../../src/types/customTool.types';
@@ -110,6 +111,7 @@ const createMockClient = () => ({
         headers: { 'x-test': '1' },
       }),
       execute: vi.fn().mockResolvedValue({
+        result_type: 'completed',
         data: { remote_result: true },
         error: null,
         log_id: 'log_remote',
@@ -323,6 +325,7 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.data).toEqual({ local_result: true });
       expect(result.logId).toBe('');
+      expect(result.resultType).toBe('completed');
       expect(localExecute).toHaveBeenCalledWith(
         { category: 'prefs' },
         expect.objectContaining({ userId: 'user_1' })
@@ -509,6 +512,24 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.error).toBe('boom');
       expect(result.data).toEqual({});
+      expect(result.resultType).toBe('failed');
+    });
+
+    it('should mark a local tool that throws an empty message as failed', async () => {
+      const throwingTool = createCustomTool('SILENT_THROW', {
+        name: 'Silent throw',
+        description: 'Throws an error with no message',
+        inputParams: z.object({}),
+        execute: async () => {
+          throw new Error('');
+        },
+      });
+
+      const session = createSession(mockClient, [throwingTool]);
+      const result = await session.execute('SILENT_THROW', {});
+
+      expect(result.error).toBe('');
+      expect(result.resultType).toBe('failed');
     });
 
     it('should apply Zod defaults when input is missing optional fields', async () => {
@@ -821,6 +842,40 @@ describe('ToolRouterSession execution routing', () => {
       });
     });
 
+    it('should rethrow an input request from the remote half of a mixed batch', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      // What `executeSessionTool` throws when the API answers `input_required`.
+      const inputRequired = new ComposioToolInputRequiredError('Tool COMPOSIO_MULTI_EXECUTE_TOOL', {
+        inputRequests: {
+          approval_1: {
+            type: 'elicitation',
+            mode: 'form',
+            message: 'Allow GMAIL_SEND_EMAIL to send this email?',
+            requestedSchema: { type: 'object' },
+          },
+        },
+        requestState: 'opaque-state-token',
+      });
+      toolsInstance.executeSessionTool.mockRejectedValueOnce(inputRequired);
+
+      const error = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'approval' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      }).catch((caught: unknown) => caught);
+
+      // The caller gets the questions and the state, not per-tool failure strings.
+      expect(error).toBe(inputRequired);
+      assert(error instanceof ComposioToolInputRequiredError);
+      expect(Object.keys(error.inputRequests)).toEqual(['approval_1']);
+      expect(error.requestState).toBe('opaque-state-token');
+      // The local tool had already run; its result is discarded by the throw.
+      expect(localExecute).toHaveBeenCalledTimes(1);
+    });
+
     it('should recompute remote counters when local results are merged', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
@@ -936,6 +991,27 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.successful).toBe(false);
       expect(result.error).toBe('Remote batch failed before per-tool results were produced');
+    });
+
+    it('should report a failed remote batch that carries no error text as unsuccessful', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      toolsInstance.executeSessionTool.mockResolvedValueOnce({
+        data: {},
+        error: null,
+        successful: false,
+      });
+
+      const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'x' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      });
+
+      expect(result.successful).toBe(false);
+      expect(result.error).toBeNull();
     });
 
     it('should forward to backend when tools array is empty', async () => {

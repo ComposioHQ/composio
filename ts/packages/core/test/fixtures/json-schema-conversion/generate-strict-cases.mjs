@@ -452,8 +452,83 @@ const cases = [
       $defs: { Alias: { $ref: '#/$defs/Real' }, Real: obj({ x: { type: 'string' } }, ['x']) },
     }),
   ],
+  [
+    'optional-typed-enum-wrapped',
+    'A typed enum is wrapped whole: adding null to its type would leave the enum rejecting it.',
+    obj({ direction: { type: 'string', enum: ['asc', 'desc'], description: 'sort order' } }),
+  ],
+  [
+    'optional-nullable-typed-enum-wrapped',
+    'A null in `type` does not make an enum without null nullable.',
+    obj({ direction: { type: ['string', 'null'], enum: ['asc', 'desc'] } }),
+  ],
+  [
+    'optional-typed-const-wrapped',
+    'A typed const is wrapped whole, like a typed enum.',
+    obj({ mode: { type: 'string', const: 'asc' } }),
+  ],
+  [
+    'optional-typed-enum-with-null-unchanged',
+    'A typed enum that lists null under a nullable type already accepts null.',
+    obj({ direction: { type: ['string', 'null'], enum: ['asc', null] } }),
+  ],
+  [
+    'optional-any-of-with-sibling-enum-wrapped',
+    'A null branch in anyOf does not lift a sibling enum, so the node is wrapped.',
+    obj({ direction: { enum: ['asc', 'desc'], anyOf: [{ type: 'string' }, { type: 'null' }] } }),
+  ],
+  [
+    'optional-ref-with-sibling-type-wrapped',
+    'Keywords beside a $ref apply together with its target.',
+    obj({ direction: { $ref: '#/$defs/Direction', type: 'string' } }, undefined, {
+      $defs: { Direction: { enum: ['asc', null] } },
+    }),
+  ],
+  [
+    'optional-ref-to-nullable-definition-unchanged',
+    'A $ref whose target accepts null needs no extra null branch.',
+    obj({ note: { $ref: '#/$defs/Note' } }, undefined, {
+      $defs: { Note: { type: ['string', 'null'] } },
+    }),
+  ],
+  [
+    'optional-ref-to-typeless-object-wrapped',
+    'A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.',
+    obj({ cfg: { $ref: '#/$defs/Config' } }, undefined, {
+      $defs: { Config: { properties: { url: { type: 'string' } }, required: ['url'] } },
+    }),
+  ],
+  [
+    'ref-into-wrapped-property-unsupported',
+    'Wrapping a property moves what is nested in it; a $ref into it would dangle.',
+    obj(
+      {
+        value: { type: 'string', enum: ['asc'], $defs: { Text: { type: 'string' } } },
+        alias: { $ref: '#/properties/value/$defs/Text' },
+      },
+      ['alias']
+    ),
+  ],
 ];
 const argumentCases = {
+  'optional-ref-to-typeless-object-wrapped': [
+    { input: { cfg: null }, output: { cfg: null } },
+    { input: { cfg: { url: 'u' } }, output: { cfg: { url: 'u' } } },
+  ],
+  'optional-typed-enum-wrapped': [
+    { input: { direction: null }, output: {} },
+    { input: { direction: 'asc' }, output: { direction: 'asc' } },
+  ],
+  'optional-nullable-typed-enum-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-typed-const-wrapped': [{ input: { mode: null }, output: {} }],
+  'optional-typed-enum-with-null-unchanged': [
+    { input: { direction: null }, output: { direction: null } },
+  ],
+  'optional-any-of-with-sibling-enum-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-ref-with-sibling-type-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-ref-to-nullable-definition-unchanged': [
+    { input: { note: null }, output: { note: null } },
+  ],
   'nested-optional-property-widened': [
     { input: { cfg: { url: 'u', note: null } }, output: { cfg: { url: 'u' } } },
   ],

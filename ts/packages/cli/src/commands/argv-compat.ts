@@ -23,7 +23,7 @@ export const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): Readonly
 };
 
 // A token shaped like a lone option (`--name`, `--name=value`, `-n`), as opposed to source code.
-const FLAG_SHAPED_TOKEN = /^--?[A-Za-z][A-Za-z0-9-]*(=|$)/;
+const FLAG_SHAPED_TOKEN = /^--?[A-Za-z][A-Za-z0-9_-]*(=|$)/;
 
 // Preserve the legacy undelimited script syntax by inserting Effect's native `--`
 // before the script tail. The framework then parses every operand itself.

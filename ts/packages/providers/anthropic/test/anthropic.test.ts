@@ -217,11 +217,13 @@ describe('AnthropicProvider', () => {
             data: { result: 'success' },
             error: null,
             logId: 'log-success',
+            resultType: 'completed',
           })
           .mockResolvedValueOnce({
             data: {},
             error: 'Tool execution failed',
             logId: 'log-failure',
+            resultType: 'failed',
           }),
       };
 

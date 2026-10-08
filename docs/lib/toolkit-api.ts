@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { instantSchema } from './instant';
 import { isPublicToolkitSlug, normalizeToolkitSlug } from '@/lib/public-toolkit-policy';
 import { PRODUCTION_API_V3_URL } from '@/scripts/production-api.mjs';
 import type { AuthConfigDetail, AuthConfigField, Toolkit } from '@/types/toolkit';
@@ -72,6 +73,7 @@ const categorySchema = z.union([
 
 const rawToolkitSchema = z
   .object({
+    instant: instantSchema,
     slug: z.string().catch(''),
     name: optionalString,
     type: z.enum(['native', 'custom']).optional().catch(undefined),
@@ -187,6 +189,7 @@ function toolkitFromRaw(raw: RawToolkit, slug: string): Toolkit {
   return {
     slug,
     name: raw.name || raw.slug || slug,
+    ...(raw.instant ? { instant: raw.instant } : {}),
     logo: raw.meta.logo || null,
     description: raw.meta.description,
     category: category.success && category.data ? category.data : null,
