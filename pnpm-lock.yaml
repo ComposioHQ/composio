@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20260922.1
       version: 5.20260925.1
     '@composio/client':
-      specifier: 2.0.0-rc.10
-      version: 2.0.0-rc.10
+      specifier: 2.0.0-rc.11
+      version: 2.0.0-rc.11
     '@effect/language-service':
       specifier: ^0.87.2
       version: 0.87.2
@@ -975,7 +975,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.10
+        version: 2.0.0-rc.11
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1226,7 +1226,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.10
+        version: 2.0.0-rc.11
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1344,7 +1344,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.10
+        version: 2.0.0-rc.11
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1740,7 +1740,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.10
+        version: 2.0.0-rc.11
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2245,6 +2245,7 @@ packages:
 
   '@cloudflare/vitest-pool-workers@0.22.0':
     resolution: {integrity: sha512-OJv/qikkOgxnKxJ5xrLS7zuOLZhc/6iziU+llqZm4tiQf2CJUYwlMuXN68VaWIQebORd1AUx4w6A0oy8XRbuaQ==}
+    deprecated: '@cloudflare/vitest-pool-workers has been renamed to @cloudflare/vitest-plugin. This package will not receive future updates.'
     peerDependencies:
       '@vitest/runner': ^4.1.0
       '@vitest/snapshot': ^4.1.0
@@ -2317,8 +2318,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.10':
-    resolution: {integrity: sha512-HqQ+Cx2tHO759T0nB5xyAhCNLljAi83fPylO1sFO/hyco/LRfkDr24rF4lp6s30PKucRTFpGitL4W56RJMNfyQ==}
+  '@composio/client@2.0.0-rc.11':
+    resolution: {integrity: sha512-jACnskE/mH0dETIBY5C8wpbeszlr1UdPH+y5bCB+CYome2zPVXi41V5bEF+vCDOowOTXhT37y3uyWsezB8gkkw==}
     engines: {node: '>=22'}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -7464,7 +7465,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.10': {}
+  '@composio/client@2.0.0-rc.11': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

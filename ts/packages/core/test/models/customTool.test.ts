@@ -798,6 +798,7 @@ describe('SessionContextImpl', () => {
 
   it('should delegate execute() to client.toolRouter.session.execute()', async () => {
     mockClient.toolRouter.session.execute.mockResolvedValue({
+      result_type: 'completed',
       data: { result: 'ok' },
       error: null,
       log_id: 'log_1',
@@ -818,11 +819,13 @@ describe('SessionContextImpl', () => {
       data: { result: 'ok' },
       error: null,
       logId: 'log_1',
+      resultType: 'completed',
     });
   });
 
   it('should pass inline custom tools when delegating execute() to backend', async () => {
     mockClient.toolRouter.session.execute.mockResolvedValue({
+      result_type: 'completed',
       data: { result: 'ok' },
       error: null,
       log_id: 'log_1',
@@ -855,6 +858,7 @@ describe('SessionContextImpl', () => {
 
   it('should preserve logId and error when execute() returns an error', async () => {
     mockClient.toolRouter.session.execute.mockResolvedValue({
+      result_type: 'failed',
       data: {},
       error: 'something went wrong',
       log_id: 'log_2',
@@ -940,6 +944,7 @@ describe('SessionContextImpl', () => {
         }),
       ]);
       mockClient.toolRouter.session.execute.mockResolvedValue({
+        result_type: 'completed',
         data: { remote: true },
         error: null,
         log_id: 'log_3',
@@ -956,11 +961,17 @@ describe('SessionContextImpl', () => {
         },
         { maxRetries: 0 }
       );
-      expect(result).toEqual({ data: { remote: true }, error: null, logId: 'log_3' });
+      expect(result).toEqual({
+        data: { remote: true },
+        error: null,
+        logId: 'log_3',
+        resultType: 'completed',
+      });
     });
 
     it('should delegate to remote when no customToolsMap is provided', async () => {
       mockClient.toolRouter.session.execute.mockResolvedValue({
+        result_type: 'completed',
         data: { remote: true },
         error: null,
         log_id: 'log_4',

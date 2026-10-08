@@ -7,29 +7,20 @@ import type {
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
+import { ValidationError } from '../../errors/ValidationErrors';
 import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
 
-/**
- * The `result_type` values that describe a call that ran. A server that
- * predates `result_type` sends none, and a value this SDK does not know is
- * treated the same way, so both fall back to the error-based rule in
- * {@link isExecutionSuccessful}.
- */
-const ExecutedResultTypeSchema = z.enum(['completed', 'failed']).optional().catch(undefined);
+/** The `result_type` values of a call that ran. `input_required` is raised before this is read. */
+const ExecutedResponseSchema = z.object({ result_type: z.enum(['completed', 'failed']) });
 
 /**
- * Whether a session tool execution succeeded.
- *
- * `resultType` decides when the API sent one: a `failed` execution is not
- * successful even when its `error` is `null` or empty. Without it, for example
- * from a server that predates `result_type`, an execution is successful when
- * it carries no error text.
+ * Whether a session tool execution succeeded. `resultType` decides: a `failed`
+ * execution is not successful even when its `error` is `null` or empty.
  */
 export function isExecutionSuccessful(
-  result: Pick<ToolRouterSessionExecuteResponse, 'resultType' | 'error'>
+  result: Pick<ToolRouterSessionExecuteResponse, 'resultType'>
 ): boolean {
-  if (result.resultType !== undefined) return result.resultType === 'completed';
-  return !result.error;
+  return result.resultType === 'completed';
 }
 
 type InputRequiredResponse = Extract<
@@ -211,15 +202,22 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  *
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
+ * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
 export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
-  const resultType = ExecutedResultTypeSchema.parse(raw.result_type);
+  const executed = ExecutedResponseSchema.safeParse(raw);
+  if (!executed.success) {
+    throw new ValidationError(
+      `Tool ${toolSlug} returned an execute response without a known result_type`,
+      { cause: executed.error }
+    );
+  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
-    ...(resultType !== undefined && { resultType }),
+    resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
   };
 }

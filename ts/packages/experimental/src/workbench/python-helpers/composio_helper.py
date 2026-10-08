@@ -128,6 +128,22 @@ def _track_helper_event(*_args, **_kwargs):
     return None
 
 
+def _is_input_required(payload):
+    return isinstance(payload, dict) and payload.get("result_type") == "input_required"
+
+
+def _input_required_error(subject, payload):
+    # The message names the call and counts the questions. `request_state` is
+    # opaque continuation state, so it stays out of the message.
+    input_requests = payload.get("input_requests")
+    count = len(input_requests) if isinstance(input_requests, dict) else 0
+    return "%s requires user input before it can run (%d input request%s) and was not executed" % (
+        subject,
+        count,
+        "" if count == 1 else "s",
+    )
+
+
 def run_composio_tool(
     tool_slug,
     arguments=None,
@@ -186,10 +202,27 @@ def run_composio_tool(
             _retry_delay(attempt, delay_ms)
             continue
 
-        # A failed tool call returns HTTP 200 with a top-level "error" field;
-        # surface it as the error tuple element so callers don't read it as success.
-        if isinstance(response_data, dict) and response_data.get("error"):
-            return response_data, str(response_data["error"])
+        # The call needs the user's input (an approval, for example) and did not
+        # run. Hand back the questions, without `request_state`, as an error.
+        if _is_input_required(response_data):
+            return (
+                {
+                    "result_type": "input_required",
+                    "input_requests": response_data.get("input_requests") or {},
+                },
+                _input_required_error("Tool %s" % payload["tool_slug"], response_data),
+            )
+
+        # A failed tool call returns HTTP 200. `result_type` says it failed even
+        # when "error" is null or empty; a response without `result_type` is
+        # failed when it carries an "error". Surface either as the error tuple
+        # element so callers don't read it as success.
+        if isinstance(response_data, dict) and (
+            response_data.get("result_type") == "failed" or response_data.get("error")
+        ):
+            return response_data, str(
+                response_data.get("error") or "Composio tool execution failed without an error message"
+            )
 
         if print_schema_for_tool:
             print_json_structure(response_data)
@@ -377,6 +410,14 @@ def proxy_execute(
             return None, str(error_msg)
 
         response_data = json.loads(text)
+
+        # The call needs the user's input (an approval, for example) and was
+        # never proxied: it has no status or data to return.
+        if _is_input_required(response_data):
+            return None, _input_required_error(
+                "%s proxy call for toolkit %s" % (method.upper(), toolkit.lower()),
+                response_data,
+            )
 
         # The session wraps the proxied response as {data, status, headers}; the
         # toolkit's own API may still report a >=400 status inside that envelope.
