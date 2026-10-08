@@ -105,8 +105,7 @@ await session.update({ instant: false });
 Passing any `instant` object after `instant=false` re-enables Instant usage if the project allows it, even if you only set charge reporting. Keep `instant` as `false` when the Session must not spend. Omitting `instant` from an update preserves the existing policy.
 </Callout>
 
-<details>
-<summary>Allow or exclude specific toolkits and tools</summary>
+### Allow or exclude specific toolkits and tools
 
 Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
 
@@ -142,8 +141,6 @@ const session = await composio.create("user_123", {
 Use `disable` instead of `enable` to exclude the listed toolkits or tools. Each filter accepts one or the other, not both. Toolkit and tool filters intersect; they cannot enable anything excluded by the Session's top-level filters.
 
 Omitting `instant.toolkits` leaves other eligible toolkits permitted. A `tools.exa` rule alone does not restrict Instant to Exa.
-
-</details>
 
 ### Return the charge with a call
 
@@ -187,16 +184,13 @@ An explicitly selected account takes priority. A failed connected-account call d
 
 Instant uses shared provider accounts, so tools exposing account history or other customers' data are excluded. Arbitrary proxy requests are not supported. Connect your own account for private data or account-specific actions. Inputs still go to the provider; Instant does not imply [zero data retention](/docs/security/zero-data-retention).
 
-<details>
-<summary>Inspect or explicitly select an Instant account</summary>
+### Inspect or explicitly select an Instant account
 
 Session search returns `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript) for a toolkit served by an Instant account. Other tools in that toolkit need your own connection.
 
 To select Instant explicitly, pass `account="instant_account"` to Python `session.execute()`, or `{ account: "instant_account" }` as TypeScript execution options. On a single-account project, this must match an active connection for the toolkit in the Session. Project policy, Session policy, and tool eligibility still apply. A failed call does not fall back to another account.
 
 Composio-managed auth is different: Composio supplies the OAuth app credentials, but your user still connects their own account. It does not establish Instant support.
-
-</details>
 
 ## Balance, usage, and troubleshooting
 
