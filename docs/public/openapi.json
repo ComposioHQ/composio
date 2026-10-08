@@ -4387,7 +4387,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
@@ -5153,7 +5154,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
@@ -18946,7 +18948,8 @@
                         "type": "string"
                       },
                       "id_token": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "token_type": {
                         "type": "string"
@@ -29203,7 +29206,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
