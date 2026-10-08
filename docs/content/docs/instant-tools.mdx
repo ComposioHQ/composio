@@ -176,7 +176,7 @@ console.log(result.instantCharge);
 
 The charge includes `amount`, `currency`, and `charged_by`. The amount is an exact USD decimal string. TypeScript exposes `instantCharge` as `unknown`. Turning charge reporting off does not stop billing or remove charges from logs and usage records.
 
-## Account selection and privacy
+## Know which account runs the tool
 
 Composio uses your user's connection first, then an available shared connection, then an Instant account. Only calls through an Instant account incur an Instant charge. Your provider may separately bill calls made with your own account.
 
