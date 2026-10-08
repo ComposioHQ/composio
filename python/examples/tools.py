@@ -1,6 +1,13 @@
+import os
+
 from composio import Composio
 
 composio = Composio()
+
+# Connected account with GitHub access (raises KeyError when unset)
+github_connected_account_id = os.environ[
+    "COMPOSIO_EXAMPLES_GITHUB_CONNECTED_ACCOUNT_ID"
+]
 
 # Get all tools by toolkit
 tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
@@ -24,7 +31,7 @@ print(response)
 proxy_response = composio.tools.proxy(
     endpoint="/repos/composiohq/composio/issues/1",
     method="GET",
-    connected_account_id="ac_1234",  # use connected account for github
+    connected_account_id=github_connected_account_id,  # use connected account for github
     parameters=[
         {
             "name": "Accept",

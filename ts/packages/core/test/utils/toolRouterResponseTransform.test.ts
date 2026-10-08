@@ -131,17 +131,58 @@ describe('toolRouterResponseTransform', () => {
         tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
       });
     });
+
+    it('maps the Instant account allowlist only when the API sends one', () => {
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+          },
+          {
+            toolkit: 'gmail',
+            description: 'Gmail',
+            has_active_connection: false,
+            status_message: 'No connection',
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_1',
+          generate_id: false,
+          instructions: 'Use session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const [instantAccount, notInstantAccount] =
+        transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(instantAccount.instantAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(notInstantAccount).not.toHaveProperty('instantAccount');
+    });
   });
 
   describe('transformExecuteResponse', () => {
     it('should transform snake_case execute response to camelCase', () => {
       const raw = {
+        result_type: 'completed' as const,
         data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
         error: null,
         log_id: 'log_abc',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
@@ -150,15 +191,37 @@ describe('toolRouterResponseTransform', () => {
 
     it('should preserve error in execute response', () => {
       const raw = {
+        result_type: 'failed' as const,
         data: {},
         error: 'Connection not found',
         log_id: 'log_err',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
+    });
+
+    it('preserves the optional Instant charge without inventing one', () => {
+      expect(
+        transformExecuteResponse(
+          {
+            result_type: 'completed',
+            data: {},
+            error: null,
+            log_id: 'log_paid',
+            instant_charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
+          },
+          'EXA_SEARCH'
+        ).instantCharge
+      ).toEqual({ amount: '0.01', currency: 'USD', charged_by: 'composio' });
+      expect(
+        transformExecuteResponse(
+          { result_type: 'completed', data: {}, error: null, log_id: 'log_free' },
+          'EXA_SEARCH'
+        )
+      ).not.toHaveProperty('instantCharge');
     });
   });
 });

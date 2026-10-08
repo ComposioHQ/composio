@@ -1,4 +1,6 @@
-docs/ @shawnesquivel @Sushmithamallesh
+docs/ @shawnesquivel @Sushmithamallesh @olearycrew
 ts/packages/cli/ @CryogenicPlanet
 ts/ @jkomyno
 python/ @jkomyno
+/install.sh @CryogenicPlanet
+/install/ @CryogenicPlanet

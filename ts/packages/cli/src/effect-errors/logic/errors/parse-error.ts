@@ -1,10 +1,12 @@
+import type { Reason } from 'effect/Cause';
+
 import { PrettyError } from 'effect-errors/types';
 
 import { extractErrorDetails } from './extract-error-details';
-import { extractSpanAnnotation } from './span-annotation';
+import { extractSpanStackFrames } from './span-annotation';
 
-export const parseError = (error: unknown): PrettyError => {
-  const maybeSpan = extractSpanAnnotation(error);
+export const parseError = (error: unknown, reason: Reason<unknown>): PrettyError => {
+  const spans = extractSpanStackFrames(reason);
   const { message, type, isPlainString } = extractErrorDetails(error);
 
   if (error instanceof Error) {
@@ -14,11 +16,11 @@ export const parseError = (error: unknown): PrettyError => {
         ?.split('\n')
         .filter(el => /at (.*)/.exec(el))
         .join('\r\n'),
-      maybeSpan,
+      spans,
       false,
       type
     );
   }
 
-  return new PrettyError(message, undefined, maybeSpan, isPlainString, type);
+  return new PrettyError(message, undefined, spans, isPlainString, type);
 };

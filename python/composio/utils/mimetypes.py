@@ -160,7 +160,7 @@ _types = {
     ".jfif-bnl": "image/jpeg",
     ".jpe": "image/jpeg",
     ".jpeg": "image/jpeg",
-    ".jpg": "image/jpg",
+    ".jpg": "image/jpeg",
     ".jps": "image/x-jps",
     ".js": "application/javascript",
     ".json": "application/json",

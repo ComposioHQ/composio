@@ -81,3 +81,29 @@ For staging deployments, set:
 ```bash
 OPENAPI_SPEC_URL=https://staging.composio.dev/api/v3/openapi.json
 ```
+
+## verify-kb.ts
+
+Checks published KB guides against the production data this repo already
+refreshes. Runs inside `docs-update-data.yml` right after the catalog and
+OpenAPI specs are regenerated, so freshness is verified on every production
+deploy instead of on a review calendar.
+
+```bash
+bun run verify:kb                    # catalog checks only, no network
+bun run verify:kb --check-links      # also probe provider doc links
+bun run verify:kb --json             # machine-readable report
+bun run verify:kb --markdown out.md  # write the report to a file
+```
+
+Exits non-zero when any finding is an error. `--warnings-as-errors` promotes
+warnings too. See `docs/decisions/kb-freshness-verification.md` for what is
+checked and why placeholders, bare URLs, and 5xx responses are excluded.
+
+A guide that deliberately cites a removed identifier declares it in
+`verifyIgnoreToolSlugs` in `kb/manifest.json`.
+
+`--check-source-pin` resolves `manifest.source.commit` against the upstream KB
+repository. It needs `GH_TOKEN`/`GITHUB_TOKEN` with read access there; without
+it the check reports "unverifiable" and emits nothing, so a narrow token
+degrades quietly instead of reporting false provenance breakage.

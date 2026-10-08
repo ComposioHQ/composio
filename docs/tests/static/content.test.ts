@@ -5,9 +5,11 @@
  * and changelog entries use valid date formats.
  */
 import { describe, test, expect } from "bun:test";
+import { compile } from "@mdx-js/mdx";
 import { readdir, readFile, stat } from "fs/promises";
 import { join, relative } from "path";
 
+const CONTENT_DIR = join(import.meta.dir, "../../content");
 const DOCS_DIR = join(import.meta.dir, "../../content/docs");
 const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
@@ -101,6 +103,51 @@ describe("Content - no empty pages", () => {
   });
 });
 
+/** A node in the tree MDX renders: markdown elements and JSX elements. */
+type RenderedNode = {
+  type: string;
+  tagName?: string;
+  name?: string | null;
+  children?: RenderedNode[];
+  position?: { start: { line: number } };
+};
+
+function isParagraph(node: RenderedNode): boolean {
+  if (node.type === "element") return node.tagName === "p";
+  return (
+    (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") && node.name === "p"
+  );
+}
+
+describe("Content - valid HTML nesting", () => {
+  test("no page renders a <p> inside a <p>", async () => {
+    // MDX wraps the lines inside a block-level <p> in a markdown paragraph,
+    // rendering <p><p>…</p></p>. Browsers split that apart, so React hydration
+    // fails and the page re-renders on the client. Checking the compiled tree
+    // skips code examples and catches tags that span several lines.
+    const files = await findMdxFiles(CONTENT_DIR);
+    const nested: string[] = [];
+
+    for (const file of files) {
+      // Blank out frontmatter so reported line numbers match the file.
+      const source = (await readFile(file, "utf-8")).replace(/^---\n[\s\S]*?\n---\n/, fm =>
+        fm.replace(/[^\n]/g, ""),
+      );
+      const visit = (node: RenderedNode, insideParagraph: boolean) => {
+        if (insideParagraph && isParagraph(node)) {
+          nested.push(`${relative(CONTENT_DIR, file)}:${node.position?.start.line}`);
+        }
+        for (const child of node.children ?? []) {
+          visit(child, insideParagraph || isParagraph(node));
+        }
+      };
+      await compile(source, { rehypePlugins: [() => (tree: RenderedNode) => visit(tree, false)] });
+    }
+
+    expect(nested).toEqual([]);
+  }, 30_000);
+});
+
 describe("Content - provider compatibility", () => {
   test("Gemini Python docs use the google-genai-compatible provider", async () => {
     const content = await readFile(GOOGLE_PROVIDER_DOC, "utf-8");
@@ -111,6 +158,27 @@ describe("Content - provider compatibility", () => {
     expect(content).toContain("from composio_gemini import GeminiProvider");
     expect(content).toContain("Composio(provider=GeminiProvider())");
     expect(content).not.toContain("composio_google google-genai");
+  });
+});
+
+describe("Content - Context7 ingest rules", () => {
+  test("context7.json states the current REST version without claiming route parity", async () => {
+    // Context7 ingests this repo for coding agents. Without a rule, nothing in
+    // the ingested corpus says which REST version is current.
+    const raw = await readFile(join(import.meta.dir, "../../../context7.json"), "utf-8");
+    const rules: unknown = JSON.parse(raw).rules;
+
+    expect(Array.isArray(rules)).toBe(true);
+    expect((rules as unknown[]).length).toBeGreaterThan(0);
+    expect(
+      (rules as string[]).some(rule => rule.includes("https://backend.composio.dev/api/v3.1")),
+    ).toBe(true);
+    expect(
+      (rules as string[]).some(rule =>
+        rule.includes("This version-default change is limited to these five endpoints."),
+      ),
+    ).toBe(true);
+    expect((rules as string[]).join("\n")).not.toMatch(/every non-tool endpoint.*unchanged/i);
   });
 });
 

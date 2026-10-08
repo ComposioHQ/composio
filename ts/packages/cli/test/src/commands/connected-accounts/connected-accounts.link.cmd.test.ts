@@ -1,11 +1,14 @@
+import { APIError } from '@composio/client';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
-import { HelpDoc, ValidationError } from '@effect/cli';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { makeSessionInfo } from 'test/__utils__/models/account';
+import type { MockRequestScope } from 'test/__utils__/services/test-layer';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { ComposioUserContext } from 'src/services/user-context';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -52,9 +55,9 @@ const connectedAccountWithCredentialFields = {
   data: { refresh_token: 'must-not-leak' },
 };
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const RecordingTerminalUI = TerminalUI.of({
   capabilities: Effect.succeed(
@@ -102,6 +105,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       execute: {},
       search: {},
       preload: { tools: [] },
+      instant: false as const,
     },
     config_version: 1,
     mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -115,6 +119,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   }));
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -125,7 +130,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] valid toolkit link [Then] creates link and waits (default)', it => {
-    it.scoped('creates link and waits for ACTIVE', () =>
+    it.effect('creates link and waits for ACTIVE', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -147,7 +152,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] --no-browser [Then] waits for ACTIVE without opening the browser', it => {
-    it.scoped('prints the URL and waits without calling open', () =>
+    it.effect('prints the URL and waits without calling open', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -172,7 +177,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] --list [Then] it shows existing accounts without opening a new link', it => {
-    it.scoped('lists alias and word_id for existing accounts', () =>
+    it.effect('lists alias and word_id for existing accounts', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -195,7 +200,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )(
     '[Given] dev connected-accounts link --list without developer project context [Then] it still uses consumer resolution',
     it => {
-      it.scoped('lists connected accounts instead of requiring a developer project', () =>
+      it.effect('lists connected accounts instead of requiring a developer project', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -217,7 +222,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       terminalUI: RecordingTerminalUI,
     })
   )('[Given] --no-wait [Then] emits a forced JSON payload for merged-stream shells', it => {
-    it.scoped('forces the pending JSON payload through output()', () =>
+    it.effect('forces the pending JSON payload through output()', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -246,7 +251,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       terminalUI: RecordingTerminalUI,
     })
   )('[Given] --no-wait [Then] stdout remains JSON-only', it => {
-    it.scoped('does not emit the raw redirect URL before the pending JSON payload', () =>
+    it.effect('does not emit the raw redirect URL before the pending JSON payload', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -268,7 +273,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   });
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -285,14 +290,19 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] a blank --alias [Then] fails with a CLI validation error', it => {
-    it.scoped('reports the invalid option value before making a link request', () =>
+    // v4 migration note: `effect/unstable/cli`'s `CliError.InvalidValue` is a fixed
+    // flag/argument-name-and-value struct produced only by the parser; it can't carry a
+    // freeform message. This business-level validation (only knowable after parsing) is
+    // now a plain typed domain error (`LinkInputError`), matching the pattern documented in
+    // `connected-accounts.link.cmd.ts`.
+    it.effect('reports the invalid option value before making a link request', () =>
       Effect.gen(function* () {
         const error = yield* cli(['link', 'gmail', '--alias', '   ']).pipe(Effect.flip);
 
-        expect(ValidationError.isValidationError(error)).toBe(true);
-        if (!ValidationError.isValidationError(error)) return;
-        expect(ValidationError.isInvalidValue(error)).toBe(true);
-        expect(HelpDoc.toAnsiText(error.error)).toContain('`--alias` cannot be empty.');
+        expect(error).toMatchObject({
+          _tag: 'commands/LinkInputError',
+          message: '`--alias` cannot be empty.',
+        });
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
@@ -307,7 +317,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] raw credential fields [Then] --list emits only schema-approved fields', it => {
-    it.scoped('strips state and data at the response boundary', () =>
+    it.effect('strips state and data at the response boundary', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--list']);
 
@@ -331,7 +341,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] composio link [Then] works for consumer toolkit linking', it => {
-    it.scoped('root link works for consumer toolkit linking only', () =>
+    it.effect('root link works for consumer toolkit linking only', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -344,6 +354,58 @@ describe('CLI: composio dev connected-accounts link', () => {
     );
   });
 
+  const sessionInfoScopes: MockRequestScope[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+      toolRouter: {
+        link: async () => {
+          throw APIError.generate(
+            400,
+            {
+              error: {
+                message: 'No managed auth',
+                code: 400,
+                slug: 'ToolRouterV2_NoManagedAuth',
+                status: 400,
+              },
+            },
+            undefined,
+            new Headers()
+          );
+        },
+      },
+      accountData: {
+        sessionInfo: scope => {
+          sessionInfoScopes.push(scope);
+          return makeSessionInfo({
+            orgId: 'org_selected',
+            orgName: 'Selected Org',
+            orgMemberId: 'member_selected',
+            projectId: 'project_id_selected',
+            projectNanoId: 'project_selected',
+            projectName: 'Selected Project',
+          });
+        },
+      },
+    })
+  )('[Given] unmanaged auth after an org switch [Then] resolves the selected membership', it => {
+    it.effect('passes the active org to session info before linking analytics identity', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_selected', 'consumer-user-org_selected');
+
+        yield* cli(['link', 'gmail', '--no-browser']);
+
+        expect(sessionInfoScopes.map(scope => scope.orgId)).toEqual(['org_selected']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('/Selected%20Org/~/connect/apps/gmail?open=true');
+      })
+    );
+  });
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -351,7 +413,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] --no-wait [Then] outputs valid JSON parseable by jq', it => {
-    it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
+    it.effect('prints JSON with status pending, connected_account_id, redirect_url', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -382,7 +444,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )(
     '[Given] auth-config link returns an incomplete response [Then] logs an error and exits early',
     it => {
-      it.scoped('reports the incomplete response instead of waiting with empty values', () =>
+      it.effect('reports the incomplete response instead of waiting with empty values', () =>
         Effect.gen(function* () {
           yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -402,7 +464,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] default (wait) [Then] waits for ACTIVE and outputs success JSON for jq', it => {
-    it.scoped(
+    it.effect(
       'prints JSON with status success, message, connected_account_id, toolkit, redirect_url',
       () =>
         Effect.gen(function* () {
@@ -432,7 +494,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] --alias [Then] it passes alias during link creation', it => {
-    it.scoped('sends alias to the tool router link API instead of patching afterward', () =>
+    it.effect('sends alias to the tool router link API instead of patching afterward', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--alias', 'work', '--no-wait']);
         expect(toolRouterCreateSpy).toHaveBeenCalledWith(
@@ -471,7 +533,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )(
     '[Given] an existing active account and no --alias [Then] link blocks the second connected account',
     it => {
-      it.scoped('fails locally and tells the user to pass --alias', () =>
+      it.effect('fails locally and tells the user to pass --alias', () =>
         Effect.gen(function* () {
           yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -495,7 +557,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] a duplicate alias [Then] link explains how to use the existing account', it => {
-    it.scoped('detects the exact existing alias before creating a link', () =>
+    it.effect('detects the exact existing alias before creating a link', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--alias', 'work']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

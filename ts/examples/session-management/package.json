@@ -1,14 +1,16 @@
 {
   "name": "session-management-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "Example project for Session-management",
   "main": "src/index.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "start": "bun src/index.ts",
+    "start:session-configs": "bun src/session-configs.ts",
     "dev": "bun --watch src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bun test test/"
   },
   "keywords": [
     "composio",
@@ -18,11 +20,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "dotenv": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "type": "module"
 }

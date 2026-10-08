@@ -14,6 +14,13 @@ vi.mock('@anthropic-ai/sdk', () => ({
 
 const ANTHROPIC_KEY_RE = /^[a-zA-Z0-9_.-]{1,64}$/;
 
+/**
+ * Minimal structural shape for a JSON-schema node carrying a `properties` bag,
+ * used to dereference `sanitizeSchemaPropertyKeys` output (typed loosely as the
+ * generic input schema) in test assertions without weakening the cast to `any`.
+ */
+type SchemaWithProperties = { properties: Record<string, unknown>; required?: string[] };
+
 describe('sanitizeSchemaPropertyKeys', () => {
   it('leaves already-valid keys untouched and reports no mapping', () => {
     const schema = {
@@ -121,7 +128,7 @@ describe('sanitizeSchemaPropertyKeys', () => {
     };
 
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
-    const nested = (out.properties as any).options;
+    const nested = (out.properties as unknown as { options: SchemaWithProperties }).options;
 
     expect(nested.properties).toHaveProperty('dollar_skip');
     expect(nested.required).toEqual(['dollar_skip']);
@@ -162,7 +169,8 @@ describe('sanitizeSchemaPropertyKeys', () => {
     };
 
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
-    const itemSchema = (out.properties as any).rows.items;
+    const itemSchema = (out.properties as unknown as { rows: { items: SchemaWithProperties } }).rows
+      .items;
 
     expect(itemSchema.properties).toHaveProperty('dollar_top');
     expect(itemSchema.properties).not.toHaveProperty('$top');
@@ -188,7 +196,11 @@ describe('sanitizeSchemaPropertyKeys', () => {
     };
 
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
-    const [first, second] = (out.properties as any).pair.items;
+    const [first, second] = (
+      out.properties as unknown as {
+        pair: { items: [SchemaWithProperties, SchemaWithProperties] };
+      }
+    ).pair.items;
 
     expect(first.properties).toHaveProperty('dollar_top');
     expect(second.properties).toHaveProperty('plain');
@@ -285,7 +297,13 @@ describe('sanitizeSchemaPropertyKeys composition coverage', () => {
 
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
     expectNoIllegalPropertyKeys(out);
-    expect((out.properties as any).foo.anyOf[0].properties).toHaveProperty('dollar_top');
+    expect(
+      (
+        out.properties as unknown as {
+          foo: { anyOf: SchemaWithProperties[] };
+        }
+      ).foo.anyOf[0].properties
+    ).toHaveProperty('dollar_top');
 
     // The branch rename folds into `foo`'s value level, so restoration finds it.
     expect(restoreOriginalKeys({ foo: { dollar_top: 5 } }, mapping)).toEqual({ foo: { $top: 5 } });
@@ -342,7 +360,10 @@ describe('sanitizeSchemaPropertyKeys composition coverage', () => {
 
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
     // 400-prevention: the alias is emitted so Anthropic accepts the schema.
-    expect((out as any).additionalProperties.properties).toHaveProperty('dollar_top');
+    expect(
+      (out as unknown as { additionalProperties: SchemaWithProperties }).additionalProperties
+        .properties
+    ).toHaveProperty('dollar_top');
     // Documented limitation: dynamic-key values are not restored — the alias
     // reaches the backend rather than being silently (mis)mapped at every level.
     expect(restoreOriginalKeys({ anyKey: { dollar_top: 1 } }, mapping)).toEqual({
@@ -358,7 +379,9 @@ describe('sanitizeSchemaPropertyKeys composition coverage', () => {
     });
 
     expectNoIllegalPropertyKeys(out);
-    expect((out as any).$defs.Foo.properties).toHaveProperty('dollar_top');
+    expect(
+      (out as unknown as { $defs: { Foo: SchemaWithProperties } }).$defs.Foo.properties
+    ).toHaveProperty('dollar_top');
   });
 
   it('sanitizes and restores `prefixItems` tuples', () => {
@@ -450,7 +473,9 @@ describe('restoreOriginalKeys', () => {
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
 
     expect(out.properties).toHaveProperty('dollar_top');
-    expect((out.properties as any).filters.properties).toHaveProperty('dollar_top');
+    expect(
+      (out.properties as unknown as { filters: SchemaWithProperties }).filters.properties
+    ).toHaveProperty('dollar_top');
 
     const restored = restoreOriginalKeys(
       { dollar_top: 10, filters: { dollar_top: 'keep-me' } },
@@ -592,6 +617,31 @@ describe('AnthropicProvider key sanitization', () => {
     expect(payload.arguments).toEqual({ $top: 25 });
   });
 
+  it('restores sanitized keys before executing through a tool router session', async () => {
+    const provider = new AnthropicProvider();
+    const directExecute = vi.fn();
+    const session = {
+      execute: vi.fn().mockResolvedValue({
+        data: { ok: true },
+        error: null,
+        logId: 'log-session',
+      }),
+    };
+    provider._setExecuteToolFn(directExecute);
+    provider.wrapTool(odataTool);
+
+    const result = await provider.executeToolCall(session, {
+      type: 'tool_use',
+      id: 'tu_session',
+      name: 'list_drive_item_activities',
+      input: '{"dollar_top": 25}' as unknown as Record<string, unknown>,
+    });
+
+    expect(session.execute).toHaveBeenCalledWith('list_drive_item_activities', { $top: 25 });
+    expect(directExecute).not.toHaveBeenCalled();
+    expect(result).toBe(JSON.stringify({ ok: true }));
+  });
+
   it('normalizes a JSON-string input for tools without sanitized keys (issue #2406)', async () => {
     const provider = new AnthropicProvider();
     const executeToolFn = vi
@@ -676,8 +726,11 @@ describe('AnthropicProvider key sanitization', () => {
 
     const wrapped = provider.wrapTool(refTool) as AnthropicTool;
     // The $ref is inlined, `$defs` removed, and the nested `$top` sanitized.
-    expect((wrapped.input_schema.properties as any).filter.properties).toHaveProperty('dollar_top');
-    expect((wrapped.input_schema as any).$defs).toBeUndefined();
+    expect(
+      (wrapped.input_schema.properties as unknown as { filter: SchemaWithProperties }).filter
+        .properties
+    ).toHaveProperty('dollar_top');
+    expect((wrapped.input_schema as unknown as { $defs?: unknown }).$defs).toBeUndefined();
 
     await provider.executeToolCall('user-1', {
       type: 'tool_use',

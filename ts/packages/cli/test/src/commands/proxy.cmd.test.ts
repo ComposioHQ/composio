@@ -1,3 +1,4 @@
+import { APIError } from '@composio/client';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
@@ -15,9 +16,9 @@ import {
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio proxy', () => {
   afterEach(() => {
@@ -43,9 +44,10 @@ describe('CLI: composio proxy', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] curl-like proxy flags [Then] it creates a scoped session and forwards proxy_execute',
     it => {
-      it.scoped('forwards proxy execute params and prints the response', () =>
+      it.effect('forwards proxy execute params and prints the response', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
+          let proxyOptions: { maxRetries?: number } | undefined;
           let proxyParams:
             | {
                 sessionId: string;
@@ -109,15 +111,22 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
+                    instant: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: [],
                 };
               },
-              proxyExecute: async (sessionId: string, params: SessionProxyExecuteParams) => {
+              proxyExecute: async (
+                sessionId: string,
+                params: SessionProxyExecuteParams,
+                options?: { maxRetries?: number }
+              ) => {
                 proxyParams = { sessionId, params };
+                proxyOptions = options;
                 return {
+                  result_type: 'completed' as const,
                   status: 200,
                   data: {
                     ok: true,
@@ -130,20 +139,24 @@ describe('CLI: composio proxy', () => {
             },
           });
 
-          yield* cli([
-            'proxy',
-            'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
-            '--toolkit',
-            'gmail',
-            '--account',
-            'work',
-            '-X',
-            'post',
-            '-H',
-            'content-type: application/json',
-            '-d',
-            '{ "message": { "raw": "abc" } }',
-          ]).pipe(Effect.provide(live));
+          const output = yield* Effect.gen(function* () {
+            yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
+              '--toolkit',
+              'gmail',
+              '--account',
+              'work',
+              '-X',
+              'post',
+              '-H',
+              'content-type: application/json',
+              '-d',
+              '{ "message": { "raw": "abc" } }',
+            ]);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return lines.join('\n');
+          }).pipe(Effect.provide(live));
 
           expect(createParams).toEqual({
             user_id: 'consumer-user-org_test',
@@ -167,9 +180,10 @@ describe('CLI: composio proxy', () => {
               ],
             },
           });
+          // A proxied call is never retried: a retry after the upstream API
+          // already acted would duplicate the side effect.
+          expect(proxyOptions).toEqual({ maxRetries: 0 });
 
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');
         })
@@ -180,7 +194,7 @@ describe('CLI: composio proxy', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] cached missing toolkit [Then] proxy fails fast before session creation',
     it => {
-      it.scoped('uses the connected toolkit cache keyed by toolkit', () =>
+      it.effect('uses the connected toolkit cache keyed by toolkit', () =>
         Effect.gen(function* () {
           const refreshSpy = vi
             .spyOn(consumerShortTermCache, 'refreshConsumerConnectedToolkitsCache')
@@ -203,6 +217,7 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
+                    instant: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -212,12 +227,16 @@ describe('CLI: composio proxy', () => {
             },
           });
 
-          const failure = yield* cli([
-            'proxy',
-            'https://gmail.googleapis.com/gmail/v1/users/me/profile',
-            '--toolkit',
-            'gmail',
-          ]).pipe(Effect.provide(live), Effect.flip);
+          const { failure, output } = yield* Effect.gen(function* () {
+            const failure = yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+              '--toolkit',
+              'gmail',
+            ]).pipe(Effect.flip);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return { failure, output: lines.join('\n') };
+          }).pipe(Effect.provide(live));
 
           expect(createCalled).toBe(false);
           expect(failure).toBeInstanceOf(ProxyCommandError);
@@ -226,8 +245,6 @@ describe('CLI: composio proxy', () => {
             expect(failure.toolkit).toBe('gmail');
           }
 
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
           expect(output).toContain('Toolkit "gmail" is not connected for this user');
           expect(output).toContain('composio link gmail');
           expect(refreshSpy).toHaveBeenCalled();
@@ -240,39 +257,93 @@ describe('CLI: composio proxy', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] backend 4302 no-connection error [Then] proxy rewrites it to link guidance',
     it => {
-      it.scoped('translates proxy_execute connection errors like execute does', () =>
+      it.effect('translates proxy_execute connection errors like execute does', () =>
         Effect.gen(function* () {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
             fixture: 'global-test-user-id',
             toolRouter: {
               proxyExecute: async () => {
-                throw {
-                  message: 'raw backend error',
-                  details: {
-                    code: 4302,
-                    slug: 'ToolRouterV2_NoActiveConnection',
-                    message: 'No active connection',
+                throw APIError.generate(
+                  400,
+                  {
+                    error: {
+                      code: 4302,
+                      slug: 'ToolRouterV2_NoActiveConnection',
+                      message: 'No active connection',
+                      status: 400,
+                    },
                   },
-                };
+                  undefined,
+                  new Headers()
+                );
               },
             },
           });
 
-          const exit = yield* cli([
-            'proxy',
-            'https://gmail.googleapis.com/gmail/v1/users/me/profile',
-            '--toolkit',
-            'gmail',
-            '--skip-connection-check',
-          ]).pipe(Effect.provide(live), Effect.exit);
+          const { exit, output } = yield* Effect.gen(function* () {
+            const exit = yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+              '--toolkit',
+              'gmail',
+              '--skip-connection-check',
+            ]).pipe(Effect.exit);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return { exit, output: lines.join('\n') };
+          }).pipe(Effect.provide(live));
 
           expect(Exit.isFailure(exit)).toBe(true);
 
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
           expect(output).toContain('No active connection found for toolkit "gmail"');
           expect(output).toContain('composio link gmail');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] proxy_execute asks for user input [Then] proxy fails without a response',
+    it => {
+      it.effect('reports that the proxied call requires user input', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              proxyExecute: async () => ({
+                result_type: 'input_required' as const,
+                input_requests: {
+                  approval_1: {
+                    type: 'elicitation' as const,
+                    mode: 'form' as const,
+                    message: 'Allow this request to Gmail?',
+                    requested_schema: { type: 'object' },
+                  },
+                },
+                request_state: 'opaque-state-token',
+              }),
+            },
+          });
+
+          const { exit, output } = yield* Effect.gen(function* () {
+            const exit = yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+              '--toolkit',
+              'gmail',
+              '--skip-connection-check',
+            ]).pipe(Effect.exit);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return { exit, output: lines.join('\n') };
+          }).pipe(Effect.provide(live));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(output).toContain(
+            'GET proxy call via \\"gmail\\" requires user input before it can run (1 input request) and was not executed.'
+          );
+          expect(output).not.toContain('Status:');
+          expect(output).not.toContain('opaque-state-token');
         })
       );
     }

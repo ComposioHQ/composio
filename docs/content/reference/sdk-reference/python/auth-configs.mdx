@@ -71,7 +71,7 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 Updates an existing authentication configuration.  This method allows you to modify properties of an auth config such as credentials, scopes, or tool restrictions. The update type (custom or default) determines which fields can be updated.
 
 ```python
-def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParams) -> Dict
+def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
 ```
 
 **Parameters**
@@ -83,7 +83,7 @@ def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParam
 
 **Returns**
 
-`Dict` — The updated auth config.
+`auth_config_update_response.AuthConfigUpdateResponse` — The update result with success and message fields.
 
 ---
 
@@ -92,7 +92,7 @@ def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParam
 Deletes an existing authentication configuration.
 
 ```python
-def delete(nanoid: str) -> Dict
+def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 ```
 
 **Parameters**
@@ -103,7 +103,7 @@ def delete(nanoid: str) -> Dict
 
 **Returns**
 
-`Dict` — The deleted auth config.
+`auth_config_delete_response.AuthConfigDeleteResponse` — The deletion result with success and message fields.
 
 ---
 
@@ -112,7 +112,7 @@ def delete(nanoid: str) -> Dict
 Enables an existing authentication configuration.
 
 ```python
-def enable(nanoid: str) -> Dict
+def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 
 **Parameters**
@@ -123,7 +123,7 @@ def enable(nanoid: str) -> Dict
 
 **Returns**
 
-`Dict` — The enabled auth config.
+`auth_config_update_status_response.AuthConfigUpdateStatus...` — The status update result with success and message fields.
 
 ---
 
@@ -132,7 +132,7 @@ def enable(nanoid: str) -> Dict
 Disables an existing authentication configuration.
 
 ```python
-def disable(nanoid: str) -> Dict
+def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 
 **Parameters**
@@ -143,8 +143,8 @@ def disable(nanoid: str) -> Dict
 
 **Returns**
 
-`Dict` — The disabled auth config.
+`auth_config_update_status_response.AuthConfigUpdateStatus...` — The status update result with success and message fields.
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L18)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L21)

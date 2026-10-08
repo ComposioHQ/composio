@@ -1,10 +1,10 @@
-import type { Span } from 'effect/Tracer';
+import type { ErrorSpan } from './error-span.type';
 
 export class PrettyError {
   constructor(
     readonly message: unknown,
     readonly stack: string | undefined,
-    readonly span: Span | undefined,
+    readonly spans: ReadonlyArray<ErrorSpan>,
     readonly isPlainString: boolean,
     readonly errorType?: unknown
   ) {}

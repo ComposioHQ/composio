@@ -1,6 +1,6 @@
 {
   "name": "@composio/json-schema-to-effect-schema",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Eval-free JSON Schema validation exposed as Effect Schema.",
   "main": "src/index.ts",
   "private": true,

@@ -3,12 +3,12 @@
 # Resolve the CLI release target and write its metadata to $GITHUB_OUTPUT for the
 # build/release jobs of build-cli-binaries.yml. Three modes:
 #
-#   - push to `next` with a ts/packages/cli/package.json version bump → stable release
-#   - push to `next` without a bump, or workflow_dispatch build-beta     → rolling beta
-#   - workflow_dispatch promote-stable <beta tag>                        → stable promotion
+#   - push to `next`                                      → rolling beta
+#   - workflow_dispatch build-beta [version]              → rolling or explicitly versioned beta
+#   - workflow_dispatch promote-stable at <beta tag>      → stable promotion
 #
-# Inputs (env): EVENT_NAME, ACTION_INPUT, BETA_TAG_INPUT, GITHUB_TOKEN,
-#               REPOSITORY, RUN_NUMBER, COMMIT_SHA
+# Inputs (env): EVENT_NAME, ACTION_INPUT, VERSION_INPUT, REF_NAME, REF_TYPE,
+#               GITHUB_TOKEN, REPOSITORY, RUN_NUMBER, COMMIT_SHA
 # Output: key=value lines appended to $GITHUB_OUTPUT
 set -euo pipefail
 
@@ -30,29 +30,59 @@ latest_stable_tag() {
           | last | .tagName // empty'
 }
 
-# Echo the next "<major>.<minor>.<patch+1>" off the latest stable release, falling
-# back to the working-tree package.json when no stable release exists yet.
+# Echo the next "<major>.<minor>.<patch+1>" off the latest stable release.
 next_beta_base_version() {
   local latest current
   latest=$(latest_stable_tag)
   if [[ -z "$latest" ]]; then
-    echo "No stable @composio/cli release found, falling back to package.json" >&2
-    current=$(node -p "require('./ts/packages/cli/package.json').version")
-  else
-    current=${latest#@composio/cli@}
+    echo "No stable @composio/cli release found; provide VERSION_INPUT for the first beta" >&2
+    return 1
   fi
+  current=${latest#@composio/cli@}
 
   local major minor patch
   IFS='.' read -r major minor patch <<<"$current"
   echo "${major}.${minor}.$((patch + 1))"
 }
 
+version_is_greater() {
+  local candidate=$1 baseline=$2
+  local candidate_major candidate_minor candidate_patch
+  local baseline_major baseline_minor baseline_patch
+  IFS='.' read -r candidate_major candidate_minor candidate_patch <<<"$candidate"
+  IFS='.' read -r baseline_major baseline_minor baseline_patch <<<"$baseline"
+
+  ((candidate_major > baseline_major)) ||
+    ((candidate_major == baseline_major && candidate_minor > baseline_minor)) ||
+    ((
+      candidate_major == baseline_major &&
+        candidate_minor == baseline_minor &&
+        candidate_patch > baseline_patch
+    ))
+}
+
 emit_beta_target() {
-  local next_version release_tag
-  next_version=$(next_beta_base_version)
+  local requested_version=${1:-}
+  local latest latest_version next_version release_tag
+  if [[ -n "$requested_version" ]]; then
+    if [[ ! "$requested_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "Beta version must match <major>.<minor>.<patch>" >&2
+      return 1
+    fi
+    next_version=$requested_version
+    latest=$(latest_stable_tag)
+    if [[ -n "$latest" ]]; then
+      latest_version=${latest#@composio/cli@}
+      if ! version_is_greater "$next_version" "$latest_version"; then
+        echo "Beta version ${next_version} must be newer than latest stable ${latest_version}" >&2
+        return 1
+      fi
+    fi
+  else
+    next_version=$(next_beta_base_version)
+  fi
   release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
   {
-    echo "checkout_ref=${COMMIT_SHA}"
     echo "release_name=CLI Beta ${release_tag}"
     echo "release_tag=${release_tag}"
     echo "release_version=${next_version}"
@@ -62,9 +92,8 @@ emit_beta_target() {
 }
 
 emit_stable_target() {
-  local release_tag=$1 release_version=$2 checkout_ref=$3
+  local release_tag=$1 release_version=$2
   {
-    echo "checkout_ref=${checkout_ref}"
     echo "release_name=CLI ${release_tag}"
     echo "release_tag=${release_tag}"
     echo "release_version=${release_version}"
@@ -73,24 +102,16 @@ emit_stable_target() {
   } >>"$GITHUB_OUTPUT"
 }
 
-# ── Push to next ──
+# Every push to next is a beta. Stable releases always promote an already-tested
+# beta, so package metadata can never create a second version authority.
 if [[ "$EVENT_NAME" == "push" ]]; then
-  current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-  previous_version=$(git show HEAD^:ts/packages/cli/package.json 2>/dev/null \
-    | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
-
-  # A version bump on push is a stable release; anything else is a rolling beta.
-  if [[ -n "$previous_version" && "$current_version" != "$previous_version" ]]; then
-    emit_stable_target "@composio/cli@${current_version}" "$current_version" "$COMMIT_SHA"
-  else
-    emit_beta_target
-  fi
+  emit_beta_target
   exit 0
 fi
 
 # ── workflow_dispatch: build-beta ──
 if [[ "$EVENT_NAME" == "workflow_dispatch" && "$ACTION_INPUT" == "build-beta" ]]; then
-  emit_beta_target
+  emit_beta_target "${VERSION_INPUT:-}"
   exit 0
 fi
 
@@ -100,12 +121,22 @@ if [[ "$ACTION_INPUT" != "promote-stable" ]]; then
   exit 1
 fi
 
-if [[ -z "$BETA_TAG_INPUT" ]]; then
-  echo "beta_tag input is required for promote-stable" >&2
+if [[ "${REF_TYPE:-}" != "tag" ]]; then
+  echo "promote-stable must be dispatched at the beta tag with --ref <beta-tag>" >&2
   exit 1
 fi
 
-encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))')
+beta_tag=${REF_NAME:-}
+
+if [[ ! "$beta_tag" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
+  echo "Selected ref must match @composio/cli@<version>-beta.<number>" >&2
+  exit 1
+fi
+
+stable_version="${BASH_REMATCH[1]}"
+stable_tag="@composio/cli@${stable_version}"
+
+encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["REF_NAME"], safe=""))')
 
 release_json=$(curl -fsSL \
   -H "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -114,17 +145,9 @@ release_json=$(curl -fsSL \
 
 is_prerelease=$(jq -r '.prerelease' <<<"$release_json")
 if [[ "$is_prerelease" != "true" ]]; then
-  echo "Release ${BETA_TAG_INPUT} is not a beta prerelease" >&2
+  echo "Release ${beta_tag} is not a beta prerelease" >&2
   exit 1
 fi
-
-if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
-  echo "Beta tag must match @composio/cli@<version>-beta.<number>" >&2
-  exit 1
-fi
-
-stable_version="${BASH_REMATCH[1]}"
-stable_tag="@composio/cli@${stable_version}"
 
 # Refuse to re-promote an already-PUBLISHED stable release, but allow resuming an
 # existing DRAFT (a prior promote run that built assets but did not publish). The
@@ -141,8 +164,13 @@ fi
 
 target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
 if [[ -z "$target_commitish" || "$target_commitish" == "null" ]]; then
-  echo "Beta release ${BETA_TAG_INPUT} does not expose target_commitish" >&2
+  echo "Beta release ${beta_tag} does not expose target_commitish" >&2
   exit 1
 fi
 
-emit_stable_target "$stable_tag" "$stable_version" "$target_commitish"
+if [[ "$target_commitish" != "$COMMIT_SHA" ]]; then
+  echo "Selected beta tag resolves to ${COMMIT_SHA}, but its release targets ${target_commitish}" >&2
+  exit 1
+fi
+
+emit_stable_target "$stable_tag" "$stable_version"

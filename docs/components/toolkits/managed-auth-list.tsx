@@ -173,7 +173,7 @@ export function ManagedAuthList() {
           }`}
         >
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-          Composio Managed App Available
+          Composio-managed OAuth available
           <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{managed.length}</span>
         </button>
         <button
@@ -185,7 +185,7 @@ export function ManagedAuthList() {
           }`}
         >
           <span className="inline-block h-2 w-2 rounded-full bg-fd-muted-foreground/60" />
-          Requires your own credentials
+          Bring your own OAuth app
           <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{notManaged.length}</span>
         </button>
       </div>

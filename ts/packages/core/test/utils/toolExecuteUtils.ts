@@ -3,7 +3,6 @@ import { Tools } from '../../src/models/Tools';
 import { mockClient } from './mocks/client.mock';
 import { MockProvider } from './mocks/provider.mock';
 import { connectedAccountMocks, toolkitMocks, toolMocks } from './mocks/data.mock';
-import ComposioClient from '@composio/client';
 import { Tool, ToolExecuteResponse, ToolExecuteParams } from '../../src/types/tool.types';
 
 export type TestTools = Tools<Tool[], Tool, MockProvider>;
@@ -15,7 +14,7 @@ export interface TestContext {
 
 export const createTestContext = (): TestContext => {
   const mockProvider = new MockProvider();
-  const tools = new Tools(mockClient as unknown as ComposioClient, { provider: mockProvider });
+  const tools = new Tools(mockClient, { provider: mockProvider });
   return { tools, mockProvider };
 };
 
@@ -23,7 +22,7 @@ export const setupTest = (context: TestContext) => {
   beforeEach(() => {
     vi.clearAllMocks();
     context.mockProvider = new MockProvider();
-    context.tools = new Tools(mockClient as unknown as ComposioClient, {
+    context.tools = new Tools(mockClient, {
       provider: context.mockProvider,
     });
   });

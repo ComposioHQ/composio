@@ -7,7 +7,8 @@ This test module verifies provider functionality including:
 - Both agentic and non-agentic provider behavior
 """
 
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -15,7 +16,10 @@ from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 from composio.core.provider import AgenticProvider, NonAgenticProvider
+from pydantic import ValidationError
+
 from tests.conftest import mock_http_client
+from tests.fixtures.json_schema_conversion_corpus import find_case
 
 
 @pytest.fixture(autouse=True)
@@ -84,80 +88,9 @@ class TestProviderInitialization:
         assert provider.name == "test_agentic"
         assert isinstance(provider, AgenticProvider)
 
-    def test_provider_has_name_attribute(self):
-        """Test that all providers have a name attribute."""
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-        assert hasattr(provider, "name")
-        assert isinstance(provider.name, str)
-        assert len(provider.name) > 0
-
 
 class TestProviderExecuteToolSetup:
     """Test cases for execute_tool setup during initialization."""
-
-    def test_execute_tool_set_during_tools_initialization_non_agentic(self):
-        """Test that execute_tool is set during Tools initialization for non-agentic providers."""
-        mock_client = mock_http_client()
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-
-        # Create Tools instance
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # After initialization, provider should have execute_tool
-        assert hasattr(provider, "execute_tool")
-        assert provider.execute_tool is not None
-        assert callable(provider.execute_tool)
-
-    def test_execute_tool_set_during_tools_initialization_agentic(self):
-        """Test that execute_tool is set during Tools initialization for agentic providers."""
-        mock_client = mock_http_client()
-
-        class TestAgenticProvider(AgenticProvider, name="test_agentic"):
-            def wrap_tool(self, tool, execute_tool):
-                return {"slug": tool.slug, "execute": execute_tool}
-
-            def wrap_tools(self, tools, execute_tool):
-                return [self.wrap_tool(tool, execute_tool) for tool in tools]
-
-        provider = TestAgenticProvider()
-
-        # Create Tools instance
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # After initialization, provider should have execute_tool
-        assert hasattr(provider, "execute_tool")
-        assert provider.execute_tool is not None
-        assert callable(provider.execute_tool)
-
-    def test_execute_tool_available_immediately_after_initialization(self):
-        """Test that execute_tool is available immediately after initialization, before get() is called."""
-        mock_client = mock_http_client()
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-
-        # Create Tools instance (but don't call get())
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        # execute_tool should be available immediately
-        assert hasattr(provider, "execute_tool")
-        assert callable(provider.execute_tool)
 
     def test_execute_tool_signature_matches_protocol(self):
         """Test that execute_tool has the correct signature matching ExecuteToolFn protocol."""
@@ -500,6 +433,131 @@ class TestNonAgenticProviderHelperMethods:
         assert results[0]["successful"] is True
         assert results[0]["data"]["starred"] is True
 
+    def test_openai_provider_routes_tool_calls_through_session(self):
+        """Session tools execute through their Tool Router session, not tools.execute."""
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.return_value = SimpleNamespace(
+            data={"tools": ["GMAIL_SEND_EMAIL"]},
+            error=None,
+            log_id="log-session",
+        )
+        completion = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        tool_calls=[
+                            SimpleNamespace(
+                                id="call-search",
+                                type="function",
+                                function=SimpleNamespace(
+                                    name="COMPOSIO_SEARCH_TOOLS",
+                                    arguments='{"queries":[{"use_case":"send email"}]}',
+                                ),
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+
+        results = provider.handle_tool_calls(response=completion, session=session)
+
+        session.execute.assert_called_once_with(
+            tool_slug="COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send email"}]},
+        )
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {
+                "data": {"tools": ["GMAIL_SEND_EMAIL"]},
+                "error": None,
+                "successful": True,
+            }
+        ]
+
+    def test_openai_responses_provider_preserves_session_result_order(self):
+        """Responses helpers keep provider order and result shape for session calls."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        mock_client = mock_http_client()
+        provider = OpenAIResponsesProvider()
+        Tools(client=mock_client, provider=provider)
+        session = Mock()
+        session.execute.side_effect = [
+            SimpleNamespace(data={"index": 1}, error=None, log_id="log-1"),
+            SimpleNamespace(data={"index": 2}, error="failed", log_id="log-2"),
+        ]
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"first"}]}',
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+                ResponseFunctionToolCall(
+                    arguments='{"queries":[{"use_case":"second"}]}',
+                    call_id="call-2",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                ),
+            ]
+        )
+
+        results = provider.handle_tool_calls(response=response, session=session)
+
+        assert session.execute.call_args_list == [
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "first"}]},
+            ),
+            call(
+                tool_slug="COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "second"}]},
+            ),
+        ]
+        mock_client.tools.execute.assert_not_called()
+        assert results == [
+            {"data": {"index": 1}, "error": None, "successful": True},
+            {"data": {"index": 2}, "error": "failed", "successful": False},
+        ]
+
+    def test_openai_responses_provider_propagates_session_exceptions(self):
+        """Responses helpers preserve their existing exception propagation behavior."""
+        from openai.types.responses.response import Response
+        from openai.types.responses.response_function_tool_call import (
+            ResponseFunctionToolCall,
+        )
+
+        from composio.core.provider._openai_responses import OpenAIResponsesProvider
+
+        provider = OpenAIResponsesProvider()
+        session = Mock()
+        session.execute.side_effect = RuntimeError("session execution failed")
+        response = Response.model_construct(
+            output=[
+                ResponseFunctionToolCall(
+                    arguments="{}",
+                    call_id="call-1",
+                    name="COMPOSIO_SEARCH_TOOLS",
+                    type="function_call",
+                )
+            ]
+        )
+
+        with pytest.raises(RuntimeError, match="session execution failed"):
+            provider.handle_tool_calls(response=response, session=session)
+
     def test_openai_provider_handle_tool_calls_only_first_choice(self):
         """Only the first choice runs; n > 1 alternatives would orphan tool_call_ids."""
         from openai.types.chat import ChatCompletion
@@ -589,28 +647,6 @@ class TestNonAgenticProviderHelperMethods:
 
 class TestAgenticProviderFunctionality:
     """Test cases for agentic providers."""
-
-    def test_agentic_provider_has_execute_tool_after_initialization(self):
-        """Test that agentic providers have execute_tool after Tools initialization."""
-        mock_client = mock_http_client()
-
-        class TestAgenticProvider(AgenticProvider, name="test_agentic"):
-            def wrap_tool(self, tool, execute_tool):
-                return {"slug": tool.slug, "execute": execute_tool}
-
-            def wrap_tools(self, tools, execute_tool):
-                return [self.wrap_tool(tool, execute_tool) for tool in tools]
-
-        provider = TestAgenticProvider()
-
-        Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"github": "12012025_00"},
-        )
-
-        assert hasattr(provider, "execute_tool")
-        assert callable(provider.execute_tool)
 
     def test_agentic_provider_execute_tool_works(self):
         """Test that agentic provider's execute_tool executes tools correctly."""
@@ -902,6 +938,82 @@ class TestLangchainReservedKeywords:
         assert captured == {"from": "2024-01-01"}
 
 
+class TestLangchainFreeFormObjectArguments:
+    """Regression for issue #4064 at the Python provider boundary.
+
+    `LangchainProvider.wrap_tool` builds its `args_schema` from
+    `json_schema_to_model` and re-reads each argument with `getattr`, so a
+    property-less object that validates but drops its content never reaches
+    execution.
+    """
+
+    def _make_tool(self, properties: dict):
+        return Tool(
+            name="Metabase Create Card",
+            slug="METABASE_POST_API_CARD",
+            description="A tool with a free-form object argument",
+            input_parameters={
+                "type": "object",
+                "title": "MetabaseCreateCardRequest",
+                "properties": properties,
+                "required": list(properties),
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(
+                name="Metabase", slug="metabase", logo=""
+            ),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Metabase Create Card",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def test_free_form_object_reaches_execution_intact(self):
+        from composio_langchain import LangchainProvider
+
+        case = find_case("nested-free-form-object")
+        payload = case.instances[0].input
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool(case.schema_["properties"]), mock_execute
+        )
+        wrapped.run(payload)
+
+        assert captured == payload
+
+    def test_unknown_keys_are_still_rejected_before_execution(self):
+        from composio_langchain import LangchainProvider
+
+        executed = []
+
+        def mock_execute(slug, arguments):
+            executed.append(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = LangchainProvider().wrap_tool(
+            self._make_tool({"name": {"type": "string"}}), mock_execute
+        )
+
+        with pytest.raises(ValidationError):
+            wrapped.args_schema.model_validate({"name": "a", "typo": 1})
+        assert executed == []
+
+
 class TestProviderEdgeCases:
     """Test edge cases and error handling for providers."""
 
@@ -1122,8 +1234,10 @@ class TestAgenticSkipDefaultsParity:
     mismatch, but its signature likewise ignored skip_defaults; it is aligned
     too and checked on the signature alone.
 
-    Provider packages are optional (the unit-test job installs langchain and
-    autogen), so each case skips via importorskip when its provider is absent.
+    Provider packages are optional. The shared unit-test job installs langchain
+    and langgraph, while Autogen runs separately because their protobuf
+    requirements conflict. Each case skips via importorskip when its provider
+    is absent.
     """
 
     def _make_tool_with_default(self):

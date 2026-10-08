@@ -1,17 +1,23 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import { useIsMobile } from "./use-is-mobile";
-import { LogoLoop } from "./logo-loop";
+import Image from 'next/image';
+import { useIsMobile } from './use-is-mobile';
+import { LogoLoop } from './logo-loop';
 
-const LOGOS = [
-  { src: "/clients/logo-agentai.svg", alt: "agent.ai", h: 34 },
-  { src: "/clients/logo-context.svg", alt: "Context", h: 30 },
-  { src: "/clients/logo-zoom.png", alt: "Zoom", h: 25 },
-  { src: "/clients/logo-letta.svg", alt: "Letta", h: 27 },
-  { src: "/clients/logo-glean.svg", alt: "Glean", h: 34 },
-  { src: "/clients/logo-hubspot.svg", alt: "HubSpot", h: 34 },
-  { src: "/clients/logo-wabi.svg", alt: "Wabi", h: 27 },
+interface ClientLogo {
+  src: string;
+  alt: string;
+  h: number;
+}
+
+const LOGOS: ClientLogo[] = [
+  { src: '/clients/logo-agentai.svg', alt: 'agent.ai', h: 34 },
+  { src: '/clients/logo-context.svg', alt: 'Context', h: 30 },
+  { src: '/clients/logo-zoom.png', alt: 'Zoom', h: 25 },
+  { src: '/clients/logo-letta.svg', alt: 'Letta', h: 27 },
+  { src: '/clients/logo-glean.svg', alt: 'Glean', h: 34 },
+  { src: '/clients/logo-hubspot.svg', alt: 'HubSpot', h: 34 },
+  { src: '/clients/logo-wabi.svg', alt: 'Wabi', h: 27 },
 ];
 
 const MOBILE_SCALE = 0.75;
@@ -25,9 +31,9 @@ export function LogoBar() {
         className="w-full max-w-[800px] overflow-hidden px-4 py-[14px] grayscale"
         style={{
           maskImage:
-            "linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%)",
+            'linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%)',
           WebkitMaskImage:
-            "linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%)",
+            'linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%)',
         }}
       >
         <LogoLoop
@@ -35,18 +41,17 @@ export function LogoBar() {
           gap={isMobile ? 40 : 64}
           logoHeight={isMobile ? 18 : 26}
           logos={LOGOS}
-          renderItem={(item: any) => {
-            const logo = item as { src: string; alt: string; h: number };
-            const h = isMobile ? logo.h * MOBILE_SCALE : logo.h;
+          renderItem={item => {
+            const h = isMobile ? item.h * MOBILE_SCALE : item.h;
             return (
               <Image
-                alt={logo.alt}
+                alt={item.alt}
                 draggable={false}
                 height={Math.ceil(h)}
-                src={logo.src}
+                src={item.src}
                 style={{
                   height: h,
-                  width: "auto",
+                  width: 'auto',
                 }}
                 width={Math.ceil(h * 3)}
               />

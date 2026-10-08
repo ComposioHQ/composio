@@ -1,5 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
-import { isLocalToolkitSlug } from '@composio/cli-local-tools';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -17,47 +16,53 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
-import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import {
+  cacheToolInputDefinition,
+  getOrFetchToolInputDefinition,
+} from 'src/services/tool-input-validation';
 
-const query = Args.repeated(Args.text({ name: 'query' })).pipe(
-  Args.withDescription(
+const query = Argument.String('query').pipe(
+  Argument.variadic(),
+  Argument.withDescription(
     'One or more semantic use-case queries (e.g. "onboard a new GitHub repo", "notify Slack").'
   )
 );
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
-  Options.optional
+const toolkits = Flag.String('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.optional,
-  Options.withDescription('Developer-project user ID override')
+const userId = Flag.String('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Options.text('project-name').pipe(
-  Options.optional,
-  Options.withDescription('Developer project name override for this command')
+const projectName = Flag.String('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project name override for this command')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(10),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.Int('limit').pipe(
+  Flag.withDefault(10),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print the full search response as JSON (default behavior)')
+const json = Flag.Boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Print the full search response as JSON (default behavior)')
 );
 
-const human = Options.boolean('human').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Show formatted human-readable search output')
+const human = Flag.Boolean('human').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Show formatted human-readable search output')
 );
 
 type SearchToolSchema = SessionSearchResponse.ToolSchemas;
@@ -142,7 +147,7 @@ const buildSearchNextSteps = (params: {
   rootOnly: boolean;
 }) => {
   const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit && !isLocalToolkitSlug(params.firstToolkit)) {
+  if (params.firstToolkit) {
     steps.push({
       action: 'Link a user account',
       command: params.rootOnly
@@ -182,7 +187,14 @@ const buildSearchJsonPayload = (params: {
     const primaryToolSchemaPaths = Object.fromEntries(
       yield* Effect.forEach(primaryToolSlugs, slug =>
         Effect.gen(function* () {
-          const definition = yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+          const searchSchema = params.searchResponse.tool_schemas[slug];
+          const definition =
+            isRemoteCustomToolSlug(slug) && searchSchema?.input_schema
+              ? yield* cacheToolInputDefinition({
+                  slug,
+                  schema: searchSchema.input_schema,
+                })
+              : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
           return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] satisfies readonly [
             string,
             string,
@@ -203,7 +215,7 @@ const buildSearchJsonPayload = (params: {
         orgId: params.cacheScope.orgId,
         consumerUserId: params.cacheScope.consumerUserId,
         toolkits: connectedToolkits,
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.catch(() => Effect.void));
     }
 
     return {
@@ -325,7 +337,7 @@ const runToolsSearch = (params: {
       }).pipe(Effect.mapError(formatResolveCommandProjectError));
       const resolvedUserId =
         resolvedProject.projectType === 'CONSUMER'
-          ? Option.fromNullable(resolvedProject.consumerUserId)
+          ? Option.fromNullishOr(resolvedProject.consumerUserId)
           : Option.match(params.userId, {
               onSome: value => Option.some(value),
               onNone: () => userContext.data.testUserId,
@@ -348,24 +360,19 @@ const runToolsSearch = (params: {
           consumerUserId: resolvedUserId.value,
         });
       }
-      const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
-        client,
-        resolvedUserId.value,
-        {
-          toolkits: toolkitList,
-          cacheScope:
-            resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
-              ? {
-                  orgId: resolvedProject.orgId,
-                  projectId: resolvedProject.projectId,
-                  consumerUserId: resolvedProject.consumerUserId,
-                }
-              : undefined,
-        }
-      );
+      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
+        toolkits: toolkitList,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
+      });
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
-        ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
       };
       const searchResponse = yield* Effect.tryPromise({
         try: () => client.toolRouter.session.search(sessionId, searchPayload),
@@ -375,8 +382,44 @@ const runToolsSearch = (params: {
             cause,
           }),
       });
+      const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
+        .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
+        .map(([slug]) => slug);
+      const hydratedSearchResponse =
+        customToolSlugsMissingSchemas.length === 0
+          ? searchResponse
+          : yield* Effect.tryPromise({
+              try: async () => {
+                const schemaResponse = await client.toolRouter.session.executeMeta(sessionId, {
+                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                });
+                assertNotInputRequired('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse);
+                if (schemaResponse.error) {
+                  throw new Error(schemaResponse.error);
+                }
+
+                const resolvedSchemas = schemaResponse.data.tool_schemas;
+                if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
+                  throw new Error('Tool Router returned no tool schemas.');
+                }
+
+                return {
+                  ...searchResponse,
+                  tool_schemas: {
+                    ...searchResponse.tool_schemas,
+                    ...(resolvedSchemas as Record<string, SearchToolSchema>),
+                  },
+                };
+              },
+              catch: cause =>
+                new ToolsSearchRequestError({
+                  message: 'Failed to fetch custom tool schemas.',
+                  cause,
+                }),
+            });
       return {
-        searchResponse,
+        searchResponse: hydratedSearchResponse,
         projectScope: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
@@ -469,7 +512,7 @@ const runToolsSearch = (params: {
         toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
         nextSteps: searchResponse.next_steps_guidance,
       },
-    }).pipe(Effect.catchAll(() => Effect.void));
+    }).pipe(Effect.catch(() => Effect.void));
 
     if (emitHuman) {
       yield* emitHumanSearchOutput({
@@ -530,20 +573,38 @@ export const rootToolsCmd$Search = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.',
-      '',
-      'Examples:',
-      '  composio search "send an email"',
-      '  composio search "send an email" "create a github issue"',
-      '  composio search "create issue" --toolkits github',
-      '  composio search "send an email" --human',
-      '  composio search "list calendar events" --limit 5',
-      '',
-      'Next steps:',
-      '  composio link <toolkit>                  Connect an account before executing tools',
-      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
-      "  composio tools info <slug>               Inspect a tool's schema before executing",
-    ].join('\n')
-  )
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withShortDescription(
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withExamples([
+    {
+      command: 'composio search "send an email"',
+      description: 'Find tools for a use case',
+    },
+    {
+      command: 'composio search "send an email" "create github issue"',
+    },
+    {
+      command: 'composio search "my emails" "my github issues" --toolkits gmail,github',
+    },
+    {
+      command: 'composio search "create issue" --toolkits github',
+    },
+    {
+      command: 'composio search "send an email" --human',
+    },
+    {
+      command: 'composio search "post a message to a slack channel"',
+      description: 'Cross-app workflow discovery',
+    },
+    {
+      command: 'composio search "add a row to google sheet"',
+    },
+    {
+      command: 'composio search "list calendar events" --toolkits google_calendar --limit 5',
+      description: 'Narrow results to a specific toolkit',
+    },
+  ])
 );

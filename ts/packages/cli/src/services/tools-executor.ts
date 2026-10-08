@@ -1,13 +1,12 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Context, Data, Effect, Layer } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
-import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
-  SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
@@ -15,15 +14,18 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import type { CliDebugFlags } from 'src/services/runtime-flags';
 import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
-import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
+import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
+import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import type { TerminalUI } from 'src/services/terminal-ui';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import type { ComposioCliUserConfig } from 'src/services/cli-user-config';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -33,12 +35,32 @@ export interface ToolExecuteParams {
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
   readonly connectedAccounts?: Record<string, string>;
+  /**
+   * The org/project the command resolved. The executor's tool-schema lookup
+   * keys its memoized `get_latest_version` on this, so it has to match what
+   * the command's own version check passed or the two never share a request.
+   */
+  readonly projectScope?: {
+    readonly orgId?: string;
+    readonly projectId?: string;
+  };
   readonly cacheScope?: {
     readonly orgId: string;
     readonly projectId: string;
     readonly consumerUserId: string;
   };
 }
+
+/**
+ * The project custom toolkits are listed for: the command's resolved one when
+ * it handed in both ids, otherwise whatever the project context resolves.
+ */
+const toolkitProjectScope = ({
+  projectScope,
+}: ToolExecuteParams): ToolkitProjectScope | undefined =>
+  projectScope?.orgId && projectScope.projectId
+    ? { orgId: projectScope.orgId, projectId: projectScope.projectId }
+    : undefined;
 
 /**
  * Normalized response that matches the shape consumers expect.
@@ -63,50 +85,46 @@ export interface ToolsExecutor {
     | NodeOs
     | NodeProcess
     | ComposioUserContext
+    | ComposioClientSingleton
     | ComposioToolkitsRepository
     | ComposioCliUserConfig
     | TerminalUI
+    // Tool-schema resolution emits `--tool-debug` diagnostics, whose flag values the caller owns.
+    | CliDebugFlags
   >;
 }
 
-export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');
-
-export class LocalToolsDisabledError extends Data.TaggedError('services/LocalToolsDisabledError')<{
-  readonly toolSlug: string;
-  readonly feature: string;
-  readonly message: string;
-}> {}
+export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecutor');
 
 /**
- * Meta tool slugs handled by `session.executeMeta` instead of `session.execute`.
+ * Whether an execution answer describes a tool that ran and succeeded.
  *
- * The `satisfies` constraint ensures this list stays in sync with the API's
- * `SessionExecuteMetaParams['slug']` union — a compile error will surface if
- * a slug is misspelled or if the API adds/removes a meta tool.
+ * `result_type` decides when the API sent one: a `failed` execution is not
+ * successful even when its `error` is `null` or empty. Without a known
+ * `result_type`, for example from a server that predates it, an execution is
+ * successful when it carries no error text. `@composio/core` applies the same
+ * rule to session executions.
  */
-const META_TOOL_SLUG_LIST: ReadonlyArray<SessionExecuteMetaParams['slug']> = [
-  'COMPOSIO_SEARCH_TOOLS',
-  'COMPOSIO_MULTI_EXECUTE_TOOL',
-  'COMPOSIO_MANAGE_CONNECTIONS',
-  'COMPOSIO_WAIT_FOR_CONNECTIONS',
-  'COMPOSIO_REMOTE_WORKBENCH',
-  'COMPOSIO_REMOTE_BASH_TOOL',
-  'COMPOSIO_GET_TOOL_SCHEMAS',
-];
-
-const META_TOOL_SLUGS: ReadonlySet<string> = new Set(META_TOOL_SLUG_LIST);
-
-const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] =>
-  META_TOOL_SLUGS.has(slug);
+export const isExecutionSuccessful = (raw: {
+  readonly result_type?: string;
+  readonly error?: string | null;
+}): boolean => {
+  if (raw.result_type === 'completed') return true;
+  if (raw.result_type === 'failed') return false;
+  return !raw.error;
+};
 
 /**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  raw: Exclude<
+    SessionExecuteResponse | SessionExecuteMetaResponse,
+    { result_type: 'input_required' }
+  >,
   permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
-  successful: raw.error === null,
+  successful: isExecutionSuccessful(raw),
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
@@ -153,52 +171,26 @@ export const ToolsExecutorLive = Layer.effect(
     // the raw Composio client on first call — no environment requirements.
     const clientSingleton = yield* ComposioClientSingleton;
 
+    // Held rather than required per call: which slugs resolve locally is an
+    // implementation detail of toolkit resolution, not part of what a caller
+    // has to hand the executor.
+    const slugCatalog = yield* ToolkitSlugCatalog;
+
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
-          const cliConfig = yield* ComposioCliUserConfig;
-          const localToolResolution = resolveLocalTool(slug, { includeUnsupported: true });
-          const localToolsEnabled = cliConfig.isExperimentalFeatureEnabled(
-            CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS
-          );
-          if (localToolResolution && !localToolsEnabled) {
-            return yield* new LocalToolsDisabledError({
-              toolSlug: slug,
-              feature: CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
-              message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${slug}.`,
-            });
-          }
-
-          if (localToolResolution) {
-            const localResult = yield* Effect.tryPromise({
-              try: () => executeLocalToolBySlug(slug, params.arguments),
-              catch: cause => cause,
-            });
-            if (localResult) {
-              return {
-                successful: true,
-                data: localResult,
-                error: null,
-                logId: '',
-              } satisfies ToolExecuteResponse;
-            }
-          }
-
-          const client = yield* clientSingleton.get();
-          const resolvedClient = params.client ?? client;
+          // Resolved lazily: `get()` walks the project context off disk, and every
+          // caller on the execute path already hands in a client built for the
+          // resolved org/project.
+          const resolvedClient = params.client ?? (yield* clientSingleton.get());
           // One session per invocation — CLI runs one tool per process.
-          const {
-            sessionId,
-            localExperimentalPayload,
-            permissionSnapshot,
-            connectedAccounts,
-            connectedAccountWordIds,
-          } = yield* createToolRouterSessionContext(resolvedClient, params.userId, {
-            manageConnections: true,
-            connectedAccounts: params.connectedAccounts,
-            cacheScope: params.cacheScope,
-          });
-          const toolkitSlug = toolkitFromToolSlug(slug);
+          const { sessionId, permissionSnapshot, connectedAccounts, connectedAccountWordIds } =
+            yield* createToolRouterSessionContext(resolvedClient, params.userId, {
+              manageConnections: true,
+              connectedAccounts: params.connectedAccounts,
+              cacheScope: params.cacheScope,
+            });
+          const toolkitSlug = yield* toolkitFromToolSlug(slug, toolkitProjectScope(params));
           const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
             connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
@@ -211,8 +203,8 @@ export const ToolsExecutorLive = Layer.effect(
           const path = yield* Path.Path;
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
-            : yield* getOrFetchToolInputDefinition(slug).pipe(
-                Effect.catchAll(() => Effect.succeed(null)),
+            : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
+                Effect.catch(() => Effect.succeed(null)),
                 Effect.flatMap(definition => {
                   if (!definition) {
                     return Effect.succeed(params.arguments);
@@ -224,6 +216,7 @@ export const ToolsExecutorLive = Layer.effect(
                         fs,
                         path,
                         toolSlug: slug,
+                        toolkitSlug,
                         arguments_: params.arguments,
                         inputSchema: definition.schema,
                         client: resolvedClient,
@@ -240,34 +233,44 @@ export const ToolsExecutorLive = Layer.effect(
                 })
               );
 
-          const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
-            {
-              try: () => {
-                if (isMetaToolSlug(slug)) {
-                  return resolvedClient.toolRouter.session.executeMeta(sessionId, {
-                    slug,
-                    arguments: normalizedArguments,
-                  });
-                }
-                const executePayload = {
-                  tool_slug: slug,
-                  arguments: normalizedArguments,
-                  ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
-                };
-                return resolvedClient.toolRouter.session.execute(sessionId, executePayload);
-              },
-              catch: cause => cause,
-            }
-          );
+          const raw = yield* Effect.tryPromise({
+            // Never retry an execution: a retry after the backend already acted
+            // duplicates the side effect (e.g. sends the same email twice).
+            try: async () => {
+              const response: SessionExecuteResponse | SessionExecuteMetaResponse = isMetaToolSlug(
+                slug
+              )
+                ? await resolvedClient.toolRouter.session.executeMeta(
+                    sessionId,
+                    { slug, arguments: normalizedArguments },
+                    { maxRetries: 0 }
+                  )
+                : await resolvedClient.toolRouter.session.execute(
+                    sessionId,
+                    { tool_slug: slug, arguments: normalizedArguments },
+                    { maxRetries: 0 }
+                  );
+              assertNotInputRequired(`Tool ${slug}`, response);
+              return response;
+            },
+            catch: cause => cause,
+          });
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(
-          Effect.mapError(error => {
-            const mapped = mapComposioError({ error, toolSlug: slug });
-            return mapped.normalized instanceof ComposioNoActiveConnectionError
-              ? mapped.normalized
-              : error;
-          })
+          Effect.catch(error =>
+            toolkitFromToolSlug(slug, toolkitProjectScope(params)).pipe(
+              Effect.flatMap(toolkitSlug => {
+                const mapped = mapComposioError({ error, toolkit: toolkitSlug, toolSlug: slug });
+                return Effect.fail(
+                  mapped.normalized instanceof ComposioNoActiveConnectionError
+                    ? mapped.normalized
+                    : error
+                );
+              })
+            )
+          ),
+          Effect.provideService(ToolkitSlugCatalog, slugCatalog)
         ),
     });
   })

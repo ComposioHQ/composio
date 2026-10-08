@@ -4,7 +4,7 @@ TypeScript provider guidance.
 
 ## Scope
 
-Provider packages adapt Composio tools and sessions to AI frameworks such as OpenAI, Anthropic, Google, LangChain, Mastra, Vercel, LlamaIndex, Cloudflare, and Claude Agent SDK.
+Provider packages adapt Composio tools and sessions to AI frameworks such as OpenAI, Anthropic, Google, LangChain, Mastra, Vercel, LlamaIndex, Cloudflare, Claude Agent SDK, and TypeSafe.
 
 ## Skill Routing
 

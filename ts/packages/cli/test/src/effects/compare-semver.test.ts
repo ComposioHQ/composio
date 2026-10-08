@@ -281,9 +281,13 @@ describe('compare-semver.ts', () => {
             }
           }
 
-          // Since we can't actually use the Effect in Array.sort, just verify
-          // the comparison results are consistent with sort expectations
-          expect(comparisons.length).toBe(3); // 3 comparisons for 3 elements
+          // Since we can't actually use the Effect in Array.sort, verify each
+          // pairwise result carries the polarity an ascending sort relies on
+          expect(comparisons).toEqual([
+            { versions: ['2.0.0', '1.0.0'], result: 1 },
+            { versions: ['2.0.0', '3.0.0'], result: -1 },
+            { versions: ['1.0.0', '3.0.0'], result: -1 },
+          ]);
         })
       );
     });

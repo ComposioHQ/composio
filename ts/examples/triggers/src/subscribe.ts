@@ -5,9 +5,15 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
+const connectedAccountId = process.env.COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID; // your Gmail connected account ID
+const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user that owns the connected account
+if (!connectedAccountId || !userId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_GMAIL_CONNECTED_ACCOUNT_ID and COMPOSIO_EXAMPLES_USER_ID');
+}
+
 // create a trigger
-const { triggerId } = await composio.triggers.create('default','GMAIL_NEW_GMAIL_MESSAGE', {
-  connectedAccountId: 'ca_uQvmu9uZOhQo',
+const { triggerId } = await composio.triggers.create(userId, 'GMAIL_NEW_GMAIL_MESSAGE', {
+  connectedAccountId,
   triggerConfig: {},
 });
 

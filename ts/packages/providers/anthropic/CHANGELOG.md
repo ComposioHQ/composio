@@ -1,5 +1,31 @@
 # @composio/anthropic
 
+## 0.11.3
+
+### Patch Changes
+
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
+## 0.11.2
+
+### Patch Changes
+
+- 62e51e8: Refresh runtime dependencies and extend provider peer compatibility to the latest supported Anthropic and OpenAI Agents SDK releases.
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.11.1
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
+## 0.11.0
+
+### Minor Changes
+
+- 760f8d0: Allow OpenAI and Anthropic provider tool-call helpers to execute through a supplied Tool Router session. Session meta-tools now retain their session context while provider argument normalization remains intact; existing user-ID calls continue to use direct execution. Anthropic helper failures now preserve their error text in `{ error }` results without changing successful payloads. Custom provider subclasses overriding `executeToolCall` or `handleToolCalls` may require updates because these methods now accept session targets.
+
 ## 0.10.1
 
 ### Patch Changes

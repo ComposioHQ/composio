@@ -1,12 +1,9 @@
 import ts from 'typescript';
 import openapiTS, { type OpenAPI3, astToString } from 'openapi-typescript';
 import { Effect } from 'effect';
-import { TaggedError } from 'effect/Data';
+import { GenerateTypeFromJsonSchemaError } from 'src/generation/errors';
 
-export class GenerateTypeFromJsonSchemaError extends TaggedError('json-parsing-error')<{
-  cause?: unknown;
-  message?: string;
-}> {}
+export { GenerateTypeFromJsonSchemaError };
 
 export function generateTypeFromJsonSchema(
   name: string,

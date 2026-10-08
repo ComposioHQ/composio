@@ -6,7 +6,8 @@ describe('master-detector', () => {
   it('detects codex when codex env markers are present', () => {
     expect(
       detectMaster({
-        CODEX_THREAD_ID: 'thread_123',
+        codex: true,
+        claude: false,
       })
     ).toBe('codex');
   });
@@ -14,7 +15,8 @@ describe('master-detector', () => {
   it('detects claude when claude env markers are present without codex markers', () => {
     expect(
       detectMaster({
-        CLAUDE_CODE_ENTRYPOINT: 'sdk-ts',
+        codex: false,
+        claude: true,
       })
     ).toBe('claude');
   });
@@ -22,13 +24,13 @@ describe('master-detector', () => {
   it('prefers codex when both codex and claude markers are present', () => {
     expect(
       detectMaster({
-        CLAUDE_CODE_ENTRYPOINT: 'sdk-ts',
-        CODEX_THREAD_ID: 'thread_123',
+        codex: true,
+        claude: true,
       })
     ).toBe('codex');
   });
 
   it('falls back to user when no known agent markers are present', () => {
-    expect(detectMaster({})).toBe('user');
+    expect(detectMaster({ codex: false, claude: false })).toBe('user');
   });
 });

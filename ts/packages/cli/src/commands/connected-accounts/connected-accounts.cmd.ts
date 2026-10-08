@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './commands/connected-accounts.whoami.cmd';

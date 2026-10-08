@@ -37,6 +37,9 @@ const REDIRECTS = [
   { from: "/docs/sandbox", to: "/docs/sandbox/remote" },
   { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
+  { from: "/docs/white-labeling-authentication", to: "/docs/authentication/white-labeling-authentication" },
+  { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
+  { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
 ];
 
 describe("Redirects - key patterns", () => {

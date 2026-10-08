@@ -6,6 +6,8 @@ keywords: [crewai]
 
 The CrewAI provider turns Composio tools into CrewAI [`BaseTool`](https://docs.crewai.com/concepts/tools) objects that execute themselves. You connect an account, fetch the tools, pass them to an `Agent`, and CrewAI runs the task end to end.
 
+To connect through CrewAI's `mcps` field, follow the [Python MCP research agent example](/examples/python-mcp-agents). It uses a hosted session endpoint with `MCPServerHTTP`.
+
 <Steps>
 <Step>
 **Install**
@@ -64,6 +66,10 @@ print(result)
 ## Provider specifics
 
 Each Composio tool becomes a CrewAI `BaseTool` whose `args_schema` is built from the tool's input schema, so CrewAI validates arguments before running anything.
+
+Object arguments that declare no properties accept and preserve arbitrary nested keys. For objects that declare named properties, undeclared keys are rejected unless the schema allows them with `additionalProperties`. Schemas that use `patternProperties` or schema-valued `additionalProperties` also validate dynamic keys before execution.
+
+The provider preserves whether an optional argument was omitted or explicitly set to `None`. By default, declared defaults are included, while optional arguments without defaults stay absent. Set `schema_config={"skip_defaults": True}` when creating the provider to leave declared defaults absent too.
 
 When validation fails, the tool does not raise. It returns a structured result instead:
 

@@ -4,18 +4,19 @@ Each package in this directory adapts Composio tools to one agent framework's na
 
 ## Packages
 
-| Package | Framework |
-|---------|-----------|
-| [`@composio/openai`](openai) | OpenAI Chat Completions and Responses APIs |
-| [`@composio/openai-agents`](openai-agents) | OpenAI Agents SDK |
-| [`@composio/anthropic`](anthropic) | Anthropic Messages API |
-| [`@composio/claude-agent-sdk`](claude-agent-sdk) | Claude Agent SDK |
-| [`@composio/vercel`](vercel) | Vercel AI SDK |
-| [`@composio/google`](google) | Google GenAI |
-| [`@composio/langchain`](langchain) | LangChain and LangGraph |
-| [`@composio/llamaindex`](llamaindex) | LlamaIndex |
-| [`@composio/mastra`](mastra) | Mastra |
-| [`@composio/cloudflare`](cloudflare) | Cloudflare Workers AI |
+| Package                                          | Framework                                  |
+| ------------------------------------------------ | ------------------------------------------ |
+| [`@composio/openai`](openai)                     | OpenAI Chat Completions and Responses APIs |
+| [`@composio/openai-agents`](openai-agents)       | OpenAI Agents SDK                          |
+| [`@composio/anthropic`](anthropic)               | Anthropic Messages API                     |
+| [`@composio/claude-agent-sdk`](claude-agent-sdk) | Claude Agent SDK                           |
+| [`@composio/vercel`](vercel)                     | Vercel AI SDK                              |
+| [`@composio/google`](google)                     | Google GenAI                               |
+| [`@composio/langchain`](langchain)               | LangChain and LangGraph                    |
+| [`@composio/llamaindex`](llamaindex)             | LlamaIndex                                 |
+| [`@composio/mastra`](mastra)                     | Mastra                                     |
+| [`@composio/cloudflare`](cloudflare)             | Cloudflare Workers AI                      |
+| [`@composio/typesafe`](typesafe)                 | TypeSafe Jev (System One, no tool calling) |
 
 Each package README has an install command and a runnable quickstart.
 

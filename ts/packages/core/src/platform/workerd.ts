@@ -82,6 +82,11 @@ export const platform: Platform = {
     return filePath;
   },
 
+  isFileSystemCaseSensitive(_filePath: string): boolean {
+    // Preserve exact matching when there is no filesystem to inspect.
+    return true;
+  },
+
   mkdirSync(_dirPath: string): void {
     // No-op in edge runtimes - directories cannot be created
   },
@@ -102,5 +107,9 @@ export const platform: Platform = {
       'File system operations are not supported in this runtime environment (Cloudflare Workers/Edge). ' +
         'Use environment variables or external storage services instead.'
     );
+  },
+
+  writeFileExclusiveSync(_filePath: string, _content: Uint8Array): never {
+    throw new Error('File system operations are not supported in this runtime environment.');
   },
 };

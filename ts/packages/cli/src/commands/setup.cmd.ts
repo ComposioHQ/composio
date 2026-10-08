@@ -1,4 +1,5 @@
-import { Command, Options } from '@effect/cli';
+import { setupSkillCmd } from './setup-skill.cmd';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -7,6 +8,7 @@ import {
   getSetupSkippedEvent,
 } from 'src/analytics/events';
 import { APP_VERSION } from 'src/constants';
+import { AGENT_HOST_LABELS } from 'src/services/agent-host';
 import {
   detectSetupTargets,
   inspectSetupTargets,
@@ -14,49 +16,51 @@ import {
   isSetupPluginReady,
   isSetupReady,
   SETUP_TARGETS,
-  SetupCommandError,
   uninstallSetupTargets,
   type AgentHost,
 } from 'src/services/setup';
+import { SetupCommandError, type SetupFailureReasonCode } from 'src/services/setup-command-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
 
-const target = Options.choice('target', SETUP_TARGETS).pipe(
-  Options.withDefault('auto'),
-  Options.withDescription('Agent host to configure: auto, claude, codex, or all')
+const target = Flag.Literals('target', SETUP_TARGETS).pipe(
+  Flag.withDefault('auto'),
+  Flag.withDescription('Agent host to configure: auto, claude, codex, or all')
 );
 
-const yes = Options.boolean('yes').pipe(
-  Options.withAlias('y'),
-  Options.withDefault(false),
-  Options.withDescription('Accept setup changes without prompting')
+const yes = Flag.Boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Accept setup changes without prompting')
 );
 
-const ifPresent = Options.boolean('if-present').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Exit successfully when automatic detection finds no supported host')
+const ifPresent = Flag.Boolean('if-present').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Exit successfully when automatic detection finds no supported host')
 );
 
-const uninstall = Options.boolean('uninstall').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Uninstall Composio plugins instead of installing them')
+const uninstall = Flag.Boolean('uninstall').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Uninstall Composio plugins instead of installing them')
 );
-
-const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
-  claude: 'Claude Code',
-  codex: 'Codex',
-};
 
 const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
-  targets.map(target => TARGET_LABELS[target]).join(' and ');
+  targets.map(target => AGENT_HOST_LABELS[target]).join(' and ');
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const setupCommandError = (message: string, operation: 'setup' | 'uninstall', cause?: unknown) =>
+const setupCommandError = (
+  message: string,
+  operation: 'setup' | 'uninstall',
+  reasonCode: SetupFailureReasonCode,
+  cause?: unknown
+) =>
   new SetupCommandError({
     message,
     operation,
+    reasonCode,
     ...(cause === undefined ? {} : { cause }),
   });
 
@@ -67,6 +71,7 @@ const setupBaseCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const terminal = yield* ui.capabilities;
+      const { invocationOrigin } = yield* cliInvocationContext;
       const operation = uninstall ? 'uninstall' : 'setup';
       yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
@@ -84,6 +89,9 @@ const setupBaseCmd = Command.make(
               detection.available && !detection.supported
                 ? (detection.unsupportedReasonCode ?? 'unknown')
                 : undefined,
+            hostConfigDirPresent: detection.configDirPresent,
+            hostBinaryInKnownPaths: detection.binaryInKnownPaths,
+            invocationOrigin,
             cliVersion: APP_VERSION,
           })
         )
@@ -104,7 +112,8 @@ const setupBaseCmd = Command.make(
       if (target === 'all' && notDetected.length > 0) {
         return yield* setupCommandError(
           `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`,
-          operation
+          operation,
+          'all_requires_both_hosts'
         );
       }
       if (unsupported.length > 0) {
@@ -113,7 +122,7 @@ const setupBaseCmd = Command.make(
           .filter((message): message is string => Boolean(message))
           .join(' ');
         if (target !== 'auto') {
-          return yield* setupCommandError(reason, operation);
+          return yield* setupCommandError(reason, operation, 'unsupported_host');
         }
         yield* ui.log.warn(
           `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
@@ -121,31 +130,43 @@ const setupBaseCmd = Command.make(
         if (supported.length === 0) {
           if (ifPresent) {
             yield* trackCliEventEffect(
-              getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+              getSetupSkippedEvent({
+                operation,
+                requestedTarget: target,
+                invocationOrigin,
+                cliVersion: APP_VERSION,
+              })
             );
             yield* ui.outro(
               `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
             );
             return;
           }
-          return yield* setupCommandError(reason, operation);
+          return yield* setupCommandError(reason, operation, 'unsupported_host');
         }
       }
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {
           return yield* setupCommandError(
-            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`,
-            operation
+            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --yes --target ${target}\`.`,
+            operation,
+            'target_not_installed'
           );
         }
         if (!ifPresent || target !== 'auto') {
           return yield* setupCommandError(
-            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`,
-            operation
+            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''} --yes\`.`,
+            operation,
+            'no_host_detected'
           );
         }
         yield* trackCliEventEffect(
-          getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+          getSetupSkippedEvent({
+            operation,
+            requestedTarget: target,
+            invocationOrigin,
+            cliVersion: APP_VERSION,
+          })
         );
         yield* ui.outro(
           `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
@@ -170,12 +191,12 @@ const setupBaseCmd = Command.make(
 
         for (const status of installed) {
           yield* ui.log.success(
-            `The Composio plugin for ${TARGET_LABELS[status.target]} is installed.`
+            `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is installed.`
           );
         }
         for (const status of notInstalled) {
           yield* ui.log.info(
-            `The Composio plugin for ${TARGET_LABELS[status.target]} is not installed.`
+            `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is not installed.`
           );
         }
 
@@ -183,7 +204,8 @@ const setupBaseCmd = Command.make(
           if (!terminal.canPrompt) {
             return yield* setupCommandError(
               'Non-interactive uninstall requires `--yes` to approve local changes.',
-              operation
+              operation,
+              'non_interactive_requires_yes'
             );
           }
           const confirmed = yield* ui.confirm(
@@ -195,6 +217,7 @@ const setupBaseCmd = Command.make(
               getSetupCancelledEvent({
                 operation,
                 requestedTarget: target,
+                invocationOrigin,
                 cliVersion: APP_VERSION,
               })
             );
@@ -207,7 +230,7 @@ const setupBaseCmd = Command.make(
         for (const result of results) {
           if (!result.plugin_changed) continue;
           yield* ui.log.success(
-            `Successfully uninstalled the Composio plugin for ${TARGET_LABELS[result.target]}.`
+            `Successfully uninstalled the Composio plugin for ${AGENT_HOST_LABELS[result.target]}.`
           );
         }
         yield* ui.outro('Composio plugin uninstall complete.');
@@ -216,7 +239,7 @@ const setupBaseCmd = Command.make(
 
       for (const status of inspected.filter(isSetupPluginReady)) {
         yield* ui.log.success(
-          `The Composio plugin for ${TARGET_LABELS[status.target]} is already installed and enabled.`
+          `The Composio plugin for ${AGENT_HOST_LABELS[status.target]} is already installed and enabled.`
         );
       }
 
@@ -231,7 +254,8 @@ const setupBaseCmd = Command.make(
         if (!terminal.canPrompt) {
           return yield* setupCommandError(
             'Non-interactive setup requires `--yes` to approve local changes.',
-            operation
+            operation,
+            'non_interactive_requires_yes'
           );
         }
 
@@ -245,6 +269,7 @@ const setupBaseCmd = Command.make(
             getSetupCancelledEvent({
               operation,
               requestedTarget: target,
+              invocationOrigin,
               cliVersion: APP_VERSION,
             })
           );
@@ -259,28 +284,48 @@ const setupBaseCmd = Command.make(
 
         const initial = pending.find(status => status.target === result.target);
         if (!initial) {
-          return yield* Effect.dieMessage(
-            `Setup invariant violated: missing initial state for ${result.target}`
+          // v4 dropped `Effect.dieMessage`; `Effect.die` takes the defect directly.
+          return yield* Effect.die(
+            new Error(`Setup invariant violated: missing initial state for ${result.target}`)
           );
         }
         let action = 'configured and enabled';
         if (!initial.plugin_installed) action = 'installed and enabled';
         else if (!initial.plugin_enabled) action = 'enabled';
         yield* ui.log.success(
-          `Successfully ${action} the Composio plugin for ${TARGET_LABELS[result.target]}.`
+          `Successfully ${action} the Composio plugin for ${AGENT_HOST_LABELS[result.target]}.`
         );
       }
 
       yield* ui.outro('Composio setup complete.');
     }).pipe(
-      Effect.mapError(error =>
-        error instanceof SetupCommandError
-          ? error
-          : setupCommandError(errorMessage(error), uninstall ? 'uninstall' : 'setup', error)
-      )
+      Effect.mapError(error => {
+        if (error instanceof SetupCommandError) return error;
+        return setupCommandError(
+          errorMessage(error),
+          uninstall ? 'uninstall' : 'setup',
+          'unknown',
+          error
+        );
+      })
     )
 );
 
 export const setupCmd = setupBaseCmd.pipe(
-  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.')
+  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.'),
+  Command.withExamples([
+    {
+      command: 'composio setup',
+    },
+    {
+      command: 'composio setup --target auto --yes',
+    },
+    {
+      command: 'composio setup --uninstall --target auto --yes',
+    },
+    {
+      command: 'composio setup --target all',
+    },
+  ]),
+  Command.withSubcommands([setupSkillCmd])
 );

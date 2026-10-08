@@ -78,6 +78,7 @@ export class JsonSchemaToZodError extends ComposioError {
       ...options,
       code: options.code || ValidationErrorCodes.JSON_SCHEMA_TO_ZOD_ERROR,
     });
+    this.name = 'JsonSchemaToZodError';
   }
 }
 
@@ -95,5 +96,6 @@ export class JsonSchemaRefResolutionError extends ComposioError {
       ...options,
       code: options.code || ValidationErrorCodes.JSON_SCHEMA_REF_RESOLUTION_ERROR,
     });
+    this.name = 'JsonSchemaRefResolutionError';
   }
 }

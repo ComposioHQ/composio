@@ -1,15 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
   getCachedToolInputDefinition,
+  ToolInputSchemaCompileError,
   ToolInputValidationError,
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { loadObjectCases } from '../../fixtures/corpus';
 
 const definition = {
   schemaPath: '/tmp/GMAIL_SEND_EMAIL.json',
@@ -24,6 +27,11 @@ const definition = {
     },
   },
 } as const;
+
+// Every schema here compiles, so only the argument failure is of interest.
+const flipValidationError = <A, R>(
+  effect: Effect.Effect<A, ToolInputValidationError | ToolInputSchemaCompileError, R>
+) => effect.pipe(Effect.catchTag('ToolInputSchemaCompileError', Effect.die), Effect.flip);
 
 describe('tool input validation', () => {
   it.effect('validates tool input through Effect Schema', () =>
@@ -44,7 +52,7 @@ describe('tool input validation', () => {
         'GMAIL_SEND_EMAIL',
         { recipent_email: 'karan@composio.dev' },
         definition
-      ).pipe(Effect.flip);
+      ).pipe(flipValidationError);
 
       expect(error).toBeInstanceOf(ToolInputValidationError);
       expect(error.issues).toContain(
@@ -59,12 +67,12 @@ describe('tool input validation', () => {
         'GMAIL_SEND_EMAIL',
         { recipient: 'karan@composio.dev' },
         definition
-      ).pipe(Effect.flip);
+      ).pipe(flipValidationError);
       const unrelatedError = yield* validateToolInputArgumentsWithDefinition(
         'GMAIL_SEND_EMAIL',
         { account: 'karan@composio.dev' },
         definition
-      ).pipe(Effect.flip);
+      ).pipe(flipValidationError);
 
       expect(prefixError.issues).toContain(
         '<root>: Unknown key "recipient". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
@@ -83,7 +91,7 @@ describe('tool input validation', () => {
           'GMAIL_SEND_EMAIL',
           { recpnt_email: 'karan@composio.dev' },
           definition
-        ).pipe(Effect.flip);
+        ).pipe(flipValidationError);
         const containmentError = yield* validateToolInputArgumentsWithDefinition(
           'TEST_TOOL',
           { to: true },
@@ -95,7 +103,7 @@ describe('tool input validation', () => {
               properties: { auto_reply: { type: 'boolean' } },
             },
           }
-        ).pipe(Effect.flip);
+        ).pipe(flipValidationError);
 
         expect(longTypoError.issues).toContain(
           '<root>: Unknown key "recpnt_email". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
@@ -128,8 +136,9 @@ describe('tool input validation', () => {
           Layer.succeed(NodeOs, defaultNodeOs({ homedir: cacheDir }))
         )
       ),
-      Effect.withConfigProvider(
-        ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir]] satisfies Array<[string, string]>))
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        ConfigProvider.fromEnv({ env: { CACHE_DIR: cacheDir } })
       )
     );
   });
@@ -140,7 +149,7 @@ describe('tool input validation', () => {
         'GMAIL_SEND_EMAIL',
         { recipient_email: 42 },
         definition
-      ).pipe(Effect.flip);
+      ).pipe(flipValidationError);
 
       expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
     })
@@ -152,13 +161,49 @@ describe('tool input validation', () => {
         'GMAIL_SEND_EMAIL',
         { recipient_email: 42, subject: false, recipent_email: 'karan@composio.dev' },
         definition
-      ).pipe(Effect.flip);
+      ).pipe(flipValidationError);
 
       expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
       expect(error.issues.some(issue => issue.startsWith('subject:'))).toBe(true);
       expect(error.issues).toContain(
         '<root>: Unknown key "recipent_email". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
       );
+    })
+  );
+});
+
+describe('free-form object tool inputs', () => {
+  const freeFormCase = loadObjectCases().find(entry => entry.id === 'nested-free-form-object');
+  if (!freeFormCase) {
+    throw new Error('Corpus is missing the nested-free-form-object case');
+  }
+
+  const freeFormDefinition = {
+    schemaPath: '/tmp/METABASE_POST_API_CARD.json',
+    schema: freeFormCase.schema,
+  } as const;
+
+  it.effect('accepts arbitrary content inside a property-less object', () =>
+    Effect.gen(function* () {
+      const result = yield* validateToolInputArgumentsWithDefinition(
+        'METABASE_POST_API_CARD',
+        freeFormCase.instances[0].input,
+        freeFormDefinition
+      );
+
+      expect(result).toEqual(freeFormDefinition);
+    })
+  );
+
+  it.effect('still reports unknown keys for named-property schemas', () =>
+    Effect.gen(function* () {
+      const error = yield* validateToolInputArgumentsWithDefinition(
+        'GMAIL_SEND_EMAIL',
+        { recipient_email: 'karan@composio.dev', nope: 1 },
+        definition
+      ).pipe(flipValidationError);
+
+      expect(error).toBeInstanceOf(ToolInputValidationError);
     })
   );
 });

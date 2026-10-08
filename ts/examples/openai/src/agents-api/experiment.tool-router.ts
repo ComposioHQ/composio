@@ -25,8 +25,10 @@ const session = await composio.sessions.create(externalUserId, {
 
 const tools: HostedMCPTool[] = [
   hostedMcpTool({
-    serverLabel: 'composio tool router',
+    serverLabel: 'composio-tool-router',
     serverUrl: session.mcp.url,
+    // The MCP endpoint authenticates with your Composio API key
+    headers: { 'x-api-key': process.env.COMPOSIO_API_KEY! },
     requireApproval: {
       never: {
         toolNames: ['HACKERNEWS_GET_USER_BY_USERNAME'],
@@ -57,5 +59,5 @@ console.log('\n📰 HackerNews Profile:');
 
 const output = response.output.filter(({ type }) => type === 'message').at(0);
 
-// @ts-ignore
+// @ts-expect-error: the agents SDK types `output` as a union whose message variant is not narrowed by the `type` filter above
 console.log(output?.content[0].text);

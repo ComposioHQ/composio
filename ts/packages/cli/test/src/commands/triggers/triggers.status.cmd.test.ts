@@ -51,15 +51,15 @@ const triggersData = {
   items: testTriggers,
 } satisfies TestLiveInput['triggersData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] no flags [Then] lists active triggers only',
     it => {
-      it.scoped('lists active trigger instances', () =>
+      it.effect('lists active trigger instances', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'status']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -77,7 +77,7 @@ describe('CLI: composio dev triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] --show-disabled [Then] includes disabled triggers',
     it => {
-      it.scoped('includes disabled trigger instances', () =>
+      it.effect('includes disabled trigger instances', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'status', '--show-disabled']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -94,7 +94,7 @@ describe('CLI: composio dev triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] --user-ids [Then] filters by user IDs',
     it => {
-      it.scoped('filters by user_ids', () =>
+      it.effect('filters by user_ids', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'status', '--user-ids', 'user_123']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -111,15 +111,9 @@ describe('CLI: composio dev triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] --trigger-names lowercase [Then] applies case-insensitive filter',
     it => {
-      it.scoped('normalizes trigger names to uppercase', () =>
+      it.effect('normalizes trigger names to uppercase', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'triggers',
-            'status',
-            '--trigger-names',
-            'gmail_new_gmail_message',
-          ]);
+          yield* cli(['dev', 'triggers', 'status', '--trigger-names', 'gmail_new_gmail_message']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -134,7 +128,7 @@ describe('CLI: composio dev triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] --toolkits [Then] filters by toolkit slug',
     it => {
-      it.scoped('filters by toolkit prefix in trigger name', () =>
+      it.effect('filters by toolkit prefix in trigger name', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'status', '--toolkits', 'slack']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -149,7 +143,7 @@ describe('CLI: composio dev triggers status', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'status']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

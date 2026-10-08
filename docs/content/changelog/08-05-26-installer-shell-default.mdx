@@ -1,0 +1,40 @@
+---
+title: "The CLI installer configures your shell by default"
+description: "curl | sh now infers your login shell and writes a managed PATH block, with COMPOSIO_INSTALL_SHELL=none as the install-only opt-out."
+date: "2026-08-05"
+---
+
+The Composio CLI installer now puts `composio` on `PATH` for future terminals automatically. This replaces the install-only default announced in [Install the Composio CLI with a POSIX shell](/docs/changelog/2026/07/31).
+
+<Callout type="warn">
+**Behavior change: `curl | sh` now edits shell startup files by default**
+
+The previous installer copied files into place and left `PATH` alone. It now infers your login shell from `$SHELL` and writes a managed `PATH` block to that shell's startup files, so new terminals find `composio` without manual setup:
+
+- zsh: `~/.zshrc`
+- bash: `~/.bashrc` and your login file — `~/.bash_profile`, or `~/.bash_login` when that is the only login file present
+- fish: `~/.config/fish/config.fish`
+
+On bash systems with no login file at all, the installer **creates `~/.bash_profile`**. When `~/.profile` exists, the new file is seeded to keep sourcing it, so your existing login settings still load.
+
+To keep the previous install-only behavior, opt out with `COMPOSIO_INSTALL_SHELL=none`:
+
+```sh
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none sh
+```
+</Callout>
+
+### What's new
+
+- The default flow infers your shell from `$SHELL` and configures `PATH` for future terminals. Set `COMPOSIO_INSTALL_SHELL=none` for an install-only run in CI, Docker images, or when a dotfile manager owns your startup files.
+- `COMPOSIO_INSTALL_SHELL=zsh|bash|fish` still forces a specific shell, for example `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`.
+- If your `$SHELL` is not zsh, bash, or fish, the installer degrades to an install-only run and prints the command to configure `PATH` yourself.
+- Agent plugin installation and login remain opt-in.
+- Re-running the installer reconciles the managed block instead of appending a second one, so repeated installs leave exactly one block per startup file.
+
+### Download verification
+
+- Every download uses HTTPS — plain HTTP is accepted only for loopback addresses or a host you explicitly allow with `COMPOSIO_INSTALL_ALLOW_HTTP_HOST` — and redirects can only ever lead to HTTPS URLs.
+- Official releases — the default `github.com/ComposioHQ/composio` source — must now pass checksum verification: a missing `checksums.txt`, a manifest with no entry for your platform's archive, a malformed entry, or a checksum mismatch aborts the install. Previously a missing manifest warned and continued.
+- On systems with no SHA-256 utility (`sha256sum` or `shasum`), rare outside minimal containers, the installer warns that checksum verification was skipped and continues.
+- Overridden sources (`COMPOSIO_GITHUB_URL`, `COMPOSIO_GITHUB_OWNER`, `COMPOSIO_GITHUB_REPO`, or a custom API base) stay lenient: a missing manifest or entry warns and continues, and only a checksum mismatch or malformed entry aborts.

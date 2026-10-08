@@ -42,3 +42,6 @@ export * from './FileModifierErrors';
 
 // SSRF guard (URL file inputs)
 export * from './SsrfErrors';
+
+// Session (tool router) errors
+export * from './ToolRouterErrors';

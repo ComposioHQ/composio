@@ -1,5 +1,8 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
@@ -11,7 +14,36 @@ import {
   resolveSetupSkillReleaseTag,
 } from 'src/services/setup-skill-installer';
 
-const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
+const TestHttpClient = Layer.succeed(
+  HttpClient.HttpClient,
+  HttpClient.make(request =>
+    Effect.succeed(
+      HttpClientResponse.fromWeb(
+        request,
+        new Response(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.21',
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'https://example.test/composio-skill.zip',
+                },
+              ],
+            },
+          ]),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+    )
+  )
+);
+
+const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer, TestHttpClient);
 
 describe('SetupSkillInstaller', () => {
   layer(TestPlatform)(it => {
@@ -32,7 +64,7 @@ describe('SetupSkillInstaller', () => {
       })
     );
 
-    it.effect('falls back to the build version outside a packaged install', () =>
+    it.effect('uses the running package fallback outside a packaged install', () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const installDir = tempy.temporaryDirectory();

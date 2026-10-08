@@ -9,6 +9,8 @@
     "test:e2e:node": "bun test e2e.test.ts"
   },
   "devDependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/openai": "workspace:*",
     "@e2e-tests/utils": "workspace:*"
   }
 }

@@ -8,7 +8,6 @@ packages:
   - ts/examples/*
   - ts/packages/cli
   - ts/packages/cli-keyring
-  - ts/packages/cli-local-tools
   - ts/packages/core
   - ts/packages/experimental
   - ts/packages/json-schema-to-effect-schema
@@ -28,41 +27,46 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/openai': ^4.0.20
+  '@ai-sdk/mcp': ^2.0.55
+  '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
-  '@clack/core': '^1.4.3'
-  '@clack/prompts': '^1.7.0'
-  '@cloudflare/vitest-pool-workers': 0.18.8
-  '@cloudflare/workers-types': ^5.20260724.1
-  '@composio/client': 0.1.0-alpha.76
-  '@effect/cli': ^0.76.0
-  '@effect/language-service': ^0.87.1
-  '@effect/platform': ^0.97.0
-  '@effect/platform-bun': ^0.91.0
-  '@effect/platform-node': ^0.108.0
-  '@effect/platform-node-shared': ^0.61.0
-  '@effect/vitest': ^0.30.0
-  '@mastra/core': ^1.52.1
-  '@modelcontextprotocol/sdk': ^1.29.0
-  '@types/bun': ^1.3.14
-  ai: ^7.0.37
-  dotenv: ^17.4.2
-  effect: ^3.22.0
-  hono: ^4.12.31
-  openai: ^6.49.0
+  '@clack/core': '^1.5.1'
+  '@clack/prompts': '^1.8.1'
+  '@cloudflare/vitest-pool-workers': 0.22.0
+  '@cloudflare/workers-types': ^5.20260922.1
+  '@composio/client': 2.0.0-rc.10
+  '@effect/language-service': ^0.87.2
+  '@effect/platform-bun': 4.0.0-rc.117
+  '@effect/vitest': 4.0.0-rc.117
+  # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
+  # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
+  # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
+  # link. 1.53.0 is the newest release that still bundles for workerd.
+  '@mastra/core': 1.53.0
+  '@modelcontextprotocol/sdk': ^1.30.0
+  '@types/bun': ^1.4.2
+  ai: ^7.0.111
+  dotenv: ^18.0.2
+  effect: 4.0.0-rc.117
+  hono: ^4.13.8
+  openai: ^7.21.0
   picocolors: ^1.1.1
-  pnpm: ^11.17.0
-  publint: ^0.3.22
-  tsdown: ^0.22.14
-  tsx: ^4.23.1
+  publint: ^0.3.24
+  tsdown: ^0.23.0
+  tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^4.1.10
-  vitest: ^4.1.10
-  wrangler: ^4.114.0
-  zod: ^4.4.3
+  '@vitest/ui': ^5.0.1
+  vitest: ^5.0.1
+  wrangler: ^4.136.1
+  zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
 catalogs:
+  # @cloudflare/vitest-pool-workers 0.22 only supports Vitest 4. Keep the
+  # Workers test projects on the latest compatible v4 while the rest of the
+  # workspace, including @effect/vitest, runs on Vitest 5.
+  vitest4:
+    vitest: ^4.1.11
   # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
   # `typescript` rebinds the compiler-API import for @composio/cli's generate
   # pipeline and @composio/core's typedoc docgen (their typechecks still run the
@@ -81,35 +85,102 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
+  # temporary: 0.6.0 (2026-09-15) is the first release with the API that
+  # @composio/typesafe targets. Publisher, provenance, and the absence of install
+  # scripts were checked by hand for this exact version only, so later releases
+  # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
+  - '@typesafe-ai/sdk@0.6.0'
 
 peerDependencyRules:
   allowedVersions:
     typescript: '^6.0.0 || ^7.0.0'
-    vitest: ^4.0.0
+    # openai >=7.4 declares an optional `undici` peer of '>=5 <9'. The
+    # `undici@>=5.0.0 <6.28.0` override below narrows that range to '<7', which
+    # @composio/core's own `undici@^7` dependency then reports as unmet. The
+    # 7.x line is what openai actually supports; core is pinned to it on purpose
+    # (see pinnedDispatcher.node.ts -- Node's fetch rejects undici 8 dispatchers).
+    undici: ^7.29.0
     zod: ^4.0.0
 
 overrides:
-  qs@<6.14.1: '>=6.14.1'
+  # temporary: @mastra/mcp 1.17.3 raised its @mastra/core peer floor to 1.64,
+  # above the Workers-compatible ceiling pinned in the catalog above. Drop this
+  # once @mastra/core can move.
+  '@mastra/mcp@>=1.17.3 <2': 1.17.2
+  # GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g; express pulls the 6.15.x line.
+  # Drop when its lockfile resolution is >=6.16.0 without an override.
+  'qs@<6.16.0': '>=6.16.0 <7'
   protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
-  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.0
-  'js-yaml@>=4.0.0 <4.3.0': '>=4.3.0 <5'
+  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins
+  # vulnerable 4.2.0; GHSA-2883-xcg3-v3hh raised the patched floor to 4.3.2.
+  # Drop when it ships >=4.3.2.
+  'js-yaml@>=4.0.0 <4.3.2': '>=4.3.2 <5'
+  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x;
+  # GHSA-rfgv-xxqx-mfg5 raised the patched floor to 6.28.1. Drop when it ships
+  # >=6.28.1.
+  'undici@>=5.0.0 <6.28.1': '>=6.28.1 <7'
+  # temporary: gray-matter (via @mastra/core) exact-pins vulnerable js-yaml 3.15.0;
+  # GHSA-2883-xcg3-v3hh raised the patched floor to 3.15.2. Drop when it ships
+  # >=3.15.2.
+  'js-yaml@>=3.0.0 <3.15.2': '>=3.15.2 <4'
   # temporary: @modelcontextprotocol/sdk depends on the 1.x line, which
   # GHSA-frvp-7c67-39w9 (serve-static path traversal) patches only in 2.0.5.
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
-  # temporary: GHSA-mh99-v99m-4gvg (HIGH, unbounded-expansion OOM) covers every
-  # version <=5.0.7 with no 1.x or 2.x backport, so this selector spans majors
-  # deliberately -- narrowing it to the 5.x line would reintroduce a HIGH
-  # finding on the production openapi-typescript path and fail the audit gate.
+  # temporary: GHSA-7p8r-x3mc-p8w7, then GHSA-f65p-4m7j-42xc /
+  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8 raised the
+  # patched floor to 3.1.6. ajv accepts the patched 3.x line. Drop when its
+  # lockfile resolution is >=3.1.6 without an override.
+  'fast-uri@>=3.0.0 <3.1.6': '>=3.1.6 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
+  # line. Drop when its lockfile resolution is >=10.3.1 without an override.
+  'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
+  # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
+  'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
+  # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
+  # GHSA-rgw5-rvv9-x895, GHSA-6j4f-fj2g-mc7p, and GHSA-qhr7-859c-m2p7 raise
+  # its patched floor to 5.0.11. This selector spans majors deliberately --
+  # narrowing it to the 5.x line would reintroduce a HIGH finding on the
+  # production openapi-typescript path and fail the audit gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
   # brace-expansion as a callable CJS export, which 5.x replaced with a named
   # `expand`, so a brace-containing pattern throws there. Not reachable today --
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.7': '>=5.0.8 <6'
+  'brace-expansion@<=5.0.10': '>=5.0.11 <6'
+  # temporary: miniflare (via wrangler and @cloudflare/vitest-pool-workers in the
+  # Cloudflare e2e fixtures) exact-pins sharp 0.35.2, which bundles a libheif
+  # with GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545. Nothing here imports
+  # sharp; miniflare only uses it to emulate the Images binding. Drop when
+  # miniflare pins >=0.35.4.
+  'sharp@<0.35.4': '>=0.35.4 <0.36'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+
+auditConfig:
+  ignoreGhsas:
+    # extract-zip symlink path traversal. GitHub records no fixed version --
+    # 2.0.1 is the newest release and the repository has been dormant since
+    # 2021 -- so there is nothing to upgrade to. The CLI extracts through
+    # `extractZipSafely`, which rejects symlink entries before they are written
+    # (ts/packages/cli/src/utils/extract-zip-safely.ts, covered by tests). Drop
+    # once a patched release exists.
+    # GHSA-7pqw-9j4j-h8q3 is GitHub's second write-up of the same symlink
+    # extraction bug (arbitrary file write through a symlink entry), with the
+    # same empty patched range.
+    - GHSA-jmr9-qjv8-65gv
+    - GHSA-7pqw-9j4j-h8q3
+    # @ai-sdk/provider-utils 3.x uncontrolled resource consumption (low). The
+    # advisory names >=3.0.98 as patched, but the highest published 3.x is
+    # 3.0.36 (@mastra/core exact-pins 3.0.30) and GitHub records no fixed
+    # version, so no bump reaches it. It reaches the
+    # audit only through @mastra/core (capped at 1.53.0 above), which is a peer
+    # or dev dependency of every published package -- all flagged paths are
+    # private examples and e2e fixtures. Drop once @mastra/core can move past
+    # the 3.x provider-utils line.
+    - GHSA-866g-f22w-33x8

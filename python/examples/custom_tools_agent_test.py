@@ -21,7 +21,6 @@ from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
 composio = Composio(
-    base_url=os.environ.get("COMPOSIO_BASE_URL"),
     provider=OpenAIAgentsProvider(),
 )
 
@@ -164,19 +163,13 @@ async def run_test(prompt, test_name):
 
 
 async def main():
+    # One test per custom-tool pattern: standalone, custom toolkit, extension.
     tests = [
         ("Look up user-2", "Standalone (inferred slug/name)"),
-        ("Generate a formal greeting for Alice", "Standalone (overridden slug/name)"),
         ("Set user-1 role to developer", "Toolkit tool"),
-        ("Look up user-1 and set their role to viewer", "Mixed local tools"),
-        ("What is the weather in Tokyo?", "Remote (weathermap)"),
         (
             'Draft an email to bob@acme.com with subject "Test" and body "Hello!"',
             "Gmail proxy",
-        ),
-        (
-            "Look up user-1, draft them an email saying hi, include weather in SF",
-            "Mixed all",
         ),
     ]
 
@@ -191,6 +184,9 @@ async def main():
     for name, ok in results:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name}")
     print(f"\n{sum(1 for _, ok in results if ok)}/{len(results)} passed")
+
+    if not all(ok for _, ok in results):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

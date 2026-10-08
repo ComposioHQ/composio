@@ -1,6 +1,7 @@
-# OpenAI + Zod v4 Compatibility Test
+# OpenAI v7 + Zod v4 Compatibility Test
 
-Verifies that `@composio/core` works correctly with `openai` and `zod@4`.
+Verifies that packed `@composio/core` and `@composio/openai` packages work with
+`openai@7` and `zod@4`.
 
 ## Background
 
@@ -8,29 +9,38 @@ Issue [#2336](https://github.com/ComposioHQ/composio/issues/2336) reported peer 
 
 ## What It Tests
 
-| Test                | Description                                           |
-| ------------------- | ----------------------------------------------------- |
-| npm install         | Installs `@composio/core`, `openai`, and `zod@4`      |
-| Package integration | Verifies all packages work together without conflicts |
-| wrapTool            | Confirms OpenAI provider tool wrapping works          |
+| Test                | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| npm install         | Installs packed Composio packages with OpenAI 7 and Zod 4 |
+| TypeScript          | Checks exported provider types against OpenAI 7           |
+| Package integration | Verifies all packages work together without conflicts     |
+| wrapTool            | Confirms both OpenAI provider surfaces wrap tools         |
 
 ## Fixture
 
 ```
 fixtures/
-├── index.mjs      # Test script that imports and uses all packages
-└── package.json   # Declares dependencies: @composio/core, openai@^6.16.0, zod@^4.3.5
+├── index.mjs      # Offline runtime assertions
+├── index.ts       # Exported-type compatibility checks
+├── package.json   # Explicit OpenAI 7 and Zod 4 dependencies
+└── tsconfig.json  # Strict consumer compiler settings
 ```
 
-The fixture uses `usesFixtures: true` with a setup phase to install dependencies at runtime:
+The setup phase packs the Composio packages, installs them with explicit
+OpenAI 7 and Zod 4 versions, and typechecks without `skipLibCheck`.
 
-- `package.json` declares `@composio/core` (linked from monorepo), `openai`, and `zod@4`
-- `index.mjs` imports all three packages and verifies they work together
-- Tests `wrapTool` to ensure schema conversion works with Zod v4
+`@composio/json-schema-to-zod` is packed alongside `@composio/core` and
+`@composio/openai` even though the fixture never imports it directly. `pnpm
+pack` rewrites `@composio/core`'s `workspace:*` dependency on it to the exact
+workspace version, so installing the core tarball alone makes npm fetch that
+version from the registry. On a release branch the workspace version is the
+one about to be published and does not exist yet, which fails the install.
+Packing it locally keeps the fixture resolvable before publication.
 
 ## Setup
 
-The `setup` phase runs `npm install --legacy-peer-deps` in a Docker volume, then the fixture runs with the installed `node_modules` mounted read-only.
+The runtime phase constructs clients with fake keys and never makes a network
+request.
 
 ## Isolation Tool
 

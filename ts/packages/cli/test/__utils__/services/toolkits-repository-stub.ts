@@ -1,0 +1,102 @@
+import { Effect, Layer } from 'effect';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
+import type { Toolkits } from 'src/models/toolkits';
+
+export type GetToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getToolkits']>
+>;
+
+const notUsed = (method: string) => () => Effect.die(`${method} is not used in this test`);
+
+/**
+ * Every repository method the toolkit-catalog suites do not exercise. A call
+ * to any of them is a defect in the test, not a scenario to handle.
+ */
+const unusedRepositoryMethods = {
+  getToolkitsBySlugs: notUsed('getToolkitsBySlugs'),
+  getMetrics: notUsed('getMetrics'),
+  getToolsAsEnums: notUsed('getToolsAsEnums'),
+  getTools: notUsed('getTools'),
+  getToolsByVersionSpecs: notUsed('getToolsByVersionSpecs'),
+  getTriggerTypesAsEnums: notUsed('getTriggerTypesAsEnums'),
+  getTriggerTypes: notUsed('getTriggerTypes'),
+  getTriggerTypeDetailed: notUsed('getTriggerTypeDetailed'),
+  validateToolkits: notUsed('validateToolkits'),
+  validateToolkitVersions: notUsed('validateToolkitVersions'),
+  // The repository's one synchronous method cannot return a dying Effect.
+  filterToolkitsBySlugs: (): never => {
+    throw new Error('filterToolkitsBySlugs is not used in this test');
+  },
+  searchToolkits: notUsed('searchToolkits'),
+  getToolkitDetailed: notUsed('getToolkitDetailed'),
+  searchTools: notUsed('searchTools'),
+  getToolDetailed: notUsed('getToolDetailed'),
+  listAuthConfigs: notUsed('listAuthConfigs'),
+  getAuthConfig: notUsed('getAuthConfig'),
+  createAuthConfig: notUsed('createAuthConfig'),
+  deleteAuthConfig: notUsed('deleteAuthConfig'),
+  listConnectedAccounts: notUsed('listConnectedAccounts'),
+  getConnectedAccount: notUsed('getConnectedAccount'),
+  deleteConnectedAccount: notUsed('deleteConnectedAccount'),
+  createConnectedAccountLink: notUsed('createConnectedAccountLink'),
+  listActiveTriggers: notUsed('listActiveTriggers'),
+  createTrigger: notUsed('createTrigger'),
+  enableTrigger: notUsed('enableTrigger'),
+  disableTrigger: notUsed('disableTrigger'),
+  deleteTrigger: notUsed('deleteTrigger'),
+} as const;
+
+export type GetProjectToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getProjectToolkits']>
+>;
+
+/**
+ * A repository whose every method dies unless the test overrides it.
+ */
+export const makeToolkitsRepositoryStub = (
+  overrides: Partial<ComposioToolkitsRepositoryShape>
+): ComposioToolkitsRepositoryShape =>
+  ComposioToolkitsRepository.of({
+    ...unusedRepositoryMethods,
+    getToolkits: notUsed('getToolkits'),
+    getProjectToolkits: notUsed('getProjectToolkits'),
+    ...overrides,
+  });
+
+/**
+ * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test
+ * can assert not just what was resolved but what it cost. The native and
+ * project-managed catalogs are counted separately.
+ */
+export const countingToolkitsRepository = (
+  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
+  getProjectToolkits: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError> = () => Effect.succeed([])
+) => {
+  let calls = 0;
+  let projectCalls = 0;
+
+  const layer = Layer.succeed(
+    ComposioToolkitsRepository,
+    ComposioToolkitsRepository.of({
+      ...unusedRepositoryMethods,
+      getToolkits: () =>
+        Effect.suspend(() => {
+          calls += 1;
+          return getToolkits();
+        }),
+      getProjectToolkits: scope =>
+        Effect.suspend(() => {
+          projectCalls += 1;
+          return getProjectToolkits(scope);
+        }),
+    })
+  );
+
+  return { layer, calls: () => calls, projectCalls: () => projectCalls };
+};

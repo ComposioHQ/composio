@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import semver from 'semver';
 import {
   findIgnoredChangesetReleases,
   validateChangesets,
@@ -26,6 +27,10 @@ const changesetConfig = JSON.parse(
 );
 const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
+  'utf8'
+);
+const tsTestWorkflow = readFileSync(
+  new URL('../.github/workflows/ts.test.yml', import.meta.url),
   'utf8'
 );
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
@@ -47,11 +52,16 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
+const buildAllCliBinariesScript = readFileSync(
+  new URL('../ts/packages/cli/scripts/build-all-binaries.ts', import.meta.url),
+  'utf8'
+);
 const installGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
 const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
 );
+const cliDocsGuide = readFileSync(new URL('../docs/content/docs/cli.mdx', import.meta.url), 'utf8');
 const resolveTargetScriptUrl = new URL(
   '../.github/scripts/cli-release/resolve-release-target.sh',
   import.meta.url
@@ -66,6 +76,12 @@ const verifyAssetsScript = readFileSync(
   new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url),
   'utf8'
 );
+const generateChecksumsScriptUrl = new URL(
+  '../ts/packages/cli/scripts/generate-checksums.ts',
+  import.meta.url
+);
+const generateChecksumsScriptPath = generateChecksumsScriptUrl.pathname;
+const generateChecksumsScript = readFileSync(generateChecksumsScriptUrl, 'utf8');
 
 function requireMatch(text, pattern, label) {
   const match = text.match(pattern);
@@ -82,10 +98,13 @@ function readPyprojectVersion(text, label) {
 function readSdkVersions(rows) {
   const versions = new Set();
   const pythonVersionPattern =
-    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
+    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)(?:[._-]?\d+)?)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
 
   for (const row of rows) {
-    const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+    const cells = row
+      .split('|')
+      .map(cell => cell.trim())
+      .filter(Boolean);
     const releaseVersionCell = cells[cells.length - 1];
     if (!releaseVersionCell) continue;
 
@@ -119,7 +138,40 @@ function readDocumentedSdkVersions(sdkLabel) {
   return readSdkVersions(rows);
 }
 
-function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
+function readTypeScriptWorkspacePackages() {
+  const workspacePackages = [];
+
+  for (const workspacePattern of packageJson.workspaces ?? []) {
+    if (!workspacePattern.startsWith('ts/packages/')) continue;
+
+    const workspacePaths = workspacePattern.endsWith('/*')
+      ? readdirSync(new URL(`../${workspacePattern.slice(0, -2)}/`, import.meta.url), {
+          withFileTypes: true,
+        })
+          .filter(entry => entry.isDirectory())
+          .map(entry => `${workspacePattern.slice(0, -1)}${entry.name}`)
+      : [workspacePattern];
+
+    for (const workspacePath of workspacePaths) {
+      const manifestUrl = new URL(`../${workspacePath}/package.json`, import.meta.url);
+      if (!existsSync(manifestUrl)) continue;
+
+      workspacePackages.push({
+        manifest: JSON.parse(readFileSync(manifestUrl, 'utf8')),
+        path: `${workspacePath}/package.json`,
+      });
+    }
+  }
+
+  return workspacePackages;
+}
+
+function runPythonBuildFixture({
+  providers,
+  providerFiles = [],
+  failingProvider = '',
+  target = 'build',
+}) {
   const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-python-build-'));
   const buildLogPath = join(fixtureDir, 'build.log');
 
@@ -162,7 +214,7 @@ touch "$target/dist/provider.whl"
       writeFileSync(join(fixtureDir, 'providers', providerFile), 'not a provider package\n');
     }
 
-    const result = spawnSync('make', ['-f', pythonMakefilePath, 'build'], {
+    const result = spawnSync('make', ['-f', pythonMakefilePath, target], {
       cwd: fixtureDir,
       encoding: 'utf8',
       env: {
@@ -178,6 +230,25 @@ touch "$target/dist/provider.whl"
     };
   } finally {
     rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+{
+  const result = runPythonBuildFixture({
+    providers: ['provider-must-not-build'],
+    target: 'build-core',
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Python core-only build fixture failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+  if (!result.invocations.includes('<root>')) {
+    throw new Error('Python core-only build must build the root SDK package');
+  }
+  if (result.invocations.includes('providers/provider-must-not-build')) {
+    throw new Error('Python core-only build must not build provider packages');
   }
 }
 
@@ -219,32 +290,36 @@ touch "$target/dist/provider.whl"
 
 {
   const directVersion = readSdkVersions(['| Python `composio` | `9.9.9` |']);
-  const versionWithPrevious = readSdkVersions([
-    '| Python `composio` | v9.9.8 | **v9.9.9** |',
-  ]);
-  const previousVersionOnly = readSdkVersions([
-    '| Python `composio` | v9.9.9 | **v9.9.10** |',
-  ]);
+  const versionWithPrevious = readSdkVersions(['| Python `composio` | v9.9.8 | **v9.9.9** |']);
+  const previousVersionOnly = readSdkVersions(['| Python `composio` | v9.9.9 | **v9.9.10** |']);
   const pep440Versions = readSdkVersions([
     '| Python `composio` | `9.9.9rc1` |',
     '| Python `composio` | `9.9.9.post1` |',
     '| Python `composio` | `9.9.9.dev1` |',
   ]);
+  const semverPrerelease = readSdkVersions(['| TypeScript `@composio/core` | `1.0.0-beta.0` |']);
 
   if (!directVersion.has('9.9.9') || !versionWithPrevious.has('9.9.9')) {
     throw new Error('Python SDK changelog version rows must recognize the released version');
   }
   if (previousVersionOnly.has('9.9.9')) {
-    throw new Error('Python SDK changelog version rows must not treat the previous version as released');
+    throw new Error(
+      'Python SDK changelog version rows must not treat the previous version as released'
+    );
   }
   for (const version of ['9.9.9rc1', '9.9.9.post1', '9.9.9.dev1']) {
     if (!pep440Versions.has(version)) {
-      throw new Error(`Python SDK changelog version rows must recognize PEP 440 version ${version}`);
+      throw new Error(
+        `Python SDK changelog version rows must recognize PEP 440 version ${version}`
+      );
     }
+  }
+  if (!semverPrerelease.has('1.0.0-beta.0')) {
+    throw new Error('SDK changelog version rows must recognize SemVer prerelease versions');
   }
 }
 
-if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
+if (!tsReleaseWorkflow.includes('publish-script: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
 }
 
@@ -254,6 +329,25 @@ if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-re
 
 if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
   throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+if (
+  packageJson.scripts?.['check:provider-compatibility'] !==
+  'tsx ts/scripts/check-provider-compatibility.ts'
+) {
+  throw new Error('check:provider-compatibility must use the packed consumer harness');
+}
+
+const tsTestBuildIdx = tsTestWorkflow.indexOf('run: pnpm run build:packages');
+const tsTestProviderCompatibilityIdx = tsTestWorkflow.indexOf(
+  'run: pnpm run check:provider-compatibility'
+);
+if (
+  tsTestBuildIdx === -1 ||
+  tsTestProviderCompatibilityIdx === -1 ||
+  tsTestBuildIdx > tsTestProviderCompatibilityIdx
+) {
+  throw new Error('ts.test.yml must build packages before checking packed provider compatibility');
 }
 
 {
@@ -322,6 +416,27 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
+if (
+  !tsReleaseWorkflow.includes('changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2')
+) {
+  throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
+}
+
+for (const input of [
+  'github-token: ${{ steps.app-token.outputs.token }}',
+  'publish-script: pnpm changeset:release',
+  "commit-message: 'Release: update version'",
+  "pr-title: 'Release: update version'",
+]) {
+  if (!tsReleaseWorkflow.includes(input)) {
+    throw new Error(`ts.release.yml must use the changesets/action v2 ${input} input`);
+  }
+}
+
+if (!tsReleaseWorkflow.includes('steps.changesets.outputs.published-packages')) {
+  throw new Error('ts.release.yml must read the changesets/action v2 published-packages output');
+}
+
 if (changesetConfig.baseBranch !== 'next') {
   throw new Error('changesets must compare against next, the active release branch');
 }
@@ -335,10 +450,80 @@ if (
   );
 }
 
+{
+  const MIN_NODE_VERSION = '>=22.22.3';
+  const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
+    ({ manifest }) => manifest.private !== true
+  );
+  // @typesafe-ai/sdk 0.6.0 terminates the process after a handled cancellation on Node
+  // releases before 24.17 (typesafe-ai/typesafe-sdk-js#2), so that provider advertises a
+  // higher floor until the SDK is fixed.
+  const NODE_VERSION_EXCEPTIONS = {
+    '@composio/typesafe': '>=24.17.0',
+  };
+  const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
+    ({ manifest }) =>
+      manifest.engines?.node !== (NODE_VERSION_EXCEPTIONS[manifest.name] ?? MIN_NODE_VERSION)
+  );
+
+  if (publicTsReleaseWorkspaces.length === 0) {
+    throw new Error('Node.js engine validation must discover public TypeScript workspaces');
+  }
+  if (invalidNodeEngines.length > 0) {
+    const details = invalidNodeEngines
+      .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
+      .join('\n');
+    throw new Error(
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}, or their documented exception:\n${details}`
+    );
+  }
+}
+
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
+
+// PEP 440 compact prereleases (0.23.1rc1) and the separator form that
+// python/scripts/bump.py --pre emits (0.23.1-rc.1) must both count as prereleases,
+// here and in the workflow's inline detector.
+const PYTHON_PRERELEASE_PATTERN = /(?:a|b|rc|dev)[-_.]?\d/i;
+const PYTHON_PRERELEASE_SAMPLES: ReadonlyArray<readonly [string, boolean]> = [
+  ['0.23.0', false],
+  ['0.23.1', false],
+  ['0.23.1rc1', true],
+  ['0.23.1-rc.1', true],
+  ['0.23.1b2', true],
+  ['0.23.1.dev3', true],
+  ['0.23.1a1', true],
+];
+const workflowPrereleaseDetector = requireMatch(
+  pythonReleaseWorkflow,
+  /is_prerelease = re\.search\(r"([^"]+)", version, re\.IGNORECASE\) is not None/,
+  'py.release.yml prerelease detector'
+);
+for (const [sample, expected] of PYTHON_PRERELEASE_SAMPLES) {
+  if (PYTHON_PRERELEASE_PATTERN.test(sample) !== expected) {
+    throw new Error(`release-workflow prerelease detector misclassifies ${sample}`);
+  }
+  if (new RegExp(workflowPrereleaseDetector, 'i').test(sample) !== expected) {
+    throw new Error(`py.release.yml prerelease detector misclassifies ${sample}`);
+  }
+}
 
 if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   throw new Error('py.release.yml must validate release metadata before publishing');
+}
+for (const input of ['id: release_mode', 'core_only=']) {
+  if (!pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must select the core-only build for prereleases: ${input}`);
+  }
+}
+if (
+  !/if \[\[ "\$\{\{ steps\.release_mode\.outputs\.core_only \}\}" == "true" \]\]; then\s+make build-core\s+else\s+make build\s+fi/.test(
+    pythonReleaseWorkflow
+  )
+) {
+  throw new Error(
+    'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
+  );
 }
 
 {
@@ -363,6 +548,8 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   }
 
   const providerDir = new URL('../python/providers/', import.meta.url);
+  const pythonIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(pythonVersion);
+  const providerVersions = new Map<string, string>();
   for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
@@ -377,7 +564,14 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       readFileSync(pyprojectPath, 'utf8'),
       `python/providers/${entry.name}/pyproject.toml version`
     );
-    if (providerPyprojectVersion !== pythonVersion) {
+    providerVersions.set(entry.name, providerPyprojectVersion);
+    const providerIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerPyprojectVersion);
+    if (pythonIsPrerelease && providerIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/pyproject.toml must remain stable during a composio prerelease (${providerPyprojectVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerPyprojectVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/pyproject.toml must match python/pyproject.toml (${providerPyprojectVersion} !== ${pythonVersion})`
       );
@@ -390,11 +584,30 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       /version\s*=\s*"([^"]+)"/,
       `python/providers/${entry.name}/setup.py version`
     );
-    if (providerSetupVersion !== pythonVersion) {
+    if (providerSetupVersion !== providerPyprojectVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must match its pyproject.toml (${providerSetupVersion} !== ${providerPyprojectVersion})`
+      );
+    }
+    const providerSetupIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerSetupVersion);
+    if (pythonIsPrerelease && providerSetupIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must remain stable during a composio prerelease (${providerSetupVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerSetupVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
       );
     }
+  }
+
+  const distinctProviderVersions = new Set(providerVersions.values());
+  if (distinctProviderVersions.size > 1) {
+    const details = [...providerVersions]
+      .map(([provider, version]) => `- ${provider}: ${version}`)
+      .join('\n');
+    throw new Error(`Python providers must share one stable version:\n${details}`);
   }
 }
 
@@ -411,9 +624,9 @@ if (!releaseScript.includes('pnpm changeset publish')) {
   throw new Error('release script must still publish non-CLI changeset packages');
 }
 
-if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
+if (!releaseScript.includes('CHANGESETS_OUTPUT')) {
   throw new Error(
-    'release script must filter @composio/cli tag output before changesets/action creates GitHub releases'
+    'release script must filter @composio/cli Changesets v3 output before changesets/action creates GitHub releases'
   );
 }
 
@@ -421,7 +634,7 @@ if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
 
 const canonicalWindowsInstallGuidance = requireMatch(
   rootInstallGuide,
-  /^(- Windows — .+)$/m,
+  /^(- Windows: .+)$/m,
   'canonical Windows install guidance'
 );
 const generatedInstallGuide = requireMatch(
@@ -431,7 +644,7 @@ const generatedInstallGuide = requireMatch(
 );
 const generatedWindowsInstallGuidance = requireMatch(
   generatedInstallGuide,
-  /^\s*(- Windows — .+)$/m,
+  /^\s*(- Windows: .+)$/m,
   'generated Windows install guidance'
 );
 
@@ -489,9 +702,11 @@ if (publishIdx === -1) {
     'build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)'
   );
 }
-if (
-  !(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)
-) {
+if (!(
+  helperCheckoutIdx < draftStepIdx &&
+  draftStepIdx < verifyStepIdx &&
+  verifyStepIdx < publishIdx
+)) {
   throw new Error(
     'build-cli-binaries.yml must order steps helper checkout → draft → verify → publish'
   );
@@ -527,6 +742,46 @@ if (!(packageSkillsIdx < generateChecksumsIdx)) {
   );
 }
 
+if (
+  !generateChecksumsScript.includes("from './_teardown'") ||
+  generateChecksumsScript.includes("from './_shared'")
+) {
+  throw new Error(
+    'CLI checksum generation must use the dependency-light teardown without loading CLI runtime helpers'
+  );
+}
+
+// The release job runs checksum generation in a fresh checkout where workspace packages have not
+// been built. Exercise the script from an unrelated working directory to prevent imports from
+// pulling in the CLI runtime and its unbuilt @composio/core dependency.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-cli-checksums-'));
+  try {
+    const binariesDir = join(fixtureDir, 'dist/binaries');
+    mkdirSync(binariesDir, { recursive: true });
+    writeFileSync(join(binariesDir, 'composio-linux-x64.zip'), 'release archive fixture\n');
+
+    const result = spawnSync(process.execPath, [generateChecksumsScriptPath], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `CLI checksum generation must run without built workspace packages\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const checksums = readFileSync(join(binariesDir, 'checksums.txt'), 'utf8');
+    if (!/^[a-f0-9]{64}  composio-linux-x64\.zip\n$/.test(checksums)) {
+      throw new Error(`CLI checksum generation wrote an invalid manifest:\n${checksums}`);
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.
 if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.release_tag }}')) {
   throw new Error(
@@ -539,10 +794,19 @@ if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.rel
 if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release-target.sh')) {
   throw new Error('build-cli-binaries.yml prepare job must delegate to resolve-release-target.sh');
 }
+if (buildCliWorkflow.includes('needs.prepare.outputs.checkout_ref')) {
+  throw new Error('CLI release jobs must not execute a ref derived from workflow inputs');
+}
+if ((buildCliWorkflow.match(/ref: \$\{\{ github\.sha \}\}/g) ?? []).length < 2) {
+  throw new Error('CLI build and release jobs must check out the selected workflow commit');
+}
+if (buildCliWorkflow.includes('beta_tag:')) {
+  throw new Error('stable promotion must select the beta through the immutable workflow ref');
+}
 
 // Release archives contain a composio-<target>/ bundle with runtime support files next to the
 // executable. Both the checked-in guide and the workflow-generated guide must preserve that
-// directory contents and put the installed binary's directory on PATH.
+// directory contents and create the same two-directory layout as the installer.
 const manualInstallGuides = [
   {
     label: 'INSTALL.md',
@@ -566,8 +830,13 @@ for (const guide of manualInstallGuides) {
   if (!guide.source.includes('cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"')) {
     throw new Error(`${guide.label} must install the complete CLI release bundle`);
   }
-  if (!guide.source.includes('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"')) {
-    throw new Error(`${guide.label} must expose the installed bundle's binary on PATH`);
+  if (!guide.source.includes('mkdir -p "$COMPOSIO_BIN_DIR"')) {
+    throw new Error(`${guide.label} must create the CLI entry-point directory`);
+  }
+  if (
+    !guide.source.includes('ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"')
+  ) {
+    throw new Error(`${guide.label} must link the CLI entry point to the release bundle`);
   }
 }
 
@@ -582,6 +851,26 @@ if (!resolveTargetScript.includes('--exclude-drafts')) {
   throw new Error(
     'resolve-release-target.sh must exclude draft stable releases from beta base selection'
   );
+}
+if (!buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}')) {
+  throw new Error('CLI binary builds must receive the resolved GitHub release tag');
+}
+if (
+  !buildAllCliBinariesScript.includes(
+    '...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)'
+  )
+) {
+  throw new Error('the all-target CLI build must embed the resolved GitHub release version');
+}
+if (
+  !buildCliWorkflow.includes(
+    "- name: Verify binary version\n        if: matrix.target == 'bun-linux-x64'"
+  )
+) {
+  throw new Error('CLI binary version verification must run only on a native target');
+}
+if (!buildCliWorkflow.includes('expected_version#@composio/cli@')) {
+  throw new Error('CLI binary version verification must strip the release tag prefix');
 }
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
@@ -627,24 +916,100 @@ if (!installHealthCheck.includes("| sed -n '1p'")) {
     'cli.install-health-check.yml must convert no matching release into empty output'
   );
 }
-if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
+if (!installHealthCheck.includes('sh -s -- "${{ steps.resolve.outputs.tag }}"')) {
   throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');
+}
+if (!installHealthCheck.includes('echo "$HOME/.local/bin" >> "$GITHUB_PATH"')) {
+  throw new Error('cli.install-health-check.yml must expose the installer entry-point directory');
+}
+if (!installHealthCheck.includes('test -L "$HOME/.local/bin/composio"')) {
+  throw new Error('cli.install-health-check.yml must verify the installer entry-point symlink');
+}
+if (installHealthCheck.includes('rm -rf "$HOME/.composio"')) {
+  throw new Error('cli.install-health-check.yml must preserve CLI user state between install legs');
+}
+
+// --- uninstall file lists: the hand-maintained copies must stay in sync ---
+
+// The uninstall file list mirrors the release bundle layout and is duplicated in INSTALL.md,
+// docs/content/docs/cli.mdx, and cli.install-health-check.yml. Drift between them ships
+// uninstall guidance (or a health-check reset) that leaves release artifacts behind.
+function readUninstallEntries(source, command, label) {
+  const block = requireMatch(
+    source,
+    new RegExp(`${command} \\\\\\n((?:[ \\t]*"[^"]+"(?: \\\\)?\\n)+)`),
+    `${label} ${command} uninstall block`
+  );
+  return [...block.matchAll(/"([^"]+)"/g)].map(entry =>
+    entry[1]
+      .replace(/^\$install_dir\//, '')
+      .replace(/^\$bin_dir\//, '')
+      .replace(/^\$HOME\/\.composio\//, '')
+      .replace(/^\$HOME\/\.local\/bin\//, '')
+  );
+}
+
+const uninstallGuides = [
+  { label: 'INSTALL.md', source: installGuide },
+  { label: 'docs/content/docs/cli.mdx', source: cliDocsGuide },
+  { label: 'cli.install-health-check.yml', source: installHealthCheck },
+].map(({ label, source }) => ({
+  label,
+  files: readUninstallEntries(source, 'rm -f', label),
+  directories: readUninstallEntries(source, 'rm -rf', label),
+}));
+
+const [canonicalUninstall, ...mirroredUninstallGuides] = uninstallGuides;
+
+// Guard the parser itself: a mis-anchored match must not pass vacuously.
+if (
+  !canonicalUninstall.files.includes('run-helpers-runtime.mjs') ||
+  !canonicalUninstall.directories.includes('services')
+) {
+  throw new Error('INSTALL.md uninstall list must cover the release bundle layout');
+}
+
+for (const guide of mirroredUninstallGuides) {
+  if (JSON.stringify(guide.files) !== JSON.stringify(canonicalUninstall.files)) {
+    throw new Error(
+      `${guide.label} uninstall file list drifted from INSTALL.md:\n` +
+        `  ${guide.label}: ${JSON.stringify(guide.files)}\n` +
+        `  INSTALL.md: ${JSON.stringify(canonicalUninstall.files)}`
+    );
+  }
+  if (JSON.stringify(guide.directories) !== JSON.stringify(canonicalUninstall.directories)) {
+    throw new Error(
+      `${guide.label} uninstall directory list drifted from INSTALL.md:\n` +
+        `  ${guide.label}: ${JSON.stringify(guide.directories)}\n` +
+        `  INSTALL.md: ${JSON.stringify(canonicalUninstall.directories)}`
+    );
+  }
 }
 
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
 try {
   const fakePnpmPath = join(fakeBin, 'pnpm');
+  const changesetsOutputPath = join(fakeBin, 'changesets-output.ndjson');
+  const commandLogPath = join(fakeBin, 'commands.log');
+  writeFileSync(commandLogPath, '');
   writeFileSync(
     fakePnpmPath,
     `#!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$*" >> "$COMMAND_LOG"
 case "$*" in
   "run build:packages")
     exit 0
     ;;
+  "run check:provider-compatibility")
+    if [[ "\${FAIL_PROVIDER_COMPATIBILITY:-}" == "1" ]]; then
+      exit 42
+    fi
+    exit 0
+    ;;
   "changeset publish")
-    echo 'New tag: @composio/core@1.2.3'
-    echo 'New tag: @composio/cli@9.9.9'
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/core@1.2.3","packageName":"@composio/core"}' > "$CHANGESETS_OUTPUT"
+    printf '%s\\n' '{"type":"git-tag","tag":"@composio/cli@9.9.9","packageName":"@composio/cli"}' >> "$CHANGESETS_OUTPUT"
     echo 'release warning preserved' >&2
     exit 0
     ;;
@@ -659,7 +1024,12 @@ esac
 
   const result = spawnSync('bash', [releaseScriptPath], {
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH}` },
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
   });
 
   if (result.status !== 0) {
@@ -668,16 +1038,49 @@ esac
     );
   }
 
-  if (!result.stdout.includes('New tag: @composio/core@1.2.3')) {
-    throw new Error('release script must preserve non-CLI changeset tags');
-  }
-
-  if (result.stdout.includes('@composio/cli@9.9.9')) {
-    throw new Error('release script must hide @composio/cli tags from changesets/action');
+  const outputEvents = readFileSync(changesetsOutputPath, 'utf8')
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line));
+  if (
+    outputEvents.length !== 1 ||
+    outputEvents[0].packageName !== '@composio/core' ||
+    outputEvents[0].tag !== '@composio/core@1.2.3'
+  ) {
+    throw new Error('release script must retain only non-CLI Changesets v3 git-tag events');
   }
 
   if (!result.stderr.includes('release warning preserved')) {
     throw new Error('release script must preserve changeset publish stderr');
+  }
+
+  const commands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (
+    JSON.stringify(commands) !==
+    JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
+  ) {
+    throw new Error(
+      `release script must run build → provider compatibility → publish: ${commands}`
+    );
+  }
+
+  writeFileSync(commandLogPath, '');
+  const failedCompatibility = spawnSync('bash', [releaseScriptPath], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      FAIL_PROVIDER_COMPATIBILITY: '1',
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
+  });
+  const failedCommands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (failedCompatibility.status !== 42) {
+    throw new Error('release script must preserve a provider compatibility gate failure');
+  }
+  if (failedCommands.includes('changeset publish')) {
+    throw new Error('release script must not publish after provider compatibility fails');
   }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
@@ -706,6 +1109,7 @@ esac
         2
       )
     );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
     writeFileSync(
       join(fixtureDir, '.changeset/config.json'),
       JSON.stringify(
@@ -797,6 +1201,132 @@ esac
     if (providerFixturePackage.peerDependencies['@composio/core'] !== '>=0.10.0 <1.0.0') {
       throw new Error(
         `fixture provider peer range should still accept core 0.11.0 without widening, got ${providerFixturePackage.peerDependencies['@composio/core']}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+// Entering the core 1.0 beta must leave stable providers unversioned when their
+// peer range explicitly accepts the prerelease. Providers should use the beta
+// only when consumers install it at the workspace root.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-beta-peer-'));
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/core'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/openai'), { recursive: true });
+
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'changeset-beta-peer-fixture',
+          private: true,
+          workspaces: ['packages/*'],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify(
+        {
+          changelog: false,
+          commit: false,
+          fixed: [],
+          linked: [],
+          access: 'restricted',
+          baseBranch: 'next',
+          updateInternalDependencies: 'patch',
+          ___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH: {
+            onlyUpdatePeerDependentsWhenOutOfRange: true,
+          },
+          ignore: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/pre.json'),
+      JSON.stringify(
+        {
+          mode: 'pre',
+          tag: 'beta',
+          initialVersions: {
+            '@composio/core': '0.18.0',
+            '@composio/openai': '0.12.1',
+          },
+          changesets: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/core-beta.md'),
+      ['---', '"@composio/core": major', '---', '', 'Release the core 1.0 beta.', ''].join('\n')
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/core/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/core',
+          version: '0.18.0',
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/openai/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/openai',
+          version: '0.12.1',
+          peerDependencies: {
+            '@composio/core': '>=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0',
+          },
+          devDependencies: {
+            '@composio/core': 'workspace:*',
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const result = spawnSync(changesetBinPath, ['version'], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `changeset beta peer fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const coreFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/core/package.json'), 'utf8')
+    );
+    const providerFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/openai/package.json'), 'utf8')
+    );
+
+    if (coreFixturePackage.version !== '1.0.0-beta.0') {
+      throw new Error(
+        `fixture core version should be 1.0.0-beta.0, got ${coreFixturePackage.version}`
+      );
+    }
+    if (providerFixturePackage.version !== '0.12.1') {
+      throw new Error(
+        `fixture provider should stay at 0.12.1, got ${providerFixturePackage.version}`
       );
     }
   } finally {
@@ -909,6 +1439,82 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
 }
 
+// Pushes to next are always betas, regardless of private package metadata.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'push',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '43',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status !== 0) {
+    throw new Error(`resolve-release-target.sh push failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.2.34-beta.43') {
+    throw new Error(`push must produce the next rolling beta, got ${r.outputs.release_tag}`);
+  }
+  if (r.outputs.prerelease !== 'true') {
+    throw new Error('push must never publish a stable release directly');
+  }
+}
+
+// Release owners can choose an intentional minor/major base without changing package.json.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: '0.3.0',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '44',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status !== 0) {
+    throw new Error(`explicitly versioned build-beta failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.3.0-beta.44') {
+    throw new Error(`explicit build-beta version was not honored: ${r.outputs.release_tag}`);
+  }
+}
+
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: '0.2.33',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '45',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [{ tagName: '@composio/cli@0.2.33', isPrerelease: false }],
+  });
+  if (r.status === 0 || !r.stderr.includes('must be newer than latest stable')) {
+    throw new Error('build-beta must reject an explicit version at or below latest stable');
+  }
+}
+
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      VERSION_INPUT: 'next',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '46',
+      COMMIT_SHA: 'deadbeef',
+    },
+  });
+  if (r.status === 0 || !r.stderr.includes('Beta version must match')) {
+    throw new Error('build-beta must reject a non-semver explicit version');
+  }
+}
+
 // build-beta bumps off the NUMERIC-latest stable release. The fixture deliberately interleaves
 // 0.2.10 and 0.2.9: a lexical sort would pick 0.2.9 and resolve 0.2.10 here — regression lock.
 {
@@ -945,17 +1551,37 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
 }
 
+// promote-stable must run at a beta tag, never accept a release candidate through an input.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      REF_TYPE: 'branch',
+      REF_NAME: 'next',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'abc123',
+    },
+  });
+  if (r.status === 0 || !r.stderr.includes('must be dispatched at the beta tag')) {
+    throw new Error('promote-stable must reject branch-scoped dispatches');
+  }
+}
+
 // promote-stable must REFUSE a tag that is already published (isDraft=false) and emit nothing.
 {
   const r = runResolver({
     env: {
       EVENT_NAME: 'workflow_dispatch',
       ACTION_INPUT: 'promote-stable',
-      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
       GITHUB_TOKEN: 'fake-token',
       REPOSITORY: 'ComposioHQ/composio',
       RUN_NUMBER: '1',
-      COMMIT_SHA: 'unused',
+      COMMIT_SHA: 'abc123',
     },
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     ghViewIsDraft: 'false',
@@ -971,17 +1597,18 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
 }
 
-// promote-stable happy path: no existing release ⇒ emit a stable target off the beta's commitish.
+// promote-stable happy path: the selected beta tag and release target the same commit.
 {
   const r = runResolver({
     env: {
       EVENT_NAME: 'workflow_dispatch',
       ACTION_INPUT: 'promote-stable',
-      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
       GITHUB_TOKEN: 'fake-token',
       REPOSITORY: 'ComposioHQ/composio',
       RUN_NUMBER: '1',
-      COMMIT_SHA: 'unused',
+      COMMIT_SHA: 'abc123',
     },
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     // ghViewIsDraft unset ⇒ `gh release view` exits non-zero ⇒ no existing release to refuse.
@@ -995,10 +1622,28 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   if (r.outputs.prerelease !== 'false' || r.outputs.make_latest !== 'true') {
     throw new Error('promote-stable must emit prerelease=false and make_latest=true');
   }
-  if (r.outputs.checkout_ref !== 'abc123') {
-    throw new Error(
-      `promote-stable must check out the beta's target_commitish, got ${r.outputs.checkout_ref}`
-    );
+  if ('checkout_ref' in r.outputs) {
+    throw new Error('promote-stable must not emit an input-derived checkout ref');
+  }
+}
+
+// A tag/release mismatch must fail before any build can run from the selected commit.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      REF_TYPE: 'tag',
+      REF_NAME: '@composio/cli@0.3.0-beta.5',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'selected123',
+    },
+    curlFixture: { prerelease: true, target_commitish: 'release456' },
+  });
+  if (r.status === 0 || !r.stderr.includes('but its release targets')) {
+    throw new Error('promote-stable must reject a beta tag/release commit mismatch');
   }
 }
 

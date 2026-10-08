@@ -1,6 +1,227 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio execute` (including meta tools), `composio proxy`, the `proxy()`
+  helper in `composio run` scripts, and the custom tool schema lookup in
+  `composio search` now fail with a clear error when the call needs user input,
+  such as an approval, before it can run. The CLI cannot answer input requests
+  yet, and it no longer treats such an answer as a result. The `proxy()` helper
+  used to return an empty `200` response for a call that never ran.
+
+- `composio execute` now reports a tool that ran and failed as failed even when
+  the API returns no error text. It used to read a failed execution with a
+  `null` error as successful.
+
+- `composio execute` now validates the arguments before it sends the tool
+  call, so a call that fails local validation is never run. Validation used to
+  race the request, and the tool could execute while the CLI reported a
+  validation failure. The cached schema named in the validation error is now
+  kept on disk instead of being deleted. A schema the CLI cannot compile no
+  longer blocks the call; the server still validates it.
+
+- Generate help from the command definitions, including every supported flag and
+  nested command. Remove help levels and the nonexistent `files` help topic.
+  Install agent skills with `composio setup skill <claude|codex|openclaw>`
+  (optionally `--name <skill-name>`) instead of `--install-skill`.
+  Internal diagnostics are hidden framework commands. `--dangerously-allow`
+  applies only to `dev triggers disable`; refused developer commands exit nonzero.
+  Debug flags after the `run` script boundary now reach the script unchanged.
+  `composio execute <slug> --help` now shows command options. Use
+  `composio execute <slug> --get-schema` to print that tool's input schema as JSON.
+
+- `composio execute` (including meta tools) and `composio proxy` are never
+  retried, so a request that timed out or failed after the backend already
+  acted cannot repeat a side effect such as sending the same email twice.
+
+- API requests and command analytics now report CLI product/version, language,
+  runtime/version, and the installed API client version separately.
+
+- Remove the experimental local-tools stack: the `local-tools` command group,
+  the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
+  and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
+  Release archives no longer ship `local-tools-binaries/`; `composio upgrade`
+  and the installer delete one left by an older install. CI no longer installs
+  Swift. Permission prompts always use the browser approval page. A
+  stored `local_tools` setting is now listed as an unknown feature and has no
+  effect.
+- Every Composio API call now goes through the `@composio/client` 2.0 runtime,
+  the same client `@composio/core` uses. Org, project, session-info, and
+  consumer lookups gain the client's retries and redirect handling, and API
+  error messages now keep a server message even when it carries no suggested
+  fix. Creating a project API key during `composio dev init` is never retried,
+  so a timed-out request cannot mint a second key.
+- Ambient `COMPOSIO_CUSTOM_HEADERS` and `COMPOSIO_LOG_LEVEL` values no longer
+  leak into CLI requests or output. Custom HTTP base URLs remain supported
+  without an additional environment flag.
+- `composio run` now validates binary download URLs returned by the proxy API
+  before fetching them. Private, loopback, link-local, and redirect-based SSRF
+  targets are blocked, DNS resolutions are pinned to prevent rebinding, and the
+  download fails closed when a configured proxy prevents address pinning.
+- The plugin hint shown under Claude Code or Codex now reads
+  `'composio setup --yes' installs it`, and setup error messages that suggest
+  a rerun now include `--yes` too, so an agent following the printed text no
+  longer fails on the non-interactive `--yes` requirement. CLI telemetry gains
+  `agent_host_env` on every event, a `CLI_PLUGIN_HINT_SHOWN` event, host
+  presence signals on `CLI_SETUP_HOST_DETECTED` when a host is not detected,
+  and a `failure_reason_code` on `CLI_SETUP_FAILED`.
+- The CLI now runs on Effect 4 (`effect@4.0.0-rc.112`). Unrecognized commands and
+  flags now print a "Did you mean?" suggestion next to the help text for the command
+  that failed to parse, and parse errors for a nested command show that command's
+  help instead of the root help. `composio --version`, `composio -v`, and
+  `composio version` keep printing the same bare version string.
+- `composio generate` now keeps tool and trigger metadata as inert data in
+  generated Python and TypeScript sources. Crafted slugs and descriptions can
+  no longer inject code into generated modules.
+- `composio upgrade` (and any other command with a long spinner message) no
+  longer scrolls endlessly in terminals narrower than that message. The spinner
+  printed its line hundreds of times instead of animating in place; live spinner
+  text is now clamped to a single terminal row.
+- `composio upgrade` shows download progress. The archive is a few hundred
+  megabytes, and the command previously printed `Downloading...` once and then
+  said nothing for minutes, which was indistinguishable from a hang. It now
+  reports percent and transferred size as the download runs.
+- `composio upgrade` downloads roughly half as much. Release archives carried
+  all four platforms' `codex-acp` binaries, about 651 MB that the machine
+  unpacking them can never execute. Only the binary for the archive's own
+  platform is shipped now; the other three remain as empty placeholders so that
+  a CLI installed before this change still passes its upgrade verification.
+- `composio upgrade` works again from any previously released CLI. Release
+  archives had been narrowed to drop the `codex-acp` binaries a machine cannot
+  execute, but a CLI installed before that change verifies a downloaded package
+  against all four platforms' binaries and rejects one that is missing any of
+  them, failing with `Downloaded binary package is incomplete`. Every archive
+  names all four paths again.
+- Archives are no longer extracted with symbolic links in them. `extract-zip`
+  creates a symlink entry without validating its target (CVE-2026-56876), which
+  has no fixed release, and anything that later reads the extracted tree can be
+  walked out of it. No archive this CLI extracts legitimately contains a
+  symlink, so such an entry is now refused before it is written.
+- `composio search` now uses schemas returned by Tool Router for dashboard-registered custom MCP tools instead of querying the legacy managed-tool endpoint, which returned 404 for `CUSTOM_*` tool slugs.
+- `COMPOSIO_ENVIRONMENT=staging` now opens the staging dashboard at
+  `https://staging-dashboard.composio.dev/`.
+- `composio dev auth-configs create` now sends custom OAuth credentials and scopes
+  in the API's expected shape instead of failing validation.
+- `composio orgs --help`, `composio signup --help`, the `agent` family pages (signup,
+  login, whoami, inbox, claim), and the group help pages for `connections`, `triggers`,
+  `artifacts`, and `install` now render the same curated, styled help page as every
+  other command family, instead of falling back to the framework's raw flag dump.
+  `composio help <command>` is now a supported spelling of command help (`composio help
+orgs` shows the same page as `composio orgs --help`, with the same longest-prefix
+  fallback for deeper paths); an unknown target fails through the framework parser like
+  any other unknown command. The `orgs` description in contextual error help now matches
+  the command's actual description.
+- `composio listen <slug> --stream` without a path is accepted again and streams
+  the whole event payload. It previously failed with
+  `Received unknown argument: '--stream='`.
+- `composio listen` reports an unknown trigger slug as such. A mistyped slug
+  used to fail with a missing-connection error for the toolkit inferred from its
+  prefix, or with a generic trigger-creation error when that toolkit already had
+  an active account.
+- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
+  and `status` commands that share its API error handling, now exit non-zero on
+  an API error and print the error when stderr is not a terminal. `composio tools
+info <unknown-slug>` used to print nothing and exit 0 when piped.
+- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
+  instead of a removed Slack tool slug and a trigger without configuration.
+
+## 0.3.3
+
+### Patch Changes
+
+- Free-form object arguments now pass CLI tool-input validation and keep their content instead of failing with an unknown-key error. Run `composio upgrade` to install the fixed CLI binary.
+- A tool schema the validator cannot interpret is now reported as a schema compile failure naming the cached schema path, instead of as an input error blaming your arguments. This covers a `patternProperties` key that is not a valid regular expression, and a reference inside a `patternProperties` or schema-valued `additionalProperties` subschema that does not resolve.
+- Tools belonging to multi-word toolkits now resolve to the right toolkit.
+  `composio tools execute GOOGLE_ANALYTICS_RUN_REPORT --account <alias>`
+  previously looked for a `google` account instead of a `google_analytics` one,
+  because the toolkit was guessed from the text before the first underscore.
+  The toolkit is now matched against the known toolkit list, longest prefix
+  first. This also corrects the toolkit shown in errors, file uploads, trigger
+  listening, and telemetry.
+- Session meta tools such as `COMPOSIO_SEARCH_TOOLS` are no longer attributed
+  to the `composio_search` toolkit, whose slug their names happen to start
+  with. A failed meta call used to suggest linking an app that had nothing to
+  do with the call.
+- Commands that consult the toolkit catalog more than once now fetch it once.
+  `composio tools execute` was downloading the full ~800 KB list up to four
+  times per run.
+- A cached API request that fails is no longer sent a second time. The caching
+  layer treated the request's own failure as a cache failure and retried it,
+  so every failed toolkit, tool, or trigger listing cost two round trips and
+  twice the wait before reporting the same error.
+- Resolving a tool's toolkit no longer downloads the toolkit catalog. The CLI
+  ships with the toolkit slugs it knew at build time and remembers any it
+  learns since in `known-toolkit-slugs.json`, so `composio tools execute` only
+  reaches for the catalog when a slug matches nothing it knows — a toolkit
+  released after your CLI version. `FORCE_USE_CACHE` is unaffected.
+- Resolving a tool's toolkit now reads what the CLI knows locally once per run
+  rather than once per lookup. A single `composio tools execute` resolves the
+  same toolkit up to four times — and once per tool with `--parallel` — and
+  each of those re-read `known-toolkit-slugs.json`, re-parsed it, and rebuilt
+  the lookup table over it. The weekly background refresh now also runs once per
+  run instead of rewriting the file after every lookup.
+- The background catalog refresh is abandoned after ten seconds. A finished
+  command ends when the event loop drains, so a slow network could otherwise
+  hold an exiting `composio` process open until the refresh completed.
+- Cache files are now written atomically, so an interrupted run can no longer
+  leave a truncated `toolkits.json` or `tools.json` behind.
+
+## 0.3.2
+
+### Minor Changes
+
+- The installer (`curl -fsSL https://composio.dev/install | sh`) now configures your shell automatically: `COMPOSIO_INSTALL_SHELL` defaults to `auto`, which infers the login shell from `$SHELL` (zsh, bash, or fish) and always runs idempotent PATH setup for it; `COMPOSIO_INSTALL_SHELL=none` keeps the old install-only behavior for CI, Docker, and dotfile managers. Startup-file setup failures no longer fail the install — the installer keeps the binary, warns, and prints a runnable absolute-path command. `composio install` now reconciles an existing managed PATH block whose bin directory changed (one block per physical file, symlink-aware) and suppresses its boxed restart hint when invoked by the installer, which owns the final message.
+- `composio install` gains a `--shell <zsh|bash|fish>` flag that overrides `$SHELL` detection, in preparation for the mise-style installer rewrite. The bin-dir PATH target now resolves through `COMPOSIO_BIN_DIR`, an existing `~/.local/bin/composio`, or the real binary's own directory, in that order, instead of hardcoding `~/.composio`; rc blocks write only a PATH line (the `export COMPOSIO_INSTALL_DIR=...` line is gone, since that variable identifies the install bundle, not the PATH entry point). Bash now always writes the PATH line to a login-mode startup file as well as `~/.bashrc`, so `bash -ilc` (and macOS Terminal.app, which starts a login shell) picks it up: the first existing of `~/.bash_profile` or `~/.bash_login`, or a newly created `~/.bash_profile` when neither exists. A `~/.bash_profile` created this way shadows `~/.profile`, so it is seeded to source it first; `~/.profile` itself is never modified. The restart hint bug is fixed: bash now prints `source ~/.bashrc` instead of the literal string `exec $SHELL`.
+- `COMPOSIO_BIN_DIR` is a documented public override: set it to the absolute directory `composio install` should add to `PATH` when the entry point users reach is a shim or symlink rather than the binary itself. See the CLI README for the full resolution order.
+- `composio install` now exits non-zero, having written nothing, when it cannot produce a safe PATH line. There are two abort conditions: the resolved bin directory is not absolute, or it contains a character that cannot be embedded in a quoted rc line. A non-zero exit is what makes `install.sh` run its inline PATH fallback, so an aborted run still leaves the user with a working `PATH` — previously the command exited 0 and the fallback never ran.
+- The unsafe-character set is narrower than the one first shipped in this entry. The bin dir is only ever written inside double quotes, where `;`, `|`, `&`, `(`, `)`, and `'` are literal — only `` ` ``, `$`, `"`, `\`, newline, carriage return, and the `:` PATH separator abort now. Paths like `/Users/o'brien/.composio` are accepted instead of rejected.
+- An rc file that carries the older three-line Composio block (`export COMPOSIO_INSTALL_DIR=...` plus a PATH line derived from it), written by a previous CLI or by `install.sh`'s fallback, is migrated to the current single-line block instead of being treated as configured forever. The stale managed lines are removed where they stood and one refreshed block is appended after the remaining content, so your own lines keep their order and the last-sourced PATH line wins. Re-running the command is still idempotent, and a completions block elsewhere in the file is untouched.
+- `composio install` no longer skips the rc write when the bin directory happens to be on the invoking process's `$PATH`. That said nothing about future shells — an ad-hoc `export` or a version-manager shim made the command persist nothing and still report success.
+- Note for custom install directories: the rc block no longer records `COMPOSIO_INSTALL_DIR`. If you installed to a custom directory with `COMPOSIO_INSTALL_DIR=... curl ... | bash` and later re-run the install script without re-specifying it, the script installs a second copy under `~/.composio` while your rc `PATH` still points at the old one. Re-specify `COMPOSIO_INSTALL_DIR` when reinstalling, or use `composio upgrade`, which replaces the running binary in place.
+
+### Patch Changes
+
+- Fix Linux `composio upgrade` failures with `ETXTBSY` by staging CLI files in
+  the install directory and renaming the executable last. The installer and
+  companion repair use the same replacement strategy, and the running binary
+  now reports its compiled version when `release-tag.txt` disagrees. Users on
+  an affected build must re-run `install.sh` once to install the first fixed
+  version.
+- Connected-account statuses added by the server no longer break
+  `connected-accounts`, `link`, or `listen`. Piped output still strips
+  credential fields, and schema warnings no longer print raw response values.
+- `composio login --poll` now reports unreadable cache files as I/O errors
+  instead of treating them as invalid session data.
+
+## 0.3.1
+
+### Minor Changes
+
+- The CLI now points Claude Code and Codex users to `composio setup` when the
+  Composio agent plugin is missing. The hint goes to stderr, appears at most
+  once every 24 hours, remains visible in non-TTY agent sessions, and stays
+  suppressed inside `composio run` children.
+- Telemetry now goes directly to PostHog. This captures `install` and `setup`
+  events before login without changing existing opt-outs.
+- Telemetry events now include `journey_stage` (`install`, `setup`, `login`,
+  `connect`, `execute`, or `other`) and `cli_channel` (`stable` or `beta`).
+  `install.sh` also labels `composio install` with
+  `invocation_origin: installer`, so script installs can be separated from
+  manual runs. npm and Homebrew installs do not pass through `install.sh` and
+  therefore have no installer origin.
+
 ## 0.3.0
+
+### Patch Changes
+
+- The GitHub release tag is now the only version source for standalone CLI
+  binaries. Release builds embed the exact tag version, manual skill
+  installation uses that tag, and stable releases can only promote a tested
+  beta.
+
+## 0.2.33
 
 ### Security
 

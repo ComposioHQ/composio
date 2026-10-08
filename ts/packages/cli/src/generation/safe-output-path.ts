@@ -1,12 +1,7 @@
-import { Path } from '@effect/platform';
-import { Data, Effect } from 'effect';
+import { Effect, Path } from 'effect';
+import { SafeOutputPathError } from 'src/generation/errors';
 
-export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutputPathError')<{
-  readonly filename: string;
-  readonly outputDir: string;
-  readonly resolvedPath: string;
-  readonly message: string;
-}> {}
+export { SafeOutputPathError };
 
 /**
  * Joins a generated filename to the output directory, ensuring the result stays

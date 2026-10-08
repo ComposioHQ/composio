@@ -281,7 +281,7 @@ describe('BatchProcessor', () => {
       const batchesProcessed: number[][] = [];
       let resolvers: (() => void)[] = [];
 
-      const asyncCallback = vi.fn().mockImplementation((batch: any[]) => {
+      const asyncCallback = vi.fn().mockImplementation((batch: unknown[]) => {
         return new Promise<void>(resolve => {
           resolvers.push(resolve);
         }).then(() => {
@@ -317,8 +317,8 @@ describe('BatchProcessor', () => {
 
 describe('TelemetryTransport', () => {
   let transport: TelemetryTransport;
-  let sendMetricSpy: any;
-  let sendErrorLogSpy: any;
+  let sendMetricSpy: unknown;
+  let sendErrorLogSpy: unknown;
   const metadata: TelemetryMetadata = {
     apiKey: 'test-key',
     baseUrl: 'http://localhost',
@@ -329,8 +329,8 @@ describe('TelemetryTransport', () => {
   };
 
   beforeEach(async () => {
-    sendMetricSpy = vi.spyOn(TelemetryService, 'sendMetric').mockResolvedValue({} as any);
-    sendErrorLogSpy = vi.spyOn(TelemetryService, 'sendErrorLog').mockResolvedValue({} as any);
+    sendMetricSpy = vi.spyOn(TelemetryService, 'sendMetric').mockResolvedValue({} as unknown);
+    sendErrorLogSpy = vi.spyOn(TelemetryService, 'sendErrorLog').mockResolvedValue({} as unknown);
     transport = new TelemetryTransport();
     transport.setup(metadata);
     await transport.flush();
@@ -338,6 +338,7 @@ describe('TelemetryTransport', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('should send SDK_INITIALIZED metric on setup', () => {
@@ -373,6 +374,20 @@ describe('TelemetryTransport', () => {
     expect(sendMetricSpy).toHaveBeenCalled();
   });
 
+  it('should instrument async methods defined on plain objects', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const instance = { double: async (a: number) => a * 2 };
+
+    transport.instrument(instance, 'PlainObject');
+
+    await expect(instance.double(21)).resolves.toBe(42);
+    await transport.flush();
+    const functionNames = sendMetricSpy.mock.calls.flatMap(([payloads]) =>
+      payloads.map((payload: TelemetryPayload) => payload.functionName)
+    );
+    expect(functionNames).toContain('PlainObject.double');
+  });
+
   it('should send error telemetry if instrumented method throws', async () => {
     class TestClass {
       async fail() {
@@ -391,7 +406,7 @@ describe('TelemetryTransport', () => {
     sendErrorLogSpy.mockImplementationOnce(
       () =>
         new Promise(resolve => {
-          resolveTelemetry = () => resolve({} as any);
+          resolveTelemetry = () => resolve({} as unknown);
         })
     );
 
@@ -434,6 +449,92 @@ describe('TelemetryTransport', () => {
 
     // Flush should complete without error
     await expect(transport.flush()).resolves.toBeUndefined();
+  });
+});
+
+describe('TelemetryService network bounding', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('bounds sendMetric with an abort signal and clears the timer once it responds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await TelemetryService.sendMetric([createPayload()]);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://telemetry.composio.dev/v1/metrics/invocations',
+      expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) })
+    );
+    // A timer left pending after the fetch resolved keeps a workerd request context
+    // open for the full timeout on every successful send.
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('clears the timer when serializing the payload fails', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const payload = createPayload({ props: { value: BigInt(1) } });
+
+    await expect(TelemetryService.sendMetric([payload])).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('swallows a sendMetric timeout when the endpoint never responds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), {
+            once: true,
+          });
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const send = TelemetryService.sendMetric([createPayload()]);
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    await expect(send).resolves.toBeUndefined();
+  });
+
+  it('bounds sendErrorLog with an abort signal and clears the timer once it responds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await TelemetryService.sendErrorLog(createPayload());
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://telemetry.composio.dev/v1/errors',
+      expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) })
+    );
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('swallows a sendErrorLog timeout when the endpoint never responds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), {
+            once: true,
+          });
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const send = TelemetryService.sendErrorLog(createPayload());
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    await expect(send).resolves.toBeUndefined();
   });
 });
 

@@ -1,0 +1,4 @@
+# fish greeting
+
+# Composio CLI
+set --export PATH "$HOME/.local/bin" $PATH

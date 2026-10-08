@@ -1,0 +1,162 @@
+---
+title: "WebhookEndpoints"
+description: "`composio.webhooks.endpoints` — inbound webhook endpoints. Each endpoint is the ingress URL Composio exposes for one toolkit + OAuth app pair, which you register with the third-party provider so it can push events to Composio."
+---
+
+## Usage
+
+Access this class through the `composio.webhookEndpoints` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.webhookEndpoints.list();
+```
+
+## Methods
+
+### create()
+
+Create a webhook endpoint for a toolkit + OAuth app pair. Returns the
+existing endpoint when one already exists for that pair.
+
+```typescript
+async create(params: { clientId: string; toolkitSlug: string }, requestOptions?: ComposioRequestOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `\{ clientId: string; toolkitSlug: string \}` | `toolkitSlug` and `clientId` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — The endpoint; register `webhookUrl` with the provider
+
+**Example**
+
+```typescript
+const endpoint = await composio.webhooks.endpoints.create({
+  toolkitSlug: 'slack',
+  clientId: 'my-slack-app-client-id',
+});
+```
+
+---
+
+### get()
+
+Retrieve a webhook endpoint by its nano id.
+
+```typescript
+async get(nanoId: string, requestOptions?: ComposioRequestOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoId` | `string` | The endpoint nano id (e.g. `we_abc123`) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — The endpoint, with secret setup values masked
+
+**Example**
+
+```typescript
+const endpoint = await composio.webhooks.endpoints.get('we_abc123');
+console.log(endpoint.webhookUrl);
+```
+
+---
+
+### list()
+
+List webhook endpoints, optionally filtered by toolkit.
+
+```typescript
+async list(query?: { toolkitSlug?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { clientId: string | null; id: string; toolkitSlug: string }[] }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `query?` | `\{ toolkitSlug?: string \}` | Optional `toolkitSlug` filter |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<\{ items: \{ clientId: string \| null; id: string; toolkitSlug: string \}[] \}>` — The endpoints
+
+**Example**
+
+```typescript
+const { items } = await composio.webhooks.endpoints.list({ toolkitSlug: 'slack' });
+```
+
+---
+
+### replace()
+
+Replace the setup fields of a webhook endpoint. All required setup fields
+for the toolkit must be provided — this is the initial configuration.
+
+```typescript
+async replace(nanoId: string, params: { data: Record<string, string> }, requestOptions?: ComposioRequestOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoId` | `string` | The endpoint nano id |
+| `params` | `\{ data: Record<string, string> \}` | `data` with every required setup field |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — The configured endpoint
+
+**Example**
+
+```typescript
+await composio.webhooks.endpoints.replace('we_abc123', {
+  data: { signing_secret: process.env.SLACK_SIGNING_SECRET! },
+});
+```
+
+---
+
+### update()
+
+Merge setup fields into a webhook endpoint. Omitted fields are preserved.
+
+```typescript
+async update(nanoId: string, params: { data: Record<string, string> }, requestOptions?: ComposioRequestOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoId` | `string` | The endpoint nano id |
+| `params` | `\{ data: Record<string, string> \}` | `data` with the fields to change |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<...>` — The updated endpoint
+
+**Example**
+
+```typescript
+await composio.webhooks.endpoints.update('we_abc123', {
+  data: { signing_secret: 'rotated-secret' },
+});
+```
+
+---

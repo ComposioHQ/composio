@@ -1,5 +1,37 @@
 # @composio/google
 
+## 0.12.0
+
+### Minor Changes
+
+- cdabe06: Allow the Google and Cloudflare providers' `executeToolCall` and the OpenAI Responses provider's `handleResponse` to execute through a supplied Tool Router session, matching the other provider helpers. Session meta-tools now keep their session context through these helpers. Existing user-ID calls keep using direct execution unchanged, and the Cloudflare `options` argument is now optional. Passing a session requires `@composio/core` 0.17.0 or later. Custom provider subclasses overriding these methods may require updates because they now accept session targets.
+
+## 0.11.1
+
+### Patch Changes
+
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.11.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
+## 0.10.3
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
+## 0.10.2
+
+### Patch Changes
+
+- a2f6b96: Add missing object types to nested Google GenAI tool schemas so Gemini accepts function declarations with property maps. This release requires `@composio/core >=0.16.0 <1.0.0` for the shared schema normalizer.
+
 ## 0.10.1
 
 ### Patch Changes

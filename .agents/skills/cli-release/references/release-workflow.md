@@ -17,24 +17,26 @@
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
-- `.changeset/config.json` ignores `@composio/cli` and `@composio/cli-local-tools`.
+- `.changeset/config.json` ignores `@composio/cli`.
 
 `ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
 
 ## Choose The Path
 
-| Goal | Path | Result |
-| --- | --- | --- |
-| Ship an ordinary CLI change | Merge the reviewed PR to `next` | The push builds a rolling beta automatically. |
-| Build a beta from a branch | Dispatch `build-beta` at that branch | A prerelease is built from the branch commit. |
-| Publish a stable CLI | Promote an existing tested beta | The beta's source commit is rebuilt and published under the stable tag. |
-| Resume a failed promotion | Re-run or re-dispatch the same beta after inspecting the draft | An unpublished draft can be resumed and its assets replaced. |
+| Goal                        | Path                                                           | Result                                                                  |
+| --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Ship an ordinary CLI change | Merge the reviewed PR to `next`                                | The push builds a rolling beta automatically.                           |
+| Build a beta from a branch  | Dispatch `build-beta` at that branch                           | A prerelease is built from the branch commit.                           |
+| Publish a stable CLI        | Dispatch promotion at an existing tested beta tag              | The beta's source commit is rebuilt and published under the stable tag. |
+| Resume a failed promotion   | Re-run or re-dispatch the same beta after inspecting the draft | An unpublished draft can be resumed and its assets replaced.            |
 
-The resolver also treats a CLI `package.json` version change pushed to `next` as a stable release. Do not use that as the normal contributor procedure. It bypasses beta selection and is reserved for explicit release-owner recovery or migration work.
+The private CLI `package.json` uses a development sentinel and never selects a
+binary version. If a release owner needs an intentional minor or major version,
+dispatch an explicitly versioned beta, verify it, and promote that exact beta.
 
 ## Changeset Rule
 
-Never create a `.changeset/*.md` entry for `@composio/cli` or `@composio/cli-local-tools` while those packages remain in `.changeset/config.json#ignore`.
+Never create a `.changeset/*.md` entry for `@composio/cli` while it remains in `.changeset/config.json#ignore`.
 
 An ignored-package changeset makes `changesets/action` enter version-PR mode, while `changeset version` emits no commit. The action then fails with `No commits between next and changeset-release/next` and blocks unrelated SDK publishing.
 
@@ -94,7 +96,10 @@ If the user asked for a stable release without naming a beta, show the candidate
 
 ## Build A Manual Beta
 
-Use this only when an explicit beta build is requested. The selected ref supplies both the workflow definition and source commit.
+Use this only when an explicit beta build is requested. The selected ref
+supplies both the workflow definition and source commit. Omit `version` for the
+normal next-patch beta, or provide an exact `major.minor.patch` base for an
+intentional minor or major release.
 
 ```bash
 SOURCE_BRANCH='replace-with-branch'
@@ -103,6 +108,16 @@ gh workflow run build-cli-binaries.yml \
   --repo "$REPOSITORY" \
   --ref "$SOURCE_BRANCH" \
   --raw-field action=build-beta
+```
+
+For an intentional minor or major, add a version newer than the latest stable:
+
+```bash
+gh workflow run build-cli-binaries.yml \
+  --repo "$REPOSITORY" \
+  --ref "$SOURCE_BRANCH" \
+  --raw-field action=build-beta \
+  --raw-field version=0.3.0
 ```
 
 Watch the returned run through publication and installation tests. A beta is not a stable release.
@@ -121,14 +136,13 @@ gh release view "$STABLE_TAG" --repo "$REPOSITORY" --json tagName,isDraft,isPrer
 - If it is a draft, the promotion can resume it.
 - If it is already published, stop. Never overwrite a published release.
 
-Dispatch the current workflow from `next`; `promote-stable` resolves the source commit from the beta release itself:
+Dispatch the workflow at the beta tag. The selected ref supplies the immutable source commit, and the workflow verifies that it matches the beta release before rebuilding:
 
 ```bash
 gh workflow run build-cli-binaries.yml \
   --repo "$REPOSITORY" \
-  --ref next \
-  --raw-field action=promote-stable \
-  --raw-field beta_tag="$BETA_TAG"
+  --ref "$BETA_TAG" \
+  --raw-field action=promote-stable
 ```
 
 Use the returned URL when available. Otherwise identify the new dispatch, verify its creation time and actor, then watch it:
@@ -138,7 +152,7 @@ gh run list \
   --repo "$REPOSITORY" \
   --workflow build-cli-binaries.yml \
   --event workflow_dispatch \
-  --branch next \
+  --commit "$TARGET_COMMIT" \
   --limit 5
 
 gh run watch RUN_ID --repo "$REPOSITORY" --compact --exit-status

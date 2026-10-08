@@ -1,0 +1,5 @@
+# bashrc prologue
+
+
+# Composio CLI
+export PATH="/opt/composio/bin:$PATH"

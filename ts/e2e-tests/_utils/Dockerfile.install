@@ -1,0 +1,18 @@
+FROM debian:bookworm-slim
+
+ARG INSTALL_SHELL=bash
+
+RUN case "$INSTALL_SHELL" in bash|zsh|fish) ;; *) exit 2 ;; esac && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends bash ca-certificates curl passwd unzip $([ "$INSTALL_SHELL" = bash ] || printf '%s' "$INSTALL_SHELL") && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -m -s "/bin/$INSTALL_SHELL" composio
+
+ENV HOME=/home/composio
+ENV SHELL=/bin/$INSTALL_SHELL
+ENV PATH=/usr/local/bin:/usr/bin:/bin
+
+USER composio
+WORKDIR /home/composio
+
+CMD ["/bin/sh"]

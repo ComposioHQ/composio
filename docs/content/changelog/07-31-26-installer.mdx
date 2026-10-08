@@ -1,0 +1,17 @@
+---
+title: "Install the Composio CLI with a POSIX shell"
+description: "The CLI installer now runs on POSIX sh, keeps the release bundle separate from the entry point, and makes shell configuration opt-in."
+date: "2026-07-31"
+---
+
+The Composio CLI installer now separates the release bundle from the command you run, works with POSIX `sh`, and leaves shell configuration opt-in.
+
+### What's new
+
+- `curl -fsSL https://composio.dev/install | sh` installs the verified release bundle in `~/.composio` and creates `~/.local/bin/composio`.
+- The default flow does not edit shell files, install agent plugins, or log you in.
+- `COMPOSIO_INSTALL_SHELL=zsh|bash|fish` configures the requested shell explicitly, for example `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh`.
+- `COMPOSIO_INSTALL_VERSION`, `COMPOSIO_BIN_DIR`, `COMPOSIO_QUIET`, and `COMPOSIO_DEBUG` give you control over version, layout, and output.
+- Existing `COMPOSIO_INSTALL_DIR` configurations keep their bundle-directory meaning.
+
+The opt-in default described here was later replaced: see [the installer now configures your shell by default](/docs/changelog/2026/08/05).

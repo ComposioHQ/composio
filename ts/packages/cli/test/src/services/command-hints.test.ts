@@ -31,6 +31,13 @@ describe('command-hints', () => {
       '--get-schema'
     );
     expect(commandHintExample('dev.logs.tools', { logId: 'log_123' })).toContain('log_123');
+    expect(commandHintExample('root.search')).toBe('composio search "<query>"');
+    expect(commandHintExample('root.search', { query: 'send email' })).toBe(
+      'composio search "send email"'
+    );
+    expect(commandHintExample('root.search', { toolkits: 'custom_grain' })).toBe(
+      'composio search "<query>" --toolkits custom_grain'
+    );
   });
 
   it('serializes the graph with nodes and links', () => {

@@ -5,8 +5,13 @@ from crewai.tools import BaseTool
 
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.pydantic import parse_pydantic_error
-from composio.utils.shared import json_schema_to_model, normalize_tool_arguments
+from composio.utils.shared import (
+    json_schema_to_model,
+    normalize_tool_arguments,
+    validate_and_serialize_tool_arguments,
+)
 
 
 class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
@@ -22,6 +27,24 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
         """Wrap a tool as a CrewAI tool."""
 
         class Wrapper(BaseTool):
+            def _validate_kwargs(
+                self, kwargs: t.Dict[str, t.Any]
+            ) -> t.Dict[str, t.Any]:
+                """Validate zero-field schemas and preserve argument presence."""
+                if self.args_schema is None:
+                    return kwargs
+                return validate_and_serialize_tool_arguments(self.args_schema, kwargs)
+
+            def run(self, *args, **kwargs):
+                try:
+                    return super().run(*args, **kwargs)
+                except pydantic.ValidationError as e:
+                    return {
+                        "successful": False,
+                        "error": parse_pydantic_error(e),
+                        "data": None,
+                    }
+
             def _run(self, **kwargs):
                 try:
                     # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
@@ -35,11 +58,19 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
                         "data": None,
                     }
 
+        # Inline internal $ref/$defs before building the Pydantic model. The
+        # converter types a referenced property as Any, so CrewAI would show the
+        # model an untyped argument. Dangling references degrade to a permissive
+        # object instead of raising, matching the other providers.
+        input_parameters = dereference_json_schema(
+            tool.input_parameters,
+            on_unresolved="sentinel",
+        )
         return Wrapper(
             name=tool.slug,
             description=tool.description,
             args_schema=json_schema_to_model(
-                json_schema=tool.input_parameters,
+                json_schema=input_parameters,
                 skip_default=self.skip_default,
             ),
         )

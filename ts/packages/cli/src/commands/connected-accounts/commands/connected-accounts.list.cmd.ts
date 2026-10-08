@@ -1,6 +1,5 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option } from 'effect';
-import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
@@ -20,19 +19,17 @@ class ConnectedAccountsListRequestError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription(
-    'Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'
-  ),
-  Options.optional
+const toolkits = Flag.String('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user ID'),
-  Options.optional
+const userId = Flag.String('user-id').pipe(
+  Flag.withDescription('Filter by user ID'),
+  Flag.optional
 );
 
-const status = Options.choice('status', [
+const status = Flag.Literals('status', [
   'INITIALIZING',
   'INITIATED',
   'ACTIVE',
@@ -40,11 +37,11 @@ const status = Options.choice('status', [
   'EXPIRED',
   'INACTIVE',
   'REVOKED',
-] as const).pipe(Options.withDescription('Filter by connection status'), Options.optional);
+] as const).pipe(Flag.withDescription('Filter by connection status'), Flag.optional);
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.Int('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 /**
@@ -85,11 +82,7 @@ export const connectedAccountsCmd$List = Command.make(
             client.connectedAccounts.list({
               toolkit_slugs: toolkitSlugs,
               user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-              // Bypass the stale Stainless union (still missing 'REVOKED')
-              // until @composio/client is regenerated.
-              statuses: Option.isSome(status)
-                ? ([status.value] as ConnectedAccountListParams['statuses'])
-                : undefined,
+              statuses: Option.isSome(status) ? [status.value] : undefined,
               limit: clampLimit(limit),
             }),
           catch: cause =>

@@ -2,7 +2,7 @@ name: Examples TypeScript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/examples/**'
       - 'ts/packages/core/**'
@@ -13,9 +13,11 @@ on:
       - '.github/workflows/ts.examples.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'turbo.jsonc'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/examples/**'
       - 'ts/packages/core/**'
@@ -26,6 +28,8 @@ on:
       - '.github/workflows/ts.examples.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'turbo.jsonc'
 
 concurrency:

@@ -1,5 +1,5 @@
-import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Command, Flag } from 'effect/unstable/cli';
+import { Data, Effect, Option } from 'effect';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 import { logsCmd } from './logs-cmd/logs.cmd';
@@ -9,15 +9,14 @@ import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cmd';
 import { triggersCmd } from './triggers/triggers.cmd';
 import { projectsCmd } from './projects/projects.cmd';
-import { devNativeUiCmd } from './dev/dev.native-ui.cmd';
 import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-user-config';
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
 
-const devMode = Options.choice('mode', ['on', 'off'] as const).pipe(
-  Options.withDescription('Set developer mode on or off.'),
-  Options.optional
+const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
+  Flag.withDescription('Set developer mode on or off.'),
+  Flag.optional
 );
 
 export const devSubcommands = [
@@ -30,8 +29,11 @@ export const devSubcommands = [
   connectedAccountsCmd,
   triggersCmd,
   projectsCmd,
-  devNativeUiCmd,
 ] as const;
+
+export class DeveloperModeError extends Data.TaggedError('commands/DeveloperModeError')<{
+  readonly message: string;
+}> {}
 
 const describeCurrentMode = (enabled: boolean) =>
   enabled
@@ -52,11 +54,9 @@ const applyDeveloperModeChange = (enabled: boolean) =>
     if (enabled) {
       if (!stdin.isTTY()) {
         const configPath = yield* resolveCliConfigPath;
-        yield* ui.log.error('Enabling developer mode requires an interactive terminal.');
-        yield* ui.log.step(
-          `Set "developer.enabled": true manually in ${configPath} if you really want to enable it outside an interactive session.`
-        );
-        return;
+        return yield* new DeveloperModeError({
+          message: `Enabling developer mode requires an interactive terminal. Set "developer.enabled": true in ${configPath} to enable it outside an interactive session.`,
+        });
       }
 
       yield* ui.note(
@@ -131,6 +131,10 @@ export const buildDevCommand = (visibility: CommandVisibility) => {
         ? 'Developer workflows: init, playground execution, logs, projects, toolkits, accounts, and triggers.'
         : 'Developer mode controls access to developer-only workflows. When off, only `composio dev --mode on|off` is available.'
     ),
+    Command.withExamples([
+      { command: 'composio dev --mode on' },
+      { command: 'composio dev --mode off' },
+    ]),
     Command.withHandler(({ devMode }) =>
       Option.match(devMode, {
         onNone: () => promptForDeveloperMode(),

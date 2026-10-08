@@ -3,8 +3,14 @@ import { Toolkits } from '../../src/models/Toolkits';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
+import {
+  ComposioToolkitFetchError,
+  ComposioToolkitNotFoundError,
+} from '../../src/errors/ToolkitErrors';
+import { ValidationError } from '../../src/errors/ValidationErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { APIError } from '@composio/client';
+import type { ToolkitListParams } from '../../src/types/toolkit.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -12,6 +18,12 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
     instrument: vi.fn(),
   },
 }));
+
+// Minimal structural shape for overriding `Toolkits.prototype.getToolkitBySlug`
+// (a protected method) with a mock implementation in tests.
+type ToolkitsPrototypeOverride = {
+  getToolkitBySlug: unknown;
+};
 
 // Create mock client with toolkit-related methods
 const createMockClient = () => ({
@@ -21,6 +33,8 @@ const createMockClient = () => ({
     list: vi.fn(),
     retrieve: vi.fn(),
     retrieveCategories: vi.fn(),
+    retrieveMulti: vi.fn(),
+    retrieveChangelog: vi.fn(),
     listCategories: vi.fn(),
     authorize: vi.fn(),
     get: vi.fn(),
@@ -104,10 +118,6 @@ describe('Toolkits', () => {
     it('should create an instance successfully', () => {
       expect(toolkits).toBeInstanceOf(Toolkits);
       expect(telemetry.instrument).toHaveBeenCalledWith(toolkits, 'Toolkits');
-    });
-
-    it('should store the client reference', () => {
-      expect(toolkits['client']).toBe(mockClient);
     });
   });
 
@@ -222,14 +232,37 @@ describe('Toolkits', () => {
     });
 
     it('should throw ValidationError for invalid list query', async () => {
-      const promise = toolkits.get({ category: 123 } as any);
+      const promise = toolkits.get({ category: 123 } as unknown as ToolkitListParams);
       await expect(promise).rejects.toThrowError('Failed to fetch toolkits');
     });
 
-    it('should throw ComposioToolkitNotFoundError when toolkit not found', async () => {
-      mockClient.toolkits.retrieve.mockRejectedValue(
-        new Error('Toolkit with slug non-existent not found')
+    it('should throw ComposioToolkitNotFoundError when the API returns 404', async () => {
+      const notFound = new ComposioClient.NotFoundError(404, undefined, undefined, new Headers());
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(notFound);
+
+      const error = await toolkits.get('non-existent').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolkitNotFoundError);
+      expect(error.cause).toBe(notFound);
+    });
+
+    it('should not report an invalid API key (401) as toolkit not found', async () => {
+      const unauthorized = new ComposioClient.AuthenticationError(
+        401,
+        undefined,
+        undefined,
+        new Headers()
       );
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(unauthorized);
+
+      const error = await toolkits.get('github').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolkitFetchError);
+      expect(error.cause).toBe(unauthorized);
+    });
+
+    it('should throw ComposioToolkitFetchError for non-API failures', async () => {
+      mockClient.toolkits.retrieve.mockRejectedValueOnce(new Error('socket hang up'));
 
       const promise = toolkits.get('non-existent');
       await expect(promise).rejects.toThrowError("Couldn't fetch Toolkit with slug: non-existent");
@@ -264,6 +297,107 @@ describe('Toolkits', () => {
         items: mockResponse.items,
         nextCursor: mockResponse.next_cursor,
         totalPages: mockResponse.total_pages,
+      });
+    });
+  });
+
+  describe('getMany', () => {
+    it('should fetch toolkits by slug and return the list shape', async () => {
+      mockClient.toolkits.retrieveMulti.mockResolvedValue(mockToolkitListResponse);
+
+      const result = await toolkits.getMany(['github', 'slack']);
+
+      expect(mockClient.toolkits.retrieveMulti).toHaveBeenCalledWith(
+        {
+          toolkits: ['github', 'slack'],
+          category: undefined,
+          managed_by: undefined,
+          sort_by: undefined,
+          cursor: undefined,
+          limit: undefined,
+        },
+        undefined
+      );
+      expect(result).toEqual([
+        {
+          name: 'GitHub',
+          slug: 'github',
+          meta: {
+            createdAt: '2024-01-01',
+            updatedAt: '2024-01-02',
+            toolsCount: 10,
+            triggersCount: 5,
+          },
+          isLocalToolkit: false,
+          authSchemes: ['oauth2'],
+          composioManagedAuthSchemes: ['oauth2'],
+          noAuth: false,
+        },
+      ]);
+    });
+
+    it('should forward filters and request options', async () => {
+      mockClient.toolkits.retrieveMulti.mockResolvedValue({ items: [] });
+      const signal = new AbortController().signal;
+
+      await toolkits.getMany(
+        ['github'],
+        { managedBy: 'composio', sortBy: 'usage', limit: 5 },
+        {
+          signal,
+        }
+      );
+
+      expect(mockClient.toolkits.retrieveMulti).toHaveBeenCalledWith(
+        {
+          toolkits: ['github'],
+          category: undefined,
+          managed_by: 'composio',
+          sort_by: 'usage',
+          cursor: undefined,
+          limit: 5,
+        },
+        { signal }
+      );
+    });
+
+    it('should throw a ValidationError for an empty slug list', async () => {
+      await expect(toolkits.getMany([])).rejects.toThrow(ValidationError);
+      expect(mockClient.toolkits.retrieveMulti).not.toHaveBeenCalled();
+    });
+
+    it('should wrap request failures in ComposioToolkitFetchError', async () => {
+      mockClient.toolkits.retrieveMulti.mockRejectedValue(new Error('boom'));
+
+      await expect(toolkits.getMany(['github'])).rejects.toThrow(ComposioToolkitFetchError);
+    });
+  });
+
+  describe('changelog', () => {
+    it('should return the toolkit changelog in camelCase', async () => {
+      mockClient.toolkits.retrieveChangelog.mockResolvedValue({
+        items: [
+          {
+            slug: 'github',
+            name: 'github',
+            display_name: 'GitHub',
+            versions: [{ version: '20250909_00', changelog: 'Added issues tools' }],
+          },
+        ],
+      });
+
+      const result = await toolkits.changelog();
+
+      expect(mockClient.toolkits.retrieveChangelog).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual({
+        items: [
+          {
+            slug: 'github',
+            name: 'github',
+            displayName: 'GitHub',
+            versions: [{ version: '20250909_00', changelog: 'Added issues tools' }],
+          },
+        ],
       });
     });
   });
@@ -523,7 +657,8 @@ describe('Toolkits', () => {
 
       const promise = toolkits.authorize('user-123', 'non-existent');
 
-      await expect(promise).rejects.toThrow("Couldn't fetch Toolkit with slug: non-existent");
+      await expect(promise).rejects.toThrow(ComposioToolkitNotFoundError);
+      await expect(promise).rejects.toThrow('Toolkit with slug non-existent not found');
       expect(mockClient.authConfigs.list).not.toHaveBeenCalled();
       expect(mockClient.authConfigs.create).not.toHaveBeenCalled();
       expect(mockClient.connectedAccounts.create).not.toHaveBeenCalled();
@@ -552,7 +687,9 @@ describe('Toolkits', () => {
     };
 
     beforeEach(() => {
-      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+      vi.spyOn(Toolkits.prototype as unknown, 'getToolkitBySlug').mockResolvedValue(
+        mockToolkit as unknown
+      );
     });
 
     it('returns all fields when requiredOnly is false', async () => {
@@ -617,7 +754,9 @@ describe('Toolkits', () => {
           },
         ],
       };
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce(multiToolkit);
       const result = await toolkits.getAuthConfigCreationFields(
         toolkitSlug,
         AuthSchemeTypes.API_KEY,
@@ -629,7 +768,9 @@ describe('Toolkits', () => {
     });
 
     it('throws if no authConfigDetails', async () => {
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce({});
       await expect(
         toolkits.getAuthConfigCreationFields(toolkitSlug, AuthSchemeTypes.API_KEY, {
           requiredOnly: true,
@@ -660,7 +801,9 @@ describe('Toolkits', () => {
     };
 
     beforeEach(() => {
-      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+      vi.spyOn(Toolkits.prototype as unknown, 'getToolkitBySlug').mockResolvedValue(
+        mockToolkit as unknown
+      );
     });
 
     it('returns all fields when requiredOnly is false', async () => {
@@ -713,7 +856,9 @@ describe('Toolkits', () => {
           },
         ],
       };
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce(multiToolkit);
       const result = await toolkits.getConnectedAccountInitiationFields(
         toolkitSlug,
         AuthSchemeTypes.API_KEY,
@@ -725,7 +870,9 @@ describe('Toolkits', () => {
     });
 
     it('throws if no authConfigDetails', async () => {
-      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      (Toolkits.prototype as unknown as ToolkitsPrototypeOverride).getToolkitBySlug = vi
+        .fn()
+        .mockResolvedValueOnce({});
       await expect(
         toolkits.getConnectedAccountInitiationFields(toolkitSlug, AuthSchemeTypes.API_KEY, {
           requiredOnly: true,

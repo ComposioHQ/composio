@@ -1,11 +1,20 @@
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { describe, expect, it, vi } from '@effect/vitest';
-import { Config, ConfigProvider, Effect, Exit, Layer } from 'effect';
-import { FetchHttpClient, FileSystem, HttpClient, Path } from '@effect/platform';
-import type * as PlatformError from '@effect/platform/Error';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import {
+  Config,
+  ConfigProvider,
+  Effect,
+  Exit,
+  FileSystem,
+  Layer,
+  Path,
+  PlatformError,
+} from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as tempy from 'tempy';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { startTestHttpServer } from 'test/__utils__/http-server';
 import {
   inferSkillReleaseChannel,
   installSkill,
@@ -30,61 +39,30 @@ const TEST_SKILL_ZIP = Uint8Array.from(
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
-const makeInstallEffect = (home: string, apiBaseUrl: string) =>
-  installSkill({ target: 'claude', releaseTag: TEST_RELEASE_TAG }).pipe(
+const makeInstallEffect = (
+  home: string,
+  apiBaseUrl: string,
+  options: { readonly releaseTag?: string } = { releaseTag: TEST_RELEASE_TAG }
+) =>
+  installSkill({ target: 'claude', ...options }).pipe(
     Effect.provide(
       Layer.mergeAll(
         TestPlatform,
         FetchHttpClient.layer,
         TerminalUITest,
-        Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
-      )
-    ),
-    Effect.withConfigProvider(
-      ConfigProvider.fromMap(
-        new Map([
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
-        ])
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: home })),
+        ConfigProvider.layer(
+          ConfigProvider.fromEnv({
+            env: {
+              GITHUB_API_BASE_URL: apiBaseUrl,
+              GITHUB_OWNER: 'test-owner',
+              GITHUB_REPO: 'test-repo',
+            },
+          })
+        )
       )
     ),
     Effect.scoped
-  );
-
-/**
- * Spin up a local HTTP server on an ephemeral port as a scoped resource and
- * return its base URL. Scope closure tears the server down.
- */
-const startTestHttpServer = (handler: (req: IncomingMessage, res: ServerResponse) => void) =>
-  Effect.map(
-    Effect.acquireRelease(
-      Effect.promise(
-        () =>
-          new Promise<Server>((resolve, reject) => {
-            const server = createServer(handler);
-            server.once('error', reject);
-            server.listen({ port: 0, host: '127.0.0.1' }, () => {
-              server.off('error', reject);
-              resolve(server);
-            });
-          })
-      ),
-      server =>
-        Effect.promise(
-          () =>
-            new Promise<void>((resolve, reject) => {
-              server.close(error => (error ? reject(error) : resolve()));
-            })
-        )
-    ),
-    server => {
-      const address = server.address();
-      if (address === null || typeof address === 'string') {
-        throw new Error('Failed to bind test server to an ephemeral port');
-      }
-      return `http://127.0.0.1:${address.port}`;
-    }
   );
 
 const startSkillReleaseServer = (skillZip: Uint8Array) =>
@@ -159,6 +137,7 @@ const makeResolveEffect = (
   configEntries: ReadonlyArray<[string, string]>,
   options: {
     channel?: SkillReleaseChannel;
+    installedReleaseTag?: string;
     releaseTag?: string;
   } = {}
 ) =>
@@ -170,11 +149,16 @@ const makeResolveEffect = (
       channel: options.channel,
       githubConfig,
       httpClient,
+      installedReleaseTag: options.installedReleaseTag,
       releaseTag: options.releaseTag,
     });
   }).pipe(
-    Effect.provide(FetchHttpClient.layer),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.provide(
+      Layer.mergeAll(
+        FetchHttpClient.layer,
+        ConfigProvider.layer(ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) }))
+      )
+    ),
     Effect.scoped
   );
 
@@ -235,6 +219,7 @@ describe('install-skill', () => {
       const releaseTag = '@composio/cli@0.3.0-beta.123';
       const tag = yield* makeResolveEffect([], {
         channel: 'stable',
+        installedReleaseTag: '@composio/cli@0.2.33-beta.322',
         releaseTag,
       });
 
@@ -242,7 +227,120 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('fails with a typed decode error for malformed GitHub release lists', () =>
+  it.effect('prefers the configured release tag over packaged metadata', () =>
+    Effect.gen(function* () {
+      const tag = yield* makeResolveEffect([['GITHUB_TAG', '@composio/cli@0.2.34-beta.1']], {
+        installedReleaseTag: '@composio/cli@0.2.33',
+      });
+
+      expect(tag).toBe('@composio/cli@0.2.34-beta.1');
+    })
+  );
+
+  it.effect('uses the packaged release tag when no explicit selector is provided', () =>
+    Effect.gen(function* () {
+      const tag = yield* makeResolveEffect([], {
+        installedReleaseTag: '@composio/cli@0.2.33-beta.322',
+      });
+
+      expect(tag).toBe('@composio/cli@0.2.33-beta.322');
+    })
+  );
+
+  it.effect('installs from the packaged release tag when package metadata differs', () => {
+    const installDir = tempy.temporaryDirectory();
+    const execPathSpy = vi
+      .spyOn(process, 'execPath', 'get')
+      .mockReturnValue(`${installDir}/composio`);
+    let requestedReleasePath = '';
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const packagedReleaseTag = '@composio/cli@0.2.33';
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), packagedReleaseTag);
+
+      const apiBaseUrl = yield* startTestHttpServer((req, res) => {
+        if (req.url === '/skill.zip') {
+          res.writeHead(200, { 'content-type': 'application/zip' });
+          res.end(TEST_SKILL_ZIP);
+          return;
+        }
+
+        requestedReleasePath = req.url ?? '';
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            tag_name: packagedReleaseTag,
+            assets: [
+              {
+                name: 'composio-skill.zip',
+                browser_download_url: `http://${req.headers.host}/skill.zip`,
+              },
+            ],
+          })
+        );
+      });
+
+      const home = tempy.temporaryDirectory();
+      yield* makeInstallEffect(home, apiBaseUrl, {});
+
+      expect(requestedReleasePath).toContain(encodeURIComponent(packagedReleaseTag));
+      expect(
+        yield* fs.readFileString(
+          path.join(home, '.agents', 'skills', 'composio-cli', SKILL_RELEASE_TAG_FILENAME)
+        )
+      ).toBe(`${packagedReleaseTag}\n`);
+    }).pipe(
+      Effect.provide(TestPlatform),
+      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore()))
+    );
+  });
+
+  it.effect('falls back to the latest inferred channel for source and development runs', () =>
+    Effect.gen(function* () {
+      yield* stubBunWhichMiss;
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.33-beta.322',
+              draft: false,
+              prerelease: true,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/beta-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.33',
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/stable-skill.zip',
+                },
+              ],
+            },
+          ])
+        );
+      });
+
+      const tag = yield* makeResolveEffect([
+        ['GITHUB_API_BASE_URL', apiBaseUrl],
+        ['GITHUB_OWNER', 'test-owner'],
+        ['GITHUB_REPO', 'test-repo'],
+      ]);
+
+      expect(tag).toBe('@composio/cli@0.2.33');
+    })
+  );
+
+  it.effect('fails with a typed decode error for malformed GitHub release lists', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -268,7 +366,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('fails with a typed decode error for malformed skill release metadata', () =>
+  it.effect('fails with a typed decode error for malformed skill release metadata', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -286,7 +384,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped.each(TARGET_SCENARIOS)('installs over %s target', ([, prepareTarget]) =>
+  it.effect.each(TARGET_SCENARIOS)('installs over %s target', ([, prepareTarget]) =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(TEST_SKILL_ZIP);
       const fs = yield* FileSystem.FileSystem;
@@ -308,7 +406,7 @@ describe('install-skill', () => {
     }).pipe(Effect.provide(TestPlatform))
   );
 
-  it.scoped('removes the temporary install directory after extraction fails', () =>
+  it.effect('removes the temporary install directory after extraction fails', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(new TextEncoder().encode('not a zip'));
       const home = tempy.temporaryDirectory();
@@ -322,7 +420,7 @@ describe('install-skill', () => {
     }).pipe(Effect.provide(TestPlatform))
   );
 
-  it.scoped('resolves the latest stable release when the stable channel is requested', () =>
+  it.effect('resolves the latest stable release when the stable channel is requested', () =>
     Effect.gen(function* () {
       yield* stubBunWhichMiss;
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
@@ -379,7 +477,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('resolves the latest beta release when the beta channel is requested', () =>
+  it.effect('resolves the latest beta release when the beta channel is requested', () =>
     Effect.gen(function* () {
       yield* stubBunWhichMiss;
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {

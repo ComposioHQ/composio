@@ -1,0 +1,4 @@
+# fish greeting
+# Composio CLI
+set --export COMPOSIO_INSTALL_DIR "/legacy/.composio"
+set --export PATH $COMPOSIO_INSTALL_DIR $PATH

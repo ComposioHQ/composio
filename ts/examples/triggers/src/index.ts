@@ -41,13 +41,18 @@ async function main() {
       '📝 Go to https://app.composio.dev to create an app and add a trigger, Once you have an incoming trigger, you will see the events'
     );
 
-    composio.triggers.subscribe(data => {
+    await composio.triggers.subscribe(data => {
       console.log('🔔 Trigger received:', JSON.stringify(data, null, 2));
     });
+    console.log('Subscribed to trigger events');
   } catch (error) {
     console.error('❌ Error running example:', error);
+    process.exitCode = 1;
   }
 }
 
 // Run the example
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

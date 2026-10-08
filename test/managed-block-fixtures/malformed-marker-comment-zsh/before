@@ -1,0 +1,4 @@
+# Composio CLI
+# added by my dotfiles
+export PATH="/stale/bin:$PATH"
+# user epilogue

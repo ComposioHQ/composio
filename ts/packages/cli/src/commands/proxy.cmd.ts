@@ -1,5 +1,5 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Data, Effect, Either, Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -22,45 +22,46 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
-const endpoint = Args.text({ name: 'url' }).pipe(
-  Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
+const endpoint = Argument.String('url').pipe(
+  Argument.withDescription('Absolute or relative API endpoint to call through proxy execute.')
 );
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withAlias('t'),
-  Options.withDescription('Toolkit slug whose connected account should be used')
+const toolkit = Flag.String('toolkit').pipe(
+  Flag.withAlias('t'),
+  Flag.withDescription('Toolkit slug whose connected account should be used')
 );
 
-const account = Options.text('account').pipe(
-  Options.withDescription(
+const account = Flag.String('account').pipe(
+  Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const method = Options.text('method').pipe(
-  Options.withAlias('X'),
-  Options.withDefault('GET'),
-  Options.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
+const method = Flag.String('method').pipe(
+  Flag.withAlias('X'),
+  Flag.withDefault('GET'),
+  Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
 );
 
-const headers = Options.text('header').pipe(
-  Options.withAlias('H'),
-  Options.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
-  Options.repeated
+const headers = Flag.String('header').pipe(
+  Flag.withAlias('H'),
+  Flag.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
+  Flag.atLeast(0)
 );
 
-const data = Options.text('data').pipe(
-  Options.withAlias('d'),
-  Options.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
-  Options.optional
+const data = Flag.String('data').pipe(
+  Flag.withAlias('d'),
+  Flag.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
+  Flag.optional
 );
 
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Skip the short-lived connected-account fail-fast check if you just connected an account'
   )
 );
@@ -116,10 +117,13 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
 const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
 export const parseProxyBody = (raw: string): unknown =>
-  Either.getOrElse(parseJsonRecord(raw), (): unknown => raw);
+  Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
-  result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
+  result: Pick<
+    Extract<SessionProxyExecuteResponse, { result_type: 'completed' }>,
+    'status' | 'data' | 'headers' | 'binary_data'
+  >
 ) => {
   if (result.binary_data) {
     return JSON.stringify(
@@ -215,8 +219,8 @@ const runProxyConnectedToolkitFailFast = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     }).pipe(
-      Effect.catchAll(() => Effect.void),
-      Effect.forkDaemon,
+      Effect.catch(() => Effect.void),
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -266,21 +270,21 @@ export const proxyCmd = Command.make('proxy', {
   skipConnectionCheck,
 }).pipe(
   Command.withDescription(
-    [
-      'curl-like access to any toolkit API through Composio using your connected account.',
-      'Composio handles authentication — just provide the full URL and toolkit.',
-      '',
-      'Examples:',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
-      `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
-      `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
-      '',
-      'See also:',
-      '  composio link <toolkit>                   Connect an account before calling proxy',
-      '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
-    ].join('\n')
+    'curl-like access to any toolkit API through Composio using your connected account.\nComposio handles authentication — just provide the full URL and toolkit.'
   ),
+  Command.withShortDescription(
+    'curl-like access to any toolkit API through Composio using your connected account.'
+  ),
+  Command.withExamples([
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
+    },
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\\n  -X POST -H \'content-type: application/json\' -d \'{"message":{"raw":"..."}}\'',
+    },
+  ]),
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
@@ -352,14 +356,26 @@ export const proxyCmd = Command.make('proxy', {
           });
 
           return yield* Effect.tryPromise({
-            try: () =>
-              client.toolRouter.session.proxyExecute(sessionId, {
-                toolkit_slug: normalizedToolkit,
-                endpoint,
-                method: normalizedMethod,
-                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-              }),
+            try: async () => {
+              const response = await client.toolRouter.session.proxyExecute(
+                sessionId,
+                {
+                  toolkit_slug: normalizedToolkit,
+                  endpoint,
+                  method: normalizedMethod,
+                  ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                  ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+                },
+                // Never retry a proxied call: a retry after the upstream API
+                // already acted duplicates the side effect.
+                { maxRetries: 0 }
+              );
+              assertNotInputRequired(
+                `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                response
+              );
+              return response;
+            },
             catch: cause =>
               new ProxyRequestError({
                 message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,

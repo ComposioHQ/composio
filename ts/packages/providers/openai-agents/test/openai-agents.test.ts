@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenAIAgentsProvider } from '../src';
-import { Tool } from '@composio/core';
+import { Tool, ExecuteToolFn } from '@composio/core';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
 
 // Define an interface for our mocked OpenAI Agent tool
 interface MockedOpenAIAgentTool {
   name: string;
   description: string;
-  parameters: any;
+  parameters: unknown;
   execute: Function;
   _isMockedOpenAIAgentTool: boolean;
 }
@@ -27,7 +27,7 @@ vi.mock('@openai/agents', () => {
 describe('OpenAIAgentsProvider', () => {
   let provider: OpenAIAgentsProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIAgentsProvider();
@@ -157,6 +157,96 @@ describe('OpenAIAgentsProvider', () => {
     });
   });
 
+  describe('strict mode', () => {
+    it('registers a strict schema with optional parameters kept as required-nullable', () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      strictProvider._setExecuteToolFn(mockExecuteToolFn);
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              input: { type: 'string' },
+              cfg: {
+                type: 'object',
+                properties: { url: { type: 'string' }, note: { type: 'string' } },
+                required: ['url'],
+              },
+            },
+            required: ['input'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      expect(wrapped.strict).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {
+          input: { type: 'string' },
+          cfg: {
+            type: ['object', 'null'],
+            properties: { url: { type: 'string' }, note: { type: ['string', 'null'] } },
+            required: ['url', 'note'],
+            additionalProperties: false,
+          },
+        },
+        required: ['input', 'cfg'],
+        additionalProperties: false,
+      });
+    });
+
+    it('registers tools strict mode cannot express without strict', () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: { headers: { type: 'object', additionalProperties: { type: 'string' } } },
+            required: ['headers'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      expect(wrapped.strict).toBe(false);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: { headers: { type: 'object', additionalProperties: { type: 'string' } } },
+        required: ['headers'],
+        additionalProperties: true,
+      });
+    });
+
+    it('omits null arguments the tool schema rejects before executing under strict mode', async () => {
+      const strictProvider = new OpenAIAgentsProvider({ strict: true });
+      const wrapped = strictProvider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              input: { type: 'string' },
+              label: { type: 'string' },
+              clearable: { type: ['string', 'null'] },
+            },
+            required: ['input'],
+          },
+        },
+        mockExecuteToolFn as ExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      await wrapped.execute({ input: 'x', label: null, clearable: null });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {
+        input: 'x',
+        clearable: null,
+      });
+    });
+  });
+
   describe('wrapTools', () => {
     it('should wrap multiple tools', () => {
       const anotherTool: Tool = {
@@ -208,42 +298,6 @@ describe('OpenAIAgentsProvider', () => {
     });
   });
 
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-  });
-
   describe('MCP functionality', () => {
     describe('wrapMcpServerResponse', () => {
       it('should transform McpUrlResponse to standard McpServerGetResponse format', () => {
@@ -278,44 +332,6 @@ describe('OpenAIAgentsProvider', () => {
 
         expect(Array.isArray(result)).toBe(true);
         expect(result).toHaveLength(0);
-      });
-
-      it('should handle single item array', () => {
-        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        expect(Array.isArray(result)).toBe(true);
-        expect(result).toHaveLength(1);
-        expect(result[0]).toEqual({
-          url: new URL('https://single.example.com'),
-          name: 'single-server',
-        });
-      });
-    });
-
-    describe('MCP integration with provider', () => {
-      it('should correctly type the MCP response transformation', () => {
-        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        // TypeScript should infer this as McpServerGetResponse
-        expect(result[0]).toHaveProperty('url');
-        expect(result[0]).toHaveProperty('name');
-        expect(result[0].url).toBeInstanceOf(URL);
-        expect(result[0].url.href).toBe('https://test.example.com/');
-      });
-
-      it('should work with MCP provider instance', () => {
-        // Verify the provider can transform MCP responses
-        const newProvider = new OpenAIAgentsProvider();
-        const testResponse = [{ name: 'test', url: 'https://test.com' }];
-
-        const result = newProvider.wrapMcpServerResponse(testResponse);
-        expect(result).toHaveLength(1);
-        expect(result[0].name).toBe('test');
-        expect(result[0].url.href).toBe('https://test.com/');
       });
     });
   });

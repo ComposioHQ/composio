@@ -29,8 +29,9 @@ modules_for_ruff = [
 # langchain-openai) is sourced from the `dev` group in pyproject.toml via
 # `--group dev`, so every package is declared in exactly one place.
 type_stubs = [
-    "types-requests==2.33.0.20260712",
-    "types-protobuf==7.34.1.20260518",
+    "types-requests==2.33.0.20260906",
+    "types-protobuf==7.35.1.20260906",
+    "types-jsonschema==4.26.0.20260518",
     "anthropic==0.120.0",
     # Keep this aligned with the CrewAI provider dependency metadata.
     "crewai==1.15.7",
@@ -39,9 +40,11 @@ type_stubs = [
     "llama-index==0.14.23",
     "openai-agents==0.18.3",
     "google-cloud-aiplatform==1.162.0",
+    # Keep this inside the TypeSafe provider's `>=0.6.0,<0.7.0` range.
+    "typesafe-sdk==0.6.0",
 ]
 
-mypy = "mypy==2.3.0"
+mypy = "mypy==2.3.1"
 
 ruff = [
     "ruff",
@@ -75,13 +78,80 @@ def fix(session: Session):
 
 
 @nox.session
+def chk_examples(session: Session):
+    """Type-check example scripts against the SDK surface.
+
+    Examples run one mypy invocation per file: duplicate basenames
+    (examples/tools.py, examples/tool_router/tools.py) collide as module
+    names inside a single run. Third-party agent frameworks stay
+    unresolved on purpose; the check targets composio API usage.
+    """
+    from pathlib import Path
+
+    session.install(".", "--group", "dev", mypy, *type_stubs)
+    for path in sorted(Path("examples").rglob("*.py")):
+        session.run(
+            "mypy",
+            "--config-file",
+            "config/mypy.ini",
+            "--ignore-missing-imports",
+            # Examples wrap their bodies in unannotated main()s; without this
+            # mypy skips those bodies entirely and the gate checks almost nothing.
+            "--check-untyped-defs",
+            str(path),
+        )
+
+
+@nox.session
 def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")
+    session.install("./providers/crewai")
     session.install("./providers/langchain")
+    session.install("./providers/langgraph")
+    session.install("./providers/gemini")
+    session.install("./providers/google")
+    session.install("./providers/openai_agents")
+    session.install("./providers/claude_agent_sdk")
+    if session.posargs:
+        session.run("pytest", *session.posargs, "-v", "--tb=short")
+        return
+    # Separate runs: the provider packages' `test_provider.py` files share a
+    # basename with tests/, which pytest cannot collect in a single session.
+    for test_path in (
+        "tests/",
+        "providers/openai_agents/tests",
+        "providers/claude_agent_sdk/tests",
+    ):
+        session.run("pytest", test_path, "-v", "--tb=short")
+
+
+@nox.session
+def tst_autogen(session: Session):
+    """Run Autogen tests in its protobuf-compatible environment."""
+    session.install(".", "--group", "dev")
     session.install("./providers/autogen")
-    test_paths = session.posargs or ["tests/"]
-    session.run("pytest", *test_paths, "-v", "--tb=short")
+    session.run(
+        "pytest",
+        "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults",
+        "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default",
+        "-v",
+        "--tb=short",
+    )
+
+
+@nox.session
+def tst_typesafe(session: Session):
+    """Run the TypeSafe provider tests, which `tst` skips without the provider."""
+    session.install(".", "--group", "dev")
+    session.install("./providers/typesafe", "typesafe-sdk==0.6.0")
+    session.run(
+        "python",
+        "-c",
+        "import composio, composio_typesafe; "
+        "print(composio.__file__); print(composio_typesafe.__file__)",
+    )
+    session.run("pytest", "tests/test_typesafe_provider.py", "-v", "--tb=short")
 
 
 @nox.session
@@ -119,6 +189,7 @@ def type_inference(session: Session):
         "./providers/llamaindex",
         "./providers/openai",
         "./providers/openai_agents",
+        "./providers/typesafe",
     )
 
     # Run mypy on type inference test files
@@ -139,6 +210,7 @@ def type_inference(session: Session):
         "tests/test_type_inference_langgraph.py",
         "tests/test_type_inference_llamaindex.py",
         "tests/test_type_inference_openai_agents.py",
+        "tests/test_type_inference_typesafe.py",
     )
 
 

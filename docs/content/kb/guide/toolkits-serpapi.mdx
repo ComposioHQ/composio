@@ -1,0 +1,23 @@
+---
+title: "SerpApi"
+description: "Public support knowledge for SerpApi."
+keywords: ["for-you","platform","serpapi","authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers","/kb/toolkits/serpapi-troubleshooting","avoid-serpapi-ebay-search-when-its-schema-causes-field-errors","disable-serpapi-by-listing-premium-toolkit-slugs-in-session-config","search-and-scraping-use-cases-can-use-serpapi-alongside-firecrawl-exa","serpapi-api-key-validation-was-not-available-in-the-connection-flow","serpapi-troubleshooting","use-toolkit-details-to-inspect-serpapi-required-auth-fields"]
+sources: [{"sourcePath":"toolkits/serpapi/public.md","sourceHeading":"Control SerpAPI availability in a Session"},{"sourcePath":"toolkits/serpapi/public.md","sourceHeading":"Use toolkit details to inspect SerpAPI required auth fields"},{"sourcePath":"toolkits/serpapi/public.md","sourceHeading":"Search and scraping use cases can use SerpAPI alongside Firecrawl, Exa, Tavily, or Composio Search"}]
+lastVerifiedAt: "2026-08-12"
+reviewAfter: "2026-11-10"
+freshness: "evergreen"
+topics: ["authentication","errors-and-troubleshooting","sessions-and-execution","toolkits-and-providers"]
+toolkitSlugs: ["serpapi"]
+aliases: ["/kb/toolkits/serpapi-troubleshooting","avoid-serpapi-ebay-search-when-its-schema-causes-field-errors","disable-serpapi-by-listing-premium-toolkit-slugs-in-session-config","search-and-scraping-use-cases-can-use-serpapi-alongside-firecrawl-exa","serpapi-api-key-validation-was-not-available-in-the-connection-flow","serpapi-troubleshooting","use-toolkit-details-to-inspect-serpapi-required-auth-fields"]
+---
+## Control SerpAPI availability in a Session
+
+To exclude SerpAPI from a Session, disable `serpapi` in the top-level [toolkit configuration](/docs/configuring-sessions). To control only access through Composio accounts while keeping connected-account routes available, use the [Instant usage controls](/docs/instant-tools#control-instant-usage). Instant eligibility is per tool.
+
+## Use toolkit details to inspect SerpAPI required auth fields
+
+Use `.toolkits.get("serpapi")` to fetch the toolkit details, including required and optional auth fields. For SerpAPI, the connection initiation payload should include a required `generic_api_key` field displayed as `API Key`.
+
+## Search and scraping use cases can use SerpAPI alongside Firecrawl, Exa, Tavily, or Composio Search
+
+For search and scraping use cases, Composio has multiple relevant toolkits: SerpAPI, Firecrawl, Exa, Tavily, and Composio Search. Composio Search provides search providers such as Exa and Tavily without separate auth.

@@ -8,7 +8,7 @@ Each auth config defines:
 - **Scopes**: what your tools are allowed to do on the user's behalf
 - **Credentials**: Composio's managed app, or your own OAuth client and secrets
 
-Reach for a custom auth config when you need your own branding on consent screens, custom scopes, a dedicated rate-limit quota, or a custom toolkit instance. See [managed vs custom auth](/docs/custom-app-vs-managed-app) for the decision and [how Composio handles authentication](/docs/authentication) for the full picture.
+Reach for a custom auth config when you need your own branding on consent screens, custom scopes, a dedicated rate-limit quota, or a custom toolkit instance. See [managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for the decision and [how Composio handles authentication](/docs/authentication) for the full picture.
 
 ## Auth schemes
 
@@ -21,6 +21,6 @@ The `auth_scheme` on an auth config determines how users authenticate to the too
 | `BEARER_TOKEN` | A bearer access token you already hold (for example, from your own OAuth flow). Composio sends it as `Authorization: Bearer <token>` and does not refresh it, so you keep it current. | Bringing an existing OAuth or server-to-server token into Composio, or apps that issue long-lived tokens. |
 | `BASIC` | HTTP Basic authentication with a username and password. | Services that use Basic Auth. |
 
-Most OAuth toolkits work out of the box with Composio managed auth. For the others you supply the credential fields. To choose or customize the scheme, see [managed vs custom auth](/docs/custom-app-vs-managed-app).
+Most OAuth toolkits work out of the box with Composio managed auth. For the others you supply the credential fields. To choose or customize the scheme, see [managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
 
 These endpoints use your project API key in the `x-api-key` header. Each auth config is addressed by its `nanoid`, and you can enable or disable one without deleting it.

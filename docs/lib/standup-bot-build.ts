@@ -223,6 +223,13 @@ const buttons2 = `import { verifySlackSignature, readRawBody, updateMessage, pos
 import { generateDraft } from './_utils/agent';
 import { draftMessage, connectMenu } from './_utils/blocks';
 
+type SlackInteractionPayload = {
+  actions?: Array<{
+    action_id?: string;
+    value?: string;
+  }>;
+};
+
 // Slack POSTs here every time someone clicks a button. Verify it really came
 // from Slack, then ack within 3 seconds (Slack retries if you're slow).
 export default async function handler(req: Request, res: Response) {
@@ -236,7 +243,7 @@ export default async function handler(req: Request, res: Response) {
 
 // Each button carried its context in \`value\`, so the handler knows exactly what
 // to do. No model decides anything here: the flow is fixed.
-async function handleClick(payload: any) {
+async function handleClick(payload: SlackInteractionPayload) {
   const action = payload.actions?.[0];
   const ctx = JSON.parse(action?.value ?? '{}');
 

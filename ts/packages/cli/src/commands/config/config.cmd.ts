@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { configExperimentalCmd } from './config.experimental.cmd';
 
 export const configCmd = Command.make('config').pipe(

@@ -9,6 +9,13 @@ import {
 } from '../../errors/TriggerErrors';
 import logger from '../../utils/logger';
 import { telemetry } from '../../telemetry/Telemetry';
+import { resolveCredentialHeaders } from '../../utils/sdk';
+import type { ComposioRequestHeaders } from '../../types/composio.types';
+
+export type PusherServiceOptions = {
+  /** Default headers of the owning SDK instance; only `x-user-api-key` is consulted. */
+  defaultHeaders?: ComposioRequestHeaders;
+};
 
 export class PusherService {
   // these values are set via the Apollo API `/internal/sdk/realtime/credentials` endpoint
@@ -18,14 +25,20 @@ export class PusherService {
   private pusherChannel!: string;
   // these details are set via the client SDK
   private pusherBaseURL!: string;
-  private apiKey!: string;
+  private authHeaders!: Record<string, string>;
   private pusherClient!: PusherClient;
   private composioClient!: ComposioClient;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
-    this.apiKey = client.apiKey ?? process.env.COMPOSIO_API_KEY ?? '';
+    // Channel authorization mirrors the client's effective auth; the
+    // environment is never consulted here.
+    this.authHeaders = resolveCredentialHeaders({
+      apiKey: client.apiKey,
+      userApiKey: client.userApiKey,
+      defaultHeaders: options.defaultHeaders,
+    });
     telemetry.instrument(this, 'PusherService');
   }
 
@@ -66,9 +79,7 @@ export class PusherService {
           cluster: this.pusherCluster,
           channelAuthorization: {
             endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: {
-              'x-api-key': this.apiKey,
-            },
+            headers: { ...this.authHeaders },
             transport: 'ajax',
           },
         });
@@ -162,22 +173,43 @@ export class PusherService {
    * @param channelName - The name of the Pusher channel to subscribe to
    * @param event - The event to subscribe to
    * @param fn - The function to call when the event is received
+   * @param onSubscriptionError - Optional callback invoked with the raw payload when the
+   * Pusher subscription fails (for example on auth or permission rejection). Errors thrown
+   * from — or promises rejected by — this callback are contained and logged, never rethrown.
    */
-  async subscribe(fn: (data: Record<string, unknown>) => void) {
+  async subscribe(
+    fn: (data: Record<string, unknown>) => void,
+    onSubscriptionError?: (data: Record<string, unknown>) => void
+  ) {
     try {
       logger.debug(`[PusherService] Subscribing to channel: ${this.pusherChannel}`);
       const pusherClient = await this.getPusherClient();
       const channel = await pusherClient.subscribe(this.pusherChannel);
 
       // add subscription error handling
+      const logCallbackFailure = (callbackError: unknown) => {
+        const errorMessage =
+          callbackError instanceof Error ? callbackError.message : String(callbackError);
+        logger.error('❌ Error in subscription error callback:', errorMessage);
+      };
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
-        const error = data.error ? String(data.error) : 'Unknown subscription error';
-        throw new ComposioFailedToSubscribeToPusherChannelError(
-          `Trigger subscription error: ${error}`,
-          {
-            cause: error,
-          }
-        );
+        logger.error('Trigger subscription error:', data);
+
+        // surface the failure to the caller without letting a faulty
+        // handler crash the host (same containment as the trigger callback).
+        // A handler may be async: contain rejected promises too, or the
+        // rejection escapes as an unhandled rejection after subscribe()
+        // already resolved.
+        try {
+          Promise.resolve(onSubscriptionError?.(data)).catch(logCallbackFailure);
+        } catch (callbackError: unknown) {
+          logCallbackFailure(callbackError);
+        }
+      });
+
+      // log success only when Pusher itself confirms the subscription
+      channel.bind('pusher:subscription_succeeded', () => {
+        logger.info(`✅ Subscribed to triggers. You should start receiving events now.`);
       });
 
       // wrap the callback to handle errors
@@ -192,8 +224,6 @@ export class PusherService {
       };
 
       this.bindWithChunking(channel as PusherClient, 'trigger_to_client', safeCallback);
-
-      logger.info(`✅ Subscribed to triggers. You should start receiving events now.`);
     } catch (error) {
       throw new ComposioFailedToSubscribeToPusherChannelError(
         'Failed to subscribe to Pusher channel',

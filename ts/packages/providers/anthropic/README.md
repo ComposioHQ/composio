@@ -45,7 +45,7 @@ let response = await client.messages.create({
 
 // Agentic loop: keep executing tool calls until the model responds with text
 while (response.stop_reason === 'tool_use') {
-  const toolResults = await composio.provider.handleToolCalls('user_123', response);
+  const toolResults = await composio.provider.handleToolCalls(session, response);
   messages.push({ role: 'assistant', content: response.content });
   messages.push(...toolResults);
   response = await client.messages.create({
@@ -69,7 +69,7 @@ Building on the Claude Agent SDK instead? Use [`@composio/claude-agent-sdk`](../
 ## Provider options
 
 - `cacheTools`: pass `new AnthropicProvider({ cacheTools: true })` to attach Anthropic's ephemeral `cache_control` to every tool definition and tool-result block. This lets Claude reuse cached tool schemas across requests and can cut prompt cost when you send the same large tool set on every turn. It is the only constructor option.
-- `handleToolCalls(userId, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. For finer control, `executeToolCall(userId, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
+- `handleToolCalls(session, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. Pass a user ID instead of a session for tools fetched with `tools.get()`. For finer control, `executeToolCall(session, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
 - Claude occasionally emits a tool's `input` as a JSON string instead of an object; the provider normalizes this before execution.
 
 ## Links

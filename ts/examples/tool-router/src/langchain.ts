@@ -12,10 +12,15 @@ const llm = new ChatOpenAI({
 });
 
 async function main() {
-  const session = await composio.create('user_123', { toolkits: ['gmail'], mcp: true });
+  const userId = process.env.COMPOSIO_EXAMPLES_USER_ID; // a user with a connected Gmail account
+  if (!userId) {
+    throw new Error('Set COMPOSIO_EXAMPLES_USER_ID');
+  }
+
+  const session = await composio.create(userId, { toolkits: ['gmail'], mcp: true });
 
   const client = new MultiServerMCPClient({
-    math: {
+    composio: {
       transport: 'http',
       url: session.mcp.url,
       headers: session.mcp.headers,
@@ -25,7 +30,7 @@ async function main() {
   const tools = await client.getTools();
 
   const agent = createAgent({
-    name: 'Gmail Assistant',
+    name: 'gmail-assistant',
     systemPrompt: 'You are a helpful gmail assistant.',
     model: llm,
     tools,

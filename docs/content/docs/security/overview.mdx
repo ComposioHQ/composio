@@ -14,9 +14,12 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 
 - Organizations and projects isolate your resources. Data from one project is not visible to another.
 - API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
+- Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
 - Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
 
 ## Credential protection
+
+See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
 
 - Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
@@ -32,5 +35,6 @@ To report a security issue, contact `security@composio.dev`. Please do not discl
 
 ## Related resources
 
-- [Data retention](/docs/security/data-retention): what we store, for how long, and how to stop storing payloads.
+- [Data retention](/docs/security/data-retention): what we store and for how long, on every plan.
+- [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
 - [Composio Trust Center](https://trust.composio.dev): security certifications and compliance.

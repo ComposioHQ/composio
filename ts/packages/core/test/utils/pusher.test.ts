@@ -4,7 +4,7 @@ import { PusherUtils } from '../../src/utils/pusher';
 // Capture the options passed to the Pusher constructor so the
 // channelAuthorization.customHandler can be exercised in isolation.
 const { constructorCalls } = vi.hoisted(() => ({
-  constructorCalls: [] as Array<{ key: string; options: Record<string, any> }>,
+  constructorCalls: [] as Array<{ key: string; options: Record<string, unknown> }>,
 }));
 
 vi.mock('pusher-js', () => {
@@ -13,7 +13,7 @@ vi.mock('pusher-js', () => {
     subscribe = vi.fn();
     unsubscribe = vi.fn();
     bind = vi.fn();
-    constructor(key: string, options: Record<string, any>) {
+    constructor(key: string, options: Record<string, unknown>) {
       constructorCalls.push({ key, options });
     }
   }

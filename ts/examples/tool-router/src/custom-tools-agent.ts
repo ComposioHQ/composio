@@ -201,12 +201,13 @@ function trunc(obj: unknown): string {
   return json.length > MAX ? json.slice(0, MAX) + "\n  ... (truncated)" : json;
 }
 
-agent.on("agent_tool_start", (_ctx, tool, details: any) => {
-  const input = details.toolCall?.arguments ?? {};
+agent.on("agent_tool_start", (_ctx, tool, details) => {
+  const toolCall = details.toolCall;
+  const input = toolCall && "arguments" in toolCall ? (toolCall.arguments ?? {}) : {};
   console.log(`\n  ┌─ ${tool.name}`);
   console.log(`  │ INPUT:\n${trunc(input)}`);
 });
-agent.on("agent_tool_end", (_ctx, tool, result: any) => {
+agent.on("agent_tool_end", (_ctx, tool, result: unknown) => {
   let output: unknown;
   try { output = typeof result === "string" ? JSON.parse(result) : result; } catch { output = result; }
   console.log(`  │ OUTPUT:\n${trunc(output)}`);

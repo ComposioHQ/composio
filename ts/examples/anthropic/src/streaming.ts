@@ -31,7 +31,7 @@ async function main() {
   console.log('🔄 Creating message with Anthropic...');
   const stream = await anthropic.messages
     .stream({
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-sonnet-5',
       max_tokens: 1024,
       messages: [
         {
@@ -70,7 +70,7 @@ async function main() {
      */
     const followUpStream = await anthropic.messages
       .stream({
-        model: 'claude-3-7-sonnet-latest',
+        model: 'claude-sonnet-5',
         max_tokens: 1024,
         messages: [
           {

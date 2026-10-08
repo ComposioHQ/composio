@@ -2,22 +2,26 @@ name: Typecheck Typescript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.typecheck.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'turbo.jsonc'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.typecheck.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - 'turbo.jsonc'
 
 concurrency:

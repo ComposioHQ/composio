@@ -1,6 +1,6 @@
 {
-  "title": "Sandbox (prev Workbench)",
-  "defaultOpen": true,
+  "title": "Sandboxes",
+  "defaultOpen": false,
   "pages": [
     "remote",
     "local"

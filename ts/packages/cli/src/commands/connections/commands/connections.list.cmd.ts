@@ -1,5 +1,5 @@
-import { Command, Options } from '@effect/cli';
 import { Data, Effect, Option } from 'effect';
+import { Command, Flag } from 'effect/unstable/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -25,9 +25,9 @@ class ConnectionsListRequestError extends Data.TaggedError('commands/Connections
   readonly cause: unknown;
 }> {}
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withDescription('Filter by toolkit slug (e.g. "gmail")'),
-  Options.optional
+const toolkit = Flag.String('toolkit').pipe(
+  Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
+  Flag.optional
 );
 
 const formatConnectionsJson = (
@@ -118,5 +118,13 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
 ).pipe(
   Command.withDescription(
     'List connection statuses as JSON. Includes aliases for duplicate toolkits and word_ids when available.'
-  )
+  ),
+  Command.withExamples([
+    {
+      command: 'composio connections list',
+    },
+    {
+      command: 'composio connections list --toolkit gmail',
+    },
+  ])
 );

@@ -37,8 +37,12 @@ async function main() {
     console.log(`✅ Found ${tools.length} tools`);
   } catch (error) {
     console.error('❌ Error running example:', error);
+    process.exitCode = 1;
   }
 }
 
 // Run the example
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -1,4 +1,9 @@
 import color from 'picocolors';
+import { Effect } from 'effect';
+import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { loadHostConfig } from 'src/services/config';
+
+const colorsEnabled = !Effect.runSync(loadHostConfig(UNPREFIXED_CONFIG.NO_COLOR));
 
 export const {
   bold,
@@ -14,5 +19,4 @@ export const {
   white,
   blue,
   cyanBright,
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- palette is created eagerly at import time, before any Effect runtime; honors the NO_COLOR convention
-} = color.createColors(!Boolean(process.env.NO_COLOR));
+} = color.createColors(colorsEnabled);

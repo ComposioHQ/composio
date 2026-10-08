@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { JsonParsingError, parseJsonRecord } from 'src/utils/parse-json';
 
-const parse = (raw: string) => Either.getOrThrowWith(parseJsonRecord(raw), error => error);
-const parseError = (raw: string) => Either.flip(parseJsonRecord(raw)).pipe(Either.getOrNull);
+const parse = (raw: string) => Result.getOrThrowWith(parseJsonRecord(raw), error => error);
+const parseError = (raw: string) => Result.flip(parseJsonRecord(raw)).pipe(Result.getOrNull);
 
 describe('parseJsonRecord', () => {
   it('parses strict JSON objects', () => {

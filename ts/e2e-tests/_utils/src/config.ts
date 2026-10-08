@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -12,6 +12,17 @@ import type {
   SkipInCI,
   NonEmptyArray,
 } from './types';
+import { INSTALL_E2E_MODES, INSTALL_E2E_SHELLS } from './const';
+
+export type InstallE2EMode = (typeof INSTALL_E2E_MODES)[number];
+export type InstallE2EShell = (typeof INSTALL_E2E_SHELLS)[number];
+
+export interface InstallE2EConfig {
+  mode: InstallE2EMode;
+  shell: InstallE2EShell;
+  version: string;
+  releaseDir?: string;
+}
 
 declare module 'bun' {
   interface Env {
@@ -19,7 +30,69 @@ declare module 'bun' {
     COMPOSIO_E2E_NODE_VERSION?: string;
     COMPOSIO_E2E_DENO_VERSION?: string;
     COMPOSIO_E2E_CLI_VERSION?: string;
+    COMPOSIO_INSTALL_E2E_MODE?: string;
+    COMPOSIO_INSTALL_E2E_SHELL?: string;
+    COMPOSIO_INSTALL_E2E_VERSION?: string;
+    COMPOSIO_INSTALL_E2E_RELEASE_DIR?: string;
   }
+}
+
+function resolveEnumValue<T extends string>(
+  name: string,
+  value: string | undefined,
+  allowed: readonly T[],
+  fallback: T
+): T {
+  const resolved = value || fallback;
+  if (!allowed.includes(resolved as T)) {
+    throw new Error(`${name} must be one of: ${allowed.join(', ')} (got ${resolved})`);
+  }
+  return resolved as T;
+}
+
+export function resolveInstallE2EConfig(): InstallE2EConfig {
+  const mode = resolveEnumValue(
+    'COMPOSIO_INSTALL_E2E_MODE',
+    Bun.env.COMPOSIO_INSTALL_E2E_MODE,
+    INSTALL_E2E_MODES,
+    'local'
+  );
+  const shell = resolveEnumValue(
+    'COMPOSIO_INSTALL_E2E_SHELL',
+    Bun.env.COMPOSIO_INSTALL_E2E_SHELL,
+    INSTALL_E2E_SHELLS,
+    'bash'
+  );
+  const version = Bun.env.COMPOSIO_INSTALL_E2E_VERSION || 'latest';
+  const releaseDir = Bun.env.COMPOSIO_INSTALL_E2E_RELEASE_DIR;
+
+  if (
+    version !== 'latest' &&
+    !/^@composio\/cli@[0-9]+\.[0-9]+\.[0-9]+(?:-beta\.[0-9]+)?$/.test(version)
+  ) {
+    throw new Error(
+      'COMPOSIO_INSTALL_E2E_VERSION must be latest or a full @composio/cli release tag'
+    );
+  }
+
+  if (mode === 'local') {
+    if (!releaseDir) {
+      throw new Error('COMPOSIO_INSTALL_E2E_RELEASE_DIR is required in local mode');
+    }
+    if (!isAbsolute(releaseDir)) {
+      throw new Error('COMPOSIO_INSTALL_E2E_RELEASE_DIR must be an absolute path');
+    }
+    if (version !== 'latest') {
+      throw new Error('COMPOSIO_INSTALL_E2E_VERSION is only supported in prod mode');
+    }
+  }
+
+  return {
+    mode,
+    shell,
+    version,
+    releaseDir,
+  };
 }
 
 /**

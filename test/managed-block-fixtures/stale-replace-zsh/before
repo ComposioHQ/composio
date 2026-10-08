@@ -1,0 +1,5 @@
+# user prologue
+# Composio CLI
+export PATH="/stale/bin:$PATH"
+# user epilogue
+alias ll="ls -la"

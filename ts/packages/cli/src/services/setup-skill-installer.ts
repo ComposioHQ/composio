@@ -1,23 +1,36 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Effect } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { HttpClient } from 'effect/unstable/http';
+import { Config, Effect, Context, Layer } from 'effect';
 import {
+  inferSkillReleaseChannel,
   installSkill,
   resolveInstalledSkillName,
+  resolveSkillReleaseTag,
   resolveTargetSkillPath,
   SKILL_RELEASE_TAG_FILENAME,
 } from 'src/effects/install-skill';
+import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION } from 'src/constants';
-import { readInstalledReleaseTag } from 'src/services/run-companion-modules';
+import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import { NodeOs } from './node-os';
 
 export const resolveSetupSkillReleaseTag = (
   execPath = process.execPath,
   fallbackVersion = APP_VERSION
-): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.map(
-    readInstalledReleaseTag(execPath),
-    releaseTag => releaseTag ?? `@composio/cli@${fallbackVersion}`
-  );
+) =>
+  Effect.gen(function* () {
+    const httpClient = yield* HttpClient.HttpClient;
+    const githubConfig = yield* Config.all(GITHUB_CONFIG);
+    const installedReleaseTag = yield* resolveRunningCliReleaseTag(execPath, fallbackVersion);
+
+    return yield* resolveSkillReleaseTag({
+      channel: inferSkillReleaseChannel(fallbackVersion),
+      githubConfig,
+      httpClient,
+      installedReleaseTag,
+    });
+  });
 
 const checkClaudeSkillCurrent = (
   fs: FileSystem.FileSystem,
@@ -32,12 +45,12 @@ const checkClaudeSkillCurrent = (
       .readFileString(path.join(target, SKILL_RELEASE_TAG_FILENAME), 'utf8')
       .pipe(
         Effect.map(value => value.trim()),
-        Effect.catchAll(() => Effect.succeed(undefined))
+        Effect.catch(() => Effect.succeed(undefined))
       );
     if (installedReleaseTag !== releaseTag) return false;
     return yield* fs.readFileString(path.join(target, 'SKILL.md'), 'utf8').pipe(
       Effect.as(true),
-      Effect.catchAll(() => Effect.succeed(false))
+      Effect.catch(() => Effect.succeed(false))
     );
   });
 
@@ -51,7 +64,7 @@ export const isClaudeSkillCurrent = (home: string, releaseTag: string) =>
 const isLinkedTo = (fs: FileSystem.FileSystem, path: Path.Path, source: string, target: string) =>
   fs.readLink(source).pipe(
     Effect.map(link => path.resolve(path.dirname(source), link) === target),
-    Effect.catchAll(() => Effect.succeed(false))
+    Effect.catch(() => Effect.succeed(false))
   );
 
 export const hasManagedClaudeSkill = (home: string) =>
@@ -106,37 +119,42 @@ export const removeManagedClaudeSkill = (home: string) =>
     return changed;
   }).pipe(Effect.uninterruptible);
 
-export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
-  'services/SetupSkillInstaller',
-  {
-    effect: Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      const os = yield* NodeOs;
-      const isCurrent = (releaseTag: string) =>
-        checkClaudeSkillCurrent(fs, path, os.homedir, releaseTag);
-      const installedReleaseTag = resolveSetupSkillReleaseTag().pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-        Effect.provideService(Path.Path, path)
-      );
+const makeSetupSkillInstaller = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const os = yield* NodeOs;
+  const isCurrent = (releaseTag: string) =>
+    checkClaudeSkillCurrent(fs, path, os.homedir, releaseTag);
+  const releaseTag = yield* Effect.cached(
+    resolveSetupSkillReleaseTag().pipe(
+      Effect.provideService(FileSystem.FileSystem, fs),
+      Effect.provideService(Path.Path, path)
+    )
+  );
 
-      return {
-        isClaudeSkillReady: Effect.flatMap(installedReleaseTag, isCurrent),
-        hasManagedClaudeSkill: hasManagedClaudeSkill(os.homedir),
-        ensureClaudeSkill: Effect.gen(function* () {
-          const releaseTag = yield* installedReleaseTag;
-          if (yield* isCurrent(releaseTag)) return false;
+  return {
+    isClaudeSkillReady: Effect.flatMap(releaseTag, isCurrent),
+    hasManagedClaudeSkill: hasManagedClaudeSkill(os.homedir),
+    ensureClaudeSkill: Effect.gen(function* () {
+      const targetReleaseTag = yield* releaseTag;
+      if (yield* isCurrent(targetReleaseTag)) return false;
 
-          yield* installSkill({
-            target: 'claude',
-            releaseTag,
-            silent: true,
-          });
-          return true;
-        }),
-        removeClaudeSkill: removeManagedClaudeSkill(os.homedir),
-      };
+      yield* installSkill({
+        target: 'claude',
+        releaseTag: targetReleaseTag,
+        silent: true,
+      });
+      return true;
     }),
-    dependencies: [],
-  }
-) {}
+    removeClaudeSkill: removeManagedClaudeSkill(os.homedir),
+  };
+});
+
+export type SetupSkillInstallerShape = Effect.Success<typeof makeSetupSkillInstaller>;
+
+export class SetupSkillInstaller extends Context.Service<
+  SetupSkillInstaller,
+  SetupSkillInstallerShape
+>()('services/SetupSkillInstaller') {
+  static readonly Default = Layer.effect(SetupSkillInstaller, makeSetupSkillInstaller);
+}

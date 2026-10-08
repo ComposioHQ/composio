@@ -102,6 +102,7 @@ Composio SDK comes with built-in support for different providers:
 - [Anthropic Provider](../packages/providers/anthropic/README.md) - Anthropic Claude integration
 - [Google Provider](../packages/providers/google/README.md) - Google Gemini integration
 - [Cloudflare Provider](../packages/providers/cloudflare/README.md) - Cloudflare Workers AI integration
+- [TypeSafe Provider](../packages/providers/typesafe/README.md) - TypeSafe Jev integration: decides a tool call, a partial call, or an abstention with a confidence
 
 ### Agentic Providers
 

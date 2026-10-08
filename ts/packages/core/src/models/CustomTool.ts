@@ -514,7 +514,11 @@ export function buildCustomToolsMapFromResponse(
     }
   }
 
-  const findHandle = (originalSlug: string, toolkit?: string): HandleMatch | undefined => {
+  const findHandle = (
+    finalSlug: string,
+    originalSlug: string,
+    toolkit?: string
+  ): HandleMatch | undefined => {
     const originalSlugKey = originalSlug.toUpperCase();
     const qualifiedMatch = handlesByQualifiedOriginalSlug.get(
       qualifiedOriginalSlugKey(toolkit, originalSlugKey)
@@ -522,13 +526,26 @@ export function buildCustomToolsMapFromResponse(
     if (qualifiedMatch) return qualifiedMatch;
 
     const bareMatches = handlesByOriginalSlug.get(originalSlugKey) ?? [];
-    return bareMatches.length === 1 ? bareMatches[0] : undefined;
+    // Response tool not defined locally; nothing to route in-process.
+    if (bareMatches.length === 0) return undefined;
+    // A bare match may only stand in when the response carries no toolkit identity.
+    // Binding a toolkit child to another toolkit's handler would silently execute
+    // the wrong implementation.
+    if (toolkit === undefined && bareMatches.length === 1) return bareMatches[0];
+
+    const registered = [
+      ...new Set(bareMatches.map(m => (m.toolkit ?? 'custom').toUpperCase())),
+    ].sort();
+    throw new ValidationError(
+      `Cannot map custom tool "${finalSlug}": original slug "${originalSlug}" for toolkit ` +
+        `"${toolkit ?? 'custom'}" has no exact local match. Registered for toolkits: ${registered.join(', ')}.`
+    );
   };
 
   const addEntry = (finalSlug: string, originalSlug: string, toolkit?: string | null) => {
     const resolvedToolkit = toolkit ?? undefined;
-    const match = findHandle(originalSlug, resolvedToolkit);
-    if (!match) return; // Response tool not found in our handles (shouldn't happen)
+    const match = findHandle(finalSlug, originalSlug, resolvedToolkit);
+    if (!match) return;
 
     const finalSlugKey = finalSlug.toUpperCase();
     if (byFinalSlug.has(finalSlugKey)) {
@@ -537,13 +554,21 @@ export function buildCustomToolsMapFromResponse(
       );
     }
 
+    const entryToolkit = resolvedToolkit ?? match.toolkit;
+    const qualifiedKey = qualifiedOriginalSlugKey(entryToolkit, originalSlug);
+    if (byToolkitAndOriginalSlug.has(qualifiedKey)) {
+      throw new ValidationError(
+        `Custom tool slug collision: original slug "${match.handle.slug}" is already registered for toolkit "${entryToolkit ?? 'custom'}".`
+      );
+    }
+
     const entry: CustomToolsMapEntry = {
       handle: match.handle,
       finalSlug,
-      toolkit: resolvedToolkit ?? match.toolkit,
+      toolkit: entryToolkit,
     };
     byFinalSlug.set(finalSlugKey, entry);
-    byToolkitAndOriginalSlug.set(qualifiedOriginalSlugKey(entry.toolkit, originalSlug), entry);
+    byToolkitAndOriginalSlug.set(qualifiedKey, entry);
     addOriginalSlugAlias({ byOriginalSlug, ambiguousOriginalSlugs, originalSlug, entry });
   };
 
@@ -560,6 +585,16 @@ export function buildCustomToolsMapFromResponse(
       for (const ct of ctk.tools) {
         addEntry(ct.slug, ct.original_slug, ctk.slug);
       }
+    }
+  }
+
+  // Ambiguity follows the local definitions, not whichever subset the response
+  // happened to include: a shared child slug must never become callable by its
+  // bare name just because a sibling was omitted.
+  for (const [originalSlugKey, matches] of handlesByOriginalSlug) {
+    if (matches.length > 1) {
+      byOriginalSlug.delete(originalSlugKey);
+      ambiguousOriginalSlugs.add(originalSlugKey);
     }
   }
 

@@ -26,10 +26,55 @@ const JSONSchemaType = z.enum([
   'array',
   'null',
 ]);
+type JSONSchemaTypeName = z.infer<typeof JSONSchemaType>;
 
 // JSON Schema property definition
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
+export interface JSONSchemaProperty {
+  [key: string]: unknown;
+  type?: JSONSchemaTypeName | JSONSchemaTypeName[];
+  description?: string;
+  anyOf?: JSONSchemaProperty[];
+  oneOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  not?: JSONSchemaProperty;
+  title?: string;
+  default?: unknown;
+  nullable?: boolean;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  file_uploadable?: boolean;
+  file_downloadable?: boolean;
+  items?: JSONSchemaProperty | JSONSchemaProperty[];
+  enum?: unknown[];
+  const?: unknown;
+  minimum?: number;
+  maximum?: number;
+  exclusiveMinimum?: number;
+  exclusiveMaximum?: number;
+  multipleOf?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  format?: string;
+  minItems?: number;
+  maxItems?: number;
+  uniqueItems?: boolean;
+  minProperties?: number;
+  maxProperties?: number;
+  patternProperties?: Record<string, JSONSchemaProperty>;
+  additionalProperties?: boolean | JSONSchemaProperty;
+  examples?: unknown[];
+  readOnly?: boolean;
+  writeOnly?: boolean;
+  if?: JSONSchemaProperty;
+  then?: JSONSchemaProperty;
+  else?: JSONSchemaProperty;
+  $ref?: string;
+  definitions?: Record<string, JSONSchemaProperty>;
+  $defs?: Record<string, JSONSchemaProperty>;
+}
+
+export const JSONSchemaPropertySchema: z.ZodType<JSONSchemaProperty> = z.object({
   type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
   anyOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
@@ -37,7 +82,7 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   allOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
   not: z.lazy(() => JSONSchemaPropertySchema).optional(),
   title: z.string().optional(),
-  default: z.any().optional(),
+  default: z.unknown().optional(),
   nullable: z.boolean().optional(),
   properties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   required: z.array(z.string()).optional(),
@@ -46,8 +91,8 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   items: z
     .lazy(() => z.union([JSONSchemaPropertySchema, z.array(JSONSchemaPropertySchema)]))
     .optional(),
-  enum: z.array(z.any()).optional(),
-  const: z.any().optional(),
+  enum: z.array(z.unknown()).optional(),
+  const: z.unknown().optional(),
   minimum: z.number().optional(),
   maximum: z.number().optional(),
   exclusiveMinimum: z.number().optional(),
@@ -64,7 +109,7 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   maxProperties: z.number().optional(),
   patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaPropertySchema)]).optional(),
-  examples: z.array(z.any()).optional(),
+  examples: z.array(z.unknown()).optional(),
   readOnly: z.boolean().optional(),
   writeOnly: z.boolean().optional(),
   if: z.lazy(() => JSONSchemaPropertySchema).optional(),
@@ -84,7 +129,6 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
     )
     .optional(),
 });
-export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
 const ParametersSchema = z.preprocess(
@@ -95,13 +139,19 @@ const ParametersSchema = z.preprocess(
     oneOf: z.array(JSONSchemaPropertySchema).optional(),
     allOf: z.array(JSONSchemaPropertySchema).optional(),
     not: JSONSchemaPropertySchema.optional(),
-    properties: z.record(z.string(), JSONSchemaPropertySchema),
+    properties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
     required: z.array(z.string()).optional(),
     title: z.string().optional(),
-    default: z.any().optional(),
+    default: z.unknown().optional(),
     nullable: z.boolean().optional(),
     description: z.string().optional(),
-    additionalProperties: z.boolean().default(false).optional(),
+    // Dynamic-key constraints the Composio API ships at the parameters root.
+    // Both were previously lost on parse: `patternProperties` was stripped as an
+    // unknown key, and a schema-valued `additionalProperties` was rejected
+    // outright by the boolean-only schema. Omission still stays omission —
+    // downstream converters, not the parser, decide the implicit policy.
+    patternProperties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
+    additionalProperties: z.union([z.boolean(), JSONSchemaPropertySchema]).optional(),
     // Definition blocks targeted by `$ref` pointers. The Composio API ships
     // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
     // because `z.object` strips unknown keys they were being dropped on parse —
@@ -297,7 +347,7 @@ export type CustomAuthParams = z.infer<typeof CustomAuthParamsSchema>;
  * Parameters for tool execution.
  *
  * @property {boolean} [allowTracing] - Enable tracing for this tool execution
- * @property {string} [connectedAccountId] - The connected account ID to use for authenticated tools
+ * @property {string} [connectedAccountId] - Connected account ID, or `instant_account` to explicitly use the Composio Instant account
  * @property {CustomAuthParams} [customAuthParams] - Custom authentication parameters
  * @property {CustomConnectionData} [customConnectionData] - Custom connection data (takes priority over customAuthParams)
  * @property {Record<string, unknown>} [arguments] - The arguments to pass to the tool
@@ -357,6 +407,8 @@ export const ToolExecuteResponseSchema = z.object({
   successful: z.boolean(),
   logId: z.string().optional(),
   sessionInfo: z.unknown().optional(),
+  /** Actual Instant usage charge when the Session opts into returning it. */
+  instantCharge: z.unknown().optional(),
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;
 

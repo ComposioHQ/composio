@@ -39,14 +39,34 @@ jobs:
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
 
+      - name: Resolve release package set
+        id: release_mode
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          import tomllib
+
+          with open("pyproject.toml", "rb") as pyproject:
+              version = tomllib.load(pyproject)["project"]["version"]
+
+          # PEP 440 compact form (0.23.1rc1) and the separator form emitted by
+          # python/scripts/bump.py --pre (0.23.1-rc.1) are both prereleases.
+          is_prerelease = re.search(r"(?:a|b|rc|dev)[-_.]?\d", version, re.IGNORECASE) is not None
+          print(f"core_only={'true' if is_prerelease else 'false'}")
+          PY
+
       - name: Build Artifacts
         run: |
           make env
-          make build
+          if [[ "${{ steps.release_mode.outputs.core_only }}" == "true" ]]; then
+            make build-core
+          else
+            make build
+          fi
 
       - name: Publish Artifacts
         if: github.event_name == 'push'
-        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: ./python/dist
           user: ${{ secrets.PYPI_USERNAME }}

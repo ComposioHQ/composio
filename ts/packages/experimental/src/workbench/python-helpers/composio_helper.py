@@ -163,11 +163,10 @@ def run_composio_tool(
         try:
             status, _headers, text = _post_json(_session_execute_url(), headers, payload)
         except (urllib.error.URLError, TimeoutError) as error:
-            # Network failure (timeout, connection/DNS error). Retry transient
-            # failures, then surface as the error tuple instead of throwing.
-            if attempt < max_retries:
-                _retry_delay(attempt, delay_ms)
-                continue
+            # Network failure (timeout, connection/DNS error). Never retry it:
+            # the backend may already have run the tool and does not deduplicate
+            # executions, so re-sending can repeat the side effect. Surface it as
+            # the error tuple instead of throwing.
             return {}, "Composio tool request failed: %s" % error
 
         if status == 429 and attempt < max_retries:

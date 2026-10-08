@@ -1,27 +1,21 @@
 import type { ReactNode } from 'react';
 import type { Item } from 'fumadocs-core/page-tree';
-import type { PageTreeTransformer } from 'fumadocs-core/source';
+import type { ContentStorage } from 'fumadocs-core/source';
+import { z } from 'zod';
 import { DeprecatedApiSidebarLegacyBadge } from '@/components/legacy-badge';
 import { getApiDisplayTitle, isApiPageDeprecated } from '@/lib/api-deprecation';
 import type { ApiPageOperation, OpenApiSchemaPageData } from '@/lib/api-deprecation';
 
-interface OpenApiSidebarPageData extends OpenApiSchemaPageData {
-  title: string;
-  getOpenAPIPageProps: () => {
-    operations?: ApiPageOperation[];
-  };
-}
-
-function isOpenApiSidebarPageData(data: unknown): data is OpenApiSidebarPageData {
-  if (!data || typeof data !== 'object') return false;
-
-  const candidate = data as Partial<OpenApiSidebarPageData>;
-  return (
-    typeof candidate.title === 'string' &&
-    typeof candidate.getSchema === 'function' &&
-    typeof candidate.getOpenAPIPageProps === 'function'
-  );
-}
+// Page data attached by fumadocs-openapi to generated operation pages. MDX
+// pages in the same tree lack these members, so the data is parsed once here
+// and non-OpenAPI pages simply fail the parse.
+const openApiSidebarPageDataSchema = z.object({
+  title: z.string(),
+  getSchema: z.custom<OpenApiSchemaPageData['getSchema']>(value => typeof value === 'function'),
+  getOpenAPIPageProps: z.custom<() => { operations?: ApiPageOperation[] }>(
+    value => typeof value === 'function'
+  ),
+});
 
 export function getDeprecatedApiSidebarName(
   title: string,
@@ -41,19 +35,22 @@ export function getDeprecatedApiSidebarName(
  * Replaces a deprecated OpenAPI operation's textual title suffix with a
  * compact lifecycle badge before fumadocs-openapi appends its method label.
  */
-export const deprecatedApiSidebarTransformer: PageTreeTransformer = {
-  file(node: Item, filePath?: string): Item {
-    if (!filePath) return node;
+export function transformDeprecatedApiSidebarNode(
+  node: Item,
+  filePath: string | undefined,
+  storage: ContentStorage
+): Item {
+  if (!filePath) return node;
 
-    const file = this.storage.read(filePath);
-    if (!file || file.format !== 'page' || !isOpenApiSidebarPageData(file.data)) {
-      return node;
-    }
+  const file = storage.read(filePath);
+  if (!file || file.format !== 'page') return node;
 
-    const apiProps = file.data.getOpenAPIPageProps();
-    return {
-      ...node,
-      name: getDeprecatedApiSidebarName(file.data.title, file.data, apiProps.operations),
-    };
-  },
-};
+  const pageData = openApiSidebarPageDataSchema.safeParse(file.data);
+  if (!pageData.success) return node;
+
+  const apiProps = pageData.data.getOpenAPIPageProps();
+  return {
+    ...node,
+    name: getDeprecatedApiSidebarName(pageData.data.title, pageData.data, apiProps.operations),
+  };
+}

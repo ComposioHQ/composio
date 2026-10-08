@@ -15,11 +15,13 @@
  */
 
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
-import { Command } from '@effect/platform';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
+import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
 /**
  * Maps Bun cross-compilation targets to Composio artifact names.
@@ -67,6 +69,8 @@ export function buildBinaryCross() {
       './src/bin.ts',
       '--env',
       'DEBUG_OVERRIDE_*',
+      ...posthogBakeArgs(),
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
       '--compile',
       '--production',
       '--target',
@@ -75,30 +79,25 @@ export function buildBinaryCross() {
       outfile,
     ] as const satisfies ReadonlyArray<string>;
 
-    const cmd = Command.make(...args);
+    const child = yield* Command.make(args[0], args.slice(1));
 
     yield* Effect.logDebug('Running build command with', args.join(' '), '');
 
-    const { exitCode } = yield* cmd.pipe(
-      Command.start,
-      Effect.flatMap(process =>
-        Effect.all(
-          {
-            exitCode: process.exitCode,
-            output: Stream.merge(
-              Stream.decodeText(process.stdout, 'utf-8'),
-              Stream.decodeText(process.stderr, 'utf-8'),
-              { haltStrategy: 'left' }
-            ).pipe(
-              Stream.tap(chunk => Console.log(chunk)),
-              Stream.runDrain
-            ),
-          },
-          {
-            concurrency: 'unbounded',
-          }
-        )
-      )
+    const { exitCode } = yield* Effect.all(
+      {
+        exitCode: child.exitCode,
+        output: Stream.merge(
+          Stream.decodeText(child.stdout, { encoding: 'utf-8' }),
+          Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
+          { haltStrategy: 'left' }
+        ).pipe(
+          Stream.tap(chunk => Console.log(chunk)),
+          Stream.runDrain
+        ),
+      },
+      {
+        concurrency: 'unbounded',
+      }
     );
 
     process.exitCode = exitCode;
@@ -113,25 +112,22 @@ export function buildBinaryCross() {
 
     const companionOutputDir = './dist/binaries/companions';
     yield* buildCompanionModules(companionOutputDir);
-    yield* copyLocalToolBinaryAssets('./dist/binaries');
 
     yield* Console.log(`Binary cross-compiled: ${outfile}`);
   });
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.LogLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 if (require.main === module) {
   buildBinaryCross().pipe(
     Effect.provide(ConfigLive),
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
+    Effect.provide(BunServices.layer),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({

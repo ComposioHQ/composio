@@ -163,7 +163,7 @@ const complexNestedSchema: JsonSchema = {
               format: 'email',
               nullable: true,
               default: null,
-            } as any,
+            } as JsonSchema,
           },
           required: ['name'],
           default: { id: 'user-123', name: 'Anonymous', email: null },
@@ -209,7 +209,7 @@ const complexNestedSchema: JsonSchema = {
           type: 'string',
           nullable: true,
           default: null,
-        } as any,
+        } as JsonSchema,
       },
       default: {
         settings: { theme: 'light', notifications: true },

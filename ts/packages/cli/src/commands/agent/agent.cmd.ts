@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { agentCmd$Claim } from './commands/agent.claim.cmd';
 import { agentCmd$Inbox } from './commands/agent.inbox.cmd';
 import { agentCmd$Login } from './commands/agent.login.cmd';

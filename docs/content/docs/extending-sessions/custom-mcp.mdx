@@ -21,10 +21,18 @@ A Custom MCP moves through this lifecycle:
 2. **Register** its URL and authentication scheme. Composio creates a project-scoped `CUSTOM_*` toolkit.
 3. **Connect** an account if the server uses an API key or DCR OAuth. No-auth servers skip this step.
 4. **Sync** its tools. The first sync starts automatically; later tool changes require a manual sync.
-5. **Use** the toolkit in a session. For authenticated servers, explicitly select the connected account.
+5. **Use** the toolkit in a session.
 
 <Callout type="warn" title="API-only while Custom MCP is experimental">
-Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. They aren't included in the public API reference or SDKs yet, and their contracts may change. Dashboard management is coming soon for customers who prefer a UI.
+Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. You can also use the experimental SDK methods described below. These contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
+</Callout>
+
+### Manage custom toolkits with the SDK
+
+You can also run this lifecycle through `composio.experimental.custom_toolkits` in Python or `composio.experimental.customToolkits` in TypeScript. Both provide `upsert()` to register a toolkit or update its display metadata, `sync()` to fetch its remote tool definitions, and `delete()` to remove it and its associated auth configs and connections.
+
+<Callout>
+These project-owned toolkit APIs are experimental. They manage remote toolkits registered in Composio; [local custom toolkits](/docs/extending-sessions/custom-tools-and-toolkits) run in your SDK process.
 </Callout>
 
 ## Register a Custom MCP
@@ -108,11 +116,44 @@ Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
 }
 ```
 
-<Callout type="warn" title="This endpoint only registers new toolkits">
-Despite `upsert` in the route name, this endpoint does not update or replace an existing toolkit. If the slug already exists, the request returns `409 Conflict`.
-
-To change the server URL, name, or authentication scheme, [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again. Deletion also revokes and removes the toolkit's auth configurations and connected accounts.
+<Callout type="warn" title="app_url and auth_schemes are immutable">
+Re-registering a slug your project already owns updates the toolkit in place: mutable fields like the name and logo take the new values, and an identical config is a harmless no-op. Two fields can't change after registration: `app_url` and `auth_schemes`. Changing either returns `409 Conflict`; [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again.
 </Callout>
+
+## Add a toolkit logo
+
+Without a logo, your toolkit shows the Composio logo in the dashboard and on end-user connect screens. To ship your own branding, include `toolkit_config.logo_file` when you register: the image itself, base64-encoded. Composio validates it, stores it on Composio-hosted asset storage, and renders it everywhere the toolkit appears. You don't host anything, and the logo keeps working even if your own site changes or goes down.
+
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "slug": "ACME",
+    "toolkit_config": {
+      "name": "Acme",
+      "app_url": "https://mcp.example.com/mcp",
+      "logo_file": {
+        "content": "iVBORw0KGgoAAAANSUhEUgAA...",
+        "mime_type": "image/png"
+      },
+      "auth_schemes": [
+        {
+          "mode": "NO_AUTH"
+        }
+      ]
+    }
+  }'
+```
+
+Set `content` to your image encoded as base64: a single line, with no line breaks or whitespace. The image must be:
+
+- **PNG or JPEG** (`mime_type` of `image/png` or `image/jpeg`)
+- **Square**, between 256 and 1024 pixels
+- **At most 3MB** before encoding
+
+Omit `logo_file` to keep the Composio default. To change a logo later, re-register the same slug with the new image: the upsert updates the toolkit in place.
 
 ## Complete setup for your authentication mode
 
@@ -176,7 +217,7 @@ A Custom MCP toolkit can contain at most 500 tools. If the server returns more t
 
 ## Delete or replace a Custom MCP
 
-The registration endpoint cannot update an existing toolkit. To replace its URL, name, or authentication scheme, delete the toolkit and register it again.
+Re-registering a slug updates mutable fields like the name and logo, but `app_url` and `auth_schemes` can't change after registration. To replace either, delete the toolkit and register it again.
 
 Call `DELETE /api/v3.1/custom/toolkits/{slug}`:
 
@@ -186,15 +227,7 @@ curl --request DELETE \
   --header "x-api-key: $COMPOSIO_API_KEY"
 ```
 
-```json
-{
-  "slug": "CUSTOM_ACME",
-  "deleted": true,
-  "revoke_job_ids": ["job_123"],
-  "auth_configs_soft_deleted": 1,
-  "connected_accounts_soft_deleted": 1
-}
-```
+A successful response confirms the deletion with `deleted: true`. See the [delete endpoint reference](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug) for the full response.
 
 <Callout type="warn" title="Deletion also removes connections">
 Deletion removes the custom toolkit and its tools. It also revokes and removes the toolkit's auth configurations and connected accounts. Any replacement starts with new connections.
@@ -204,7 +237,7 @@ Deletion removes the custom toolkit and its tools. It also revokes and removes t
 
 Once the toolkit is synced, add its `CUSTOM_*` slug to a session.
 
-### Use a no-auth server
+### Create a session
 
 Pass the toolkit slug when you create the session:
 
@@ -242,7 +275,7 @@ With the default search-first session, your agent can discover the custom tools 
 
 ### Use an authenticated server
 
-For API-key and DCR OAuth servers, explicitly select the connected account in the session config. Don't rely on automatic account matching for Custom MCP toolkits yet.
+Sessions automatically match connected accounts by `user_id`. If you created the auth config yourself, [set `is_enabled_for_tool_router: true`](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) to enable automatic account matching. To select a specific connected account, pass its ID in the session configuration:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -289,12 +322,22 @@ The pinned account must belong to the custom toolkit and be active. Explicit sel
 
 ## Technical behavior
 
+List your custom toolkits with `GET /api/v3.1/toolkits?type=custom`.
+
 Each registered server becomes a custom toolkit scoped to your project:
 
 - The toolkit has `type: "custom"` and the `CUSTOM` category.
 - Its slug starts with `CUSTOM_`, such as `CUSTOM_ACME`.
 - Its tools are available through Tool Router search and toolkit-filtered tool listing.
 - Tool execution is proxied to your MCP server with the selected connected account's credentials.
+
+On v3, `GET /api/v3/tools?toolkit_slug=CUSTOM_ACME` can return an empty list even after a successful sync. This is *not* a sync failure: v3 reads from a pinned toolkit version by default, and custom tools only exist in the latest version. Add `toolkit_versions=latest` to the request, or use v3.1, which always resolves the latest version:
+
+```bash
+curl --request GET \
+  --url "https://backend.composio.dev/api/v3/tools?toolkit_slug=CUSTOM_ACME&toolkit_versions=latest" \
+  --header "x-api-key: $COMPOSIO_API_KEY"
+```
 
 Custom toolkits use dated registry versions. The v3.1 tools API selects the latest version by default. If you use v3 directly, select the latest version for each operation:
 
@@ -311,10 +354,9 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 <Accordions>
 <Accordion title="Setup and lifecycle">
 
-- **API-only setup:** The SDKs don't expose registration, sync, update, or deletion methods yet. Use the lifecycle endpoints on this page, then use the toolkit slug through the SDK.
 - **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
 - **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
-- **Insert-only registration:** The `upsert` endpoint returns `409 Conflict` for an existing slug. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
+- **Immutable `app_url` and `auth_schemes`:** Re-registering an existing slug updates other fields in place, but changing `app_url` or `auth_schemes` returns `409 Conflict`. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
 - **500-tool limit:** Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful version stays available.
 
 </Accordion>
@@ -326,7 +368,6 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 </Accordion>
 <Accordion title="Sessions and tool APIs">
 
-- **Select authenticated accounts explicitly:** Custom MCP sessions don't reliably match a connected account automatically. Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript.
 - **Prefer the v3.1 tools API:** The v3 tools API pins a default version that doesn't contain custom tools. If you must use v3, explicitly select `latest` as described above.
 
 </Accordion>
@@ -338,5 +379,5 @@ See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more example
 <Card title="Using sessions via MCP" href="/docs/sessions-via-mcp" description="Connect an MCP client to a Composio-hosted session" />
 <Card title="Custom Tools and Toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Run your own tools inside your application process" />
 <Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Configure toolkit and tool filtering" />
-<Card title="Managing Multiple Connected Accounts" href="/docs/managing-multiple-connected-accounts" description="Select a connected account explicitly" />
+<Card title="Managing Multiple Connected Accounts" href="/docs/authentication/managing-multiple-connected-accounts" description="Select a connected account explicitly" />
 </Cards>

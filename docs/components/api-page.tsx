@@ -1,13 +1,22 @@
 'use client';
 
-import { createElement, type FC, type ReactNode } from 'react';
-import { createOpenAPIPage } from 'fumadocs-openapi/ui';
+import {
+  createContext, createElement, use, useEffect, useEffectEvent, useMemo,
+  type FC, type ReactNode,
+} from 'react';
+import {
+  createOpenAPIPage, useOperationContext, useServerContext, type APIPlaygroundProps,
+} from 'fumadocs-openapi/ui';
+import { hideDeprecatedFields } from '@/lib/openapi-deprecated';
 import { generateSchemaData } from './schema-generator';
 import { CustomSchemaUI } from './custom-schema-ui';
 
 export const APIPage = createOpenAPIPage({
   generateTypeScriptDefinitions: false,
-  playground: { enabled: true },
+  playground: {
+    enabled: true,
+    render: (props) => <DeprecatedFieldsPlayground {...props} />,
+  },
   schemaUI: {
     render: (options, ctx) => {
       const client = (
@@ -53,6 +62,61 @@ export const APIPage = createOpenAPIPage({
     },
   },
 });
+
+// A separate page context keeps filtered schemas and initial request examples
+// inside the playground. The surrounding reference uses the complete contract.
+const PlaygroundSyncContext = createContext<{
+  operation: ReturnType<typeof useOperationContext>;
+  server: ReturnType<typeof useServerContext>;
+} | null>(null);
+
+function PlaygroundSync({ children }: { children: ReactNode }) {
+  const parent = use(PlaygroundSyncContext)!;
+  const { example, setExample, addListener, removeListener } = useOperationContext();
+  const { server } = useServerContext();
+  useEffect(() => {
+    if (parent.operation.example && parent.operation.example !== example)
+      setExample(parent.operation.example);
+  }, [parent.operation.example, example, setExample]);
+  useEffect(() => {
+    const listener = parent.operation.setExampleData;
+    addListener(listener);
+    return () => removeListener(listener);
+  }, [addListener, removeListener, parent.operation.setExampleData]);
+  const syncServer = useEffectEvent(() => {
+    if (!server) return;
+    parent.server.setServer(server.url);
+    parent.server.setServerVariables(server.variables);
+  });
+  useEffect(() => {
+    syncServer();
+  }, [server]);
+  return children;
+}
+
+const PlaygroundPage = createOpenAPIPage({
+  generateTypeScriptDefinitions: false,
+  content: {
+    renderOperationLayout: ({ apiPlayground }) => <PlaygroundSync>{apiPlayground}</PlaygroundSync>,
+  },
+});
+
+function DeprecatedFieldsPlayground({ path, method, ctx }: APIPlaygroundProps) {
+  const operation = useOperationContext();
+  const server = useServerContext();
+  const bundled = useMemo(
+    () => hideDeprecatedFields(ctx.schema.bundled),
+    [ctx.schema.bundled]
+  );
+  return (
+    <PlaygroundSyncContext value={{ operation, server }}>
+      <PlaygroundPage
+        payload={{ bundled, proxyUrl: ctx.proxyUrl }}
+        operations={[{ path, method }]}
+      />
+    </PlaygroundSyncContext>
+  );
+}
 
 function getRawRef(value: object): string | undefined {
   if (!('$ref' in value)) return undefined;

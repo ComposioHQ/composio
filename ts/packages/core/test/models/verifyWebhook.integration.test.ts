@@ -112,7 +112,7 @@ function computeSignature(id: string, timestamp: string, payload: string, secret
 }
 
 describe('Triggers.verifyWebhook - Integration Tests', () => {
-  let triggers: Triggers<any>;
+  let triggers: Triggers<unknown>;
   let mockClient: ReturnType<typeof createMockClient>;
   const fixtures = loadFixtures();
   const goldenSignatures = loadGoldenSignatures();

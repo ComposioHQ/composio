@@ -7,6 +7,17 @@ import { describe, test, expect } from "bun:test";
 import { fetchPage } from "./helpers";
 
 describe("Search API", () => {
+  test("server-renders unified knowledge results", async () => {
+    const res = await fetchPage("/kb/search?q=authentication");
+    expect(res.status).toBe(200);
+
+    const html = (await res.text()).replaceAll("<!-- -->", "");
+    expect(html).toContain("Results for “authentication”");
+    expect(html).toContain("<ol");
+    expect(html).toMatch(/(?:Documentation|Support|Toolkit|API Reference)/);
+    expect(html).not.toContain("Loading search results");
+  });
+
   test("returns results for 'authentication'", async () => {
     const res = await fetchPage("/api/search?query=authentication");
     expect(res.status).toBe(200);

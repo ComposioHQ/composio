@@ -1,15 +1,29 @@
 import { createRequire } from 'node:module';
-import type { Readable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
-import { Command, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
-import { Cause, Config, Effect, Exit, Layer, Option, Predicate, Queue, Stream } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import {
+  Cause,
+  Config,
+  Data,
+  Effect,
+  Exit,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  Predicate,
+  Queue,
+  Stream,
+} from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
 import type { MasterKind } from 'src/services/master-detector';
 import { NodeOs } from 'src/services/node-os';
 import {
+  codexAcpBinaryTargetFor,
+  hasInstalledRunCompanionModules,
   resolveRunCompanionAssetPath,
   resolveRunCompanionModulePath,
-  RUN_CODEX_ACP_BINARY_TARGETS,
+  RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
 } from 'src/services/run-companion-modules';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
@@ -42,7 +56,7 @@ type AcpAdapterCommand = {
 
 // This module is bundled as a standalone `composio run` companion module, so it
 // provides its own platform layers instead of assuming the CLI runtime.
-const RunSubAgentAcpLive = Layer.mergeAll(BunContext.layer, NodeOs.Default);
+const RunSubAgentAcpLive = Layer.mergeAll(BunServices.layer, NodeOs.Default);
 
 const getLegacySetSessionModel = (
   connection: unknown
@@ -54,46 +68,6 @@ const getLegacySetSessionModel = (
   return Predicate.isFunction(method) ? async params => method.call(connection, params) : undefined;
 };
 
-export const readableStreamFromNode = (input: Readable): ReadableStream<Uint8Array> => {
-  let cleanup = () => undefined;
-
-  return new ReadableStream<Uint8Array>({
-    start: controller => {
-      const onData = (chunk: Buffer | string) => {
-        controller.enqueue(
-          typeof chunk === 'string' ? new TextEncoder().encode(chunk) : Uint8Array.from(chunk)
-        );
-        if ((controller.desiredSize ?? 1) <= 0) {
-          input.pause();
-        }
-      };
-      const onEnd = () => {
-        cleanup();
-        controller.close();
-      };
-      const onError = (error: Error) => {
-        cleanup();
-        controller.error(error);
-      };
-      cleanup = () => {
-        input.off('data', onData);
-        input.off('end', onEnd);
-        input.off('error', onError);
-      };
-      input.on('data', onData);
-      input.once('end', onEnd);
-      input.once('error', onError);
-    },
-    pull: () => {
-      input.resume();
-    },
-    cancel: reason => {
-      cleanup();
-      input.destroy(reason instanceof Error ? reason : undefined);
-    },
-  });
-};
-
 // Bridges the ACP connection's outgoing ndjson writes into an Effect Queue that
 // a forked fiber drains into the child's stdin Sink. A bounded queue keeps the
 // child's stdin backpressure visible to the ACP writer, and shutting the queue
@@ -101,34 +75,102 @@ export const readableStreamFromNode = (input: Readable): ReadableStream<Uint8Arr
 const writableStreamFromQueue = (queue: Queue.Queue<Uint8Array>): WritableStream<Uint8Array> =>
   new WritableStream<Uint8Array>({
     write: chunk => Effect.runPromise(Effect.asVoid(Queue.offer(queue, chunk))),
-    close: () => Effect.runPromise(Queue.shutdown(queue)),
-    abort: () => Effect.runPromise(Queue.shutdown(queue)),
+    close: () => Effect.runPromise(Effect.asVoid(Queue.shutdown(queue))),
+    abort: () => Effect.runPromise(Effect.asVoid(Queue.shutdown(queue))),
   });
 
-const resolveShippedAdapterAsset = (
-  target: InvokeAgentTarget
-): Effect.Effect<string | null, never, FileSystem.FileSystem | Path.Path> => {
-  if (target === 'claude') {
-    return resolveRunCompanionAssetPath({
-      callerImportMetaUrl: import.meta.url,
-      execPath: process.execPath,
-      relativePathFromRoot: 'acp-adapters/claude-code-acp.mjs',
-    });
-  }
+/**
+ * The ACP adapter assets are the lazy tier of the companion install: `composio
+ * run` no longer requires them at startup, so this is the first place that can
+ * observe them missing. When a packaged install has lost them, say so with the
+ * fix instead of silently falling through to an npx download or a 404 from the
+ * startup repair path.
+ */
+export class MissingAcpAdapterAssetsError extends Data.TaggedError(
+  'services/MissingAcpAdapterAssetsError'
+)<{
+  readonly message: string;
+  readonly target: InvokeAgentTarget;
+  readonly missingRelativePaths: ReadonlyArray<string>;
+  readonly installDirectory: string;
+}> {
+  // The error crosses into the user's script as a rejection, so it reports its
+  // own name rather than the internal `services/`-prefixed tag.
+  override readonly name = 'MissingAcpAdapterAssetsError';
+}
 
-  const binaryTarget = RUN_CODEX_ACP_BINARY_TARGETS.find(
-    candidate => candidate.platform === process.platform && candidate.arch === process.arch
-  );
-  if (!binaryTarget) {
-    return Effect.succeed(null);
-  }
-
-  return resolveRunCompanionAssetPath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativePathFromRoot: binaryTarget.relativePath,
-  });
+type ShippedAdapterAsset = {
+  /** Absolute path to the adapter shipped with this install, when present. */
+  readonly resolvedPath: string | null;
+  /**
+   * Asset paths a complete install ships for this target on this host, relative
+   * to the install root. Empty when this platform has no shipped adapter at all
+   * (no codex-acp binary is built for it), which is not a broken install.
+   */
+  readonly expectedRelativePaths: ReadonlyArray<string>;
 };
+
+const resolveShippedAdapterAsset = ({
+  target,
+  execPath,
+}: {
+  target: InvokeAgentTarget;
+  execPath: string;
+}): Effect.Effect<ShippedAdapterAsset, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    if (target === 'claude') {
+      return {
+        resolvedPath: yield* resolveRunCompanionAssetPath({
+          callerImportMetaUrl: import.meta.url,
+          execPath,
+          relativePathFromRoot: 'acp-adapters/claude-code-acp.mjs',
+        }),
+        // cli.js has no separate resolution step: the bundled adapter finds it
+        // through import.meta.url, so name it as part of the requirement.
+        expectedRelativePaths: RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
+      };
+    }
+
+    const binaryTarget = codexAcpBinaryTargetFor({
+      platform: process.platform,
+      arch: process.arch,
+    });
+    if (!binaryTarget) {
+      return { resolvedPath: null, expectedRelativePaths: [] };
+    }
+
+    return {
+      // Reject a zero-byte placeholder: a foreign-platform slot in the archive
+      // can never execute, so treat it as absent and fall through.
+      resolvedPath: yield* resolveRunCompanionAssetPath({
+        callerImportMetaUrl: import.meta.url,
+        execPath,
+        relativePathFromRoot: binaryTarget.relativePath,
+        requireNonEmpty: true,
+      }),
+      expectedRelativePaths: [binaryTarget.relativePath],
+    };
+  });
+
+const missingAcpAdapterAssetsError = ({
+  target,
+  installDirectory,
+  missingRelativePaths,
+}: {
+  target: InvokeAgentTarget;
+  installDirectory: string;
+  missingRelativePaths: ReadonlyArray<string>;
+}) =>
+  new MissingAcpAdapterAssetsError({
+    target,
+    installDirectory,
+    missingRelativePaths,
+    message: [
+      `This Composio install cannot run a ${target} sub-agent: the ACP adapter files are missing from ${installDirectory}.`,
+      ...missingRelativePaths.map(relativePath => `  - ${relativePath}`),
+      `Run 'composio upgrade' to restore them, or reinstall the CLI.`,
+    ].join('\n'),
+  });
 
 const resolveInstalledAdapter = (target: InvokeAgentTarget): string | null => {
   const specifier =
@@ -140,25 +182,31 @@ const resolveInstalledAdapter = (target: InvokeAgentTarget): string | null => {
 };
 
 export const resolveAcpAdapterCommand = (
-  target: InvokeAgentTarget
-): Effect.Effect<AcpAdapterCommand, never, FileSystem.FileSystem | Path.Path> =>
+  target: InvokeAgentTarget,
+  { execPath = process.execPath }: { readonly execPath?: string } = {}
+): Effect.Effect<
+  AcpAdapterCommand,
+  MissingAcpAdapterAssetsError,
+  FileSystem.FileSystem | Path.Path
+> =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const binary = target === 'claude' ? 'claude-code-acp' : 'codex-acp';
     const packageName =
       target === 'claude' ? '@zed-industries/claude-code-acp' : '@zed-industries/codex-acp';
 
     // 1. Prefer shipped companion assets next to the CLI binary / dist bundle.
-    const shipped = yield* resolveShippedAdapterAsset(target);
-    if (shipped) {
+    const shipped = yield* resolveShippedAdapterAsset({ target, execPath });
+    if (shipped.resolvedPath) {
       if (target === 'codex') {
         return {
-          cmd: [shipped],
+          cmd: [shipped.resolvedPath],
           source: 'shipped',
         } satisfies AcpAdapterCommand;
       }
 
       return {
-        cmd: [process.execPath, shipped],
+        cmd: [execPath, shipped.resolvedPath],
         env: {
           BUN_BE_BUN: '1',
         },
@@ -166,11 +214,26 @@ export const resolveAcpAdapterCommand = (
       } satisfies AcpAdapterCommand;
     }
 
+    // A packaged install ships both the companion wrappers and the adapters. If
+    // the wrappers are there and the adapters are not, the install is damaged —
+    // report the repair instead of quietly downloading an adapter through npx.
+    // A source checkout has no wrappers next to `bun`, so it keeps falling back.
+    if (
+      shipped.expectedRelativePaths.length > 0 &&
+      (yield* hasInstalledRunCompanionModules(execPath))
+    ) {
+      return yield* missingAcpAdapterAssetsError({
+        target,
+        installDirectory: path.dirname(execPath),
+        missingRelativePaths: shipped.expectedRelativePaths,
+      });
+    }
+
     // 2. Try the installed dependency bundle next (no npx overhead).
     const bundled = resolveInstalledAdapter(target);
     if (bundled) {
       return {
-        cmd: [process.execPath, bundled],
+        cmd: [execPath, bundled],
         env: {
           BUN_BE_BUN: '1',
         },
@@ -564,7 +627,7 @@ export const createStructuredOutputMcpContext = ({
     });
 
     return yield* build.pipe(
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.sync(() => {
           helperDebugLog('subAgent.acp.structured_output_tool_failed', {
             error: error instanceof Error ? error.message : String(error),
@@ -616,7 +679,7 @@ const maybeReadStructuredOutputFromTool = ({
     );
 
     return yield* read.pipe(
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.sync<unknown>(() => {
           helperDebugLog('subAgent.acp.structured_output_tool_result_failed', {
             resultFilePath: context.resultFilePath,
@@ -666,7 +729,7 @@ const finalizeWithStructuredRepair = ({
 
   return finalizeText.pipe(
     Effect.map(payload => toInvokeAgentResponse(master, target, payload)),
-    Effect.catchAll(error => {
+    Effect.catch(error => {
       const structuredSchema = options.structuredSchema;
       if (!structuredSchema) {
         return Effect.fail(error);
@@ -741,12 +804,11 @@ const invokeAcpSubAgentEffect = ({
       args: resolved.cmd.slice(1),
     });
 
-    // The Claude Code CLI refuses to start when it inherits CLAUDECODE=1 (its
-    // nested-session guard checks `process.env.CLAUDECODE === "1"`). The
-    // platform Command executor always spreads process.env into the child, so
-    // the variable cannot be dropped; mask it with an empty string instead —
+    // The Claude Code CLI refuses to start when it inherits CLAUDECODE=1. The
+    // platform Command executor inherits the parent environment, so the
+    // variable cannot be dropped; mask it with an empty string instead —
     // falsy and distinct from the guarded "1" — only when the parent has it set.
-    const claudeCode = yield* Config.option(Config.string('CLAUDECODE'));
+    const claudeCode = yield* Config.option(Config.String('CLAUDECODE'));
     const childEnv: Record<string, string> = {
       ...(Option.isSome(claudeCode) ? { CLAUDECODE: '' } : {}),
       ...(resolved.env ?? {}),
@@ -754,9 +816,11 @@ const invokeAcpSubAgentEffect = ({
 
     const stdinQueue = yield* Queue.bounded<Uint8Array>(16);
     const [executable, ...commandArgs] = resolved.cmd;
-    const command = Command.make(executable, ...commandArgs).pipe(Command.env(childEnv));
+    // extendEnv keeps the inherited environment (PATH included) underneath the
+    // per-child overrides, matching the previous spawn semantics.
+    const command = Command.make(executable, commandArgs, { env: childEnv, extendEnv: true });
 
-    const child = yield* Command.start(command).pipe(
+    const child = yield* command.pipe(
       Effect.mapError(error =>
         createFallbackError('spawn_failed', `Failed to spawn ${target} ACP adapter.`, error)
       )
@@ -764,17 +828,17 @@ const invokeAcpSubAgentEffect = ({
 
     // Teardown parity with the previous finally block: SIGTERM the child, wait
     // for it to exit for at most 200ms, then SIGKILL it if it is still alive.
-    // Registered after Command.start so it runs before the executor's own
+    // Registered after the spawn so it runs before the spawner's own
     // scope finalizer (which would otherwise await a stubborn child forever).
     yield* Effect.addFinalizer(() =>
       Effect.gen(function* () {
-        yield* Effect.interruptible(child.kill('SIGTERM')).pipe(
+        yield* Effect.interruptible(child.kill({ killSignal: 'SIGTERM' })).pipe(
           Effect.timeout('200 millis'),
           Effect.ignore
         );
         const stillRunning = yield* child.isRunning.pipe(Effect.orElseSucceed(() => false));
         if (stillRunning) {
-          yield* Effect.ignore(child.kill('SIGKILL'));
+          yield* Effect.ignore(child.kill({ killSignal: 'SIGKILL' }));
         }
       })
     );

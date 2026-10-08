@@ -1,0 +1,5 @@
+# user prologue
+# Composio CLI
+export COMPOSIO_INSTALL_DIR="$HOME/.composio"
+export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
+alias ll="ls -la"

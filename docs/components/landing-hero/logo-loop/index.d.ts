@@ -20,8 +20,8 @@ interface LogoNodeItem {
 
 type LogoItem = LogoImageItem | LogoNodeItem;
 
-interface LogoLoopProps {
-	logos: LogoItem[];
+interface LogoLoopProps<Item extends LogoItem = LogoItem> {
+	logos: Item[];
 	speed?: number;
 	direction?: "left" | "right" | "up" | "down";
 	width?: string | number;
@@ -32,11 +32,13 @@ interface LogoLoopProps {
 	fadeOut?: boolean;
 	fadeOutColor?: string;
 	scaleOnHover?: boolean;
-	renderItem?: (item: LogoItem, key: string) => ReactNode;
+	renderItem?: (item: Item, key: string) => ReactNode;
 	ariaLabel?: string;
 	className?: string;
 	style?: CSSProperties;
 }
 
-export const LogoLoop: React.MemoExoticComponent<React.FC<LogoLoopProps>>;
+export const LogoLoop: <Item extends LogoItem = LogoItem>(
+	props: LogoLoopProps<Item>
+) => ReactNode;
 export default LogoLoop;

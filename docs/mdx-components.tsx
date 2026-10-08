@@ -23,6 +23,9 @@ import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
+import { AgentFirstPrompt } from '@/components/agent-first-prompt';
+import { AgentSetupActions } from '@/components/agent-setup-actions';
+import { AgentSetupGrid } from '@/components/agent-setup-grid';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
@@ -49,6 +52,7 @@ import { MediaSplit } from '@/components/media-split';
 import { PackageInstall } from '@/components/package-install';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
+import { ZdrLogVisual } from '@/components/zdr-log-visual';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -71,11 +75,20 @@ import {
 } from 'lucide-react';
 
 function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export function Accordion({ id, title, ...props }: ComponentProps<typeof BaseAccordion>) {
-  return <BaseAccordion id={id ?? (typeof title === 'string' ? slugify(title) : undefined)} title={title} {...props} />;
+  return (
+    <BaseAccordion
+      id={id ?? (typeof title === 'string' ? slugify(title) : undefined)}
+      title={title}
+      {...props}
+    />
+  );
 }
 
 export { Accordions };
@@ -83,10 +96,10 @@ export { Accordions };
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
-    h2: (props) => <Heading as="h2" {...props} />,
-    h3: (props) => <Heading as="h3" {...props} />,
-    h4: (props) => <Heading as="h4" {...props} />,
-    img: (props) => <ImageZoom {...(props as any)} />,
+    h2: props => <Heading as="h2" {...props} />,
+    h3: props => <Heading as="h3" {...props} />,
+    h4: props => <Heading as="h4" {...props} />,
+    img: props => <ImageZoom {...(props as ComponentProps<typeof ImageZoom>)} />,
     YouTube,
     Tabs,
     Tab,
@@ -121,6 +134,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ManagedAuthList,
     Mermaid,
     AIToolsBanner,
+    AgentFirstPrompt,
+    AgentSetupActions,
+    AgentSetupGrid,
     DocsHero,
     HomeFeatures,
     SessionFlow,
@@ -149,6 +165,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     PackageInstall,
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
+    ZdrLogVisual,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

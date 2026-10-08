@@ -12,31 +12,39 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from composio_client import BadRequestError, Omit, omit
+import typing_extensions as te
+from composio_client import BadRequestError, ConflictError, Omit, omit
 from composio_client._types import SequenceNotStr
 from composio_client.types.tool_list_response import (
     ItemDeprecated,
     ItemDeprecatedToolkit,
     ItemToolkit,
 )
-from composio_client.types.tool_router import session_link_params, session_patch_params
+from composio_client.types.tool_router import (
+    session_create_response,
+    session_link_params,
+    session_patch_params,
+    session_search_response,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
-)
-from composio_client.types.tool_router.session_proxy_execute_response import (
-    SessionProxyExecuteResponse,
-)
-from composio_client.types.tool_router.session_search_response import (
-    SessionSearchResponse,
 )
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import Tool
+from composio.client.types import (
+    Tool,
+    session_config_history_params,
+    session_config_history_response,
+)
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
+from composio.core.models.custom_tool import (
+    find_custom_tool_map_entry_by_final_slug,
+    find_custom_tool_map_entry_by_toolkit_and_original_slug,
+)
 from composio.core.models.custom_tool_execution import (
+    assert_unambiguous_custom_tool_slug,
     execute_custom_tool,
     find_custom_tool,
 )
@@ -44,6 +52,7 @@ from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
     InlineCustomToolsWirePayload,
+    ToolRouterSessionProxyExecuteResponse,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
 )
@@ -52,12 +61,19 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
     inline_custom_tools_search_experimental,
 )
-from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
+from composio.core.models.session_context import (
+    SessionContextImpl,
+    proxy_execute_impl,
+)
 from composio.core.models.tool_router_session_delete import (
     ToolRouterSessionDeleteResponse,
     delete_tool_router_session,
 )
-from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
+from composio.core.models.tools import (
+    ToolExecuteParams,
+    ToolExecutionResponse,
+    require_executed,
+)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
@@ -82,6 +98,115 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
+class ToolRouterSessionConfig(t.Protocol):
+    """Server-side Session config, as the generated client models it."""
+
+    user_id: str
+    instant: t.Union[
+        t.Literal[False], session_create_response.CurrentConfigInstantVariant1
+    ]
+    auth_configs: t.Optional[t.Dict[str, str]]
+    connected_accounts: t.Optional[t.Dict[str, t.List[str]]]
+    execute: session_create_response.ConfigExecute
+    manage_connections: t.Optional[session_create_response.ConfigManageConnections]
+    multi_account: t.Optional[session_create_response.ConfigMultiAccount]
+    preload: session_create_response.ConfigPreload
+    search: session_create_response.ConfigSearch
+    tags: t.Optional[session_create_response.ConfigTags]
+    toolkits: t.Union[
+        session_create_response.ConfigToolkitsEnabled,
+        session_create_response.ConfigToolkitsDisabled,
+        session_create_response.ConfigToolkitsRequireApproval,
+        None,
+    ]
+    tools: t.Optional[
+        t.Dict[
+            str,
+            t.Union[
+                session_create_response.ConfigToolsEnabled,
+                session_create_response.ConfigToolsDisabled,
+                session_create_response.ConfigToolsTags,
+                session_create_response.ConfigToolsRequireApproval,
+            ],
+        ]
+    ]
+    workbench: t.Optional[session_create_response.ConfigWorkbench]
+    proxy_execute: t.Optional[session_create_response.CurrentConfigProxyExecute]
+
+    def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
+
+    def model_dump_json(self, **kwargs: t.Any) -> str: ...
+
+    def model_copy(self, **kwargs: t.Any) -> ToolRouterSessionConfig: ...
+
+
+class ToolRouterInstantEnable(te.TypedDict):
+    enable: t.List[str]
+
+
+class ToolRouterInstantDisable(te.TypedDict):
+    disable: t.List[str]
+
+
+class ToolRouterInstantConfig(te.TypedDict, total=False):
+    """Experimental Instant usage policy for a Session."""
+
+    toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
+    tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
+    return_instant_charge: bool
+
+
+ToolRouterSessionExecuteResponse = SessionExecuteResponse
+"""Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
+only when the Session sets ``instant.return_instant_charge`` and a charge is
+available."""
+
+ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
+"""Session search result. A toolkit served by a Composio Instant account
+lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
+connection status."""
+
+
+class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
+    """``manage_connections`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    Only the supplied subfields travel. Unlike the create-time config,
+    ``callback_url=None`` removes the stored callback URL while leaving the
+    sibling connection settings untouched.
+    """
+
+    enable: t.Optional[bool]
+    callback_url: t.Optional[str]
+    enable_connection_removal: t.Optional[bool]
+    enable_wait_for_connections: t.Optional[bool]
+
+
+class ToolRouterUpdateMultiAccountConfig(te.TypedDict, total=False):
+    """``multi_account`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    ``max_accounts_per_toolkit=None`` removes the stored maximum so the
+    default applies again.
+    """
+
+    enable: bool
+    max_accounts_per_toolkit: t.Optional[int]
+    require_explicit_selection: bool
+
+
+class ToolRouterUpdateExperimentalConfig(te.TypedDict, total=False):
+    """``experimental`` shape accepted by :meth:`ToolRouterSession.update`.
+
+    Each leaf follows the PATCH contract: omit to keep the stored value,
+    ``None`` to remove it, a value to replace it.
+    """
+
+    permissions: t.Optional[t.Dict[str, t.Any]]
+    link_url_overwrite: t.Optional[str]
+    fast_mode: t.Optional[bool]
+    submit_feedback: t.Optional[t.Dict[str, bool]]
+    session_config_id: str
+
+
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
@@ -100,13 +225,23 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
     Attributes:
         session_id: Unique session identifier
+        config: Server-side session configuration as returned by the API,
+                refreshed in place by :meth:`update`
         experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     #: Unique session identifier.
     session_id: str
+    #: Server-side session configuration (toolkit/tool allowlists, tags,
+    #: preload, sandbox, manage_connections) as returned by the API. Refreshed
+    #: in place by :meth:`update`.
+    config: ToolRouterSessionConfig
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
+    #: Version of the server-side configuration this object last observed.
+    #: Refreshed in place by :meth:`update`. Pass it as ``expected_config_version``
+    #: to make an update conditional.
+    config_version: t.Optional[int]
 
     def __init__(
         self,
@@ -120,6 +255,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
+        config: t.Optional[ToolRouterSessionConfig] = None,
+        config_version: t.Optional[int] = None,
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
@@ -133,13 +270,28 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
+        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
+        # Sessions built from an API response always carry their config; the
+        # fallback only covers direct construction without one (tests).
+        self.config = config or t.cast(
+            ToolRouterSessionConfig,
+            session_create_response.Config.model_construct(
+                user_id=user_id or "",
+                execute=session_create_response.ConfigExecute(),
+                search=session_create_response.ConfigSearch(),
+                preload=session_create_response.ConfigPreload(tools=self.preload.tools),
+                instant=False,
+            ),
+        )
         # The MCP endpoint exists on every session at runtime (kept for
         # backwards compatibility), but is only typed via
         # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
         # not surface `mcp` on the base class — MCP is an explicit opt-in.
         setattr(self, "mcp", mcp)
         self.experimental = experimental
-        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
+        self.config_version = (
+            config_version if isinstance(config_version, int) else None
+        )
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
         self._preloaded_custom_tool_slugs = preloaded_custom_tool_slugs or []
@@ -387,6 +539,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                         t.cast(SessionContextImpl, self._session_context),
                     ),
                 )
+            assert_unambiguous_custom_tool_slug(self._custom_tools_map, slug)
             # Non-multi-execute meta tools always go to backend
             return backend_execute(slug, arguments)
 
@@ -409,8 +562,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """Route a COMPOSIO_MULTI_EXECUTE_TOOL call.
 
         Splits the tools[] array into local and remote, executes each
-        appropriately, and merges results: remotes first, locals appended
-        (matches TS — remote results may have workbench index references).
+        appropriately, and merges results in the original request order.
 
         Modifiers are NOT applied here — the caller (routing_execute)
         handles before_execute/after_execute to avoid double application.
@@ -433,6 +585,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if entry:
                 local_items.append((i, entry))
             else:
+                assert_unambiguous_custom_tool_slug(
+                    self._custom_tools_map, p["tool_slug"]
+                )
                 remote_indices.append(i)
 
         # All remote — just forward entire payload (no modifiers — caller handles them)
@@ -479,10 +634,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for idx, future in local_futures:
                 local_results.append((idx, future.result()))
 
-            # Gather remote result
+            # Gather remote result. A transport failure (exception from the
+            # backend call) must not discard completed local results, so it
+            # is captured here and surfaced as per-tool failures below
+            # (matches TS).
             remote_result: t.Optional[t.Dict[str, t.Any]] = None
+            remote_error_message: t.Optional[str] = None
             if remote_future:
-                remote_result = remote_future.result()
+                try:
+                    remote_result = remote_future.result()
+                except Exception as error:
+                    remote_error_message = str(error) or "Remote tool execution failed"
 
         # If only one local tool and no remote, return unwrapped
         if not remote_indices and len(local_results) == 1:
@@ -497,56 +659,90 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     "data": result["data"],
                 },
                 "tool_slug": parsed[idx]["tool_slug"],
+                "index": idx,
             }
             if result.get("error"):
                 local_entry["response"]["error"] = result["error"]
                 local_entry["error"] = result["error"]
             local_entries.append(local_entry)
 
-        # Merge: remotes first, locals appended (matches TS behavior —
-        # remote results may have workbench index references)
+        # Restore original request order, then re-index sequentially.
         remote_data_raw = (remote_result or {}).get("data")
         remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
-        remote_results_list = (
-            remote_data.get("results", [])
-            if isinstance(remote_data.get("results"), list)
-            else []
-        )
-        all_results = [
-            {**entry, "index": i}
-            for i, entry in enumerate([*remote_results_list, *local_entries])
+        remote_results_list: t.List[t.Dict[str, t.Any]]
+        if remote_error_message is not None:
+            remote_results_list = [
+                {
+                    "response": {
+                        "successful": False,
+                        "data": {},
+                        "error": remote_error_message,
+                    },
+                    "tool_slug": parsed[index]["tool_slug"],
+                    "error": remote_error_message,
+                }
+                for index in remote_indices
+            ]
+        else:
+            remote_results_list = (
+                remote_data.get("results", [])
+                if isinstance(remote_data.get("results"), list)
+                else []
+            )
+        merged_results = [
+            {
+                **entry,
+                "index": remote_indices[position]
+                if position < len(remote_indices)
+                else position,
+            }
+            for position, entry in enumerate(remote_results_list)
         ]
+        merged_results.extend(local_entries)
+        merged_results.sort(key=lambda entry: int(entry["index"]))
+        all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
         failed = sum(1 for r in all_results if r.get("error"))
         merged_data = {**remote_data, "results": all_results}
-        if local_entries and any(
-            key in remote_data
-            for key in ("total_count", "success_count", "error_count")
+        if local_entries and (
+            remote_error_message is not None
+            or any(
+                key in remote_data
+                for key in ("total_count", "success_count", "error_count")
+            )
         ):
             merged_data["total_count"] = len(all_results)
             merged_data["success_count"] = len(all_results) - failed
             merged_data["error_count"] = failed
 
-        remote_error = (
-            str(remote_result.get("error"))
-            if remote_result and remote_result.get("error") is not None
-            else None
-        )
-        has_any_error = any(r.get("error") for _, r in local_results) or bool(
-            remote_error
+        remote_error = remote_error_message
+        if remote_error is None and remote_result:
+            raw_remote_error = remote_result.get("error")
+            remote_error = (
+                str(raw_remote_error) if raw_remote_error is not None else None
+            )
+        # A failed execution can carry no error text, so success is read from
+        # each result's own verdict and not from the absence of an error message.
+        has_any_failure = (
+            any(not r["successful"] for _, r in local_results)
+            or (remote_result is not None and remote_result.get("successful") is False)
+            or bool(remote_error)
         )
         error_message = None
-        if has_any_error:
+        if has_any_failure:
             error_message = (
-                remote_error
-                if remote_error is not None and failed == 0
-                else f"{failed} out of {len(all_results)} tools failed"
+                f"{failed} out of {len(all_results)} tools failed"
+                if failed > 0
+                else remote_error
             )
 
-        return {
+        merged: t.Dict[str, t.Any] = {
             "data": merged_data,
             "error": error_message,
-            "successful": not has_any_error,
+            "successful": not has_any_failure,
         }
+        if remote_result and remote_result.get("instant_charge") is not None:
+            merged["instant_charge"] = remote_result["instant_charge"]
+        return merged
 
     def authorize(
         self,
@@ -680,7 +876,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         query: str,
         model: t.Optional[str] = None,
-    ) -> SessionSearchResponse:
+    ) -> ToolRouterSessionSearchResponse:
         """
         Search for tools by semantic use case.
 
@@ -701,43 +897,55 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
         account: t.Optional[str] = None,
-    ) -> SessionExecuteResponse:
+    ) -> ToolRouterSessionExecuteResponse:
         """
         Execute a tool within the session.
 
-        For custom tools, accepts the original slug (e.g. "GREP") or the
-        full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-        remote tools are sent to the Composio backend.
+        For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+        original slug (e.g. "GREP") when that original slug is unique across
+        the session's custom tools and toolkits. Custom tools are executed
+        in-process; remote tools are sent to the Composio backend.
 
         :param account: Account ID or alias for direct app tool execution in
             multi-account sessions. Helper/meta tools either ignore this
             top-level field or define their own account-selection fields.
 
-        Both paths return a ``SessionExecuteResponse`` with ``data``,
-        ``error``, and ``log_id`` attributes.
-        """
-        from composio_client.types.tool_router.session_execute_response import (
-            SessionExecuteResponse,
-        )
+        Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
+        ``error``, ``log_id``, ``result_type``, and ``instant_charge``
+        attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
+        execution can carry a ``None`` or empty ``error``, so read
+        ``result_type`` to tell the two apart. It is ``None`` when the API sent
+        none.
 
+        :raises ToolInputRequiredError: If the tool needs input from the user
+            (for example an approval) before it can run. Nothing was executed.
+        """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
         if entry and self._session_context:
             result = execute_custom_tool(entry, arguments or {}, self._session_context)
-            return SessionExecuteResponse(
+            return ToolRouterSessionExecuteResponse(
                 data=result["data"],
                 error=result["error"],
                 log_id="",
+                result_type="completed" if result["successful"] else "failed",
             )
 
-        return self._client.tool_router.session.execute(
-            session_id=self.session_id,
-            tool_slug=tool_slug,
-            arguments=arguments if arguments is not None else omit,
-            account=account if account is not None else omit,
-            experimental=inline_custom_tools_execute_experimental(
-                self._inline_custom_tools_payload
+        assert_unambiguous_custom_tool_slug(self._custom_tools_map, tool_slug)
+
+        # Disable retries: a session execution is a non-idempotent write, and a
+        # silent retry after a read timeout can duplicate the side effect.
+        return require_executed(
+            self._client.without_retries.tool_router.session.execute(
+                session_id=self.session_id,
+                tool_slug=tool_slug,
+                arguments=arguments if arguments is not None else omit,
+                account=account if account is not None else omit,
+                experimental=inline_custom_tools_execute_experimental(
+                    self._inline_custom_tools_payload
+                ),
             ),
+            f"Tool {tool_slug}",
         )
 
     def custom_tools(
@@ -783,7 +991,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         for tk in self._custom_tools_map.toolkits:
             tools = []
             for tool in tk.tools:
-                entry = self._custom_tools_map.by_original_slug.get(tool.slug.upper())
+                entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
+                    self._custom_tools_map, tk.slug, tool.slug
+                )
+                if entry is None:
+                    # Only trust a bare alias that belongs to this toolkit.
+                    bare = self._custom_tools_map.by_original_slug.get(
+                        tool.slug.upper()
+                    )
+                    if (
+                        bare is not None
+                        and bare.toolkit is not None
+                        and bare.toolkit.lower() == tk.slug.lower()
+                    ):
+                        entry = bare
                 tools.append(
                     RegisteredCustomTool(
                         slug=entry.final_slug if entry else tool.slug,
@@ -812,7 +1033,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ) -> SessionProxyExecuteResponse:
+    ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy an API call through Composio's auth layer.
 
         :param toolkit: Composio toolkit slug (e.g. 'gmail', 'github')
@@ -821,6 +1042,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param body: Request body (for POST, PUT, PATCH)
         :param parameters: Query/header parameters
         :returns: Proxied API response
+        :raises ToolInputRequiredError: If the call needs input from the user
+            before it can run. Nothing was executed.
         """
         return proxy_execute_impl(
             self._client,
@@ -835,35 +1058,73 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     def update(
         self,
         *,
-        toolkits: t.Union[session_patch_params.Toolkits, "Omit"] = omit,
-        tools: t.Union[t.Dict[str, session_patch_params.Tools], "Omit"] = omit,
-        tags: t.Union[session_patch_params.Tags, "Omit"] = omit,
-        auth_configs: t.Union[t.Dict[str, str], "Omit"] = omit,
+        toolkits: t.Union[t.Optional[session_patch_params.Toolkits], "Omit"] = omit,
+        instant: t.Union[t.Literal[False], ToolRouterInstantConfig, "Omit"] = omit,
+        tools: t.Union[
+            t.Optional[t.Dict[str, session_patch_params.Tools]], "Omit"
+        ] = omit,
+        tags: t.Union[t.Optional[session_patch_params.Tags], "Omit"] = omit,
+        auth_configs: t.Union[t.Optional[t.Dict[str, str]], "Omit"] = omit,
         connected_accounts: t.Union[
             t.Optional[t.Dict[str, SequenceNotStr[str]]], "Omit"
         ] = omit,
         manage_connections: t.Union[
-            t.Optional[session_patch_params.ManageConnections], "Omit"
+            t.Optional[session_patch_params.ManageConnections],
+            t.Optional[ToolRouterUpdateManageConnectionsConfig],
+            "Omit",
         ] = omit,
         sandbox: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         multi_account: t.Union[
-            t.Optional[session_patch_params.MultiAccount], "Omit"
+            t.Optional[session_patch_params.MultiAccount],
+            t.Optional[ToolRouterUpdateMultiAccountConfig],
+            "Omit",
         ] = omit,
-        preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
-    ) -> None:
+        preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
+        search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
+        execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
+        experimental: t.Union[
+            t.Optional[session_patch_params.Experimental],
+            t.Optional[ToolRouterUpdateExperimentalConfig],
+            "Omit",
+        ] = omit,
+        expected_config_version: t.Union[int, None, t.Literal[False]] = None,
+    ) -> ToolRouterSessionConfig:
         """Partially update the session configuration.
 
-        Only the fields provided will be changed; omitted fields are preserved.
-        Mutates this session's ``preload`` in-place.
+        Only the fields provided are changed; omitted fields are preserved.
+        For each policy block ``None`` removes the stored override (which can
+        increase access: ``toolkits=None`` restores the unrestricted default,
+        while ``toolkits={"enable": []}`` denies every app toolkit and is sent
+        as-is). Supplied ``tools``, ``auth_configs`` and ``connected_accounts``
+        maps replace the stored map entirely. Inside ``manage_connections``,
+        ``callback_url=None`` removes only the stored callback URL.
+        Experimental ``instant`` accepts ``False`` to disable billed
+        access or an object to set its filters; it does not accept ``None``.
+        Any object, even one that only sets ``return_instant_charge``,
+        re-enables Instant usage on a Session set to ``False``.
 
-        Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
-        ``multi_account`` to clear the stored value.
+        By default the request carries no precondition: the last writer wins.
+        Pass ``expected_config_version`` (for example this object's
+        ``config_version``) to make the update conditional: the API then
+        applies it only when the stored version still matches, and a concurrent
+        change raises :class:`~composio.exceptions.SessionConfigConflictError`
+        (HTTP 409) instead of being overwritten. The API must support the
+        ``expected_config_version`` field; otherwise it rejects the request with
+        a 400. ``expected_config_version=False`` is the same as omitting it.
+        The PATCH is never retried by the transport, so a 409 is reported
+        exactly once. On conflict this object stays unchanged: re-fetch the
+        session with ``composio.sessions.use(session_id)`` and retry against
+        the fresh ``config_version``.
+
+        ``config``, ``config_version`` and ``preload`` are refreshed in place
+        only after a successful response, and the updated ``config`` is
+        returned.
 
         ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer
         ``sandbox`` in new code.
 
-        All parameters use the same types as the Stainless-generated
+        All other parameters use the same types as the generated
         ``client.tool_router.session.patch()`` method.
         """
         from composio.core.models.tool_router import _session_preload_config
@@ -873,22 +1134,123 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "Pass either `sandbox` or `workbench`, not both. "
                 "`workbench` is a backwards-compatible alias for `sandbox`."
             )
+        if instant is None:
+            raise exceptions.InvalidParams(
+                "`instant` does not accept None; pass False to disable "
+                "Instant usage, or omit it to keep the stored policy"
+            )
+
+        precondition: t.Union[int, "Omit"]
+        if expected_config_version is None or expected_config_version is False:
+            precondition = omit
+        elif isinstance(expected_config_version, bool) or expected_config_version < 1:
+            raise exceptions.InvalidParams(
+                "`expected_config_version` must be a positive integer, or False to "
+                "send no precondition"
+            )
+        else:
+            precondition = expected_config_version
 
         workbench_payload = sandbox if sandbox is not omit else workbench
 
-        response = self._client.tool_router.session.patch(
-            session_id=self.session_id,
-            toolkits=toolkits,
-            tools=tools,
-            tags=tags,
-            auth_configs=auth_configs,
-            connected_accounts=connected_accounts,
-            manage_connections=manage_connections,
-            workbench=workbench_payload,
-            multi_account=multi_account,
-            preload=preload,
+        # The generated client has no typed parameter for the precondition, so
+        # it travels as an extra root body field.
+        extra_body: t.Optional[t.Dict[str, t.Any]] = (
+            None
+            if isinstance(precondition, Omit)
+            else {"expected_config_version": precondition}
         )
+
+        # The generated client does not type ``None`` for every policy block
+        # although the API accepts it (it removes the stored override), nor the
+        # subfield removals inside ``manage_connections``, ``multi_account`` and
+        # ``experimental``; the values are serialized as-is.
+        try:
+            response = self._client.tool_router.session.patch(
+                session_id=self.session_id,
+                toolkits=t.cast(
+                    t.Union[session_patch_params.Toolkits, "Omit"], toolkits
+                ),
+                tools=t.cast(
+                    t.Union[t.Dict[str, session_patch_params.Tools], "Omit"], tools
+                ),
+                tags=t.cast(t.Union[session_patch_params.Tags, "Omit"], tags),
+                instant=t.cast(
+                    t.Union[
+                        t.Literal[False],
+                        session_patch_params.CurrentInstantVariant1,
+                        "Omit",
+                    ],
+                    instant,
+                ),
+                auth_configs=t.cast(t.Union[t.Dict[str, str], "Omit"], auth_configs),
+                connected_accounts=connected_accounts,
+                manage_connections=t.cast(
+                    t.Union[t.Optional[session_patch_params.ManageConnections], "Omit"],
+                    manage_connections,
+                ),
+                workbench=workbench_payload,
+                multi_account=t.cast(
+                    t.Union[t.Optional[session_patch_params.MultiAccount], "Omit"],
+                    multi_account,
+                ),
+                preload=t.cast(t.Union[session_patch_params.Preload, "Omit"], preload),
+                search=t.cast(t.Union[session_patch_params.Search, "Omit"], search),
+                execute=t.cast(t.Union[session_patch_params.Execute, "Omit"], execute),
+                experimental=t.cast(
+                    t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
+                    experimental,
+                ),
+                extra_body=extra_body,
+                # A stale precondition is a deterministic 409: never retry it.
+                request_options={"max_retries": 0},
+            )
+        except ConflictError as exc:
+            if precondition is omit:
+                message = (
+                    f"Session {self.session_id} configuration changed while this "
+                    "update was in flight; re-fetch the session and retry the update"
+                )
+            else:
+                message = (
+                    f"Session {self.session_id} configuration is no longer at "
+                    f"version {precondition}; re-fetch the session and retry the update"
+                )
+            raise exceptions.SessionConfigConflictError(
+                message,
+                session_id=self.session_id,
+                expected_config_version=(
+                    None if isinstance(precondition, Omit) else precondition
+                ),
+            ) from exc
+        self.config = t.cast(ToolRouterSessionConfig, response.config)
+        self.config_version = response.config_version
         self.preload = _session_preload_config(response.config.preload)
+        return self.config
+
+    def list_config_history(
+        self,
+        **query: te.Unpack[session_config_history_params.SessionConfigHistoryParams],
+    ) -> session_config_history_response.SessionConfigHistoryResponse:
+        """
+        List the configuration history of this session, newest first.
+
+        Every ``update()`` records a new config version; this returns those
+        versions with cursor-based pagination.
+
+        :param cursor: Pagination cursor from a previous response.
+        :param limit: Number of items per page (max 100).
+        :return: The config versions under ``.items`` plus pagination fields.
+
+        Example:
+            history = session.list_config_history(limit=10)
+            for entry in history.items:
+                print(entry.version, entry.is_current)
+        """
+        return self._client.tool_router.session.config_history(
+            session_id=self.session_id,
+            **query,
+        )
 
     def delete(self) -> ToolRouterSessionDeleteResponse:
         """

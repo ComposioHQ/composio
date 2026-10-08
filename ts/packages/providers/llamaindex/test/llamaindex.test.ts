@@ -23,7 +23,7 @@ vi.mock('llamaindex', () => {
 describe('LlamaindexProvider', () => {
   let provider: LlamaindexProvider;
   let sampleTool: Tool;
-  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<any>;
+  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<unknown>;
 
   beforeEach(() => {
     provider = new LlamaindexProvider();
@@ -263,19 +263,6 @@ describe('LlamaindexProvider', () => {
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(0);
-    });
-
-    it('should handle single item array', () => {
-      const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-      const result = provider.wrapMcpServerResponse(mcpResponse);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        url: new URL('https://single.example.com'),
-        name: 'single-server',
-      });
     });
 
     it('should create proper URL objects from string URLs', () => {

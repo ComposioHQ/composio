@@ -24,6 +24,7 @@ from composio.exceptions import (
     FileUploadPathNotAllowedError,
     SDKFileNotFoundError,
 )
+from composio.utils.safe_path import is_inside_dir, resolve_root
 
 UPLOAD_TEMP_DIRECTORY_NAME = "temp"
 
@@ -96,24 +97,6 @@ def resolve_effective_upload_allowlist(
     return out
 
 
-def _is_inside_dir(child: Path, parent: Path) -> bool:
-    """True iff ``child`` equals ``parent`` or is nested inside on a component
-    boundary. Assumes both are absolute and normalized."""
-    try:
-        child_str = str(child)
-        parent_str = str(parent)
-        if sys.platform == "win32":
-            child_str = child_str.lower()
-            parent_str = parent_str.lower()
-        if child_str == parent_str:
-            return True
-        sep = os.sep
-        parent_with_sep = parent_str if parent_str.endswith(sep) else parent_str + sep
-        return child_str.startswith(parent_with_sep)
-    except OSError:
-        return False
-
-
 def _format_allowlist(dirs: t.Sequence[Path]) -> str:
     if not dirs:
         return "  (none configured — all local paths are blocked)"
@@ -164,11 +147,7 @@ def assert_path_inside_upload_dirs(
         entry of ``allowlist`` (including when allowlist is empty).
     """
     attempted = str(file_path)
-    abs_path = Path(attempted).expanduser()
-    try:
-        abs_path = abs_path.resolve(strict=False)
-    except OSError:
-        pass
+    abs_path = resolve_root(attempted)
 
     if not abs_path.exists():
         cwd = Path.cwd()
@@ -218,11 +197,7 @@ def assert_path_inside_upload_dirs(
         )
 
     for dir_entry in allowlist:
-        try:
-            real_dir = Path(dir_entry).expanduser().resolve(strict=False)
-        except OSError:
-            real_dir = Path(dir_entry)
-        if _is_inside_dir(real_path, real_dir):
+        if is_inside_dir(real_path, resolve_root(dir_entry)):
             return
 
     raise FileUploadPathNotAllowedError(

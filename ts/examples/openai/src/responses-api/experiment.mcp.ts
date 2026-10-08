@@ -10,12 +10,15 @@ const composio = new Composio({
   allowTracking: false,
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const externalUserId = '<external_user_id>'; // Replace it with the user id from your database
+const authConfigId = process.env.COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID; // your Gmail auth config ID
+const externalUserId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the user id from your database
+if (!authConfigId || !externalUserId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID and COMPOSIO_EXAMPLES_USER_ID');
+}
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcp.create(`gmail-mcp-${Date.now()}`, {
+const mcpConfig = await composio.mcp.create(`examples-gm-resp-${Math.floor(Date.now() / 1000)}`, {
   toolkits: [
     {
       toolkit: 'gmail',
@@ -34,9 +37,10 @@ const tools = [
     type: 'mcp' as const,
     server_label: mcp.name,
     server_url: mcp.url,
+    // The MCP endpoint authenticates with your Composio API key
+    headers: { 'x-api-key': process.env.COMPOSIO_API_KEY! },
   },
 ];
-console.log({ tools });
 
 // 4. Pass tools to OpenAI-specific Agent.
 const openai = new OpenAI();
@@ -50,8 +54,6 @@ const emailResponse = await openai.responses.create({
   input: `Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email.`,
   tools: tools,
 });
-
-console.log(JSON.stringify(emailResponse, null, 2));
 
 const result = await composio.provider.handleToolCalls('default', emailResponse.output);
 console.log({ result });

@@ -6,28 +6,7 @@ import { OpenAI } from 'openai';
 // Mock the openai modules
 vi.mock('openai', () => {
   return {
-    OpenAI: vi.fn().mockImplementation(function () {
-      return {
-        beta: {
-          threads: {
-            runs: {
-              retrieve: vi.fn().mockImplementation((runId, options) => {
-                return { id: runId, status: 'completed' };
-              }),
-              submitToolOutputs: vi.fn().mockImplementation((runId, options) => {
-                return { id: runId, status: 'completed' };
-              }),
-            },
-          },
-        },
-      };
-    }),
-  };
-});
-
-vi.mock('openai/streaming', () => {
-  return {
-    Stream: vi.fn(),
+    OpenAI: vi.fn(),
   };
 });
 
@@ -37,14 +16,14 @@ interface MockedOpenAIChatCompletionTool {
   function: {
     name: string;
     description?: string;
-    parameters?: any;
+    parameters?: unknown;
   };
 }
 
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new OpenAIProvider();
@@ -431,146 +410,6 @@ describe('OpenAIProvider', () => {
           content: JSON.stringify({ result: 'success' }),
         },
       ]);
-    });
-  });
-
-  describe('handleAssistantMessage', () => {
-    it('should process tool calls from an assistant run', async () => {
-      const userId = 'test-user';
-      const run = {
-        id: 'run-123',
-        required_action: {
-          submit_tool_outputs: {
-            tool_calls: [
-              {
-                id: 'tool-call-123',
-                type: 'function',
-                function: {
-                  name: 'test-tool',
-                  arguments: JSON.stringify({ input: 'test-value' }),
-                },
-              },
-            ],
-          },
-        },
-      } as unknown as OpenAI.Beta.Threads.Run;
-
-      const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
-      executeToolCallSpy.mockResolvedValue(JSON.stringify({ result: 'success' }));
-
-      const toolOutputs = await provider.handleAssistantMessage(userId, run);
-
-      expect(executeToolCallSpy).toHaveBeenCalledWith(
-        userId,
-        run.required_action?.submit_tool_outputs
-          ?.tool_calls[0] as OpenAI.ChatCompletionMessageToolCall,
-        undefined,
-        undefined
-      );
-      expect(toolOutputs).toEqual([
-        {
-          tool_call_id: 'tool-call-123',
-          output: JSON.stringify(JSON.stringify({ result: 'success' })),
-        },
-      ]);
-    });
-
-    it('should handle runs without tool calls', async () => {
-      const userId = 'test-user';
-      const run = {
-        id: 'run-123',
-      } as OpenAI.Beta.Threads.Run;
-
-      const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
-
-      const toolOutputs = await provider.handleAssistantMessage(userId, run);
-
-      expect(executeToolCallSpy).not.toHaveBeenCalled();
-      expect(toolOutputs).toEqual([]);
-    });
-  });
-
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-  });
-
-  describe('waitAndHandleAssistantToolCalls', () => {
-    it('should handle and submit tool outputs for an assistant run', async () => {
-      const userId = 'test-user';
-      const client = new OpenAI();
-      const thread = { id: 'thread-123' } as OpenAI.Beta.Threads.Thread;
-      const run = {
-        id: 'run-123',
-        status: 'requires_action',
-        required_action: {
-          submit_tool_outputs: {
-            tool_calls: [
-              {
-                id: 'tool-call-123',
-                type: 'function',
-                function: {
-                  name: 'test-tool',
-                  arguments: JSON.stringify({ input: 'test-value' }),
-                },
-              },
-            ],
-          },
-        },
-      } as OpenAI.Beta.Threads.Run;
-
-      const handleAssistantMessageSpy = vi.spyOn(provider, 'handleAssistantMessage');
-      handleAssistantMessageSpy.mockResolvedValue([
-        {
-          tool_call_id: 'tool-call-123',
-          output: JSON.stringify({ result: 'success' }),
-        },
-      ]);
-
-      const result = await provider.waitAndHandleAssistantToolCalls(userId, client, run, thread);
-
-      expect(handleAssistantMessageSpy).toHaveBeenCalledWith(userId, run, undefined, undefined);
-      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith(run.id, {
-        thread_id: thread.id,
-        tool_outputs: [
-          {
-            tool_call_id: 'tool-call-123',
-            output: JSON.stringify({ result: 'success' }),
-          },
-        ],
-      });
-      expect(result).toEqual({ id: 'run-123', status: 'completed' });
     });
   });
 });

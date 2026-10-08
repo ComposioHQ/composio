@@ -21,6 +21,8 @@ import {
 import { ValidationError } from '../errors/ValidationErrors';
 import { ComposioAclOnlyForSharedError } from '../errors';
 import { telemetry } from '../telemetry/Telemetry';
+import { Usage } from './Usage';
+import { CustomToolkits } from './CustomToolkits';
 
 /**
  * Server-side 400 message the API uses to reject ACL writes against a
@@ -129,8 +131,33 @@ export async function updateConnectedAccountAcl(
 export class Experimental {
   private client: ComposioClient;
 
+  /**
+   * Project-scoped usage metering (`summary()` / `breakdown()`).
+   * **Experimental — shape may change in future releases.**
+   *
+   * @example
+   * ```typescript
+   * const summary = await composio.experimental.usage.summary();
+   * const byTool = await composio.experimental.usage.breakdown('tool_calls');
+   * ```
+   */
+  usage: Usage;
+
+  /**
+   * Register and manage project-owned custom toolkits (`upsert()` / `sync()` / `delete()`).
+   * **Experimental — custom toolkits are in pilot; shape may change.**
+   *
+   * @example
+   * ```typescript
+   * await composio.experimental.customToolkits.sync('CUSTOM_MY_TOOLKIT');
+   * ```
+   */
+  customToolkits: CustomToolkits;
+
   constructor(client: ComposioClient) {
     this.client = client;
+    this.usage = new Usage(client);
+    this.customToolkits = new CustomToolkits(client);
     telemetry.instrument(this, 'Experimental');
   }
 

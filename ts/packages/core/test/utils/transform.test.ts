@@ -43,7 +43,7 @@ describe('transform', () => {
 
     const result = transform({ name: 'Alice', extra: 'field' })
       .with(schema)
-      .using(raw => raw as any);
+      .using(raw => raw as unknown);
 
     expect(result).toEqual({ name: 'Alice' });
     expect(result).not.toHaveProperty('extra');
@@ -57,7 +57,7 @@ describe('transform', () => {
 
     const result = transform({ name: 123, age: 'not a number' })
       .with(schema)
-      .using(raw => raw as any);
+      .using(raw => raw as unknown);
 
     expect(result).toEqual({ name: 123, age: 'not a number' });
 
@@ -75,7 +75,7 @@ describe('transform', () => {
 
     transform({ id: 42 })
       .with(schema)
-      .using(raw => raw as any, { label: 'ConnectedAccount' });
+      .using(raw => raw as unknown, { label: 'ConnectedAccount' });
 
     expect(mockLogger.warn).toHaveBeenCalledTimes(1);
     const warnMessage = mockLogger.warn.mock.calls[0][0] as string;
@@ -87,7 +87,7 @@ describe('transform', () => {
 
     const result = transform({ id: 'abc' })
       .with(schema)
-      .using(raw => raw as any);
+      .using(raw => raw as unknown);
 
     expect(result).toEqual({ id: 'abc' });
     expect(mockLogger.warn).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('transform', () => {
 
     const result = transform({ user: { email: 'not-an-email' } })
       .with(schema)
-      .using(raw => raw as any);
+      .using(raw => raw as unknown);
 
     expect(result).toEqual({ user: { email: 'not-an-email' } });
     expect(mockLogger.warn).toHaveBeenCalledTimes(1);

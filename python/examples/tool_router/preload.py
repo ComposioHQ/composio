@@ -58,7 +58,6 @@ INTERNAL_USERS = {
 
 composio = Composio(
     api_key=require_env("COMPOSIO_API_KEY"),
-    base_url=os.environ.get("COMPOSIO_BASE_URL"),
     provider=OpenAIAgentsProvider(),
 )
 require_env("OPENAI_API_KEY")

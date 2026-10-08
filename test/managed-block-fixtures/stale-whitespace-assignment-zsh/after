@@ -1,0 +1,4 @@
+# user prologue
+
+# Composio CLI
+export PATH="$HOME/.local/bin:$PATH"

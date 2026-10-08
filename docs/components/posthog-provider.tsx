@@ -5,6 +5,17 @@ import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+export function getPostHogPageViewUrl(
+  origin: string,
+  pathname: string,
+  searchParams: URLSearchParams,
+): string {
+  const visibleParams = new URLSearchParams(searchParams.toString());
+  if (pathname === '/kb/search') visibleParams.delete('q');
+  const queryString = visibleParams.toString();
+  return `${origin}${pathname}${queryString ? `?${queryString}` : ''}`;
+}
+
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -48,10 +59,7 @@ function PostHogPageView() {
 
   useEffect(() => {
     if (pathname && posthog) {
-      let url = window.origin + pathname;
-      if (searchParams.toString()) {
-        url = url + '?' + searchParams.toString();
-      }
+      const url = getPostHogPageViewUrl(window.origin, pathname, searchParams);
       posthog.capture('$pageview', { $current_url: url });
     }
   }, [pathname, searchParams, posthog]);

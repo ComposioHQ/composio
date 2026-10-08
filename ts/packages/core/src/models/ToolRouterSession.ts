@@ -1,10 +1,12 @@
 import { telemetry } from '../telemetry/Telemetry';
-import { Composio as ComposioClient, BadRequestError } from '@composio/client';
+import { Composio as ComposioClient, BadRequestError, ConflictError } from '@composio/client';
 import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -16,15 +18,23 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
   ToolRouterSessionWorkbenchConfig,
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
+  ToolRouterSessionEnsureConnectedOptions,
+  ToolRouterSessionEnsureConnectedOptionsSchema,
+  ToolRouterSessionEnsureConnectedResult,
+  ToolRouterSessionListConfigHistoryOptions,
+  ToolRouterSessionListConfigHistoryOptionsSchema,
+  type ToolRouterSessionListConfigHistoryResponse,
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
+  assertNotInputRequired,
   transformSearchResponse,
   transformExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
@@ -41,7 +51,11 @@ import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from
 import { z } from 'zod/v3';
 import { transform } from '../utils/transform';
 import { ToolkitConnectionStateSchema } from '../types/toolRouter.types';
-import { ComposioAclOnlyForSharedError, ValidationError } from '../errors';
+import {
+  ComposioAclOnlyForSharedError,
+  ComposioInvalidModifierError,
+  ValidationError,
+} from '../errors';
 import { Tools } from './Tools';
 import { ToolRouterSessionFilesMount } from './ToolRouterSessionFileMount';
 import type {
@@ -51,11 +65,13 @@ import type {
   RegisteredCustomTool,
   RegisteredCustomToolkit,
 } from '../types/customTool.types';
-import type { Tool, ToolExecuteResponse } from '../types/tool.types';
+import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
   SessionExecuteParams,
   SessionLinkParams,
+  SessionPatchParams,
+  SessionPatchResponse,
   SessionSearchParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
@@ -72,6 +88,8 @@ import {
 import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
+import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
+import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
@@ -114,9 +132,20 @@ export class ToolRouterSession<
   /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
+  /**
+   * The session's current configuration (policy snapshot and runtime
+   * settings). Refreshed in place by `update()`. For saved, reusable Session
+   * configs, see `composio.sessionConfigs`.
+   */
+  public config: ToolRouterSessionConfig;
   public preload: ToolRouterSessionPreloadConfig;
   /** Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. */
   public sandbox?: ToolRouterSessionWorkbenchConfig;
+  /**
+   * Version of the server-side configuration this object last observed.
+   * Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to
+   * make an update conditional.
+   */
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];
@@ -127,14 +156,21 @@ export class ToolRouterSession<
 
   constructor(
     private readonly client: ComposioClient,
-    private readonly config: ComposioConfig<TProvider> | undefined,
+    private readonly sdkConfig: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
-    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
+    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt' | 'sourceSessionConfig'>,
     private readonly customToolsMap?: CustomToolsMap,
     private readonly userId?: string,
     metadata?: ToolRouterSessionMetadata
   ) {
+    const config: ToolRouterSessionConfig = metadata?.config ?? {
+      user_id: userId ?? '',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+      instant: false,
+    };
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
     }
@@ -143,9 +179,11 @@ export class ToolRouterSession<
     this.experimental = {
       assistivePrompt: experimentalOverrides?.assistivePrompt,
       files: new ToolRouterSessionFilesMount(client, sessionId),
+      sourceSessionConfig: experimentalOverrides?.sourceSessionConfig,
     };
-    this.preload = metadata?.preload ?? { tools: [] };
-    this.sandbox = metadata?.workbench;
+    this.config = config;
+    this.preload = metadata?.preload ?? config.preload;
+    this.sandbox = metadata?.workbench ?? config.workbench;
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
@@ -189,14 +227,15 @@ export class ToolRouterSession<
     modifiers?: SessionMetaToolOptions,
     requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<TProvider['wrapTools']>> {
-    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-    const tools = await ToolsModel.getRawToolRouterSessionTools(
+    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.sdkConfig);
+    const rawTools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      undefined,
       requestOptions
     );
+    const tools = await this.applySchemaModifier(rawTools, modifiers?.modifySchema);
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
-    const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
+    const rawToolBySlug = new Map(rawTools.map(tool => [tool.slug.toUpperCase(), tool]));
 
     if (this.hasCustomTools()) {
       // Create an execute function that splits local/remote tools in COMPOSIO_MULTI_EXECUTE_TOOL
@@ -205,7 +244,7 @@ export class ToolRouterSession<
         input: Record<string, unknown>
       ): Promise<ToolExecuteResponse> => {
         if (toolSlug === COMPOSIO_MULTI_EXECUTE_TOOL) {
-          return this.routeMultiExecute(input, ToolsModel, sessionTools, modifiers);
+          return this.routeMultiExecute(input, ToolsModel, rawTools, modifiers);
         }
         const customTool = findCustomTool(this.customToolsMap, toolSlug);
         if (customTool) {
@@ -217,24 +256,47 @@ export class ToolRouterSession<
           toolSlug,
           input,
           modifiers,
-          toolBySlug.get(toolSlug.toUpperCase())
+          rawToolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
-      if (!this.config?.provider) {
+      if (!this.sdkConfig?.provider) {
         throw new Error(
           'A provider is required when using custom tools with session.tools(). ' +
             'Pass a provider in the Composio constructor.'
         );
       }
-      return this.config.provider.wrapTools(sessionTools, routingExecuteFn) as ReturnType<
+      return this.sdkConfig.provider.wrapTools(sessionTools, routingExecuteFn) as ReturnType<
         TProvider['wrapTools']
       >;
     }
 
     // Standard path (no local tools)
-    const wrappedTools = ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
+    const wrappedTools = modifiers?.modifySchema
+      ? ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers, rawTools)
+      : ToolsModel.wrapToolsForToolRouter(this.sessionId, sessionTools, modifiers);
     return wrappedTools as ReturnType<TProvider['wrapTools']>;
+  }
+
+  private async applySchemaModifier(
+    tools: Tool[],
+    modifier?: SessionMetaToolOptions['modifySchema']
+  ): Promise<Tool[]> {
+    if (!modifier) {
+      return tools;
+    }
+    if (typeof modifier !== 'function') {
+      throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+    }
+    return Promise.all(
+      tools.map(tool =>
+        modifier({
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          schema: ToolSchema.parse(tool),
+        })
+      )
+    );
   }
 
   private async addPreloadedCustomTools(
@@ -347,9 +409,13 @@ export class ToolRouterSession<
       tools: tk.tools.map(tool => {
         // Look up by toolkit + original slug so toolkits can safely reuse common names
         // like VERSION, CLICK, or SEARCH without losing the backend-assigned final slug.
+        // Only trust a bare alias that belongs to this toolkit.
+        const bare = this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
         const entry =
           findCustomToolMapEntryByToolkitAndOriginalSlug(this.customToolsMap, tk.slug, tool.slug) ??
-          this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
+          (bare?.toolkit && bare.toolkit.toLowerCase() === tk.slug.toLowerCase()
+            ? bare
+            : undefined);
         return {
           slug: entry?.finalSlug ?? tool.slug,
           name: tool.name,
@@ -436,6 +502,83 @@ export class ToolRouterSession<
       ConnectedAccountStatuses.INITIATED,
       response.redirect_url
     );
+  }
+
+  /**
+   * Ensure a toolkit has an active connection in this session, reconciling
+   * `authorize()`/`session.link` with the session's active connection state.
+   *
+   * If the session already resolves an ACTIVE connection (or the toolkit is
+   * no-auth), this returns immediately without creating a link — unlike
+   * `authorize()`, which always starts a new link flow, even when one is
+   * already connected. Otherwise it starts the authorization flow and waits
+   * for the new connection to become ACTIVE.
+   *
+   * For interactive flows that should surface the redirect URL instead of
+   * blocking, use `authorize()` and its `waitForConnection()` directly.
+   *
+   * @param toolkit - The toolkit slug to ensure a connection for (e.g. 'github')
+   * @param options - Optional authorization options plus `timeout` (ms to wait
+   *   for a newly-initiated connection, default 60000)
+   * @returns The toolkit's canonical slug, whether it was already connected,
+   *   and the active connected account (omitted for no-auth toolkits)
+   * @throws {ValidationError} If the options fail validation
+   * @throws {ConnectionRequestTimeoutError} If a newly-initiated connection does
+   *   not become active within `timeout`
+   * @throws {ConnectionRequestFailedError} If the new connection enters a failed,
+   *   expired, or revoked state
+   *
+   * @example
+   * ```typescript
+   * const session = await composio.sessions.create({ toolkits: ['github'] });
+   * const { wasConnected, connectedAccount } = await session.ensureConnected('github');
+   * if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
+   * ```
+   */
+  async ensureConnected(
+    toolkit: string,
+    options?: ToolRouterSessionEnsureConnectedOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionEnsureConnectedResult> {
+    const parsedOptions = ToolRouterSessionEnsureConnectedOptionsSchema.safeParse(options ?? {});
+    if (!parsedOptions.success) {
+      throw new ValidationError('Failed to parse tool router ensureConnected options', {
+        cause: parsedOptions.error,
+      });
+    }
+    const { callbackUrl, alias, experimental, timeout } = parsedOptions.data;
+
+    const state = await this.toolkits({ toolkits: [toolkit] }, requestOptions);
+    const existing = state.items.find(item => item.slug.toLowerCase() === toolkit.toLowerCase());
+
+    if (existing?.isNoAuth) {
+      return { toolkit: existing.slug, wasConnected: true };
+    }
+    const activeAccount = existing?.connection?.connectedAccount;
+    if (existing?.connection?.isActive && activeAccount) {
+      return {
+        toolkit: existing.slug,
+        wasConnected: true,
+        connectedAccount: { id: activeAccount.id, status: activeAccount.status },
+      };
+    }
+
+    const request = await this.authorize(
+      toolkit,
+      {
+        ...(callbackUrl !== undefined && { callbackUrl }),
+        ...(alias !== undefined && { alias }),
+        ...(experimental !== undefined && { experimental }),
+      },
+      requestOptions
+    );
+    const account = await request.waitForConnection(timeout);
+
+    return {
+      toolkit: existing?.slug ?? toolkit,
+      wasConnected: false,
+      connectedAccount: { id: account.id, status: account.status },
+    };
   }
 
   /**
@@ -527,15 +670,17 @@ export class ToolRouterSession<
   /**
    * Execute a tool within the session.
    *
-   * For custom tools, accepts the original slug (e.g. "GREP") or the
-   * full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
-   * remote tools are sent to the Composio backend.
+   * For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+   * original slug (e.g. "GREP") when that original slug is unique across
+   * the session's custom tools and toolkits. Custom tools are executed
+   * in-process; remote tools are sent to the Composio backend.
    *
    * @param toolSlug - The tool slug to execute
    * @param arguments_ - Optional tool arguments
    * @param options - Optional execution options
-   * @param options.account - Account identifier for direct app tool execution in multi-account sessions. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
+   * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @returns The tool execution result
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
   async execute(
     toolSlug: string,
@@ -561,6 +706,7 @@ export class ToolRouterSession<
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       };
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -581,10 +727,15 @@ export class ToolRouterSession<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          this.sessionId,
+          executeParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
-    const transformed = transformExecuteResponse(response);
+    const transformed = transformExecuteResponse(response, toolSlug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 
@@ -594,6 +745,7 @@ export class ToolRouterSession<
    *
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
    * @returns The proxied API response with status, data, headers
+   * @throws {ComposioToolInputRequiredError} If the call needs input from the user before it can run
    */
   async proxyExecute(
     params: SessionProxyExecuteParams,
@@ -607,10 +759,18 @@ export class ToolRouterSession<
     const clientParams = transformProxyParams(validated.data);
     const response = await withCancellation(
       () =>
-        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+        this.client.toolRouter.session.proxyExecute(
+          this.sessionId,
+          clientParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
+    assertNotInputRequired(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
     return {
       status: response.status,
       data: response.data,
@@ -630,23 +790,95 @@ export class ToolRouterSession<
 
   /**
    * Partially update the session configuration.
-   * Only the fields provided will be changed; omitted fields are preserved.
-   * Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
+   *
+   * Only the fields provided are changed; omitted fields are preserved. For
+   * each policy block `null` removes the stored override (which can increase
+   * access: `toolkits: null` restores the unrestricted default, while
+   * `toolkits: []` denies every app toolkit and is sent as-is). Supplied
+   * `tools`, `authConfigs` and `connectedAccounts` maps replace the stored
+   * map entirely. `manageConnections.callbackUrl: null` removes only the
+   * stored callback URL.
+   *
+   * By default the request carries no precondition: the last writer wins.
+   * Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+   * the update conditional: the API then applies it only when the stored
+   * version still matches, and a concurrent change surfaces as
+   * {@link ComposioSessionConfigConflictError} (HTTP 409) instead of being
+   * overwritten. The API must support the `expected_config_version` field;
+   * otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+   * is the same as omitting it. The PATCH is never retried by the transport,
+   * so a 409 is reported exactly once. On conflict this object is left
+   * unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+   * against the fresh `configVersion`.
+   *
+   * `experimental.sessionConfigId` applies a saved Session config: it
+   * replaces the session's toolkit, tool and tag access and cannot be combined
+   * with `toolkits`, `tools` or `tags` (a `ValidationError` is thrown before
+   * any request). A 409 while applying it means the session or the config
+   * changed; re-fetch the session and retry. Backend 400, 403 and 404 errors,
+   * for example for an archived or missing config, surface unchanged.
+   *
+   * `config`, `configVersion`, `preload`, `sandbox`, `warnings` and
+   * `experimental.sourceSessionConfig` are refreshed in place only after a
+   * successful response, and the updated `config` is returned.
    */
   async update(
     config: ToolRouterUpdateSessionConfig,
     requestOptions?: ComposioRequestOptions
-  ): Promise<void> {
-    const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
-    const params = transformToolRouterUpdateParams(parsed);
-    const response = await withCancellation(
-      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
-      requestOptions?.signal
-    );
+  ): Promise<ToolRouterSessionConfig> {
+    const parsed = parseSessionConfigInput(ToolRouterUpdateSessionConfigSchema, config);
+    const body = transformToolRouterUpdateParams(parsed);
+    const expectedConfigVersion =
+      parsed.expectedConfigVersion === false ? undefined : parsed.expectedConfigVersion;
+    if (expectedConfigVersion !== undefined) {
+      body.expected_config_version = expectedConfigVersion;
+    }
+
+    let response: SessionPatchResponse;
+    try {
+      response = await withCancellation(
+        () =>
+          this.client.toolRouter.session.patch(
+            this.sessionId,
+            // The generated client does not type `expected_config_version` or
+            // the nullable policy blocks; the body is serialized as-is.
+            body as SessionPatchParams,
+            { ...requestOptions, maxRetries: 0 }
+          ),
+        requestOptions?.signal
+      );
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        const sessionConfigId = parsed.experimental?.sessionConfigId;
+        if (sessionConfigId !== undefined) {
+          throw new ComposioSessionConfigConflictError(
+            `Session ${this.sessionId} or Session config ${sessionConfigId} changed while the config was being applied; re-fetch the session and retry the update`,
+            {
+              cause: error,
+              meta: { sessionId: this.sessionId, sessionConfigId, expectedConfigVersion },
+            }
+          );
+        }
+        throw new ComposioSessionConfigConflictError(
+          expectedConfigVersion === undefined
+            ? `Session ${this.sessionId} configuration changed while this update was in flight; re-fetch the session and retry the update`
+            : `Session ${this.sessionId} configuration is no longer at version ${expectedConfigVersion}; re-fetch the session and retry the update`,
+          {
+            cause: error,
+            meta: { sessionId: this.sessionId, expectedConfigVersion },
+          }
+        );
+      }
+      throw error;
+    }
+
     this.configVersion = response.config_version;
+    this.config = response.config;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
+    this.experimental.sourceSessionConfig = getSourceSessionConfig(response);
+    return this.config;
   }
 
   /**
@@ -657,6 +889,54 @@ export class ToolRouterSession<
    */
   async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse> {
     return deleteToolRouterSession(this.client, this.sessionId, requestOptions);
+  }
+
+  /**
+   * Page through this session's configuration history, newest first. The
+   * first page starts with the live config (`isCurrent: true`); every
+   * `session.update()` archives the previous version as a history row.
+   *
+   * @param options - Optional `cursor` and `limit` (max 100)
+   * @returns The config versions on this page plus pagination info
+   * @throws {ValidationError} If the options fail validation
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor } = await session.listConfigHistory({ limit: 10 });
+   * console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
+   * console.log(items[1].config.toolkits);
+   * ```
+   */
+  async listConfigHistory(
+    options?: ToolRouterSessionListConfigHistoryOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionListConfigHistoryResponse> {
+    const parsedOptions = ToolRouterSessionListConfigHistoryOptionsSchema.safeParse(options ?? {});
+    if (!parsedOptions.success) {
+      throw new ValidationError('Failed to parse config history options', {
+        cause: parsedOptions.error,
+      });
+    }
+    const query = {
+      cursor: parsedOptions.data.cursor,
+      limit: parsedOptions.data.limit,
+    };
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.configHistory(this.sessionId, query, requestOptions),
+      requestOptions?.signal
+    );
+    return {
+      items: response.items.map(item => ({
+        version: item.version,
+        createdAt: item.created_at,
+        isCurrent: item.is_current,
+        config: item.config,
+      })),
+      nextCursor: response.next_cursor ?? null,
+      totalPages: response.total_pages,
+      currentPage: response.current_page,
+      totalItems: response.total_items,
+    };
   }
 
   // ── Private helpers ──────────────────────────────────────────
@@ -846,16 +1126,24 @@ export class ToolRouterSession<
     }
     const remoteError =
       remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
+    // A failed execution can carry no error text, so success is read from each
+    // result's own verdict and not from the absence of an error message.
+    const hasAnyFailure =
+      localResults.some(r => !r.result.successful) ||
+      remoteResult?.successful === false ||
+      !!remoteError;
 
     return {
       data: mergedData,
-      error: hasAnyError
-        ? remoteError && failedCount === 0
-          ? remoteError
-          : `${failedCount} out of ${allResults.length} tools failed`
+      error: hasAnyFailure
+        ? failedCount > 0
+          ? `${failedCount} out of ${allResults.length} tools failed`
+          : remoteError
         : null,
-      successful: !hasAnyError,
+      successful: !hasAnyFailure,
+      ...(remoteResult?.instantCharge !== undefined && {
+        instantCharge: remoteResult.instantCharge,
+      }),
     };
   }
 }

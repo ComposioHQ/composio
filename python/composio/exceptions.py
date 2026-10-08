@@ -5,6 +5,10 @@ Composio exceptions.
 import difflib
 import typing as t
 
+import typing_extensions as te
+
+from composio_client import ComposioDeprecationWarning as ComposioDeprecationWarning
+
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 
 
@@ -210,6 +214,16 @@ class FileUploadAbortedError(FileError):
     """Raised when a ``before_file_upload`` hook returns ``False``."""
 
 
+class UnsafePathComponentError(FileError):
+    """
+    Raised when untrusted input (a tool slug, toolkit slug, or server-supplied
+    filename) cannot be safely used as part of a filesystem path.
+
+    Fails closed: the SDK refuses the write rather than sanitizing the value
+    into something that merely looks safe.
+    """
+
+
 class ErrorDownloadingFile(FileError):
     pass
 
@@ -282,6 +296,22 @@ class InvalidTriggerFilters(TriggerSubscriptionError):
     pass
 
 
+class TriggerSubscriptionAuthError(TriggerSubscriptionError):
+    """Raised when the realtime channel-auth request fails.
+
+    Covers a transport error, a timeout, a non-200 response, and a response
+    without an ``auth`` token.
+    """
+
+    pass
+
+
+class InvalidPusherClusterError(TriggerSubscriptionError, ValidationError):
+    """Raised when the realtime credentials carry a malformed pusher cluster."""
+
+    pass
+
+
 class ApiKeyError(ComposioClientError):
     pass
 
@@ -297,6 +327,109 @@ class ApiKeyNotProvidedError(ApiKeyError, NotFoundError):
                 "or run `composio login`"
             ),
         )
+
+
+class UserApiKeyNotProvidedError(ApiKeyError):
+    """Raised when the project key is disabled and no user API key is available."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message=(
+                "`disable_api_key=True` turns off the project API key, but no user "
+                "API key was provided: pass `user_api_key` or export it as "
+                "`COMPOSIO_USER_API_KEY`"
+            )
+        )
+
+
+class MCPDestinationError(ComposioClientError):
+    """Raised when a session's hosted MCP endpoint is not a destination the
+    SDK will hand the session headers to.
+
+    The credential and scope headers are only attached when the MCP URL shares
+    the origin of the API base URL the session was created against. The error
+    is raised only when the caller asked for the endpoint with ``mcp=True``;
+    otherwise the session is returned with empty ``mcp.headers`` and a warning
+    is logged instead. The message names both origins and never includes a
+    credential value.
+    """
+
+    def __init__(self, message: str, *, mcp_origin: str, api_origin: str) -> None:
+        super().__init__(message)
+        self.mcp_origin = mcp_origin
+        self.api_origin = api_origin
+
+
+class SessionConfigConflictError(ComposioClientError):
+    """Raised when a session update is rejected with HTTP 409 because the
+    session configuration changed since it was last read, for example when an
+    ``expected_config_version`` precondition passed to ``update()`` is stale.
+
+    The local session object is left as it was before the call. Re-fetch the
+    session with ``composio.sessions.use(session_id)`` and retry the update
+    against the fresh ``config_version``.
+    """
+
+    status_code = 409
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        session_id: str,
+        expected_config_version: t.Optional[int] = None,
+    ) -> None:
+        super().__init__(message)
+        self.session_id = session_id
+        self.expected_config_version = expected_config_version
+
+
+class ToolInputRequest(te.TypedDict):
+    """One question a tool asks the user before it can run."""
+
+    type: str
+    """Kind of input requested, currently ``"elicitation"``."""
+    mode: str
+    """How the client collects the input, currently ``"form"``."""
+    message: str
+    """Message to show the user."""
+    requested_schema: t.Dict[str, t.Any]
+    """JSON Schema for the answer: a flat object with string, number, boolean
+    or enum fields."""
+
+
+class ToolInputRequiredError(ComposioClientError):
+    """Raised when a session tool execution or proxied call did not run
+    because it needs input from the user first, for example an approval. The
+    API answers such a call with ``result_type: "input_required"`` instead of
+    a result.
+
+    ``input_requests`` holds the questions, keyed by the ID the answers must
+    reuse. ``request_state`` is the opaque state the API returned; when present
+    it must be sent back unchanged together with the answers. The SDK does not
+    submit answers yet, so nothing was executed and the call is not retried.
+
+    ``request_state`` is continuation state, so it is kept out of logs: read it
+    as an attribute. ``str()``, ``repr()``, ``args`` and a formatted traceback
+    do not include it.
+    """
+
+    def __init__(
+        self,
+        subject: str,
+        *,
+        input_requests: t.Dict[str, ToolInputRequest],
+        request_state: t.Optional[str] = None,
+    ) -> None:
+        count = len(input_requests)
+        super().__init__(
+            f"{subject} requires user input before it can run "
+            f"({count} input request{'' if count == 1 else 's'}) and was not "
+            "executed. The questions are on `input_requests` and the opaque "
+            "`request_state` to send back with the answers is on `request_state`."
+        )
+        self.input_requests = input_requests
+        self.request_state = request_state
 
 
 class ResourceError(ComposioClientError):
@@ -363,6 +496,27 @@ class ComposioLegacyConnectedAccountsEndpointRetiredError(ConnectedAccountError)
     pass
 
 
+class ComposioConnectedAccountRevocationNotSupportedError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the toolkit
+    behind the connected account does not support programmatic token
+    revocation (API ``400``).
+
+    Fix: delete or disable the connected account instead, and revoke the
+    grant from the provider's own settings page.
+    """
+
+    pass
+
+
+class ComposioConnectedAccountNotRevokableError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.revoke()`` when the connected
+    account is not in a state that can be revoked (API ``409``), for
+    example because it was already revoked or never became ``ACTIVE``.
+    """
+
+    pass
+
+
 class ComposioAclOnlyForSharedError(ConnectedAccountError):
     """Raised when ACL fields (``allow_all_users``, ``allowed_user_ids``,
     ``not_allowed_user_ids``) are sent on a ``PRIVATE`` connection. ACL
@@ -423,8 +577,13 @@ class InvalidExecuteFunctionError(ComposioError):
     pass
 
 
-class ToolNotFoundError(ComposioError):
-    pass
+class ToolNotFoundError(NotFoundError):
+    """Raised when a tool slug does not exist.
+
+    Mirrors the TypeScript SDK's ``ComposioToolNotFoundError``. Other failures
+    while fetching a tool (invalid API key, server or network errors) are not
+    translated and surface as the underlying ``composio_client`` error.
+    """
 
 
 class InvalidModifier(ComposioError):

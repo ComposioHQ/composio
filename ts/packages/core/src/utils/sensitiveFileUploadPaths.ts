@@ -12,7 +12,8 @@ import { ComposioSensitiveFilePathBlockedError } from '../errors/FileModifierErr
 
 /**
  * Path segments (a single path component) that indicate a sensitive directory when
- * they appear anywhere in a resolved local path. Compared case-insensitively on Windows.
+ * they appear anywhere in a resolved local path. Matching follows the case sensitivity
+ * of the filesystem containing that path.
  */
 export const BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: readonly string[] = [
   '.ssh',
@@ -30,12 +31,29 @@ const SECRET_LIKE_BASENAME = /^(\.env(\.|$)|\.netrc$|\.pgpass$)/i;
 /** Default SSH private key basenames (public keys like id_rsa.pub are allowed). */
 const DEFAULT_PRIVATE_KEY_BASENAME = /^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$/i;
 
-const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
+const splitSegments = (aPath: string): string[] => aPath.split(/[/\\]+/).filter(Boolean);
 
 /**
  * Returns normalized path segments, resolving symlinks when the path exists.
+ *
+ * Both the written path and the symlink-resolved one are returned, because a
+ * denied segment can be hidden by a symlink in either direction:
+ *
+ *   - `~/innocent-name` -> `~/nested/.aws/creds` hides `.aws` from the written
+ *     path, so the denylist has to see the resolved one.
+ *   - `~/.claude` -> `/state/claude` hides `.claude` from the *resolved* path,
+ *     so the denylist also has to see the written one. Dotfile managers
+ *     (chezmoi, stow, yadm) and containerised home directories produce exactly
+ *     this layout.
+ *
+ * Matching only the resolved path silently turns the denylist off for the
+ * second case.
  */
-function normalizePathSegments(filePath: string): string[] {
+function normalizePath(filePath: string): {
+  resolvedPath: string;
+  segments: string[];
+  writtenSegments: string[];
+} {
   const absolute = platform.resolvePath(filePath);
   let resolved = absolute;
   try {
@@ -45,7 +63,11 @@ function normalizePathSegments(filePath: string): string[] {
   } catch {
     // If realpath fails (e.g. race), use resolved path
   }
-  return resolved.split(/[/\\]+/).filter(Boolean);
+  return {
+    resolvedPath: resolved,
+    segments: splitSegments(resolved),
+    writtenSegments: splitSegments(absolute),
+  };
 }
 
 /**
@@ -63,24 +85,32 @@ function getSensitiveFileUploadPathBlockReason(
   filePath: string,
   additionalDenySegments?: string[]
 ): string | null {
-  const segments = normalizePathSegments(filePath);
+  const { resolvedPath, segments, writtenSegments } = normalizePath(filePath);
+  const isCaseSensitive = platform.isFileSystemCaseSensitive?.(resolvedPath) ?? true;
+  const normalizeSegment = (segment: string) => (isCaseSensitive ? segment : segment.toLowerCase());
   const deny = new Set(
     [
       ...BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
       ...(additionalDenySegments ?? []).map(s => s.trim()).filter(Boolean),
-    ].map(s => (isWindows ? s.toLowerCase() : s))
+    ].map(normalizeSegment)
   );
 
-  // Windows: compare segments case-insensitively; map once instead of toLowerCase per iteration.
-  const segmentsForMatch = isWindows ? segments.map(s => s.toLowerCase()) : segments;
-  for (let i = 0; i < segments.length; i++) {
-    if (deny.has(segmentsForMatch[i]!)) {
-      return `path segment "${segments[i]}" is in the sensitive file upload denylist`;
+  for (const candidate of [segments, writtenSegments]) {
+    const segmentsForMatch = isCaseSensitive ? candidate : candidate.map(normalizeSegment);
+    for (let i = 0; i < candidate.length; i++) {
+      if (deny.has(segmentsForMatch[i]!)) {
+        return `path segment "${candidate[i]}" is in the sensitive file upload denylist`;
+      }
     }
   }
 
-  const basename = segments.length > 0 ? segments[segments.length - 1] : '';
-  if (basename) {
+  // Same two directions as the segment scan: `~/.env -> /state/config` hides a
+  // denied basename from the resolved path, and a symlink pointing *at* a
+  // credential file hides it from the written one.
+  const basenames = [segments.at(-1), writtenSegments.at(-1)].filter(
+    (name): name is string => !!name
+  );
+  for (const basename of basenames) {
     if (SECRET_LIKE_BASENAME.test(basename) || DEFAULT_PRIVATE_KEY_BASENAME.test(basename)) {
       return `file name "${basename}" looks like a credential, env, or private key file`;
     }

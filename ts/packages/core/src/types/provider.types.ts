@@ -8,6 +8,7 @@ import {
   ToolListParams,
 } from './tool.types';
 import { CustomConnectionData } from './connectedAccountAuthStates.types';
+import type { ToolRouterSessionExecuteResponse } from './toolRouter.types';
 
 /**
  * Base provider implementation, which needs to be implemented by the extended class.
@@ -24,6 +25,20 @@ export type ExecuteToolFnOptions = {
   customAuthParams?: CustomAuthParams;
   customConnectionData?: CustomConnectionData;
 };
+
+/**
+ * Minimal public contract required to execute model tool calls through a Tool Router session.
+ * {@link ToolRouterSession} satisfies this interface.
+ */
+export interface ToolCallSession {
+  execute(
+    toolSlug: string,
+    arguments_?: Record<string, unknown>
+  ): Promise<ToolRouterSessionExecuteResponse>;
+}
+
+/** Direct user execution or execution bound to a Tool Router session. */
+export type ToolCallExecutionTarget = string | ToolCallSession;
 
 /**
  * This type is used to infer the wrapped tool type from the provider.

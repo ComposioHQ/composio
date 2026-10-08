@@ -11,13 +11,16 @@ const composio = new Composio({
   allowTracking: false,
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const authConfigId = process.env.COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID; // your Gmail auth config ID
 const toolkit = 'gmail'; // slug of the toolkit
-const externalUserId = '<external_user_id>'; // Replace it with the userId from your database
+const externalUserId = process.env.COMPOSIO_EXAMPLES_USER_ID; // the userId from your database
+if (!authConfigId || !externalUserId) {
+  throw new Error('Set COMPOSIO_EXAMPLES_GMAIL_AUTH_CONFIG_ID and COMPOSIO_EXAMPLES_USER_ID');
+}
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
-// 2. Create an MCP config
-const mcpConfig = await composio.mcp.create(externalUserId, {
+// 2. Create an MCP config (names must be unique within a project)
+const mcpConfig = await composio.mcp.create(`examples-gm-agents-${Math.floor(Date.now() / 1000)}`, {
   toolkits: [{ toolkit, authConfigId }],
   allowedTools,
 });
@@ -29,6 +32,8 @@ const tools: HostedMCPTool[] = [
   hostedMcpTool({
     serverLabel: server.name,
     serverUrl: server.url,
+    // The MCP endpoint authenticates with your Composio API key
+    headers: { 'x-api-key': process.env.COMPOSIO_API_KEY! },
     requireApproval: {
       never: {
         toolNames: ['GMAIL_FETCH_EMAILS'],
@@ -60,5 +65,5 @@ console.log('\n📬 Email Summary:');
 
 const output = emailResponse.output.filter(({ type }) => type === 'message').at(0);
 
-// @ts-ignore
+// @ts-expect-error: the agents SDK types `output` as a union whose message variant is not narrowed by the `type` filter above
 console.log(output?.content[0].text);

@@ -1,22 +1,18 @@
 import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
-import { extractActual } from './utils/extract-actual';
 
-export const ToolAsEnum = Schema.String.annotations({ identifier: 'ToolAsEnum' });
+export const ToolAsEnum = Schema.String.annotate({ identifier: 'ToolAsEnum' });
 export type ToolAsEnum = Schema.Schema.Type<typeof ToolAsEnum>;
 
-export const ToolsAsEnums = Schema.Array(ToolAsEnum).annotations({
+export const ToolsAsEnums = Schema.Array(ToolAsEnum).annotate({
   identifier: 'Array<ToolAsEnum>',
-  message: issue => ({
-    message: `Expected an array of strings, got ${extractActual(issue)}`,
-    override: true,
-  }),
+  message: 'Expected an array of strings',
 });
 export type ToolsAsEnums = Schema.Schema.Type<typeof ToolsAsEnums>;
 
 export const ToolsAsEnumsJSON = JSONTransformSchema(ToolsAsEnums);
-export const toolsAsEnumsFromJSON = Schema.decode(ToolsAsEnumsJSON);
-export const toolsAsEnumsToJSON = Schema.encode(ToolsAsEnumsJSON);
+export const toolsAsEnumsFromJSON = Schema.decodeEffect(ToolsAsEnumsJSON);
+export const toolsAsEnumsToJSON = Schema.encodeEffect(ToolsAsEnumsJSON);
 
 // E.g., `SEND_EMAIL`
 export type ToolName = string & Brand.Brand<'ToolName'>;
@@ -45,11 +41,11 @@ export const Tool = Schema.Struct({
   /**
    * Schema definition of required input parameters for the tool
    */
-  input_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  input_parameters: Schema.Record(Schema.String, Schema.Unknown),
   /**
    * Schema definition of required output parameters for the tool
    */
-  output_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  output_parameters: Schema.Record(Schema.String, Schema.Unknown),
   /**
    * Detailed explanation of the tool's functionality and purpose.
    */
@@ -58,12 +54,12 @@ export const Tool = Schema.Struct({
    * List of tags associated with the tool for categorization and filtering.
    */
   tags: Schema.Array(Schema.String),
-}).annotations({ identifier: 'Tool' });
+}).annotate({ identifier: 'Tool' });
 export type Tool = Schema.Schema.Type<typeof Tool>;
 
-export const Tools = Schema.Array(Tool).annotations({ identifier: 'Array<Tool>' });
+export const Tools = Schema.Array(Tool).annotate({ identifier: 'Array<Tool>' });
 export type Tools = Schema.Schema.Type<typeof Tools>;
 
 export const ToolsJSON = JSONTransformSchema(Tools);
-export const ToolsFromJSON = Schema.decode(ToolsJSON);
-export const ToolsToJSON = Schema.encode(ToolsJSON);
+export const ToolsFromJSON = Schema.decodeEffect(ToolsJSON);
+export const ToolsToJSON = Schema.encodeEffect(ToolsJSON);

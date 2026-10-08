@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, expect, it, assert } from '@effect/vitest';
-import { BunPath } from '@effect/platform-bun';
-import { Effect, Either } from 'effect';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { Effect, Result } from 'effect';
 import { safeOutputPath, SafeOutputPathError } from 'src/generation/safe-output-path';
 
 describe('safeOutputPath', () => {
@@ -20,23 +20,23 @@ describe('safeOutputPath', () => {
     '[Given] an absolute generated filename [Then] it fails through the Effect error channel',
     Effect.fn(function* () {
       const result = yield* safeOutputPath('generated', path.resolve('gmail.ts')).pipe(
-        Effect.either
+        Effect.result
       );
 
-      assert(Either.isLeft(result));
-      expect(result.left).toBeInstanceOf(SafeOutputPathError);
-      expect(result.left.filename).toBe(path.resolve('gmail.ts'));
+      assert(Result.isFailure(result));
+      expect(result.failure).toBeInstanceOf(SafeOutputPathError);
+      expect(result.failure.filename).toBe(path.resolve('gmail.ts'));
     }, Effect.provide(BunPath.layer))
   );
 
   it.effect(
     '[Given] a parent-directory generated filename [Then] it fails through the Effect error channel',
     Effect.fn(function* () {
-      const result = yield* safeOutputPath('generated', '../gmail.ts').pipe(Effect.either);
+      const result = yield* safeOutputPath('generated', '../gmail.ts').pipe(Effect.result);
 
-      assert(Either.isLeft(result));
-      expect(result.left).toBeInstanceOf(SafeOutputPathError);
-      expect(result.left.filename).toBe('../gmail.ts');
+      assert(Result.isFailure(result));
+      expect(result.failure).toBeInstanceOf(SafeOutputPathError);
+      expect(result.failure.filename).toBe('../gmail.ts');
     }, Effect.provide(BunPath.layer))
   );
 });

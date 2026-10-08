@@ -24,7 +24,11 @@
       "outputs": ["dist/"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      // the shared cross-SDK JSON Schema conversion corpus and its loader are
+      // owned by `@composio/core` but imported by the Zod, Effect, and CLI test
+      // suites, whose $TURBO_DEFAULT$ inputs stop at their own package directory
+      "inputs": ["$TURBO_DEFAULT$", "../core/test/fixtures/json-schema-conversion/*"]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
@@ -44,6 +48,10 @@
     "test:e2e:cli": {
       "dependsOn": ["^build"],
       "env": ["COMPOSIO_API_KEY", "COMPOSIO_BASE_URL", "COMPOSIO_USER_API_KEY", "COMPOSIO_E2E_CLI_VERSION", "OPENAI_API_KEY"],
+      "cache": false
+    },
+    "test:e2e:install": {
+      "env": ["COMPOSIO_INSTALL_E2E_MODE", "COMPOSIO_INSTALL_E2E_SHELL", "COMPOSIO_INSTALL_E2E_VERSION", "COMPOSIO_INSTALL_E2E_RELEASE_DIR"],
       "cache": false
     },
     "test:e2e:cloudflare": {

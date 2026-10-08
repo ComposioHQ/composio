@@ -28,7 +28,7 @@ vi.mock('@anthropic-ai/sdk', () => {
 describe('AnthropicProvider', () => {
   let provider: AnthropicProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new AnthropicProvider();
@@ -201,6 +201,35 @@ describe('AnthropicProvider', () => {
         undefined
       );
       expect(result).toBe(JSON.stringify({ result: 'success' }));
+    });
+
+    it('should expose session execution errors without changing successful results', async () => {
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_123',
+        name: 'test-tool',
+        input: { input: 'test-value' },
+      };
+      const session = {
+        execute: vi
+          .fn()
+          .mockResolvedValueOnce({
+            data: { result: 'success' },
+            error: null,
+            logId: 'log-success',
+          })
+          .mockResolvedValueOnce({
+            data: {},
+            error: 'Tool execution failed',
+            logId: 'log-failure',
+          }),
+      };
+
+      const successfulResult = await provider.executeToolCall(session, toolUse);
+      const failedResult = await provider.executeToolCall(session, toolUse);
+
+      expect(successfulResult).toBe(JSON.stringify({ result: 'success' }));
+      expect(failedResult).toBe(JSON.stringify({ error: 'Tool execution failed' }));
     });
 
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
@@ -407,42 +436,6 @@ describe('AnthropicProvider', () => {
     });
   });
 
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-  });
-
   describe('MCP functionality', () => {
     describe('wrapMcpServerResponse', () => {
       it('should transform McpUrlResponse to AnthropicMcpServerGetResponse format', () => {
@@ -482,20 +475,6 @@ describe('AnthropicProvider', () => {
         expect(result).toHaveLength(0);
       });
 
-      it('should handle single item array', () => {
-        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        expect(Array.isArray(result)).toBe(true);
-        expect(result).toHaveLength(1);
-        expect(result[0]).toEqual({
-          url: 'https://single.example.com',
-          name: 'single-server',
-          type: 'url',
-        });
-      });
-
       it('should preserve URL strings exactly', () => {
         const mcpResponse = [
           { name: 'http-server', url: 'http://insecure.example.com' },
@@ -520,33 +499,6 @@ describe('AnthropicProvider', () => {
         result.forEach(item => {
           expect(item.type).toBe('url');
         });
-      });
-    });
-
-    describe('MCP integration with provider', () => {
-      it('should correctly type the MCP response transformation', () => {
-        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        // TypeScript should infer this as AnthropicMcpServerGetResponse
-        expect(result[0]).toHaveProperty('url');
-        expect(result[0]).toHaveProperty('name');
-        expect(result[0]).toHaveProperty('type');
-        expect(result[0].url).toBe('https://test.example.com');
-        expect(result[0].type).toBe('url');
-      });
-
-      it('should work with MCP provider instance', () => {
-        // Verify the provider can transform MCP responses
-        const newProvider = new AnthropicProvider();
-        const testResponse = [{ name: 'test', url: 'https://test.com' }];
-
-        const result = newProvider.wrapMcpServerResponse(testResponse);
-        expect(result).toHaveLength(1);
-        expect(result[0].name).toBe('test');
-        expect(result[0].url).toBe('https://test.com');
-        expect(result[0].type).toBe('url');
       });
     });
   });

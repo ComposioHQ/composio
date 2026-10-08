@@ -1,0 +1,46 @@
+---
+type: "reference"
+title: "LinkedIn"
+description: "Public support knowledge for LinkedIn."
+category: "auth-config"
+visibility: "public"
+timestamp: "2026-07-16T00:00:00Z"
+tags:
+  - "linkedin"
+---
+# LinkedIn
+
+
+## Fix LinkedIn 426 NONEXISTENT_VERSION by using the latest toolkit version
+
+LinkedIn 426 `NONEXISTENT_VERSION` errors usually mean the request is using an older LinkedIn API version header. In Composio, this often happens when calls run on the base toolkit version `00000000_00` or another older pinned version. Specify the latest LinkedIn toolkit version on tool calls, or pin to the current fixed version if needed. If the error persists after switching to the latest version, collect a failed call `logId` or request ID so the actual `LinkedIn-Version` header can be verified.
+
+## Fetch modern LinkedIn tools with `toolkit_slug=linkedin` and `toolkit_versions=latest`
+
+The v3 tools-list endpoint defaults to the base toolkit version when no toolkit version is specified, which can return only legacy LinkedIn slugs. Use the singular filter `toolkit_slug=linkedin`; plural or alternate filters such as `toolkit_slugs`, `toolkits`, `app`, or `app_names` may be ignored. Add `toolkit_versions=latest`. Example: `GET /api/v3/tools?toolkit_slug=linkedin&toolkit_versions=latest&limit=100`.
+
+## LinkedIn organization scopes depend on the toolkit and auth config
+
+An active LinkedIn connection can run personal/profile actions while organization actions return 403. Check the actual toolkit and scopes stored on the auth config: the standard LinkedIn flow commonly uses personal scopes, while LinkedIn Ads can request organization and advertising scopes.
+
+For organization ACLs, page statistics, or company-page posting, use an auth config that explicitly requests the required organization scopes and reconnect so LinkedIn issues a new grant. Reconnecting an unchanged config does not add scopes. Do not assume provider approval alone means those scopes were requested by the concrete connection.
+
+## LinkedIn post creation supports image arrays through SDK/API
+
+`LINKEDIN_CREATE_LINKED_IN_POST` supports image + text posting, including multiple images when using SDKs or APIs directly. Pass an array of values to the `images` field. If image posting fails, first confirm the customer is using a recent toolkit version, then collect log IDs from failed tool calls for debugging.
+
+## Use Connect MCP instead of legacy Platform MCP for consumer LinkedIn connector flows
+
+For consumer/client connector flows, use `connect.composio.dev` / Connect MCP rather than the legacy Platform MCP endpoint. The API key does not belong in the URL; configure the `x-consumer-api-key` header shown by the current AI Clients setup. If LinkedIn MCP calls fail with 401 despite an active connection, confirm the endpoint and header type and collect the exact error/log ID.
+
+## Fix LinkedIn Ads `redirect_uri` mismatch before debugging scopes
+
+If LinkedIn rejects authorization with `The redirect_uri does not match the registered value`, register the exact callback shown by the current Composio auth-config flow in the customer's LinkedIn developer app. Do not guess between legacy v1, v3, and v3.1 callback paths; copy the callback from the current setup UI or auth-config documentation and match it exactly, without adding a trailing slash.
+
+This error occurs before a successful callback and is separate from LinkedIn product or scope approval.
+
+## LinkedIn Ads `unauthorized_scope_error` means a requested scope is unavailable
+
+LinkedIn rejects the complete OAuth request when any requested scope is unavailable to the developer app. Compare the exact auth-config scope set with the products and scopes enabled on that same LinkedIn app.
+
+The default LinkedIn Ads flow includes OpenID Connect scopes (`openid`, `profile`, `email`) as well as advertising and organization scopes. Legacy `r_basicprofile` is not a substitute for the OpenID Connect scopes. Enable the relevant LinkedIn products or narrow a custom auth config to scopes the app actually has, then reconnect.

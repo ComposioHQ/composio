@@ -41,6 +41,8 @@ pnpm validate:agent-skills
 pnpm validate:skill-routing
 ```
 
+Both validators are deterministic, and `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
+
 `validate:agent-skills` checks frontmatter, names, reference links, compatibility symlink state, stale guidance references, and known command names.
 
 `validate:skill-routing` is a deterministic routing smoke test (`ts/scripts/test-skill-routing.mjs`): for representative tasks it asserts the expected skill is the unique top match by distinctive trigger phrases, and fails if any skill has no probe. When you add or rename a skill, or rewrite a `description`, add or update its probe so routing stays covered.

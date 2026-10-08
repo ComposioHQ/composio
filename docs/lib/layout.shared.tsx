@@ -1,42 +1,17 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import Image from 'next/image';
 import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
-
-// Composio Logo Component with light/dark mode switching
-function ComposioLogo() {
-  return (
-    <>
-      {/* Light mode logo (black) */}
-      <Image
-        src="/Composio Logo.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="dark:hidden"
-        priority
-      />
-      {/* Dark mode logo (white) */}
-      <Image
-        src="/Composio Logo Dark.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="hidden dark:block"
-        priority
-      />
-    </>
-  );
-}
+import { ProductNavTitle } from '@/components/product-switcher';
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: <ComposioLogo />,
+      title: null,
       transparentMode: 'top',
     },
-    themeSwitch: { enabled: true, mode: 'light-dark-system' },
+    slots: { navTitle: ProductNavTitle },
+    themeSwitch: { enabled: false },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,
@@ -47,6 +22,11 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Docs',
         url: '/docs',
+        active: 'nested-url',
+      },
+      {
+        text: 'Knowledge Base',
+        url: '/kb',
         active: 'nested-url',
       },
       {
@@ -74,6 +54,19 @@ export function baseOptions(): BaseLayoutProps {
         ),
         text: 'GitHub',
         url: 'https://github.com/composiohq/composio',
+        external: true,
+        secondary: true,
+      },
+      {
+        type: 'icon',
+        label: 'X (formerly Twitter)',
+        icon: (
+          <svg fill="currentColor" viewBox="0 0 24 24" className="size-4">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        ),
+        text: 'X',
+        url: 'https://x.com/composiodevs',
         external: true,
         secondary: true,
       },

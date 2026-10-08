@@ -41,7 +41,7 @@ response = client.messages.create(
 # Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
-    results = composio.provider.handle_tool_calls(user_id="user_123", response=response)
+    results = composio.provider.handle_tool_calls(session=session, response=response)
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
         "role": "user",
@@ -63,7 +63,7 @@ for block in response.content:
         print(block.text)
 ```
 
-`handle_tool_calls` extracts every `tool_use` block from the response, executes the matching Composio tools, and returns the raw results in order. Claude occasionally emits tool input as a JSON string instead of an object; the provider normalizes this before execution.
+`handle_tool_calls` extracts every `tool_use` block from the response, executes the matching Composio tools through the supplied session, and returns the raw results in order. Pass `user_id` instead for tools fetched with `tools.get()`. Claude occasionally emits tool input as a JSON string instead of an object; the provider normalizes this before execution.
 
 Building on the Claude Agent SDK instead of the Messages API? Use [`composio-claude-agent-sdk`](../claude_agent_sdk).
 

@@ -9,7 +9,12 @@ import json
 
 import pytest
 
-from tests.conftest import get_py_fixtures_dir, get_ts_fixtures_dir
+from tests.conftest import (
+    get_py_fixtures_dir,
+    get_py_json_schema_corpus_dir,
+    get_ts_fixtures_dir,
+    get_ts_json_schema_corpus_dir,
+)
 
 
 class TestCrossSDKFixtureCompatibility:
@@ -37,4 +42,14 @@ class TestCrossSDKFixtureCompatibility:
         assert ts_content == py_content, (
             f"Fixture {fixture_name} differs between TypeScript and Python SDKs. "
             "Ensure fixtures are kept in sync."
+        )
+
+    def test_json_schema_conversion_corpus_is_identical(self) -> None:
+        """The shared JSON Schema conversion corpus has one copy per language."""
+        ts_path = get_ts_json_schema_corpus_dir() / "object-cases.json"
+        py_path = get_py_json_schema_corpus_dir() / "object-cases.json"
+
+        assert ts_path.read_bytes() == py_path.read_bytes(), (
+            "object-cases.json differs between the TypeScript and Python SDKs. "
+            "Both copies must stay byte-identical."
         )

@@ -4,6 +4,8 @@ node_modules
 # output
 out
 dist
+# wrangler deploy --dry-run --outdir, used by the examples' cf:dry-run script
+dist-worker
 *.tgz
 
 # code coverage
@@ -73,3 +75,6 @@ docs/.workflow-data/*
 # Local agent / tooling state (regenerated per machine)
 .pi/
 .playwright-mcp/
+
+# Examples harness sweep output (results, traces, candidate client artifacts)
+.artifacts/

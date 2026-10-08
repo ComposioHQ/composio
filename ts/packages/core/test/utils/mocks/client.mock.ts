@@ -1,50 +1,55 @@
 import { vi } from 'vitest';
+import ComposioClient from '@composio/client';
 
-const mockClientBase = {
-  tools: {
-    list: vi.fn(),
-    retrieve: vi.fn(),
-    execute: vi.fn(),
-    retrieveEnum: vi.fn(),
-    getInput: vi.fn(),
-    proxy: vi.fn(),
-  },
-  connectedAccounts: {
-    list: vi.fn(),
-    get: vi.fn(),
-    retrieve: vi.fn(),
-    delete: vi.fn(),
-    refresh: vi.fn(),
-    updateStatus: vi.fn(),
-  },
-  toolkits: {
-    list: vi.fn(),
-    retrieve: vi.fn(),
-    retrieveCategories: vi.fn(),
-  },
-  authConfigs: {
-    list: vi.fn(),
-    create: vi.fn(),
-    retrieve: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    updateStatus: vi.fn(),
-  },
-  toolRouter: {
-    session: {
-      execute: vi.fn(),
-      tools: vi.fn(),
-    },
-  },
-};
+const client = new ComposioClient({ apiKey: 'test-api-key' });
 
-// `withOptions` returns the same mock so chained calls (e.g.
-// `client.withOptions({ maxRetries: 0 }).tools.execute(...)`) still record on
-// the same spies. Mirrors the real client's `withOptions`.
-//
-// This implementation is load-bearing: tests rely on `vi.clearAllMocks()`
-// (which preserves implementations), not `vi.resetAllMocks()` (which would wipe
-// it and make chained `.tools.*` calls throw on `undefined`).
-export const mockClient = Object.assign(mockClientBase, {
-  withOptions: vi.fn(() => mockClientBase),
+const tools = Object.assign(client.tools, {
+  list: vi.fn<typeof client.tools.list>(),
+  retrieve: vi.fn<typeof client.tools.retrieve>(),
+  execute: vi.fn<typeof client.tools.execute>(),
+  retrieveEnum: vi.fn<typeof client.tools.retrieveEnum>(),
+  getInput: vi.fn<typeof client.tools.getInput>(),
+  proxy: vi.fn<typeof client.tools.proxy>(),
 });
+
+const connectedAccounts = Object.assign(client.connectedAccounts, {
+  list: vi.fn<typeof client.connectedAccounts.list>(),
+  create: vi.fn<typeof client.connectedAccounts.create>(),
+  retrieve: vi.fn<typeof client.connectedAccounts.retrieve>(),
+  delete: vi.fn<typeof client.connectedAccounts.delete>(),
+  refresh: vi.fn<typeof client.connectedAccounts.refresh>(),
+  updateStatus: vi.fn<typeof client.connectedAccounts.updateStatus>(),
+});
+
+const toolkits = Object.assign(client.toolkits, {
+  list: vi.fn<typeof client.toolkits.list>(),
+  retrieve: vi.fn<typeof client.toolkits.retrieve>(),
+  retrieveCategories: vi.fn<typeof client.toolkits.retrieveCategories>(),
+});
+
+const authConfigs = Object.assign(client.authConfigs, {
+  list: vi.fn<typeof client.authConfigs.list>(),
+  create: vi.fn<typeof client.authConfigs.create>(),
+  retrieve: vi.fn<typeof client.authConfigs.retrieve>(),
+  update: vi.fn<typeof client.authConfigs.update>(),
+  delete: vi.fn<typeof client.authConfigs.delete>(),
+  updateStatus: vi.fn<typeof client.authConfigs.updateStatus>(),
+});
+
+const session = Object.assign(client.toolRouter.session, {
+  execute: vi.fn<typeof client.toolRouter.session.execute>(),
+  tools: vi.fn<typeof client.toolRouter.session.tools>(),
+});
+const toolRouter = Object.assign(client.toolRouter, { session });
+const withOptions = vi.fn<typeof client.withOptions>();
+
+export const mockClient = Object.assign(client, {
+  tools,
+  connectedAccounts,
+  toolkits,
+  authConfigs,
+  toolRouter,
+  withOptions,
+});
+
+withOptions.mockReturnValue(mockClient);

@@ -52,7 +52,7 @@ const connectionRequest = await composio.connectedAccounts.link(
 </Tab>
 </Tabs>
 
-Pair with a session-level `multiAccount` / `multi_account` config so the agent can disambiguate at execution time. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for the session shape.
+Pair with a session-level `multiAccount` / `multi_account` config so the agent can disambiguate at execution time. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for the session shape.
 
 **2. You're migrating from `initiate()` to `link()`** as part of the [Composio-managed OAuth migration](/docs/changelog/2026/04/24). Pass `allow_multiple` / `allowMultiple` through unchanged — same flag name, same default (`False`), same exception (`ComposioMultipleConnectedAccountsError`).
 

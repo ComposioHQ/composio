@@ -7,7 +7,9 @@ ARG CLI_VERSION=0.0.0
 FROM node:${NODE_VERSION}-slim AS builder
 
 ENV MISE_DATA_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
 ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
 WORKDIR /app
@@ -18,14 +20,13 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
-# mise is installed to /usr/local/bin and the tool binaries are symlinked there too;
-# Node is disabled so the base image's Node is used.
-RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+# mise is installed to /usr/local/bin; its shared cache and shims expose bun and
+# pnpm while Node stays on the base image.
+ENV XDG_CACHE_HOME="/mise/cache"
+COPY .github/scripts/install-mise.sh ./.github/scripts/install-mise.sh
+RUN MISE_INSTALL_PATH=/usr/local/bin/mise bash .github/scripts/install-mise.sh
 COPY mise.toml mise.lock ./
-RUN mise trust /app/mise.toml && \
-    mise install && \
-    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
-    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+RUN mise install && \
     pnpm --version && \
     bun --version
 
@@ -41,17 +42,13 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
-# Copy pre-install scripts (rarely change)
-COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
-COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
-
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues across builds
-RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Build composio CLI binary
 WORKDIR /app/ts/packages/cli
@@ -60,6 +57,20 @@ RUN bun build ./src/bin.ts \
     --compile \
     --production \
     --outfile /out/composio
+
+# Build the `composio run` companion modules next to the binary. Without the
+# run-*.mjs wrappers every `composio run` treats the install as broken and
+# enters the GitHub self-repair path. `--host-only` restricts the bundled
+# codex-acp binary to this image's own platform; shipping all four costs ~870MB
+# and ~2min of build time for binaries this image can never execute.
+#
+# The acp-adapters are dropped afterwards: they are only needed when a script
+# invokes an ACP sub-agent, which is checked lazily at the invocation site, and
+# no CLI e2e test does. Keeping them would add ~224MB to the image. The build
+# script still produces them (it asserts on its own output), so the removal
+# happens in the same layer to keep it out of the image entirely.
+RUN bun scripts/build-companion-modules.ts /out --host-only && \
+    rm -rf /out/acp-adapters
 
 # Copy CLI e2e tests last (changes frequently)
 WORKDIR /app
@@ -75,8 +86,9 @@ ENV HOME="/tmp"
 
 WORKDIR /app
 
-# CLI binary
-COPY --from=builder /out/composio /usr/local/bin/composio
+# CLI binary plus the `composio run` companion modules, which must stay siblings
+# of the executable (they are resolved from dirname(process.execPath)).
+COPY --from=builder /out/ /usr/local/bin/
 
 # CLI e2e tests
 COPY --from=builder /app/ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/

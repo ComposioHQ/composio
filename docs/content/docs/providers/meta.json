@@ -1,18 +1,19 @@
 {
-  "title": "Providers",
+  "title": "SDKs and frameworks",
   "pages": [
-    "...",
     "anthropic",
     "openai",
     "vercel",
     "pi",
     "eve",
     "google",
+    "typesafe",
     "langchain",
     "autogen",
     "crewai",
     "llamaindex",
     "mastra",
-    "custom-providers"
+    "custom-providers",
+    "..."
   ]
 }

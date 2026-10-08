@@ -1,0 +1,2 @@
+# Composio CLI 
+export PATH="/stale/bin:$PATH"

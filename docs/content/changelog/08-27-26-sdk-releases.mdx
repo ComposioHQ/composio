@@ -1,0 +1,47 @@
+---
+title: 'Python SDK 0.21.0 and TypeScript SDK 0.18.0 harden strict tool schemas and file transfers'
+description: 'Python SDK 0.21.0 and TypeScript SDK 0.18.0 preserve optional parameters in strict tool schemas, reject unsafe file transfers, and improve provider reliability.'
+date: '2026-08-27'
+---
+
+Python SDK `composio` `0.21.0` and TypeScript SDK `@composio/core` `0.18.0` make strict-mode tool schemas compatible with nested and optional parameters, harden automatic file transfers, and improve reliability across providers and runtimes.
+
+### SDK versions
+
+| SDK                                  | Version  |
+| ------------------------------------ | -------- |
+| Python `composio`                    | `0.21.0` |
+| TypeScript `@composio/core`          | `0.18.0` |
+| TypeScript `@composio/slim`          | `0.18.0` |
+| TypeScript `@composio/openai`        | `0.12.1` |
+| TypeScript `@composio/openai-agents` | `0.10.2` |
+| TypeScript `@composio/mastra`        | `0.10.4` |
+| TypeScript `@composio/vercel`        | `0.11.2` |
+
+### Strict tool schemas keep optional parameters
+
+OpenAI-compatible strict mode now normalizes schemas recursively across nested objects, unions, array items, and local references. Every object declares all properties as required and rejects undeclared properties, while fields that were optional accept `null`. Before tool execution, the SDK removes a `null` argument when the tool's original schema does not accept it.
+
+Schemas that strict mode cannot represent, such as arbitrary-key objects, unsupported intersections, tuple-style arrays, or unresolved references, now fall back to non-strict mode with a warning that names the tool and incompatible path. This avoids silently narrowing the tool's accepted input.
+
+TypeScript users can apply the same behavior directly with the new `toStrictJsonSchema()` and `omitNullToolArguments()` exports. `OpenAIAgentsProvider({ strict: true })` now honors the option, and Mastra and Vercel use the same normalization rules.
+
+Python's `OpenAIResponsesProvider` now accepts `strict=True`, emits `strict: true` on compatible tools, and follows the same recursive schema rules. Existing provider construction remains unchanged unless strict mode is enabled.
+
+### Safer file uploads and downloads
+
+- Automatic uploads reject sensitive paths even when a symlink hides the sensitive directory or filename.
+- Empty-string file arguments are omitted instead of being sent to the API or treated as upload candidates.
+- Nullable and nested file arguments retain their original structure during Python request preparation.
+- TypeScript URL fetching now connects to the exact IP address that passed SSRF validation, closing a DNS-rebinding window while preserving the original hostname for HTTP and TLS verification. Redirect destinations are validated and pinned independently.
+
+### Runtime and reliability updates
+
+- Published TypeScript packages now require Node.js 22.22.3 or newer. Package managers report unsupported runtimes during installation instead of allowing later ESM loading failures.
+- Best-effort TypeScript telemetry requests now time out, so an unreachable telemetry endpoint cannot keep an SDK call pending indefinitely.
+- TypeScript error subclasses now report their own names for accurate telemetry grouping.
+- Python preserves explicit empty tool schemas and isolates provider dependency conflicts more reliably.
+
+### Backward compatibility
+
+Strict mode remains opt-in. Python users who do not pass `strict=True` keep the existing provider behavior. TypeScript users on Node.js versions older than 22.22.3 must upgrade Node.js before installing this release.

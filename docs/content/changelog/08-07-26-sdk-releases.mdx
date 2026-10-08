@@ -1,0 +1,81 @@
+---
+title: 'Python SDK 0.18.2 and TypeScript SDK 0.15.0 tighten JSON Schema types and secret redaction'
+description: 'Python SDK 0.18.2 and TypeScript SDK 0.15.0 redact secrets inside JSON telemetry payloads, replace the loose JSON Schema property type with a recursive one, and add OpenAI v6 and v7 support.'
+date: '2026-08-07'
+---
+
+Python SDK `composio` `0.18.2` and TypeScript SDK `@composio/core` `0.15.0` redact secrets that appear inside JSON payloads in telemetry, give `JSONSchemaProperty` a precise recursive type, and harden several request and upload paths. `@composio/openai` `0.11.0` adds support for OpenAI v6 and v7.
+
+### SDK versions
+
+| SDK                                       | Version  |
+| ----------------------------------------- | -------- |
+| Python `composio`                         | `0.18.2` |
+| TypeScript `@composio/core`               | `0.15.0` |
+| TypeScript `@composio/slim`               | `0.15.0` |
+| TypeScript `@composio/openai`             | `0.11.0` |
+| TypeScript `@composio/experimental`       | `0.2.2`  |
+| TypeScript `@composio/json-schema-to-zod` | `0.2.2`  |
+
+### Secret redaction in telemetry
+
+Telemetry error text is redacted before it leaves the process, but the key/value rule required the separator to follow the key name directly. In JSON — and in a Python `dict` repr — the key's own closing quote sits between the name and the colon, so a serialized body such as `{"api_key": "sk-live-..."}` never matched and the value was sent verbatim. That is the shape error messages usually carry: an API error envelope, or a rejected request body echoed back.
+
+Both SDKs now redact these values.
+
+**Before:**
+
+```
+Request failed: {"api_key": "sk-live-abc123", "user_id": "u_42"}
+```
+
+**After:**
+
+```
+Request failed: {"api_key": "[REDACTED]", "user_id": "u_42"}
+```
+
+### Typed JSON Schema properties
+
+<Callout type="warn">
+**Type-level breaking change**
+
+`JSONSchemaProperty` — re-exported from `@composio/core` and reachable through `Tool.input_parameters` and `Tool.output_parameters` — is now a concrete recursive interface instead of effectively `any`. Runtime behavior is unchanged, but code that indexed into it without narrowing may see new type errors: `properties` entries are now possibly `undefined`, and `default` and `enum` values are `unknown`.
+</Callout>
+
+**Before:**
+
+```typescript
+// @noErrors
+const type = tool.input_parameters.properties.query.type;
+const fallback: string = tool.input_parameters.properties.query.default;
+```
+
+**After:**
+
+```typescript
+// @noErrors
+const type = tool.input_parameters.properties?.query?.type;
+const rawDefault = tool.input_parameters.properties?.query?.default;
+const fallback = typeof rawDefault === 'string' ? rawDefault : undefined;
+```
+
+`@composio/json-schema-to-zod` now also models the parser-supported `min`, `max`, and `example` JSON Schema extensions in its exported recursive schema type.
+
+### What's new
+
+- `@composio/openai` supports OpenAI versions 6 and 7. The OpenAI runtime dependency in `@composio/core` and `@composio/slim` has been refreshed to version 7.
+
+### Improvements
+
+- The background npm version check is now bounded by an abort timeout, so a registry outage cannot leave the request pending indefinitely.
+- Sensitive upload path segments are matched using the target filesystem's actual case sensitivity, so case-insensitive mounts cannot bypass the denylist and distinct paths on case-sensitive mounts are not over-blocked.
+- Unread response bodies are released on the paths the SDK knowingly abandons: every intermediate redirect body in `ssrfSafeFetch`, and the response body before throwing on a failed URL upload.
+
+### Dependency updates
+
+Runtime dependencies across the TypeScript SDK packages and the Python core and provider packages have been refreshed.
+
+### Backward compatibility
+
+Runtime behavior is unchanged in both SDKs. The only upgrade impact is at the TypeScript type level, for consumers that read `JSONSchemaProperty` fields without narrowing.

@@ -1,5 +1,68 @@
 # @composio/claude-code-agents
 
+## 0.12.1
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.12.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
+## 0.11.1
+
+### Patch Changes
+
+- db7b576: Declare Node.js 22.22.3 as the minimum supported runtime for every published TypeScript package so package managers surface incompatible runtimes before users encounter ESM loading failures.
+
+## 0.11.0
+
+### Minor Changes
+
+- ac6bbab: Register each tool with its complete schema, so root rules reach the Claude Agent SDK.
+
+  The provider used to register a raw property shape. A raw shape is only the map of named properties, so it cannot carry any root rule. `additionalProperties` and `patternProperties` were dropped before the SDK saw them.
+
+  Two things went wrong because of that. Free-form object arguments lost their content. An argument the tool never declared was quietly removed, and the tool ran anyway.
+
+  Both are fixed. The provider now registers the whole object schema.
+
+  **What no longer works**
+
+  An undeclared argument no longer passes silently.
+
+  ```ts
+  // The tool declares `to` and nothing else. The model also sends `hallucinated`.
+  { to: 'someone@example.com', hallucinated: 'value' }
+
+  // before: `hallucinated` was stripped, and the tool ran with { to: '...' }
+  // now:    the caller receives an error result, and the tool does not run
+  ```
+
+  Tools with no input parameters behave the same way. They stay closed and reject every argument.
+
+  **What to do instead**
+
+  If the model should be allowed to send extra keys, say so in the tool schema:
+
+  ```json
+  {
+    "type": "object",
+    "properties": { "to": { "type": "string" } },
+    "additionalProperties": true
+  }
+  ```
+
+  If an argument is one the tool really accepts, declare it in `properties`. Rejection is usually the better outcome, because the agent sees the error and can correct itself instead of running with a silently dropped argument.
+
+  This brings the provider in line with `@composio/vercel`, `@composio/langchain`, and `@composio/llamaindex`, which already registered complete schemas.
+
 ## 0.10.1
 
 ### Patch Changes

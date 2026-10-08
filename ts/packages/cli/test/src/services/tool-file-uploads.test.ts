@@ -2,11 +2,17 @@ import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
-import type { Composio as RawComposioClient } from '@composio/client';
-import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
+import { Composio as RawComposioClient } from '@composio/client';
+import {
+  ComposioBlockedInternalUrlError,
+  ComposioSensitiveFilePathBlockedError,
+  MAX_URL_UPLOAD_SIZE_BYTES,
+} from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
@@ -19,7 +25,9 @@ const inputSchema = {
 };
 
 const makeClient = (createPresignedURL = vi.fn()) =>
-  ({ files: { createPresignedURL } }) as unknown as RawComposioClient;
+  Object.assign(new RawComposioClient({ apiKey: 'test' }), {
+    files: { createPresignedURL },
+  });
 
 describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {
@@ -128,7 +136,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     writeFileSync(file, 'hello');
 
     const createPresignedURL = vi.fn(async () => ({
-      new_presigned_url: 'https://s3.example.com/put',
+      new_presigned_url: 'https://1.1.1.1/put',
       key: 's3key-123',
     }));
     const client = makeClient(createPresignedURL);
@@ -152,10 +160,123 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       );
 
       expect(createPresignedURL).toHaveBeenCalledTimes(1);
+      expect(createPresignedURL).toHaveBeenCalledWith(
+        expect.objectContaining({ md5: '5d41402abc4b2a76b9719d911017c592' })
+      );
       expect(result.attachment).toMatchObject({ s3key: 's3key-123', name: 'document.pdf' });
     }).pipe(
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
+  });
+});
+
+describe('uploadToolInputFiles — URL SSRF boundary', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('rejects an unsafe source before requesting an upload destination', () =>
+    Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+      const createPresignedURL = vi.fn();
+      const client = makeClient(createPresignedURL);
+      const sourceUrl = 'http://169.254.169.254/latest/meta-data/credentials';
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: sourceUrl },
+            inputSchema,
+            client,
+          })
+        ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
+      );
+
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
+
+  it.effect('rejects an unsafe presigned destination before sending file bytes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'document.pdf');
+    writeFileSync(file, 'hello');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const createPresignedURL = vi.fn(async () => ({
+      new_presigned_url: 'http://127.0.0.1:8080/upload',
+      key: 's3key-123',
+    }));
+
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: file },
+            inputSchema,
+            client: makeClient(createPresignedURL),
+          })
+        ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
+      );
+
+      expect(createPresignedURL).toHaveBeenCalledOnce();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+});
+
+describe('uploadToolInputFiles — URL download size cap', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('rejects a remote file that declares a body above the cap before buffering it', () => {
+    const createPresignedURL = vi.fn();
+    const client = makeClient(createPresignedURL);
+    const oversized = String(MAX_URL_UPLOAD_SIZE_BYTES + 1);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('not the real body', {
+            status: 200,
+            headers: { 'content-length': oversized, 'content-type': 'application/octet-stream' },
+          })
+      )
+    );
+
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: 'https://1.1.1.1/large.bin' },
+            inputSchema,
+            client,
+          })
+        ).rejects.toThrow(/exceeds maximum allowed size/)
+      );
+
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
 });

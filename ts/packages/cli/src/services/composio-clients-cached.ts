@@ -1,10 +1,15 @@
-import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { Effect, Option, Schema, Layer, Array as Arr } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
-import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
-import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
+import { writeFileAtomic } from 'src/effects/write-file-atomic';
+import {
+  ComposioToolkitsRepository,
+  InvalidToolkitsError,
+  type ToolkitProjectScope,
+} from './composio-clients';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
@@ -50,99 +55,175 @@ const filterBySlugPrefixes =
  */
 function createCachedEffect<T, E, R>(
   cacheFileName: string,
-  decoder: (input: string) => Effect.Effect<T, ParseResult.ParseError>,
-  encoder: (input: T) => Effect.Effect<string, ParseResult.ParseError>,
+  decoder: (input: string) => Effect.Effect<T, Schema.SchemaError>,
+  encoder: (input: T) => Effect.Effect<string, Schema.SchemaError>,
   computation: Effect.Effect<T, E, R>,
   cacheFilter?: (data: T) => Effect.Effect<T, E, never>
 ): Effect.Effect<T, E, R> {
-  // First define the cache-handling function that will run with all required services
+  /**
+   * The cached value, or none when there is nothing usable to serve: caching
+   * is off, the file is absent, it does not parse, or it does not cover the
+   * request. Every one of those is a cache miss, never a failure — the caller
+   * falls through to the computation.
+   */
+  const readFromCache = (fs: FileSystem.FileSystem, cacheFilePath: string) =>
+    Effect.gen(function* () {
+      const consumeFromCache = yield* FORCE_CONFIG['USE_CACHE'];
+      if (!consumeFromCache) {
+        return Option.none<T>();
+      }
+
+      const cacheFileExists = yield* fs
+        .exists(cacheFilePath)
+        .pipe(Effect.catch(() => Effect.succeed(false)));
+      if (!cacheFileExists) {
+        return Option.none<T>();
+      }
+
+      yield* Effect.logDebug(`Cache HIT for ${cacheFileName}`);
+
+      const cached = yield* fs.readFileString(cacheFilePath).pipe(Effect.flatMap(decoder));
+
+      // A filter that rejects the cached data means the cache does not answer
+      // this request — e.g. it predates a toolkit the caller asked for.
+      return Option.some(cacheFilter ? yield* cacheFilter(cached) : cached);
+    }).pipe(
+      Effect.catch(error =>
+        Effect.logWarning(`Ignoring cache ${cacheFilePath}: ${error}`).pipe(
+          Effect.as(Option.none<T>())
+        )
+      )
+    );
+
+  /**
+   * Atomic: these files are hundreds of KB, and a run killed mid-write — or
+   * two CLI processes writing at once — would otherwise leave behind a
+   * truncated file that the next run reads back as a parse failure.
+   */
+  const writeToCache = (cacheFilePath: string, result: T) =>
+    encoder(result).pipe(
+      Effect.flatMap(content => writeFileAtomic(cacheFilePath, content)),
+      Effect.catch(error =>
+        Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
+      )
+    );
+
   const cacheEffect = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const cacheDir = yield* setupCacheDir;
 
-    const cacheFilePath = path.join(cacheDir, cacheFileName);
-    const cacheFileExists = yield* fs
-      .exists(cacheFilePath)
-      .pipe(Effect.orElse(() => Effect.succeed(false)));
-    const consumeFromCache = yield* FORCE_CONFIG['USE_CACHE'];
+    // A cache directory we cannot resolve or create means no caching, not a
+    // failed command.
+    const cacheFilePath = yield* setupCacheDir.pipe(
+      Effect.map(cacheDir => Option.some(path.join(cacheDir, cacheFileName))),
+      Effect.catch(error =>
+        Effect.logWarning(`Cache unavailable for ${cacheFileName}: ${error}`).pipe(
+          Effect.as(Option.none<string>())
+        )
+      )
+    );
 
-    if (consumeFromCache && cacheFileExists) {
-      yield* Effect.logDebug(`Cache HIT for ${cacheFileName}`);
-
-      // Try to read from cache
-      const cachedResult = yield* fs.readFileString(cacheFilePath).pipe(
-        Effect.flatMap(decoder),
-        Effect.asSome,
-        Effect.catchAll(error => {
-          // Log cache read/parse errors but don't fail - fall through to computation
-          return Effect.logWarning(`Failed to read/parse cache ${cacheFilePath}: ${error}`).pipe(
-            Effect.as(Option.none<T>())
-          );
-        })
-      );
-
-      if (Option.isSome(cachedResult)) {
-        return yield* cacheFilter
-          ? cacheFilter(cachedResult.value)
-          : Effect.succeed(cachedResult.value);
+    if (Option.isSome(cacheFilePath)) {
+      const cached = yield* readFromCache(fs, cacheFilePath.value);
+      if (Option.isSome(cached)) {
+        return cached.value;
       }
     }
 
     yield* Effect.logDebug(`Cache MISS for ${cacheFileName}`);
 
-    // Fetch from the underlying service
+    // Fetch from the underlying service. Its failure is the caller's failure:
+    // retrying here would double every failed request, and the retry would
+    // fail the same way.
     const result = yield* computation;
 
     // Write to cache only if we're fetching the full dataset (no cacheFilter).
     // Filtered API calls fetch partial data that would corrupt the shared cache file.
-    if (!cacheFilter) {
-      yield* encoder(result).pipe(
-        Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
-        Effect.catchAll(error =>
-          Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
-        )
-      );
+    if (!cacheFilter && Option.isSome(cacheFilePath)) {
+      yield* writeToCache(cacheFilePath.value, result);
     }
 
     return result;
   });
 
-  // Handle any cache errors by falling back to the original computation
-  const handledCacheEffect = cacheEffect.pipe(
-    Effect.catchAll(error =>
-      Effect.logWarning(`Cache operation failed: ${error}`).pipe(Effect.flatMap(() => computation))
-    )
-  );
-
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
-  return handledCacheEffect.pipe(
+  return cacheEffect.pipe(
     Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
 
 /**
- * Cached implementation of ComposioToolkitsRepository using the wrapper layer pattern
+ * Cached implementation of ComposioToolkitsRepository using the wrapper layer pattern.
  *
- * This layer adds file-based caching to the repository methods while preserving the
- * exact same interface and error types.
+ * Only full-catalog fetches are cached: `getToolkits`, `getToolkitsBySlugs`,
+ * `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, and
+ * `getTools`. Every other method passes through to the underlying repository,
+ * so adding a method there needs no edit here. In particular these stay
+ * uncached on purpose:
+ * - version-specific tool fetches, which would need per-version cache keys and
+ *   must not pollute the `latest` cache;
+ * - version validation, because `available_versions` changes as versions ship;
+ * - searches and single-item details, which depend on the query or must be fresh;
+ * - auth config, connected account, and trigger instance CRUD.
  */
 export const ComposioToolkitsRepositoryCached = Layer.effect(
   ComposioToolkitsRepository,
   Effect.gen(function* () {
     const underlyingRepository = yield* ComposioToolkitsRepository;
 
+    // The full toolkit list is ~800 KB over two pages, and a single command can
+    // ask for it several times (toolkit resolution, validation, telemetry). The
+    // file cache only helps when `FORCE_USE_CACHE` is on, so memoize the whole
+    // lookup for the lifetime of the layer: the first caller pays, the rest
+    // await the same result.
+    //
+    // `Effect.cached` memoizes the outcome, not just the success — a failed
+    // first fetch stays failed for the rest of the process. That is the right
+    // trade for a one-shot CLI, where retrying a broken network per call would
+    // only multiply the wait before the same error surfaces.
+    const cachedGetToolkits = yield* Effect.cached(
+      createCachedEffect(
+        CACHE_FILES.toolkits,
+        toolkitsFromJSON,
+        toolkitsToJSON,
+        underlyingRepository.getToolkits()
+      )
+    );
+
+    // Project toolkits are never written to `toolkits.json`: that file holds
+    // the Composio-managed catalog, and its readers assume nothing else is in
+    // it. They are still memoized, because every toolkit resolution that
+    // misses locally asks for them. Under `FORCE_USE_CACHE` replay the fetch
+    // still reaches the API, and a failure only costs toolkit resolution its
+    // fallback guess.
+    //
+    // The list depends on the project it is asked for, so each scope gets its
+    // own memo (the unscoped call is one more key), with the same
+    // failure-is-final semantics as `cachedGetToolkits`. The memo is created
+    // synchronously so that concurrent first callers share it.
+    const projectToolkitsByScope = new Map<
+      string,
+      ReturnType<typeof underlyingRepository.getProjectToolkits>
+    >();
+    const cachedGetProjectToolkits = (scope?: ToolkitProjectScope) =>
+      Effect.suspend(() => {
+        const key = scope ? JSON.stringify([scope.orgId, scope.projectId]) : '';
+        const memo =
+          projectToolkitsByScope.get(key) ??
+          Effect.runSync(Effect.cached(underlyingRepository.getProjectToolkits(scope)));
+        projectToolkitsByScope.set(key, memo);
+        return memo;
+      });
+
     // Create the cached implementation that wraps the original implementation
-    return ComposioToolkitsRepository.make({
-      getToolkits: () => {
-        return createCachedEffect(
-          CACHE_FILES.toolkits,
-          toolkitsFromJSON,
-          toolkitsToJSON,
-          underlyingRepository.getToolkits()
-        );
-      },
+    return ComposioToolkitsRepository.of({
+      ...underlyingRepository,
+      // Memoized per layer instance; `getToolkitsBySlugs` stays unmemoized
+      // because its result depends on the requested slugs.
+      getToolkits: () => cachedGetToolkits,
+
+      getProjectToolkits: cachedGetProjectToolkits,
 
       getToolkitsBySlugs: slugs => {
         const cacheFilter = (data: Toolkits) => {
@@ -153,7 +234,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           const foundSlugs = new Set(filtered.map(t => t.slug.toUpperCase()));
           const missingSlugs = slugs.filter(s => !foundSlugs.has(s.toUpperCase()));
 
-          if (Arr.isNonEmptyReadonlyArray(missingSlugs)) {
+          if (Arr.isReadonlyArrayNonEmpty(missingSlugs)) {
             return Effect.fail(
               new InvalidToolkitsError({
                 invalidToolkits: missingSlugs,
@@ -191,9 +272,6 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
-      // Trigger type detail should NOT be cached (single-item fetch, should be fresh)
-      getTriggerTypeDetailed: slug => underlyingRepository.getTriggerTypeDetailed(slug),
-
       getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
@@ -221,53 +299,6 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           cacheFilter
         );
       },
-
-      // Version-specific tools bypass cache because:
-      // 1. Different versions = different cache keys needed
-      // 2. Version-specific data shouldn't pollute the main cache
-      // The cache is mainly useful for 'latest' during repeated dev iterations.
-      getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
-        return underlyingRepository.getToolsByVersionSpecs(specs);
-      },
-
-      // These methods don't need caching as they operate on already fetched data
-      // or perform validation that should always be fresh
-      getMetrics: () => underlyingRepository.getMetrics(),
-      validateToolkits: toolkitSlugs => underlyingRepository.validateToolkits(toolkitSlugs),
-      filterToolkitsBySlugs: (toolkits, toolkitSlugs) =>
-        underlyingRepository.filterToolkitsBySlugs(toolkits, toolkitSlugs),
-      // Version validation should NOT be cached because:
-      // 1. available_versions can change frequently as new versions are released
-      // 2. Validation should always reflect the current API state
-      // 3. Caching validation results could cause false positives/negatives
-      validateToolkitVersions: (overrides, relevantToolkits) =>
-        underlyingRepository.validateToolkitVersions(overrides, relevantToolkits),
-      // These methods should NOT be cached:
-      // - searchToolkits: results depend on query params, caching would be misleading
-      // - getToolkitDetailed: detailed info should be fresh (auth config fields change)
-      searchToolkits: params => underlyingRepository.searchToolkits(params),
-      getToolkitDetailed: slug => underlyingRepository.getToolkitDetailed(slug),
-      // Tool search/detail should NOT be cached (query-dependent, should be fresh)
-      searchTools: params => underlyingRepository.searchTools(params),
-      getToolDetailed: slug => underlyingRepository.getToolDetailed(slug),
-      // Auth config operations should NOT be cached (CRUD operations, must be fresh)
-      listAuthConfigs: params => underlyingRepository.listAuthConfigs(params),
-      getAuthConfig: nanoid => underlyingRepository.getAuthConfig(nanoid),
-      createAuthConfig: params => underlyingRepository.createAuthConfig(params),
-      deleteAuthConfig: nanoid => underlyingRepository.deleteAuthConfig(nanoid),
-      // Connected account operations should NOT be cached (CRUD operations, must be fresh)
-      listConnectedAccounts: params => underlyingRepository.listConnectedAccounts(params),
-      getConnectedAccount: nanoid => underlyingRepository.getConnectedAccount(nanoid),
-      deleteConnectedAccount: nanoid => underlyingRepository.deleteConnectedAccount(nanoid),
-      createConnectedAccountLink: params => underlyingRepository.createConnectedAccountLink(params),
-      // Trigger instance listing should NOT be cached (status can change frequently)
-      listActiveTriggers: params => underlyingRepository.listActiveTriggers(params),
-      // Trigger instance mutations should NOT be cached
-      createTrigger: (triggerSlug, params) =>
-        underlyingRepository.createTrigger(triggerSlug, params),
-      enableTrigger: triggerId => underlyingRepository.enableTrigger(triggerId),
-      disableTrigger: triggerId => underlyingRepository.disableTrigger(triggerId),
-      deleteTrigger: triggerId => underlyingRepository.deleteTrigger(triggerId),
     });
   })
 ).pipe(

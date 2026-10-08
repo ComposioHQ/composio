@@ -1,12 +1,13 @@
 import { describe, expect, layer } from '@effect/vitest';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const dangerousDevConfig = {
   cliUserConfig: {
@@ -18,16 +19,9 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] --toolkit "gmail" [Then] creates with Composio managed auth',
     it => {
-      it.scoped('creates successfully', () =>
+      it.effect('creates successfully', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -42,17 +36,9 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] named config --toolkit "gmail" [Then] creates with name',
     it => {
-      it.scoped('creates with name successfully', () =>
+      it.effect('creates with name successfully', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            'my-config',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', 'my-config', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -66,7 +52,7 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] --auth-scheme "OAUTH2" [Then] creates with custom auth',
     it => {
-      it.scoped('creates with custom auth scheme', () =>
+      it.effect('creates with custom auth scheme', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -76,7 +62,6 @@ describe('CLI: composio dev auth-configs create', () => {
             'gmail',
             '--auth-scheme',
             'OAUTH2',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -99,9 +84,9 @@ describe('CLI: composio dev auth-configs create', () => {
       },
     })
   )('[Given] custom create response [Then] shows correct details', it => {
-    it.scoped('shows custom response data', () =>
+    it.effect('shows custom response data', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack', '--dangerously-allow']);
+        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -115,7 +100,7 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] invalid JSON in --custom-credentials [Then] shows error',
     it => {
-      it.scoped('shows JSON parse error', () =>
+      it.effect('shows JSON parse error', () =>
         Effect.gen(function* () {
           yield* cli([
             'dev',
@@ -127,7 +112,6 @@ describe('CLI: composio dev auth-configs create', () => {
             'OAUTH2',
             '--custom-credentials',
             '{invalid json}',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -141,16 +125,9 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ ...dangerousDevConfig }))(
     '[Given] no API key [Then] warns user to login',
     it => {
-      it.scoped('warns user to login', () =>
+      it.effect('warns user to login', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -163,20 +140,68 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] next step hint [Then] includes auth config ID',
     it => {
-      it.scoped('shows next step hint', () =>
+      it.effect('shows next step hint', () =>
         Effect.gen(function* () {
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('composio dev auth-configs info');
+        })
+      );
+    }
+  );
+
+  let capturedCreateAuthConfig: AuthConfigCreateParams | undefined;
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      ...dangerousDevConfig,
+      authConfigsData: {
+        createResponse: {
+          auth_config: { id: 'ac_oauth', auth_scheme: 'OAUTH2', is_composio_managed: false },
+          toolkit: { slug: 'shopify' },
+        },
+        onCreate: params => {
+          capturedCreateAuthConfig = params;
+        },
+      },
+    })
+  )(
+    '[Given] custom OAuth credentials and scopes [Then] nests them under auth_config.credentials',
+    it => {
+      it.effect('sends custom OAuth settings inside credentials', () =>
+        Effect.gen(function* () {
+          capturedCreateAuthConfig = undefined;
+
           yield* cli([
             'dev',
             'auth-configs',
             'create',
             '--toolkit',
-            'gmail',
-            '--dangerously-allow',
+            'shopify',
+            '--auth-scheme',
+            'OAUTH2',
+            '--custom-credentials',
+            '{"client_id":"my_client_id","client_secret":"my_client_secret"}',
+            '--scopes',
+            'read_products, write_products',
           ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
 
-          expect(output).toContain('composio dev auth-configs info');
+          expect(capturedCreateAuthConfig).toStrictEqual({
+            toolkit: { slug: 'shopify' },
+            auth_config: {
+              type: 'use_custom_auth',
+              authScheme: 'OAUTH2',
+              name: undefined,
+              credentials: {
+                client_id: 'my_client_id',
+                client_secret: 'my_client_secret',
+                scopes: ['read_products', 'write_products'],
+              },
+            },
+          });
         })
       );
     }

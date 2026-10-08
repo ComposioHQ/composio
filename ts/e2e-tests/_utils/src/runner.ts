@@ -809,6 +809,17 @@ function renderCliVersionMeta({ kind, value }: CliVersionMeta): string {
 // ============================================================================
 
 /**
+ * Timeout for the beforeAll hook that ensures a runtime Docker image exists.
+ *
+ * CI pre-builds these images in a dedicated workflow step, so this hook
+ * normally only runs `docker image inspect`. Locally, however, a cold
+ * `docker build` (apt, toolchain bootstrap, full pnpm install inside the
+ * image) can take well over ten minutes on a slow network, so the ceiling
+ * must accommodate a from-scratch build.
+ */
+const IMAGE_ENSURE_TIMEOUT_MS = 1_200_000;
+
+/**
  * Runs e2e tests using bun:test.
  * Creates a describe block per runtime version and passes test utilities to defineTests.
  *
@@ -880,7 +891,7 @@ export function runE2E(config: RunE2EInternalConfig): void {
         beforeAll(async () => {
           const imageTag = await ensureNodeImage(nodeVersionMeta.value, { repoRoot });
           executors = createNodeDockerExecutors(config, nodeVersionMeta.value, imageTag, repoRoot, logManager);
-        }, 600_000);
+        }, IMAGE_ENSURE_TIMEOUT_MS);
 
         defineTests({
           runtime: 'node',
@@ -924,7 +935,7 @@ export function runE2E(config: RunE2EInternalConfig): void {
         beforeAll(async () => {
           const imageTag = await ensureDenoImage(denoVersionMeta.value, { repoRoot });
           executors = createDenoDockerExecutors(config, denoVersionMeta.value, imageTag, repoRoot, logManager);
-        }, 600_000);
+        }, IMAGE_ENSURE_TIMEOUT_MS);
 
         defineTests({
           runtime: 'deno',
@@ -968,7 +979,7 @@ export function runE2E(config: RunE2EInternalConfig): void {
         beforeAll(async () => {
           const imageTag = await ensureCliImage(cliVersionMeta.value, { repoRoot });
           executors = createCliDockerExecutors(config, cliVersionMeta.value, imageTag, repoRoot, logManager);
-        }, 600_000);
+        }, IMAGE_ENSURE_TIMEOUT_MS);
 
         defineTests({
           runtime: 'cli',

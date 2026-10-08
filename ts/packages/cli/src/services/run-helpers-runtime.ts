@@ -1,16 +1,16 @@
+import { cliRequestHeaders } from './client-provenance';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
-// eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
-import * as os from 'node:os';
-import process from 'node:process';
-import { Path } from '@effect/platform';
-import { Effect, Predicate, Schema } from 'effect';
+import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
+import { ChildProcess as Command } from 'effect/unstable/process';
+import * as Path from 'effect/Path';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
-import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
-import { detectMaster, type MasterKind } from 'src/services/master-detector';
+import type { MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
   parseJson,
@@ -20,6 +20,15 @@ import {
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
+import { NodeOs } from 'src/services/node-os';
+import { collectText } from 'src/services/command-runner';
+import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
+
+// One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
+// builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
+// run script that spawns many does not rebuild the platform services per call.
+const bunCommandRuntime = ManagedRuntime.make(BunServices.layer);
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -32,6 +41,7 @@ export type RunHelperContext = {
   readonly consumerProjectName?: string;
   readonly perfDebug?: boolean;
   readonly toolDebug?: boolean;
+  readonly telemetryDebug?: boolean;
   readonly dryRun?: boolean;
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
@@ -43,6 +53,7 @@ export type RunHelperContext = {
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
   readonly readAccessRoots?: ReadonlyArray<string>;
+  readonly cliConfigPath?: string;
 };
 
 type RunHelpersInstallParams = {
@@ -59,16 +70,37 @@ const ExperimentalSubagentConfig = Schema.Struct({
   ),
 });
 const decodeExperimentalSubagentConfig = Schema.decodeUnknownSync(
-  Schema.parseJson(ExperimentalSubagentConfig)
+  Schema.fromJsonString(ExperimentalSubagentConfig)
 );
 const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
-const ProxyExecuteResponse = Schema.Struct({
-  headers: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
+const ProxyExecuteCompletedResponse = Schema.Struct({
+  // Absent when an older server answers; any other value fails the decode
+  // instead of being read as a completed call.
+  result_type: Schema.optional(Schema.Literal('completed')),
+  headers: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   binary_data: Schema.optional(Schema.Struct({ url: Schema.optional(Schema.String) })),
   data: Schema.optional(Schema.Unknown),
   status: Schema.optional(Schema.Number),
 });
-type ProxyExecuteResponse = Schema.Schema.Type<typeof ProxyExecuteResponse>;
+type ProxyExecuteCompletedResponse = Schema.Schema.Type<typeof ProxyExecuteCompletedResponse>;
+const ProxyExecuteInputRequiredResponse = Schema.Struct({
+  result_type: Schema.Literal('input_required'),
+  input_requests: Schema.Record(
+    Schema.String,
+    Schema.Struct({
+      type: Schema.Literal('elicitation'),
+      mode: Schema.Literal('form'),
+      message: Schema.String,
+      requested_schema: Schema.Record(Schema.String, Schema.Unknown),
+    })
+  ),
+  request_state: Schema.optional(Schema.String),
+});
+const ProxyExecuteResponse = Schema.Union([
+  ProxyExecuteInputRequiredResponse,
+  ProxyExecuteCompletedResponse,
+]);
+const isProxyInputRequired = Schema.is(ProxyExecuteInputRequiredResponse);
 
 const experimentalSubAgentSchema = {
   type: 'function',
@@ -166,7 +198,7 @@ const previewDebugValue = (value: unknown): string => {
   if (typeof value === 'string') return truncateDebugText(value.replace(/\s+/g, ' ').trim());
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) return `array(${value.length})`;
-  if (Predicate.isRecord(value)) {
+  if (Predicate.isObject(value)) {
     const preferred = ['message', 'error', 'title', 'summary', 'brief', 'status'];
     for (const key of preferred) {
       const candidate = value[key];
@@ -218,7 +250,7 @@ const formatHelperDebugEvent = (step: string, details: Record<string, unknown> =
     }
     case 'subAgent.acp.plan': {
       const entries = Array.isArray(details.entries)
-        ? details.entries.filter(Predicate.isRecord)
+        ? details.entries.filter(Predicate.isObject)
         : [];
       if (entries.length === 0) return '[experimental_subAgent:plan] updated';
       const summary = entries
@@ -262,16 +294,14 @@ const stringifyForPrompt = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
+  return Result.getOrElse(
+    Result.try(() => JSON.stringify(value, null, 2)),
+    () => String(value)
+  );
 };
 
 const attachPromptMethod = <T>(value: T): T => {
-  if (!Predicate.isRecord(value)) return value;
+  if (!Predicate.isObject(value)) return value;
   if (typeof value.prompt === 'function') return value;
   Object.defineProperty(value, 'prompt', {
     value: () => stringifyForPrompt('data' in value ? value.data : value),
@@ -280,7 +310,7 @@ const attachPromptMethod = <T>(value: T): T => {
   return value;
 };
 
-const isPlainObjectForExecute = Predicate.isRecord;
+const isPlainObjectForExecute = Predicate.isObject;
 
 const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
   if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
@@ -301,7 +331,7 @@ const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
 
 const describeDebugValue = (value: unknown) => {
   if (Array.isArray(value)) return { type: 'array', length: value.length };
-  if (Predicate.isRecord(value)) {
+  if (Predicate.isObject(value)) {
     return { type: 'object', keys: Object.keys(value).slice(0, 20) };
   }
   return {
@@ -311,23 +341,27 @@ const describeDebugValue = (value: unknown) => {
 };
 
 const summarizeCliResultPreview = (result: RunCliResult): unknown => {
-  if (!Predicate.isRecord(result)) return result;
+  if (!Predicate.isObject(result)) return result;
   if ('data' in result && result.data !== undefined) return result.data;
   if (typeof result.error === 'string' && result.error.trim().length > 0)
     return result.error.trim();
   return result;
 };
 
-const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-  // eslint-disable-next-line eslint-js/no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
-  try {
-    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-    const parsed = decodeExperimentalSubagentConfig(raw);
-    const target = parsed.experimental_subagent?.target;
-    return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-  } catch {
-    return 'auto';
-  }
+const readConfiguredExperimentalSubagentTarget = (
+  cliConfigPath: string | undefined
+): 'auto' | 'claude' | 'codex' => {
+  if (!cliConfigPath) return 'auto';
+
+  return Result.getOrElse(
+    Result.try(() => {
+      const raw = fs.readFileSync(cliConfigPath, 'utf8');
+      const parsed = decodeExperimentalSubagentConfig(raw);
+      const target = parsed.experimental_subagent?.target;
+      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
+    }),
+    () => 'auto' as const
+  );
 };
 
 const normalizeInvokeAgentOptions = (
@@ -365,7 +399,7 @@ const normalizeInvokeAgentOptions = (
       zodSchema = inputSchema;
       const generatedSchema = z.toJSONSchema(inputSchema);
       structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
-    } else if (Predicate.isRecord(inputSchema)) {
+    } else if (Predicate.isObject(inputSchema)) {
       structuredSchema = inputSchema;
     } else {
       throw new Error('experimental_subAgent() schema must be a Zod schema or JSON Schema object.');
@@ -431,10 +465,16 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
   };
 };
 
-const toProxyResponse = async (result: ProxyExecuteResponse) => {
+const toProxyResponse = async (result: ProxyExecuteCompletedResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
-    const binaryResponse = await fetch(result.binary_data.url);
+    const binaryResponse = await ssrfSafeFetch(
+      result.binary_data.url,
+      {},
+      {
+        requirePinnedConnection: true,
+      }
+    );
     binaryResponse.headers.forEach((value, key) => {
       if (!headers.has(key)) headers.set(key, value);
     });
@@ -506,12 +546,13 @@ const createRunHelperLoggers = (params: {
 
 const createExecutePayloadMaterializer = (params: {
   readonly path: Path.Path;
+  readonly tmpdir: string;
   readonly sharedRunOutputDir: string | null;
 }): ((value: unknown) => Promise<unknown>) => {
-  const { path, sharedRunOutputDir } = params;
+  const { path, tmpdir, sharedRunOutputDir } = params;
 
   const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
-    const outputDir = sharedRunOutputDir || path.join(os.tmpdir(), 'composio-run-files');
+    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
     fs.mkdirSync(outputDir, { recursive: true });
     if (typeof File !== 'undefined' && value instanceof File) {
       const safeName =
@@ -568,7 +609,7 @@ const createCliRunner = (params: {
   let perfDebugSeq = 0;
 
   const maybeLoadStoredCliResult = (result: RunCliResult): RunCliResult => {
-    if (!Predicate.isRecord(result) || result.storedInFile !== true) {
+    if (!Predicate.isObject(result) || result.storedInFile !== true) {
       return attachPromptMethod(result);
     }
     helperDebugLog('cli.result.stored_in_file', {
@@ -590,7 +631,7 @@ const createCliRunner = (params: {
     command: string | undefined,
     result: RunCliResult
   ) => {
-    if (!Predicate.isRecord(result)) {
+    if (!Predicate.isObject(result)) {
       helperDebugLog('cli.result', {
         requestId,
         command,
@@ -612,32 +653,59 @@ const createCliRunner = (params: {
     });
   };
 
+  // Invariant for the life of the run session, so built once rather than per
+  // spawned CLI call.
+  const env: Record<string, string> = {
+    // The platform command inherits the ambient environment by default. An
+    // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
+    // without copying or enumerating unrelated values.
+    BUN_BE_BUN: '',
+    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
+    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
+    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
+    COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
+    ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
+    ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
+    ...debugFlagsToChildEnv({
+      perfDebug: perfDebugEnabled,
+      toolDebug: toolDebugEnabled,
+      acpOnly: helperContext.acpOnly === true,
+      telemetryDebug: helperContext.telemetryDebug === true,
+    }),
+  };
+
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
-    const env: Record<string, string | undefined> = {
-      // eslint-disable-next-line eslint-js/no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
-      ...process.env,
-      ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
-      ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
-      ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
-      COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
-      ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),
-      ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),
-      ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
-      ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
-    };
-    delete env.BUN_BE_BUN;
     perfDebugLog('start', requestId, { cmd: args });
-    const child = Bun.spawn({
-      cmd: [...cliPrefix, ...args],
-      env,
-      stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe'],
-    });
-    const stdout = child.stdout ? await new Response(child.stdout).text() : '';
-    const stderr = child.stderr ? await new Response(child.stderr).text() : '';
+    const [executable, ...commandArgs] = [...cliPrefix, ...args];
+    const inheritStderr = perfDebugEnabled || toolDebugEnabled;
+    const { exitCode, stderr, stdout } = await bunCommandRuntime.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const child = yield* Command.make(executable, commandArgs, {
+            env,
+            extendEnv: true,
+            stdin: 'inherit',
+            stderr: inheritStderr ? 'inherit' : 'pipe',
+          });
+          const [childExitCode, childStdout, childStderr] = yield* Effect.all(
+            [
+              child.exitCode,
+              collectText(child.stdout),
+              inheritStderr ? Effect.succeed('') : collectText(child.stderr),
+            ],
+            { concurrency: 'unbounded' }
+          );
+          return {
+            exitCode: Number(childExitCode),
+            stdout: childStdout,
+            stderr: childStderr,
+          };
+        })
+      )
+    );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
-    const exitCode = await child.exited;
     if (exitCode !== 0) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
       helperDebugLog('cli.error', {
@@ -741,7 +809,7 @@ const createSearchAndExecuteHelpers = (params: {
       }
     }
     const result = await runCliJson(args);
-    if (Predicate.isRecord(result) && result.successful === false) {
+    if (Predicate.isObject(result) && result.successful === false) {
       const message =
         typeof result.error === 'string' && result.error.trim().length > 0
           ? result.error.trim()
@@ -762,6 +830,10 @@ const createExperimentalSubAgent = (params: {
 }) => {
   const { helperContext, helperDebugLog } = params;
 
+  // The parent CLI resolves the master via `detectMasterFromHost` and serializes
+  // it into `helperContext` (see run.cmd.ts), so a missing or unrecognized value
+  // deliberately falls back to 'user' instead of re-detecting from this child
+  // process's environment.
   const detectInvokeAgentMaster = (): MasterKind | 'user' => {
     if (
       helperContext.master === 'claude' ||
@@ -770,12 +842,12 @@ const createExperimentalSubAgent = (params: {
     ) {
       return helperContext.master;
     }
-    return detectMaster();
+    return 'user';
   };
 
   const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
     if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget();
+    const configuredTarget = readConfiguredExperimentalSubagentTarget(helperContext.cliConfigPath);
     if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
     const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
     if (detected === 'codex' || detected === 'claude') return detected;
@@ -805,20 +877,20 @@ const createExperimentalSubAgent = (params: {
       resolvedTarget: target,
       master,
     });
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
-    try {
-      const response = await invokeAcpSubAgent({
-        prompt: prompt.trim(),
-        options: normalizedOptions,
-        master,
-        target,
-        allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-          ? helperContext.readAccessRoots
-          : [],
-        helperDebugLog,
-      });
-      return logFilePath ? { ...response, logFilePath } : response;
-    } catch (error) {
+    const response = await invokeAcpSubAgent({
+      prompt: prompt.trim(),
+      options: normalizedOptions,
+      master,
+      target,
+      allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
+        ? helperContext.readAccessRoots
+        : [],
+      helperDebugLog,
+    }).catch(error => {
+      // Only ACP protocol failures fall back to the legacy sub-agent. A damaged
+      // install (MissingAcpAdapterAssetsError) is not one of them: its message
+      // names the repair, and swapping in a different sub-agent implementation
+      // would hide the fact that the install needs fixing.
       if (!isAcpInvokeError(error)) throw error;
       if (helperContext.acpOnly === true) throw error;
       helperDebugLog('subAgent.acp.fallback', {
@@ -826,15 +898,15 @@ const createExperimentalSubAgent = (params: {
         code: error.code,
         message: error.message,
       });
-      const response = await invokeLegacySubAgent({
+      return invokeLegacySubAgent({
         prompt: prompt.trim(),
         options: normalizedOptions,
         master,
         target,
         helperDebugLog,
       });
-      return logFilePath ? { ...response, logFilePath } : response;
-    }
+    });
+    return logFilePath ? { ...response, logFilePath } : response;
   };
 
   Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
@@ -871,6 +943,7 @@ const createProxyHelper = (params: {
     const response = await fetch(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
+        ...cliRequestHeaders(),
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,
@@ -881,8 +954,8 @@ const createProxyHelper = (params: {
     const raw = await response.text();
     const parsed = parseJson(raw);
     if (!response.ok) {
-      const responseMessage = Predicate.isRecord(parsed) ? parsed.message : undefined;
-      const responseError = Predicate.isRecord(parsed) ? parsed.error : undefined;
+      const responseMessage = Predicate.isObject(parsed) ? parsed.message : undefined;
+      const responseError = Predicate.isObject(parsed) ? parsed.error : undefined;
       const detail =
         typeof parsed === 'string'
           ? parsed
@@ -947,6 +1020,16 @@ const createProxyHelper = (params: {
             : {}),
         })
       );
+      // An approval request is not a response from the proxied API: converting
+      // it would hand the script an empty 200 for a call that never ran.
+      if (isProxyInputRequired(result)) {
+        // The error is thrown into the user's script, where it is likely to be
+        // logged whole. `request_state` is continuation state the CLI cannot
+        // use yet, so it is left off the error.
+        throw toolInputRequiredError(`${request.method} proxy call via "${normalizedToolkit}"`, {
+          input_requests: result.input_requests,
+        });
+      }
       return toProxyResponse(result);
     };
     Object.defineProperty(proxyFetch, 'toolkit', { value: normalizedToolkit });
@@ -965,17 +1048,14 @@ export const installRunHelpers = async ({
   // Resolve the live services once at that boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
   const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const nodeOs = Effect.runSync(NodeOs.pipe(Effect.provide(NodeOs.Default)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 
   Reflect.set(globalThis, 'z', z);
   Reflect.set(globalThis, 'zod', z);
 
-  const perfDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
-  const toolDebugEnabled =
-    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
+  const perfDebugEnabled = helperContext.perfDebug === true;
+  const toolDebugEnabled = helperContext.toolDebug === true;
   const perfDebugStart = Date.now();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
     /\/$/,
@@ -1001,6 +1081,7 @@ export const installRunHelpers = async ({
 
   const materializeExecutePayload = createExecutePayloadMaterializer({
     path,
+    tmpdir: nodeOs.tmpdir,
     sharedRunOutputDir,
   });
   const runCliJson = createCliRunner({

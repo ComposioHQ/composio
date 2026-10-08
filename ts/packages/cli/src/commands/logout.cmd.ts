@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import {
   AGENT_CONFIG_FILE_NAME,
@@ -7,6 +7,7 @@ import {
 } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { clearApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 
 /**
  * CLI command to log out from the Composio CLI.
@@ -16,10 +17,10 @@ import { TerminalUI } from 'src/services/terminal-ui';
  * composio logout <command>
  * ```
  */
-const force = Options.boolean('force').pipe(
-  Options.withAlias('f'),
-  Options.withDefault(false),
-  Options.withDescription('Skip confirmation prompts')
+const force = Flag.Boolean('force').pipe(
+  Flag.withAlias('f'),
+  Flag.withDefault(false),
+  Flag.withDescription('Skip confirmation prompts')
 );
 
 export const logoutCmd = Command.make('logout', { force }, ({ force }) =>
@@ -54,6 +55,7 @@ export const logoutCmd = Command.make('logout', { force }, ({ force }) =>
     }
 
     yield* ctx.logout;
+    yield* clearApolloIdentityForAnalytics;
 
     if (Option.isSome(loggedInAgent)) {
       yield* removeStoredAgentIdentity;

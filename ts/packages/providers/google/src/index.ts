@@ -13,10 +13,14 @@ import {
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
   deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
+  ensureObjectTypeOnProperties,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -128,7 +132,13 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * ```
    */
   wrapTool(tool: Tool): GoogleTool {
-    const inputParameters = deduplicateJsonSchemaRequiredArrays(tool.inputParameters);
+    const inputParameters = ensureObjectTypeOnProperties(
+      deduplicateJsonSchemaRequiredArrays(
+        dereferenceJsonSchema(tool.inputParameters ?? { type: 'object', properties: {} }, {
+          onUnresolved: 'sentinel',
+        })
+      )
+    );
 
     return {
       name: tool.slug,
@@ -201,10 +211,10 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * This method processes a function call from Google's GenAI API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param tool - The Google GenAI function call to execute
-   * @param options - Optional execution options like connected account ID
-   * @param modifiers - Optional execution modifiers for tool behavior
+   * @param options - Optional execution options like connected account ID (user ID targets only)
+   * @param modifiers - Optional execution modifiers for tool behavior (user ID targets only)
    * @returns The result of the tool execution as a JSON string
    *
    * @example
@@ -237,21 +247,44 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    *     { role: 'model', parts: [{ functionResponse: { name: 'SEARCH_TOOL', response: result } }] }
    *   ]
    * });
+   *
+   * // For tools from session.tools(), pass the session instead of a user ID
+   * const sessionResult = await provider.executeToolCall(session, functionCall);
    * ```
    */
+  async executeToolCall(session: ToolCallSession, tool: GoogleGenAIFunctionCall): Promise<string>;
   async executeToolCall(
     userId: string,
     tool: GoogleGenAIFunctionCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: GoogleGenAIFunctionCall,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Models occasionally emit tool args as a JSON string rather than an object (issue #2406).
+    const toolArguments = normalizeToolArguments(tool.args, tool.name);
+    if (typeof executionTarget !== 'string') {
+      const result = await this.executeToolForTarget(
+        executionTarget,
+        tool.name,
+        toolArguments,
+        options,
+        modifiers
+      );
+      return JSON.stringify(result);
+    }
+
+    // Keep direct execution on `executeTool`, which every supported @composio/core provides.
     const payload: ToolExecuteParams = {
-      // Models occasionally emit tool args as a JSON string rather than an object (issue #2406).
-      arguments: normalizeToolArguments(tool.args, tool.name),
+      arguments: toolArguments,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
-      userId: userId,
+      userId: executionTarget,
     };
 
     const result = await this.executeTool(tool.name, payload, modifiers);

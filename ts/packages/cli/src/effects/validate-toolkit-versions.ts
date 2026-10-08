@@ -3,7 +3,7 @@ import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type {
-  ComposioToolkitsRepository,
+  ComposioToolkitsRepositoryShape,
   InvalidVersionDetail,
 } from 'src/services/composio-clients';
 import type { ToolkitVersionOverrides } from './toolkit-version-overrides';
@@ -119,7 +119,7 @@ export interface ValidateVersionsOptions {
   /** Optional array of toolkit slugs to filter (from --toolkits flag) */
   readonly toolkitSlugsFilter: ReadonlyArray<string> | null;
   /** The ComposioToolkitsRepository client */
-  readonly client: ComposioToolkitsRepository;
+  readonly client: ComposioToolkitsRepositoryShape;
 }
 
 /**
@@ -207,10 +207,19 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('NoSuchElementException', () =>
+        Effect.catchTag('NoSuchElementError', () =>
           Effect.fail(
             new ToolkitVersionValidationError({
               message: 'API client not initialized',
+              reason: 'client-unavailable',
+            })
+          )
+        ),
+        Effect.catchTag('services/ComposioClientConfigurationError', error =>
+          Effect.fail(
+            new ToolkitVersionValidationError({
+              cause: error,
+              message: error.message,
               reason: 'client-unavailable',
             })
           )

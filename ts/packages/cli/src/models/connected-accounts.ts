@@ -1,4 +1,31 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
+
+/**
+ * Statuses this CLI build knows about. The server owns this enum and may add
+ * values at any time, so schemas must stay open (see
+ * {@link ConnectedAccountStatus}) — use {@link isKnownConnectedAccountStatus}
+ * to detect values newer than this build.
+ */
+export const KnownConnectedAccountStatus = Schema.Literals([
+  'INITIALIZING',
+  'INITIATED',
+  'ACTIVE',
+  'FAILED',
+  'EXPIRED',
+  'INACTIVE',
+  'REVOKED',
+]);
+export type KnownConnectedAccountStatus = typeof KnownConnectedAccountStatus.Type;
+
+export const isKnownConnectedAccountStatus = Schema.is(KnownConnectedAccountStatus);
+
+/**
+ * Open enum for the server-owned account status: the known literals document
+ * the values this build understands, the `Schema.String` branch lets a newer
+ * status decode instead of failing the whole payload. Callers only compare
+ * against literals or render the value as text, so widening is safe.
+ */
+export const ConnectedAccountStatus = Schema.Union([KnownConnectedAccountStatus, Schema.String]);
 
 /**
  * A connected account item from the list or retrieve endpoints.
@@ -13,16 +40,10 @@ export const ConnectedAccountItem = Schema.Struct({
   id: Schema.String,
   word_id: Schema.optional(Schema.NullOr(Schema.String)),
   alias: Schema.optional(Schema.NullOr(Schema.String)),
-  status: Schema.Literal(
-    'INITIALIZING',
-    'INITIATED',
-    'ACTIVE',
-    'FAILED',
-    'EXPIRED',
-    'INACTIVE',
-    'REVOKED'
+  status: ConnectedAccountStatus,
+  status_reason: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
   ),
-  status_reason: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
   is_disabled: Schema.Boolean,
   user_id: Schema.String,
   toolkit: Schema.Struct({
@@ -36,21 +57,9 @@ export const ConnectedAccountItem = Schema.Struct({
   }),
   created_at: Schema.String,
   updated_at: Schema.String,
-  test_request_endpoint: Schema.optionalWith(Schema.String, { default: () => '' }),
-}).annotations({ identifier: 'ConnectedAccountItem' });
+  test_request_endpoint: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+}).annotate({ identifier: 'ConnectedAccountItem' });
 export type ConnectedAccountItem = Schema.Schema.Type<typeof ConnectedAccountItem>;
 
 export const ConnectedAccountItems = Schema.Array(ConnectedAccountItem);
 export type ConnectedAccountItems = Schema.Schema.Type<typeof ConnectedAccountItems>;
-
-/**
- * Forward-compatible variant of {@link ConnectedAccountItem}: identical field
- * allowlist (same credential-stripping guarantee as above) with `status`
- * widened to accept values newer than this CLI build's closed literal union.
- */
-export const ConnectedAccountItemPermissive = Schema.Struct({
-  ...ConnectedAccountItem.fields,
-  status: Schema.String,
-}).annotations({ identifier: 'ConnectedAccountItemPermissive' });
-
-export const ConnectedAccountItemsPermissive = Schema.Array(ConnectedAccountItemPermissive);

@@ -11,7 +11,7 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE');
+const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_TOP_STORIES');
 const stream = await streamText({
   model: openai('gpt-4o-mini'),
   tools,

@@ -1,0 +1,53 @@
+Use this guide to configure Gmail authentication, send and fetch messages, work with attachments and labels, and set up new-message triggers.
+
+## Configure Gmail OAuth, scopes, and toolkit versions
+
+**Use `latest` or v3.1 for newer Gmail settings tools.** The v3 execute endpoint can default to base toolkit version `00000000_00` when no version is specified. For newer Gmail tools like `GMAIL_PATCH_SEND_AS`, `GMAIL_LIST_SEND_AS`, and `GMAIL_GET_VACATION_SETTINGS`, pass `version: "latest"` in the execute body or use the v3.1 endpoint, which defaults to latest.
+
+**Create the auth config before initiating a connection.** Create the Gmail auth config first with the custom OAuth credentials, then initiate a connected account using that auth config. The callback URL is supplied during connection initiation, while the OAuth client ID/secret and redirect URI live on the auth config.
+
+**Choose scopes based on the actions and data required.** When creating the Gmail auth config, pass the desired Gmail scopes in `credentials.scopes`, typically as a comma-joined string. Example scopes include `gmail.send`, `gmail.readonly`, `gmail.compose`, `gmail.modify`, and `gmail.labels`.
+
+Gmail filter creation maps to the Gmail API `users.settings.filters.create` endpoint: `POST /gmail/v1/users/{userId}/settings/filters`. Google lists `https://www.googleapis.com/auth/gmail.settings.basic` as the required OAuth scope for this endpoint, and the current Composio `GMAIL_CREATE_FILTER` action declares the same single required scope. Google must approve this scope for the OAuth app used by the connection. If the consent screen blocks an unverified scope, use an OAuth app that is verified for `gmail.settings.basic` and reconnect.
+
+`https://www.googleapis.com/auth/gmail.send` can send messages, but it is a granular sensitive scope and requires Google verification. The broader `https://mail.google.com/` scope gives full mailbox access and can cover send use cases, but it is broader than many customers want.
+
+The Gmail metadata scope cannot be used when requesting full email content. Remove `https://www.googleapis.com/auth/gmail.metadata` and use a scope that allows message content access, such as `https://mail.google.com/`, when full payload/body data is needed.
+
+**Use Google Super for one Google connection across services.** Google Super owns the canonical multi-service authentication guidance. See [Google Super is a unified Google Workspace toolkit](../googlesuper/public.md#google-super-is-a-unified-google-workspace-toolkit).
+
+## Address and send Gmail messages
+
+**Use `me` for the authenticated user.** For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenticated connected account.
+
+**Provide at least one recipient channel.** `GMAIL_SEND_EMAIL` no longer needs a single required recipient field. At least one recipient channel such as `to` / `recipient_email`, `cc`, or `bcc` can be supplied, which keeps the tool flexible for different email composition flows.
+
+For hosted MCP / Tool Router calls through `COMPOSIO_MULTI_EXECUTE_TOOL`, put recipient fields inside the nested tool `arguments` object. Prefer `recipient_email` for the first To recipient and `extra_recipients` for additional To recipients unless the current schema explicitly exposes another shape.
+
+If the connection is active but the action returns `At least one of 'to' (or 'recipient_email'), 'cc', or 'bcc' must be provided`, the tool did not receive a recipient channel and failed before Gmail API execution. Retry with the exact nested `recipient_email` shape; if it still fails, provide a fresh request ID for investigation.
+
+**Select a send-as alias with `from_email`.** Use the `from_email` parameter on `GMAIL_SEND_EMAIL` to choose the Gmail send-as alias.
+
+## Send attachments safely
+
+**Upload files before tool execution.** Temporary S3/file instances are short-lived. Use `files.upload` before tool execution via the SDK or MCP flow, then pass the resulting `FileUploadable`/uploaded file object to the agent/tool call.
+
+**Verify a timed-out send before retrying.** `GMAIL_SEND_EMAIL` accepts attachments as uploaded Composio file references, not signed URLs or JSON strings. The action downloads the uploaded file, builds the MIME message, base64-url encodes it, and posts it to Gmail. Attachment sends can therefore take materially longer than small text-only sends.
+
+Current Python and TypeScript SDKs do not automatically retry non-idempotent tool executions. However, a client timeout can still occur after Gmail accepted the message. If `GMAIL_SEND_EMAIL` hangs or creates duplicate sends with attachments:
+
+- If the log is a fast 400 validation error, verify the `attachment` argument is an object/list with `name`, `mimetype`, and `s3key`.
+- If the client timed out, inspect the Composio execution log or Gmail Sent folder before retrying manually.
+- If the client is older than Python SDK 0.16.0 or TypeScript SDK 0.14.0, upgrade before investigating SDK-level automatic retries.
+
+## Fetch messages and manage labels
+
+**Reduce fetch payload size.** For Gmail fetch/list flows, set `include_payload=false` and `verbose=false` where supported. For very lightweight flows, use `only_ids=true` and then fetch selected messages separately. Also use `max_results` and Gmail `query` filters to keep result sets small.
+
+**Use label IDs for label operations.** For Gmail label operations and trigger label filters that require IDs, pass the label ID rather than the display name. Use `GMAIL_LIST_LABELS` to retrieve IDs.
+
+**Use accepted Gmail color values when patching labels.** To patch a label color, use the label ID and pass background color as an object field such as `{ "background_color": "#FFFF0000" }`. Gmail only accepts specific label color values from the Gmail API reference.
+
+## Configure Gmail new-message trigger filters
+
+Use a Gmail query such as `label:sent OR label:category_personal` to filter matching messages. This avoids depending on label IDs for that trigger path.

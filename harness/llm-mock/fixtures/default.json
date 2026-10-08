@@ -1,0 +1,29 @@
+{
+  "$comment": "Deterministic LLM fixtures for --llm mock sweeps. One file so fixture order is explicit: specific matches first, catch-alls last (first match wins). Tool-call fixtures guard with hasToolResult:false so the follow-up turn falls through to the wrap-up fixture. Composio tool execution stays live; only the model is mocked.",
+  "fixtures": [
+    {
+      "match": { "userMessage": "HackerNews user", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          { "name": "HACKERNEWS_GET_USER", "arguments": { "username": "pg" }, "id": "call_hn_user" }
+        ]
+      }
+    },
+    {
+      "match": { "userMessage": "HackerNews", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          { "name": "HACKERNEWS_GET_TOP_STORIES", "arguments": { "size": 3 }, "id": "call_hn_top" }
+        ]
+      }
+    },
+    {
+      "match": { "hasToolResult": true },
+      "response": { "content": "Mock model wrap-up: summarized the tool result deterministically." }
+    },
+    {
+      "match": {},
+      "response": { "content": "Mock model response: no tool needed for this prompt." }
+    }
+  ]
+}

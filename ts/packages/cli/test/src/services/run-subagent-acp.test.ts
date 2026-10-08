@@ -1,40 +1,22 @@
-import { Readable } from 'node:stream';
-import { BunContext } from '@effect/platform-bun';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect } from 'effect';
 import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import {
   BufferedChunkLogger,
   createStructuredOutputMcpContext,
-  readableStreamFromNode,
+  MissingAcpAdapterAssetsError,
   resolveAcpAdapterCommand,
   selectPermissionOutcome,
 } from 'src/services/run-subagent-acp';
+import { RUN_COMPANION_MODULE_FILENAMES } from 'src/services/run-companion-modules';
 import { AcpInvokeError, isAcpInvokeError } from 'src/services/run-subagent-shared';
 
 describe('run-subagent-acp', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it('pauses a Node producer while the Web Stream queue is full', async () => {
-    const input = new Readable({ read: () => undefined });
-    const stream = readableStreamFromNode(input);
-
-    input.push(new TextEncoder().encode('first'));
-    input.push(new TextEncoder().encode('second'));
-    await new Promise<void>(resolve => setImmediate(resolve));
-
-    expect(input.isPaused()).toBe(true);
-
-    const reader = stream.getReader();
-    const first = await reader.read();
-    const second = await reader.read();
-
-    expect(new TextDecoder().decode(first.value)).toBe('first');
-    expect(new TextDecoder().decode(second.value)).toBe('second');
-
-    await reader.cancel();
-    expect(input.destroyed).toBe(true);
   });
 
   it.effect(
@@ -45,7 +27,7 @@ describe('run-subagent-acp', () => {
         expect(result.source).toBe('bundled');
         expect(result.cmd[0]).toBe(process.execPath);
         expect(result.cmd[1]).toMatch(/claude-code-acp/);
-      }).pipe(Effect.provide(BunContext.layer))
+      }).pipe(Effect.provide(BunServices.layer))
   );
 
   it.effect('[Given] bundled codex adapter [Then] it resolves to the bundled path', () =>
@@ -54,7 +36,62 @@ describe('run-subagent-acp', () => {
       expect(result.source).toBe('bundled');
       expect(result.cmd[0]).toBe(process.execPath);
       expect(result.cmd[1]).toMatch(/codex-acp/);
-    }).pipe(Effect.provide(BunContext.layer))
+    }).pipe(Effect.provide(BunServices.layer))
+  );
+
+  it.effect(
+    '[Given] a packaged install shipping the adapter [Then] it runs the shipped asset',
+    () =>
+      Effect.gen(function* () {
+        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-acp-shipped-'));
+        const execPath = path.join(installDirectory, 'composio');
+        for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+          fs.writeFileSync(path.join(installDirectory, fileName), '', 'utf8');
+        }
+        const adapterPath = path.join(installDirectory, 'acp-adapters', 'claude-code-acp.mjs');
+        fs.mkdirSync(path.dirname(adapterPath), { recursive: true });
+        fs.writeFileSync(adapterPath, '', 'utf8');
+
+        return yield* Effect.gen(function* () {
+          const result = yield* resolveAcpAdapterCommand('claude', { execPath });
+          expect(result.source).toBe('shipped');
+          expect(result.cmd).toEqual([execPath, adapterPath]);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }).pipe(Effect.provide(BunServices.layer))
+  );
+
+  it.effect(
+    '[Given] a packaged install missing the ACP adapters [Then] it names the repair instead of falling back',
+    () =>
+      Effect.gen(function* () {
+        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-acp-missing-'));
+        const execPath = path.join(installDirectory, 'composio');
+        for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+          fs.writeFileSync(path.join(installDirectory, fileName), '', 'utf8');
+        }
+
+        return yield* Effect.gen(function* () {
+          const error = yield* Effect.flip(resolveAcpAdapterCommand('claude', { execPath }));
+
+          expect(error).toBeInstanceOf(MissingAcpAdapterAssetsError);
+          expect(error.missingRelativePaths).toContain('acp-adapters/claude-code-acp.mjs');
+          expect(error.message).toContain(
+            `This Composio install cannot run a claude sub-agent: the ACP adapter files are missing from ${installDirectory}.`
+          );
+          expect(error.message).toContain("Run 'composio upgrade' to restore them");
+          // Not an AcpInvokeError, so the helper runtime surfaces it to the user
+          // instead of silently retrying through the legacy sub-agent.
+          expect(isAcpInvokeError(error)).toBe(false);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }).pipe(Effect.provide(BunServices.layer))
   );
 
   it('[Given] an ACP invoke error [Then] it is classified for fallback', () => {
@@ -285,6 +322,6 @@ describe('run-subagent-acp', () => {
         );
 
         yield* context!.cleanup;
-      }).pipe(Effect.provide(BunContext.layer))
+      }).pipe(Effect.provide(BunServices.layer))
   );
 });

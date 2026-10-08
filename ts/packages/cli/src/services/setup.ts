@@ -1,5 +1,6 @@
-import { Command, Error as PlatformError } from '@effect/platform';
-import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import * as PlatformError from 'effect/PlatformError';
+import { Data, Effect, Option, Predicate, Schema } from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -7,23 +8,32 @@ import {
   getPluginLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import { APP_VERSION } from 'src/constants';
+import {
+  AGENT_HOSTS,
+  AGENT_HOST_LABELS,
+  COMPOSIO_AGENT_PLUGIN_ID,
+  type AgentHost,
+} from './agent-host';
+import { probeHostInstallation } from './agent-host-env';
 import { CommandRunner, type CommandResult } from './command-runner';
+import { SetupCommandError } from './setup-command-error';
 import { SetupSkillInstaller } from './setup-skill-installer';
+import { cliInvocationContext } from './runtime-cli-context';
 
-export const SETUP_TARGETS = ['auto', 'claude', 'codex', 'all'] as const;
+export const SETUP_TARGETS = ['auto', ...AGENT_HOSTS, 'all'] as const;
 export type SetupTarget = (typeof SETUP_TARGETS)[number];
-export type AgentHost = Exclude<SetupTarget, 'auto' | 'all'>;
+export type { AgentHost } from './agent-host';
 
 const CLAUDE_PLUGIN_MARKETPLACE = {
   name: 'composio',
   source: 'https://github.com/ComposioHQ/composio-plugin-cc.git',
-  plugin: 'composio@composio',
+  plugin: COMPOSIO_AGENT_PLUGIN_ID,
 } as const;
 
 const CODEX_PLUGIN_MARKETPLACE = {
   name: 'composio',
   source: 'https://github.com/ComposioHQ/composio-plugin-openai.git',
-  plugin: 'composio@composio',
+  plugin: COMPOSIO_AGENT_PLUGIN_ID,
 } as const;
 
 export interface SetupTargetStatus {
@@ -123,12 +133,6 @@ const ADAPTER_LIST = Object.values(ADAPTERS);
 const SETUP_COMMAND_TIMEOUT = '2 minutes';
 const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
 
-export class SetupCommandError extends Data.TaggedError('services/SetupCommandError')<{
-  readonly message: string;
-  readonly operation: 'setup' | 'uninstall';
-  readonly cause?: unknown;
-}> {}
-
 type SetupFailureStage = 'detect' | 'inspect' | 'validate' | 'mutate' | 'verify' | 'skill';
 
 export class SetupProcessError extends Data.TaggedError('services/SetupProcessError')<{
@@ -152,14 +156,14 @@ const setupProcessError = (params: {
   });
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-  Predicate.isRecord(value) ? value : undefined;
+  Predicate.isObject(value) ? value : undefined;
 
-const decodeJsonOption = Schema.decodeUnknownOption(Schema.parseJson());
+const decodeJsonOption = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown));
 
 const parseJson = (value: string): unknown | undefined =>
   Option.getOrUndefined(decodeJsonOption(value));
 
-const isRecord = Predicate.isRecord;
+const isRecord = Predicate.isObject;
 
 const recordsFrom = (
   value: unknown,
@@ -199,9 +203,9 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(repository)) {
     // new URL() throws on malformed input; an unparseable repository string
     // simply normalizes to undefined.
-    const parsedUrl = Either.try(() => new URL(repository));
-    if (Either.isLeft(parsedUrl)) return undefined;
-    const url = parsedUrl.right;
+    const parsedUrl = Option.liftThrowable((s: string) => new URL(s))(repository);
+    if (Option.isNone(parsedUrl)) return undefined;
+    const url = parsedUrl.value;
     const isCanonicalGitHubUrl =
       url.protocol === 'https:' &&
       url.hostname.toLowerCase() === 'github.com' &&
@@ -275,29 +279,34 @@ const capture = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    return yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
-      Effect.timeoutFail({
+    return yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+      Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () =>
-          setupProcessError({
-            adapter,
-            stage,
-            message: `The \`${commandText(adapter.executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`,
-          }),
+        orElse: () =>
+          Effect.fail(
+            setupProcessError({
+              adapter,
+              stage,
+              message: `The \`${commandText(adapter.executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+            })
+          ),
       })
     );
   });
 
+const isCommandNotFoundError = (
+  error: PlatformError.PlatformError | SetupProcessError
+): error is PlatformError.PlatformError =>
+  Predicate.isTagged(error, 'PlatformError') && Predicate.isTagged(error.reason, 'NotFound');
+
 const captureOptional = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =>
   capture(adapter, args, 'detect').pipe(
-    Effect.catchIf(Schema.is(PlatformError.SystemError), error =>
-      error.reason === 'NotFound'
-        ? Effect.succeed<CommandResult | undefined>(undefined)
-        : Effect.fail(error)
+    Effect.catchIf(isCommandNotFoundError, () =>
+      Effect.succeed<CommandResult | undefined>(undefined)
     )
   );
 
-const targetLabel = (target: AgentHost): string => (target === 'claude' ? 'Claude Code' : 'Codex');
+const targetLabel = (target: AgentHost): string => AGENT_HOST_LABELS[target];
 
 const hostUpdateCommand = (adapter: SetupTargetAdapter): string => `${adapter.executable} update`;
 
@@ -379,7 +388,7 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
   Effect.gen(function* () {
     const versionArgs = ['--version'];
     const versionCommand = commandText(adapter.executable, versionArgs);
-    return yield* captureOptional(adapter, versionArgs).pipe(
+    const detection = yield* captureOptional(adapter, versionArgs).pipe(
       Effect.matchEffect({
         onFailure: cause =>
           Effect.succeed({
@@ -447,6 +456,8 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
         },
       })
     );
+    if (detection.available) return detection;
+    return { ...detection, ...(yield* probeHostInstallation(adapter.target)) };
   });
 
 const commandFailureSuffix = (result: CommandResult): string => {
@@ -460,8 +471,11 @@ const errorMessage = (error: unknown): string => {
 
 type SetupOperation = 'setup' | 'uninstall';
 
+// Remediation commands must stay usable from the non-interactive shells
+// agents run in (the plugin hint's primary audience), so they always carry
+// --yes; interactive users can drop it.
 const setupCommand = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
-  `composio setup${operation === 'uninstall' ? ' --uninstall' : ''} --target ${adapter.target}`;
+  `composio setup${operation === 'uninstall' ? ' --uninstall' : ''} --yes --target ${adapter.target}`;
 
 const recoveryHint = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
   `Run \`${setupCommand(adapter, operation)}\` again. If the problem persists, run \`${hostUpdateCommand(adapter)}\` and retry.`;
@@ -615,15 +629,17 @@ const runRequired = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    const result = yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
-      Effect.timeoutFail({
+    const result = yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+      Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () =>
-          setupProcessError({
-            adapter,
-            stage: 'mutate',
-            message: `${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`,
-          }),
+        orElse: () =>
+          Effect.fail(
+            setupProcessError({
+              adapter,
+              stage: 'mutate',
+              message: `${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+            })
+          ),
       }),
       Effect.mapError(cause =>
         setupProcessError({
@@ -643,19 +659,23 @@ const runRequired = (
     }
   });
 
-const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) => {
+const validateInitialState = (
+  adapter: SetupTargetAdapter,
+  initial: InspectedSetupTarget,
+  operation: SetupOperation
+) => {
   if (!initial.available) {
-    return setupProcessError({
-      adapter,
-      stage: 'validate',
-      message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`,
+    return new SetupCommandError({
+      operation,
+      reasonCode: 'target_not_installed',
+      message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
   }
   if (initial.marketplace_conflict) {
-    return setupProcessError({
-      adapter,
-      stage: 'validate',
-      message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`,
+    return new SetupCommandError({
+      operation,
+      reasonCode: 'marketplace_conflict',
+      message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --yes --target ${adapter.target}\`.`,
     });
   }
   return Effect.void;
@@ -714,7 +734,7 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
       return yield* setupProcessError({
         adapter,
         stage: 'verify',
-        message: `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`composio setup --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+        message: `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`${setupCommand(adapter, 'setup')}\` or inspect the native ${adapter.target} plugin configuration.`,
       });
     }
 
@@ -754,7 +774,7 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
       return yield* setupProcessError({
         adapter,
         stage: 'verify',
-        message: `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+        message: `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`${setupCommand(adapter, 'uninstall')}\` or inspect the native ${adapter.target} plugin configuration.`,
       });
     }
 
@@ -777,6 +797,8 @@ export interface SetupTargetDetection {
   readonly version?: string;
   readonly unsupportedReason?: string;
   readonly unsupportedReasonCode?: SetupUnsupportedReasonCode;
+  readonly configDirPresent?: boolean;
+  readonly binaryInKnownPaths?: boolean;
 }
 
 export const detectSetupTargets = (target: SetupTarget) =>
@@ -806,7 +828,7 @@ export const inspectSetupTargets = (
     );
     if (!options.allowMarketplaceConflict) {
       yield* Effect.forEach(inspected, status =>
-        validateInitialState(ADAPTERS[status.target], status)
+        validateInitialState(ADAPTERS[status.target], status, options.operation ?? 'setup')
       );
     }
     return inspected;
@@ -823,6 +845,7 @@ const runSetupTargets = <E, R>(
   Effect.gen(function* () {
     const operation = verb === 'Uninstall' ? 'uninstall' : 'setup';
     const phase = verb === 'Uninstall' ? 'uninstall' : 'install';
+    const { invocationOrigin } = yield* cliInvocationContext;
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
       const result = yield* runAdapter(ADAPTERS[status.target], status).pipe(
@@ -833,6 +856,7 @@ const runSetupTargets = <E, R>(
               target: status.target,
               phase,
               error,
+              invocationOrigin,
               cliVersion: APP_VERSION,
             })
           )
@@ -862,6 +886,7 @@ const runSetupTargets = <E, R>(
             operation,
             target: result.target,
             action,
+            invocationOrigin,
             cliVersion: APP_VERSION,
           })
         );

@@ -1,16 +1,17 @@
-import { Config, Data, Effect, Option } from 'effect';
-import { FileSystem, HttpClient, Path } from '@effect/platform';
+import { Config, Data, Effect, FileSystem, Option, Path } from 'effect';
+import { HttpClient } from 'effect/unstable/http';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
+import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import {
   fetchLatestCliRelease,
   fetchCliReleaseByTag,
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
@@ -81,11 +82,13 @@ export const resolveSkillReleaseTag = ({
   channel,
   githubConfig,
   httpClient,
+  installedReleaseTag,
   releaseTag,
 }: {
   channel?: SkillReleaseChannel;
   githubConfig: GitHubConfig;
   httpClient: HttpClient.HttpClient;
+  installedReleaseTag?: string;
   releaseTag?: string;
 }) =>
   Effect.gen(function* () {
@@ -98,13 +101,13 @@ export const resolveSkillReleaseTag = ({
       return configTag;
     }
 
-    if (!channel) {
-      return `@composio/cli@${APP_VERSION}`;
+    if (installedReleaseTag) {
+      return installedReleaseTag;
     }
 
     const latest = yield* fetchLatestCliRelease({
       assetDescription: SKILL_ASSET_NAME,
-      channel,
+      channel: channel ?? inferSkillReleaseChannel(APP_VERSION),
       githubConfig,
       hasRequiredAsset: hasSkillAsset,
       httpClient,
@@ -147,6 +150,7 @@ export const installSkill = (options?: {
       channel: options?.channel,
       githubConfig,
       httpClient,
+      installedReleaseTag: yield* resolveRunningCliReleaseTag(process.execPath, APP_VERSION),
       releaseTag: options?.releaseTag,
     });
 
@@ -214,7 +218,7 @@ export const installSkill = (options?: {
       yield* fs.writeFile(zipPath, new Uint8Array(zipData));
 
       yield* Effect.tryPromise({
-        try: () => extractZip(zipPath, { dir: tmpDir }),
+        try: () => extractZipSafely(zipPath, tmpDir),
         catch: cause =>
           new SkillInstallError({
             cause,
@@ -267,7 +271,7 @@ export const installSkillSafe = (options?: {
 }) =>
   installSkill(options).pipe(
     Effect.sandbox,
-    Effect.catchAll(cause =>
+    Effect.catch(cause =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* Effect.logDebug('Skill install failed:', cause);

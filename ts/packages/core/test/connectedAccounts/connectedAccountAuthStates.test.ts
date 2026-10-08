@@ -95,8 +95,7 @@ describe('connectedAccountAuthStates — REVOKED arms', () => {
             revoked_at: '2026-05-01T00:00:00Z',
           },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      } as unknown as Parameters<typeof transformConnectedAccountResponse>[0]);
 
       expect(transformed.status).toBe(ConnectionStatuses.REVOKED);
       expect(transformed.state).toBeDefined();
@@ -116,8 +115,7 @@ describe('connectedAccountAuthStates — REVOKED arms', () => {
             revoked_at: '2026-05-01T00:00:00Z',
           },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      } as unknown as Parameters<typeof transformConnectedAccountResponse>[0]);
 
       expect(transformed.state).toBeDefined();
       expect(transformed.state?.authScheme).toBe(AuthSchemeTypes.S2S_OAUTH2);

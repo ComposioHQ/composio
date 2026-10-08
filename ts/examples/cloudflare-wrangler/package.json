@@ -1,23 +1,26 @@
 {
 	"name": "cloudflare-wrangler-example",
-	"version": "0.0.0",
+	"version": "0.0.5",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"typecheck": "tsc --noEmit -p ./tsconfig.json"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@types/node": "^26.6.2",
 		"typescript": "catalog:",
-		"vitest": "catalog:",
+		"vitest": "catalog:vitest4",
 		"wrangler": "catalog:"
 	},
 	"dependencies": {
 		"@composio/core": "workspace:^",
 		"hono": "catalog:",
 		"openai": "catalog:"
-	}
+	},
+	"type": "module"
 }

@@ -1,5 +1,19 @@
-import { Data, Effect, Config, Match, Option, Predicate, Record as EffectRecord } from 'effect';
-import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
+import {
+  Data,
+  Effect,
+  Config,
+  Match,
+  Option,
+  Predicate,
+  Record as EffectRecord,
+  Scope,
+  Stream,
+  Context,
+  Layer,
+} from 'effect';
+import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -7,14 +21,16 @@ import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
+import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-replace';
 
 // Note: `node:zlib` does not support Github's zip files
-import extractZip from 'extract-zip';
+import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
-  readInstalledReleaseTag,
+  RUN_COMPANION_RELEASE_TAG_FILENAME,
+  resolveRunningCliReleaseTag,
   writeInstalledReleaseTag,
 } from './run-companion-modules';
 
@@ -27,7 +43,9 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
-const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
+// Older releases shipped macOS local-tool sidecars in this directory next to the
+// binary. Current archives omit it, so upgrades remove what an old install left.
+const LEGACY_LOCAL_TOOLS_DIRNAME = 'local-tools-binaries';
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -43,7 +61,7 @@ interface UpgradeBinaryContext {
   readonly httpClient: HttpClient.HttpClient;
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
-  readonly githubConfig: Config.Config.Success<typeof GITHUB_CONFIG_ALL>;
+  readonly githubConfig: Config.Success<typeof GITHUB_CONFIG_ALL>;
 }
 
 /**
@@ -72,9 +90,9 @@ const fetchGitHubRelease = (
     if (response.status < 200 || response.status >= 300) {
       const pretty = yield* response.json.pipe(
         Effect.map(json =>
-          Predicate.isRecord(json) ? renderPrettyError(EffectRecord.toEntries(json)) : ''
+          Predicate.isObject(json) ? renderPrettyError(EffectRecord.toEntries(json)) : ''
         ),
-        Effect.catchAll(() => Effect.succeed(''))
+        Effect.catch(() => Effect.succeed(''))
       );
 
       const cause = pretty ? `HTTP ${response.status}\n${pretty}` : `HTTP ${response.status}`;
@@ -160,9 +178,9 @@ const fetchLatestRelease = (
     return release;
   });
 
-const provideFsAndPath = <A, E>(
-  { fs, path }: UpgradeBinaryContext,
-  effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>
+const provideFsAndPath = <A, E, R>(
+  { fs, path }: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
+  effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | R>
 ) =>
   effect.pipe(
     Effect.provideService(FileSystem.FileSystem, fs),
@@ -173,9 +191,7 @@ const provideFsAndPath = <A, E>(
  * Check if update is available
  */
 const resolveCurrentReleaseIdentifier = (ctx: UpgradeBinaryContext, currentPath: string) =>
-  provideFsAndPath(ctx, readInstalledReleaseTag(currentPath)).pipe(
-    Effect.map(releaseTag => releaseTag || `@composio/cli@${APP_VERSION}`)
-  );
+  provideFsAndPath(ctx, resolveRunningCliReleaseTag(currentPath, APP_VERSION));
 
 const isUpdateAvailable = (
   release: GitHubRelease,
@@ -188,13 +204,54 @@ const isUpdateAvailable = (
     return isVersionOutdated(comparison);
   });
 
+type DownloadProgress = {
+  readonly receivedBytes: number;
+  readonly totalBytes: number | undefined;
+};
+
+type DownloadProgressReporter = (progress: DownloadProgress) => Effect.Effect<void>;
+
+// Fast enough to look live, slow enough not to thrash the spinner.
+const DOWNLOAD_PROGRESS_INTERVAL_MILLIS = 250;
+
+const MEGABYTE = 1_000_000;
+
+export const formatMegabytes = (bytes: number): string => `${(bytes / MEGABYTE).toFixed(1)} MB`;
+
+/**
+ * Human-readable transfer state. Falls back to a plain byte count when the
+ * server never told us how large the asset is.
+ */
+export const formatDownloadProgress = ({ receivedBytes, totalBytes }: DownloadProgress): string => {
+  if (totalBytes === undefined || totalBytes <= 0) {
+    return `Downloading... ${formatMegabytes(receivedBytes)}`;
+  }
+
+  const percent = Math.min(100, Math.floor((receivedBytes / totalBytes) * 100));
+  return `Downloading... ${percent}% (${formatMegabytes(receivedBytes)} / ${formatMegabytes(totalBytes)})`;
+};
+
+const resolveDownloadTotalBytes = (
+  asset: { readonly size?: number },
+  response: HttpClientResponse.HttpClientResponse
+): number | undefined => {
+  if (typeof asset.size === 'number' && asset.size > 0) {
+    return asset.size;
+  }
+
+  const header = response.headers['content-length'];
+  const parsed = header === undefined ? Number.NaN : Number.parseInt(header, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
 /**
  * Download binary for current platform
  */
 const downloadBinary = (
   { httpClient }: UpgradeBinaryContext,
   release: GitHubRelease,
-  platformArch: PlatformArch
+  platformArch: PlatformArch,
+  onProgress: DownloadProgressReporter = () => Effect.void
 ): Effect.Effect<{ name: string; data: Uint8Array }, UpgradeBinaryError, never> =>
   Effect.gen(function* () {
     yield* Effect.logDebug(`Looking up binary for ${platformArch.platform}-${platformArch.arch}`);
@@ -234,9 +291,27 @@ const downloadBinary = (
       return resp;
     });
 
-    const arrayBuffer = yield* Effect.gen(function* () {
-      return yield* response.arrayBuffer;
-    }).pipe(
+    // Streamed rather than buffered so the transfer can be reported as it runs:
+    // these archives are hundreds of megabytes, and a silent multi-minute wait
+    // is indistinguishable from a hung command.
+    const totalBytes = resolveDownloadTotalBytes(asset, response);
+
+    const parts: Array<Uint8Array> = [];
+    let receivedBytes = 0;
+    let lastReportedAt = 0;
+
+    yield* response.stream.pipe(
+      Stream.runForEach(chunk => {
+        parts.push(chunk);
+        receivedBytes += chunk.length;
+
+        const now = Date.now();
+        if (now - lastReportedAt < DOWNLOAD_PROGRESS_INTERVAL_MILLIS) {
+          return Effect.void;
+        }
+        lastReportedAt = now;
+        return onProgress({ receivedBytes, totalBytes });
+      }),
       Effect.mapError(
         cause =>
           new UpgradeBinaryError({
@@ -246,9 +321,18 @@ const downloadBinary = (
       )
     );
 
+    yield* onProgress({ receivedBytes, totalBytes: totalBytes ?? receivedBytes });
+
+    const data = new Uint8Array(receivedBytes);
+    let offset = 0;
+    for (const part of parts) {
+      data.set(part, offset);
+      offset += part.length;
+    }
+
     return {
       name: binaryName,
-      data: new Uint8Array(arrayBuffer),
+      data,
     };
   });
 
@@ -269,14 +353,14 @@ const fetchChecksums = (
 
     const response = yield* httpClient
       .get(checksumsAsset.browser_download_url)
-      .pipe(Effect.catchAll(() => Effect.succeed(null)));
+      .pipe(Effect.catch(() => Effect.succeed(null)));
 
     if (!response || response.status < 200 || response.status >= 300) {
       yield* Effect.logDebug('Failed to download checksums.txt');
       return Option.none();
     }
 
-    const text = yield* response.text.pipe(Effect.catchAll(() => Effect.succeed('')));
+    const text = yield* response.text.pipe(Effect.catch(() => Effect.succeed('')));
     if (!text) {
       return Option.none();
     }
@@ -353,7 +437,7 @@ const extractBinary = (
 
     yield* Effect.tryPromise({
       try: async () => {
-        await extractZip(zipPath, { dir: extractDir });
+        await extractZipSafely(zipPath, extractDir);
       },
       catch: error =>
         new UpgradeBinaryError({
@@ -363,7 +447,7 @@ const extractBinary = (
     });
 
     // Check if binary exists
-    const exists = yield* fs.exists(binaryPath).pipe(Effect.catchAll(() => Effect.succeed(false)));
+    const exists = yield* fs.exists(binaryPath).pipe(Effect.catch(() => Effect.succeed(false)));
 
     if (!exists) {
       return yield* Effect.fail(
@@ -416,31 +500,23 @@ const getCurrentExecutablePath = Effect.fn(function* () {
 /**
  * Replace current executable binary with the new target one.
  */
+const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =>
+  new UpgradeBinaryError({
+    cause: error.cause,
+    message: `${message}: ${error.message}`,
+  });
+
 const replaceBinary = (
-  ctx: UpgradeBinaryContext,
+  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
   sourcePath: string,
   targetPath: string,
   options: {
     releaseTag?: string;
   } = {}
-): Effect.Effect<void, UpgradeBinaryError> =>
+): Effect.Effect<void, UpgradeBinaryError, Scope.Scope> =>
   Effect.gen(function* () {
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
-    yield* fs
-      .copy(sourcePath, targetPath, {
-        // Note: without `overwrite: true`, the copy operation will silently bail out
-        overwrite: true,
-      })
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new UpgradeBinaryError({
-              cause,
-              message: 'Failed to replace binary',
-            })
-        )
-      );
 
     const sourceDirectory = path.dirname(sourcePath);
     const targetDirectory = path.dirname(targetPath);
@@ -448,11 +524,17 @@ const replaceBinary = (
       ctx,
       collectExpectedRunCompanionAssetRelativePaths(sourceDirectory)
     );
+    const companionReplacements: Array<{
+      readonly relativePath: string;
+      readonly sourcePath: string;
+      readonly targetPath: string;
+    }> = [];
+
     for (const relativePath of companionRelativePaths) {
       const sourceCompanion = path.join(sourceDirectory, relativePath);
       const sourceExists = yield* fs
         .exists(sourceCompanion)
-        .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        .pipe(Effect.catch(() => Effect.succeed(false)));
 
       if (!sourceExists) {
         return yield* Effect.fail(
@@ -463,7 +545,33 @@ const replaceBinary = (
         );
       }
 
-      const targetCompanion = path.join(targetDirectory, relativePath);
+      companionReplacements.push({
+        relativePath,
+        sourcePath: sourceCompanion,
+        targetPath: path.join(targetDirectory, relativePath),
+      });
+    }
+
+    const releaseTag = options.releaseTag;
+    const stagedReleaseTagPath = path.join(sourceDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
+    if (releaseTag) {
+      yield* provideFsAndPath(ctx, writeInstalledReleaseTag(sourceDirectory, releaseTag)).pipe(
+        Effect.mapError(
+          error =>
+            new UpgradeBinaryError({
+              cause: error,
+              message: 'Failed to update installed release metadata',
+            })
+        )
+      );
+    }
+
+    for (const replacement of companionReplacements) {
+      const {
+        relativePath,
+        sourcePath: sourceCompanion,
+        targetPath: targetCompanion,
+      } = replacement;
       yield* fs.makeDirectory(path.dirname(targetCompanion), { recursive: true }).pipe(
         Effect.mapError(
           cause =>
@@ -474,53 +582,38 @@ const replaceBinary = (
         )
       );
 
-      yield* fs
-        .copy(sourceCompanion, targetCompanion, {
-          overwrite: true,
-        })
-        .pipe(
-          Effect.mapError(
-            cause =>
-              new UpgradeBinaryError({
-                cause,
-                message: `Failed to replace companion module: ${relativePath}`,
-              })
-          )
-        );
-    }
-
-    const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-    const localToolsAssetExists = yield* fs
-      .exists(localToolsAssetSource)
-      .pipe(Effect.catchAll(() => Effect.succeed(false)));
-    if (localToolsAssetExists) {
-      const localToolsAssetTarget = path.join(targetDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-      // Replace the whole asset directory: drop the previous tree, then copy
-      // the new one (fs.copy is recursive for directories).
-      yield* fs.remove(localToolsAssetTarget, { recursive: true, force: true }).pipe(
-        Effect.andThen(fs.copy(localToolsAssetSource, localToolsAssetTarget, { overwrite: true })),
+      yield* provideFsAndPath(
+        ctx,
+        atomicReplaceFile({ sourcePath: sourceCompanion, targetPath: targetCompanion })
+      ).pipe(
         Effect.mapError(
-          error =>
-            new UpgradeBinaryError({
-              cause: error,
-              message: 'Failed to replace local-tool binary assets',
-            })
+          mapAtomicReplaceError(`Failed to replace companion module: ${relativePath}`)
         )
       );
     }
 
-    const releaseTag = options.releaseTag;
     if (releaseTag) {
-      yield* provideFsAndPath(ctx, writeInstalledReleaseTag(targetDirectory, releaseTag)).pipe(
-        Effect.mapError(
-          error =>
-            new UpgradeBinaryError({
-              cause: error,
-              message: 'Failed to update installed release metadata',
-            })
+      yield* provideFsAndPath(
+        ctx,
+        atomicReplaceFile({
+          sourcePath: stagedReleaseTagPath,
+          targetPath: path.join(targetDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME),
+        })
+      ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to update installed release metadata')));
+    }
+
+    yield* provideFsAndPath(ctx, atomicReplaceFile({ sourcePath, targetPath, mode: 0o755 })).pipe(
+      Effect.mapError(mapAtomicReplaceError('Failed to replace binary'))
+    );
+
+    const legacyLocalToolsPath = path.join(targetDirectory, LEGACY_LOCAL_TOOLS_DIRNAME);
+    yield* fs
+      .remove(legacyLocalToolsPath, { recursive: true, force: true })
+      .pipe(
+        Effect.catch(cause =>
+          Effect.logDebug(`Could not remove obsolete ${legacyLocalToolsPath}: ${String(cause)}`)
         )
       );
-    }
   });
 
 /**
@@ -548,7 +641,9 @@ const upgrade = (
     // If local binary path is provided (for testing), use it directly
     if (Option.isSome(upgradeTargetOpt)) {
       yield* ui.log.info(`New local version available (current: ${currentReleaseIdentifier})`);
-      yield* replaceBinary(ctx, upgradeTargetOpt.value, currentPath);
+      yield* replaceBinary(ctx, upgradeTargetOpt.value, currentPath, {
+        releaseTag: explicitTag,
+      });
       yield* ui.outro('Upgrade completed');
       return undefined;
     }
@@ -576,7 +671,9 @@ const upgrade = (
             : `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
         );
 
-        const { name, data } = yield* downloadBinary(ctx, release, platformArch);
+        const { name, data } = yield* downloadBinary(ctx, release, platformArch, progress =>
+          spinner.message(formatDownloadProgress(progress))
+        );
 
         yield* spinner.message('Verifying checksum...');
 
@@ -623,19 +720,25 @@ const upgrade = (
   });
 
 // Service to manage CLI binary upgrades
-export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
-  accessors: true,
-  effect: Effect.gen(function* () {
-    const ctx: UpgradeBinaryContext = {
-      httpClient: yield* HttpClient.HttpClient,
-      fs: yield* FileSystem.FileSystem,
-      path: yield* Path.Path,
-      githubConfig: yield* GITHUB_CONFIG_ALL,
-    };
+const makeUpgradeBinary = Effect.gen(function* () {
+  const ctx: UpgradeBinaryContext = {
+    httpClient: yield* HttpClient.HttpClient,
+    fs: yield* FileSystem.FileSystem,
+    path: yield* Path.Path,
+    githubConfig: yield* GITHUB_CONFIG_ALL,
+  };
 
-    return {
-      upgrade: (options: { prerelease?: boolean; tag?: string } = {}) => upgrade(ctx, options),
-    } as const;
-  }),
-  dependencies: [Path.layer],
-}) {}
+  return {
+    upgrade: (options: { prerelease?: boolean; tag?: string } = {}) => upgrade(ctx, options),
+  } as const;
+});
+
+export type UpgradeBinaryShape = Effect.Success<typeof makeUpgradeBinary>;
+
+export class UpgradeBinary extends Context.Service<UpgradeBinary, UpgradeBinaryShape>()(
+  'services/UpgradeBinary'
+) {
+  static readonly Default = Layer.effect(UpgradeBinary, makeUpgradeBinary).pipe(
+    Layer.provide(Path.layer)
+  );
+}

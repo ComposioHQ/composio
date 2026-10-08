@@ -1,0 +1,5 @@
+# bashrc prologue
+
+# Composio CLI
+export COMPOSIO_INSTALL_DIR="/opt/composio"
+export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
