@@ -2711,6 +2711,53 @@ class TestCustomToolBodyRequiresUserInput:
         assert result.result_type == "failed"
 
 
+class TestMixedMultiExecuteRequiresUserInput:
+    """A ``COMPOSIO_MULTI_EXECUTE_TOOL`` batch that mixes local and remote
+    tools turns a raised backend error into per-tool failures. An input request
+    is not one: the caller needs the questions and the request state.
+    """
+
+    def test_remote_half_input_required_raises(self):
+        from composio.core.models.tools import Tools
+
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+        local_calls: t.List[bool] = []
+        session = _session_with_custom_tools(
+            client, _custom_tool_calling(lambda ctx: local_calls.append(True))
+        )
+        tools = Tools(
+            client=client,
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        # Keep the (read) tool-schema lookup off the transport.
+        tools._tool_schemas["COMPOSIO_MULTI_EXECUTE_TOOL"] = MagicMock()
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            session._route_multi_execute(
+                {
+                    "tools": [
+                        {"tool_slug": "SEND_WELCOME_EMAIL", "arguments": {}},
+                        {"tool_slug": "GMAIL_SEND_EMAIL", "arguments": {}},
+                    ]
+                },
+                tools,
+            )
+
+        error = raised.value
+        assert "Tool COMPOSIO_MULTI_EXECUTE_TOOL requires user input" in error.message
+        assert list(error.input_requests) == ["approval_1"]
+        assert error.request_state == "opaque-state-token"
+        # Only the remote half reached the API, once.
+        assert len(requests) == 1
+        assert [
+            tool["tool_slug"]
+            for tool in json.loads(requests[0].content)["arguments"]["tools"]
+        ] == ["GMAIL_SEND_EMAIL"]
+        # The local tool had already run; its result is discarded by the raise.
+        assert local_calls == [True]
+
+
 _EXECUTED_ANSWERS = [
     pytest.param("failed", None, False, id="failed with a null error"),
     pytest.param("failed", "", False, id="failed with an empty error"),

@@ -643,6 +643,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_future:
                 try:
                     remote_result = remote_future.result()
+                except exceptions.ToolInputRequiredError:
+                    # An input request is not a per-tool failure: re-raise it so
+                    # the caller gets `input_requests` and `request_state`.
+                    # Accepted: local tools in this batch already ran and their results are discarded.
+                    raise
                 except Exception as error:
                     remote_error_message = str(error) or "Remote tool execution failed"
 
