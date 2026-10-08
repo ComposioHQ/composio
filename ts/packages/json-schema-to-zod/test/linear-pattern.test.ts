@@ -151,70 +151,88 @@ describe('catastrophic backtracking (SEC-1178)', () => {
     }
   );
 
-  it.each(['x', 'components', 'escaped'])('protects regexes referenced through %s', location => {
-    const pattern = '^(a+)+$';
-    let nativeExecutions = 0;
-    const originalExec = RegExp.prototype.exec;
-    const nativeExec = vi.spyOn(RegExp.prototype, 'exec').mockImplementation(function (
-      this: RegExp,
-      input: string
-    ) {
-      if (this.source === pattern) {
-        nativeExecutions++;
-        throw new Error('schema regex reached native matching');
+  it.each(['x', 'components', 'escaped', '$id', '$anchor'])(
+    'protects regexes referenced through %s',
+    location => {
+      const pattern = '^(a+)+$';
+      let nativeExecutions = 0;
+      const originalExec = RegExp.prototype.exec;
+      const nativeExec = vi.spyOn(RegExp.prototype, 'exec').mockImplementation(function (
+        this: RegExp,
+        input: string
+      ) {
+        if (this.source === pattern) {
+          nativeExecutions++;
+          throw new Error('schema regex reached native matching');
+        }
+        return originalExec.call(this, input);
+      });
+      try {
+        for (const keyword of ['pattern', 'patternProperties']) {
+          const target =
+            keyword === 'pattern'
+              ? { type: 'string', pattern }
+              : {
+                  type: 'object',
+                  patternProperties: { [pattern]: { type: 'integer' } },
+                  additionalProperties: false,
+                };
+          const { extension, ref } = {
+            x: { extension: { x: target }, ref: '#/x' },
+            components: {
+              extension: { components: { schemas: { target } } },
+              ref: '#/components/schemas/target',
+            },
+            escaped: { extension: { 'schema/~target': target }, ref: '#/schema~1~0target' },
+            // The interpreter also resolves identifiers it registers anywhere.
+            $id: {
+              extension: { x: { $id: 'https://example.com/target', ...target } },
+              ref: 'https://example.com/target',
+            },
+            $anchor: { extension: { x: { $anchor: 'target', ...target } }, ref: '#target' },
+          }[location]!;
+          const parsed = jsonSchemaToZod({
+            type: 'object',
+            properties: { value: { $ref: ref } },
+            ...extension,
+          } as JsonSchema);
+          expect(
+            parsed.safeParse({ value: keyword === 'pattern' ? 'aaa' : { aaa: 1 } }).success
+          ).toBe(true);
+          expect(
+            parsed.safeParse({ value: keyword === 'pattern' ? 'a!' : { 'a!': 1 } }).success
+          ).toBe(false);
+          if (keyword === 'patternProperties') {
+            expect(parsed.safeParse({ value: { aaa: 'bad' } }).success).toBe(false);
+          }
+        }
+        expect(nativeExecutions).toBe(0);
+      } finally {
+        nativeExec.mockRestore();
       }
-      return originalExec.call(this, input);
-    });
-    try {
-      for (const keyword of ['pattern', 'patternProperties']) {
-        const target =
-          keyword === 'pattern'
-            ? { type: 'string', pattern }
-            : {
-                type: 'object',
-                patternProperties: { [pattern]: { type: 'integer' } },
-                additionalProperties: false,
-              };
-        const extension =
-          location === 'components'
-            ? { components: { schemas: { target } } }
-            : { [location === 'escaped' ? 'schema/~target' : 'x']: target };
-        const ref =
-          location === 'components'
-            ? '#/components/schemas/target'
-            : location === 'escaped'
-              ? '#/schema~1~0target'
-              : '#/x';
-        const parsed = jsonSchemaToZod({
+    }
+  );
+
+  it.each([
+    ['#/x', {}],
+    ['https://example.com/target', { $id: 'https://example.com/target' }],
+    ['#target', { $anchor: 'target' }],
+  ])(
+    'rejects unsupported key patterns in extension reference targets (%s) during conversion',
+    (ref, identifier) => {
+      expect(() =>
+        jsonSchemaToZod({
           type: 'object',
           properties: { value: { $ref: ref } },
-          ...extension,
-        } as JsonSchema);
-        expect(
-          parsed.safeParse({ value: keyword === 'pattern' ? 'aaa' : { aaa: 1 } }).success
-        ).toBe(true);
-        expect(
-          parsed.safeParse({ value: keyword === 'pattern' ? 'a!' : { 'a!': 1 } }).success
-        ).toBe(false);
-        if (keyword === 'patternProperties') {
-          expect(parsed.safeParse({ value: { aaa: 'bad' } }).success).toBe(false);
-        }
-      }
-      expect(nativeExecutions).toBe(0);
-    } finally {
-      nativeExec.mockRestore();
+          x: {
+            ...identifier,
+            type: 'object',
+            patternProperties: { '^(?=a)': { type: 'integer' } },
+          },
+        } as JsonSchema)
+      ).toThrow(InvalidPatternError);
     }
-  });
-
-  it('rejects unsupported key patterns in extension reference targets during conversion', () => {
-    expect(() =>
-      jsonSchemaToZod({
-        type: 'object',
-        properties: { value: { $ref: '#/x' } },
-        x: { type: 'object', patternProperties: { '^(?=a)': { type: 'integer' } } },
-      } as JsonSchema)
-    ).toThrow(InvalidPatternError);
-  });
+  );
 
   it('keeps references through renamed keys in extension schemas valid', () => {
     const parsed = jsonSchemaToZod({
@@ -314,11 +332,14 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   });
 
   it('leaves a lookahead pattern that could backtrack catastrophically unenforced', () => {
-    const regex = compilePattern('pattern', '^(?=(a+)+$)a', { path: [] });
+    // Assembled at runtime so static analysis does not flag the test input
+    // itself as an inefficient regular expression.
+    const pattern = ['^(?=(a+)+', '$)a'].join('');
+    const regex = compilePattern('pattern', pattern, { path: [] });
     expect(regex.matcher.kind).toBe('unenforced');
     finishesQuickly(() => expect(regex.test(ATTACK)).toBe(true));
     // The JSON Schema shown to the model still carries the pattern.
-    expect(regex.source).toBe('^(?=(a+)+$)a');
+    expect(regex.source).toBe(pattern);
   });
 
   it('rejects a patternProperties key that needs a backtracking engine', () => {

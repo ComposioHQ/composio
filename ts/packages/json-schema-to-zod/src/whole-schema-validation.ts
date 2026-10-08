@@ -1,4 +1,11 @@
-import { encodePointer, format, Validator } from '@cfworker/json-schema';
+import {
+  encodePointer,
+  format,
+  ignoredKeyword,
+  schemaArrayKeyword,
+  schemaMapKeyword,
+  Validator,
+} from '@cfworker/json-schema';
 import type { Schema as InterpreterSchema } from '@cfworker/json-schema';
 import { z } from 'zod/v3';
 
@@ -69,10 +76,15 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 type SchemaNode = { value: Record<string, unknown>; path: ReadonlyArray<string | number> };
 
-/** Known schema positions and local reference targets, including extension locations. */
-function* reachableSchemaNodes(
+/**
+ * Every object the interpreter registers as a schema, found with its own walk
+ * (`dereference`): each key it does not ignore, extension locations included.
+ * A `$ref` resolves only through that registry, whether it is a JSON Pointer,
+ * an `$id` or an `$anchor`, so these are all the schemas the interpreter can
+ * ever validate against.
+ */
+function* interpreterSchemaNodes(
   value: unknown,
-  root: unknown,
   path: ReadonlyArray<string | number> = [],
   seen: WeakSet<object> = new WeakSet()
 ): Generator<SchemaNode> {
@@ -82,36 +94,25 @@ function* reachableSchemaNodes(
   seen.add(value);
   yield { value, path };
 
-  if (typeof value.$ref === 'string' && (value.$ref === '#' || value.$ref.startsWith('#/'))) {
-    const targetPath =
-      value.$ref === '#' ? [] : value.$ref.slice(2).split('/').map(decodePointerSegment);
-    let target = root;
-    for (const segment of targetPath) {
-      target =
-        (isObject(target) || Array.isArray(target)) && Object.hasOwn(target, segment)
-          ? Reflect.get(target, segment)
-          : undefined;
-    }
-    yield* reachableSchemaNodes(target, root, targetPath, seen);
-  }
-
   for (const [key, child] of Object.entries(value)) {
-    if (SCHEMA_MAP_KEYWORDS.has(key) && isObject(child)) {
-      for (const [name, nested] of Object.entries(child)) {
-        yield* reachableSchemaNodes(nested, root, [...path, key, name], seen);
-      }
-    } else if (SCHEMA_ARRAY_KEYWORDS.has(key) && Array.isArray(child)) {
-      for (const [index, nested] of child.entries()) {
-        yield* reachableSchemaNodes(nested, root, [...path, key, index], seen);
-      }
-    } else if (SCHEMA_VALUE_KEYWORDS.has(key)) {
-      if (Array.isArray(child)) {
+    // Indexed like `dereference` does, so inherited names are skipped alike.
+    if ((ignoredKeyword as Record<string, boolean>)[key]) {
+      continue;
+    }
+    if (Array.isArray(child)) {
+      if ((schemaArrayKeyword as Record<string, boolean>)[key]) {
         for (const [index, nested] of child.entries()) {
-          yield* reachableSchemaNodes(nested, root, [...path, key, index], seen);
+          yield* interpreterSchemaNodes(nested, [...path, key, index], seen);
         }
-      } else {
-        yield* reachableSchemaNodes(child, root, [...path, key], seen);
       }
+    } else if ((schemaMapKeyword as Record<string, boolean>)[key]) {
+      if (isObject(child)) {
+        for (const [name, nested] of Object.entries(child)) {
+          yield* interpreterSchemaNodes(nested, [...path, key, name], seen);
+        }
+      }
+    } else {
+      yield* interpreterSchemaNodes(child, [...path, key], seen);
     }
   }
 }
@@ -618,7 +619,7 @@ export const withWholeSchemaValidation = (
   parsedSchema: z.ZodTypeAny
 ): z.ZodTypeAny => {
   const patternMatchers = new Map<string, PatternMatcher>();
-  const originalNodes = [...reachableSchemaNodes(jsonSchema, jsonSchema)];
+  const originalNodes = [...interpreterSchemaNodes(jsonSchema)];
   const schemaObjects = new WeakSet(originalNodes.map(node => node.value));
   const keyMatchers = collectPatternKeyMatchers(originalNodes);
 
@@ -628,7 +629,7 @@ export const withWholeSchemaValidation = (
     const renamed = new Map<string, string>();
     const renamePatternKeys = patternKeyRenamer(spell, renamed);
     // Capture targets before key renaming changes the paths that address them.
-    const nodes = [...reachableSchemaNodes(interpreterSchema, interpreterSchema)];
+    const nodes = [...interpreterSchemaNodes(interpreterSchema)];
     for (const { value } of nodes) {
       prepareInterpreterSchema(
         value,
