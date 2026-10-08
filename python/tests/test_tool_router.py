@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import traceback
 import typing as t
 from unittest.mock import MagicMock, patch
 
@@ -34,10 +35,12 @@ from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionWithMcp,
 )
+from composio.core.models.session_context import SessionContextImpl
 from composio.exceptions import (
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
+    ToolInputRequiredError,
     ValidationError,
 )
 from tests.conftest import mock_http_client
@@ -184,7 +187,7 @@ class TestToolRouter:
         policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
         tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["extra_body"]["instant"] == policy
+        assert kwargs["instant"] == policy
         assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
@@ -196,10 +199,7 @@ class TestToolRouter:
 
         tool_router.create(user_id="user_123", instant=False)
         assert (
-            mock_client.tool_router.session.create.call_args.kwargs["extra_body"][
-                "instant"
-            ]
-            is False
+            mock_client.tool_router.session.create.call_args.kwargs["instant"] is False
         )
 
     def test_create_session_default_returns_base_session(self, tool_router):
@@ -2333,7 +2333,8 @@ class TestInstantContractTransport:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
-        assert session.config.instant == {"return_instant_charge": True}
+        assert not isinstance(session.config.instant, bool)
+        assert session.config.instant.return_instant_charge is True
         assert "premium_usage" not in session.config.model_dump()
 
         if policy is None:
@@ -2347,11 +2348,13 @@ class TestInstantContractTransport:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
-        assert session.config.instant == {"return_instant_charge": True}
+        assert not isinstance(session.config.instant, bool)
+        assert session.config.instant.return_instant_charge is True
         assert "premium_usage" not in session.config.model_dump()
 
         attached = router.use(session_id="session_123")
-        assert attached.config.instant == {"return_instant_charge": True}
+        assert not isinstance(attached.config.instant, bool)
+        assert attached.config.instant.return_instant_charge is True
 
     def test_execute_selector_charge_and_search_coverage(self):
         requests: t.List[httpx.Request] = []
@@ -2384,7 +2387,9 @@ class TestInstantContractTransport:
         )
         result = session.execute("EXA_SEARCH", arguments={}, account="instant_account")
         assert json.loads(requests[-1].content)["account"] == "instant_account"
-        assert result.instant_charge == charge
+        assert result.instant_charge is not None
+        assert result.instant_charge.amount == "0.012"
+        assert result.instant_charge.model_dump() == charge
         assert "premium_charge" not in result.model_dump()
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
@@ -2418,6 +2423,377 @@ class TestInstantContractTransport:
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
         assert result.to_dict() == payload
+
+
+_INPUT_REQUIRED_JSON: t.Dict[str, t.Any] = {
+    "result_type": "input_required",
+    "input_requests": {
+        "approval_1": {
+            "type": "elicitation",
+            "mode": "form",
+            "message": "Allow GMAIL_SEND_EMAIL to send this email?",
+            "requested_schema": {
+                "type": "object",
+                "properties": {"approved": {"type": "boolean"}},
+                "required": ["approved"],
+            },
+        }
+    },
+    "request_state": "opaque-state-token",
+}
+
+_PROXY_PARAMS: t.Dict[str, t.Any] = {
+    "toolkit": "github",
+    "endpoint": "https://api.github.com/user/repos?token=secret",
+    "method": "POST",
+    "body": {"name": "repo"},
+}
+
+
+def _answering_client(
+    body: t.Dict[str, t.Any],
+) -> t.Tuple[HttpClient, t.List[httpx.Request]]:
+    """A real client whose execute and proxy calls are answered with ``body``."""
+    requests: t.List[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith(("/execute", "/proxy_execute")):
+            requests.append(request)
+            return httpx.Response(200, json=body)
+        return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+    client = HttpClient(
+        provider="test",
+        api_key="ak_test",
+        base_url="https://backend.composio.dev",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    return client, requests
+
+
+def _created_session(client: HttpClient) -> ToolRouterSession:
+    return ToolRouter(client=client, provider=MagicMock()).create(user_id="user_123")
+
+
+class TestExecutionRequiresUserInput:
+    """``result_type: "input_required"`` carries no data, log ID or HTTP status,
+    so every execution path raises it instead of returning it as a result.
+
+    The cases run a real client over a stub transport so they cover the wire
+    shape the generated client hands to the SDK.
+    """
+
+    @pytest.mark.parametrize(
+        ("run", "subject"),
+        [
+            pytest.param(
+                lambda client: _created_session(client).execute(
+                    "GMAIL_SEND_EMAIL", arguments={"to": "test@test.com"}
+                ),
+                "Tool GMAIL_SEND_EMAIL",
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
+                "POST proxy call for toolkit github",
+                id="session.proxy_execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).execute("GMAIL_SEND_EMAIL", {"to": "test@test.com"}),
+                "Tool GMAIL_SEND_EMAIL",
+                id="custom tool context execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).proxy_execute(**_PROXY_PARAMS),
+                "POST proxy call for toolkit github",
+                id="custom tool context proxy_execute",
+            ),
+            pytest.param(
+                lambda client: _session_tool_execute_fn(client)(
+                    "GMAIL_SEND_EMAIL", {"to": "test@test.com"}
+                ),
+                "Tool GMAIL_SEND_EMAIL",
+                id="provider-wrapped session tool",
+            ),
+        ],
+    )
+    def test_raises_tool_input_required_error(self, run, subject):
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            run(client)
+
+        error = raised.value
+        assert f"{subject} requires user input" in error.message
+        assert "request_state" in error.message
+        # The opaque state and the proxied URL stay out of the message.
+        assert "opaque-state-token" not in error.message
+        assert "secret" not in error.message
+        assert error.request_state == "opaque-state-token"
+        assert error.input_requests == {
+            "approval_1": {
+                "type": "elicitation",
+                "mode": "form",
+                "message": "Allow GMAIL_SEND_EMAIL to send this email?",
+                "requested_schema": {
+                    "type": "object",
+                    "properties": {"approved": {"type": "boolean"}},
+                    "required": ["approved"],
+                },
+            }
+        }
+        # The call is not repeated: answering needs the user.
+        assert len(requests) == 1
+
+    def test_request_state_stays_out_of_str_repr_and_args(self):
+        """``request_state`` is continuation state: readable as an attribute
+        for the code that answers the request, absent from what an exception
+        is routinely logged as."""
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        error = raised.value
+        assert error.request_state == "opaque-state-token"
+        assert "opaque-state-token" not in str(error)
+        assert "opaque-state-token" not in repr(error)
+        assert "opaque-state-token" not in repr(error.args)
+        assert error.args == (error.message,)
+        formatted = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        assert "ToolInputRequiredError" in formatted
+        assert "opaque-state-token" not in formatted
+
+    def test_request_state_is_none_when_the_api_returns_none(self):
+        body = {k: v for k, v in _INPUT_REQUIRED_JSON.items() if k != "request_state"}
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert raised.value.request_state is None
+
+    @pytest.mark.parametrize(
+        ("result_type", "error"),
+        [("completed", None), ("failed", "Connection not found")],
+    )
+    def test_execute_still_returns_a_result(self, result_type, error):
+        client, _ = _answering_client(
+            {
+                "result_type": result_type,
+                "data": {"id": "msg_1"},
+                "error": error,
+                "log_id": "log_1",
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert result.result_type == result_type
+        assert result.data == {"id": "msg_1"}
+        assert result.error == error
+        assert result.log_id == "log_1"
+
+    def test_proxy_execute_still_returns_a_completed_result(self):
+        client, _ = _answering_client(
+            {
+                "result_type": "completed",
+                "status": 201,
+                "data": {"id": 1},
+                "headers": {"x-request-id": "req_1"},
+            }
+        )
+
+        result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
+
+        assert result == {
+            "status": 201,
+            "data": {"id": 1},
+            "headers": {"x-request-id": "req_1"},
+        }
+
+
+class _NoInput(BaseModel):
+    pass
+
+
+def _custom_tool_calling(call: t.Callable[[t.Any], t.Any]) -> t.Any:
+    """A custom tools map with one local tool whose body runs ``call(ctx)``."""
+    from composio.core.models.custom_tool import build_custom_tools_map
+
+    @experimental_api.tool()
+    def send_welcome_email(input: _NoInput, ctx: t.Any) -> t.Dict[str, t.Any]:
+        """Sends the welcome email through a session helper."""
+        return {"sent": call(ctx)}
+
+    return build_custom_tools_map([send_welcome_email])
+
+
+def _session_with_custom_tools(
+    client: HttpClient, custom_tools_map: t.Any
+) -> ToolRouterSession:
+    return ToolRouterSession(
+        client=client,
+        provider=MagicMock(),
+        dangerously_allow_auto_upload_download_files=False,
+        session_id="session_123",
+        mcp=MagicMock(),
+        experimental=MagicMock(),
+        custom_tools_map=custom_tools_map,
+        user_id="user_123",
+    )
+
+
+def _raise_boom(ctx: t.Any) -> t.Any:
+    raise RuntimeError("boom")
+
+
+class TestCustomToolBodyRequiresUserInput:
+    """A local custom tool reaches the API through ``ctx.execute()`` and
+    ``ctx.proxy_execute()``. The wrapper that runs the tool turns whatever it
+    raises into a failed result, which must not happen to an input request: the
+    caller needs the questions and the request state, not a message.
+    """
+
+    _BODIES = [
+        pytest.param(
+            lambda ctx: ctx.execute("GMAIL_SEND_EMAIL", {"to": "test@test.com"}),
+            "Tool GMAIL_SEND_EMAIL",
+            id="ctx.execute",
+        ),
+        pytest.param(
+            lambda ctx: ctx.proxy_execute(**_PROXY_PARAMS),
+            "POST proxy call for toolkit github",
+            id="ctx.proxy_execute",
+        ),
+    ]
+
+    @pytest.mark.parametrize(("call", "subject"), _BODIES)
+    def test_session_execute_of_a_custom_tool_raises(self, call, subject):
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+        session = _session_with_custom_tools(client, _custom_tool_calling(call))
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            session.execute("SEND_WELCOME_EMAIL", arguments={})
+
+        error = raised.value
+        assert f"{subject} requires user input" in error.message
+        assert error.request_state == "opaque-state-token"
+        assert list(error.input_requests) == ["approval_1"]
+        assert len(requests) == 1
+
+    @pytest.mark.parametrize(("call", "subject"), _BODIES)
+    def test_sibling_custom_tool_raises_through_ctx_execute(self, call, subject):
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+        context = SessionContextImpl(
+            client, "user_123", "session_123", _custom_tool_calling(call)
+        )
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            context.execute("SEND_WELCOME_EMAIL", {})
+
+        assert raised.value.request_state == "opaque-state-token"
+
+    def test_any_other_error_is_still_a_failed_result(self):
+        client, _ = _answering_client(_INPUT_REQUIRED_JSON)
+        session = _session_with_custom_tools(client, _custom_tool_calling(_raise_boom))
+
+        result = session.execute("SEND_WELCOME_EMAIL", arguments={})
+
+        assert result.error == "boom"
+        assert result.result_type == "failed"
+
+
+_EXECUTED_ANSWERS = [
+    pytest.param("failed", None, False, id="failed with a null error"),
+    pytest.param("failed", "", False, id="failed with an empty error"),
+    pytest.param("failed", "Boom", False, id="failed with a message"),
+    pytest.param("completed", None, True, id="completed"),
+    pytest.param(None, None, True, id="no result_type and no error"),
+    pytest.param(None, "Boom", False, id="no result_type and an error"),
+]
+
+
+def _executed_json(
+    result_type: t.Optional[str], error: t.Optional[str]
+) -> t.Dict[str, t.Any]:
+    body: t.Dict[str, t.Any] = {"data": {}, "error": error, "log_id": "log"}
+    if result_type is not None:
+        body["result_type"] = result_type
+    return body
+
+
+class TestSessionExecutionSuccess:
+    """``result_type`` says whether a tool that ran succeeded. A failed
+    execution can carry a ``None`` or empty ``error``, so success is read from
+    ``result_type`` and only falls back to the error text when the API sent no
+    ``result_type``.
+    """
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_provider_wrapped_session_tool(self, result_type, error, successful):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        # The error is passed through as the API sent it.
+        assert result == {"data": {}, "error": error, "successful": successful}
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_provider_tool_call_bound_to_a_session(
+        self, result_type, error, successful
+    ):
+        from composio.core.provider._openai import OpenAIProvider
+
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = OpenAIProvider().execute_tool_for_target(
+            target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
+        )
+
+        assert result == {"data": {}, "error": error, "successful": successful}
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_session_execute_exposes_result_type(self, result_type, error, successful):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        assert result.result_type == result_type
+        assert result.error == error
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_custom_tool_context_execute_exposes_result_type(
+        self, result_type, error, successful
+    ):
+        client, _ = _answering_client(_executed_json(result_type, error))
+
+        result = SessionContextImpl(client, "user_123", "session_123").execute(
+            "GMAIL_SEND_EMAIL", {}
+        )
+
+        assert result.result_type == result_type
+        assert result.error == error
+
+
+def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
+    """The execute function providers wrap session tools with."""
+    from composio.core.models.tools import Tools
+
+    tools = Tools(
+        client=client,
+        provider=MagicMock(),
+        dangerously_allow_auto_upload_download_files=False,
+    )
+    # Keep the (read) tool-schema lookup off the transport.
+    tools._tool_schemas["GMAIL_SEND_EMAIL"] = MagicMock()
+    return tools._wrap_execute_tool_for_tool_router(session_id="session_123")
 
 
 def _transport_client(
@@ -2724,7 +3100,7 @@ class TestSessionUpdateContract:
             }
         )
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["extra_body"]["instant"] == {
+        assert kwargs["instant"] == {
             "toolkits": {"enable": ["exa"]},
             "return_instant_charge": True,
         }
@@ -2733,10 +3109,7 @@ class TestSessionUpdateContract:
     def test_instant_can_be_disabled(self, session, mock_client):
         session.update(instant=False)
         assert (
-            mock_client.tool_router.session.patch.call_args.kwargs["extra_body"][
-                "instant"
-            ]
-            is False
+            mock_client.tool_router.session.patch.call_args.kwargs["instant"] is False
         )
 
     def test_instant_rejects_none(self, session, mock_client):

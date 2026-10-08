@@ -161,7 +161,7 @@ export class CustomToolkits {
     requestOptions?: ComposioRequestOptions
   ): Promise<CustomToolkitDeleteResponse> {
     const result = await withCancellation(
-      () => this.client.custom.deleteToolkit(slug, requestOptions),
+      () => this.client.custom.deleteToolkit(slug, {}, requestOptions),
       requestOptions?.signal
     );
     return transformCustomToolkitDeleteResponse(result);
