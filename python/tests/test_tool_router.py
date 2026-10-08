@@ -188,7 +188,6 @@ class TestToolRouter:
         tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert kwargs["instant"] == policy
-        assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
         tool_router.create(user_id="user_123")
@@ -2334,14 +2333,12 @@ class TestInstantContractTransport:
         router = ToolRouter(client=client, provider=MagicMock())
         session = router.create(user_id="user_123", instant=policy)
         body = json.loads(requests[0].content)
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
 
         if policy is None:
             session.update(expected_config_version=3)
@@ -2349,14 +2346,12 @@ class TestInstantContractTransport:
             session.update(instant=policy, expected_config_version=3)
         body = json.loads(requests[-1].content)
         assert body["expected_config_version"] == 3
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
 
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
@@ -2397,7 +2392,6 @@ class TestInstantContractTransport:
         assert result.instant_charge is not None
         assert result.instant_charge.amount == "0.012"
         assert result.instant_charge.model_dump() == charge
-        assert "premium_charge" not in result.model_dump()
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
@@ -3156,7 +3150,6 @@ class TestSessionUpdateContract:
             "toolkits": {"enable": ["exa"]},
             "return_instant_charge": True,
         }
-        assert "premium_usage" not in kwargs
 
     def test_instant_can_be_disabled(self, session, mock_client):
         session.update(instant=False)
