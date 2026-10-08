@@ -3,23 +3,30 @@ import { instantDiscount, instantPricingDescription, instantSchema, toolkitSuppo
 import { readFileSync } from 'node:fs';
 import { toolFromApi } from '../../lib/toolkit-schema';
 import { parseNamedItems, transformToolkit } from '../../scripts/generate-toolkits';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { ToolkitDetail } from '../../components/toolkits/toolkit-detail';
-import type { Toolkit } from '../../types/toolkit';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 
 describe('Instant catalog metadata', () => {
   test('toolkit headers show live tool eligibility when the snapshot lacks Instant metadata', () => {
-    const toolkit: Toolkit = {
-      slug: 'example', name: 'Example', logo: null, category: null,
-      description: 'Example toolkit', authSchemes: [], toolCount: 1,
-      triggerCount: 0, version: null, tools: [], triggers: [],
-    };
-    const html = renderToStaticMarkup(createElement(ToolkitDetail, {
-      toolkit,
-      tools: [toolFromApi({ slug: 'EXAMPLE_SEARCH', instant: { supported: true } })],
-      triggers: [], path: '/toolkits/example',
-    }));
+    // Other suites mock next/navigation; render with real Next exports in a fresh process.
+    const rendered = spawnSync(process.execPath, ['--eval', `
+      import { createElement } from 'react';
+      import { renderToStaticMarkup } from 'react-dom/server';
+      import { ToolkitDetail } from './components/toolkits/toolkit-detail';
+      import { toolFromApi } from './lib/toolkit-schema';
+      const toolkit = {
+        slug: 'example', name: 'Example', logo: null, category: null,
+        description: 'Example toolkit', authSchemes: [], toolCount: 1,
+        triggerCount: 0, version: null, tools: [], triggers: [],
+      };
+      console.log(renderToStaticMarkup(createElement(ToolkitDetail, {
+        toolkit,
+        tools: [toolFromApi({ slug: 'EXAMPLE_SEARCH', instant: { supported: true } })],
+        triggers: [], path: '/toolkits/example',
+      })));
+    `], { cwd: join(import.meta.dir, '../..'), encoding: 'utf8', timeout: 10000 });
+    expect(rendered.status, rendered.stderr).toBe(0);
+    const html = rendered.stdout;
     expect(html).toContain('is available on the latest version. Check each tool for support and pricing.');
     expect(html.match(/title="Instant is supported on the latest version"/g)).toHaveLength(2);
   });
