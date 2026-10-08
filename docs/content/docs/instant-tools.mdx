@@ -189,7 +189,7 @@ With `instant.return_instant_charge` enabled (`instant.returnInstantCharge` in T
 ```python
 charge = result.instant_charge
 if charge is not None:
-    print(charge["amount"], charge["currency"], charge["charged_by"])
+    print(charge.amount, charge.currency, charge.charged_by)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -209,7 +209,7 @@ console.log(result.instantCharge ?? "No Instant charge");
 </Tab>
 </Tabs>
 
-The `InstantCharge` type is exported from `composio.types` and includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details.
+The charge includes `amount`, `currency`, and `charged_by`. Python provider integrations and mixed local/remote multi-tool execution also preserve these charge details, as a dictionary typed by `InstantCharge` from `composio.types`.
 
 ## Control Instant usage
 

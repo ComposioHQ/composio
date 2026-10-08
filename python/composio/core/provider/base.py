@@ -121,9 +121,14 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
                 "Direct execution modifiers cannot be used with a Tool Router session"
             )
 
+        # Imported here: the tools module imports this one.
+        from composio.core.models.tools import is_execution_successful
+
         result = target.execute(tool_slug=slug, arguments=arguments)
         return {
             "data": t.cast(t.Dict, result.data),
             "error": result.error,
-            "successful": result.error is None,
+            "successful": is_execution_successful(
+                getattr(result, "result_type", None), result.error
+            ),
         }

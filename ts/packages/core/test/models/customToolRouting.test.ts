@@ -323,6 +323,7 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.data).toEqual({ local_result: true });
       expect(result.logId).toBe('');
+      expect(result.resultType).toBe('completed');
       expect(localExecute).toHaveBeenCalledWith(
         { category: 'prefs' },
         expect.objectContaining({ userId: 'user_1' })
@@ -509,6 +510,24 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.error).toBe('boom');
       expect(result.data).toEqual({});
+      expect(result.resultType).toBe('failed');
+    });
+
+    it('should mark a local tool that throws an empty message as failed', async () => {
+      const throwingTool = createCustomTool('SILENT_THROW', {
+        name: 'Silent throw',
+        description: 'Throws an error with no message',
+        inputParams: z.object({}),
+        execute: async () => {
+          throw new Error('');
+        },
+      });
+
+      const session = createSession(mockClient, [throwingTool]);
+      const result = await session.execute('SILENT_THROW', {});
+
+      expect(result.error).toBe('');
+      expect(result.resultType).toBe('failed');
     });
 
     it('should apply Zod defaults when input is missing optional fields', async () => {
@@ -936,6 +955,27 @@ describe('ToolRouterSession execution routing', () => {
 
       expect(result.successful).toBe(false);
       expect(result.error).toBe('Remote batch failed before per-tool results were produced');
+    });
+
+    it('should report a failed remote batch that carries no error text as unsuccessful', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      toolsInstance.executeSessionTool.mockResolvedValueOnce({
+        data: {},
+        error: null,
+        successful: false,
+      });
+
+      const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'x' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      });
+
+      expect(result.successful).toBe(false);
+      expect(result.error).toBeNull();
     });
 
     it('should forward to backend when tools array is empty', async () => {

@@ -10,6 +10,7 @@ import type {
 import type { ToolExecuteResponse } from '../types/tool.types';
 import { ValidationError } from '../errors';
 import { ComposioRequestCancelledError, isRequestAbortError } from '../errors/SDKErrors';
+import { ComposioToolInputRequiredError } from '../errors/ToolRouterErrors';
 
 /**
  * Find a custom tool entry by slug.
@@ -59,6 +60,9 @@ export function assertUnambiguousCustomToolSlug(
  * and wraps the result into the standard response format.
  *
  * Callers provide a pre-built SessionContext (which may include sibling routing).
+ *
+ * @throws {ComposioToolInputRequiredError} If a call the tool made through the
+ *   session context needs user input before it can run
  */
 export async function executeCustomTool(
   entry: CustomToolsMapEntry,
@@ -101,6 +105,12 @@ export async function executeCustomTool(
     };
   } catch (err: unknown) {
     if (err instanceof ComposioRequestCancelledError) {
+      throw err;
+    }
+    // `ctx.execute()` / `ctx.proxyExecute()` asked for user input: nothing ran.
+    // Flattening it into a failed result would drop the questions and the
+    // request state the caller needs to answer them.
+    if (err instanceof ComposioToolInputRequiredError) {
       throw err;
     }
     if (options?.signal?.aborted && isRequestAbortError(err)) {

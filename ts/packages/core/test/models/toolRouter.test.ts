@@ -4114,7 +4114,6 @@ describe('ToolRouter', () => {
             ...rawHistoryItem,
             config: {
               ...rawHistoryItem.config,
-              premium_usage: false,
               instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
             },
           },
