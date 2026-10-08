@@ -1,151 +1,29 @@
 ---
 title: Instant Tools
-description: Use supported tools in a Session without asking every user to connect a provider account
+description: Give your agent supported tools without asking every user to connect a provider account
 keywords: [Composio Instant, instant tools, Sessions, Instant usage, Instant account]
 experimental: true
 ---
 
-You can build an agent that enriches company records or creates media, but asking every user to sign up for another provider and supply an API key interrupts that workflow. Instant Tools run supported actions on Composio's provider accounts without that setup. Users still connect their own accounts when a task needs their identity or private data.
+Adding enrichment, scraping, or media creation to your agent shouldn't mean asking every user to sign up for another provider, manage an API key, or buy a separate subscription. Instant tools run supported actions on Composio's provider accounts and charge your organization's Composio balance. Your users still connect their own accounts when a task needs their identity or private data.
 
-Already using Sessions? Enable Instant for your project below. Your existing `session.tools()` or MCP integration can then use supported tools, subject to its Session restrictions.
+Instant works through [Sessions](/docs/how-composio-works). New to Composio? Follow the [Quickstart](/docs/quickstart) for SDK and agent setup, then return here.
 
-## Enable Instant for your project
+## Enable Instant
 
-Get your `COMPOSIO_API_KEY` from [API keys](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). Use the project's key for the examples below.
+In [project Settings](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=instant-tools), turn on **Instant Toolkits**. Check that your organization has an available balance in [Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools) before running a tool.
 
-In [project Settings](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=instant-tools), turn on **Instant Toolkits**. Developer projects start with this setting off. A Session cannot override a project where Instant is off.
-
-<details>
-<summary>Where to enable Instant</summary>
-
-<Figure src="/images/instant-project-setting.jpg" alt="Instant Toolkits toggle in developer project settings, with a note that calls charge the organization's balance" caption="Enable Instant Toolkits for all Sessions in the project." />
-
-</details>
-
-Calls through Instant accounts spend your organization's Composio balance. Once enabled, all Sessions in the project can use eligible Instant tools by default, including existing Sessions, even if `instant` is omitted. Session restrictions still apply. Set `instant=False` in Python or `instant: false` in TypeScript for a Session that must not incur Instant usage charges.
+- **Project default:** off. A Session cannot override a project where Instant is off.
+- **Once enabled:** eligible tools can use Instant in all Sessions, including existing Sessions. Existing Session restrictions still apply.
+- **Session default:** omitting `instant` permits Instant usage. Set `instant=False` in Python or `instant: false` in TypeScript to prevent Instant charges for that Session.
 
 <Callout type="info" title="Experimental access">
-  If the setting is unavailable, contact [support@composio.dev](mailto:support@composio.dev) to request access.
+If the setting is unavailable, contact [support@composio.dev](mailto:support@composio.dev) to request access.
 </Callout>
 
-Before running the example, check your balance in [Organization Settings → Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). You need available funds for Instant calls. See [funding](#fund-instant-usage) if you need to add funds.
+## Use Instant in your agent
 
-## Build with Session tools
-
-This uses the [Quickstart's OpenAI Agents integration](/docs/quickstart). Use Python 3.10 or newer, or Node.js 22.22.3 or newer with ESM imports.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-<PackageInstall ecosystem="python" packages="python-dotenv composio composio-openai-agents openai-agents" />
-</Tab>
-<Tab value="TypeScript">
-<PackageInstall packages="dotenv tsx @composio/core @composio/openai-agents @openai/agents" />
-</Tab>
-</Tabs>
-
-Create a `.env` file with your keys:
-
-```dotenv
-COMPOSIO_API_KEY=your_composio_project_key
-OPENAI_API_KEY=your_openai_key
-```
-
-The OpenAI key runs the model. Instant supplies the Firecrawl credentials for the tool. Both the model and tool calls can incur charges.
-
-Use a test user ID without existing Firecrawl connections so a personal connection does not take priority. This example asks the agent to extract public company information without asking the user for a Firecrawl account.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python title="instant_agent.py"
-from dotenv import load_dotenv
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
-from agents import Agent, Runner
-
-load_dotenv()
-composio = Composio(provider=OpenAIAgentsProvider())
-session = composio.sessions.create(
-    user_id="instant_demo",
-    toolkits=["firecrawl"],
-    instant={"return_instant_charge": True},
-)
-agent = Agent(
-    name="Company researcher",
-    model="gpt-5.2",
-    instructions="Use an eligible Instant tool to read the page. Do not invent results.",
-    tools=session.tools(),
-)
-result = Runner.run_sync(
-    agent,
-    "Read https://composio.dev and summarize what the company offers.",
-)
-print(result.final_output)
-print("Session:", session.session_id)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript title="instant_agent.ts"
-import "dotenv/config";
-import { Composio } from "@composio/core";
-import { OpenAIAgentsProvider } from "@composio/openai-agents";
-import { Agent, run } from "@openai/agents";
-
-const composio = new Composio({ provider: new OpenAIAgentsProvider() });
-const session = await composio.create("instant_demo", {
-  toolkits: ["firecrawl"],
-  instant: { returnInstantCharge: true },
-});
-const agent = new Agent({
-  name: "Company researcher",
-  model: "gpt-5.2",
-  instructions: "Use an eligible Instant tool to read the page. Do not invent results.",
-  tools: await session.tools(),
-});
-const result = await run(
-  agent,
-  "Read https://composio.dev and summarize what the company offers.",
-);
-console.log(result.finalOutput);
-console.log("Session:", session.sessionId);
-```
-</Tab>
-</Tabs>
-
-Run `python instant_agent.py` or `npx tsx --env-file=.env instant_agent.ts`. The agent should discover a supported Firecrawl tool, read the page, and return a company summary without a Connect Link.
-
-### Check the result and charge
-
-The example prints the summary and Session ID. To confirm that Instant handled the call, inspect that Session's logs. Look for `metadata.credential_source: "instant_account"` and `metadata.instant_charge` on the provider tool's execution record. A summary alone does not prove Instant ran the tool.
-
-<details>
-<summary>Fetch the execution logs</summary>
-
-Use the [tool-execution logs API](/reference/api-reference/logs/postLogsToolExecution). Replace `trs_your_session_id` with your Session ID:
-
-```bash
-curl 'https://backend.composio.dev/api/v3.1/logs/tool_execution' \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "limit": 20,
-    "filters": [{"field": "session_id", "operator": "==", "value": "trs_your_session_id"}]
-  }'
-```
-
-The response contains `logs` and `next_cursor`. Send `cursor` in the next request to continue. Each log can include `metadata.credential_source` and `metadata.instant_charge`. The source `instant_account` identifies an Instant execution. The charge is an exact USD string, including `"0"` for a recorded zero charge. An absent charge means no charge was recorded, not that the call was free. These records remain available even when `return_instant_charge` is `false`.
-
-</details>
-
-`session.tools()` supplies the agent's discovery and execution tools. For another framework, use the matching [provider adapter](/docs/providers). Reuse the Session for later turns as shown in the [Quickstart](/docs/quickstart).
-
-Top-level `toolkits` controls what the Session can discover and run. Omit it to make all toolkits discoverable. The separate `instant` policy controls Instant usage, as shown under [usage controls](#control-instant-usage).
-
-<details>
-<summary>Call a tool directly with session.execute()</summary>
-
-### Execute a known tool
-
-To call a known tool without an agent, use the Session's `execute` method. These examples read the same public page with Firecrawl:
+Keep your existing Composio client and agent integration. For example, create a Session with Firecrawl available and pass its tools to your agent as usual:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -153,9 +31,8 @@ To call a known tool without an agent, use the Session's `execute` method. These
 session = composio.sessions.create(
     user_id="instant_demo",
     toolkits=["firecrawl"],
-    instant={"return_instant_charge": True},
 )
-result = session.execute("FIRECRAWL_SCRAPE", arguments={"url": "https://composio.dev"})
+tools = session.tools()
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -165,122 +42,47 @@ const composio = new Composio();
 // ---cut---
 const session = await composio.create("instant_demo", {
   toolkits: ["firecrawl"],
-  instant: { returnInstantCharge: true },
 });
-const result = await session.execute("FIRECRAWL_SCRAPE", { url: "https://composio.dev" });
+const tools = await session.tools();
 ```
 </Tab>
 </Tabs>
 
-Check the current [tool input schema](/reference/api-reference/tools/getToolsByToolSlug) before constructing arguments.
+Ask your agent: “Read https://composio.dev and summarize what the company offers.” With Instant enabled and no existing Firecrawl connection, the agent can use a supported tool without asking you for a Firecrawl API key.
 
-</details>
+You don't need a separate Instant execution method. It works with `session.tools()`, `session.execute()`, and the Session's [MCP endpoint](/docs/sessions-via-mcp). For general toolkit filters and agent setup, see [Configuring Sessions](/docs/configuring-sessions) and the [Quickstart](/docs/quickstart).
 
-<details>
-<summary>Use an MCP client instead</summary>
-
-### Use MCP
-
-For an MCP client, create the Session with `mcp=True` in Python or `mcp: true` in TypeScript. Pass both the URL and headers to your client. The same Instant policy applies over MCP.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["firecrawl"],
-    instant={"return_instant_charge": True},
-    mcp=True,
-)
-mcp_url = session.mcp.url
-mcp_headers = session.mcp.headers
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-const composio = new Composio();
-// ---cut---
-const session = await composio.create("user_123", {
-  toolkits: ["firecrawl"],
-  instant: { returnInstantCharge: true },
-  mcp: true,
-});
-const mcpUrl = session.mcp.url;
-const mcpHeaders = session.mcp.headers;
-```
-</Tab>
-</Tabs>
-
-Treat `session.mcp.headers` as a secret. See [Using sessions via MCP](/docs/sessions-via-mcp) for client setup and credential scope.
-
-</details>
+To verify the call, find the Session's tool execution in the [logs API](/reference/api-reference/logs/postLogsToolExecution). `metadata.credential_source` should be `instant_account`; `metadata.instant_charge` records the charge. An agent's summary alone doesn't prove the tool ran through Instant.
 
 ## Find supported tools and rates
 
-Instant coverage is per tool, not per toolkit. A toolkit badge means at least one tool supports Instant. Use a connected account for actions Instant does not support. See [shared-account restrictions](#shared-account-restrictions-and-privacy).
+Instant support is **per tool**. A toolkit supporting Instant does not mean every tool in that toolkit supports it.
 
-In the dashboard, open **Toolkits** and select **Instant Toolkits**. A lightning icon marks toolkits with Instant support. Open a toolkit's **Instant tools** tab to see its eligible tools.
+- [List toolkits](/reference/api-reference/toolkits/getToolkits) and filter `items` by `instant.supported == true` to find toolkits with Instant tools.
+- [List tools](/reference/api-reference/tools/getTools) with `toolkit_slug`, `toolkit_versions=latest`, and `include_pricing=true`. Filter `items` by `instant.supported == true`.
+- [Get a tool](/reference/api-reference/tools/getToolsByToolSlug) with `include_pricing=true` to check its support, rate, and input schema before executing it.
 
-<Figure src="/images/instant-toolkit-filter.jpg" alt="Developer toolkit catalog with the Instant Toolkits filter selected and lightning icons beside eligible toolkits" caption="Filter the toolkit catalog to find Instant support." />
-
-<Figure src="/images/instant-tool-eligibility.jpg" alt="Firecrawl's Instant tools tab lists Map multiple URLs, Scrape URL, and Search separately from its 29 total tools" caption="Open the Instant tools tab to see which tools support an Instant account." />
-
-<details>
-<summary>Discover supported tools and rates through the APIs</summary>
-
-### List supported toolkits
-
-Use the [toolkit listing API](/reference/api-reference/toolkits/getToolkits) to fetch a page, then filter its `items` by `instant.supported`. This example uses `jq` to keep eligible toolkits and the pagination cursor:
+For example, check Firecrawl's scrape tool:
 
 ```bash
-curl --get 'https://backend.composio.dev/api/v3.1/toolkits' \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --data-urlencode 'limit=100' \
-  | jq '{items: [.items[] | select(.instant.supported == true)], next_cursor}'
-```
-
-Fetch subsequent pages with `--data-urlencode "cursor=$NEXT_CURSOR"`, where `NEXT_CURSOR` is the previous response's `next_cursor`. Continue until `next_cursor` is empty or null, even if a page has no matching toolkits. A toolkit's `instant.supported` means at least one tool supports Instant, not every tool.
-
-Do not infer Instant support from `no_auth` or `composio_managed_auth_schemes`. They describe different access routes.
-
-### Check tool eligibility and rates
-
-Request `include_pricing=true` when [listing tools](/reference/api-reference/tools/getTools) or [reading a tool](/reference/api-reference/tools/getToolsByToolSlug). Select the latest toolkit version to receive Instant metadata:
-
-```bash
-curl --get 'https://backend.composio.dev/api/v3.1/tools' \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --data-urlencode 'toolkit_slug=exa' \
-  --data-urlencode 'toolkit_versions=latest' \
-  --data-urlencode 'include_pricing=true' \
-  --data-urlencode 'limit=100' \
-  | jq '{items: [.items[] | select(.instant.supported == true) | {slug, instant}], next_cursor}'
-
-curl --get 'https://backend.composio.dev/api/v3.1/tools/EXA_SEARCH' \
+curl --get 'https://backend.composio.dev/api/v3.1/tools/FIRECRAWL_SCRAPE' \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --data-urlencode 'toolkit_versions=latest' \
   --data-urlencode 'include_pricing=true' \
   | jq '{slug, instant, input_parameters}'
 ```
 
-Follow `next_cursor` on tool listings as you do for toolkits. Eligible tools include `instant.supported: true`. When published pricing is available, `instant.price.description` contains the human-readable rate and `instant.price.discount` contains the discount. Both values are strings when present, and `discount` can be null. Do not treat them as numeric prices or infer an expiry date. Discounts may change.
+Read the rate from `instant.price.description` and any discount from `instant.price.discount`. Both are strings when present; `discount` can be null. Missing pricing does not mean the tool is free.
 
-Missing pricing does not mean a tool is free. Check the rate before running it. Instant metadata is absent for older toolkit versions and ineligible tools.
-
-</details>
+Follow `next_cursor` when listing tools or toolkits, including pages with no Instant matches. Instant metadata is absent for older toolkit versions and ineligible tools. Neither `no_auth` nor `composio_managed_auth_schemes` indicates Instant support.
 
 ## Control Instant usage
 
-`instant` is a Session policy in both SDKs. It does not enable a toolkit that top-level `toolkits` excludes, and it does not change a connected account you explicitly selected.
+The Session's top-level `toolkits` filter controls which toolkits your agent can use. The separate `instant` setting controls whether it can use Composio's Instant accounts for those tools.
 
-The toolkit filter and per-tool filter intersect. A `tools.exa` rule alone does not disable Instant usage for other eligible toolkits. Use `instant.toolkits` when you need a toolkit allowlist. Each filter accepts either `enable` or `disable`, not both.
+### Turn Instant off
 
-### Disable Instant usage
-
-Set `instant=False` in Python or `instant: false` in TypeScript when creating a Session to prevent Instant charges. Your own connected-account routes remain available.
-
-To stop Instant usage on an existing Session, update its policy:
+Your own connected accounts remain available when you disable Instant:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -300,17 +102,13 @@ await session.update({ instant: false });
 </Tabs>
 
 <Callout type="warning" title="Updating a disabled Session">
-  On patch, omitted `instant` fields keep their existing values. But supplying any `instant` object after `instant=false`, even `{ "return_instant_charge": true }`, silently re-enables Instant spending for that Session if the project allows it. Leave `instant` as `false` if the Session must not spend.
+Passing any `instant` object after `instant=false` re-enables Instant usage if the project allows it, even if you only set charge reporting. Keep `instant` as `false` when the Session must not spend. Omitting `instant` from an update preserves the existing policy.
 </Callout>
 
 <details>
-<summary>Restrict Instant to selected toolkits or tools</summary>
+<summary>Allow or exclude specific toolkits and tools</summary>
 
-### Restrict toolkits or tools
-
-Omitted `instant` or `instant={}` permits eligible tools, subject to the project setting and normal Session filters. Omitting `instant.toolkits` does not restrict Instant usage.
-
-For example, keep Exa and Firecrawl available, but permit Instant usage only for `EXA_SEARCH`:
+Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -341,19 +139,27 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-To keep both toolkits discoverable but exclude Firecrawl and `EXA_SEARCH` from Instant usage, use `disable`:
+Use `disable` instead of `enable` to exclude the listed toolkits or tools. Each filter accepts one or the other, not both. Toolkit and tool filters intersect; they cannot enable anything excluded by the Session's top-level filters.
+
+Omitting `instant.toolkits` leaves other eligible toolkits permitted. A `tools.exa` rule alone does not restrict Instant to Exa.
+
+</details>
+
+### Return the charge with a call
+
+Charge reporting is off by default. To include the charge in a `session.execute()` response, set `return_instant_charge` in Python or `returnInstantCharge` in TypeScript:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["exa", "firecrawl"],
-    instant={
-        "toolkits": {"disable": ["firecrawl"]},
-        "tools": {"exa": {"disable": ["EXA_SEARCH"]}},
-    },
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+    instant={"return_instant_charge": True},
 )
+result = session.execute("FIRECRAWL_SCRAPE", arguments={"url": "https://composio.dev"})
+if result.instant_charge is not None:
+    print(result.instant_charge.amount, result.instant_charge.currency)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -361,109 +167,47 @@ session = composio.sessions.create(
 import { Composio } from "@composio/core";
 const composio = new Composio();
 // ---cut---
-const session = await composio.create("user_123", {
-  toolkits: ["exa", "firecrawl"],
-  instant: {
-    toolkits: { disable: ["firecrawl"] },
-    tools: { exa: { disable: ["EXA_SEARCH"] } },
-  },
-});
-```
-</Tab>
-</Tabs>
-
-
-
-</details>
-
-<details>
-<summary>Read charges from a session.execute() response</summary>
-
-### Inspect charges
-
-With `instant.return_instant_charge` enabled (`instant.returnInstantCharge` in TypeScript), the response from `session.execute()` includes `instant_charge` (`instantCharge` in TypeScript) when an Instant account runs the tool. For the `session.execute()` example above, read it from the result:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-charge = result.instant_charge
-if charge is not None:
-    print(charge.amount, charge.currency, charge.charged_by)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-
-const composio = new Composio();
-const session = await composio.create("user_123", {
+const session = await composio.create("instant_demo", {
   toolkits: ["firecrawl"],
   instant: { returnInstantCharge: true },
 });
 const result = await session.execute("FIRECRAWL_SCRAPE", { url: "https://composio.dev" });
-// ---cut---
-console.log(result.instantCharge ?? "No Instant charge");
+console.log(result.instantCharge);
 ```
 </Tab>
 </Tabs>
 
-The charge contains `amount`, `currency`, and `charged_by`. `amount` is an exact USD decimal string. Python Session execution returns a charge object with these attributes. Python provider integrations and mixed local/remote multi-tool execution preserve the charge as a dictionary typed by `InstantCharge` from `composio.types`. TypeScript exposes `instantCharge` as `unknown`.
+The charge includes `amount`, `currency`, and `charged_by`. The amount is an exact USD decimal string. TypeScript exposes `instantCharge` as `unknown`. Turning charge reporting off does not stop billing or remove charges from logs and usage records.
 
-`return_instant_charge` defaults to `false`. Connected-account calls do not have an Instant charge. Setting `return_instant_charge` to `false` hides the immediate response charge, but does not prevent billing or remove charges from usage records.
+## Account selection and privacy
+
+Composio uses your user's connection first, then an available shared connection, then an Instant account. Only calls through an Instant account incur an Instant charge. Your provider may separately bill calls made with your own account.
+
+An explicitly selected account takes priority. A failed connected-account call does not fall back to Instant. Tools that don't support Instant use the normal connection flow.
+
+Instant uses shared provider accounts, so tools exposing account history or other customers' data are excluded. Arbitrary proxy requests are not supported. Connect your own account for private data or account-specific actions. Inputs still go to the provider; Instant does not imply [zero data retention](/docs/security/zero-data-retention).
+
+<details>
+<summary>Inspect or explicitly select an Instant account</summary>
+
+Session search returns `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript) for a toolkit served by an Instant account. Other tools in that toolkit need your own connection.
+
+To select Instant explicitly, pass `account="instant_account"` to Python `session.execute()`, or `{ account: "instant_account" }` as TypeScript execution options. On a single-account project, this must match an active connection for the toolkit in the Session. Project policy, Session policy, and tool eligibility still apply. A failed call does not fall back to another account.
+
+Composio-managed auth is different: Composio supplies the OAuth app credentials, but your user still connects their own account. It does not establish Instant support.
 
 </details>
 
-## Know which account runs the tool
+## Balance, usage, and troubleshooting
 
-An Instant account is a provider account held by Composio for specific tools. It is different from **Composio-managed auth**, where Composio supplies OAuth application credentials but your user still connects their own account. Composio-managed auth alone does not make a tool available through Composio Instant.
+Instant calls use your organization's prepaid balance, including on Enterprise. Check or add funds in [Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). If your plan doesn't allow adding funds, upgrade or contact support.
 
-You pay an Instant charge only when Composio's Instant account runs the tool. A call using the user's own connection has no Instant charge. The provider may bill that user under their own plan.
-
-Without an explicit account selection, Composio prefers the user's own connection, then an available shared connection, then an Instant account. If you select a connected account explicitly, that route wins and does not fall back to Instant on failure. If a tool does not support Instant, it follows the normal connection flow.
-
-Session search tells you when an Instant account serves a toolkit. The toolkit's connection status includes `instant_account.allowed_tool_slugs` (`instantAccount.allowedToolSlugs` in TypeScript), which lists the tools that run on it. Any other tool in that toolkit needs the user's own connection.
-
-You can choose the Instant account explicitly on any project. Pass `account="instant_account"` to Python `session.execute()` or `{ account: "instant_account" }` as TypeScript execution options. On a single-account project, it must match an active connection for that toolkit in the Session. The project and Session must permit Instant, and the tool must support it. This route does not fall back to another credential if it fails.
-
-### Shared-account restrictions and privacy
-
-Instant accounts cannot run arbitrary provider requests through proxy execution. Use supported tool actions. Actions that expose a shared account's history or other customers' data are excluded. Connect your own provider account when you need account-specific access.
-
-Tool inputs still go to the provider that runs the tool. Using Instant does not imply zero data retention or replace the provider's data-handling terms. See [Zero data retention](/docs/security/zero-data-retention) for Composio's retention controls.
-
-## Fund Instant usage
-
-Instant usage is paid from your organization's balance on every plan, including Enterprise. It is not invoice-funded. Composio adds no markup to provider charges for Instant tools. Other Composio usage remains subject to your plan's pricing.
-
-Check your balance in [Organization Settings → Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). Paid plans can add prepaid funds there. Hobby organizations must upgrade before adding funds.
-
-When Composio confirms that the balance is exhausted, an Instant call fails with HTTP 402 (`Metering_WalletBalanceExhausted`). It does not fall back to another account. Calls that select a user's connected account can still run. Balance verification is asynchronous, so a zero balance is not a strict per-call spending cap.
-
-## Review usage
-
-Use the [project usage summary API](/reference/api-reference/projects/postProjectUsageSummary) for totals. This request returns the authenticated project's last 30 days of usage:
-
-```bash
-curl 'https://backend.composio.dev/api/v3.1/project/usage/summary' \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header 'Content-Type: application/json' \
-  --data '{}'
-```
-
-Read the top-level `instant_charge` for the total Instant charge as an exact USD string. The separate `entities` object groups metering usage by entity type, with `unit`, `total_quantity`, and `event_count`. Do not treat all billable usage as Instant charges. To choose a window, supply `from` and `to` in Unix epoch milliseconds. `from` is inclusive and `to` is exclusive.
-
-For individual calls, [inspect the Session's execution logs](#check-the-result-and-charge). These records remain available even when `return_instant_charge` is `false`.
-
-## Troubleshoot access and charges
-
-- If Instant is unavailable, check the project's **Instant Toolkits** setting, Session filters, and the tool's `instant.supported` field on the latest version.
-- If a tool needs a connection, check that individual tool's eligibility. A toolkit badge does not cover every tool.
-- If a call has no immediate charge, check `return_instant_charge` and the execution log's `metadata.credential_source`. A personal or shared connection may have taken priority.
-- If an Instant call returns HTTP 402, check the organization's balance in Billing.
-- Before retrying a failed or timed-out call, check its execution log. A provider may have completed billable work even if your client did not receive the result. Contact [support@composio.dev](mailto:support@composio.dev) with the log ID if the result or charge is unclear.
-
-See [Configuring Sessions](/docs/configuring-sessions) for general toolkit and tool filters and the [create Session API reference](/reference/api-reference/tool-router/postToolRouterSession) for the complete request schema.
+- **Usage totals:** call the [project usage summary API](/reference/api-reference/projects/postProjectUsageSummary). Its top-level `instant_charge` is the total Instant charge as a USD string. An empty request body selects the last 30 days; use `from` and `to` in Unix milliseconds for another window.
+- **Individual calls:** query the [execution logs API](/reference/api-reference/logs/postLogsToolExecution) with a `session_id` filter. Check `metadata.credential_source` and `metadata.instant_charge`. An absent charge is not proof that the call was free.
+- **Instant unavailable:** check the project setting, Session restrictions, and the individual tool's eligibility on the latest version.
+- **Balance exhausted:** Instant calls fail with HTTP 402 (`Metering_WalletBalanceExhausted`) once detected, without falling back to another account. Balance checks are asynchronous, not a strict spending cap. Calls using your own connected account can still run.
+- **Failed or timed-out call:** check the execution log before retrying. The provider may have completed billable work. Contact [support@composio.dev](mailto:support@composio.dev) with the log ID if the result or charge is unclear.
 
 <Callout type="info" title="Previous name">
-  Instant Tools were previously called Premium Tools.
+Instant Tools were previously called Premium Tools.
 </Callout>
