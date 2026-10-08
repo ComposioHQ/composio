@@ -125,6 +125,22 @@ def _join_path(parent: str, key: str) -> str:
     return f"{parent}.{key}" if parent else key
 
 
+def _allow_null_value(node: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Let ``enum`` and ``const`` accept ``null`` once ``type`` does.
+
+    Widening ``type`` alone leaves a typed enum or const rejecting ``null``, which
+    would make an optional one mandatory.
+    """
+    if "const" in node:
+        without_const = {k: v for k, v in node.items() if k != "const"}
+        const = node["const"]
+        return {**without_const, "enum": [None] if const is None else [const, None]}
+    enum = node.get("enum")
+    if isinstance(enum, list) and None not in enum:
+        return {**node, "enum": [*enum, None]}
+    return node
+
+
 def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
     """Accept ``null`` without placing ``type`` beside ``anyOf``."""
     any_of = node.get("anyOf")
@@ -134,9 +150,13 @@ def _widen_to_nullable(node: dict[str, t.Any]) -> dict[str, t.Any]:
         return {**node, "anyOf": [*any_of, {"type": "null"}]}
     node_type = node.get("type")
     if isinstance(node_type, str):
-        return node if node_type == "null" else {**node, "type": [node_type, "null"]}
+        if node_type == "null":
+            return node
+        return _allow_null_value({**node, "type": [node_type, "null"]})
     if isinstance(node_type, list):
-        return node if "null" in node_type else {**node, "type": [*node_type, "null"]}
+        if "null" in node_type:
+            return node
+        return _allow_null_value({**node, "type": [*node_type, "null"]})
     if (isinstance(node.get("enum"), list) and None in node["enum"]) or (
         "const" in node and node["const"] is None
     ):
