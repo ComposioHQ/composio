@@ -175,6 +175,123 @@ print(_json.dumps({
     }
   });
 
+  it('reports a failed execution and an input request through the error channel', () => {
+    const source = experimental_createPythonWorkbenchHelperSource();
+    const directory = mkdtempSync(join(tmpdir(), 'composio-helper-'));
+    const scriptPath = join(directory, 'helper_result_type_test.py');
+    const testScript = `${source}
+
+import json as _json
+
+_INPUT_REQUIRED = {
+    "result_type": "input_required",
+    "input_requests": {
+        "approval_1": {
+            "type": "elicitation",
+            "mode": "form",
+            "message": "Allow GMAIL_SEND_EMAIL to send this email?",
+            "requested_schema": {"type": "object"},
+        }
+    },
+    "request_state": "opaque-state-token",
+}
+
+_answers = {
+    # A failed execution can carry a null or empty error.
+    "failed_null": {"result_type": "failed", "data": {}, "error": None, "log_id": "log"},
+    "failed_empty": {"result_type": "failed", "data": {}, "error": "", "log_id": "log"},
+    "failed_message": {"result_type": "failed", "data": {}, "error": "Boom", "log_id": "log"},
+    "completed": {"result_type": "completed", "data": {"ok": True}, "error": None, "log_id": "log"},
+    "input_required": _INPUT_REQUIRED,
+}
+_calls = []
+_results = {}
+
+for _name, _answer in _answers.items():
+    def _post_json(url, headers, payload, timeout=120, _answer=_answer):
+        _calls.append(_name)
+        return 200, {}, _json.dumps(_answer)
+
+    _data, _error = run_composio_tool("gmail_send_email", {}, {"delay_ms": 0}, False)
+    _results[_name] = {"data": _data, "error": _error}
+
+def _post_json(url, headers, payload, timeout=120):
+    return 200, {}, _json.dumps(_INPUT_REQUIRED)
+
+_proxy_data, _proxy_error = proxy_execute("POST", "/user/repos", "GitHub", body={"name": "repo"})
+_results["proxy_input_required"] = {"data": _proxy_data, "error": _proxy_error}
+
+def _post_json(url, headers, payload, timeout=120):
+    return 200, {}, _json.dumps({"result_type": "completed", "data": {"id": 1}, "status": 201})
+
+_proxy_data, _proxy_error = proxy_execute("POST", "/user/repos", "github", body={"name": "repo"})
+_results["proxy_completed"] = {"data": _proxy_data, "error": _proxy_error}
+
+print(_json.dumps({"calls": _calls, "results": _results}))
+`;
+
+    try {
+      writeFileSync(scriptPath, testScript);
+      const output = execFileSync('python3', [scriptPath], {
+        env: {
+          ...process.env,
+          BACKEND_URL: 'https://backend.test/',
+          COMPOSIO_TOOLROUTER_SESSION_ID: 'session_123',
+          COMPOSIO_API_KEY: 'project_key',
+        },
+        encoding: 'utf8',
+      });
+      const { calls, results } = JSON.parse(output);
+
+      expect(results.failed_null.error).toBe(
+        'Composio tool execution failed without an error message'
+      );
+      expect(results.failed_null.data).toMatchObject({ result_type: 'failed', log_id: 'log' });
+      expect(results.failed_empty.error).toBe(
+        'Composio tool execution failed without an error message'
+      );
+      expect(results.failed_message.error).toBe('Boom');
+      expect(results.completed).toEqual({
+        data: { result_type: 'completed', data: { ok: true }, error: null, log_id: 'log' },
+        error: '',
+      });
+
+      expect(results.input_required.error).toBe(
+        'Tool GMAIL_SEND_EMAIL requires user input before it can run (1 input request) and was not executed'
+      );
+      expect(results.input_required.data).toEqual({
+        result_type: 'input_required',
+        input_requests: {
+          approval_1: {
+            type: 'elicitation',
+            mode: 'form',
+            message: 'Allow GMAIL_SEND_EMAIL to send this email?',
+            requested_schema: { type: 'object' },
+          },
+        },
+      });
+      expect(results.proxy_input_required).toEqual({
+        data: null,
+        error:
+          'POST proxy call for toolkit github requires user input before it can run (1 input request) and was not executed',
+      });
+      expect(results.proxy_completed).toEqual({ data: { id: 1 }, error: '' });
+
+      // The opaque continuation state reaches neither the data nor the message.
+      expect(output).not.toContain('opaque-state-token');
+      // Nothing is re-sent: a failure or an input request is not a retry signal.
+      expect(calls).toEqual([
+        'failed_null',
+        'failed_empty',
+        'failed_message',
+        'completed',
+        'input_required',
+      ]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('round-trips helper calls through the session execute endpoint shape', () => {
     const source = experimental_createPythonWorkbenchHelperSource({
       invokeLlmModel: 'test/model',
