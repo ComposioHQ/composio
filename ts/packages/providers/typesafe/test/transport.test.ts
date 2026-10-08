@@ -93,6 +93,58 @@ describe('SDK error mapping', () => {
       timeout: 2500,
     });
   });
+
+  it('retries on retryable status code (429) and succeeds on second attempt', async () => {
+    let callCount = 0;
+    const { client } = mockClient(async () => {
+      callCount += 1;
+      if (callCount === 1) {
+        throw sdkError('RateLimitError', { status: 429 });
+      }
+      return {
+        model: 'jev-1.13',
+        answers: {
+          route: {
+            type: 'choice',
+            choice: '__none__',
+            confidence: 0.9,
+            probabilities: { __none__: 0.9 },
+          },
+          gate_0: { type: 'noul', noul: 0.9 },
+          gate_1: { type: 'noul', noul: 0.9 },
+          gate_2: { type: 'noul', noul: 0.9 },
+        },
+      };
+    });
+
+    const provider = new TypesafeProvider({ client });
+    const decision = await provider.decide(
+      provider.wrapTools([corpusTool('no_input_parameters')]),
+      'some state',
+      { maxRetries: 2, backoffMs: 1 }
+    );
+
+    expect(callCount).toBe(2);
+    expect(decision.kind).toBe('abstain');
+  });
+
+  it('exhausts retries and throws the provider error when failures persist', async () => {
+    let callCount = 0;
+    const { client } = mockClient(async () => {
+      callCount += 1;
+      throw sdkError('InternalServerError', { status: 503 });
+    });
+
+    const provider = new TypesafeProvider({ client });
+    await expect(
+      provider.decide(provider.wrapTools([tickets]), 'open a ticket', {
+        maxRetries: 2,
+        backoffMs: 1,
+      })
+    ).rejects.toMatchObject({ reason: 'server_error', status: 503 });
+
+    expect(callCount).toBe(3); // Initial attempt + 2 retries
+  });
 });
 
 describe('the client the provider builds', () => {
