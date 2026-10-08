@@ -1411,6 +1411,7 @@ class TestToolRouter:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"ok": True}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_execute_response.log_id = "log_123"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
@@ -2020,6 +2021,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real Tools instance to test the execute function
@@ -2066,6 +2068,7 @@ class TestToolRouterExecution:
         mock_client.tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"result": "success"},
                     "error": None,
                     "log_id": "log_123",
@@ -2093,6 +2096,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         from composio.core.models.tools import Tools as RealTools
@@ -2134,6 +2138,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create modifier functions
@@ -2187,6 +2192,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {}
         mock_execute_response.error = "Authentication failed"
+        mock_execute_response.result_type = "failed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real execute function
@@ -2366,6 +2372,7 @@ class TestInstantContractTransport:
                 return httpx.Response(
                     200,
                     json={
+                        "result_type": "completed",
                         "data": {},
                         "error": None,
                         "log_id": "log_123",
@@ -2715,25 +2722,17 @@ _EXECUTED_ANSWERS = [
     pytest.param("failed", "", False, id="failed with an empty error"),
     pytest.param("failed", "Boom", False, id="failed with a message"),
     pytest.param("completed", None, True, id="completed"),
-    pytest.param(None, None, True, id="no result_type and no error"),
-    pytest.param(None, "Boom", False, id="no result_type and an error"),
 ]
 
 
-def _executed_json(
-    result_type: t.Optional[str], error: t.Optional[str]
-) -> t.Dict[str, t.Any]:
-    body: t.Dict[str, t.Any] = {"data": {}, "error": error, "log_id": "log"}
-    if result_type is not None:
-        body["result_type"] = result_type
-    return body
+def _executed_json(result_type: str, error: t.Optional[str]) -> t.Dict[str, t.Any]:
+    return {"result_type": result_type, "data": {}, "error": error, "log_id": "log"}
 
 
 class TestSessionExecutionSuccess:
     """``result_type`` says whether a tool that ran succeeded. A failed
     execution can carry a ``None`` or empty ``error``, so success is read from
-    ``result_type`` and only falls back to the error text when the API sent no
-    ``result_type``.
+    ``result_type`` alone.
     """
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
@@ -2780,6 +2779,59 @@ class TestSessionExecutionSuccess:
 
         assert result.result_type == result_type
         assert result.error == error
+
+
+_INVALID_ANSWERS = [
+    pytest.param({"data": {}, "error": None, "log_id": "log"}, id="no result_type"),
+    pytest.param(
+        {"result_type": "deferred", "data": {}, "error": None, "log_id": "log"},
+        id="an unknown result_type",
+    ),
+]
+
+
+@pytest.mark.parametrize("body", _INVALID_ANSWERS)
+class TestSessionExecuteAnswerWithoutAKnownResultType:
+    """Every session execute answer carries a ``result_type``. One without it,
+    or with a value this SDK does not know, is not a result: reading it as a
+    success or as a failure would be a guess, so each path raises instead.
+    """
+
+    _MESSAGE = (
+        "Tool GMAIL_SEND_EMAIL returned an execute response without a known result_type"
+    )
+
+    def test_provider_wrapped_session_tool_raises(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert len(requests) == 1
+
+    def test_provider_tool_call_bound_to_a_session_raises(self, body):
+        from composio.core.provider._openai import OpenAIProvider
+
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            OpenAIProvider().execute_tool_for_target(
+                target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
+            )
+
+    def test_session_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+    def test_custom_tool_context_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            SessionContextImpl(client, "user_123", "session_123").execute(
+                "GMAIL_SEND_EMAIL", {}
+            )
 
 
 def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:

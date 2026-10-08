@@ -445,6 +445,7 @@ class TestNonAgenticProviderHelperMethods:
             data={"tools": ["GMAIL_SEND_EMAIL"]},
             error=None,
             log_id="log-session",
+            result_type="completed",
         )
         completion = SimpleNamespace(
             choices=[
@@ -494,8 +495,12 @@ class TestNonAgenticProviderHelperMethods:
         Tools(client=mock_client, provider=provider)
         session = Mock()
         session.execute.side_effect = [
-            SimpleNamespace(data={"index": 1}, error=None, log_id="log-1"),
-            SimpleNamespace(data={"index": 2}, error="failed", log_id="log-2"),
+            SimpleNamespace(
+                data={"index": 1}, error=None, log_id="log-1", result_type="completed"
+            ),
+            SimpleNamespace(
+                data={"index": 2}, error="failed", log_id="log-2", result_type="failed"
+            ),
         ]
         response = Response.model_construct(
             output=[

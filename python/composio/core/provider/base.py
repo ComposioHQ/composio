@@ -128,7 +128,5 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
         return {
             "data": t.cast(t.Dict, result.data),
             "error": result.error,
-            "successful": is_execution_successful(
-                getattr(result, "result_type", None), result.error
-            ),
+            "successful": is_execution_successful(result.result_type),
         }
