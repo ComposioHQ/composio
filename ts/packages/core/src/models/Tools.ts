@@ -1246,7 +1246,7 @@ export class Tools<
     let result: ToolExecuteResponse = {
       data,
       error,
-      successful: isExecutionSuccessful({ resultType, error }),
+      successful: isExecutionSuccessful({ resultType }),
       logId,
       ...(instantCharge !== undefined && { instantCharge }),
     };

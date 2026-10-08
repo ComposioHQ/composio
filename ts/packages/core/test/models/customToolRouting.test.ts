@@ -110,6 +110,7 @@ const createMockClient = () => ({
         headers: { 'x-test': '1' },
       }),
       execute: vi.fn().mockResolvedValue({
+        result_type: 'completed',
         data: { remote_result: true },
         error: null,
         log_id: 'log_remote',

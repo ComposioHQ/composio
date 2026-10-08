@@ -199,6 +199,7 @@ describe('OpenAIProvider', () => {
           data: { tools: ['GMAIL_SEND_EMAIL'] },
           error: null,
           logId: 'log-session',
+          resultType: 'completed',
         }),
       };
       const chatCompletion = {
@@ -234,6 +235,7 @@ describe('OpenAIProvider', () => {
             data: { tools: ['GMAIL_SEND_EMAIL'] },
             error: null,
             logId: 'log-session',
+            resultType: 'completed',
             successful: true,
           }),
         },

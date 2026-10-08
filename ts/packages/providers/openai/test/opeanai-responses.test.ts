@@ -444,7 +444,12 @@ describe('OpenAIResponsesProvider', () => {
       const session = {
         execute: vi
           .fn()
-          .mockResolvedValueOnce({ data: { index: 1 }, error: null, logId: 'log-1' })
+          .mockResolvedValueOnce({
+            data: { index: 1 },
+            error: null,
+            logId: 'log-1',
+            resultType: 'completed',
+          })
           .mockRejectedValueOnce(new Error('session execution failed')),
       };
       const toolCalls = [
@@ -481,6 +486,7 @@ describe('OpenAIResponsesProvider', () => {
             data: { index: 1 },
             error: null,
             logId: 'log-1',
+            resultType: 'completed',
             successful: true,
           }),
           status: 'completed',
@@ -695,6 +701,7 @@ describe('OpenAIResponsesProvider', () => {
           data: { result: 'session-success' },
           error: null,
           logId: 'log-session',
+          resultType: 'completed',
         }),
       };
       const response = {
@@ -724,6 +731,7 @@ describe('OpenAIResponsesProvider', () => {
             data: { result: 'session-success' },
             error: null,
             logId: 'log-session',
+            resultType: 'completed',
             successful: true,
           }),
           status: 'completed',
