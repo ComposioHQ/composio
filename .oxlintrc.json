@@ -23,7 +23,6 @@
     "ts/packages/core/pack/generated/**",
     "ts/packages/slim/generated/**",
     "ts/packages/**/.generated/**",
-    "ts/packages/**/acp-adapters/**",
     "node_modules/**",
     "ts/examples/**/dist-worker/**",
     "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",

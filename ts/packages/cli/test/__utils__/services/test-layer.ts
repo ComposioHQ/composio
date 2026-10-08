@@ -921,7 +921,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       },
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
       security: 'auto',
     });
 
@@ -935,7 +934,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
-            experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
         },

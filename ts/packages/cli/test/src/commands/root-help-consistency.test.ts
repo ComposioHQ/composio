@@ -61,7 +61,7 @@ describe('framework command help', () => {
         expect((yield* capture(['version', '--help'])).stdout).toContain('--check');
         const run = yield* capture(['run', '--help']);
         expect(run.stdout).toContain('--skip-checks');
-        expect(run.stdout).toContain('--logs-off');
+        expect(run.stdout).not.toContain('--logs-off');
         expect(run.stdout).not.toContain('--perf-debug');
       })
     );

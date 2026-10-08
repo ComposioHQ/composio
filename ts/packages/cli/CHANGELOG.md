@@ -48,6 +48,28 @@
   Swift. Permission prompts always use the browser approval page. A
   stored `local_tools` setting is now listed as an unknown feature and has no
   effect.
+- Remove `experimental_subAgent()` (alias `invokeAgent`) from `composio run`.
+  Its ACP transport approved every tool call the spawned agent requested, so
+  both transports (ACP and the older `claude -p` / `codex exec` one), the output
+  MCP server, and the bundled ACP adapters are gone. `execute`, `search`,
+  `proxy`, `result.prompt()`, and the `z` / `zod` globals are unchanged. A
+  script that still calls the helper fails at that call with a message naming
+  the removal; tool calls it made earlier have already taken effect. To keep
+  the helper, install an older CLI with the installer:
+  `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=<version> sh`.
+  `composio upgrade <older version>` from this CLI is not a way back. A stored
+  `experimental_subagent` config key is now ignored and preserved; an invalid
+  target used to reset the whole config to defaults. `COMPOSIO_RUN_ACP_ONLY` is
+  no longer read and the hidden `--acp-only` flag is gone. Remove `--logs-off`,
+  which only canceled `--debug` after sub-agent streaming was removed. Helper
+  logs are written to disk; use `--debug` to also print them to stderr. An
+  unknown flag placed before inline `run` code is now rejected by name
+  (`Unrecognized flag: --x in command composio run`) instead of being executed
+  as source; inline source that is exactly one flag-shaped token needs an
+  explicit `--`. Release archives keep ten legacy paths (the four root
+  `run-subagent-*.mjs` files and six `acp-adapters/*` paths) as intentionally
+  empty placeholders so that a CLI installed before this change still passes
+  its upgrade verification. No adapter binaries are downloaded or shipped.
 - Every Composio API call now goes through the `@composio/client` 2.0 runtime,
   the same client `@composio/core` uses. Org, project, session-info, and
   consumer lookups gain the client's retries and redirect handling, and API

@@ -20,7 +20,7 @@ export const readTelemetryDebugOverride = (argv: ReadonlyArray<string>): boolean
 };
 
 /**
- * Values parsed from the hidden `--perf-debug` / `--tool-debug` / `--acp-only` flags.
+ * Values parsed from the hidden `--perf-debug` / `--tool-debug` flags.
  *
  * `undefined` means "the flag was absent", which is what lets the corresponding `COMPOSIO_*`
  * config value through; an explicit `true`/`false` always wins over it.
@@ -28,13 +28,11 @@ export const readTelemetryDebugOverride = (argv: ReadonlyArray<string>): boolean
 export type CliDebugFlagOverrides = {
   readonly perfDebug: boolean | undefined;
   readonly toolDebug: boolean | undefined;
-  readonly acpOnly: boolean | undefined;
 };
 
 export const NO_CLI_DEBUG_FLAG_OVERRIDES: CliDebugFlagOverrides = {
   perfDebug: undefined,
   toolDebug: undefined,
-  acpOnly: undefined,
 };
 
 /**
@@ -57,7 +55,6 @@ const debugSetting = <const Name extends string>(name: Name) =>
 const debugSettings = {
   'perf-debug': debugSetting('perf-debug'),
   'tool-debug': debugSetting('tool-debug'),
-  'acp-only': debugSetting('acp-only'),
   'telemetry-debug': debugSetting('telemetry-debug'),
 };
 export const CLI_DEBUG_FLAG_NAMES = Object.keys(debugSettings);
@@ -87,12 +84,6 @@ export const isToolDebugEnabled = debugFlagOr(
   Effect.orDie(APP_CONFIG.TOOL_DEBUG)
 );
 
-export const isAcpOnlyEnabled = debugFlagOr(
-  debugSettings['acp-only'],
-  overrides => overrides.acpOnly,
-  Effect.orDie(APP_CONFIG.RUN_ACP_ONLY)
-);
-
 /**
  * Debug state a parent CLI process resolved for the processes it spawns.
  *
@@ -104,14 +95,12 @@ export const isAcpOnlyEnabled = debugFlagOr(
 export type ChildProcessDebugFlags = {
   readonly perfDebug: boolean;
   readonly toolDebug: boolean;
-  readonly acpOnly: boolean;
   readonly telemetryDebug: boolean;
 };
 
 export const debugFlagsToChildEnv = (flags: ChildProcessDebugFlags): Record<string, string> => ({
   COMPOSIO_PERF_DEBUG: flags.perfDebug ? '1' : '0',
   COMPOSIO_TOOL_DEBUG: flags.toolDebug ? '1' : '0',
-  COMPOSIO_RUN_ACP_ONLY: flags.acpOnly ? '1' : '0',
   COMPOSIO_CLI_TELEMETRY_DEBUG: flags.telemetryDebug ? '1' : '0',
 });
 
