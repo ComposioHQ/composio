@@ -3,7 +3,7 @@
 '@composio/slim': minor
 ---
 
-Update the owned API client to `@composio/client@2.0.0-rc.10`.
+Update the owned API client to `@composio/client@2.0.0-rc.11`.
 
 A session tool can now ask for user input, such as an approval, instead of running: the API answers the call with `result_type: "input_required"`. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools throw the new `ComposioToolInputRequiredError` in that case. A local custom tool whose body makes such a call lets the error through instead of returning it as a failed result. The error carries the questions on `inputRequests` and the opaque `request_state` on `requestState`. `requestState` is continuation state, so it is a non-enumerable property: read it as `error.requestState`, and `console.error(error)`, `util.inspect(error)` and `JSON.stringify(error)` leave it out. Nothing was executed and the call is not retried. The SDK does not submit answers yet.
 
