@@ -188,7 +188,6 @@ class TestToolRouter:
         tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert kwargs["instant"] == policy
-        assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
         tool_router.create(user_id="user_123")
@@ -1411,6 +1410,7 @@ class TestToolRouter:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"ok": True}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_execute_response.log_id = "log_123"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
@@ -2020,6 +2020,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real Tools instance to test the execute function
@@ -2066,6 +2067,7 @@ class TestToolRouterExecution:
         mock_client.tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"result": "success"},
                     "error": None,
                     "log_id": "log_123",
@@ -2093,6 +2095,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         from composio.core.models.tools import Tools as RealTools
@@ -2134,6 +2137,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create modifier functions
@@ -2187,6 +2191,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {}
         mock_execute_response.error = "Authentication failed"
+        mock_execute_response.result_type = "failed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real execute function
@@ -2328,14 +2333,12 @@ class TestInstantContractTransport:
         router = ToolRouter(client=client, provider=MagicMock())
         session = router.create(user_id="user_123", instant=policy)
         body = json.loads(requests[0].content)
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
 
         if policy is None:
             session.update(expected_config_version=3)
@@ -2343,14 +2346,12 @@ class TestInstantContractTransport:
             session.update(instant=policy, expected_config_version=3)
         body = json.loads(requests[-1].content)
         assert body["expected_config_version"] == 3
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
 
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
@@ -2366,6 +2367,7 @@ class TestInstantContractTransport:
                 return httpx.Response(
                     200,
                     json={
+                        "result_type": "completed",
                         "data": {},
                         "error": None,
                         "log_id": "log_123",
@@ -2390,7 +2392,6 @@ class TestInstantContractTransport:
         assert result.instant_charge is not None
         assert result.instant_charge.amount == "0.012"
         assert result.instant_charge.model_dump() == charge
-        assert "premium_charge" not in result.model_dump()
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
@@ -2710,30 +2711,69 @@ class TestCustomToolBodyRequiresUserInput:
         assert result.result_type == "failed"
 
 
+class TestMixedMultiExecuteRequiresUserInput:
+    """A ``COMPOSIO_MULTI_EXECUTE_TOOL`` batch that mixes local and remote
+    tools turns a raised backend error into per-tool failures. An input request
+    is not one: the caller needs the questions and the request state.
+    """
+
+    def test_remote_half_input_required_raises(self):
+        from composio.core.models.tools import Tools
+
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+        local_calls: t.List[bool] = []
+        session = _session_with_custom_tools(
+            client, _custom_tool_calling(lambda ctx: local_calls.append(True))
+        )
+        tools = Tools(
+            client=client,
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        # Keep the (read) tool-schema lookup off the transport.
+        tools._tool_schemas["COMPOSIO_MULTI_EXECUTE_TOOL"] = MagicMock()
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            session._route_multi_execute(
+                {
+                    "tools": [
+                        {"tool_slug": "SEND_WELCOME_EMAIL", "arguments": {}},
+                        {"tool_slug": "GMAIL_SEND_EMAIL", "arguments": {}},
+                    ]
+                },
+                tools,
+            )
+
+        error = raised.value
+        assert "Tool COMPOSIO_MULTI_EXECUTE_TOOL requires user input" in error.message
+        assert list(error.input_requests) == ["approval_1"]
+        assert error.request_state == "opaque-state-token"
+        # Only the remote half reached the API, once.
+        assert len(requests) == 1
+        assert [
+            tool["tool_slug"]
+            for tool in json.loads(requests[0].content)["arguments"]["tools"]
+        ] == ["GMAIL_SEND_EMAIL"]
+        # The local tool had already run; its result is discarded by the raise.
+        assert local_calls == [True]
+
+
 _EXECUTED_ANSWERS = [
     pytest.param("failed", None, False, id="failed with a null error"),
     pytest.param("failed", "", False, id="failed with an empty error"),
     pytest.param("failed", "Boom", False, id="failed with a message"),
     pytest.param("completed", None, True, id="completed"),
-    pytest.param(None, None, True, id="no result_type and no error"),
-    pytest.param(None, "Boom", False, id="no result_type and an error"),
 ]
 
 
-def _executed_json(
-    result_type: t.Optional[str], error: t.Optional[str]
-) -> t.Dict[str, t.Any]:
-    body: t.Dict[str, t.Any] = {"data": {}, "error": error, "log_id": "log"}
-    if result_type is not None:
-        body["result_type"] = result_type
-    return body
+def _executed_json(result_type: str, error: t.Optional[str]) -> t.Dict[str, t.Any]:
+    return {"result_type": result_type, "data": {}, "error": error, "log_id": "log"}
 
 
 class TestSessionExecutionSuccess:
     """``result_type`` says whether a tool that ran succeeded. A failed
     execution can carry a ``None`` or empty ``error``, so success is read from
-    ``result_type`` and only falls back to the error text when the API sent no
-    ``result_type``.
+    ``result_type`` alone.
     """
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
@@ -2780,6 +2820,59 @@ class TestSessionExecutionSuccess:
 
         assert result.result_type == result_type
         assert result.error == error
+
+
+_INVALID_ANSWERS = [
+    pytest.param({"data": {}, "error": None, "log_id": "log"}, id="no result_type"),
+    pytest.param(
+        {"result_type": "deferred", "data": {}, "error": None, "log_id": "log"},
+        id="an unknown result_type",
+    ),
+]
+
+
+@pytest.mark.parametrize("body", _INVALID_ANSWERS)
+class TestSessionExecuteAnswerWithoutAKnownResultType:
+    """Every session execute answer carries a ``result_type``. One without it,
+    or with a value this SDK does not know, is not a result: reading it as a
+    success or as a failure would be a guess, so each path raises instead.
+    """
+
+    _MESSAGE = (
+        "Tool GMAIL_SEND_EMAIL returned an execute response without a known result_type"
+    )
+
+    def test_provider_wrapped_session_tool_raises(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert len(requests) == 1
+
+    def test_provider_tool_call_bound_to_a_session_raises(self, body):
+        from composio.core.provider._openai import OpenAIProvider
+
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            OpenAIProvider().execute_tool_for_target(
+                target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
+            )
+
+    def test_session_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+    def test_custom_tool_context_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            SessionContextImpl(client, "user_123", "session_123").execute(
+                "GMAIL_SEND_EMAIL", {}
+            )
 
 
 def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
@@ -3104,7 +3197,6 @@ class TestSessionUpdateContract:
             "toolkits": {"enable": ["exa"]},
             "return_instant_charge": True,
         }
-        assert "premium_usage" not in kwargs
 
     def test_instant_can_be_disabled(self, session, mock_client):
         session.update(instant=False)

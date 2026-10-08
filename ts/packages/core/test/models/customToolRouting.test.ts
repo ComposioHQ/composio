@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, assert } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { createCustomTool, buildCustomToolsMap } from '../../src/models/CustomTool';
+import { ComposioToolInputRequiredError } from '../../src/errors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import ComposioClient from '@composio/client';
 import type { CustomTool, SessionContext } from '../../src/types/customTool.types';
@@ -110,6 +111,7 @@ const createMockClient = () => ({
         headers: { 'x-test': '1' },
       }),
       execute: vi.fn().mockResolvedValue({
+        result_type: 'completed',
         data: { remote_result: true },
         error: null,
         log_id: 'log_remote',
@@ -838,6 +840,40 @@ describe('ToolRouterSession execution routing', () => {
         response: { successful: false, error: 'remote unavailable' },
         error: 'remote unavailable',
       });
+    });
+
+    it('should rethrow an input request from the remote half of a mixed batch', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      // What `executeSessionTool` throws when the API answers `input_required`.
+      const inputRequired = new ComposioToolInputRequiredError('Tool COMPOSIO_MULTI_EXECUTE_TOOL', {
+        inputRequests: {
+          approval_1: {
+            type: 'elicitation',
+            mode: 'form',
+            message: 'Allow GMAIL_SEND_EMAIL to send this email?',
+            requestedSchema: { type: 'object' },
+          },
+        },
+        requestState: 'opaque-state-token',
+      });
+      toolsInstance.executeSessionTool.mockRejectedValueOnce(inputRequired);
+
+      const error = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'approval' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      }).catch((caught: unknown) => caught);
+
+      // The caller gets the questions and the state, not per-tool failure strings.
+      expect(error).toBe(inputRequired);
+      assert(error instanceof ComposioToolInputRequiredError);
+      expect(Object.keys(error.inputRequests)).toEqual(['approval_1']);
+      expect(error.requestState).toBe('opaque-state-token');
+      // The local tool had already run; its result is discarded by the throw.
+      expect(localExecute).toHaveBeenCalledTimes(1);
     });
 
     it('should recompute remote counters when local results are merged', async () => {

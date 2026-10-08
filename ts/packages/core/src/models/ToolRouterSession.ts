@@ -6,7 +6,10 @@ import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
-import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
+import {
+  ComposioSessionConfigConflictError,
+  ComposioToolInputRequiredError,
+} from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -1055,6 +1058,12 @@ export class ToolRouterSession<
 
     const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
     const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    // An input request is not a per-tool failure: rethrow it so the caller gets
+    // `inputRequests` and `requestState`.
+    // Accepted: local tools in this batch already ran and their results are discarded.
+    if (remoteTransportError instanceof ComposioToolInputRequiredError) {
+      throw remoteTransportError;
+    }
     const remoteErrorMessage = remoteTransportFailed
       ? (remoteTransportError instanceof Error
           ? remoteTransportError.message

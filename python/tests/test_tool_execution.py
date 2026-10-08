@@ -115,7 +115,9 @@ class TestToolExecution:
         result = tools.get_raw_tool_router_meta_tools(
             "session_123", modifiers=[observe_toolkit]
         )
-        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        mock_client.tool_router.session.execute.return_value = Mock(
+            data={}, error=None, result_type="completed"
+        )
         execute = tools._wrap_execute_tool_for_tool_router(
             "session_123", modifiers=[observe_before_execute, observe_after_execute]
         )
@@ -162,7 +164,9 @@ class TestToolExecution:
             "required": ["attachment"],
         }
         tools._tool_schemas[tool.slug] = tool
-        mock_client.tool_router.session.execute.return_value = Mock(data={}, error=None)
+        mock_client.tool_router.session.execute.return_value = Mock(
+            data={}, error=None, result_type="completed"
+        )
         execute = tools._wrap_execute_tool_for_tool_router("session_123")
         arguments = {
             "attachment": value,

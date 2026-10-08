@@ -11,9 +11,10 @@
   yet, and it no longer treats such an answer as a result. The `proxy()` helper
   used to return an empty `200` response for a call that never ran.
 
-- `composio execute` now reports a tool that ran and failed as failed even when
-  the API returns no error text. It used to read a failed execution with a
-  `null` error as successful.
+- `composio execute` now reads whether a tool succeeded from the `result_type`
+  the API returns with every execution, so a tool that ran and failed is
+  reported as failed even when the API returns no error text. It used to read a
+  failed execution with a `null` error as successful.
 
 - `composio execute` now validates the arguments before it sends the tool
   call, so a call that fails local validation is never run. Validation used to

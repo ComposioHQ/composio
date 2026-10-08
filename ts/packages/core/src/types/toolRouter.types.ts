@@ -633,10 +633,9 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   /**
    * Whether the tool ran and succeeded (`completed`) or ran and failed
    * (`failed`). A failed execution can carry a `null` or empty `error`, so
-   * read this rather than `error` to tell the two apart. Absent when the API
-   * sent no `result_type`.
+   * read this rather than `error` to tell the two apart.
    */
-  resultType: z.enum(['completed', 'failed']).optional(),
+  resultType: z.enum(['completed', 'failed']),
   /** Actual Instant usage charge when the Session opts into returning it. */
   instantCharge: z.unknown().optional(),
 });
@@ -715,19 +714,6 @@ export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preloa
 export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
 
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
-
-const ToolRouterInstantResponseFilterSchema = z.union([
-  z.object({ enabled: z.array(z.string()) }),
-  z.object({ disabled: z.array(z.string()) }),
-]);
-
-/** Instant policy in the server's Session config (wire field casing). */
-export const ToolRouterInstantResponseSchema = z.object({
-  toolkits: ToolRouterInstantResponseFilterSchema.optional(),
-  tools: z.record(z.string(), ToolRouterInstantResponseFilterSchema).optional(),
-  return_instant_charge: z.boolean(),
-});
-export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;
 
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
