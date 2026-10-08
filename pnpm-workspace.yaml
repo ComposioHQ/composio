@@ -43,7 +43,7 @@ catalog:
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.30.0
+  '@modelcontextprotocol/sdk': ^1.31.0
   '@types/bun': ^1.4.2
   ai: ^7.0.111
   dotenv: ^18.0.2
@@ -131,13 +131,31 @@ overrides:
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
   # temporary: GHSA-7p8r-x3mc-p8w7, then GHSA-f65p-4m7j-42xc /
-  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8 raised the
-  # patched floor to 3.1.6. ajv accepts the patched 3.x line. Drop when its
-  # lockfile resolution is >=3.1.6 without an override.
-  'fast-uri@>=3.0.0 <3.1.6': '>=3.1.6 <4'
-  # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
-  # line. Drop when its lockfile resolution is >=10.3.1 without an override.
-  'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8, then
+  # GHSA-hrr3-gc8f-f4qj raised the patched floor to 3.1.8. ajv accepts the
+  # patched 3.x line. Drop when its lockfile resolution is >=3.1.8 without an
+  # override.
+  'fast-uri@>=3.0.0 <3.1.8': '>=3.1.8 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr, then GHSA-rpw4-54j3-4h4q /
+  # GHSA-2vr4-cq9g-pvrc / GHSA-j6r3-76f7-8jcv / GHSA-h3mg-xc3c-68pw raised the
+  # patched floor to 10.7.1. express-rate-limit accepts the patched 10.x line.
+  # Drop when its lockfile resolution is >=10.7.1 without an override.
+  'ip-address@>=10.0.0 <10.7.1': '>=10.7.1 <11'
+  # temporary: GHSA-jqcg-44mw-7w3h; express accepts the patched 2.x line. Drop
+  # when its lockfile resolution is >=2.0.8 without an override.
+  'proxy-addr@>=1.1.0 <2.0.8': '>=2.0.8 <3'
+  # temporary: GHSA-6qxp-vccf-f47h. @zed-industries/claude-code-acp@0.16.2
+  # (latest) exact-pins the vulnerable 1.26.0; drop when it ships >=1.31.0.
+  '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': '>=1.31.0 <2'
+  # temporary: GHSA-6qxp-vccf-f47h is patched in @modelcontextprotocol/client
+  # 2.2.0, but @mastra/mcp@1.17.2 (held back above) exact-pins the whole 2.x
+  # family at 2.0.0. The client exact-pins its matching core, so the siblings
+  # move together to keep a single core instance. Drop with the @mastra/mcp
+  # override.
+  '@modelcontextprotocol/client@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/core@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/server@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.2.0': 2.2.0
   # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
   # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
   'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
