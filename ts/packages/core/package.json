@@ -123,6 +123,8 @@
     "@hono/node-server": "^2.1.1",
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.8.0",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.10.2",
     "hono": "catalog:",
     "tsdown": "catalog:",
     "tsx": "catalog:",
