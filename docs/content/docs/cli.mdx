@@ -43,8 +43,8 @@ Setup asks before changing local files. Add `--yes` when you run it from an agen
 If you explicitly need the standalone skill without the native plugin, install it manually for the agent host:
 
 ```bash
-composio --install-skill composio-cli claude
-composio --install-skill composio-cli codex
+composio setup skill claude
+composio setup skill codex
 ```
 
 ### Install with options
@@ -239,6 +239,9 @@ composio link gmail
 composio execute GMAIL_FETCH_EMAILS \
   -d '{ query: "is:unread newer_than:1d", max_results: 10 }'
 ```
+
+Use `composio execute <slug> --get-schema` to print the tool's input schema as JSON.
+`composio execute <slug> --help` now shows command options and examples.
 
 The commands you'll reach for most:
 
@@ -446,8 +449,8 @@ Use `--help` on the root command or any subcommand:
 
 ```bash
 composio --help
-composio --help full
-composio execute --help full
-composio run --help full
-composio dev --help full
+composio help
+composio execute --help
+composio run --help
+composio dev projects switch --help
 ```

@@ -111,7 +111,7 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
-                    premium_usage: false,
+                    instant: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -126,6 +126,7 @@ describe('CLI: composio proxy', () => {
                 proxyParams = { sessionId, params };
                 proxyOptions = options;
                 return {
+                  result_type: 'completed' as const,
                   status: 200,
                   data: {
                     ok: true,
@@ -216,7 +217,7 @@ describe('CLI: composio proxy', () => {
                     execute: {},
                     search: {},
                     preload: { tools: [] },
-                    premium_usage: false,
+                    instant: false,
                   },
                   config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
@@ -296,6 +297,53 @@ describe('CLI: composio proxy', () => {
 
           expect(output).toContain('No active connection found for toolkit "gmail"');
           expect(output).toContain('composio link gmail');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] proxy_execute asks for user input [Then] proxy fails without a response',
+    it => {
+      it.effect('reports that the proxied call requires user input', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              proxyExecute: async () => ({
+                result_type: 'input_required' as const,
+                input_requests: {
+                  approval_1: {
+                    type: 'elicitation' as const,
+                    mode: 'form' as const,
+                    message: 'Allow this request to Gmail?',
+                    requested_schema: { type: 'object' },
+                  },
+                },
+                request_state: 'opaque-state-token',
+              }),
+            },
+          });
+
+          const { exit, output } = yield* Effect.gen(function* () {
+            const exit = yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+              '--toolkit',
+              'gmail',
+              '--skip-connection-check',
+            ]).pipe(Effect.exit);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return { exit, output: lines.join('\n') };
+          }).pipe(Effect.provide(live));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(output).toContain(
+            'GET proxy call via \\"gmail\\" requires user input before it can run (1 input request) and was not executed.'
+          );
+          expect(output).not.toContain('Status:');
+          expect(output).not.toContain('opaque-state-token');
         })
       );
     }

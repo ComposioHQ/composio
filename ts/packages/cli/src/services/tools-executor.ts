@@ -19,6 +19,7 @@ import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-fil
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
@@ -96,13 +97,27 @@ export interface ToolsExecutor {
 export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecutor');
 
 /**
+ * Whether an execution answer describes a tool that ran and succeeded.
+ *
+ * `result_type` decides: a `failed` execution is not successful even when its
+ * `error` is `null` or empty. `@composio/core` applies the same rule to
+ * session executions.
+ */
+export const isExecutionSuccessful = (raw: {
+  readonly result_type: 'completed' | 'failed';
+}): boolean => raw.result_type === 'completed';
+
+/**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  raw: Exclude<
+    SessionExecuteResponse | SessionExecuteMetaResponse,
+    { result_type: 'input_required' }
+  >,
   permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
-  successful: raw.error === null,
+  successful: isExecutionSuccessful(raw),
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
@@ -211,27 +226,28 @@ export const ToolsExecutorLive = Layer.effect(
                 })
               );
 
-          const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
-            {
-              // Never retry an execution: a retry after the backend already acted
-              // duplicates the side effect (e.g. sends the same email twice).
-              try: () => {
-                if (isMetaToolSlug(slug)) {
-                  return resolvedClient.toolRouter.session.executeMeta(
+          const raw = yield* Effect.tryPromise({
+            // Never retry an execution: a retry after the backend already acted
+            // duplicates the side effect (e.g. sends the same email twice).
+            try: async () => {
+              const response: SessionExecuteResponse | SessionExecuteMetaResponse = isMetaToolSlug(
+                slug
+              )
+                ? await resolvedClient.toolRouter.session.executeMeta(
                     sessionId,
                     { slug, arguments: normalizedArguments },
                     { maxRetries: 0 }
+                  )
+                : await resolvedClient.toolRouter.session.execute(
+                    sessionId,
+                    { tool_slug: slug, arguments: normalizedArguments },
+                    { maxRetries: 0 }
                   );
-                }
-                return resolvedClient.toolRouter.session.execute(
-                  sessionId,
-                  { tool_slug: slug, arguments: normalizedArguments },
-                  { maxRetries: 0 }
-                );
-              },
-              catch: cause => cause,
-            }
-          );
+              assertNotInputRequired(`Tool ${slug}`, response);
+              return response;
+            },
+            catch: cause => cause,
+          });
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(

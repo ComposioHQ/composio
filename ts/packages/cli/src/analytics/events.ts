@@ -7,6 +7,7 @@ import type { CliInvocationContext } from 'src/services/runtime-cli-context';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { rootCommandIndex } from 'src/utils/cli-args';
 
 export const CLI_ANALYTICS_EVENTS = {
   CLI_COMMAND_INVOKED: 'CLI_COMMAND_INVOKED',
@@ -208,8 +209,8 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
 
 const extractCommandPath = (argv: ReadonlyArray<string>): string => {
   const commandTokens: string[] = [];
-
-  for (const token of argv.slice(2)) {
+  const args = argv.slice(2);
+  for (const token of args.slice(rootCommandIndex(args))) {
     if (!token || token.startsWith('-') || !KNOWN_COMMAND_TOKENS.has(token)) {
       break;
     }
@@ -291,7 +292,8 @@ const getFlagValue = (argv: ReadonlyArray<string>, ...flags: string[]): string |
 const getTrailingPositionals = (context: CliCommandTelemetryContext): ReadonlyArray<string> => {
   const commandTokenCount =
     context.commandPath === 'composio' ? 0 : context.commandPath.split(' ').length;
-  const args = context.argv.slice(2 + commandTokenCount);
+  const rootArgs = context.argv.slice(2);
+  const args = rootArgs.slice(rootCommandIndex(rootArgs) + commandTokenCount);
   const positionals: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -505,21 +507,21 @@ export const createCliCommandTelemetryContext = (
   cliVersion: string,
   terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean },
   invocation: CliInvocationContext
-): CliCommandTelemetryContext => ({
-  argv,
-  cliVersion,
-  invocationOrigin: invocation.invocationOrigin,
-  parentRunId: invocation.parentRunId,
-  commandPath: extractCommandPath(argv),
-  flagNames: extractFlagNames(argv),
-  stdoutIsTTY: terminal.stdoutIsTTY,
-  stderrIsTTY: terminal.stderrIsTTY,
-  startedAt: Date.now(),
-  runId:
-    extractCommandPath(argv) === 'run'
-      ? (invocation.parentRunId ?? crypto.randomUUID())
-      : undefined,
-});
+): CliCommandTelemetryContext => {
+  const commandPath = extractCommandPath(argv);
+  return {
+    argv,
+    cliVersion,
+    invocationOrigin: invocation.invocationOrigin,
+    parentRunId: invocation.parentRunId,
+    commandPath,
+    flagNames: extractFlagNames(argv),
+    stdoutIsTTY: terminal.stdoutIsTTY,
+    stderrIsTTY: terminal.stderrIsTTY,
+    startedAt: Date.now(),
+    runId: commandPath === 'run' ? (invocation.parentRunId ?? crypto.randomUUID()) : undefined,
+  };
+};
 
 const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent =>
   buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED, {

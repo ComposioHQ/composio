@@ -263,6 +263,8 @@ export interface TestLiveInput {
   toolsExecutor?: {
     failWith?: unknown;
     respondWith?: ToolExecuteResponse;
+    /** Called each time the mock executor actually runs a tool call. */
+    onExecute?: (slug: string) => void;
   };
 
   /**
@@ -1297,6 +1299,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             execute:
               toolRouterOverrides?.execute ??
               (async (_sessionId: string, params: SessionExecuteParams) => ({
+                result_type: 'completed' as const,
                 data: { tool_slug: params.tool_slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
@@ -1304,6 +1307,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             executeMeta:
               toolRouterOverrides?.executeMeta ??
               (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+                result_type: 'completed' as const,
                 data: { slug: params.slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
@@ -1503,20 +1507,22 @@ export const TestLayer = (input?: TestLiveInput) =>
       ? Layer.succeed(
           ToolsExecutor,
           ToolsExecutor.of({
-            execute: (slug, params) => {
-              if (input.toolsExecutor!.failWith) {
-                return Effect.fail(input.toolsExecutor!.failWith);
-              }
-              if (input.toolsExecutor!.respondWith) {
-                return Effect.succeed(input.toolsExecutor!.respondWith);
-              }
-              return Effect.succeed({
-                data: { slug, params },
-                error: null,
-                successful: true,
-                logId: 'log_test',
-              });
-            },
+            execute: (slug, params) =>
+              Effect.suspend(() => {
+                input.toolsExecutor!.onExecute?.(slug);
+                if (input.toolsExecutor!.failWith) {
+                  return Effect.fail(input.toolsExecutor!.failWith);
+                }
+                if (input.toolsExecutor!.respondWith) {
+                  return Effect.succeed(input.toolsExecutor!.respondWith);
+                }
+                return Effect.succeed({
+                  data: { slug, params },
+                  error: null,
+                  successful: true,
+                  logId: 'log_test',
+                });
+              }),
           })
         )
       : Layer.provide(

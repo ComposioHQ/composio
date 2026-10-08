@@ -291,6 +291,7 @@ describe('GoogleProvider', () => {
           data: { result: 'session-success' },
           error: null,
           logId: 'log-session',
+          resultType: 'completed',
         }),
       };
 
@@ -307,13 +308,19 @@ describe('GoogleProvider', () => {
         data: { result: 'session-success' },
         error: null,
         logId: 'log-session',
+        resultType: 'completed',
         successful: true,
       });
     });
 
     it('reports a failed session execution in the result', async () => {
       const session = {
-        execute: vi.fn().mockResolvedValue({ data: {}, error: 'Tool failed', logId: 'log-fail' }),
+        execute: vi.fn().mockResolvedValue({
+          data: {},
+          error: 'Tool failed',
+          logId: 'log-fail',
+          resultType: 'failed',
+        }),
       };
 
       const result = await provider.executeToolCall(session, {
