@@ -920,7 +920,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -943,7 +943,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -960,7 +960,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -1121,7 +1121,7 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                "description": "Tool calls matched here pause until the user approves them.",
                                 "x-experimental": true
                               }
                             },
@@ -1144,7 +1144,7 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                "description": "Tool calls matched here pause until the user approves them.",
                                 "x-experimental": true
                               }
                             },
@@ -1196,7 +1196,7 @@
                                         "openWorldHint"
                                       ]
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 }
@@ -1206,7 +1206,7 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                "description": "Tool calls matched here pause until the user approves them.",
                                 "x-experimental": true
                               }
                             },
@@ -1223,7 +1223,7 @@
                                 "items": {
                                   "type": "string"
                                 },
-                                "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                "description": "Tool calls matched here pause until the user approves them.",
                                 "x-experimental": true
                               }
                             },
@@ -1276,7 +1276,7 @@
                               "openWorldHint"
                             ]
                           },
-                          "description": "Experimental: tool calls matched here pause until the user approves them.",
+                          "description": "Tool calls matched here pause until the user approves them.",
                           "x-experimental": true
                         }
                       },
@@ -1454,76 +1454,17 @@
           "total_items"
         ]
       },
-      "ToolRouterSessionExecuteCompleted": {
+      "ExecuteCompleted": {
         "type": "object",
         "properties": {
-          "instant_charge": {
-            "type": "object",
-            "properties": {
-              "amount": {
-                "type": "string",
-                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
-                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
-              },
-              "currency": {
-                "type": "string",
-                "enum": [
-                  "USD"
-                ],
-                "description": "Currency of the instant charge. Always USD."
-              },
-              "charged_by": {
-                "type": "string",
-                "enum": [
-                  "composio"
-                ],
-                "description": "Entity charging for instant usage. Always composio."
-              }
-            },
-            "required": [
-              "amount",
-              "currency",
-              "charged_by"
-            ],
-            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
-          },
-          "data": {
-            "type": "object",
-            "additionalProperties": {},
-            "description": "The data returned by the tool execution",
-            "example": {
-              "message": "Hello, World!",
-              "status": "success"
-            }
-          },
-          "error": {
-            "type": "string",
-            "nullable": true,
-            "description": "Error message if the execution failed, null otherwise"
-          },
-          "log_id": {
-            "type": "string",
-            "description": "Unique identifier for the execution log",
-            "example": "log_abc123xyz"
-          },
           "result_type": {
             "type": "string",
             "enum": [
               "completed"
             ],
-            "description": "The tool ran and succeeded"
-          }
-        },
-        "required": [
-          "data",
-          "error",
-          "log_id",
-          "result_type"
-        ]
-      },
-      "ToolRouterSessionExecuteFailed": {
-        "type": "object",
-        "properties": {
+            "description": "The tool ran and succeeded",
+            "x-experimental": true
+          },
           "instant_charge": {
             "type": "object",
             "properties": {
@@ -1572,23 +1513,84 @@
             "type": "string",
             "description": "Unique identifier for the execution log",
             "example": "log_abc123xyz"
-          },
+          }
+        },
+        "required": [
+          "result_type",
+          "data",
+          "error",
+          "log_id"
+        ]
+      },
+      "ExecuteFailed": {
+        "type": "object",
+        "properties": {
           "result_type": {
             "type": "string",
             "enum": [
               "failed"
             ],
-            "description": "The tool ran and failed"
+            "description": "The tool ran and failed, or the user did not approve it",
+            "x-experimental": true
+          },
+          "instant_charge": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ],
+                "description": "Currency of the instant charge. Always USD."
+              },
+              "charged_by": {
+                "type": "string",
+                "enum": [
+                  "composio"
+                ],
+                "description": "Entity charging for instant usage. Always composio."
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "charged_by"
+            ],
+            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The data returned by the tool execution",
+            "example": {
+              "message": "Hello, World!",
+              "status": "success"
+            }
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if the execution failed, null otherwise"
+          },
+          "log_id": {
+            "type": "string",
+            "description": "Unique identifier for the execution log",
+            "example": "log_abc123xyz"
           }
         },
         "required": [
+          "result_type",
           "data",
           "error",
-          "log_id",
-          "result_type"
+          "log_id"
         ]
       },
-      "ToolRouterInputRequest": {
+      "UserInputRequest": {
         "type": "object",
         "properties": {
           "type": {
@@ -1596,24 +1598,24 @@
             "enum": [
               "elicitation"
             ],
-            "description": "Kind of input requested"
+            "description": "Always `elicitation`"
           },
           "mode": {
             "type": "string",
             "enum": [
               "form"
             ],
-            "description": "How the client collects the input"
+            "description": "Always `form`: collect the answer with a form built from `requested_schema`"
           },
           "message": {
             "type": "string",
-            "description": "Message to show the user",
+            "description": "Text to show the user",
             "example": "Your agent wants to run the following tool:\n\nGITHUB_DELETE_A_REPOSITORY({\"owner\": \"acme\", \"repo\": \"old-api\"})"
           },
           "requested_schema": {
             "type": "object",
             "additionalProperties": {},
-            "description": "JSON Schema for the answer: a flat object with string, number, boolean or enum fields"
+            "description": "JSON Schema for the answer. As in MCP form mode, it is a flat object whose fields are strings, numbers, booleans, or single- or multi-select enums."
           }
         },
         "required": [
@@ -1621,33 +1623,63 @@
           "mode",
           "message",
           "requested_schema"
-        ]
+        ],
+        "description": "A question for the user, in the shape of an MCP `elicitation/create` request in form mode (https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). Show `message` to the user and collect an answer that matches `requested_schema`."
       },
-      "ToolRouterInputRequiredResponse": {
+      "ExecuteRequiresUserInput": {
         "type": "object",
         "properties": {
           "result_type": {
             "type": "string",
             "enum": [
               "input_required"
-            ]
+            ],
+            "description": "The call needs the user's input before it runs",
+            "x-experimental": true
           },
           "input_requests": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/ToolRouterInputRequest"
+              "$ref": "#/components/schemas/UserInputRequest"
             },
-            "description": "Questions for the user, keyed by an ID the answers must reuse"
+            "description": "Questions for the user, keyed by an ID the answers must reuse",
+            "x-experimental": true
           },
           "request_state": {
             "type": "string",
-            "description": "Opaque state. If present, send it back unchanged with the answers"
+            "description": "Send this back unchanged in `request_state` with the answers",
+            "x-experimental": true
           }
         },
         "required": [
           "result_type",
           "input_requests"
-        ]
+        ],
+        "description": "The call needs the user's input before it runs. Returned only when the session is configured to ask for user approval before tool execution. Show each question in `input_requests` to the user, then repeat the same call with their answers in `input_responses`, along with this `request_state` if present.",
+        "x-experimental": true
+      },
+      "UserInputResponse": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "decline",
+              "cancel"
+            ],
+            "description": "`accept` when the user submitted the form, `decline` when they said no, `cancel` when they dismissed it"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "With `accept`, the user's answer: fields matching the question's `requested_schema`"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "The user's answer to one question, in the shape of an MCP elicitation result (https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation)."
       },
       "ComposioManagedAuthConfigCreate": {
         "type": "object",
@@ -2242,9 +2274,17 @@
           "toolkitId": "550e8400-e29b-41d4-a716-446655440000"
         }
       },
-      "ProxyExecuteForSessionCompleted": {
+      "ProxyExecuteCompleted": {
         "type": "object",
         "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "completed"
+            ],
+            "description": "The request was sent and the proxied API responded",
+            "x-experimental": true
+          },
           "data": {
             "nullable": true,
             "description": "The response data returned from the proxied API",
@@ -2297,18 +2337,11 @@
               "content-type": "application/json",
               "cache-control": "no-cache"
             }
-          },
-          "result_type": {
-            "type": "string",
-            "enum": [
-              "completed"
-            ],
-            "description": "The request was sent and the proxied API responded"
           }
         },
         "required": [
-          "status",
-          "result_type"
+          "result_type",
+          "status"
         ]
       },
       "ToolRouterToolkitsListResponse": {
@@ -6749,7 +6782,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -6782,7 +6815,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -6804,7 +6837,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -7021,7 +7054,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -7052,7 +7085,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -7120,7 +7153,7 @@
                                         ]
                                       },
                                       "minItems": 1,
-                                      "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                                      "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                                       "x-experimental": true,
                                       "example": [
                                         "destructiveHint"
@@ -7145,7 +7178,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -7166,7 +7199,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -7235,7 +7268,7 @@
                               ]
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "destructiveHint"
@@ -7585,7 +7618,7 @@
                           "allow"
                         ],
                         "default": "deny",
-                        "description": "Experimental: what session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
+                        "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
                         "x-experimental": true
                       },
                       "session_config_id": {
@@ -7906,7 +7939,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -7929,7 +7962,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -7946,7 +7979,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -8107,7 +8140,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -8130,7 +8163,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -8182,7 +8215,7 @@
                                             "openWorldHint"
                                           ]
                                         },
-                                        "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                        "description": "Tool calls matched here pause until the user approves them.",
                                         "x-experimental": true
                                       }
                                     }
@@ -8192,7 +8225,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -8209,7 +8242,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -8262,7 +8295,7 @@
                                   "openWorldHint"
                                 ]
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -8785,7 +8818,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -8808,7 +8841,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -8825,7 +8858,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -8986,7 +9019,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -9009,7 +9042,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -9061,7 +9094,7 @@
                                             "openWorldHint"
                                           ]
                                         },
-                                        "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                        "description": "Tool calls matched here pause until the user approves them.",
                                         "x-experimental": true
                                       }
                                     }
@@ -9071,7 +9104,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -9088,7 +9121,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -9141,7 +9174,7 @@
                                   "openWorldHint"
                                 ]
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -9595,7 +9628,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -9628,7 +9661,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -9650,7 +9683,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -9860,7 +9893,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -9891,7 +9924,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -9959,7 +9992,7 @@
                                         ]
                                       },
                                       "minItems": 1,
-                                      "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                                      "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                                       "x-experimental": true,
                                       "example": [
                                         "destructiveHint"
@@ -9984,7 +10017,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -10005,7 +10038,7 @@
                                 "type": "string"
                               },
                               "minItems": 1,
-                              "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -10074,7 +10107,7 @@
                               ]
                             },
                             "minItems": 1,
-                            "description": "Experimental: tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
                             "x-experimental": true,
                             "example": [
                               "destructiveHint"
@@ -10280,7 +10313,7 @@
                           "deny",
                           "allow"
                         ],
-                        "description": "Experimental: what session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
+                        "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
                         "x-experimental": true
                       },
                       "session_config_id": {
@@ -10365,7 +10398,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -10388,7 +10421,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -10405,7 +10438,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -10566,7 +10599,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -10589,7 +10622,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -10641,7 +10674,7 @@
                                             "openWorldHint"
                                           ]
                                         },
-                                        "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                        "description": "Tool calls matched here pause until the user approves them.",
                                         "x-experimental": true
                                       }
                                     }
@@ -10651,7 +10684,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -10668,7 +10701,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -10721,7 +10754,7 @@
                                   "openWorldHint"
                                 ]
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -11542,7 +11575,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -11565,7 +11598,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -11582,7 +11615,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                  "description": "Tool calls matched here pause until the user approves them.",
                                   "x-experimental": true
                                 }
                               },
@@ -11743,7 +11776,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -11766,7 +11799,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -11818,7 +11851,7 @@
                                             "openWorldHint"
                                           ]
                                         },
-                                        "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                        "description": "Tool calls matched here pause until the user approves them.",
                                         "x-experimental": true
                                       }
                                     }
@@ -11828,7 +11861,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -11845,7 +11878,7 @@
                                     "items": {
                                       "type": "string"
                                     },
-                                    "description": "Experimental: tool calls matched here pause until the user approves them.",
+                                    "description": "Tool calls matched here pause until the user approves them.",
                                     "x-experimental": true
                                   }
                                 },
@@ -11898,7 +11931,7 @@
                                   "openWorldHint"
                                 ]
                               },
-                              "description": "Experimental: tool calls matched here pause until the user approves them.",
+                              "description": "Tool calls matched here pause until the user approves them.",
                               "x-experimental": true
                             }
                           },
@@ -13115,6 +13148,16 @@
               }
             }
           },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload too large",
             "content": {
@@ -13328,8 +13371,10 @@
                   },
                   "input_responses": {
                     "type": "object",
-                    "additionalProperties": {},
-                    "description": "Experimental: the user's answers to the questions an earlier response asked, keyed by the same ids. Send them with the same tool call to continue it.",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/UserInputResponse"
+                    },
+                    "description": "The user's answers to an `input_required` response, keyed by the ids in its `input_requests`. Send them by repeating the same call (same tool and arguments) with this field added, along with the response's `request_state` if present. An approved call runs; a denied or declined one returns `failed`.",
                     "x-experimental": true,
                     "example": {
                       "approval_3f9a1c2b7d4e5f60": {
@@ -13342,7 +13387,7 @@
                   },
                   "request_state": {
                     "type": "string",
-                    "description": "Experimental: state from an earlier response that asked the user for input, sent back unchanged.",
+                    "description": "The `request_state` from the `input_required` response, sent back unchanged with `input_responses`.",
                     "x-experimental": true
                   },
                   "experimental": {
@@ -13531,27 +13576,27 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully executed the tool. Returns execution result, logs, and status.",
+            "description": "The tool call completed, failed, or needs the user's input before it can run. The `result_type` field says which of these happened.",
             "content": {
               "application/json": {
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ToolRouterSessionExecuteCompleted"
+                      "$ref": "#/components/schemas/ExecuteCompleted"
                     },
                     {
-                      "$ref": "#/components/schemas/ToolRouterSessionExecuteFailed"
+                      "$ref": "#/components/schemas/ExecuteFailed"
                     },
                     {
-                      "$ref": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "result_type",
                     "mapping": {
-                      "completed": "#/components/schemas/ToolRouterSessionExecuteCompleted",
-                      "failed": "#/components/schemas/ToolRouterSessionExecuteFailed",
-                      "input_required": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "completed": "#/components/schemas/ExecuteCompleted",
+                      "failed": "#/components/schemas/ExecuteFailed",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
                 }
@@ -13610,6 +13655,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -13725,8 +13780,10 @@
                   },
                   "input_responses": {
                     "type": "object",
-                    "additionalProperties": {},
-                    "description": "Experimental: the user's answers to the questions an earlier response asked, keyed by the same ids. Send them with the same tool call to continue it.",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/UserInputResponse"
+                    },
+                    "description": "The user's answers to an `input_required` response, keyed by the ids in its `input_requests`. Send them by repeating the same call (same tool and arguments) with this field added, along with the response's `request_state` if present. An approved call runs; a denied or declined one returns `failed`.",
                     "x-experimental": true,
                     "example": {
                       "approval_3f9a1c2b7d4e5f60": {
@@ -13739,7 +13796,7 @@
                   },
                   "request_state": {
                     "type": "string",
-                    "description": "Experimental: state from an earlier response that asked the user for input, sent back unchanged.",
+                    "description": "The `request_state` from the `input_required` response, sent back unchanged with `input_responses`.",
                     "x-experimental": true
                   },
                   "experimental": {
@@ -13928,27 +13985,27 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully executed the meta tool. Returns execution result, logs, and status.",
+            "description": "The tool call completed, failed, or needs the user's input before it can run. The `result_type` field says which of these happened.",
             "content": {
               "application/json": {
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ToolRouterSessionExecuteCompleted"
+                      "$ref": "#/components/schemas/ExecuteCompleted"
                     },
                     {
-                      "$ref": "#/components/schemas/ToolRouterSessionExecuteFailed"
+                      "$ref": "#/components/schemas/ExecuteFailed"
                     },
                     {
-                      "$ref": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "result_type",
                     "mapping": {
-                      "completed": "#/components/schemas/ToolRouterSessionExecuteCompleted",
-                      "failed": "#/components/schemas/ToolRouterSessionExecuteFailed",
-                      "input_required": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "completed": "#/components/schemas/ExecuteCompleted",
+                      "failed": "#/components/schemas/ExecuteFailed",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
                 }
@@ -14007,6 +14064,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -19609,6 +19676,63 @@
                     "description": "Whether to create an API key for the project. If true, the API key will be created and returned in the response.",
                     "example": false
                   },
+                  "api_key_allowed_ips": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "ip"
+                    },
+                    "description": "IPv4 or IPv6 addresses allowed to use the project API key. Requires should_create_api_key to be true. Omit to allow requests from any IP address.",
+                    "example": [
+                      "203.0.113.10"
+                    ]
+                  },
+                  "api_key_permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "preset": {
+                          "type": "string",
+                          "enum": [
+                            "tools",
+                            "tool_execution",
+                            "proxy_execute",
+                            "session_management",
+                            "session_tool_execution",
+                            "legacy_mcp",
+                            "connected_accounts",
+                            "auth_configs",
+                            "toolkits",
+                            "triggers",
+                            "webhooks",
+                            "observability",
+                            "sessions"
+                          ]
+                        },
+                        "access": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "read",
+                            "write",
+                            "read_write"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "preset",
+                        "access"
+                      ]
+                    },
+                    "description": "Permission levels for the project API key. Requires should_create_api_key to be true. Omit to create a full-access API key.",
+                    "example": [
+                      {
+                        "preset": "tool_execution",
+                        "access": "write"
+                      }
+                    ]
+                  },
                   "config": {
                     "type": "object",
                     "properties": {
@@ -22117,6 +22241,21 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "instant": {
+                            "type": "object",
+                            "properties": {
+                              "supported": {
+                                "type": "boolean",
+                                "enum": [
+                                  true
+                                ]
+                              }
+                            },
+                            "required": [
+                              "supported"
+                            ],
+                            "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
+                          },
                           "access": {
                             "type": "string",
                             "enum": [
@@ -23632,6 +23771,21 @@
                             ],
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
+                          },
+                          "instant": {
+                            "type": "object",
+                            "properties": {
+                              "supported": {
+                                "type": "boolean",
+                                "enum": [
+                                  true
+                                ]
+                              }
+                            },
+                            "required": [
+                              "supported"
+                            ],
+                            "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
                           },
                           "access": {
                             "type": "string",
@@ -29208,17 +29362,17 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ProxyExecuteForSessionCompleted"
+                      "$ref": "#/components/schemas/ProxyExecuteCompleted"
                     },
                     {
-                      "$ref": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "result_type",
                     "mapping": {
-                      "completed": "#/components/schemas/ProxyExecuteForSessionCompleted",
-                      "input_required": "#/components/schemas/ToolRouterInputRequiredResponse"
+                      "completed": "#/components/schemas/ProxyExecuteCompleted",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
                 }
@@ -29277,6 +29431,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
