@@ -1299,6 +1299,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             execute:
               toolRouterOverrides?.execute ??
               (async (_sessionId: string, params: SessionExecuteParams) => ({
+                result_type: 'completed' as const,
                 data: { tool_slug: params.tool_slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
@@ -1306,6 +1307,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             executeMeta:
               toolRouterOverrides?.executeMeta ??
               (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+                result_type: 'completed' as const,
                 data: { slug: params.slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
