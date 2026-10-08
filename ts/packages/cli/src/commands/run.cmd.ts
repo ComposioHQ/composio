@@ -33,7 +33,6 @@ const RUN_FLAG_NAMES = {
   file: 'file',
   dryRun: 'dry-run',
   debug: 'debug',
-  logsOff: 'logs-off',
   skipConnectionCheck: 'skip-connection-check',
   skipToolParamsCheck: 'skip-tool-params-check',
   skipChecks: 'skip-checks',
@@ -53,10 +52,6 @@ const debug = Flag.Boolean(RUN_FLAG_NAMES.debug).pipe(
   Flag.withDescription('Log helper steps while the script runs'),
   Flag.withDefault(false)
 );
-const logsOff = Flag.Boolean(RUN_FLAG_NAMES.logsOff).pipe(
-  Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
-  Flag.withDefault(false)
-);
 const skipConnectionCheck = Flag.Boolean(RUN_FLAG_NAMES.skipConnectionCheck).pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
@@ -74,7 +69,6 @@ const runFlags = {
   file,
   dryRun,
   debug,
-  logsOff,
   skipConnectionCheck,
   skipToolParamsCheck,
   skipChecks,
@@ -450,16 +444,7 @@ export const runCmd = Command.make('run', {
     },
   ]),
   Command.withHandler(
-    ({
-      file,
-      dryRun,
-      debug,
-      logsOff,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-      args,
-    }) =>
+    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, skipChecks, args }) =>
       Effect.gen(function* () {
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
@@ -498,7 +483,6 @@ export const runCmd = Command.make('run', {
           toolDebug,
           telemetryDebug,
           debug,
-          logsOff,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,

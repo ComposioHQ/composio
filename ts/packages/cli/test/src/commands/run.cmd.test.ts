@@ -311,6 +311,9 @@ describe('CLI: composio run', () => {
       '--acp-only',
       '--acp-only=false',
       '--no-acp-only',
+      '--logs-off',
+      '--logs-off=false',
+      '--no-logs-off',
       '--foo_bar',
       '--foo_bar=value',
     ]) {
@@ -348,21 +351,6 @@ describe('CLI: composio run', () => {
 
   layer(RunTestLive())(it => {
     it.effect(
-      '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
-      () =>
-        Effect.gen(function* () {
-          yield* cli(['run', '--logs-off', 'console.log("hi")']);
-
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(process.exitCode).toBe(0);
-        })
-    );
-  });
-
-  layer(RunTestLive())(it => {
-    it.effect(
       '[Given] a multiline execute script [Then] run preserves the inline TypeScript source',
       () =>
         Effect.gen(function* () {
@@ -380,7 +368,7 @@ describe('CLI: composio run', () => {
             console.log(JSON.stringify(issue));
             console.log(JSON.stringify(issue.data));
           `;
-          yield* cli(['run', '--logs-off', script]);
+          yield* cli(['run', script]);
 
           expect(commandRuns).toHaveBeenCalledTimes(1);
           const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
@@ -547,7 +535,7 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--skip-connection-check');
           expect(output).toContain('--skip-tool-params-check');
           expect(output).toContain('--skip-checks');
-          expect(output).toContain('--logs-off');
+          expect(output).not.toContain('--logs-off');
           expect(output).not.toContain('experimental_subAgent');
           expect(output).toContain('Injected helpers');
           expect(output).toContain('execute(slug, data?)');
@@ -573,7 +561,6 @@ describe('buildRunHelpersSource', () => {
         webURL: 'https://app.example.test',
         orgId: 'org_test',
         consumerUserId: 'consumer_user_test',
-        logsOff: true,
         dryRun: true,
         runLogFilePath: '/tmp/composio-run/run.log',
       },
@@ -585,7 +572,6 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('import { installRunHelpers } from "file://');
     expect(source).toContain('await installRunHelpers(');
     expect(source).toContain('"cliPrefix":["/tmp/composio"]');
-    expect(source).toContain('"logsOff":true');
     expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
     expect(source).not.toContain('globalThis.execute = async (slug, data = {}) => {');

@@ -37,7 +37,6 @@ export type RunHelperContext = {
   readonly skipToolParamsCheck?: boolean;
   readonly skipChecks?: boolean;
   readonly debug?: boolean;
-  readonly logsOff?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
 };
@@ -365,14 +364,12 @@ const createRunHelperLoggers = (params: {
     writeError(`[perf] ${JSON.stringify(payload)}`);
   };
 
-  const streamHelperLogs = helperContext.logsOff !== true && helperContext.debug === true;
-
   const helperDebugLog: HelperDebugLog = (step, details = {}) => {
     const formattedLine = formatHelperDebugEvent(step, details);
     const elapsedMs = Date.now() - perfDebugStart;
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
     appendRunLogLine(line);
-    if (streamHelperLogs) {
+    if (helperContext.debug === true) {
       writeError(line);
     }
   };

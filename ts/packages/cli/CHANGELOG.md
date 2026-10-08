@@ -60,8 +60,10 @@
   `composio upgrade <older version>` from this CLI is not a way back. A stored
   `experimental_subagent` config key is now ignored and preserved; an invalid
   target used to reset the whole config to defaults. `COMPOSIO_RUN_ACP_ONLY` is
-  no longer read and the hidden `--acp-only` flag is gone. An unknown flag
-  placed before inline `run` code is now rejected by name
+  no longer read and the hidden `--acp-only` flag is gone. Remove `--logs-off`,
+  which only canceled `--debug` after sub-agent streaming was removed. Helper
+  logs are written to disk; use `--debug` to also print them to stderr. An
+  unknown flag placed before inline `run` code is now rejected by name
   (`Unrecognized flag: --x in command composio run`) instead of being executed
   as source; inline source that is exactly one flag-shaped token needs an
   explicit `--`. Release archives keep ten legacy paths (the four root
