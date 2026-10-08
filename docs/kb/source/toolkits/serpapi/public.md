@@ -11,9 +11,9 @@ tags:
 # SerpApi
 
 
-## Disable SerpAPI by listing premium toolkit slugs in session config
+## Control SerpAPI availability in a Session
 
-There is no single global toggle for premium tools. To prevent SerpAPI from being available in a session, list `serpapi` in the disabled toolkit slugs for the session config. Other premium slugs commonly disabled together include `composio_search`, `perplexityai`, `exa`, and `codeinterpreter`.
+To exclude SerpAPI from a Session, disable `serpapi` in the top-level [toolkit configuration](/docs/configuring-sessions). To control only access through Composio accounts while keeping connected-account routes available, use the [Instant usage controls](/docs/instant-tools#control-instant-usage). Instant eligibility is per tool.
 
 ## Use toolkit details to inspect SerpAPI required auth fields
 
