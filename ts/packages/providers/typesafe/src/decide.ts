@@ -195,25 +195,52 @@ export function createAsk(
   return async (state, questions) => {
     if (requestOptions.signal?.aborted) throw new TypesafeApiError('aborted');
     const client = await getClient();
-    let data: unknown;
-    let requestId: string | undefined;
-    try {
-      const options: TypesafeRequestOptions = {
-        ...(requestOptions.signal === undefined ? {} : { signal: requestOptions.signal }),
-        ...(requestOptions.timeout === undefined ? {} : { timeout: requestOptions.timeout }),
-      };
-      const pending = client.systemOne({ state, questions, model }, options);
-      if (typeof pending.withResponse === 'function') {
-        ({ data, requestId } = await pending.withResponse());
-      } else {
-        data = await pending;
+    const maxRetries = Math.max(0, requestOptions.maxRetries ?? 3);
+    const initialBackoff = Math.max(0, requestOptions.backoffMs ?? 200);
+    const retryStatusCodes = new Set(requestOptions.retryStatusCodes ?? [429, 500, 502, 503, 504]);
+
+    let attempt = 0;
+    while (true) {
+      if (requestOptions.signal?.aborted) throw new TypesafeApiError('aborted');
+      let data: unknown;
+      let requestId: string | undefined;
+
+      try {
+        const options: TypesafeRequestOptions = {
+          ...(requestOptions.signal === undefined ? {} : { signal: requestOptions.signal }),
+          ...(requestOptions.timeout === undefined ? {} : { timeout: requestOptions.timeout }),
+        };
+        const pending = client.systemOne({ state, questions, model }, options);
+        if (typeof pending.withResponse === 'function') {
+          ({ data, requestId } = await pending.withResponse());
+        } else {
+          data = await pending;
+        }
+        onRequest?.(requestId);
+        return { ...validateAnswers(data, questions, requestId), requestId };
+      } catch (error) {
+        onRequest?.(undefined);
+        const providerError = toProviderError(error);
+
+        const isRetryable =
+          providerError.reason === 'rate_limit' ||
+          providerError.reason === 'server_error' ||
+          providerError.reason === 'connection' ||
+          providerError.reason === 'timeout' ||
+          (providerError.status !== undefined && retryStatusCodes.has(providerError.status));
+
+        if (!isRetryable || attempt >= maxRetries || requestOptions.signal?.aborted) {
+          throw providerError;
+        }
+
+        attempt += 1;
+        const baseDelay = Math.min(initialBackoff * Math.pow(2, attempt - 1), 5000);
+        const jitter = 0.8 + 0.4 * Math.random();
+        const delayMs = Math.round(baseDelay * jitter);
+
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
-    } catch (error) {
-      onRequest?.(undefined);
-      throw toProviderError(error);
     }
-    onRequest?.(requestId);
-    return { ...validateAnswers(data, questions, requestId), requestId };
   };
 }
 
