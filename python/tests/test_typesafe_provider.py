@@ -1350,7 +1350,9 @@ class TestExecute:
 
     def test_executes_through_a_session_which_takes_no_modifiers(self) -> None:
         session = Mock()
-        session.execute.return_value = Mock(data={"ok": True}, error=None)
+        session.execute.return_value = Mock(
+            data={"ok": True}, error=None, result_type="completed"
+        )
         result = self.provider.execute(
             session=session, decision=PARTIAL, arguments={"body": "text"}
         )
