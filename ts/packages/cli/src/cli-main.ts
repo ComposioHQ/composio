@@ -31,6 +31,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
@@ -111,9 +112,14 @@ export const ToolkitSlugCatalogLive = Layer.provide(
   ComposioToolkitsRepositoryCachedLive
 ) satisfies RequiredLayer;
 
+export const DashboardToolExecutionLive = Layer.provide(
+  DashboardToolExecution.Default,
+  Layer.mergeAll(ComposioUserContextLive, FetchHttpClient.layer)
+);
+
 export const ToolsExecutorLive = Layer.provide(
   _ToolsExecutorLive,
-  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive)
+  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive, DashboardToolExecutionLive)
 ) satisfies RequiredLayer;
 
 export const ProjectContextLive = Layer.provide(

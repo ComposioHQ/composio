@@ -1,0 +1,650 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { describe, expect, it } from '@effect/vitest';
+import { afterEach, vi } from 'vitest';
+import { APIError } from '@composio/client';
+import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from 'effect';
+import { TestClock } from 'effect/testing';
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientError,
+  HttpClientResponse,
+  type HttpClientRequest,
+} from 'effect/unstable/http';
+import {
+  DashboardToolExecution,
+  DashboardToolExecutionError,
+  resolveConsumerExecutionTransport,
+} from 'src/services/dashboard-tool-execution';
+import { cliRequestHeaders } from 'src/services/client-provenance';
+import { extendConfigProvider } from 'src/services/config';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { ComposioUserContext } from 'src/services/user-context';
+import { extractApiErrorDetails } from 'src/utils/api-error-extraction';
+
+interface RecordedRequest {
+  readonly method: string;
+  readonly url: string;
+  readonly headers: Record<string, string>;
+  readonly body: unknown;
+  readonly signal: AbortSignal;
+}
+
+type Respond = (
+  request: HttpClientRequest.HttpClientRequest
+) => Effect.Effect<Response, HttpClientError.HttpClientError>;
+
+const jsonResponse = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+
+const succeedWith =
+  (outcome: unknown): Respond =>
+  () =>
+    Effect.succeed(jsonResponse(200, { result: { data: { json: outcome } } }));
+
+const requestBody = (request: HttpClientRequest.HttpClientRequest): unknown =>
+  request.body._tag === 'Uint8Array'
+    ? JSON.parse(new TextDecoder().decode(request.body.body))
+    : null;
+
+/** The filesystem the service reads the analytics state from, rooted at `home`. */
+const platform = (home: string) =>
+  Layer.mergeAll(
+    BunFileSystem.layer,
+    BunPath.layer,
+    Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
+  );
+type Platform = Layer.Success<ReturnType<typeof platform>>;
+
+const temporaryHomes: Array<string> = [];
+const emptyHome = () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+  temporaryHomes.push(home);
+  return home;
+};
+
+afterEach(() => {
+  for (const home of temporaryHomes) fs.rmSync(home, { recursive: true, force: true });
+  temporaryHomes.length = 0;
+});
+
+const userContext = (
+  overrides: { webURL?: string; apiKey?: Option.Option<string>; home?: string } = {}
+) =>
+  Layer.succeed(
+    ComposioUserContext,
+    ComposioUserContext.of({
+      data: {
+        apiKey: overrides.apiKey ?? Option.some('uak_test_key'),
+        baseURL: 'https://backend.example.test',
+        webURL: overrides.webURL ?? 'https://dashboard.example.test/',
+        orgId: Option.some('org_test'),
+        projectId: Option.none(),
+        testUserId: Option.none(),
+      },
+      isLoggedIn: () => true,
+      logout: Effect.void,
+      login: () => Effect.void,
+      update: () => Effect.void,
+    })
+  );
+
+/** Runs `use` against the real service over a recording HTTP client. */
+const withDashboard = <A, E>(
+  respond: Respond,
+  use: (
+    dashboard: DashboardToolExecution['Service'],
+    requests: ReadonlyArray<RecordedRequest>
+  ) => Effect.Effect<A, E, Platform>,
+  overrides?: Parameters<typeof userContext>[0]
+) => {
+  const requests: Array<RecordedRequest> = [];
+  const httpClient = HttpClient.make((request, url, signal) => {
+    requests.push({
+      method: request.method,
+      url: url.toString(),
+      headers: { ...request.headers },
+      body: requestBody(request),
+      signal,
+    });
+    return respond(request).pipe(
+      Effect.map(response => HttpClientResponse.fromWeb(request, response))
+    );
+  });
+
+  return Effect.gen(function* () {
+    const dashboard = yield* DashboardToolExecution;
+    return yield* use(dashboard, requests);
+  }).pipe(
+    Effect.provide(
+      DashboardToolExecution.Default.pipe(
+        Layer.provide(
+          Layer.mergeAll(Layer.succeed(HttpClient.HttpClient, httpClient), userContext(overrides))
+        )
+      )
+    ),
+    Effect.provide(platform(overrides?.home ?? emptyHome()))
+  );
+};
+
+const successOutcome = {
+  ok: true,
+  response: { data: { id: 'msg_1' }, error: null, log_id: 'log_dashboard' },
+};
+
+const executeRequest = {
+  slug: 'GMAIL_SEND_EMAIL',
+  arguments: { recipient: 'a@example.com' },
+  orgId: 'org_test',
+};
+
+describe('DashboardToolExecution', () => {
+  it.effect('posts a tool execution to the execute procedure and returns the relayed body', () =>
+    withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
+      Effect.gen(function* () {
+        const response = yield* dashboard.execute(executeRequest);
+
+        expect(response).toEqual({ data: { id: 'msg_1' }, error: null, log_id: 'log_dashboard' });
+        expect(requests).toHaveLength(1);
+        const [request] = requests;
+        expect(request?.method).toBe('POST');
+        expect(request?.url).toBe('https://dashboard.example.test/api/cli/trpc/execute');
+        expect(request?.headers['authorization']).toBe('Bearer uak_test_key');
+        expect(request?.headers['x-org-id']).toBe('org_test');
+        expect(request?.headers['content-type']).toBe('application/json');
+        expect(request?.headers['x-source']).toBe('CLI');
+        expect(request?.headers['x-user-api-key']).toBeUndefined();
+        // Telemetry is off under test unless a case turns it on.
+        expect(request?.headers['x-cli-install-id']).toBeUndefined();
+        expect(request?.body).toEqual({
+          json: {
+            tool_slug: 'GMAIL_SEND_EMAIL',
+            arguments: { recipient: 'a@example.com' },
+          },
+        });
+      })
+    )
+  );
+
+  it.effect('sends the selected connected account with the execution, and omits it otherwise', () =>
+    withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
+      Effect.gen(function* () {
+        yield* dashboard.execute({ ...executeRequest, account: 'ca_1' });
+        yield* dashboard.execute(executeRequest);
+
+        expect(requests[0]?.body).toEqual({
+          json: {
+            tool_slug: 'GMAIL_SEND_EMAIL',
+            arguments: { recipient: 'a@example.com' },
+            account: 'ca_1',
+          },
+        });
+        expect(requests[1]?.body).toEqual({
+          json: { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { recipient: 'a@example.com' } },
+        });
+      })
+    )
+  );
+
+  it.effect('posts a meta tool to the executeMeta procedure under `slug`', () =>
+    withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
+      Effect.gen(function* () {
+        yield* dashboard.executeMeta({
+          slug: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: { query: 'email' },
+          orgId: 'org_test',
+        });
+
+        expect(requests[0]?.url).toBe('https://dashboard.example.test/api/cli/trpc/executeMeta');
+        expect(requests[0]?.body).toEqual({
+          json: { slug: 'COMPOSIO_SEARCH_TOOLS', arguments: { query: 'email' } },
+        });
+      })
+    )
+  );
+
+  for (const webURL of ['https://web.example.test', 'https://web.example.test/']) {
+    it.effect(`builds the same request URL from ${webURL}`, () =>
+      withDashboard(
+        succeedWith(successOutcome),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            yield* dashboard.execute(executeRequest);
+            expect(requests[0]?.url).toBe('https://web.example.test/api/cli/trpc/execute');
+          }),
+        { webURL }
+      )
+    );
+  }
+
+  it.effect('rebuilds an API error from a relayed backend failure', () =>
+    withDashboard(
+      succeedWith({
+        ok: false,
+        status: 402,
+        error: {
+          message: 'Insufficient wallet balance',
+          code: 4020,
+          slug: 'Wallet_InsufficientBalance',
+          status: 402,
+          request_id: 'req_wallet',
+          suggested_fix: 'Add credits and retry.',
+        },
+      }),
+      dashboard =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(APIError);
+          expect(extractApiErrorDetails(failure)).toEqual({
+            message: 'Insufficient wallet balance',
+            code: 4020,
+            slug: 'Wallet_InsufficientBalance',
+            status: 402,
+            request_id: 'req_wallet',
+            suggested_fix: 'Add credits and retry.',
+          });
+        })
+    )
+  );
+
+  it.effect('suggests logging in when the Dashboard rejects the credentials', () =>
+    withDashboard(
+      () =>
+        Effect.succeed(
+          jsonResponse(401, {
+            error: {
+              json: {
+                message: 'Invalid API key',
+                data: { code: 'UNAUTHORIZED', httpStatus: 401 },
+              },
+            },
+          })
+        ),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(DashboardToolExecutionError);
+          expect(failure).toMatchObject({ reason: 'unauthorized', status: 401 });
+          expect(failure.message).toContain('Invalid API key');
+          expect(failure.message).toContain('composio login');
+          expect(requests).toHaveLength(1);
+        })
+    )
+  );
+
+  it.effect("reports the Dashboard's own message for its other failures", () =>
+    withDashboard(
+      () =>
+        Effect.succeed(
+          jsonResponse(502, {
+            error: {
+              json: {
+                message: 'Tool execution is temporarily unavailable.',
+                data: { code: 'BAD_GATEWAY', httpStatus: 502 },
+              },
+            },
+          })
+        ),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({
+            reason: 'dashboard',
+            status: 502,
+            code: 'BAD_GATEWAY',
+            message: 'Tool execution is temporarily unavailable.',
+          });
+          expect(requests).toHaveLength(1);
+        })
+    )
+  );
+
+  it.effect('names the Dashboard host on a network failure and sends the request once', () =>
+    withDashboard(
+      request =>
+        Effect.fail(
+          new HttpClientError.HttpClientError({
+            reason: new HttpClientError.TransportError({
+              request,
+              cause: new Error('connect ECONNREFUSED'),
+            }),
+          })
+        ),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({ reason: 'request' });
+          expect(failure.message).toContain('dashboard.example.test');
+          expect(requests).toHaveLength(1);
+        })
+    )
+  );
+
+  it.effect('names the Dashboard host when the response is not JSON', () =>
+    withDashboard(
+      () => Effect.succeed(new Response('<html>Bad gateway</html>', { status: 502 })),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({ reason: 'response', status: 502 });
+          expect(failure.message).toContain('dashboard.example.test');
+          expect(requests).toHaveLength(1);
+        })
+    )
+  );
+
+  it.effect('sends nothing when no user API key is stored', () =>
+    withDashboard(
+      succeedWith(successOutcome),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({ reason: 'unauthorized' });
+          expect(failure.message).toContain('composio login');
+          expect(requests).toHaveLength(0);
+        }),
+      { apiKey: Option.none() }
+    )
+  );
+
+  it.effect('tells fetch to fail on a redirect instead of re-posting the execution', () =>
+    Effect.gen(function* () {
+      const inits: Array<RequestInit | undefined> = [];
+      const fetchStub: typeof globalThis.fetch = Object.assign(
+        (_input: RequestInfo | URL, init?: RequestInit) => {
+          inits.push(init);
+          // What fetch does with `redirect: 'error'` when the server answers 307.
+          return Promise.reject(new TypeError('unexpected redirect'));
+        },
+        { preconnect: () => undefined }
+      );
+
+      const failure = yield* Effect.gen(function* () {
+        const dashboard = yield* DashboardToolExecution;
+        return yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+      }).pipe(
+        Effect.provide(
+          DashboardToolExecution.Default.pipe(
+            Layer.provide(Layer.mergeAll(FetchHttpClient.layer, userContext()))
+          )
+        ),
+        Effect.provideService(FetchHttpClient.Fetch, fetchStub),
+        Effect.provide(platform(emptyHome()))
+      );
+
+      expect(inits).toHaveLength(1);
+      expect(inits[0]?.redirect).toBe('error');
+      expect(inits[0]?.method).toBe('POST');
+      expect(failure).toMatchObject({ reason: 'request' });
+    })
+  );
+
+  const rejectedURLs: ReadonlyArray<{ readonly name: string; readonly webURL: string }> = [
+    { name: 'plain http to a remote host', webURL: 'http://dashboard.example.test' },
+    { name: 'embedded credentials', webURL: 'https://user:s3cret-pass@dashboard.example.test' },
+    { name: 'a query string', webURL: 'https://dashboard.example.test/?token=s3cret-token' },
+    { name: 'a fragment', webURL: 'https://dashboard.example.test/#s3cret-fragment' },
+    { name: 'a non-http scheme', webURL: 'ftp://dashboard.example.test' },
+    { name: 'an unparseable value', webURL: 'not a url s3cret-value' },
+  ];
+
+  for (const testCase of rejectedURLs) {
+    it.effect(`sends nothing to a Dashboard URL with ${testCase.name}`, () =>
+      withDashboard(
+        succeedWith(successOutcome),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+            expect(failure).toMatchObject({ reason: 'configuration' });
+            expect(failure.message).toContain('COMPOSIO_WEB_URL');
+            expect(failure.message).not.toContain('s3cret');
+            expect(failure.message).not.toContain('example.test');
+            expect(requests).toHaveLength(0);
+          }),
+        { webURL: testCase.webURL }
+      )
+    );
+  }
+
+  for (const webURL of ['http://localhost:3000', 'http://127.0.0.1:3000/', 'http://[::1]:3000']) {
+    it.effect(`allows plain http for the loopback host in ${webURL}`, () =>
+      withDashboard(
+        succeedWith(successOutcome),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            yield* dashboard.execute(executeRequest);
+            expect(requests.map(request => request.url)).toEqual([
+              `${webURL.replace(/\/$/, '')}/api/cli/trpc/execute`,
+            ]);
+          }),
+        { webURL }
+      )
+    );
+  }
+
+  it.effect('names only the origin of the Dashboard in a transport error', () =>
+    withDashboard(
+      () => Effect.succeed(new Response('<html>Bad gateway</html>', { status: 502 })),
+      dashboard =>
+        Effect.gen(function* () {
+          const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
+
+          expect(failure.message).toContain('https://dashboard.example.test ');
+          expect(failure.message).not.toContain('tenant-path');
+        }),
+      { webURL: 'https://dashboard.example.test/tenant-path/' }
+    )
+  );
+
+  it.effect('gives up after the deadline, aborts the request and does not resend it', () =>
+    Effect.gen(function* () {
+      const started = yield* Deferred.make<void>();
+
+      yield* withDashboard(
+        () => Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never)),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            const fiber = yield* Effect.forkChild(
+              dashboard.execute(executeRequest).pipe(Effect.flip)
+            );
+            yield* Deferred.await(started);
+
+            yield* TestClock.adjust('14 minutes');
+            expect(requests[0]?.signal.aborted).toBe(false);
+            yield* TestClock.adjust('1 minute');
+            const failure = yield* Fiber.join(fiber);
+
+            expect(failure).toMatchObject({ reason: 'timeout' });
+            expect(failure.message).toContain('may still have run');
+            expect(failure.message).toContain('check before running it again');
+            expect(requests).toHaveLength(1);
+            expect(requests[0]?.signal.aborted).toBe(true);
+          })
+      );
+    })
+  );
+
+  it.effect('aborts the in-flight request when the calling fiber is interrupted', () =>
+    Effect.gen(function* () {
+      const started = yield* Deferred.make<void>();
+
+      yield* withDashboard(
+        () => Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never)),
+        (dashboard, requests) =>
+          Effect.gen(function* () {
+            const fiber = yield* Effect.forkChild(dashboard.execute(executeRequest));
+            yield* Deferred.await(started);
+            expect(requests[0]?.signal.aborted).toBe(false);
+
+            yield* Fiber.interrupt(fiber);
+
+            expect(requests[0]?.signal.aborted).toBe(true);
+            expect(requests).toHaveLength(1);
+          })
+      );
+    })
+  );
+});
+
+describe('DashboardToolExecution install ID header', () => {
+  const INSTALL_ID = '6f1d2c1e-8a4b-4c0e-9f55-2f0d6d1b7a31';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /** The environment in which the CLI sends its own analytics events. */
+  const enableTelemetry = () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('CI', 'false');
+    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
+  };
+
+  const analyticsStatePath = (home: string) => path.join(home, '.composio', 'analytics.json');
+
+  const homeWithAnalyticsState = (contents: string) => {
+    const home = emptyHome();
+    fs.mkdirSync(path.join(home, '.composio'), { recursive: true });
+    fs.writeFileSync(analyticsStatePath(home), contents);
+    return home;
+  };
+
+  const sentInstallId = (home: string) =>
+    withDashboard(
+      succeedWith(successOutcome),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          const response = yield* dashboard.execute(executeRequest);
+          yield* dashboard.executeMeta({ ...executeRequest, slug: 'COMPOSIO_SEARCH_TOOLS' });
+          expect(response.log_id).toBe('log_dashboard');
+          expect(requests).toHaveLength(2);
+          return requests.map(request => request.headers['x-cli-install-id']);
+        }),
+      { home }
+    );
+
+  it.effect('sends the stored install ID verbatim on both procedures when telemetry is on', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = homeWithAnalyticsState(
+        JSON.stringify({ install_id: INSTALL_ID, apollo_user_id: 'user_linked' })
+      );
+
+      expect(yield* sentInstallId(home)).toEqual([INSTALL_ID, INSTALL_ID]);
+    })
+  );
+
+  for (const optOut of [
+    'COMPOSIO_CLI_TELEMETRY_DISABLED',
+    'TELEMETRY_DISABLED',
+    'COMPOSIO_DISABLE_TELEMETRY',
+    'CI',
+  ]) {
+    it.effect(`omits the header when ${optOut} opts out of telemetry`, () =>
+      Effect.gen(function* () {
+        enableTelemetry();
+        vi.stubEnv(optOut, 'true');
+        const home = homeWithAnalyticsState(JSON.stringify({ install_id: INSTALL_ID }));
+
+        expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+      })
+    );
+  }
+
+  it.effect('omits the header and creates no install ID when none is stored', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = emptyHome();
+
+      expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+      expect(fs.existsSync(analyticsStatePath(home))).toBe(false);
+    })
+  );
+
+  it.effect('still executes, without the header, when the analytics state is unreadable', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      const home = homeWithAnalyticsState('{ not json');
+
+      expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
+    })
+  );
+
+  it('is not part of the headers shared with backend requests', () => {
+    enableTelemetry();
+    expect(Object.keys(cliRequestHeaders())).not.toContain('x-cli-install-id');
+  });
+});
+
+describe('resolveConsumerExecutionTransport', () => {
+  const resolveWith = (env: Record<string, string>) =>
+    resolveConsumerExecutionTransport.pipe(
+      Effect.provide(
+        ConfigProvider.layer(ConfigProvider.fromEnv({ env }).pipe(extendConfigProvider))
+      )
+    );
+
+  const cases: ReadonlyArray<{
+    readonly name: string;
+    readonly env: Record<string, string>;
+    readonly expected: 'dashboard' | 'backend';
+  }> = [
+    { name: 'no overrides', env: {}, expected: 'dashboard' },
+    {
+      name: 'the staging environment',
+      env: { COMPOSIO_ENVIRONMENT: 'staging' },
+      expected: 'dashboard',
+    },
+    {
+      name: 'the default backend URL spelled out',
+      env: { COMPOSIO_BASE_URL: 'https://backend.composio.dev/' },
+      expected: 'dashboard',
+    },
+    {
+      name: 'a custom backend URL without a web URL',
+      env: { COMPOSIO_BASE_URL: 'https://composio.internal.example' },
+      expected: 'backend',
+    },
+    {
+      name: 'a backend URL that does not match the selected environment',
+      env: {
+        COMPOSIO_ENVIRONMENT: 'staging',
+        COMPOSIO_BASE_URL: 'https://backend.composio.dev',
+      },
+      expected: 'backend',
+    },
+    {
+      name: 'a custom backend URL with a web URL',
+      env: {
+        COMPOSIO_BASE_URL: 'https://composio.internal.example',
+        COMPOSIO_WEB_URL: 'https://dashboard.internal.example',
+      },
+      expected: 'dashboard',
+    },
+  ];
+
+  for (const testCase of cases) {
+    it.effect(`uses the ${testCase.expected} transport for ${testCase.name}`, () =>
+      Effect.gen(function* () {
+        expect(yield* resolveWith(testCase.env)).toBe(testCase.expected);
+      })
+    );
+  }
+});

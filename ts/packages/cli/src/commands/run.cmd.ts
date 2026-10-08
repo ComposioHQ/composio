@@ -11,6 +11,7 @@ import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
+import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import {
   CLI_DEBUG_FLAG_NAMES,
   debugFlagsToChildEnv,
@@ -309,10 +310,15 @@ const resolveRunHelperContext = () =>
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
     ];
 
+    // A spawned `composio execute` treats a forwarded web URL as an explicit
+    // choice of Dashboard. When this process keeps the backend transport (a
+    // custom backend with no web URL), forward none so the child decides alike.
+    const forwardWebURL = (yield* resolveConsumerExecutionTransport) === 'dashboard';
+
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
-      webURL: userContext.data.webURL,
+      webURL: forwardWebURL ? userContext.data.webURL : undefined,
       orgId,
       cliConfigPath: yield* resolveCliConfigPath,
       readAccessRoots: baseReadAccessRoots,

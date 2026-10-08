@@ -7,7 +7,14 @@ import type {
   SessionExecuteMetaResponse,
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
-import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
+import {
+  createToolRouterSessionFromContext,
+  resolveToolRouterSessionContext,
+} from 'src/effects/create-tool-router-session';
+import {
+  DashboardToolExecution,
+  type DashboardToolExecutionShape,
+} from 'src/services/dashboard-tool-execution';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
@@ -28,10 +35,21 @@ import type { TerminalUI } from 'src/services/terminal-ui';
 import type { ComposioCliUserConfig } from 'src/services/cli-user-config';
 
 /**
+ * Where the execution itself is sent. Connection lookups, the permission gate
+ * and file uploads go to the backend either way.
+ */
+export type ToolExecutionTarget =
+  | { readonly kind: 'backend' }
+  /** `orgId` is the organization the Dashboard resolves the consumer project from. */
+  | { readonly kind: 'dashboard'; readonly orgId: string };
+
+/**
  * Parameters accepted by the Tool Router-based executor.
  */
 export interface ToolExecuteParams {
   readonly userId: string;
+  /** Chosen by the command surface, never inferred by the executor. */
+  readonly target: ToolExecutionTarget;
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
   readonly connectedAccounts?: Record<string, string>;
@@ -111,10 +129,7 @@ export const isExecutionSuccessful = (raw: {
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: Exclude<
-    SessionExecuteResponse | SessionExecuteMetaResponse,
-    { result_type: 'input_required' }
-  >,
+  raw: Effect.Success<ReturnType<DashboardToolExecutionShape['execute']>>,
   permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
   successful: isExecutionSuccessful(raw),
@@ -168,6 +183,7 @@ export const ToolsExecutorLive = Layer.effect(
     // implementation detail of toolkit resolution, not part of what a caller
     // has to hand the executor.
     const slugCatalog = yield* ToolkitSlugCatalog;
+    const dashboard = yield* DashboardToolExecution;
 
     return ToolsExecutor.of({
       execute: (slug, params) =>
@@ -176,13 +192,67 @@ export const ToolsExecutorLive = Layer.effect(
           // caller on the execute path already hands in a client built for the
           // resolved org/project.
           const resolvedClient = params.client ?? (yield* clientSingleton.get());
-          // One session per invocation — CLI runs one tool per process.
-          const { sessionId, permissionSnapshot, connectedAccounts, connectedAccountWordIds } =
-            yield* createToolRouterSessionContext(resolvedClient, params.userId, {
+          const { target } = params;
+          const sessionContext = yield* resolveToolRouterSessionContext(
+            resolvedClient,
+            params.userId,
+            {
               manageConnections: true,
               connectedAccounts: params.connectedAccounts,
               cacheScope: params.cacheScope,
-            });
+            }
+          );
+          const { permissionSnapshot, connectedAccounts, connectedAccountWordIds } = sessionContext;
+          // Never retry an execution, on either target: a retry after the backend
+          // already acted duplicates the side effect (e.g. sends the same email twice).
+          const send: (
+            arguments_: Record<string, unknown>
+          ) => Effect.Effect<
+            Effect.Success<ReturnType<DashboardToolExecutionShape['execute']>>,
+            unknown,
+            FileSystem.FileSystem | Path.Path | NodeOs
+          > =
+            target.kind === 'dashboard'
+              ? arguments_ => {
+                  // The Dashboard creates its own session and resolves its user;
+                  // it takes no session settings from the CLI.
+                  const request = { slug, arguments: arguments_, orgId: target.orgId };
+                  if (isMetaToolSlug(slug)) return dashboard.executeMeta(request);
+                  // The session cannot be pinned from here, so the account the CLI
+                  // resolved for this tool's toolkit goes with the call itself.
+                  const [account] = Object.values(params.connectedAccounts ?? {});
+                  return dashboard.execute({ ...request, account });
+                }
+              : // One session per invocation — CLI runs one tool per process.
+                yield* createToolRouterSessionFromContext(
+                  resolvedClient,
+                  params.userId,
+                  sessionContext
+                ).pipe(
+                  Effect.map(
+                    ({ sessionId }) =>
+                      (arguments_: Record<string, unknown>) =>
+                        Effect.tryPromise({
+                          try: async () => {
+                            const response: SessionExecuteResponse | SessionExecuteMetaResponse =
+                              isMetaToolSlug(slug)
+                                ? await resolvedClient.toolRouter.session.executeMeta(
+                                    sessionId,
+                                    { slug, arguments: arguments_ },
+                                    { maxRetries: 0 }
+                                  )
+                                : await resolvedClient.toolRouter.session.execute(
+                                    sessionId,
+                                    { tool_slug: slug, arguments: arguments_ },
+                                    { maxRetries: 0 }
+                                  );
+                            assertNotInputRequired(`Tool ${slug}`, response);
+                            return response;
+                          },
+                          catch: cause => cause,
+                        })
+                  )
+                );
           const toolkitSlug = yield* toolkitFromToolSlug(slug, toolkitProjectScope(params));
           const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
@@ -226,28 +296,7 @@ export const ToolsExecutorLive = Layer.effect(
                 })
               );
 
-          const raw = yield* Effect.tryPromise({
-            // Never retry an execution: a retry after the backend already acted
-            // duplicates the side effect (e.g. sends the same email twice).
-            try: async () => {
-              const response: SessionExecuteResponse | SessionExecuteMetaResponse = isMetaToolSlug(
-                slug
-              )
-                ? await resolvedClient.toolRouter.session.executeMeta(
-                    sessionId,
-                    { slug, arguments: normalizedArguments },
-                    { maxRetries: 0 }
-                  )
-                : await resolvedClient.toolRouter.session.execute(
-                    sessionId,
-                    { tool_slug: slug, arguments: normalizedArguments },
-                    { maxRetries: 0 }
-                  );
-              assertNotInputRequired(`Tool ${slug}`, response);
-              return response;
-            },
-            catch: cause => cause,
-          });
+          const raw = yield* send(normalizedArguments);
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(

@@ -17,6 +17,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
+import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
@@ -937,6 +938,13 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       );
 
+    // The consumer surface executes through the Dashboard. `dev
+    // playground-execute` and developer projects stay on the backend.
+    const executesViaDashboard =
+      params.projectMode === 'consumer' &&
+      resolvedProject.projectType === 'CONSUMER' &&
+      (yield* resolveConsumerExecutionTransport) === 'dashboard';
+
     return {
       ui,
       executor,
@@ -947,6 +955,9 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       executeOutputDir,
       executeParams: {
         userId: resolvedUserId.value,
+        target: executesViaDashboard
+          ? { kind: 'dashboard', orgId: resolvedProject.orgId }
+          : { kind: 'backend' },
         arguments: args,
         client,
         projectScope: {

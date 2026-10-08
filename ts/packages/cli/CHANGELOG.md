@@ -4,6 +4,29 @@
 
 ### Patch Changes
 
+- `composio execute` now sends the execution itself (single, `--parallel`, and
+  meta tools) through the Composio Dashboard instead of calling the backend
+  directly. Output, exit codes, error details, connection tips, and `--json`
+  shapes are unchanged for tool results and for the request errors the backend
+  reports; a backend outage is reported with the Dashboard's own message. No
+  new login or configuration is needed.
+  `composio dev playground-execute` and every other command still call the
+  backend. A `COMPOSIO_BASE_URL` override without `COMPOSIO_WEB_URL` keeps
+  `composio execute` on that backend; set both to use that deployment's
+  Dashboard. The request is sent once, with no retry and no redirect following,
+  and gives up after 15 minutes with a message that the tool may still have run.
+  `COMPOSIO_WEB_URL` must be an `https://` URL with no credentials, query
+  string, or fragment (`http://` is accepted only for localhost); otherwise
+  `composio execute` fails before sending anything.
+
+- When telemetry is enabled, `composio execute` sends the CLI's anonymous
+  analytics install ID (the random UUID in `~/.composio/analytics.json`) to the
+  Composio Dashboard in an `x-cli-install-id` header, so Dashboard-side product
+  analytics can be joined with the CLI's own events. It follows the existing
+  telemetry opt-outs (`COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
+  ID is stored, the header is not sent. It is never sent to the backend API.
+
 - `composio execute` (including meta tools), `composio proxy`, the `proxy()`
   helper in `composio run` scripts, and the custom tool schema lookup in
   `composio search` now fail with a clear error when the call needs user input,

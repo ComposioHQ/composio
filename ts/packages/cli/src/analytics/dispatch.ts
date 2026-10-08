@@ -218,6 +218,21 @@ const readAnalyticsState = Effect.gen(function* () {
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
 
+/**
+ * The stored analytics install ID, for first-party requests that should join
+ * the CLI's own events. `None` when telemetry is disabled or no ID is stored or
+ * readable. Read-only: it never creates an ID, takes no lock, and cannot fail.
+ */
+export const readInstallIdWhenTelemetryEnabled = Effect.gen(function* () {
+  if (!(yield* postHogEnabled)) {
+    return Option.none<string>();
+  }
+  const state = yield* readAnalyticsState;
+  return typeof state?.install_id === 'string' && state.install_id.length > 0
+    ? Option.some(state.install_id)
+    : Option.none<string>();
+}).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())));
+
 const recoverStaleAnalyticsStateLock = (
   fs: FileSystem.FileSystem,
   lockPath: string
