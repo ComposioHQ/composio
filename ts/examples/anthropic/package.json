@@ -21,7 +21,7 @@
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.17.2",
+    "@mastra/mcp": "^2.1.2",
     "ai": "^6.0.287",
     "dotenv": "catalog:",
     "zod": "catalog:",
