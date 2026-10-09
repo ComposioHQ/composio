@@ -25,7 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.118",
+    "@ai-sdk/openai": "^4.0.84",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
