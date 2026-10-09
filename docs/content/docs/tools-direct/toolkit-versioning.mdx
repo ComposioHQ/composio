@@ -1,7 +1,7 @@
 ---
 title: Toolkit Versioning
-description: Pin specific tool versions for consistent behavior in production
-keywords: [version, pin version, tool versioning]
+description: Pin a tool version per execute call or configure defaults for consistent behavior in production
+keywords: [version, pin version, tool versioning, tools.execute, per-execution override]
 llmGuardrails: "direct-execution"
 legacy: true
 ---
@@ -11,6 +11,54 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 </Callout>
 
 Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back when needed.
+
+## Per-execution override
+
+Pass `version` directly to `composio.tools.execute()` to pin one call. The per-call value takes precedence over SDK initialization and environment variables, and leaves the defaults for other calls unchanged.
+
+These examples use `20251027_00`. Replace it with an available version you have tested for your toolkit.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="YOUR_API_KEY")
+
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio"
+    },
+    user_id="user-k7334",
+    version="20251027_00",
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "YOUR_API_KEY" });
+
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+    userId: "user-k7334",
+    version: "20251027_00",
+    arguments: {
+        owner: "ComposioHQ",
+        repo: "composio"
+    }
+});
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+A dated version passes the direct-execution version check without a bypass flag. See [Direct Tool Execution](/docs/tools-direct/executing-tools#direct-tool-execution) for more examples.
+
+## Find available versions
 
 To view available versions, go to [Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) > **All Toolkits** > select a toolkit. The version dropdown shows the latest and all available versions:
 
@@ -42,7 +90,7 @@ curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit
 
 ## Configuration methods
 
-Configure toolkit versions using one of three methods:
+To use the same version across calls, set a default at SDK initialization or through environment variables. A [per-execution override](#per-execution-override) takes precedence over either default.
 
 ### SDK initialization
 
@@ -87,48 +135,6 @@ export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
 export COMPOSIO_TOOLKIT_VERSION_SLACK="20251027_00"
 export COMPOSIO_TOOLKIT_VERSION_GMAIL="20251027_00"
 ```
-
-### Per-execution override
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Specify version directly in execute call
-result = composio.tools.execute(
-    "GITHUB_LIST_STARGAZERS",
-    arguments={
-        "owner": "ComposioHQ",
-        "repo": "composio"
-    },
-    user_id="user-k7334",
-    version="20251027_00"  # Override version for this execution
-)
-print(result)
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-
-const composio = new Composio({ apiKey: "YOUR_API_KEY" });
-
-// Specify version directly in execute call
-const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
-    userId: "user-k7334",
-    arguments: {
-        owner: "ComposioHQ",
-        repo: "composio"
-    },
-    version: "20251027_00"  // Override version for this execution
-});
-console.log(result);
-```
-  </Tab>
-</Tabs>
 
 ## Version format
 
