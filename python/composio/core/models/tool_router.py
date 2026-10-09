@@ -50,6 +50,7 @@ from composio.core.models.tool_router_constants import (
 )
 from composio.core.models.tool_router_session import (
     ToolRouterInstantConfig,
+    ToolRouterProxyExecuteConfig,
     ToolRouterSession,
     ToolRouterSessionConfig,
     ToolRouterSessionPreloadConfig,
@@ -725,6 +726,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[ToolRouterProxyExecuteConfig] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -754,6 +756,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[ToolRouterProxyExecuteConfig] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -782,6 +785,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[ToolRouterProxyExecuteConfig] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -893,6 +897,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param proxy_execute: Optional proxy execute configuration
+                        (ToolRouterProxyExecuteConfig). ``{"enable": True}`` exposes
+                        the ``COMPOSIO_PROXY_EXECUTE`` meta tool. ``{"enable": False}``
+                        also turns off the sandbox ``proxy_execute()`` helper, and the
+                        API rejects it together with
+                        ``sandbox={"enable_proxy_execution": True}``. Leaving it
+                        out keeps the meta tool off.
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
@@ -1091,6 +1102,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         }
         if instant is not None:
             create_params["instant"] = instant
+        if proxy_execute is not None:
+            create_params["proxy_execute"] = proxy_execute
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
