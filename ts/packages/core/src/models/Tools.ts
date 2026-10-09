@@ -1,5 +1,6 @@
 import ComposioClient, { APIError } from '@composio/client';
 import { FileToolModifier } from '#file_tool_modifier';
+import { z } from 'zod/v3';
 import {
   Tool,
   ToolExecuteParams,
@@ -79,23 +80,109 @@ type RawToolParameters =
   | ToolRetrieveResponse['input_parameters']
   | ComposioToolListResponse['items'][0]['input_parameters'];
 
+type JsonSchemaNode = Record<string, unknown>;
+
+const isSchemaRecord = (value: unknown): value is JsonSchemaNode =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Rewrite one JSON-Schema node into the strict subset `ParametersSchema`
+ * accepts, preserving its meaning:
+ *
+ * - boolean nodes (`items: true` / `items: false`) become `{}` / `{ not: {} }`
+ *   — the strict subset's way to express "anything" and "nothing", so the
+ *   meaning survives; booleans are still valid JSON Schema (draft-04 style)
+ *   that MCP toolkits emit;
+ * - draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum` (paired with
+ *   `minimum`/`maximum`) become the numeric form draft-07+ uses;
+ *
+ * Children are rewritten recursively. `additionalProperties` legitimately
+ * accepts a boolean, so it is only recursed into when it is a schema.
+ */
+function sanitizeJsonSchemaNode(node: unknown): unknown {
+  // Boolean JSON-Schema nodes (draft-04 style, still emitted by MCP toolkits):
+  // `true` accepts anything, which `{}` also expresses; `false` accepts
+  // nothing, which the strict subset (an object node) expresses as `not: {}`.
+  // Coercing `false` to `{}` would invert the schema's meaning.
+  if (typeof node === 'boolean') return node ? {} : { not: {} };
+  if (Array.isArray(node)) return node.map(sanitizeJsonSchemaNode);
+  if (!isSchemaRecord(node)) return node;
+
+  const schema: JsonSchemaNode = { ...node };
+
+  for (const [bound, limit] of [
+    ['exclusiveMinimum', 'minimum'],
+    ['exclusiveMaximum', 'maximum'],
+  ] as const) {
+    if (typeof schema[bound] !== 'boolean') continue;
+    if (schema[bound] && typeof schema[limit] === 'number') {
+      schema[bound] = schema[limit];
+    } else {
+      delete schema[bound];
+    }
+  }
+
+  for (const key of ['items', 'not', 'if', 'then', 'else', 'additionalProperties'] as const) {
+    const child = schema[key];
+    if (child === undefined) continue;
+    // Every keyword here takes a schema node except `additionalProperties`,
+    // which also accepts a boolean; the sanitizer coerces boolean nodes.
+    if (key === 'additionalProperties' && typeof child === 'boolean') continue;
+    schema[key] = sanitizeJsonSchemaNode(child);
+  }
+
+  for (const key of ['anyOf', 'oneOf', 'allOf'] as const) {
+    if (Array.isArray(schema[key])) {
+      schema[key] = sanitizeJsonSchemaNode(schema[key]);
+    }
+  }
+
+  for (const key of ['properties', 'patternProperties', '$defs', 'definitions'] as const) {
+    const children = schema[key];
+    if (!isSchemaRecord(children)) continue;
+    const mapped: JsonSchemaNode = {};
+    for (const [name, child] of Object.entries(children)) {
+      mapped[name] = sanitizeJsonSchemaNode(child);
+    }
+    schema[key] = mapped;
+  }
+
+  return schema;
+}
+
 /**
  * Normalize a raw `input_parameters` / `output_parameters` payload returned by
  * the Composio API. Maps `null`, `undefined`, and empty `{}` — all of which
  * mean "no declared schema" — to `undefined` so the strict `ParametersSchema`
- * validator never sees them. Non-empty objects pass through unchanged and
- * remain subject to strict Zod validation.
+ * validator never sees them, and rewrites the valid-but-unusual JSON Schema
+ * shapes MCP toolkits ship (boolean nodes, draft-04 boolean bounds, a bare
+ * combinator root) into the strict subset.
  *
  * MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
  * declared output schema and the API serializes that as `{}`, which would
  * otherwise trip `ParametersSchema`. See
- * https://github.com/ComposioHQ/composio/issues/3354.
+ * https://github.com/ComposioHQ/composio/issues/3354. The malformed-shape
+ * handling covers the toolkits listed in
+ * https://github.com/ComposioHQ/composio/issues/4757.
  */
 function normalizeRawToolParameters(
   params: RawToolParameters | null | undefined
 ): RawToolParameters | undefined {
   if (params == null || Object.keys(params).length === 0) return undefined;
-  return params;
+  const sanitized = sanitizeJsonSchemaNode(params);
+  // A parameters root is a tool's named-argument object, so a bare combinator
+  // root (`oneOf`/`anyOf`/`allOf` with no `type`) still needs `type: "object"`
+  // to satisfy the strict schema.
+  if (
+    isSchemaRecord(sanitized) &&
+    sanitized.type === undefined &&
+    (Array.isArray(sanitized.anyOf) ||
+      Array.isArray(sanitized.oneOf) ||
+      Array.isArray(sanitized.allOf))
+  ) {
+    return { ...sanitized, type: 'object' } as RawToolParameters;
+  }
+  return sanitized as RawToolParameters;
 }
 
 /**
@@ -123,6 +210,8 @@ export class Tools<
    * Scoped per-instance so a fresh `Composio` starts with a clean slate.
    */
   private readonly warnedAutoUploadDisabledForTool = new Set<string>();
+  /** Tools whose parameters were dropped by `transformToolCases`; warn once each. */
+  private readonly warnedMalformedToolParametersSlugs = new Set<string>();
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -163,21 +252,75 @@ export class Tools<
    * making them more consistent with JavaScript/TypeScript conventions.
    *
    * @param {ToolRetrieveResponse | ComposioToolListResponse['items'][0]} tool - The tool object to transform
-   * @returns {Tool} The transformed tool with camelCase properties
+   * @returns {Tool} The transformed tool with camelCase properties, or
+   * `undefined` when its input schema is unrepairable and the tool is skipped
    *
    * @private
    */
   private transformToolCases(
     tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0]
-  ): Tool {
-    return ToolSchema.parse({
+  ): Tool | undefined {
+    const candidate = {
       ...tool,
       inputParameters: normalizeRawToolParameters(tool.input_parameters),
       outputParameters: normalizeRawToolParameters(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,
-    });
+    };
+
+    const parsed = ToolSchema.safeParse(candidate);
+    if (parsed.success) return parsed.data;
+
+    // One malformed schema must not take down a whole toolkit's tool list
+    // (#4757). The output side degrades to "no schema"; the input side cannot,
+    // because providers build their call schema from it and a tool without one
+    // is not callable — @composio/langchain's wrapTool throws
+    // "Tool input parameters are not defined", so an unrepairable input schema
+    // would fail the provider's whole wrapTools pass one layer later. Such a
+    // tool is skipped instead, with the same warning. A failure outside the
+    // parameters is genuinely broken data and stays loud.
+    const failingSides = new Set<'inputParameters' | 'outputParameters'>();
+    for (const issue of parsed.error.issues) {
+      const root = issue.path[0];
+      if (root === 'inputParameters' || root === 'outputParameters') {
+        failingSides.add(root);
+      }
+    }
+    if (failingSides.size === 0) throw parsed.error;
+
+    this.warnMalformedToolParameters(tool, parsed.error, [...failingSides]);
+    if (failingSides.has('inputParameters')) return undefined;
+    const degradedCandidate = { ...candidate };
+    for (const side of failingSides) {
+      degradedCandidate[side] = undefined;
+    }
+    const degraded = ToolSchema.safeParse(degradedCandidate);
+    if (degraded.success) return degraded.data;
+    throw parsed.error;
+  }
+
+  /**
+   * Warn once per tool that its declared parameters could not be parsed and
+   * were dropped, so a caller sees why a tool carries no schema instead of a
+   * bare TypeError from deep inside Zod.
+   */
+  private warnMalformedToolParameters(
+    tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0],
+    error: z.ZodError,
+    droppedSides: Array<'inputParameters' | 'outputParameters'>
+  ): void {
+    const slug = String((tool as { slug?: unknown }).slug ?? '');
+    if (slug && this.warnedMalformedToolParametersSlugs.has(slug)) return;
+    if (slug) this.warnedMalformedToolParametersSlugs.add(slug);
+    const inputFailed = droppedSides.includes('inputParameters');
+    logger.warn(
+      `Tool "${slug || '(unknown slug)'}" has ${droppedSides.join(' and ')} that do not ` +
+        `match the expected schema, so the tool was ` +
+        `${inputFailed ? 'skipped' : 'returned without those parameters'}. ` +
+        `${inputFailed ? 'It cannot be offered without an input schema.' : 'The tool still executes, but LLM callers will not see those parameters.'} ` +
+        `Issues: ${error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`
+    );
   }
 
   /**
@@ -540,7 +683,9 @@ export class Tools<
     if (!tools) {
       return [];
     }
-    const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const caseTransformedTools = tools.items
+      .map(tool => this.transformToolCases(tool))
+      .filter((tool): tool is Tool => tool !== undefined);
 
     let modifiedTools = await this.applyDefaultSchemaModifiers(caseTransformedTools);
 
@@ -597,7 +742,11 @@ export class Tools<
         () => this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions),
         requestOptions?.signal
       );
-      tools.push(...response.items.map(tool => this.transformToolCases(tool)));
+      tools.push(
+        ...response.items
+          .map(tool => this.transformToolCases(tool))
+          .filter((tool): tool is Tool => tool !== undefined)
+      );
       cursor = response.next_cursor;
     } while (cursor);
 
@@ -708,7 +857,13 @@ export class Tools<
     }
 
     // change the case of the tool to camel case and apply default modifiers
-    let [modifiedTool] = await this.applyDefaultSchemaModifiers([this.transformToolCases(tool)]);
+    const transformedTool = this.transformToolCases(tool);
+    if (transformedTool === undefined) {
+      throw new ComposioToolNotFoundError(`Tool with slug ${slug} has an unusable input schema`, {
+        meta: { slug },
+      });
+    }
+    let [modifiedTool] = await this.applyDefaultSchemaModifiers([transformedTool]);
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
       const modifier = options.modifySchema;

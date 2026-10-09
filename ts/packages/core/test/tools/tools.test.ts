@@ -384,6 +384,180 @@ describe('Tools', () => {
 
       await expect(context.tools.getRawComposioTools(emptyQuery)).rejects.toThrow(ValidationError);
     });
+
+    // One tool's malformed schema used to fail the whole call (#4757).
+    it('should tolerate a tool whose inputParameters holds a boolean schema node', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            input_parameters: {
+              type: 'object',
+              properties: {
+                params: { type: 'object', items: true },
+              },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].inputParameters).toEqual({
+        type: 'object',
+        properties: {
+          params: { type: 'object', items: {} },
+        },
+      });
+    });
+
+    it('should express a false boolean node as not-anything, not anything', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            input_parameters: {
+              type: 'object',
+              properties: {
+                // `false` accepts nothing; coercing it to `{}` would invert
+                // the rule and accept everything.
+                forbidden: { type: 'array', items: false },
+                anything: { type: 'array', items: true },
+              },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].inputParameters).toEqual({
+        type: 'object',
+        properties: {
+          forbidden: { type: 'array', items: { not: {} } },
+          anything: { type: 'array', items: {} },
+        },
+      });
+    });
+
+    it('should tolerate a draft-04 boolean exclusiveMinimum', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            input_parameters: {
+              type: 'object',
+              properties: {
+                amount: { type: 'number', minimum: 5, exclusiveMinimum: true },
+              },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].inputParameters).toEqual({
+        type: 'object',
+        properties: {
+          amount: { type: 'number', minimum: 5, exclusiveMinimum: 5 },
+        },
+      });
+    });
+
+    it('should tolerate a bare combinator root without a type', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            input_parameters: {
+              oneOf: [{ type: 'object', properties: { a: { type: 'string' } } }],
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].inputParameters).toEqual({
+        type: 'object',
+        oneOf: [{ type: 'object', properties: { a: { type: 'string' } } }],
+      });
+    });
+
+    it('should return the conforming tools of a batch when one schema is malformed', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          toolMocks.rawTool,
+          {
+            ...toolMocks.customTool,
+            input_parameters: {
+              type: 'object',
+              properties: { filters: { type: 'array', items: true } },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] });
+
+      expect(result.map((tool) => tool.slug)).toEqual(['COMPOSIO_TOOL', 'CUSTOM_TOOL']);
+    });
+
+    it('should keep a tool whose output schema cannot be repaired, minus that schema', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            output_parameters: {
+              type: 'object',
+              properties: { query: { type: 'not-a-json-schema-type' } },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toEqual('COMPOSIO_TOOL');
+      expect(result[0].outputParameters).toBeUndefined();
+      expect(result[0].inputParameters).toBeDefined();
+    });
+
+    it('should skip a tool whose input schema cannot be repaired', async () => {
+      // An unrepairable input schema cannot degrade to "no schema": providers
+      // build their call schema from it (@composio/langchain's wrapTool throws
+      // "Tool input parameters are not defined"), so the tool is skipped and
+      // the rest of the batch still returns.
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          toolMocks.rawTool,
+          {
+            ...toolMocks.customTool,
+            input_parameters: {
+              type: 'object',
+              properties: { query: { type: 'not-a-json-schema-type' } },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] });
+
+      expect(result.map((tool) => tool.slug)).toEqual(['COMPOSIO_TOOL']);
+    });
   });
 
   describe('getRawToolRouterSessionTools', () => {
