@@ -156,6 +156,18 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     return_instant_charge: bool
 
 
+class ToolRouterProxyExecuteConfig(te.TypedDict):
+    """Proxy execute settings for a Session.
+
+    ``enable=True`` exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool and
+    ``enable=False`` also turns off the sandbox ``proxy_execute()`` helper.
+    Leaving the block out keeps the meta tool off while
+    ``sandbox.enable_proxy_execution`` controls the helper.
+    """
+
+    enable: bool
+
+
 ToolRouterSessionExecuteResponse = SessionExecuteResponse
 """Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
 only when the Session sets ``instant.return_instant_charge`` and a charge is
@@ -1086,6 +1098,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[ToolRouterUpdateMultiAccountConfig],
             "Omit",
         ] = omit,
+        proxy_execute: t.Union[t.Optional[ToolRouterProxyExecuteConfig], "Omit"] = omit,
         preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
         search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
         execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
@@ -1109,6 +1122,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         access or an object to set its filters; it does not accept ``None``.
         Any object, even one that only sets ``return_instant_charge``,
         re-enables Instant usage on a Session set to ``False``.
+        ``proxy_execute`` is sent as given: ``{"enable": True}`` exposes the
+        ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``{"enable": False}`` also turns
+        off the sandbox ``proxy_execute()`` helper, and ``None`` removes the
+        stored block.
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1200,6 +1217,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Optional[session_patch_params.MultiAccount], "Omit"],
                     multi_account,
                 ),
+                proxy_execute=proxy_execute,
                 preload=t.cast(t.Union[session_patch_params.Preload, "Omit"], preload),
                 search=t.cast(t.Union[session_patch_params.Search, "Omit"], search),
                 execute=t.cast(t.Union[session_patch_params.Execute, "Omit"], execute),

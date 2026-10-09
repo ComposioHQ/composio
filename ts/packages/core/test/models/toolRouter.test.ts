@@ -221,6 +221,27 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty('instant');
     });
 
+    it('sends proxyExecute.enable as given and omits the block otherwise', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+      await toolRouter.create(userId, { proxyExecute: { enable: true } });
+      await toolRouter.create(userId, { proxyExecute: { enable: false } });
+      await toolRouter.create(userId);
+
+      const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
+      expect(bodies[0]).toMatchObject({ proxy_execute: { enable: true } });
+      expect(bodies[1]).toMatchObject({ proxy_execute: { enable: false } });
+      expect(bodies[2]).not.toHaveProperty('proxy_execute');
+    });
+
+    it('rejects a proxyExecute block without enable', async () => {
+      await expect(
+        // @ts-expect-error enable is required
+        toolRouter.create(userId, { proxyExecute: {} })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
     describe('basic session creation', () => {
       it('should create a session with minimal configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);

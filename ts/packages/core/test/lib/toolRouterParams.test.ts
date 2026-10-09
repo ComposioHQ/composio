@@ -194,6 +194,18 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
+  it('maps proxyExecute as given, and null clears it', () => {
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: true } })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: false } })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: null })).toEqual({
+      proxy_execute: null,
+    });
+  });
+
   it('keeps an empty toolkit allowlist in the request', () => {
     expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
       toolkits: { enable: [] },
