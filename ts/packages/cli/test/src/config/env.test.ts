@@ -1,7 +1,14 @@
 import { describe, it } from '@effect/vitest';
 import { deepStrictEqual } from '@effect/vitest/utils';
 import { Config, ConfigProvider, Effect } from 'effect';
-import { flag, hasEnvironmentRoot, optionalFlag, optionalString } from 'src/config/env';
+import {
+  flag,
+  hasEnvironmentRoot,
+  optionalFlag,
+  optionalLogLevel,
+  optionalString,
+  withFallback,
+} from 'src/config/env';
 
 const read = <A>(config: Config.Config<A>, env: Record<string, string>) =>
   config.parse(ConfigProvider.fromEnvRecord(env));
@@ -29,6 +36,27 @@ describe('config readers', () => {
         typo: true,
         unset: undefined,
       });
+    })
+  );
+
+  it.effect(
+    'optionalLogLevel matches level names case-insensitively and ignores other values',
+    () =>
+      Effect.gen(function* () {
+        const level = optionalLogLevel('LEVEL');
+        deepStrictEqual(yield* read(level, {}), undefined);
+        deepStrictEqual(yield* read(level, { LEVEL: 'debug' }), 'Debug');
+        deepStrictEqual(yield* read(level, { LEVEL: ' Error ' }), 'Error');
+        deepStrictEqual(yield* read(level, { LEVEL: 'verbose' }), undefined);
+      })
+  );
+
+  it.effect('withFallback replaces only undefined', () =>
+    Effect.gen(function* () {
+      const value = withFallback(optionalString('X'), 'fallback');
+      deepStrictEqual(yield* read(value, {}), 'fallback');
+      deepStrictEqual(yield* read(value, { X: ' ' }), 'fallback');
+      deepStrictEqual(yield* read(value, { X: 'set' }), 'set');
     })
   );
 

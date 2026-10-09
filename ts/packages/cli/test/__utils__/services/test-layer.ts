@@ -129,8 +129,10 @@ export interface MockAccountRequest {
 
 export interface TestLiveInput {
   /**
-   * Config provider to use in test. Defaults to `hostOnlyEnvConfigProvider`: the live host
-   * environment without any `COMPOSIO_*` variable.
+   * Config provider to use in test. Its values win; anything it leaves unset falls through to
+   * `hostOnlyEnvConfigProvider`, the live host environment without any `COMPOSIO_*`,
+   * `DEBUG_OVERRIDE_*`, or `FORCE_*` variable, so `HOST_CONFIG` (`CI`, `VITEST`, `PATH`, the
+   * agent-host markers) keeps reading the real process the way the old raw-provider bypass did.
    */
   baseConfigProvider?: ConfigProvider.ConfigProvider;
 
@@ -1612,7 +1614,13 @@ export const TestLayer = (input?: TestLiveInput) =>
     // reading `Config`/`DEBUG_OVERRIDE_*` at runtime) would fall back to the default
     // `ConfigProvider` reference instead of the test's `baseConfigProvider`. `Layer.provideMerge`
     // keeps `ConfigProvider` in the output so it stays visible to everything `TestLayer` provides.
-    Layer.provideMerge(ConfigProvider.layer(input?.baseConfigProvider ?? hostOnlyEnvConfigProvider))
+    Layer.provideMerge(
+      ConfigProvider.layer(
+        input?.baseConfigProvider === undefined
+          ? hostOnlyEnvConfigProvider
+          : ConfigProvider.orElse(input.baseConfigProvider, hostOnlyEnvConfigProvider)
+      )
+    )
   );
 
 // Run @effect/vitest suite with TestLive layer

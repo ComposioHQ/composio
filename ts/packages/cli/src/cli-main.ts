@@ -4,7 +4,7 @@
  * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
-import { Cause, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/unstable/cli';
 import { FetchHttpClient } from 'effect/unstable/http';
@@ -330,7 +330,13 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
         }
       })
     ),
-    Effect.provide(layers)
+    Effect.provide(layers),
+    // Built per invocation, never at module scope: `ConfigProvider.fromEnv()` snapshots
+    // `process.env` when constructed, and the ambient `ConfigProvider` reference caches its
+    // default snapshot process-wide on first use. A fresh provider here means every config read
+    // of this invocation observes the environment as it is now (`vi.stubEnv` in tests, any
+    // in-process mutation before `runCli`).
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv()))
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {

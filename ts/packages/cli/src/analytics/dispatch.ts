@@ -452,12 +452,13 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
 
 // The same URL the CLI itself talks to: `COMPOSIO_BASE_URL`, else the `COMPOSIO_ENVIRONMENT`
 // default. The persisted login URL is not consulted, matching `ComposioUserContext`.
-export const readApiBaseUrl = Effect.map(APP_CONFIG.BASE_URL, url => url.replace(/\/+$/u, '')).pipe(
-  Effect.catchCause(() => Effect.succeed(null))
+export const readApiBaseUrl = Effect.orDie(APP_CONFIG.BASE_URL).pipe(
+  Effect.map(url => url.replace(/\/+$/u, ''))
 );
 
-const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
-  baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
+const getCliCodactFailuresEndpoint = Effect.map(
+  readApiBaseUrl,
+  baseUrl => `${baseUrl}${CLI_CODACT_FAILURES_PATH}`
 );
 
 // Effect's Command processes are scoped and die with their scope; telemetry
@@ -571,9 +572,9 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const disabled = yield* analyticsDisabled;
-    if (!endpoint || disabled) {
+    if (disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
-        reason: disabled ? 'disabled' : 'missing_endpoint',
+        reason: 'disabled',
         endpoint,
         failureType: failure.failureType,
       });
@@ -815,9 +816,9 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
     const disabled = yield* analyticsDisabled;
-    if (disabled || !endpoint || !userApiKey) {
+    if (disabled || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
-        reason: disabled ? 'disabled' : !endpoint ? 'missing_endpoint' : 'missing_user_api_key',
+        reason: disabled ? 'disabled' : 'missing_user_api_key',
         failureType: failure.failureType,
         endpoint,
       });

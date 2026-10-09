@@ -1,6 +1,6 @@
 import { Config } from 'effect';
 import * as constants from 'src/constants';
-import { optionalString } from './env';
+import { optionalString, withFallback } from './env';
 
 export interface GitHubConfig {
   readonly apiBaseUrl: string;
@@ -16,11 +16,9 @@ const githubConfig = (
   read: (name: string) => Config.Config<string | undefined>
 ): Config.Config<GitHubConfig> =>
   Config.all({
-    apiBaseUrl: read('API_BASE_URL').pipe(
-      Config.map(value => value ?? constants.GITHUB_REPO.API_BASE_URL)
-    ),
-    owner: read('OWNER').pipe(Config.map(value => value ?? constants.GITHUB_REPO.OWNER)),
-    repo: read('REPO').pipe(Config.map(value => value ?? constants.GITHUB_REPO.REPO)),
+    apiBaseUrl: withFallback(read('API_BASE_URL'), constants.GITHUB_REPO.API_BASE_URL),
+    owner: withFallback(read('OWNER'), constants.GITHUB_REPO.OWNER),
+    repo: withFallback(read('REPO'), constants.GITHUB_REPO.REPO),
     tag: read('TAG'),
     accessToken: read('ACCESS_TOKEN'),
   });

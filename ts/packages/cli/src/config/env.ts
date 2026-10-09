@@ -1,4 +1,4 @@
-import { Config, type LogLevel, Option, Schema } from 'effect';
+import { Config, LogLevel, Option, Schema } from 'effect';
 
 /**
  * Readers shared by the configuration catalogs in `src/config`.
@@ -18,13 +18,28 @@ export const optionalString = (name: string): Config.Config<string | undefined> 
     })
   );
 
-/** A `LogLevel` setting; `undefined` when unset. */
-export const optionalLogLevel = (name: string): Config.Config<LogLevel.LogLevel | undefined> =>
-  Config.option(Config.LogLevel(name)).pipe(Config.map(Option.getOrUndefined));
+/** `self` with `fallback` in place of `undefined`. */
+export const withFallback = <A>(
+  self: Config.Config<A | undefined>,
+  fallback: A
+): Config.Config<A> => self.pipe(Config.map(value => value ?? fallback));
 
 /** A string setting that falls back to `fallback` when unset or blank. */
 export const stringWithDefault = (name: string, fallback: string): Config.Config<string> =>
-  optionalString(name).pipe(Config.map(value => value ?? fallback));
+  withFallback(optionalString(name), fallback);
+
+const LOG_LEVEL_SPELLINGS = new Map(LogLevel.values.map(level => [level.toLowerCase(), level]));
+
+/**
+ * A `LogLevel` setting, matched case-insensitively; `undefined` when unset, blank, or not a
+ * level name. A typo in a README-documented variable must not fail the CLI before it starts.
+ */
+export const optionalLogLevel = (name: string): Config.Config<LogLevel.LogLevel | undefined> =>
+  optionalString(name).pipe(
+    Config.map(value =>
+      value === undefined ? undefined : LOG_LEVEL_SPELLINGS.get(value.toLowerCase())
+    )
+  );
 
 const FLAG_OFF_SPELLINGS = new Set(['0', 'false', 'no', 'off']);
 
