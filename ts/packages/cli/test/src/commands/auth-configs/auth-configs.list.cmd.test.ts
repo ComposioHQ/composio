@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { AuthConfigItem } from 'src/models/auth-configs';
@@ -53,7 +52,7 @@ const authConfigsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio dev auth-configs list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(

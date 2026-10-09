@@ -25,7 +25,6 @@ import {
   resolveRunCompanionModulePath,
   writeInstalledReleaseTag,
 } from 'src/services/run-companion-modules';
-import { extendConfigProvider } from 'src/services/config';
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -35,7 +34,7 @@ const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_RUN_ACP_ONLY: '1',
   COMPOSIO_PERF_DEBUG: '1',
   COMPOSIO_TOOL_DEBUG: '1',
-}).pipe(extendConfigProvider);
+});
 
 const readRunPreloadSource = (command: ReadonlyArray<string>): string => {
   const preloadPath = command[2];

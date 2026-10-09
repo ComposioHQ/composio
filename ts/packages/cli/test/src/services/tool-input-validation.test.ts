@@ -138,7 +138,7 @@ describe('tool input validation', () => {
       ),
       Effect.provideService(
         ConfigProvider.ConfigProvider,
-        ConfigProvider.fromEnv({ env: { CACHE_DIR: cacheDir } })
+        ConfigProvider.fromEnv({ env: { COMPOSIO_CACHE_DIR: cacheDir } })
       )
     );
   });

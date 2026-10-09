@@ -28,16 +28,6 @@ export const STAGING_BASE_URL = 'https://staging-backend.composio.dev';
 export const STAGING_WEB_URL = 'https://staging-dashboard.composio.dev/';
 
 /**
- * Prefix for user environment variable keys used by the Composio CLI.
- */
-export const APP_ENV_CONFIG_KEY_PREFIX = 'COMPOSIO_';
-
-/**
- * Prefix for environment variable keys used by the Composio CLI for debug overrides.
- */
-export const DEBUG_OVERRIDE_ENV_CONFIG_KEY_PREFIX = 'DEBUG_OVERRIDE_';
-
-/**
  * Name of the user config file used by the Composio CLI.
  */
 export const USER_CONFIG_FILE_NAME = 'user_data.json';

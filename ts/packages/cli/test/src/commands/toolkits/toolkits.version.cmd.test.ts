@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
@@ -57,7 +56,7 @@ const toolkitsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const parseLastJson = (lines: ReadonlyArray<string>) => {
   for (let i = lines.length - 1; i >= 0; i -= 1) {

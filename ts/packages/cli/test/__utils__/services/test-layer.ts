@@ -33,6 +33,7 @@ import {
 import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { ComposioCliConfig } from 'src/cli-config';
+import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
@@ -128,8 +129,8 @@ export interface MockAccountRequest {
 
 export interface TestLiveInput {
   /**
-   * Base config provider to use in test.
-   * If not provided, the default `ConfigProvider.fromEnv({ env: {} })` is used.
+   * Config provider to use in test. Defaults to `hostOnlyEnvConfigProvider`: the live host
+   * environment without any `COMPOSIO_*` variable.
    */
   baseConfigProvider?: ConfigProvider.ConfigProvider;
 
@@ -1611,9 +1612,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     // reading `Config`/`DEBUG_OVERRIDE_*` at runtime) would fall back to the default
     // `ConfigProvider` reference instead of the test's `baseConfigProvider`. `Layer.provideMerge`
     // keeps `ConfigProvider` in the output so it stays visible to everything `TestLayer` provides.
-    Layer.provideMerge(
-      ConfigProvider.layer(input?.baseConfigProvider ?? ConfigProvider.fromEnv({ env: {} }))
-    )
+    Layer.provideMerge(ConfigProvider.layer(input?.baseConfigProvider ?? hostOnlyEnvConfigProvider))
   );
 
 // Run @effect/vitest suite with TestLive layer

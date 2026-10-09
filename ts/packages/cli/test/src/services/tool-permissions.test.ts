@@ -22,7 +22,6 @@ import {
   ToolPermissionDeniedError,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
-import { extendConfigProvider } from 'src/services/config';
 import { NodeOs } from 'src/services/node-os';
 import {
   ComposioClientConfigurationError,
@@ -42,7 +41,7 @@ const ToolPermissionsTest = Layer.mergeAll(
   NodeOs.Default,
   // fromEnv() snapshots the environment when built; build it per provide so the
   // per-test COMPOSIO_CACHE_DIR stub is observed.
-  ConfigProvider.layer(Effect.sync(() => extendConfigProvider(ConfigProvider.fromEnv())))
+  ConfigProvider.layer(Effect.sync(() => ConfigProvider.fromEnv()))
 );
 
 const snapshotFixture = (

@@ -14,7 +14,6 @@ import {
   RUN_COMPANION_MODULE_FILENAMES,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
 } from 'src/services/run-companion-modules';
-import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
 vi.mock('extract-zip', () => ({ default: extractZipMock }));
@@ -415,10 +414,7 @@ describe('run-companion-modules', () => {
         }).pipe(
           // Simulate the cli-main runtime, whose provider rewrites config keys
           // to their COMPOSIO_-prefixed spelling.
-          Effect.provideService(
-            ConfigProvider.ConfigProvider,
-            extendConfigProvider(getBaseConfigProvider())
-          ),
+          Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -459,10 +455,7 @@ describe('run-companion-modules', () => {
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(
-          Effect.provideService(
-            ConfigProvider.ConfigProvider,
-            extendConfigProvider(getBaseConfigProvider())
-          ),
+          Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )

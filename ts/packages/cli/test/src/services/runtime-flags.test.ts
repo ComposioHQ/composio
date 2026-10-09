@@ -12,8 +12,7 @@ import {
   telemetryDebugModeLayer,
   TELEMETRY_DEBUG_FLAG,
 } from 'src/services/runtime-flags';
-import { extendConfigProvider } from 'src/services/config';
-import { TestLive } from 'test/__utils__';
+import { liveEnvConfigProvider, TestLive } from 'test/__utils__';
 
 describe('debugFlagsToChildEnv', () => {
   it('[Given] resolved debug flags [Then] every flag serializes into the child environment', () => {
@@ -56,7 +55,7 @@ const enabledDebugConfig = ConfigProvider.fromEnvRecord({
   COMPOSIO_PERF_DEBUG: '1',
   COMPOSIO_TOOL_DEBUG: '1',
   COMPOSIO_RUN_ACP_ONLY: '1',
-}).pipe(extendConfigProvider);
+});
 
 const readAllDebugFlags = Effect.all({
   perfDebug: isPerfDebugEnabled,
@@ -111,6 +110,6 @@ describe('telemetry debug mode', () => {
 
       vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DEBUG', '');
       expect(yield* isTelemetryDebugEnabled).toBe(false);
-    })
+    }).pipe(Effect.provide(ConfigProvider.layer(liveEnvConfigProvider)))
   );
 });

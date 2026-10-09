@@ -4,7 +4,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Effect, Exit, Layer, Option, Schema } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';

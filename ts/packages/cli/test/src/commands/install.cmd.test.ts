@@ -11,7 +11,6 @@ import {
   type Shell,
 } from 'src/commands/install.cmd';
 import { makeTerminalUI } from 'src/services/terminal-ui';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 
@@ -43,7 +42,7 @@ const TEST_EXEC_PATH = '/usr/local/bin/composio';
 const expectedRuntimeBinDir = (): string => path.dirname(TEST_EXEC_PATH);
 const InstallTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
   TestLive({
-    baseConfigProvider: liveEnvConfigProvider.pipe(extendConfigProvider),
+    baseConfigProvider: liveEnvConfigProvider,
     execPath: TEST_EXEC_PATH,
     ...input,
   });

@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -70,7 +69,7 @@ const testDevConfigProvider = ConfigProvider.fromEnv({
     COMPOSIO_ORG_ID: 'dev_org_test',
     COMPOSIO_PROJECT_ID: 'dev_project_test',
   },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testDevConfigProvider, connectedAccountsData }))(

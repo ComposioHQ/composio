@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Path } from 'effect';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { NodeOs } from 'src/services/node-os';
 
 // Helper to create cache directory

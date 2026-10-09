@@ -4,7 +4,7 @@
  * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
-import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/unstable/cli';
 import { FetchHttpClient } from 'effect/unstable/http';
@@ -15,7 +15,6 @@ import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
-import { getBaseConfigProvider, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -48,6 +47,7 @@ import {
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
+import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
@@ -81,7 +81,7 @@ export const ComposioSessionRepositoryLive = Layer.provide(
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -101,7 +101,7 @@ export const TriggersRealtimeLive = Layer.provide(
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 // Fed the cached repository so that the staleness refresh behind it shares the
@@ -127,7 +127,7 @@ export const SetupSkillInstallerLive = Layer.provide(
 ) satisfies RequiredLayer;
 
 const layers = Layer.mergeAll(
-  CliConfigLive.pipe(Layer.provide(ConfigLive)),
+  CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
@@ -330,10 +330,7 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
         }
       })
     ),
-    Effect.provide(layers),
-    // v4 removed `Effect.withConfigProvider` (a FiberRef-scoped combinator); `ConfigProvider` is
-    // now a `Context.Reference`, so the equivalent is providing it as a layer.
-    Effect.provide(ConfigProvider.layer(extendConfigProvider(getBaseConfigProvider())))
+    Effect.provide(layers)
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {

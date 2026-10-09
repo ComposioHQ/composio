@@ -52,7 +52,7 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
 
 export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(

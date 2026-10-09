@@ -3,7 +3,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { getAncestors } from 'src/utils/get-ancestors';
 import * as constants from 'src/constants';
 import { type ProjectKeys, projectKeysFromJSON } from 'src/models/project-keys';
@@ -66,11 +66,11 @@ const makeProjectContext = Effect.gen(function* () {
       // 1. Check env vars (highest priority)
       const envOrgId = yield* APP_CONFIG.ORG_ID;
       const envProjectId = yield* APP_CONFIG.PROJECT_ID;
-      if (Option.isSome(envOrgId) && Option.isSome(envProjectId)) {
+      if (envOrgId !== undefined && envProjectId !== undefined) {
         yield* Effect.logDebug('ProjectContext: resolved from env vars');
         return Option.some<ProjectKeys>({
-          orgId: envOrgId.value,
-          projectId: envProjectId.value,
+          orgId: envOrgId,
+          projectId: envProjectId,
           projectName: Option.none(),
           orgName: Option.none(),
           email: Option.none(),

@@ -6,3 +6,4 @@ export { TestLayer as TestLive } from './services/test-layer';
 export { cli } from './cli';
 export { pkg };
 export { withHttpServer } from './http-server';
+export { hostOnlyEnvConfigProvider, liveEnvConfigProvider } from './live-env-config-provider';

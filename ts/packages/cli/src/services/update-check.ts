@@ -1,10 +1,11 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
-import { APP_VERSION, GITHUB_REPO } from '../constants';
+import { GITHUB_CONFIG } from 'src/config';
+import { APP_VERSION } from '../constants';
 import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
@@ -100,18 +101,14 @@ const defaultConfig = (stateFile: string) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const currentVersion = yield* resolveRunningCliVersion(process.execPath, APP_VERSION);
-    const accessToken = yield* Effect.orDie(
-      Config.option(Config.String('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
-        Config.map(Option.getOrUndefined)
-      )
-    );
+    const github = yield* Effect.orDie(GITHUB_CONFIG);
     return {
       stateFile,
       currentVersion,
       checkIntervalMs: CHECK_INTERVAL_MS,
-      releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
+      releasesUrl: `${github.apiBaseUrl}/repos/${github.owner}/${github.repo}/releases?per_page=100`,
       binaryAssetName: getCurrentBinaryAssetName(os),
-      accessToken,
+      accessToken: github.accessToken,
       fetchFn: fetch,
     } satisfies UpdateCheckConfig;
   });
