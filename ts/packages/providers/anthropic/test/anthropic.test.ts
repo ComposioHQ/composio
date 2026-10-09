@@ -176,6 +176,24 @@ describe('AnthropicProvider', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
     });
+
+    it('adds one cache breakpoint to the final tool when tool caching is enabled', () => {
+      const cachedProvider = new AnthropicProvider({ cacheTools: true });
+      const tools = Array.from({ length: 5 }, (_, index) => ({
+        ...mockTool,
+        slug: `tool-${index}`,
+      }));
+
+      const wrapped = cachedProvider.wrapTools(tools);
+
+      expect(wrapped.map(tool => tool.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { type: 'ephemeral' },
+      ]);
+    });
   });
 
   describe('executeToolCall', () => {
@@ -435,6 +453,44 @@ describe('AnthropicProvider', () => {
 
       expect(executeToolCallSpy).not.toHaveBeenCalled();
       expect(results).toEqual([]);
+    });
+
+    it('does not add cache breakpoints to tool results when caching is enabled', async () => {
+      const cachedProvider = new AnthropicProvider({ cacheTools: true });
+      const message = {
+        id: 'msg_123',
+        content: Array.from({ length: 4 }, (_, index) => ({
+          type: 'tool_use' as const,
+          id: `tu_${index}`,
+          name: `test-tool-${index}`,
+          input: { input: `test-value-${index}` },
+        })),
+      } as Anthropic.Message;
+      vi.spyOn(cachedProvider, 'executeToolCall').mockResolvedValue(
+        JSON.stringify({ result: 'success' })
+      );
+
+      const results = await cachedProvider.handleToolCalls('test-user', message);
+      const content = results[0]?.content;
+
+      expect(Array.isArray(content)).toBe(true);
+      expect(content?.map(block => block.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ]);
+
+      const nextResults = await cachedProvider.handleToolCalls('test-user', message);
+      const nextContent = nextResults[0]?.content;
+
+      expect(Array.isArray(nextContent)).toBe(true);
+      expect(nextContent?.map(block => block.cache_control)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ]);
     });
   });
 

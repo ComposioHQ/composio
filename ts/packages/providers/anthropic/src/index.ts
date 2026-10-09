@@ -237,7 +237,14 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
-    return tools.map(tool => this.wrapTool(tool));
+    const wrapped: AnthropicToolCollection = tools.map(tool => ({
+      ...this.wrapTool(tool),
+      cache_control: undefined,
+    }));
+    if (this.cacheTools && wrapped.length > 0) {
+      wrapped[wrapped.length - 1].cache_control = { type: 'ephemeral' };
+    }
+    return wrapped;
   }
 
   /**
@@ -402,7 +409,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
+        cache_control: undefined,
       });
     }
 
