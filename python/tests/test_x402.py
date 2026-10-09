@@ -9,7 +9,6 @@ import pytest
 
 from composio.core.models.x402 import (
     PaymentAction,
-    X402Accept,
     X402ParseError,
     parse_x402_envelope,
     x402_after_execute,

@@ -74,7 +74,7 @@ import json
 import functools
 import typing as t
 
-from ._modifiers import after_execute
+from ._modifiers import Modifier
 
 if t.TYPE_CHECKING:
     from .tools import ToolExecutionResponse
@@ -396,11 +396,16 @@ def _build_modifier(
     """Wrap the inner modifier function as a Composio ``after_execute`` modifier."""
     return t.cast(
         "AfterExecute",
-        after_execute(_modifier(payer), tools=tools, toolkits=toolkits),
+        Modifier(
+            modifier=_modifier(payer),
+            type_="after_execute",
+            tools=tools or [],
+            toolkits=toolkits or [],
+        ),
     )
 
 
-def _modifier(payer: t.Optional[Payer]) -> t.Callable[[str, str, "ToolExecutionResponse"], "ToolExecutionResponse"]:
+def _modifier(payer: t.Optional[Payer]) -> AfterExecute:
     def _apply(
         tool: str, toolkit: str, response: "ToolExecutionResponse"
     ) -> "ToolExecutionResponse":
