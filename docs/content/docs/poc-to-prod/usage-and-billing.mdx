@@ -1,0 +1,138 @@
+---
+title: Track and export usage
+description: View organization and project usage in the dashboard, pull all-time usage through the usage APIs, export it to CSV, and reconcile Instant charges against your invoice.
+keywords: [usage, billing, metering, export, CSV, Instant charge, invoice, cost attribution, production]
+---
+
+Track how much usage your organization and projects consume, for billing reconciliation, per-customer cost attribution, or forecasting. The dashboard covers recent activity at a glance; the usage APIs cover any period, up to 366 days per request, and return data you can export.
+
+## Usage in the dashboard
+
+The dashboard shows usage in two places:
+
+- **Project usage:** open the project's **Settings → Usage** page for that project's usage.
+- **Organization usage:** the **Billing** and **Usage** pages in your organization settings cover every project in the organization.
+
+The dashboard is the quickest way to check recent activity, but it has two limits: date filters cover at most the last 90 days, and there is no export button. For all-time views, longer ranges, or data you can load into a spreadsheet or warehouse, use the API.
+
+## Pull usage via the API
+
+Four endpoints return metered usage: two scopes, each with a summary and a breakdown.
+
+| Endpoint | Auth header | Returns |
+| --- | --- | --- |
+| [`POST /api/v3.1/org/usage/summary`](/reference/api-reference/organization/postOrgUsageSummary) | `x-org-api-key` | Org-wide totals per entity type |
+| [`POST /api/v3.1/org/usage/{entity_type}`](/reference/api-reference/organization/postOrgUsageByEntityType) | `x-org-api-key` | Org-wide breakdown, grouped by one dimension |
+| [`POST /api/v3.1/project/usage/summary`](/reference/api-reference/projects/postProjectUsageSummary) | project `x-api-key` | Project totals per entity type |
+| [`POST /api/v3.1/project/usage/{entity_type}`](/reference/api-reference/projects/postProjectUsageByEntityType) | project `x-api-key` | Project breakdown, grouped by one dimension |
+
+`{entity_type}` is a metering entity type such as `tool_calls` or `sessions`.
+
+An empty request body returns the default window, the last 30 days:
+
+```bash
+set -euo pipefail
+: "${COMPOSIO_ORG_API_KEY:?Set your Composio organization API key}"
+
+curl --fail-with-body --silent --show-error --max-time 30 \
+	-X POST https://backend.composio.dev/api/v3.1/org/usage/summary \
+	-H "x-org-api-key: ${COMPOSIO_ORG_API_KEY}" \
+	-H "Content-Type: application/json" \
+	-d '{}'
+```
+
+### Request parameters
+
+- `from` / `to`: Unix epoch milliseconds; `from` is inclusive, `to` is exclusive. `to` defaults to now and `from` to 30 days before `to`. A single request spans at most 366 days; longer ranges return a 400. That is much more than the dashboard's 90-day cap, and for an all-time view you chain windows of up to 366 days each, as the [CSV export](#export-to-csv) below does.
+- `group_by` (breakdown only): dimension to group by. Defaults to `tool_slug` for `tool_calls` and `user_id` for `sessions`.
+- `order_by` / `order_direction` (breakdown only): `key`, `total_quantity` (default), or `event_count`; `asc` or `desc` (default).
+- `limit` (breakdown only): maximum number of groups returned. Defaults to 100, max 1000.
+- `entity_types` (summary only): restrict to specific entity types; omit for all.
+- `filters.user_id`, `filters.session_id`: arrays that restrict results to specific end users or sessions. Org endpoints also accept `filters.project_id`; omit it for org-wide totals. Project endpoints are already scoped to one project.
+
+### Response
+
+A breakdown response contains the totals for the range plus one row per group:
+
+```json
+{
+  "entity_type": "tool_calls",
+  "unit": "calls",
+  "total_quantity": "18234",
+  "event_count": 18234,
+  "groups": [
+    {
+      "key": "GITHUB_CREATE_ISSUE",
+      "total_quantity": "9120",
+      "event_count": 9120
+    }
+  ]
+}
+```
+
+Summary responses return the same totals per entity type, without `groups`, plus the window's total Instant charge as `instant_charge`.
+
+## Reconcile charges against your invoice
+
+`instant_charge` in the summary response is the exact USD amount charged for Instant usage in the window, as a decimal string (`"0"` when nothing was charged). Set `from` and `to` to a billing period and compare the total against your invoice. Breakdowns contain usage quantities and event counts, not charges: to see which executions drove a charge, read `metadata.instant_charge` on charged entries in [tool execution logs](/reference/api-reference/logs).
+
+## Export to CSV
+
+The breakdown endpoint plus `jq` gives you a CSV export. Because a single request spans at most 366 days, an all-time export walks the full period in windows and collects the rows. Set `EXPORT_START` to the date your usage began, such as your account-creation date; an earlier date is safe because empty windows return no groups. This pulls org-wide tool-call usage from `EXPORT_START` to now, grouped by tool:
+
+```bash
+set -euo pipefail
+: "${COMPOSIO_ORG_API_KEY:?Set your Composio organization API key}"
+: "${EXPORT_START:?Set the export start date (YYYY-MM-DD), e.g. your account-creation date}"
+
+if date -u -d "${EXPORT_START}" +%s >/dev/null 2>&1; then
+	START_S=$(date -u -d "${EXPORT_START}" +%s) # GNU date (Linux)
+else
+	START_S=$(date -ju -f "%Y-%m-%d %H:%M:%S" "${EXPORT_START} 00:00:00" +%s) # BSD date (macOS)
+fi
+FROM=$((START_S * 1000))
+NOW=$(( $(date +%s) * 1000 ))
+WINDOW_MS=$((366 * 86400 * 1000))
+GROUPS_FILE=$(mktemp)
+trap 'rm -f "${GROUPS_FILE}"' EXIT
+
+while [ "${FROM}" -lt "${NOW}" ]; do
+	TO=$((FROM + WINDOW_MS))
+	if [ "${TO}" -gt "${NOW}" ]; then TO="${NOW}"; fi
+
+	RESPONSE=$(curl --fail-with-body --silent --show-error --max-time 30 \
+		-X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
+		-H "x-org-api-key: ${COMPOSIO_ORG_API_KEY}" \
+		-H "Content-Type: application/json" \
+		-d "{\"from\": ${FROM}, \"to\": ${TO}, \"group_by\": \"tool_slug\", \"limit\": 1000}")
+
+	if [ "$(jq '.groups | length' <<< "${RESPONSE}")" -eq 1000 ]; then
+		echo "Window ${FROM}..${TO} hit the 1000-group cap; lower WINDOW_MS or add filters" >&2
+		exit 1
+	fi
+
+	jq --argjson from "${FROM}" --argjson to "${TO}" \
+		'.groups | map(. + {from: $from, to: $to})' <<< "${RESPONSE}" >> "${GROUPS_FILE}"
+	FROM="${TO}"
+done
+
+jq -r -s '
+	add
+	| sort_by(.key, .from)
+	| (["key", "from", "to", "total_quantity", "event_count"],
+		(.[] | [.key, .from, .to, .total_quantity, .event_count]))
+	| @csv
+' "${GROUPS_FILE}" > usage.csv
+```
+
+The CSV holds one row per group per window, with every value exactly as the API returned it. A tool or user active in several windows appears once per window: sum its `total_quantity` and `event_count` rows for all-time totals.
+
+To scope the export to a single project, swap the URL to `project/usage/tool_calls`, the header to `x-api-key`, and the credential to a project API key: replace the `COMPOSIO_ORG_API_KEY` guard with `: "${COMPOSIO_PROJECT_API_KEY:?Set your Composio project API key}"` and send `x-api-key: ${COMPOSIO_PROJECT_API_KEY}`. Change `group_by` to `user_id` for per-customer attribution.
+
+<Callout>
+Breakdown responses are not paginated: each request returns at most 1000 groups (`limit`), with no flag to say groups were dropped. Treat a response with exactly 1000 groups as truncated, as the script above does, and lower the window size or add `filters` (for example, batches of `user_id` values) until every response comes back under the cap. Every returned group lands in the CSV as its own row, so nothing is silently omitted or altered.
+</Callout>
+
+## Query usage from the SDK
+
+Both SDKs return usage quantities and event counts through `composio.experimental.usage.summary()` and `composio.experimental.usage.breakdown()`, scoped to the project associated with your API key. The summary also returns the window's total Instant charge (`instantCharge` in TypeScript, `instant_charge` in Python). Breakdowns carry no charges, in the SDKs or over REST: for per-execution charge attribution, read `metadata.instant_charge` from [tool execution logs](/reference/api-reference/logs). Both methods are experimental, and their response shape may change in future releases. See [Inspect project usage](/docs/production-readiness#inspect-project-usage) and the [TypeScript Usage reference](/reference/sdk-reference/typescript/usage).
