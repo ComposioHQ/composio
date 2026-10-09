@@ -40,6 +40,114 @@ def test_wrap_tool_dereferences_internal_refs() -> None:
     assert message_schema["properties"]["subject"]["type"] == "STRING"
 
 
+def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
+    """Composio schema keywords outside the Vertex ``Schema`` must not raise."""
+    tool = Tool.model_construct(
+        slug="TEST_KEYWORDS",
+        description="test",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "examples": ["is:unread"],
+                    "human_parameter_name": "Search query",
+                    "human_parameter_description": "What to search for",
+                },
+                "kind": {"type": "string", "const": "message"},
+                "status": {
+                    "type": ["string", "null"],
+                    "enum": ["open", "closed", None],
+                },
+                "page_token": {
+                    "description": "Next page",
+                    "anyOf": [
+                        {"type": "string", "examples": ["abc"]},
+                        {"type": "null"},
+                    ],
+                },
+                "amount": {
+                    "description": "Amount",
+                    "anyOf": [
+                        {"type": "string"},
+                        {"anyOf": [{"type": "integer"}, {"type": "number"}]},
+                    ],
+                },
+                "flag": {
+                    "type": ["string", "null"],
+                    "anyOf": [{"type": "string"}, {"type": "boolean"}],
+                },
+                "direction": {"type": "null"},
+                "label": {"type": ["string", "null"]},
+                "value": {"type": ["string", "integer"]},
+                "id": {
+                    "type": ["string", "integer"],
+                    "anyOf": [
+                        {"type": ["string"], "enum": ["yes"]},
+                        {"type": "boolean"},
+                    ],
+                },
+                "format": {"type": "integer", "enum": [0, 1], "exclusiveMinimum": -1},
+                "target": {
+                    "oneOf": [
+                        {"type": "object", "properties": {"id": {"type": "string"}}},
+                        {"type": "string"},
+                    ]
+                },
+                # A property may be named like a schema keyword.
+                "description": {"type": "string", "file_uploadable": True},
+            },
+            "required": ["query"],
+        },
+    )
+
+    parameters = GoogleProvider().wrap_tool(tool).to_dict()["parameters"]
+    properties = parameters["properties"]
+
+    assert properties["query"] == {"type": "STRING"}
+    assert properties["kind"] == {"type": "STRING", "enum": ["message"]}
+    assert properties["status"] == {
+        "type": "STRING",
+        "nullable": True,
+        "enum": ["open", "closed"],
+    }
+    assert properties["page_token"] == {
+        "type": "STRING",
+        "description": "Next page",
+        "nullable": True,
+    }
+    assert properties["amount"] == {
+        "any_of": [
+            {"type": "STRING", "description": "Amount"},
+            {"type": "INTEGER", "description": "Amount"},
+            {"type": "NUMBER", "description": "Amount"},
+        ]
+    }
+    assert properties["flag"] == {"type": "STRING", "nullable": True}
+    assert properties["direction"] == {"nullable": True}
+    assert properties["label"] == {"type": "STRING", "nullable": True}
+    assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
+    assert properties["id"] == {"type": "STRING", "enum": ["yes"]}
+    assert properties["format"] == {
+        "type": "INTEGER",
+        "description": "Allowed values: 0, 1.",
+    }
+    assert len(properties["target"]["any_of"]) == 2
+    assert properties["description"] == {"type": "STRING"}
+
+    # Vertex rejects a schema that sets any other field next to any_of.
+    def any_of_stands_alone(node: Any) -> bool:
+        if isinstance(node, list):
+            return all(any_of_stands_alone(item) for item in node)
+        if not isinstance(node, dict):
+            return True
+        if "any_of" in node and len(node) > 1:
+            return False
+        return all(any_of_stands_alone(value) for value in node.values())
+
+    assert any_of_stands_alone(parameters)
+
+
 def _function_call_response() -> Any:
     return GenerationResponse.from_dict(
         {
