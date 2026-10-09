@@ -18,6 +18,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import {
   formatConnectedAccountChoices,
+  isUsableConnectedAccount,
   resolveConnectedAccountSelection,
 } from 'src/services/connected-account-selection';
 import { parseJsonRecord } from 'src/utils/parse-json';
@@ -34,6 +35,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
   readonly reason:
     | 'project_context'
     | 'connected_accounts'
+    | 'connected_account_ambiguous'
     | 'connected_account_not_found'
     | 'unknown_trigger'
     | 'create_trigger'
@@ -227,9 +229,27 @@ const resolveConnectedAccountIdForTrigger = (params: {
           })
       )
     );
+    // Never silently pick the newest account when multiple active accounts
+    // exist without an explicit selector or a designated default alias.
+    const accountSelector = Option.getOrUndefined(params.account);
+    if (!accountSelector?.trim()) {
+      const activeAccounts = selectableAccounts.filter(isUsableConnectedAccount);
+      const hasDefault = activeAccounts.some(
+        account => account.alias?.trim().toLowerCase() === 'default'
+      );
+      if (activeAccounts.length > 1 && !hasDefault) {
+        const choices = formatConnectedAccountChoices(activeAccounts);
+        return yield* new ListenCommandError({
+          reason: 'connected_account_ambiguous',
+          message: `Multiple active connected accounts found for toolkit "${toolkitSlug}". Pass --account to select one. Available accounts: ${choices.join(', ')}.`,
+          slug: params.slug,
+          toolkitSlug,
+        });
+      }
+    }
     const selectedAccount = resolveConnectedAccountSelection(
       selectableAccounts,
-      Option.getOrUndefined(params.account)
+      accountSelector
     );
     if (selectedAccount?.id) {
       return selectedAccount.id;
