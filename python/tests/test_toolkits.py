@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from composio_client import omit
+from composio_client.types import toolkit_list_response
 
 from composio.core.models.toolkits import Toolkits
 from tests.conftest import mock_http_client
@@ -23,6 +24,43 @@ def toolkits(mock_client: Mock) -> Toolkits:
 
 
 class TestToolkitsGetMany:
+    def test_list_exposes_instant_support(self, toolkits, mock_client):
+        response = toolkit_list_response.ToolkitListResponse.model_validate(
+            {
+                "current_page": 1,
+                "items": [
+                    {
+                        "name": "Exa",
+                        "slug": "exa",
+                        "type": "native",
+                        "is_local_toolkit": False,
+                        "deprecated": {"toolkitId": "toolkit-id"},
+                        "meta": {
+                            "categories": [],
+                            "created_at": "2026-01-01",
+                            "description": "Search",
+                            "logo": "",
+                            "tools_count": 1,
+                            "triggers_count": 0,
+                            "updated_at": "2026-01-01",
+                            "version": "20261001_00",
+                        },
+                        "instant": {"supported": True},
+                    }
+                ],
+                "total_items": 1,
+                "total_pages": 1,
+            }
+        )
+        mock_client.toolkits.list.return_value = response
+        mock_client.toolkits.retrieve_multi.return_value = Mock(items=response.items)
+
+        listed = toolkits.list()
+        assert listed.items[0].instant is not None
+        assert listed.items[0].instant.supported is True
+        assert toolkits.get()[0].instant is not None
+        assert toolkits.get_many(["exa"])[0].instant.supported is True
+
     def test_get_many_by_slugs(self, toolkits, mock_client):
         mock_client.toolkits.retrieve_multi.return_value = Mock(items=["gh", "sl"])
 
@@ -39,6 +77,7 @@ class TestToolkitsGetMany:
         )
 
     def test_get_many_forwards_filters(self, toolkits, mock_client):
+        mock_client.toolkits.retrieve_multi.return_value = Mock(items=[])
         toolkits.get_many(
             ["github"],
             category="developer-tools",

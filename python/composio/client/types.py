@@ -5,6 +5,7 @@ This module is a light wrapper around the auto-generated composio client types.
 import typing as t
 
 from composio_client import NotGiven
+from pydantic import BaseModel, ConfigDict
 from composio_client.types import (
     auth_config_create_params,
     auth_config_create_response,
@@ -83,7 +84,49 @@ from composio_client.types.tool_router import (
     session_config_history_response,
 )
 
-Tool: t.TypeAlias = tool_list_response.Item
+
+class ToolPrice(BaseModel):
+    """Published display pricing for an Instant tool, when requested."""
+
+    description: t.Optional[str] = None
+    discount: t.Optional[str] = None
+
+
+class ToolInstant(BaseModel):
+    """Present only when the tool supports Instant at its selected version."""
+
+    supported: t.Literal[True]
+    price: t.Optional[ToolPrice] = None
+
+
+class Tool(tool_list_response.Item):
+    """Tool metadata returned by the SDK's raw tool methods."""
+
+    instant: t.Optional[ToolInstant] = None
+
+
+class ToolkitInstant(BaseModel):
+    """Present when the latest toolkit version supports Instant accounts."""
+
+    supported: t.Literal[True]
+
+
+class Toolkit(toolkit_list_response.Item):
+    """Toolkit metadata returned by the SDK's list methods."""
+
+    instant: t.Optional[ToolkitInstant] = None
+
+
+class ToolkitListResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    current_page: float
+    items: t.List[Toolkit]
+    next_cursor: t.Optional[str] = None
+    total_items: float
+    total_pages: float
+
+
 ToolkitMinimal: t.TypeAlias = tool_list_response.ItemToolkit
 AuthConfig: t.TypeAlias = connected_account_create_params.AuthConfig
 
@@ -188,6 +231,8 @@ __all__ = (
     "webhook_subscription_update_params",
     "webhook_subscription_update_response",
     "Tool",
+    "ToolInstant",
+    "ToolPrice",
     "ToolkitMinimal",
     "AuthConfig",
     "NotGiven",

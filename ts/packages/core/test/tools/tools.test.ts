@@ -52,6 +52,35 @@ describe('Tools', () => {
   });
 
   describe('getRawComposioTools', () => {
+    it('requests and preserves Instant display pricing when opted in', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            instant: {
+              supported: true,
+              price: { description: '$7 per 1,000 searches', discount: '5' },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const [tool] = await context.tools.getRawComposioTools({
+        tools: ['EXA_SEARCH'],
+        includePricing: true,
+      });
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        expect.objectContaining({ include_pricing: true }),
+        undefined
+      );
+      expect(tool.instant).toEqual({
+        supported: true,
+        price: { description: '$7 per 1,000 searches', discount: '5' },
+      });
+    });
+
     it('should fetch tools from the API', async () => {
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
@@ -442,6 +471,27 @@ describe('Tools', () => {
   });
 
   describe('getRawComposioToolBySlug', () => {
+    it('requests and preserves Instant support when pricing is opted in', async () => {
+      mockClient.tools.retrieve.mockResolvedValueOnce({
+        ...toolMocks.rawTool,
+        instant: { supported: true, price: { description: '$7 per 1,000 searches' } },
+      });
+
+      const tool = await context.tools.getRawComposioToolBySlug('EXA_SEARCH', {
+        includePricing: true,
+      });
+
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        'EXA_SEARCH',
+        { toolkit_versions: 'latest', include_pricing: true },
+        undefined
+      );
+      expect(tool.instant).toEqual({
+        supported: true,
+        price: { description: '$7 per 1,000 searches' },
+      });
+    });
+
     it('should fetch a tool by slug from the API', async () => {
       const slug = 'TOOL_SLUG';
 
