@@ -2,7 +2,7 @@ import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, FileSystem, Layer, Path } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { FetchHttpClient } from 'effect/unstable/http';
@@ -22,6 +22,7 @@ import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 
 const childProcessMocks = vi.hoisted(() => ({
   once: vi.fn(),
@@ -56,11 +57,14 @@ const cwdHash = (cwd: string): string => {
 // which `makePlatformLayerWithFetch` below wires up. Tests that never
 // exercise a fetch-reaching code path use the plain `makePlatformLayer` and
 // don't touch `globalThis.fetch` at all.
+// `vi.stubEnv` drives every scenario, so config reads go through a provider that re-reads
+// the environment per lookup instead of the process-wide snapshot `ConfigProvider` defaults to.
 const makePlatformLayer = (home: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
@@ -70,6 +74,7 @@ const makePlatformLayerWithFetch = (home: string, fetchImpl: typeof fetch) =>
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
     Layer.succeed(FetchHttpClient.Fetch, fetchImpl),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
@@ -130,15 +135,11 @@ describe('CLI analytics dispatch', () => {
       const cacheDir = tempy.temporaryDirectory();
       const cwd = '/workspace/project';
       vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
-      vi.stubEnv('COMPOSIO_BASE_URL', '');
+      vi.stubEnv('COMPOSIO_BASE_URL', 'https://backend.example.test///');
 
       return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        yield* fs.writeFileString(
-          path.join(cacheDir, USER_CONFIG_FILE_NAME),
-          JSON.stringify({ base_url: 'https://backend.example.test///' })
-        );
         yield* fs.writeFileString(
           path.join(cacheDir, 'consumer-short-term-cache.json'),
           JSON.stringify({

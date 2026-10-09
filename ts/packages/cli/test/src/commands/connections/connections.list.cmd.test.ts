@@ -1,7 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -86,7 +85,7 @@ const connectedAccountsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Predicate } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
-import { cli, TestLive } from 'test/__utils__';
+import { cli, liveEnvConfigProvider, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
@@ -32,6 +32,8 @@ describe('CLI: composio generate py', () => {
     TestLive({
       fixture: 'python-project-with-composio-core',
       toolkitsData: appClientData,
+      // The COMPOSIO_TOOLKIT_VERSION_* scenarios below stub the environment.
+      baseConfigProvider: liveEnvConfigProvider,
     })
   )(it => {
     describe('[Given] valid fetched app data', () => {

@@ -1,53 +1,22 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Config, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { HOST_CONFIG, type AgentHostEnvironment } from 'src/config';
 import type { AgentHost } from './agent-host';
-import { loadHostConfig } from './config';
 import { NodeOs } from './node-os';
 
-export interface HostEnvMarkers {
-  readonly claudeCode: string | undefined;
-  readonly codexThreadId: string | undefined;
-  readonly codexSandbox: string | undefined;
-}
+type HostEnvMarkers = Pick<AgentHostEnvironment, 'claudeCode' | 'codexThreadId' | 'codexSandbox'>;
 
-export interface RawHostEnvironment extends HostEnvMarkers {
-  readonly claudeConfigDir: string | undefined;
-  readonly codexHome: string | undefined;
-}
-
-const isPresent = (value: string | undefined): boolean =>
-  value !== undefined && value.trim().length > 0;
-
-const nonBlankOrUndefined = (value: string | undefined): string | undefined => {
-  if (!isPresent(value)) return undefined;
-  return value;
-};
-
+// Blank markers already read as `undefined` (see `HOST_CONFIG`).
 export function detectPluginHost(markers: HostEnvMarkers): AgentHost | undefined {
-  if (isPresent(markers.claudeCode)) return 'claude';
-  if (isPresent(markers.codexThreadId) || isPresent(markers.codexSandbox)) return 'codex';
+  if (markers.claudeCode !== undefined) return 'claude';
+  if (markers.codexThreadId !== undefined || markers.codexSandbox !== undefined) return 'codex';
   return undefined;
 }
 
-const optionalRawEnv = (name: string) =>
-  Config.option(Config.String(name)).pipe(Config.map(Option.getOrUndefined));
-
-// Host-owned variables must bypass the CLI ConfigProvider, which prefixes
-// application keys with COMPOSIO_. loadHostConfig builds a fresh
-// ConfigProvider.fromEnv() per execution (v4's fromEnv snapshots the
-// environment at build time), so live env changes and test stubs are
-// always observed.
-const HostEnvironmentConfig = Config.all({
-  claudeCode: optionalRawEnv('CLAUDECODE'),
-  codexThreadId: optionalRawEnv('CODEX_THREAD_ID'),
-  codexSandbox: optionalRawEnv('CODEX_SANDBOX'),
-  claudeConfigDir: optionalRawEnv('CLAUDE_CONFIG_DIR').pipe(Config.map(nonBlankOrUndefined)),
-  codexHome: optionalRawEnv('CODEX_HOME').pipe(Config.map(nonBlankOrUndefined)),
-});
-
-export const rawHostEnvironment: Effect.Effect<RawHostEnvironment> =
-  loadHostConfig(HostEnvironmentConfig);
+export const rawHostEnvironment: Effect.Effect<AgentHostEnvironment> = Effect.orDie(
+  HOST_CONFIG.AGENT_HOST
+);
 
 export const hostConfigDirectory = (host: AgentHost) =>
   Effect.gen(function* () {

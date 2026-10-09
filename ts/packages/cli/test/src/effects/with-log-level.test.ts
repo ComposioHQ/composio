@@ -2,14 +2,9 @@ import { describe, it } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { ConfigProvider, Effect, type LogLevel, Option, References } from 'effect';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
-import { extendConfigProvider } from 'src/services/config';
 
 const withEnv = (entries: ReadonlyArray<readonly [string, string]>) =>
-  Effect.provide(
-    ConfigProvider.layer(
-      extendConfigProvider(ConfigProvider.fromEnvRecord(Object.fromEntries(entries)))
-    )
-  );
+  Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(Object.fromEntries(entries))));
 
 const resolveMinimumLogLevel = (logLevelFromCLI: Option.Option<LogLevel.LogLevel>) =>
   Effect.service(References.MinimumLogLevel).pipe(

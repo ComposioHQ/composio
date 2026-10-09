@@ -15,7 +15,6 @@ import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
-import { getBaseConfigProvider, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -48,6 +47,7 @@ import {
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
+import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
@@ -81,7 +81,7 @@ export const ComposioSessionRepositoryLive = Layer.provide(
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -101,7 +101,7 @@ export const TriggersRealtimeLive = Layer.provide(
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 // Fed the cached repository so that the staleness refresh behind it shares the
@@ -127,7 +127,7 @@ export const SetupSkillInstallerLive = Layer.provide(
 ) satisfies RequiredLayer;
 
 const layers = Layer.mergeAll(
-  CliConfigLive.pipe(Layer.provide(ConfigLive)),
+  CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
@@ -331,9 +331,12 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
       })
     ),
     Effect.provide(layers),
-    // v4 removed `Effect.withConfigProvider` (a FiberRef-scoped combinator); `ConfigProvider` is
-    // now a `Context.Reference`, so the equivalent is providing it as a layer.
-    Effect.provide(ConfigProvider.layer(extendConfigProvider(getBaseConfigProvider())))
+    // Built per invocation, never at module scope: `ConfigProvider.fromEnv()` snapshots
+    // `process.env` when constructed, and the ambient `ConfigProvider` reference caches its
+    // default snapshot process-wide on first use. A fresh provider here means every config read
+    // of this invocation observes the environment as it is now (`vi.stubEnv` in tests, any
+    // in-process mutation before `runCli`).
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv()))
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {

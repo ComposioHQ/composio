@@ -18,7 +18,6 @@ import {
   listOrgProjects,
 } from 'src/services/composio-clients';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
@@ -53,11 +52,10 @@ const platformLayer = () =>
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempy.temporaryDirectory() })),
     Layer.succeed(
       ConfigProvider.ConfigProvider,
-      extendConfigProvider(
-        ConfigProvider.fromEnv({
-          env: { COMPOSIO_USER_API_KEY: 'uak_config', COMPOSIO_BASE_URL: BASE_URL },
-        })
-      )
+
+      ConfigProvider.fromEnv({
+        env: { COMPOSIO_USER_API_KEY: 'uak_config', COMPOSIO_BASE_URL: BASE_URL },
+      })
     )
   );
 
@@ -583,14 +581,13 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
         Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempy.temporaryDirectory() })),
         Layer.succeed(
           ConfigProvider.ConfigProvider,
-          extendConfigProvider(
-            ConfigProvider.fromEnv({
-              env: {
-                COMPOSIO_USER_API_KEY: 'uak_test',
-                COMPOSIO_BASE_URL: 'https://backend.composio.dev',
-              },
-            })
-          )
+
+          ConfigProvider.fromEnv({
+            env: {
+              COMPOSIO_USER_API_KEY: 'uak_test',
+              COMPOSIO_BASE_URL: 'https://backend.composio.dev',
+            },
+          })
         )
       )
     );

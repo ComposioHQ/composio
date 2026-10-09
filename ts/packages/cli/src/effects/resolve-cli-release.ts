@@ -2,6 +2,7 @@ import { Data, Effect, Option, Schema } from 'effect';
 import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
 import { semverComparator } from 'src/effects/compare-semver';
 import type { CliReleaseChannel } from 'src/constants';
+import type { GitHubConfig } from 'src/config';
 
 export const GitHubReleaseAsset = Schema.Struct({
   name: Schema.NonEmptyString,
@@ -36,11 +37,7 @@ export class CliReleaseResolutionError extends Data.TaggedError(
   readonly status?: number;
 }> {}
 
-export type GitHubRepoConfig = {
-  API_BASE_URL: string;
-  OWNER: string;
-  REPO: string;
-};
+export type GitHubRepoConfig = Pick<GitHubConfig, 'apiBaseUrl' | 'owner' | 'repo'>;
 
 export const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
 
@@ -56,7 +53,7 @@ export const fetchCliReleaseByTag = ({
   tag: string;
 }) =>
   Effect.gen(function* () {
-    const releaseUrl = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodeURIComponent(tag)}`;
+    const releaseUrl = `${githubConfig.apiBaseUrl}/repos/${githubConfig.owner}/${githubConfig.repo}/releases/tags/${encodeURIComponent(tag)}`;
     const releaseResponse = yield* httpClient.get(releaseUrl).pipe(
       Effect.mapError(
         cause =>
@@ -102,7 +99,7 @@ export const fetchLatestCliRelease = ({
   httpClient: HttpClient.HttpClient;
 }) =>
   Effect.gen(function* () {
-    const releaseUrl = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
+    const releaseUrl = `${githubConfig.apiBaseUrl}/repos/${githubConfig.owner}/${githubConfig.repo}/releases?per_page=100`;
     const releaseResponse = yield* httpClient.get(releaseUrl).pipe(
       Effect.mapError(
         cause =>

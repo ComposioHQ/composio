@@ -1,7 +1,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Effect, Option } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';

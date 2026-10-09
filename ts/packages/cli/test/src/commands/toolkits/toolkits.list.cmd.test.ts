@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
@@ -65,7 +64,7 @@ const toolkitsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio dev toolkits list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(

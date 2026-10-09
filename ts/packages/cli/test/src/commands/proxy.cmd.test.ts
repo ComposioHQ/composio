@@ -6,7 +6,6 @@ import type {
   SessionCreateParams,
   SessionProxyExecuteParams,
 } from '@composio/client/resources/tool-router';
-import { extendConfigProvider } from 'src/services/config';
 import {
   normalizeProxyMethod,
   parseProxyBody,
@@ -18,7 +17,7 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio proxy', () => {
   afterEach(() => {

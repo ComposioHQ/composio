@@ -4,7 +4,6 @@ import type {
   SessionCreateParams,
   SessionSearchParams,
 } from '@composio/client/resources/tool-router';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
@@ -46,7 +45,7 @@ const toolkitsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const testLiveOptions = {
   baseConfigProvider: testConfigProvider,

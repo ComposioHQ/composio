@@ -1,7 +1,6 @@
 import { APIError } from '@composio/client';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockRequestScope } from 'test/__utils__/services/test-layer';
@@ -57,7 +56,7 @@ const connectedAccountWithCredentialFields = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const RecordingTerminalUI = TerminalUI.of({
   capabilities: Effect.succeed(

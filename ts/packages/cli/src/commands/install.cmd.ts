@@ -2,8 +2,8 @@ import { Command, Flag } from 'effect/unstable/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { PlatformError } from 'effect/PlatformError';
-import { Array as Arr, Config, ConfigProvider, Data, Effect, Option } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { Array as Arr, Config, Data, Effect, Option } from 'effect';
+import { APP_CONFIG, HOST_CONFIG } from 'src/config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
@@ -84,14 +84,6 @@ const COMPLETIONS_MARKER = '# Composio CLI completions';
  */
 const UNSAFE_PATH_CHARS = /[`$"\\\n\r:]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
-
-// SHELL and PATH are POSIX-standard host variables, so the CLI's COMPOSIO_
-// prefix does not apply to them. The provider is built per read because
-// `ConfigProvider.fromEnv` snapshots the environment when constructed.
-const readEnvWithDefault = (name: string, fallback: string): Effect.Effect<string> =>
-  Effect.orDie(
-    Config.String(name).pipe(Config.withDefault(fallback)).parse(ConfigProvider.fromEnv())
-  );
 
 const detectShellFromEnv = (path: Path.Path, shellEnv: string): Shell | undefined => {
   const base = path.basename(shellEnv);
@@ -690,11 +682,11 @@ export const installShellIntegration = (params: {
     const invocationOrigin = yield* APP_CONFIG.CLI_INVOCATION_ORIGIN.pipe(Effect.orDie);
     const installerOwnsFinalMessaging = invocationOrigin === 'installer';
 
-    const shellEnv = yield* readEnvWithDefault('SHELL', '');
-    const shell = params.shell ?? detectShellFromEnv(path, shellEnv);
-
-    const pathEnv = yield* readEnvWithDefault('PATH', '');
-    const binDirOnPath = isDirOnPath(pathEnv, binDir);
+    const host = yield* Effect.orDie(
+      Config.all({ shell: HOST_CONFIG.SHELL, path: HOST_CONFIG.PATH })
+    );
+    const shell = params.shell ?? detectShellFromEnv(path, host.shell ?? '');
+    const binDirOnPath = isDirOnPath(host.path ?? '', binDir);
 
     if (!shell) {
       // With no shell there is no rc file to write, so the current process's

@@ -1,14 +1,11 @@
 import { describe, expect, it } from '@effect/vitest';
 import { ChildProcessSpawner } from 'effect/unstable/process';
 import { ConfigProvider, Effect, Layer, PlatformError } from 'effect';
-import {
-  detectPermissionCallerAgentEffect,
-  interactivePermissionUiDisabledConfig,
-} from 'src/services/permission-ui';
-import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { detectPermissionCallerAgentEffect } from 'src/services/permission-ui';
+import { HOST_CONFIG } from 'src/config';
 
 const loadFlag = (entries: Record<string, string>) =>
-  interactivePermissionUiDisabledConfig.pipe(
+  HOST_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED.pipe(
     Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv({ env: entries }))
   );
 
@@ -30,7 +27,7 @@ const detectAgent = (
   layer: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner>
 ) =>
   Effect.gen(function* () {
-    const signals = yield* UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS.pipe(
+    const signals = yield* HOST_CONFIG.CALLER_AGENT_SIGNALS.pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv({ env }))
     );
     return yield* detectPermissionCallerAgentEffect(signals);

@@ -130,7 +130,9 @@ const runInCacheDir = <A>(
     );
   }).pipe(
     Effect.provide(BunFileSystem.layer),
-    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ CACHE_DIR: cacheDir })))
+    Effect.provide(
+      ConfigProvider.layer(ConfigProvider.fromEnvRecord({ COMPOSIO_CACHE_DIR: cacheDir }))
+    )
   );
 
 describe('toolkitFromToolSlug', () => {

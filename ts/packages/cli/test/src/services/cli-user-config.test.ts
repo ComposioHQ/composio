@@ -7,7 +7,6 @@ import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
@@ -15,7 +14,7 @@ describe('ComposioCliUserConfig', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
     Layer.succeed(
       ConfigProvider.ConfigProvider,
-      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+      ConfigProvider.fromEnv({ env: Object.fromEntries(map) })
     );
 
   it.effect('defaults experimental features off in stable releases', () => {

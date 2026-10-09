@@ -1,12 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 
 describe('CLI: composio', () => {
   const testConfigProvider = ConfigProvider.fromEnv({
     env: { DEBUG_OVERRIDE_VERSION: '1.2.3-test' },
-  }).pipe(extendConfigProvider);
+  });
 
   layer(TestLive())(it => {
     it.effect("[Given] no arguments [Then] prints composio's version from package.json", () =>

@@ -3,7 +3,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { FORCE_CONFIG } from 'src/effects/force-config';
+import { DEBUG_CONFIG } from 'src/config';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
 import {
   ComposioToolkitsRepository,
@@ -26,7 +26,7 @@ import {
   TriggerTypesToJSON,
   type TriggerTypes,
 } from 'src/models/trigger-types';
-import { ConfigLive } from './config';
+import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 
 /**
  * Cache file names for different data types
@@ -68,7 +68,7 @@ function createCachedEffect<T, E, R>(
    */
   const readFromCache = (fs: FileSystem.FileSystem, cacheFilePath: string) =>
     Effect.gen(function* () {
-      const consumeFromCache = yield* FORCE_CONFIG['USE_CACHE'];
+      const consumeFromCache = yield* DEBUG_CONFIG.FORCE_USE_CACHE;
       if (!consumeFromCache) {
         return Option.none<T>();
       }
@@ -303,5 +303,5 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
   })
 ).pipe(
   // Provide the required dependencies for the layer
-  Layer.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive))
+  Layer.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, LogLevelFromConfigLive))
 );
