@@ -674,6 +674,122 @@
     }
   },
   {
+    "slug": "COMPOSIO_PROXY_EXECUTE",
+    "name": "proxy_execute",
+    "displayName": "Proxy Execute",
+    "description": "\nSend a raw HTTP request to a connected app's own API, authenticated with the user's connected account for that toolkit. Use it only when no existing tool covers the endpoint you need; prefer a dedicated tool when one exists.\n\nThe account is the session's active connection for toolkit_slug; if there is none, connect the toolkit first. The endpoint can be a path relative to the app's API base URL (e.g. /user/repos) or an absolute URL on the app's own API domain. Credentials are attached for you: never put tokens or API keys in parameters or body.\n\nThe result contains the app's HTTP status, response headers and response data. A non-2xx status is the app's own answer, not a tool failure.\nIf the response is large, the full response is saved to a file in the workbench and this tool returns a preview with the file path; read the file from the workbench to process it.\n    ",
+    "tags": [
+      "openWorldHint"
+    ],
+    "toolkit": null,
+    "inputParameters": {
+      "type": "object",
+      "title": "ProxyExecuteRequest",
+      "properties": {
+        "toolkit_slug": {
+          "type": "string",
+          "description": "Slug of the toolkit whose connected account authenticates the request, e.g. github."
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API path relative to the app's API base URL (e.g. /user/repos), or an absolute URL on the app's own API domain."
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "HEAD"
+          ],
+          "description": "HTTP method."
+        },
+        "body": {
+          "description": "JSON request body, for POST, PUT and PATCH requests."
+        },
+        "parameters": {
+          "type": "array",
+          "description": "Extra HTTP headers or query parameters. Do not include credentials.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Header or query parameter name."
+              },
+              "value": {
+                "type": "string",
+                "description": "Header or query parameter value."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "header",
+                  "query"
+                ],
+                "description": "Where to send the parameter."
+              }
+            },
+            "required": [
+              "name",
+              "value",
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "toolkit_slug",
+        "endpoint",
+        "method"
+      ],
+      "additionalProperties": false
+    },
+    "responseSchema": {
+      "type": "object",
+      "title": "ProxyExecuteResponseWrapper",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "integer",
+              "description": "The app's HTTP status code."
+            },
+            "headers": {
+              "type": "object",
+              "description": "The app's response headers."
+            },
+            "data": {
+              "description": "The app's response body."
+            },
+            "binary_data": {
+              "type": "object",
+              "description": "Present when the app returned a file: a download URL instead of inline content."
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "nullable": true,
+          "default": null,
+          "description": "Error if the request could not be sent."
+        },
+        "successful": {
+          "type": "boolean",
+          "description": "Whether the request was sent and a response received."
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ]
+    }
+  },
+  {
     "slug": "COMPOSIO_REMOTE_BASH_TOOL",
     "name": "remote_bash_tool",
     "displayName": "Remote Bash Tool",
