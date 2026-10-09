@@ -1617,7 +1617,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -1774,7 +1777,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -7549,7 +7555,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -7702,7 +7711,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -8271,7 +8283,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -8415,7 +8430,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -10578,7 +10596,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -10735,7 +10756,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -16510,7 +16534,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -16663,7 +16690,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -17232,7 +17262,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
@@ -17376,7 +17409,10 @@
                                         "type": "string"
                                       },
                                       "id_token": {
-                                        "type": "string"
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "token_type": {
                                         "type": "string"
