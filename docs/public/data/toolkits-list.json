@@ -60,7 +60,7 @@
     "name": "Supabase",
     "logo": "https://logos.composio.dev/api/supabase",
     "category": "developer tools",
-    "toolCount": 129,
+    "toolCount": 130,
     "triggerCount": 0
   },
   {
@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 313,
+    "toolCount": 316,
     "triggerCount": 5
   },
   {
@@ -205,7 +205,7 @@
     "name": "Bitbucket",
     "logo": "https://logos.composio.dev/api/bitbucket",
     "category": "developer tools",
-    "toolCount": 110,
+    "toolCount": 111,
     "triggerCount": 0
   },
   {
@@ -315,7 +315,7 @@
     "name": "Microsoft Teams",
     "logo": "https://logos.composio.dev/api/microsoft_teams",
     "category": "team chat",
-    "toolCount": 185,
+    "toolCount": 187,
     "triggerCount": 0
   },
   {
@@ -390,7 +390,7 @@
     "name": "Salesforce",
     "logo": "https://logos.composio.dev/api/salesforce",
     "category": "crm",
-    "toolCount": 238,
+    "toolCount": 239,
     "triggerCount": 7
   },
   {
@@ -457,8 +457,8 @@
     "name": "PostHog",
     "logo": "https://logos.composio.dev/api/posthog",
     "category": "analytics",
-    "toolCount": 510,
-    "triggerCount": 0
+    "toolCount": 515,
+    "triggerCount": 11
   },
   {
     "slug": "clickup",
@@ -473,7 +473,7 @@
     "name": "Brevo",
     "logo": "https://logos.composio.dev/api/brevo",
     "category": "email newsletters",
-    "toolCount": 35,
+    "toolCount": 41,
     "triggerCount": 0
   },
   {
@@ -505,7 +505,7 @@
     "name": "Mailchimp",
     "logo": "https://logos.composio.dev/api/mailchimp",
     "category": "email newsletters",
-    "toolCount": 275,
+    "toolCount": 276,
     "triggerCount": 4
   },
   {
@@ -839,7 +839,7 @@
     "name": "Bolna",
     "logo": "https://logos.composio.dev/api/bolna",
     "category": "ai agents",
-    "toolCount": 35,
+    "toolCount": 102,
     "triggerCount": 0
   },
   {
@@ -959,7 +959,7 @@
     "name": "SharePoint",
     "logo": "https://logos.composio.dev/api/share_point",
     "category": "documents",
-    "toolCount": 120,
+    "toolCount": 122,
     "triggerCount": 0
   },
   {
@@ -1119,7 +1119,7 @@
     "name": "Facebook",
     "logo": "https://logos.composio.dev/api/facebook",
     "category": "social media accounts",
-    "toolCount": 48,
+    "toolCount": 49,
     "triggerCount": 0
   },
   {
@@ -1690,7 +1690,7 @@
     "name": "Cloudflare",
     "logo": "https://logos.composio.dev/api/cloudflare",
     "category": "security & identity tools",
-    "toolCount": 29,
+    "toolCount": 37,
     "triggerCount": 0
   },
   {
@@ -1746,7 +1746,7 @@
     "name": "Mural",
     "logo": "https://logos.composio.dev/api/mural",
     "category": "team collaboration",
-    "toolCount": 22,
+    "toolCount": 31,
     "triggerCount": 0
   },
   {
@@ -1858,7 +1858,7 @@
     "name": "Datadog",
     "logo": "https://logos.composio.dev/api/datadog",
     "category": "server monitoring",
-    "toolCount": 65,
+    "toolCount": 69,
     "triggerCount": 0
   },
   {
@@ -2069,7 +2069,7 @@
     "name": "Agent Mail",
     "logo": "https://logos.composio.dev/api/agent_mail",
     "category": "ai agents",
-    "toolCount": 5,
+    "toolCount": 15,
     "triggerCount": 1
   },
   {
@@ -2937,7 +2937,7 @@
     "name": "Blitz API",
     "logo": "https://logos.composio.dev/api/blitz_api",
     "category": "sales & crm",
-    "toolCount": 15,
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -3177,7 +3177,7 @@
     "name": "Browser Use",
     "logo": "https://logos.composio.dev/api/browseruse",
     "category": "ai agents",
-    "toolCount": 39,
+    "toolCount": 47,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -6650,7 +6650,10 @@
     "logo": "https://logos.composio.dev/api/higgsfield",
     "category": "artificial intelligence",
     "toolCount": 12,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "higgsfield_mcp",
@@ -6665,6 +6668,14 @@
     "name": "Highergov",
     "logo": "https://www.highergov.com/favicon.ico",
     "category": "business intelligence",
+    "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
+    "slug": "highlevel_agency",
+    "name": "HighLevel Agency",
+    "logo": "https://logos.composio.dev/api/highlevel_agency",
+    "category": "crm",
     "toolCount": 16,
     "triggerCount": 0
   },
@@ -6761,7 +6772,7 @@
     "name": "Hostinger",
     "logo": "https://logos.composio.dev/api/hostinger",
     "category": "developer tools",
-    "toolCount": 24,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -7279,7 +7290,7 @@
     "name": "Jotform",
     "logo": "https://logos.composio.dev/api/jotform",
     "category": "forms & surveys",
-    "toolCount": 18,
+    "toolCount": 29,
     "triggerCount": 0
   },
   {
@@ -7761,6 +7772,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "linq",
+    "name": "Linq",
+    "logo": "https://logos.composio.dev/api/linq",
+    "category": "communication",
+    "toolCount": 68,
+    "triggerCount": 0
+  },
+  {
     "slug": "listclean",
     "name": "Listclean",
     "logo": "https://logos.composio.dev/api/listclean",
@@ -7880,7 +7899,7 @@
     "name": "Lusha",
     "logo": "https://logos.composio.dev/api/lusha",
     "category": "sales & crm",
-    "toolCount": 7,
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
@@ -9009,7 +9028,7 @@
     "name": "OpenRouter",
     "logo": "https://logos.composio.dev/api/openrouter",
     "category": "artificial intelligence",
-    "toolCount": 15,
+    "toolCount": 19,
     "triggerCount": 0
   },
   {
@@ -10255,7 +10274,7 @@
     "name": "Render",
     "logo": "https://logos.composio.dev/api/render",
     "category": "developer tools",
-    "toolCount": 98,
+    "toolCount": 99,
     "triggerCount": 0
   },
   {
@@ -10786,7 +10805,7 @@
     "name": "Sender",
     "logo": "https://logos.composio.dev/api/sender",
     "category": "email newsletters",
-    "toolCount": 8,
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -11864,7 +11883,7 @@
     "name": "TikHub",
     "logo": "https://logos.composio.dev/api/tikhub",
     "category": "social media marketing",
-    "toolCount": 508,
+    "toolCount": 510,
     "triggerCount": 0,
     "instant": {
       "supported": true
