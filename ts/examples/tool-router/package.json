@@ -29,7 +29,7 @@
     "@composio/openai-agents": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@langchain/anthropic": "^1.5.11",
-    "@langchain/mcp-adapters": "^1.1.4",
+    "@langchain/mcp-adapters": "^2.0.1",
     "@langchain/openai": "^1.5.13",
     "@openai/agents": "^0.18.0",
     "ai": "catalog:",
