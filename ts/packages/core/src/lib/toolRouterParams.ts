@@ -391,6 +391,9 @@ export const transformToolRouterUpdateParams = (
       params.multi_account = ma;
     }
   }
+  if (config.proxyExecute !== undefined) {
+    params.proxy_execute = config.proxyExecute;
+  }
   if (config.preload !== undefined) {
     params.preload = config.preload;
   }

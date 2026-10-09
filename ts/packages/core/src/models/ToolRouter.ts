@@ -282,6 +282,9 @@ export class ToolRouter<
       ),
       workbench: sandboxPayload,
       multi_account: multiAccountPayload,
+      ...(routerConfig.proxyExecute !== undefined && {
+        proxy_execute: routerConfig.proxyExecute,
+      }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {
         search: { enable: false },
