@@ -120,7 +120,7 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@hono/node-server": "^2.1.1",
+    "@hono/node-server": "^2.1.3",
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.8.0",
     "ajv": "^8.20.0",
