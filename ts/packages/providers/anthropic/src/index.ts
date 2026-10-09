@@ -98,7 +98,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * Creates a new instance of the AnthropicProvider.
    *
    * @param {Object} [options] - Configuration options for the provider
-   * @param {boolean} [options.cacheTools=false] - Whether to cache tools using Anthropic's ephemeral cache
+   * @param {boolean} [options.cacheTools=false] - Whether to cache tools using Anthropic's ephemeral
+   *   cache. Anthropic allows at most 4 cache_control breakpoints per request, shared across the
+   *   system prompt, tools, and messages, and a breakpoint caches everything up to and including
+   *   it — so {@link wrapTools} places a single breakpoint on the last tool, covering the whole
+   *   tool list with one breakpoint. Tool results are never marked, since they accumulate in the
+   *   message history across turns.
    *
    * @example
    * ```typescript
@@ -237,7 +242,18 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
-    return tools.map(tool => this.wrapTool(tool));
+    const wrapped = tools.map(tool => this.wrapTool(tool));
+    // A cache_control breakpoint caches every block up to and including it,
+    // so one breakpoint on the last tool covers the entire tool list.
+    // Anthropic caps breakpoints at 4 per request (shared with the system
+    // prompt and messages); a breakpoint on every tool would exceed that
+    // limit as soon as a caller passes 5+ tools.
+    if (this.cacheTools) {
+      for (const tool of wrapped.slice(0, -1)) {
+        delete tool.cache_control;
+      }
+    }
+    return wrapped;
   }
 
   /**
@@ -402,10 +418,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
     }
 
+    // Tool results are not marked as cache breakpoints. The caller appends
+    // every turn's results to the message history, so a breakpoint here would
+    // add one more to each later request until the 4-breakpoint limit is hit.
     return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
   }
 

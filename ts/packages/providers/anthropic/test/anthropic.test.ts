@@ -176,6 +176,40 @@ describe('AnthropicProvider', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
     });
+
+    it('should place a single cache_control breakpoint on the last tool when caching is enabled', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+        { ...mockTool, slug: 'tool-c' },
+      ];
+
+      const wrapped = cachingProvider.wrapTools(tools);
+
+      expect(wrapped[0]).not.toHaveProperty('cache_control');
+      expect(wrapped[1]).not.toHaveProperty('cache_control');
+      expect(wrapped[2].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should still cache a single-tool batch', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+
+      const wrapped = cachingProvider.wrapTools([mockTool]);
+
+      expect(wrapped[0].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should omit cache_control from every tool when caching is disabled', () => {
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+      ];
+
+      const wrapped = provider.wrapTools(tools);
+
+      expect(wrapped.every(tool => tool.cache_control === undefined)).toBe(true);
+    });
   });
 
   describe('executeToolCall', () => {
@@ -420,6 +454,37 @@ describe('AnthropicProvider', () => {
           ],
         },
       ]);
+    });
+
+    it('should not place cache_control on any tool_result when caching is enabled', async () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+      cachingProvider._setExecuteToolFn(mockExecuteToolFn);
+      const userId = 'test-user';
+      const message = {
+        id: 'msg_123',
+        content: [
+          { type: 'text', text: 'Hello' },
+          { type: 'tool_use', id: 'tu_123', name: 'test-tool-1', input: {} },
+          { type: 'tool_use', id: 'tu_456', name: 'test-tool-2', input: {} },
+          { type: 'tool_use', id: 'tu_789', name: 'test-tool-3', input: {} },
+        ],
+      } as Anthropic.Message;
+
+      const executeToolCallSpy = vi.spyOn(cachingProvider, 'executeToolCall');
+      executeToolCallSpy
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-1' }))
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-2' }))
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-3' }));
+
+      const results = await cachingProvider.handleToolCalls(userId, message);
+
+      // Results are appended to the message history every turn, so a breakpoint on them would
+      // pile up across turns and exceed Anthropic's 4-breakpoint limit.
+      const outputs = results[0].content as Anthropic.Messages.ToolResultBlockParam[];
+      expect(outputs).toHaveLength(3);
+      for (const output of outputs) {
+        expect(output).not.toHaveProperty('cache_control');
+      }
     });
 
     it('should handle messages without tool calls', async () => {
