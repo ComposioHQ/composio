@@ -335,6 +335,8 @@ You can proxy requests to any supported toolkit API and let Composio inject the 
 
 Proxy execute requires auth context. Pass `connected_account_id` / `connectedAccountId`, or provide `custom_connection_data` if you're supplying auth manually.
 
+Also pass the user the connected account belongs to as `user_id` / `userId`. Projects with 2FA enabled check that value against the connected account and can require it, so a call without it is rejected there.
+
 The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
 
 <Callout type="warn">

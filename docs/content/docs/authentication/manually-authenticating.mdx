@@ -174,6 +174,8 @@ const profile = z.record(z.string(), z.unknown()).parse(response.data);
 </Tab>
 </Tabs>
 
+If your project has 2FA enabled, also pass the application user ID to the proxy as `user_id` / `userId`. Composio checks it against the connected account, and those projects can require it. See [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute).
+
 Toolkit metadata describes where to request a profile; it doesn't contain the account owner's details. Endpoint availability, required scopes, and response fields vary by provider. If the metadata is absent, use a documented profile endpoint or tool for that provider. A GitHub username or display label isn't a verified email address.
 
 For an application policy, validate the provider's response before giving an agent access to the account. Follow [Restrict Gmail connections to an email domain](/examples/restrict-gmail-domain) for a complete example that checks the mailbox address and disables rejected connections. Return only the fields your UI needs, not the account's authentication state.
