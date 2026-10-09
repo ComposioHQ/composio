@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as hex in a
+  `base16` field. OpenAPI `binary` is raw bytes, not base64; only
+  `contentEncoding: "base64"` is still checked as base64.
+
 - `composio execute` (including meta tools), `composio proxy`, the `proxy()`
   helper in `composio run` scripts, and the custom tool schema lookup in
   `composio search` now fail with a clear error when the call needs user input,
