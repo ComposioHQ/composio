@@ -1,5 +1,40 @@
 # @composio/core
 
+## 0.23.0
+
+### Minor Changes
+
+- 55ed9e2: Update the owned API client to `@composio/client@2.0.0-rc.11`.
+
+  A session tool can now ask for user input, such as an approval, instead of running: the API answers the call with `result_type: "input_required"`. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools throw the new `ComposioToolInputRequiredError` in that case. A local custom tool whose body makes such a call lets the error through instead of returning it as a failed result. The error carries the questions on `inputRequests` and the opaque `request_state` on `requestState`. `requestState` is continuation state, so it is a non-enumerable property: read it as `error.requestState`, and `console.error(error)`, `util.inspect(error)` and `JSON.stringify(error)` leave it out. Nothing was executed and the call is not retried. The SDK does not submit answers yet.
+
+  Every session tool that ran reports `result_type` as `completed` or `failed`, and a failed execution can carry a `null` or empty `error`. `session.execute()` and the custom tool `execute` helper return it as the new `resultType`, which is always present; read it rather than `error` to tell a failure from a success. Provider-wrapped session tools, provider tool calls bound to a session, and the merged `COMPOSIO_MULTI_EXECUTE_TOOL` result set `successful` from it alone, so a failure without error text is no longer reported as successful. `error` is returned as the API sent it. A session execute answer without `result_type`, or with a value this SDK does not know, throws `ValidationError` instead of being read as a success or a failure.
+
+  A `COMPOSIO_MULTI_EXECUTE_TOOL` batch that mixes local custom tools with remote tools now throws `ComposioToolInputRequiredError` when the remote half needs user input, as an all-remote batch already did. It used to report the input request as a failure message on each remote tool, without `inputRequests` or `requestState`. Local tools in that batch have already run by then, and their results are discarded by the throw.
+
+  Breaking changes:
+
+  - `ToolRouterSessionConfig` (`session.config`, the result of `session.update()`) and `ToolRouterSessionConfigHistoryConfig` (`session.listConfigHistory()`) are now the client's own config types. `instant` is always present (`false` or the policy object) instead of optional.
+  - In those config types, `toolkits` and each `tools` entry can be a `{ require_approval }`-only object, so a check for `enabled` or `disabled` no longer covers every case. `tags` can carry `require_approval`, and the config can carry `proxy_execute`.
+  - The session config is returned as the API sent it. The SDK no longer validates `instant` at runtime or removes a `premium_usage` key.
+  - `ToolRouterSessionExecuteResponse` requires `resultType`. A custom `ToolCallSession` passed to a provider must return it from `execute()`, because `successful` is no longer derived from `error`.
+  - Removed the unused `ToolRouterInstantResponseSchema` and `ToolRouterInstantResponse` exports. Use `ToolRouterSessionConfig['instant']` for the Instant policy the API returns.
+
+- ec55dd1: Add `userId` to `tools.proxyExecute()`. It is sent as `user_id`, which projects with 2FA enabled check against the connected account and may require. Python's `tools.proxy()` takes the same value as `user_id`.
+
+### Patch Changes
+
+- 67e80e3: Update the owned API client to `@composio/client@2.0.0-rc.9`.
+- a7b4943: Send product identity, product version, language, and runtime version with API requests. Identify installed core and slim packages separately while preserving existing telemetry headers.
+- 077ceb3: Fix tool schemas rejected by OpenAI and Anthropic when a parameter uses `anyOf`, `oneOf`, `allOf`, `$ref`, or similar keywords. The converted schema is a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send tool parameters with a top-level `type: "object"`. Patterns with escapes such as `\_` or `\:` no longer fail every call to the tool.
+- e3999c4: Stop retrying session tool executions and proxied calls. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools no longer retry after a timeout, connection error, or 408/409/429/5xx response, so a retry can no longer repeat a side effect such as sending the same email twice. This matches `tools.execute()` and `tools.proxyExecute()`.
+- 8c7e40a: `RemoteFile.save()` without a path no longer rejects ordinary file names. Names with characters Windows reserves, such as `report_2026-09-29T10:30:00.csv` or `What is this?.png`, are saved with those characters replaced by `_`. Names longer than 128 bytes are truncated with their extension kept, and reserved device names such as `NUL` get a `_` prefix. A name changed this way also gets a short digest of the original before its extension (`What is this_-9c68adf2da8b6e8d.png`). Default saves create a new file exclusively; if the destination exists, a copy number is added before its extension. Repeated default saves therefore return distinct paths and preserve earlier downloads. Names with a NUL byte or no usable basename are still refused.
+- d9f6291: Tool schema `pattern` and `patternProperties` regexes now run on a linear-time engine (RE2, via `re2js`), so a hostile pattern such as `^(a+)+$` can no longer hang argument validation. A `pattern` that needs lookaround still runs on the native engine when a static check shows it cannot backtrack catastrophically, on input up to 1000 characters; otherwise it is left unenforced. A `patternProperties` key that needs lookaround or a backreference now fails conversion with an `InvalidPatternError` (reason `unsupported`). Patterns now match astral characters (emoji) as single characters, as JSON Schema's Unicode regex dialect does.
+- 48d3559: Fix optional enum and const parameters under strict mode. A typed enum such as `{ "type": "string", "enum": ["asc", "desc"] }` was widened by adding `null` to its `type` only, so the enum still rejected `null` and the model could not omit the parameter. Such schemas are now wrapped whole in `anyOf` with a `null` branch, as are `type` beside `anyOf` and `$ref` with sibling keywords. `omitNullToolArguments` now keeps a `null` only when every keyword of the tool's schema accepts it, so a `null` that an `enum`, `const`, `$ref` sibling or `allOf` rejects is treated as an omitted argument. Schemas whose only obstacle to `null` is `type` or `anyOf` are emitted exactly as before. A tool whose schema holds a `$ref` into a property that wrapping moves is reported in `unsupported` and sent without strict mode. Null checks remember their answer per schema node and are bounded in depth and work, so a schema whose definitions fan out through shared references stays cheap.
+- Updated dependencies [077ceb3]
+- Updated dependencies [d9f6291]
+  - @composio/json-schema-to-zod@0.3.4
+
 ## 0.22.0
 
 ### Minor Changes

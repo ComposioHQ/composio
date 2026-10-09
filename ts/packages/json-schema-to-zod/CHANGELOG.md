@@ -1,5 +1,12 @@
 # @composio/json-schema-to-zod
 
+## 0.3.4
+
+### Patch Changes
+
+- 077ceb3: Fix tool schemas rejected by OpenAI and Anthropic when a parameter uses `anyOf`, `oneOf`, `allOf`, `$ref`, or similar keywords. The converted schema is a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send tool parameters with a top-level `type: "object"`. Patterns with escapes such as `\_` or `\:` no longer fail every call to the tool.
+- d9f6291: Tool schema `pattern` and `patternProperties` regexes now run on a linear-time engine (RE2, via `re2js`), so a hostile pattern such as `^(a+)+$` can no longer hang argument validation. A `pattern` that needs lookaround still runs on the native engine when a static check shows it cannot backtrack catastrophically, on input up to 1000 characters; otherwise it is left unenforced. A `patternProperties` key that needs lookaround or a backreference now fails conversion with an `InvalidPatternError` (reason `unsupported`). Patterns now match astral characters (emoji) as single characters, as JSON Schema's Unicode regex dialect does.
+
 ## 0.3.3
 
 ### Patch Changes
