@@ -166,6 +166,7 @@ describe('resolveConnectedAccountForToolkit', () => {
         expect(error.message).toContain('Multiple connected accounts exist');
         expect(error.message).toContain('work');
         expect(error.message).toContain('personal');
+        expect(error.message).toContain('Pass --account <alias or id> to choose one.');
       }).pipe(Effect.provideService(TerminalUI, terminalUITestImpl))
   );
 

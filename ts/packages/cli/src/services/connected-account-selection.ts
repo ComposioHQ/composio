@@ -315,7 +315,7 @@ export const resolveConnectedAccountForToolkit = (params: {
         if (!hasExplicitDefault && usable.length > 1) {
           const choices = formatConnectedAccountChoices(selectableAccounts);
           return yield* new ConnectedAccountResolutionError({
-            message: `Multiple connected accounts exist for toolkit "${toolkitSlug}" and no --account was given. Available accounts: ${choices.join(', ')}.`,
+            message: `Multiple connected accounts exist for toolkit "${toolkitSlug}" and no --account was given. Available accounts: ${choices.join(', ')}. Pass --account <alias or id> to choose one.`,
             toolkitSlug,
           });
         }
