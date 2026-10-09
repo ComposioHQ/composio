@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@langchain/core": "^1.2.12",
+    "@langchain/core": "^1.2.16",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
