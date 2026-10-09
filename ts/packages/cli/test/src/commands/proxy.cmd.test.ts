@@ -192,6 +192,99 @@ describe('CLI: composio proxy', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] no --account and several connected accounts, none aliased default [Then] proxy fails instead of silently picking one',
+    it => {
+      it.effect('fails before creating a session, same as composio execute would', () =>
+        Effect.gen(function* () {
+          let createCalled = false;
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            cliUserConfig: { experimentalFeatures: { multi_account: false } },
+            connectedAccountsData: {
+              items: [
+                {
+                  id: 'con_gmail_work',
+                  alias: 'work',
+                  word_id: 'gmail-work',
+                  status: 'ACTIVE',
+                  status_reason: null,
+                  is_disabled: false,
+                  user_id: 'consumer-user-org_test',
+                  toolkit: { slug: 'gmail' },
+                  auth_config: {
+                    id: 'ac_gmail_oauth',
+                    auth_scheme: 'OAUTH2',
+                    is_composio_managed: true,
+                    is_disabled: false,
+                  },
+                  created_at: '2026-01-01T00:00:00.000Z',
+                  updated_at: '2026-01-01T00:00:00.000Z',
+                  test_request_endpoint: '',
+                },
+                {
+                  id: 'con_gmail_personal',
+                  alias: 'personal',
+                  word_id: 'gmail-personal',
+                  status: 'ACTIVE',
+                  status_reason: null,
+                  is_disabled: false,
+                  user_id: 'consumer-user-org_test',
+                  toolkit: { slug: 'gmail' },
+                  auth_config: {
+                    id: 'ac_gmail_oauth',
+                    auth_scheme: 'OAUTH2',
+                    is_composio_managed: true,
+                    is_disabled: false,
+                  },
+                  created_at: '2026-01-02T00:00:00.000Z',
+                  updated_at: '2026-01-02T00:00:00.000Z',
+                  test_request_endpoint: '',
+                },
+              ],
+            },
+            toolRouter: {
+              create: async (_params: SessionCreateParams) => {
+                createCalled = true;
+                return {
+                  session_id: 'trs_proxy_test',
+                  config: {
+                    user_id: 'consumer-user-org_test',
+                    execute: {},
+                    search: {},
+                    preload: { tools: [] },
+                    premium_usage: false,
+                  },
+                  config_version: 1,
+                  mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                  tool_router_tools: [],
+                };
+              },
+            },
+          });
+
+          const failure = yield* Effect.gen(function* () {
+            return yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
+              '--toolkit',
+              'gmail',
+              '--skip-connection-check',
+              '-X',
+              'post',
+            ]).pipe(Effect.flip);
+          }).pipe(Effect.provide(live));
+
+          expect(createCalled).toBe(false);
+          expect(String(failure)).toContain(
+            'Multiple connected accounts exist for toolkit "gmail"'
+          );
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] cached missing toolkit [Then] proxy fails fast before session creation',
     it => {
       it.effect('uses the connected toolkit cache keyed by toolkit', () =>
