@@ -167,6 +167,71 @@ describe('CLI: composio listen', () => {
     TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'con_work',
+            alias: 'work',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'auth_gmail_test',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-04-06T17:59:00.000Z',
+            updated_at: '2026-04-06T18:00:00.000Z',
+            test_request_endpoint: '',
+          },
+          {
+            id: 'con_personal',
+            alias: 'personal',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'auth_gmail_test',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-04-06T17:59:00.000Z',
+            updated_at: '2026-04-06T18:01:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+    })
+  )('listen connected-account ambiguity', it => {
+    it.effect('refuses to select an arbitrary account when multiple are active', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']));
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(failure).toBeInstanceOf(ListenCommandError);
+          if (failure instanceof ListenCommandError) {
+            expect(failure.reason).toBe('connected_account_ambiguous');
+            expect(failure.message).toContain('Pass --account');
+            expect(failure.message).toContain('work (con_work)');
+            expect(failure.message).toContain('personal (con_personal)');
+          }
+        }
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       toolkitsData: {
         triggerTypes: [
           {
