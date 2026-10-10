@@ -2137,6 +2137,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "aircall",
+    "name": "Aircall",
+    "logo": "https://logos.composio.dev/api/aircall",
+    "category": "communication",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
     "slug": "airops_mcp",
     "name": "AirOps MCP",
     "logo": "https://logos.composio.dev/api/airops_mcp",
@@ -5522,7 +5530,10 @@
     "logo": "https://logos.composio.dev/api/fal_ai",
     "category": "ai models",
     "toolCount": 12,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "faraday",
