@@ -175,7 +175,7 @@ def bump(bump_type: t.Optional[str]):
         try:
             _bump_package(file=package, bump_type=bump_type)
         except Exception as e:
-            raise e.__class__(f"Error bumping {package}")
+            raise e.__class__(f"Error bumping {package}: {e}") from e
 
 
 if __name__ == "__main__":
