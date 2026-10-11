@@ -38,7 +38,7 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio proxy <url> --toolkit <toolkit> [-X method] [-H header]... [-d data]`: Call a toolkit API directly through Composio using a connected account.
 - `composio tools list|info`: Inspect available tools and their cached schemas.
 - `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
-- `composio connections list [--toolkit <toolkit>]`: Print toolkit connection statuses as JSON.
+- `composio connections list [--toolkit <toolkit>]`: Print toolkit connections as JSON with each account's ID, status, alias, word_id, and provider display name.
 - `composio connections remove <account>`: Interactively remove a toolkit connection after confirmation.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.

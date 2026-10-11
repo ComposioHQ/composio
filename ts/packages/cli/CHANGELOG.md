@@ -149,6 +149,15 @@ orgs` shows the same page as `composio orgs --help`, with the same longest-prefi
 info <unknown-slug>` used to print nothing and exit 0 when piped.
 - Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
   instead of a removed Slack tool slug and a trigger without configuration.
+- `composio connections list` now prints each account's `id`, prints `alias`
+  whenever the account has one, and adds `display_name`: the provider identity
+  Composio fills in for an active connection, such as the Gmail address, when it
+  is a non-empty string of at most 200 characters. `alias` used to appear only
+  for toolkits with more than one account, and the provider identity was not
+  printed at all. `display_name` is the only value the CLI reads from a
+  connection's `state`; tokens and the rest of `state` stay out of the output.
+  `composio link <toolkit> --list` and `composio dev connected-accounts info`,
+  which print the whole connected account, now include `display_name` too.
 
 ## 0.3.3
 

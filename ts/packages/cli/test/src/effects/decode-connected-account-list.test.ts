@@ -4,6 +4,7 @@ import {
   decodeConnectedAccountItems,
   decodeConnectedAccountListWithFallback,
 } from 'src/effects/decode-connected-account-list';
+import { CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH } from 'src/models/connected-accounts';
 import { MockConsole } from 'test/__utils__';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
@@ -60,6 +61,63 @@ describe('decodeConnectedAccountItems', () => {
         expect(output).toContain('QUANTUM_LINKED');
         expect(output).toContain('composio upgrade');
         expect(output).not.toContain('must-not-leak');
+      })
+    );
+  });
+
+  layer(TestLayer)('[Given] a state with a provider identity next to credentials', it => {
+    it.effect('keeps only the trimmed display name from state', () =>
+      Effect.gen(function* () {
+        const raw = makeItem({
+          state: {
+            authScheme: 'OAUTH2',
+            val: {
+              displayName: '  ada@example.com  ',
+              access_token: 'must-not-leak',
+              refresh_token: 'must-not-leak',
+              scope: 'must-not-leak',
+            },
+          },
+          data: { access_token: 'must-not-leak' },
+        });
+
+        const items = yield* decodeConnectedAccountItems([raw]);
+
+        expect(items).toStrictEqual([makeItem({ display_name: 'ada@example.com' })]);
+        expect(JSON.stringify(items)).not.toContain('must-not-leak');
+      })
+    );
+
+    it.effect('keeps a display name of exactly the maximum length', () =>
+      Effect.gen(function* () {
+        const displayName = 'a'.repeat(CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH);
+
+        const items = yield* decodeConnectedAccountItems([
+          makeItem({ state: { val: { displayName } } }),
+        ]);
+
+        expect(items).toStrictEqual([makeItem({ display_name: displayName })]);
+      })
+    );
+  });
+
+  layer(TestLayer)('[Given] a state without a usable display name', it => {
+    it.effect.each([
+      ['state is null', null],
+      ['state is not an object', 'opaque'],
+      ['state has no val', { authScheme: 'OAUTH2' }],
+      ['val has no displayName', { val: { access_token: 'must-not-leak' } }],
+      ['displayName is blank', { val: { displayName: '   ' } }],
+      ['displayName is not a string', { val: { displayName: { email: 'ada@example.com' } } }],
+      [
+        'displayName is over the maximum length',
+        { val: { displayName: 'a'.repeat(CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH + 1) } },
+      ],
+    ] as const)('leaves display_name out when %s', ([, state]) =>
+      Effect.gen(function* () {
+        const items = yield* decodeConnectedAccountItems([makeItem({ state })]);
+
+        expect(items).toStrictEqual([makeItem()]);
       })
     );
   });
