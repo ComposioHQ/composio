@@ -525,7 +525,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   /**
    * Subscribe to all the triggers
    *
-   * @param fn - The function to call when a trigger is received
+   * @param fn - The function to call when a trigger is received. Errors thrown from — or
+   * promises rejected by — the function are contained and logged.
    * @param filters - The filters to apply to the triggers
    * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
    * the underlying subscription fails (for example on auth or permission rejection). The
@@ -555,6 +556,11 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
+    const logCallbackFailure = (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('❌ Error in trigger callback:', errorMessage);
+    };
+
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
     await this.pusherService.subscribe((_data: Record<string, unknown>) => {
       logger.debug('Received raw trigger data', JSON.stringify(_data, null, 2));
@@ -563,10 +569,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       const parsedData = this.parsePusherPayload(_data);
 
       if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
+        // A handler may be async: contain rejected promises too, or the
+        // rejection escapes as an unhandled rejection and ends the process.
         try {
-          fn(parsedData);
+          Promise.resolve(fn(parsedData)).catch(logCallbackFailure);
         } catch (error) {
-          logger.error('❌ Error in trigger callback:', error);
+          logCallbackFailure(error);
         }
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));

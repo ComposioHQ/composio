@@ -1103,8 +1103,43 @@ describe('Triggers', () => {
       expect(errorCallback).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         '❌ Error in trigger callback:',
-        Error('Error in user callback')
+        'Error in user callback'
       );
+    });
+
+    it('should contain rejections from async user callbacks', async () => {
+      const unhandledRejection = vi.fn();
+      process.on('unhandledRejection', unhandledRejection);
+      try {
+        // A plain async function: a vi.fn() spy would attach its own handlers
+        // to the returned promise and hide an unhandled rejection.
+        let calls = 0;
+        const asyncErrorCallback = async () => {
+          calls++;
+          throw new Error('Async error in user callback');
+        };
+
+        await triggers.subscribe(asyncErrorCallback);
+
+        const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+        const filterCallback = subscribeCall[0];
+
+        expect(() => filterCallback(mockTriggerData)).not.toThrow();
+
+        // let the rejected promise settle and the containment log run
+        await new Promise<void>(resolve => {
+          setImmediate(resolve);
+        });
+
+        expect(calls).toBe(1);
+        expect(logger.error).toHaveBeenCalledWith(
+          '❌ Error in trigger callback:',
+          'Async error in user callback'
+        );
+        expect(unhandledRejection).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandledRejection);
+      }
     });
   });
 
