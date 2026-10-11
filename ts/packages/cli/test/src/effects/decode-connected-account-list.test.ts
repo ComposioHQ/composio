@@ -101,21 +101,29 @@ describe('decodeConnectedAccountItems', () => {
     );
   });
 
-  layer(TestLayer)('[Given] a state without a usable display name', it => {
+  layer(TestLayer)('[Given] no usable state.val.displayName', it => {
     it.effect.each([
-      ['state is null', null],
-      ['state is not an object', 'opaque'],
-      ['state has no val', { authScheme: 'OAUTH2' }],
-      ['val has no displayName', { val: { access_token: 'must-not-leak' } }],
-      ['displayName is blank', { val: { displayName: '   ' } }],
-      ['displayName is not a string', { val: { displayName: { email: 'ada@example.com' } } }],
+      ['state is null', { state: null }],
+      ['state is not an object', { state: 'opaque' }],
+      ['state has no val', { state: { authScheme: 'OAUTH2' } }],
+      ['val has no displayName', { state: { val: { access_token: 'must-not-leak' } } }],
+      ['displayName is blank', { state: { val: { displayName: '   ' } } }],
+      [
+        'displayName is not a string',
+        { state: { val: { displayName: { email: 'ada@example.com' } } } },
+      ],
       [
         'displayName is over the maximum length',
-        { val: { displayName: 'a'.repeat(CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH + 1) } },
+        {
+          state: {
+            val: { displayName: 'a'.repeat(CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH + 1) },
+          },
+        },
       ],
-    ] as const)('leaves display_name out when %s', ([, state]) =>
+      ['only a top-level display_name is sent', { display_name: 'ada@example.com' }],
+    ] as const)('leaves display_name out when %s', ([, overrides]) =>
       Effect.gen(function* () {
-        const items = yield* decodeConnectedAccountItems([makeItem({ state })]);
+        const items = yield* decodeConnectedAccountItems([makeItem(overrides)]);
 
         expect(items).toStrictEqual([makeItem()]);
       })
