@@ -1,4 +1,4 @@
-# Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
+# Single source of truth for Node, Bun, Python, uv, and pnpm versions.
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
 # CI:         exact versions are read from `mise.lock` by the composite actions
@@ -16,7 +16,6 @@ bun = "http:bun"
 [tools]
 "npm:pnpm" = "11.8.0"
 node = "24.17.0"
-deno = "2.6.7"
 python = "3.12"
 uv = "0.8.19"
 

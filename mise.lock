@@ -20,26 +20,6 @@ url = "https://registry.npmjs.org/@oven/bun-darwin-aarch64/-/bun-darwin-aarch64-
 checksum = "sha512:8be7845c3e9c52eeffa4fdd01af7d49643a463e27b3bc5ca820912292efbca0fbe114935a75bea7c6d25a105f01c1204c9c3d82fd4e9ee629c8b18804404fd9d"
 url = "https://registry.npmjs.org/@oven/bun-darwin-x64/-/bun-darwin-x64-1.4.1.tgz"
 
-[[tools.deno]]
-version = "2.6.7"
-backend = "core:deno"
-
-[tools.deno."platforms.linux-arm64"]
-checksum = "sha256:d2aedfa8c73e258cce78dc80e8d0e764a69d4a09d946d32f0c29eef46592b82f"
-url = "https://dl.deno.land/release/v2.6.7/deno-aarch64-unknown-linux-gnu.zip"
-
-[tools.deno."platforms.linux-x64"]
-checksum = "sha256:c5626c9ee10e87201706fc5e64ed5a44b31527d98c130f164e149e1477c0a87d"
-url = "https://dl.deno.land/release/v2.6.7/deno-x86_64-unknown-linux-gnu.zip"
-
-[tools.deno."platforms.macos-arm64"]
-checksum = "sha256:71aaec50a92e06b2f5fed982b332c07a35e11798ca9a359db7603ae5f19c2d8b"
-url = "https://dl.deno.land/release/v2.6.7/deno-aarch64-apple-darwin.zip"
-
-[tools.deno."platforms.macos-x64"]
-checksum = "sha256:fae025e69cada67fb57affdda26abbe72991b02b515c3221e92c58aa8a642cec"
-url = "https://dl.deno.land/release/v2.6.7/deno-x86_64-apple-darwin.zip"
-
 [[tools.node]]
 version = "24.17.0"
 backend = "core:node"

@@ -3,12 +3,17 @@
 
 ARG NODE_VERSION
 ARG CLI_VERSION=0.0.0
+# Base images come from the ECR Public mirror of the Docker Official Images, so
+# builds do not depend on Docker Hub's availability or anonymous pull limits.
+ARG BASE_REGISTRY=public.ecr.aws/docker/library
 
-FROM node:${NODE_VERSION}-slim AS builder
+# The toolchain stage depends only on the base image and mise.toml/mise.lock, so
+# CI saves its layers to the GitHub Actions cache (see .github/actions/build-e2e-image).
+FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim AS toolchain
 
 ENV MISE_DATA_DIR="/mise"
 ENV MISE_CACHE_DIR="/mise/cache"
-ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_DISABLE_TOOLS="node,python,uv"
 ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
@@ -29,6 +34,8 @@ COPY mise.toml mise.lock ./
 RUN mise install && \
     pnpm --version && \
     bun --version
+
+FROM toolchain AS builder
 
 # Copy lockfile first for optimal layer caching
 COPY pnpm-lock.yaml ./
@@ -71,7 +78,7 @@ COPY ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/
 # Pre-create Composio CLI cache directory to work around Bun issue #7967
 RUN mkdir -p /tmp/.composio
 
-FROM debian:bookworm-slim
+FROM ${BASE_REGISTRY}/debian:bookworm-slim
 
 ENV PATH="/usr/local/bin:/bin"
 ENV HOME="/tmp"

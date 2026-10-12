@@ -13,6 +13,7 @@ on:
       - 'ts/e2e-tests/cli/install/**'
       - 'ts/e2e-tests/_utils/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/cli.install-e2e.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -61,6 +62,22 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Build the image here rather than inside the test's beforeAll hook, so
+      # its layers come from the GitHub Actions cache and a registry failure
+      # surfaces as a visible, retryable step failure.
+      - name: Pre-build installer image
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.install
+          tag: composio-e2e-install:${{ matrix.shell }}
+          cache-scope: e2e-install-${{ matrix.shell }}
+          build-args: |
+            INSTALL_SHELL=${{ matrix.shell }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=cli-install
+            composio.install_shell=${{ matrix.shell }}
 
       - name: Test production installer
         env:
@@ -166,6 +183,22 @@ jobs:
         with:
           name: cli-install-linux-x64
           path: ${{ runner.temp }}/cli-install-fixture
+
+      # Build the image here rather than inside the test's beforeAll hook, so
+      # its layers come from the GitHub Actions cache and a registry failure
+      # surfaces as a visible, retryable step failure.
+      - name: Pre-build installer image
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.install
+          tag: composio-e2e-install:${{ matrix.shell }}
+          cache-scope: e2e-install-${{ matrix.shell }}
+          build-args: |
+            INSTALL_SHELL=${{ matrix.shell }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=cli-install
+            composio.install_shell=${{ matrix.shell }}
 
       - name: Test local installer
         env:
