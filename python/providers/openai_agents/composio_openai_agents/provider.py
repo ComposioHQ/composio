@@ -152,6 +152,13 @@ class OpenAIAgentsProvider(
             )
             strict = to_strict_json_schema(source)
             if not strict.unsupported:
+                if strict.total_changes:
+                    logger.debug(
+                        'OpenAIAgentsProvider: strict mode rewrote %d node(s) of tool "%s": %s',
+                        strict.total_changes,
+                        tool.slug,
+                        "; ".join(f"{c.path}: {c.reason}" for c in strict.changes),
+                    )
                 strict_source = strict.source
                 return FunctionTool(
                     name=tool.slug,
