@@ -34,7 +34,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
-      assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
 
       const fs = yield* FileSystem.FileSystem;
@@ -83,7 +82,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-      assertEquals(config.data.experimentalSubagentTarget, 'auto');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
@@ -103,9 +101,6 @@ describe('ComposioCliUserConfig', () => {
           multi_account: false,
         },
         artifact_directory: '/tmp/composio-artifacts',
-        experimental_subagent: {
-          target: 'claude',
-        },
       })
     );
 
@@ -125,7 +120,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.experimentalFeatures.multi_account, false);
       assertEquals(config.isExperimentalFeatureEnabled('multi_account'), false);
       assertEquals(config.data.artifactDirectory, '/tmp/composio-artifacts');
-      assertEquals(config.data.experimentalSubagentTarget, 'claude');
 
       const persisted = yield* fileSystem.readFileString(
         path.join(cwd, '.composio', 'config.json'),
@@ -138,7 +132,6 @@ describe('ComposioCliUserConfig', () => {
         };
         experimental_features: { listen: boolean; multi_account: boolean };
         artifact_directory: string;
-        experimental_subagent: { target: string };
       };
 
       assertEquals(parsed.developer.enabled, false);
@@ -146,7 +139,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.experimental_features.listen, false);
       assertEquals(parsed.experimental_features.multi_account, false);
       assertEquals(parsed.artifact_directory, '/tmp/composio-artifacts');
-      assertEquals(parsed.experimental_subagent.target, 'claude');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
@@ -243,6 +235,53 @@ describe('ComposioCliUserConfig', () => {
       });
     }).pipe(Effect.provide(CliUserConfigTest));
   });
+
+  for (const storedSubagent of [{ target: 'gemini' }, null]) {
+    it.effect(
+      `ignores a stored experimental_subagent of ${JSON.stringify(storedSubagent)} and writes it back unchanged`,
+      () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+        fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+        fs.writeFileSync(
+          path.join(cwd, '.composio', 'config.json'),
+          JSON.stringify({
+            developer: { enabled: false, destructive_actions: true },
+            experimental_subagent: storedSubagent,
+            security: 'json',
+          })
+        );
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const CliUserConfigTest = Layer.provideMerge(
+          ComposioCliUserConfigLive,
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const config = yield* ComposioCliUserConfig;
+          assertEquals(config.data.developerModeEnabled, false);
+          assertEquals(config.data.developerDangerousCommandsEnabled, true);
+          assertEquals(config.data.security, 'json');
+
+          yield* config.update({ experimentalFeatures: { listen: true } });
+
+          const persisted = yield* fileSystem.readFileString(
+            path.join(cwd, '.composio', 'config.json'),
+            'utf8'
+          );
+          const parsed = JSON.parse(persisted) as Record<string, unknown>;
+
+          assertEquals(parsed.developer, { enabled: false, destructive_actions: true });
+          assertEquals(parsed.security, 'json');
+          assertEquals(parsed.experimental_features, { listen: true });
+          assertEquals('experimental_subagent' in parsed, true);
+          assertEquals(parsed.experimental_subagent, storedSubagent);
+        }).pipe(Effect.provide(CliUserConfigTest));
+      }
+    );
+  }
 
   it.effect('replaces malformed persisted config with safe defaults', () => {
     const cwd = tempy.temporaryDirectory();

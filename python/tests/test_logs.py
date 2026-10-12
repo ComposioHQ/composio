@@ -46,7 +46,7 @@ class TestLogs:
 
         result = logs.search()
 
-        assert result.logs[0].metadata["instant_charge"] == "0.012"
+        assert result.logs[0].metadata.instant_charge == "0.012"
 
     def test_search_passes_params_through(self, logs, mock_client):
         mock_client.logs.create_tool_execution.return_value = "page"
@@ -96,4 +96,4 @@ class TestLogs:
 
         result = logs.get("log_1")
 
-        assert result.metadata["instant_charge"] == "0.012"
+        assert result.metadata.instant_charge == "0.012"

@@ -4,12 +4,11 @@ import { ConfigProvider, Effect } from 'effect';
 import {
   cliDebugFlagsLayer,
   debugFlagsToChildEnv,
-  isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
   NO_CLI_DEBUG_FLAG_OVERRIDES,
-  stripTelemetryDebugFlag,
+  readTelemetryDebugOverride,
   telemetryDebugModeLayer,
   TELEMETRY_DEBUG_FLAG,
 } from 'src/services/runtime-flags';
@@ -22,53 +21,34 @@ describe('debugFlagsToChildEnv', () => {
       debugFlagsToChildEnv({
         perfDebug: true,
         toolDebug: false,
-        acpOnly: true,
         telemetryDebug: false,
       })
     ).toEqual({
       COMPOSIO_PERF_DEBUG: '1',
       COMPOSIO_TOOL_DEBUG: '0',
-      COMPOSIO_RUN_ACP_ONLY: '1',
       COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
     });
   });
 });
 
-describe('stripTelemetryDebugFlag', () => {
-  it('[Given] the flag before the delimiter [Then] it is removed and reported', () => {
-    expect(stripTelemetryDebugFlag(['bun', 'composio', TELEMETRY_DEBUG_FLAG, 'whoami'])).toEqual({
-      argv: ['bun', 'composio', 'whoami'],
-      telemetryDebug: true,
-    });
+describe('telemetry debug bootstrap', () => {
+  it('reads an override without rewriting argv', () => {
+    const argv = ['bun', 'composio', TELEMETRY_DEBUG_FLAG, 'whoami'];
+    expect(readTelemetryDebugOverride(argv)).toBe(true);
+    expect(argv).toEqual(['bun', 'composio', TELEMETRY_DEBUG_FLAG, 'whoami']);
   });
-
-  it('[Given] the flag after a `--` delimiter [Then] it belongs to the child and survives', () => {
-    const argv = ['bun', 'composio', 'run', 'my-agent', '--', TELEMETRY_DEBUG_FLAG];
-
-    expect(stripTelemetryDebugFlag(argv)).toEqual({ argv, telemetryDebug: false });
-  });
-
-  it('[Given] the flag on both sides of `--` [Then] only the CLI-side one is consumed', () => {
+  it('ignores arguments after the delimiter', () => {
     expect(
-      stripTelemetryDebugFlag([
-        'bun',
-        'composio',
-        TELEMETRY_DEBUG_FLAG,
-        'run',
-        'my-agent',
-        '--',
-        TELEMETRY_DEBUG_FLAG,
-      ])
-    ).toEqual({
-      argv: ['bun', 'composio', 'run', 'my-agent', '--', TELEMETRY_DEBUG_FLAG],
-      telemetryDebug: true,
-    });
+      readTelemetryDebugOverride(['bun', 'composio', 'run', '--', TELEMETRY_DEBUG_FLAG])
+    ).toBeUndefined();
   });
-
-  it('[Given] no flag [Then] argv is reported unchanged', () => {
-    const argv = ['bun', 'composio', 'whoami'];
-
-    expect(stripTelemetryDebugFlag(argv)).toEqual({ argv, telemetryDebug: false });
+  it('supports an explicit false override', () => {
+    expect(
+      readTelemetryDebugOverride(['bun', 'composio', '--telemetry-debug=false', 'whoami'])
+    ).toBe(false);
+  });
+  it('leaves absent overrides to configuration', () => {
+    expect(readTelemetryDebugOverride(['bun', 'composio', 'whoami'])).toBeUndefined();
   });
 });
 
@@ -81,7 +61,6 @@ const enabledDebugConfig = ConfigProvider.fromEnvRecord({
 const readAllDebugFlags = Effect.all({
   perfDebug: isPerfDebugEnabled,
   toolDebug: isToolDebugEnabled,
-  acpOnly: isAcpOnlyEnabled,
 });
 
 describe('debug flag precedence', () => {
@@ -91,7 +70,6 @@ describe('debug flag precedence', () => {
         expect(yield* readAllDebugFlags).toEqual({
           perfDebug: true,
           toolDebug: true,
-          acpOnly: true,
         });
       }).pipe(
         Effect.provide(cliDebugFlagsLayer(NO_CLI_DEBUG_FLAG_OVERRIDES)),
@@ -104,10 +82,9 @@ describe('debug flag precedence', () => {
         expect(yield* readAllDebugFlags).toEqual({
           perfDebug: false,
           toolDebug: false,
-          acpOnly: false,
         });
       }).pipe(
-        Effect.provide(cliDebugFlagsLayer({ perfDebug: false, toolDebug: false, acpOnly: false })),
+        Effect.provide(cliDebugFlagsLayer({ perfDebug: false, toolDebug: false })),
         Effect.provideService(ConfigProvider.ConfigProvider, enabledDebugConfig)
       )
     );

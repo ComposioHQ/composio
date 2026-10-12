@@ -241,6 +241,7 @@ describe('CLI: composio search', () => {
         executeMeta: async (_sessionId, params) => {
           schemaRequestSlugs = params.arguments?.tool_slugs;
           return {
+            result_type: 'completed' as const,
             data: {
               success: true,
               tool_schemas: {
@@ -542,7 +543,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
-                premium_usage: false,
+                instant: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
@@ -627,7 +628,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
-                premium_usage: false,
+                instant: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
@@ -823,7 +824,7 @@ describe('CLI: composio search', () => {
                 execute: {},
                 search: {},
                 preload: { tools: [] },
-                premium_usage: false,
+                instant: false,
               },
               config_version: 1,
               mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },

@@ -1,10 +1,14 @@
-"""Non-idempotent tool writes (``tools.execute`` / ``tools.proxy``) must not retry.
+"""Tool executions and proxied API calls must not retry.
 
 A POST that times out while the backend is still processing it is unsafe to
 retry: the request may already have taken effect, so a silent re-send can
-duplicate the side effect (e.g. send an email twice). ``Tools.execute`` and
-``Tools.proxy`` therefore route through ``client.without_retries`` (a
-retry-disabled clone), while reads keep the default retry behaviour.
+duplicate the side effect (e.g. send an email twice). The backend does not
+deduplicate executions, so every execution path (``tools.execute``,
+``tools.proxy``, and the session ``execute`` / ``proxy_execute`` paths) routes
+through ``client.without_retries`` (a retry-disabled clone), while reads keep
+the default retry behaviour.
+
+See https://github.com/ComposioHQ/composio/issues/3654.
 """
 
 import inspect
@@ -18,6 +22,8 @@ from composio_client import Composio as BaseComposio
 
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
+from composio.core.models.session_context import SessionContextImpl
+from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.models.tools import Tools
 
 
@@ -165,6 +171,88 @@ class TestWritePathDoesNotRetry:
         # write itself — no read to patch out (unlike the execute test above).
         with pytest.raises(APIError):
             tools.proxy(endpoint="/any", method="POST")
+
+        assert len(attempts) == 1
+
+
+SESSION_ID = "sess_123"
+
+
+def _session(client: HttpClient) -> ToolRouterSession:
+    return ToolRouterSession(
+        client=client,
+        provider=None,
+        dangerously_allow_auto_upload_download_files=False,
+        session_id=SESSION_ID,
+        mcp=Mock(),
+        experimental=Mock(),
+    )
+
+
+def _provider_wrapped_session_tool(client: HttpClient) -> t.Any:
+    tools = Tools(client=client, provider=Mock())
+    # Avoid the (read) tool-schema lookup hitting the transport.
+    mock_tool = Mock()
+    mock_tool.toolkit.slug = "gmail"
+    mock_tool.input_parameters = {}
+    tools._tool_schemas["GMAIL_SEND_EMAIL"] = mock_tool
+    execute = tools._wrap_execute_tool_for_tool_router(session_id=SESSION_ID)
+    return execute("GMAIL_SEND_EMAIL", {"to": "test@test.com"})
+
+
+PROXY_KWARGS: t.Dict[str, t.Any] = {
+    "toolkit": "github",
+    "endpoint": "https://api.github.com/user/repos",
+    "method": "POST",
+    "body": {"name": "repo"},
+}
+
+SESSION_EXECUTION_PATHS: t.List[t.Tuple[str, t.Callable[[HttpClient], t.Any]]] = [
+    ("provider_wrapped_session_tool", _provider_wrapped_session_tool),
+    (
+        "session_execute",
+        lambda client: _session(client).execute(
+            "GMAIL_SEND_EMAIL", arguments={"to": "test@test.com"}
+        ),
+    ),
+    (
+        "session_proxy_execute",
+        lambda client: _session(client).proxy_execute(**PROXY_KWARGS),
+    ),
+    (
+        "custom_tool_context_execute",
+        lambda client: SessionContextImpl(client, "test-user", SESSION_ID).execute(
+            "GMAIL_SEND_EMAIL", {"to": "test@test.com"}
+        ),
+    ),
+    (
+        "custom_tool_context_proxy_execute",
+        lambda client: SessionContextImpl(
+            client, "test-user", SESSION_ID
+        ).proxy_execute(**PROXY_KWARGS),
+    ),
+]
+
+
+class TestSessionExecutionDoesNotRetry:
+    """Every session execution path must reach the transport exactly once."""
+
+    @pytest.mark.parametrize(
+        "run",
+        [run for _, run in SESSION_EXECUTION_PATHS],
+        ids=[name for name, _ in SESSION_EXECUTION_PATHS],
+    )
+    def test_does_not_retry_on_transient_error(
+        self, run: t.Callable[[HttpClient], t.Any], no_sleep: None
+    ) -> None:
+        attempts: t.List[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(request)
+            return httpx.Response(500, json={"error": {"message": "boom"}})
+
+        with pytest.raises(APIError):
+            run(_client_with_transport(handler))
 
         assert len(attempts) == 1
 

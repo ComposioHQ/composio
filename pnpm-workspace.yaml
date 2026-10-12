@@ -34,7 +34,7 @@ catalog:
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.22.0
   '@cloudflare/workers-types': ^5.20260922.1
-  '@composio/client': 2.0.0-rc.8
+  '@composio/client': 2.0.0-rc.11
   '@effect/language-service': ^0.87.2
   '@effect/platform-bun': 4.0.0-rc.117
   '@effect/vitest': 4.0.0-rc.117
@@ -43,7 +43,7 @@ catalog:
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.30.0
+  '@modelcontextprotocol/sdk': ^1.31.0
   '@types/bun': ^1.4.2
   ai: ^7.0.111
   dotenv: ^18.0.2
@@ -111,14 +111,14 @@ overrides:
   # Drop when its lockfile resolution is >=6.16.0 without an override.
   'qs@<6.16.0': '>=6.16.0 <7'
   protobufjs: 7.6.5
-  # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
-  'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
   # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins
   # vulnerable 4.2.0; GHSA-2883-xcg3-v3hh raised the patched floor to 4.3.2.
   # Drop when it ships >=4.3.2.
   'js-yaml@>=4.0.0 <4.3.2': '>=4.3.2 <5'
-  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x; drop when it ships >=6.28.0.
-  'undici@>=5.0.0 <6.28.0': '>=6.28.0 <7'
+  # temporary: @ai-sdk/provider-utils@4 exact-pins vulnerable undici 5.x;
+  # GHSA-rfgv-xxqx-mfg5 raised the patched floor to 6.28.1. Drop when it ships
+  # >=6.28.1.
+  'undici@>=5.0.0 <6.28.1': '>=6.28.1 <7'
   # temporary: gray-matter (via @mastra/core) exact-pins vulnerable js-yaml 3.15.0;
   # GHSA-2883-xcg3-v3hh raised the patched floor to 3.15.2. Drop when it ships
   # >=3.15.2.
@@ -129,28 +129,46 @@ overrides:
   # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
   '@hono/node-server@<2.0.10': '>=2.0.10 <3'
   # temporary: GHSA-7p8r-x3mc-p8w7, then GHSA-f65p-4m7j-42xc /
-  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8 raised the
-  # patched floor to 3.1.6. ajv accepts the patched 3.x line. Drop when its
-  # lockfile resolution is >=3.1.6 without an override.
-  'fast-uri@>=3.0.0 <3.1.6': '>=3.1.6 <4'
-  # temporary: GHSA-mwp4-54f8-5fhr; express-rate-limit accepts the patched 10.x
-  # line. Drop when its lockfile resolution is >=10.3.1 without an override.
-  'ip-address@>=10.0.0 <=10.3.0': '>=10.3.1 <11'
+  # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8, then
+  # GHSA-hrr3-gc8f-f4qj raised the patched floor to 3.1.8. ajv accepts the
+  # patched 3.x line. Drop when its lockfile resolution is >=3.1.8 without an
+  # override.
+  'fast-uri@>=3.0.0 <3.1.8': '>=3.1.8 <4'
+  # temporary: GHSA-mwp4-54f8-5fhr, then GHSA-rpw4-54j3-4h4q /
+  # GHSA-2vr4-cq9g-pvrc / GHSA-j6r3-76f7-8jcv / GHSA-h3mg-xc3c-68pw raised the
+  # patched floor to 10.7.1. express-rate-limit accepts the patched 10.x line.
+  # Drop when its lockfile resolution is >=10.7.1 without an override.
+  'ip-address@>=10.0.0 <10.7.1': '>=10.7.1 <11'
+  # temporary: GHSA-jqcg-44mw-7w3h; express accepts the patched 2.x line. Drop
+  # when its lockfile resolution is >=2.0.8 without an override.
+  'proxy-addr@>=1.1.0 <2.0.8': '>=2.0.8 <3'
+  # temporary: GHSA-6qxp-vccf-f47h. @zed-industries/claude-code-acp@0.16.2
+  # (latest) exact-pins the vulnerable 1.26.0; drop when it ships >=1.31.0.
+  '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': '>=1.31.0 <2'
+  # temporary: GHSA-6qxp-vccf-f47h is patched in @modelcontextprotocol/client
+  # 2.2.0, but @mastra/mcp@1.17.2 (held back above) exact-pins the whole 2.x
+  # family at 2.0.0. The client exact-pins its matching core, so the siblings
+  # move together to keep a single core instance. Drop with the @mastra/mcp
+  # override.
+  '@modelcontextprotocol/client@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/core@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/server@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.2.0': 2.2.0
   # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
   # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
   'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
-  # GHSA-rgw5-rvv9-x895 raises its patched floor to 5.0.9. This selector spans
-  # majors deliberately -- narrowing it to the 5.x line would reintroduce a
-  # HIGH finding on the production openapi-typescript path and fail the audit
-  # gate.
+  # GHSA-rgw5-rvv9-x895, GHSA-6j4f-fj2g-mc7p, and GHSA-qhr7-859c-m2p7 raise
+  # its patched floor to 5.0.11. This selector spans majors deliberately --
+  # narrowing it to the 5.x line would reintroduce a HIGH finding on the
+  # production openapi-typescript path and fail the audit gate.
   # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
   # brace-expansion as a callable CJS export, which 5.x replaced with a named
   # `expand`, so a brace-containing pattern throws there. Not reachable today --
   # the CLI's only openapi-typescript call passes an in-memory document and no
   # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
   # whose minimatch accepts brace-expansion 5.x.
-  'brace-expansion@<=5.0.8': '>=5.0.9 <6'
+  'brace-expansion@<=5.0.10': '>=5.0.11 <6'
   # temporary: miniflare (via wrangler and @cloudflare/vitest-pool-workers in the
   # Cloudflare e2e fixtures) exact-pins sharp 0.35.2, which bundles a libheif
   # with GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545. Nothing here imports

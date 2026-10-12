@@ -5,6 +5,28 @@ import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
 
 describe('CLI process error handling', () => {
+  it('records help and version as successes and invalid help as a failure', () => {
+    const configDirectory = tempy.temporaryDirectory();
+    for (const args of [[], ['help'], ['--help'], ['--version'], ['help', 'orgz']]) {
+      const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CI: '1',
+          NO_COLOR: '1',
+          COMPOSIO_CACHE_DIR: configDirectory,
+          COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+          COMPOSIO_CLI_TELEMETRY_DEBUG: '1',
+        },
+      });
+      const invalid = args.includes('orgz');
+      expect(result.status).toBe(invalid ? 1 : 0);
+      expect(result.stderr).toContain(invalid ? 'CLI_COMMAND_FAILED' : 'CLI_COMMAND_SUCCEEDED');
+      expect(result.stderr).not.toContain(invalid ? 'CLI_COMMAND_SUCCEEDED' : 'CLI_COMMAND_FAILED');
+    }
+  });
+
   it('prints unreported typed execute failures and exits non-zero', () => {
     const configDirectory = tempy.temporaryDirectory();
     fs.writeFileSync(

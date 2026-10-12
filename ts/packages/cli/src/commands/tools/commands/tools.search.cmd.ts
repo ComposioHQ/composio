@@ -17,6 +17,7 @@ import {
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
+import { assertNotInputRequired } from 'src/utils/tool-input-required';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -393,6 +394,7 @@ const runToolsSearch = (params: {
                   slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
                   arguments: { tool_slugs: customToolSlugsMissingSchemas },
                 });
+                assertNotInputRequired('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse);
                 if (schemaResponse.error) {
                   throw new Error(schemaResponse.error);
                 }
@@ -571,20 +573,38 @@ export const rootToolsCmd$Search = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    [
-      'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.',
-      '',
-      'Examples:',
-      '  composio search "send an email"',
-      '  composio search "send an email" "create a github issue"',
-      '  composio search "create issue" --toolkits github',
-      '  composio search "send an email" --human',
-      '  composio search "list calendar events" --limit 5',
-      '',
-      'Next steps:',
-      '  composio link <toolkit>                  Connect an account before executing tools',
-      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
-      "  composio tools info <slug>               Inspect a tool's schema before executing",
-    ].join('\n')
-  )
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withShortDescription(
+    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
+  ),
+  Command.withExamples([
+    {
+      command: 'composio search "send an email"',
+      description: 'Find tools for a use case',
+    },
+    {
+      command: 'composio search "send an email" "create github issue"',
+    },
+    {
+      command: 'composio search "my emails" "my github issues" --toolkits gmail,github',
+    },
+    {
+      command: 'composio search "create issue" --toolkits github',
+    },
+    {
+      command: 'composio search "send an email" --human',
+    },
+    {
+      command: 'composio search "post a message to a slack channel"',
+      description: 'Cross-app workflow discovery',
+    },
+    {
+      command: 'composio search "add a row to google sheet"',
+    },
+    {
+      command: 'composio search "list calendar events" --toolkits google_calendar --limit 5',
+      description: 'Narrow results to a specific toolkit',
+    },
+  ])
 );

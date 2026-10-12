@@ -105,7 +105,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       execute: {},
       search: {},
       preload: { tools: [] },
-      premium_usage: false as const,
+      instant: false as const,
     },
     config_version: 1,
     mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },

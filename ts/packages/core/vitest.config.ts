@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
+      '#client_identity': path.resolve(__dirname, 'package.json'),
       '#platform': path.resolve(__dirname, 'src/platform/node.ts'),
       '#files': path.resolve(__dirname, 'src/models/Files.node.ts'),
       '#file_tool_modifier': path.resolve(

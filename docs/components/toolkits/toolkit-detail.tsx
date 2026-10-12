@@ -6,6 +6,8 @@ import { Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucid
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
+import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
+import { InstantBadge } from './instant-badge';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
@@ -146,7 +148,7 @@ function isTrigger(item: Tool | Trigger): item is Trigger {
   return 'config' in item || 'payload' in item || 'type' in item;
 }
 
-function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersion?: string | null }) {
+function ToolItem({ item, toolkitVersion, instant }: { item: Tool | Trigger; toolkitVersion?: string | null; instant?: Tool['instant'] }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [detailedParams, setDetailedParams] = useState<{
@@ -164,6 +166,7 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
 
   const tool = isTool(item) ? item : null;
   const trigger = isTrigger(item) ? item : null;
+  const discount = instantDiscount(instant);
 
   // Fetch detailed schema once when a tool is first expanded
   useEffect(() => {
@@ -205,6 +208,7 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
         <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
+            {instant?.supported === true && <InstantBadge />}
             {trigger?.type && (
               <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
                 trigger.type === 'webhook'
@@ -228,6 +232,12 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
       {expanded && (
         <div className="space-y-4 bg-fd-muted/20 px-3 py-3 sm:px-4 sm:pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
+          {instant?.supported === true && (
+            <p className="text-sm text-fd-muted-foreground">Instant pricing, latest version. {instantPricingDescription(instant)}</p>
+          )}
+          {discount !== undefined && (
+            <p className="text-sm text-fd-muted-foreground">Discount: {discount}</p>
+          )}
 
           {/* Tool parameters */}
           {hasInputParams && (
@@ -265,6 +275,7 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
 }
 
 export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDetailProps) {
+  const instantSupported = toolkitSupportsInstant(toolkit.instant, tools);
   const [copied, setCopied] = useState(false);
   const [versionCopied, setVersionCopied] = useState(false);
   const [toolSearch, setToolSearch] = useState('');
@@ -325,6 +336,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             {/* Title row */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
+              {instantSupported && <InstantBadge />}
               <button
                 onClick={copySlug}
                 className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
@@ -348,6 +360,11 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
 
             {/* Description */}
             <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
+            {instantSupported && (
+              <p className="mt-1.5 text-sm text-fd-muted-foreground">
+                <Link href="/docs/instant-tools" className="underline">Instant</Link> is available on the latest version. Check each tool for support and pricing.
+              </p>
+            )}
           </div>
         </div>
 
@@ -418,7 +435,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             {activeTab === 'tools' && (
               filteredTools.length > 0 ? (
                 filteredTools.map((tool) => (
-                  <ToolItem key={tool.slug} item={tool} toolkitVersion={toolkit.version} />
+                  <ToolItem key={tool.slug} item={tool} toolkitVersion="latest" instant={tool.instant} />
                 ))
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-fd-muted-foreground">

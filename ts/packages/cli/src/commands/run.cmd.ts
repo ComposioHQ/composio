@@ -3,22 +3,20 @@ import { Argument, Command, Flag } from 'effect/unstable/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
-import { Context, Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
+import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
-import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import {
+  CLI_DEBUG_FLAG_NAMES,
   debugFlagsToChildEnv,
-  isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
-import { detectMasterFromHost } from 'src/services/master-detector';
 import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
@@ -28,61 +26,67 @@ import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
-import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { loadHostConfig } from 'src/services/config';
-import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
-const file = Flag.String('file').pipe(
+const RUN_FLAG_NAMES = {
+  file: 'file',
+  dryRun: 'dry-run',
+  debug: 'debug',
+  skipConnectionCheck: 'skip-connection-check',
+  skipToolParamsCheck: 'skip-tool-params-check',
+  skipChecks: 'skip-checks',
+} as const;
+
+const file = Flag.String(RUN_FLAG_NAMES.file).pipe(
   Flag.withAlias('f'),
   Flag.withDescription('Run a TS/JS file instead of inline code'),
   Flag.optional
 );
 
-const dryRun = Flag.Boolean('dry-run').pipe(
+const dryRun = Flag.Boolean(RUN_FLAG_NAMES.dryRun).pipe(
   Flag.withDescription('Preview execute() calls without running them'),
   Flag.withDefault(false)
 );
-const debug = Flag.Boolean('debug').pipe(
+const debug = Flag.Boolean(RUN_FLAG_NAMES.debug).pipe(
   Flag.withDescription('Log helper steps while the script runs'),
   Flag.withDefault(false)
 );
-const logsOff = Flag.Boolean('logs-off').pipe(
-  Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
-  Flag.withDefault(false)
-);
-const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
+const skipConnectionCheck = Flag.Boolean(RUN_FLAG_NAMES.skipConnectionCheck).pipe(
   Flag.withDescription('Skip the connected-account check'),
   Flag.withDefault(false)
 );
-const skipToolParamsCheck = Flag.Boolean('skip-tool-params-check').pipe(
+const skipToolParamsCheck = Flag.Boolean(RUN_FLAG_NAMES.skipToolParamsCheck).pipe(
   Flag.withDescription('Skip input validation against cached schema'),
   Flag.withDefault(false)
 );
-const skipChecks = Flag.Boolean('skip-checks').pipe(
+const skipChecks = Flag.Boolean(RUN_FLAG_NAMES.skipChecks).pipe(
   Flag.withDescription('Skip both connection and input validation checks'),
   Flag.withDefault(false)
 );
 
-/**
- * Flag surface of the `run` command as raw argv tokens, consumed by
- * `commands/index.ts`'s passthrough normalizer. Kept adjacent to the `Flag`
- * definitions above: adding, renaming, or aliasing a `run` flag MUST update
- * these sets, or the normalizer will demote the new flag (and everything
- * after it) to passthrough script arguments.
- */
-export const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
-  '--dry-run',
-  '--debug',
-  '--logs-off',
-  '--skip-connection-check',
-  '--skip-tool-params-check',
-  '--skip-checks',
+const runFlags = {
+  file,
+  dryRun,
+  debug,
+  skipConnectionCheck,
+  skipToolParamsCheck,
+  skipChecks,
+};
+
+/** Share names with the passthrough adapter; the framework owns parsing the flag values. */
+export const RUN_FILE_FLAGS = new Set([`--${RUN_FLAG_NAMES.file}`, '-f']);
+export const RUN_KNOWN_VALUE_FLAGS = new Set([...RUN_FILE_FLAGS, '--log-level']);
+export const RUN_KNOWN_BOOLEAN_FLAGS = new Set([
+  ...Object.values(RUN_FLAG_NAMES)
+    .filter(name => name !== RUN_FLAG_NAMES.file)
+    .map(name => `--${name}`),
+  ...CLI_DEBUG_FLAG_NAMES.flatMap(name => [`--${name}`, `--no-${name}`]),
   '--help',
   '-h',
+  '--version',
+  '-v',
 ]);
-export const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
 
 const args = Argument.String('arg').pipe(
   Argument.variadic(),
@@ -90,20 +94,6 @@ const args = Argument.String('arg').pipe(
 );
 
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
-
-/**
- * Out-of-band passthrough tail for `run`'s script arguments. See
- * `splitRunPassthroughArgs` in `src/commands/index.ts` for the full
- * mechanism this exists for (lexer/parser facts + the handoff); that
- * function provides this reference for the scope of a single CLI
- * invocation. `undefined` here means no front door provided it (direct
- * programmatic/test invocations of this command), so the handler below
- * falls back to the parsed `Argument.variadic()` value.
- */
-export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | undefined>(
-  'composio/cli/run/RunPassthroughArgs',
-  { defaultValue: () => undefined }
-);
 
 /**
  * The source rewrites need the TypeScript compiler, which ships in the
@@ -191,28 +181,11 @@ const createRunHelpersPreloadFile = (
         ? context.runOutputDir
         : yield* fs.makeTempDirectory({ directory: os.tmpdir, prefix: 'composio-run-artifacts-' });
     const runLogFilePath = path.join(runOutputDir, 'run.log');
-    const readAccessRoots = [
-      ...new Set(
-        [
-          ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
-          runOutputDir,
-        ].map(value => path.resolve(value))
-      ),
-    ];
     yield* fs.makeDirectory(runOutputDir, { recursive: true });
     yield* fs.writeFileString(runLogFilePath, '');
     yield* fs.writeFileString(
       preloadPath,
-      buildRunHelpersSource(
-        cliPrefix,
-        {
-          ...context,
-          runOutputDir,
-          runLogFilePath,
-          readAccessRoots,
-        },
-        moduleUrls
-      )
+      buildRunHelpersSource(cliPrefix, { ...context, runOutputDir, runLogFilePath }, moduleUrls)
     );
     return { directory, preloadPath, runOutputDir, runLogFilePath };
   });
@@ -292,29 +265,14 @@ export const buildRunCommand = ({
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const os = yield* NodeOs;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
-    const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
-    // Honors the same COMPOSIO_CACHE_DIR-then-CACHE_DIR precedence the spawned
-    // run-helpers child applies when locating its cache, so the sandbox read
-    // roots below always include the directory the child actually uses.
-    const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
-    const hostCacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
-    const configuredCacheDir = composioCacheDir || hostCacheDir || defaultComposioDir;
-    const baseReadAccessRoots = [
-      ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
-    ];
-
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
       webURL: userContext.data.webURL,
       orgId,
-      cliConfigPath: yield* resolveCliConfigPath,
-      readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {
@@ -339,13 +297,6 @@ const resolveRunHelperContext = () =>
       consumerProjectId: consumerProject.value.projectId,
       consumerProjectName: consumerProject.value.projectName,
       runOutputDir: sessionArtifactsDir,
-      readAccessRoots: [
-        ...new Set(
-          [...baseReadAccessRoots, sessionArtifactsDir]
-            .filter((value): value is string => typeof value === 'string' && value.length > 0)
-            .map(value => path.resolve(value))
-        ),
-      ],
     } satisfies RunHelperContext;
   });
 
@@ -449,83 +400,52 @@ const forwardSignalsToChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
   });
 
 export const runCmd = Command.make('run', {
-  file,
-  dryRun,
-  debug,
-  logsOff,
-  skipConnectionCheck,
-  skipToolParamsCheck,
-  skipChecks,
+  ...runFlags,
   args,
 }).pipe(
   Command.withDescription(
-    [
-      'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.',
-      '',
-      'Examples:',
-      `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "composiohq", repo: "composio", title: "Bug report" }); console.log(issue)'`,
-      `  composio run --dry-run 'await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" })'`,
-      `  composio run --debug 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
-      `  composio run '`,
-      `    const [emails, issues] = await Promise.all([`,
-      `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
-      `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
-      `    ]);`,
-      `    const brief = await experimental_subAgent(`,
-      `      \`Create a morning brief from these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
-      `      {`,
-      `        schema: z.object({`,
-      `          brief: z.string(),`,
-      `          urgentEmails: z.array(z.string()),`,
-      `          urgentIssues: z.array(z.string()),`,
-      `        }),`,
-      `      }`,
-      `    );`,
-      `    brief.structuredOutput;`,
-      `  '`,
-      '  composio run --file ./script.ts -- hello world',
-      '',
-      'Injected helpers (behave like their CLI counterparts):',
-      '  execute(slug, data?)          Same as `composio execute` — returns parsed JSON',
-      '  search(query, options?)        Same as `composio search` — returns matching tools',
-      '  experimental_subAgent(prompt, options?) Experimental helper to spawn a powerful sub-agent from the same agent family as your current main agent',
-      '                                 (Codex -> Codex, Claude -> Claude) with optional Zod structured output',
-      '  result.prompt()                Prompt-safe serialization of a helper result, ideal for experimental_subAgent(...)',
-      '  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function',
-      '                                 Example: const f = await proxy("gmail")',
-      '                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")',
-      '  z                              Injected global from `zod` for structured output schemas',
-      '',
-      'All helpers reuse your CLI auth state and connected accounts.',
-      '',
-      'Flags:',
-      '  --debug                     Log helper steps while the script runs',
-      '  --dry-run                   Preview execute() calls without running them',
-      '  --logs-off                  Hide the always-on experimental_subAgent streaming logs',
-      '  --skip-connection-check     Skip the connected-account check',
-      '  --skip-tool-params-check    Skip input validation against cached schema',
-      '  --skip-checks               Skip both checks above',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Discover tool slugs before scripting',
-      '  composio link <toolkit>                   Connect accounts before scripting',
-      '  composio execute <slug> --get-schema      Inspect tool inputs before scripting',
-    ].join('\n')
+    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.\n\nInjected helpers (behave like their CLI counterparts):\n  execute(slug, data?)          Same as `composio execute` — returns parsed JSON\n  search(query, options?)        Same as `composio search` — returns matching tools\n  result.prompt()                Prompt-safe serialization of a helper result\n  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function\n                                 Example: const f = await proxy("gmail")\n                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")\n  z                              Injected global from `zod` for defining and validating schemas\n\nAll helpers reuse your CLI auth state and connected accounts.\n\nUse composio search "<query>" to discover tools and composio execute <slug> --get-schema to inspect inputs.'
   ),
+  Command.withShortDescription(
+    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.'
+  ),
+  Command.withExamples([
+    {
+      command:
+        'composio run \'\n  // execute(slug, data?) — run a tool, returns parsed JSON\n  const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER");\n  console.log(me);\n\'',
+    },
+    {
+      command:
+        'composio run \'\n  // search(query, opts?) — find tools by use case\n  const tools = await search("send email");\n  console.log(tools);\n\'',
+    },
+    {
+      command:
+        'composio run \'\n  const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Deploy v2" });\n  await execute("SLACK_SEND_MESSAGE", { channel: "eng", markdown_text: "Created: " + issue.data.html_url });\n\'',
+      description: 'Sequential: chain tool outputs across services',
+    },
+    {
+      command:
+        'composio run \'\n  const [emails, issues, events] = await Promise.all([\n    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),\n    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),\n    execute("GOOGLECALENDAR_FIND_EVENT", { calendar_id: "primary" }),\n  ]);\n  console.log({ emails: emails.data, issues: issues.data, events: events.data });\n\'',
+      description: 'Parallel: fetch from multiple services at once with Promise.all',
+    },
+    {
+      command:
+        'composio run \'\n  const issues = [101, 102, 103, 104];\n  await Promise.all(issues.map(n =>\n    execute("GITHUB_ADD_LABELS_TO_ISSUE", { owner: "acme", repo: "app", issue_number: n, labels: ["priority"] })\n  ));\n\'',
+      description: 'Bulk: fan out with Promise.all + .map()',
+    },
+    {
+      command:
+        'composio run \'\n  const f = await proxy("gmail");\n  console.log(await f("https://gmail.googleapis.com/gmail/v1/users/me/profile"));\n\'',
+      description: 'proxy(toolkit) — returns a fetch() bound to your connected account',
+    },
+    {
+      command: 'composio run --file ./workflow.ts -- --repo acme/app',
+      description: 'Run from a file',
+    },
+  ]),
   Command.withHandler(
-    ({
-      file,
-      dryRun,
-      debug,
-      logsOff,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-      args: rawArgs,
-    }) =>
+    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, skipChecks, args }) =>
       Effect.gen(function* () {
-        const passthroughTail = yield* RunPassthroughArgs;
-        const args = passthroughTail ?? rawArgs;
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
         if (Option.isNone(file) && !args[0]) {
@@ -543,7 +463,6 @@ export const runCmd = Command.make('run', {
         );
         const perfDebug = yield* isPerfDebugEnabled;
         const toolDebug = yield* isToolDebugEnabled;
-        const acpOnly = yield* isAcpOnlyEnabled;
         const telemetryDebug = yield* isTelemetryDebugEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
@@ -560,13 +479,10 @@ export const runCmd = Command.make('run', {
         const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
           runId,
-          master: yield* detectMasterFromHost,
           perfDebug,
           toolDebug,
           telemetryDebug,
           debug,
-          logsOff,
-          acpOnly,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,
@@ -615,7 +531,7 @@ export const runCmd = Command.make('run', {
             env: {
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
-              ...debugFlagsToChildEnv({ perfDebug, toolDebug, acpOnly, telemetryDebug }),
+              ...debugFlagsToChildEnv({ perfDebug, toolDebug, telemetryDebug }),
             },
             extendEnv: true,
             stdin: 'inherit',

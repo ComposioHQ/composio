@@ -4,8 +4,12 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import type { ComposioConfig } from '../composio';
 import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
-import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
+import {
+  ComposioSessionConfigConflictError,
+  ComposioToolInputRequiredError,
+} from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -33,9 +37,9 @@ import {
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
+  assertNotInputRequired,
   transformSearchResponse,
   transformExecuteResponse,
-  transformSessionConfig,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -679,6 +683,7 @@ export class ToolRouterSession<
    * @param options - Optional execution options
    * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @returns The tool execution result
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
   async execute(
     toolSlug: string,
@@ -704,6 +709,7 @@ export class ToolRouterSession<
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       };
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -724,10 +730,15 @@ export class ToolRouterSession<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          this.sessionId,
+          executeParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
-    const transformed = transformExecuteResponse(response);
+    const transformed = transformExecuteResponse(response, toolSlug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 
@@ -737,6 +748,7 @@ export class ToolRouterSession<
    *
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
    * @returns The proxied API response with status, data, headers
+   * @throws {ComposioToolInputRequiredError} If the call needs input from the user before it can run
    */
   async proxyExecute(
     params: SessionProxyExecuteParams,
@@ -750,10 +762,18 @@ export class ToolRouterSession<
     const clientParams = transformProxyParams(validated.data);
     const response = await withCancellation(
       () =>
-        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+        this.client.toolRouter.session.proxyExecute(
+          this.sessionId,
+          clientParams,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
+    assertNotInputRequired(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
     return {
       status: response.status,
       data: response.data,
@@ -856,7 +876,7 @@ export class ToolRouterSession<
     }
 
     this.configVersion = response.config_version;
-    this.config = transformSessionConfig(response.config);
+    this.config = response.config;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
@@ -913,7 +933,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: transformSessionConfig(item.config),
+        config: item.config,
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
@@ -1038,6 +1058,12 @@ export class ToolRouterSession<
 
     const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
     const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    // An input request is not a per-tool failure: rethrow it so the caller gets
+    // `inputRequests` and `requestState`.
+    // Accepted: local tools in this batch already ran and their results are discarded.
+    if (remoteTransportError instanceof ComposioToolInputRequiredError) {
+      throw remoteTransportError;
+    }
     const remoteErrorMessage = remoteTransportFailed
       ? (remoteTransportError instanceof Error
           ? remoteTransportError.message
@@ -1109,16 +1135,21 @@ export class ToolRouterSession<
     }
     const remoteError =
       remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
+    // A failed execution can carry no error text, so success is read from each
+    // result's own verdict and not from the absence of an error message.
+    const hasAnyFailure =
+      localResults.some(r => !r.result.successful) ||
+      remoteResult?.successful === false ||
+      !!remoteError;
 
     return {
       data: mergedData,
-      error: hasAnyError
-        ? remoteError && failedCount === 0
-          ? remoteError
-          : `${failedCount} out of ${allResults.length} tools failed`
+      error: hasAnyFailure
+        ? failedCount > 0
+          ? `${failedCount} out of ${allResults.length} tools failed`
+          : remoteError
         : null,
-      successful: !hasAnyError,
+      successful: !hasAnyFailure,
       ...(remoteResult?.instantCharge !== undefined && {
         instantCharge: remoteResult.instantCharge,
       }),

@@ -2986,6 +2986,484 @@
           "output": {}
         }
       ]
+    },
+    {
+      "id": "optional-typed-enum-wrapped",
+      "description": "A typed enum is wrapped whole: adding null to its type would leave the enum rejecting it.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "description": "sort order"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "description": "sort order",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        },
+        {
+          "input": {
+            "direction": "asc"
+          },
+          "output": {
+            "direction": "asc"
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-nullable-typed-enum-wrapped",
+      "description": "A null in `type` does not make an enum without null nullable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": ["string", "null"],
+            "enum": ["asc", "desc"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "type": ["string", "null"],
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-typed-const-wrapped",
+      "description": "A typed const is wrapped whole, like a typed enum.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "asc"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "asc"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["mode"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.mode",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "mode": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-typed-enum-with-null-unchanged",
+      "description": "A typed enum that lists null under a nullable type already accepts null.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": ["string", "null"],
+            "enum": ["asc", null]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": ["string", "null"],
+              "enum": ["asc", null]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {
+            "direction": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-any-of-with-sibling-enum-wrapped",
+      "description": "A null branch in anyOf does not lift a sibling enum, so the node is wrapped.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "enum": ["asc", "desc"],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "enum": ["asc", "desc"],
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-with-sibling-type-wrapped",
+      "description": "Keywords beside a $ref apply together with its target.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "$ref": "#/$defs/Direction",
+            "type": "string"
+          }
+        },
+        "$defs": {
+          "Direction": {
+            "enum": ["asc", null]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Direction",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Direction": {
+              "enum": ["asc", null]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-to-nullable-definition-unchanged",
+      "description": "A $ref whose target accepts null needs no extra null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "$ref": "#/$defs/Note"
+          }
+        },
+        "$defs": {
+          "Note": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "note": {
+              "$ref": "#/$defs/Note"
+            }
+          },
+          "$defs": {
+            "Note": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["note"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.note",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "note": null
+          },
+          "output": {
+            "note": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-to-typeless-object-wrapped",
+      "description": "A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config"
+          }
+        },
+        "$defs": {
+          "Config": {
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["url"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Config"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Config": {
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": ["url"],
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {
+            "cfg": null
+          }
+        },
+        {
+          "input": {
+            "cfg": {
+              "url": "u"
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref-into-wrapped-property-unsupported",
+      "description": "Wrapping a property moves what is nested in it; a $ref into it would dangle.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": ["asc"],
+            "$defs": {
+              "Text": {
+                "type": "string"
+              }
+            }
+          },
+          "alias": {
+            "$ref": "#/properties/value/$defs/Text"
+          }
+        },
+        "required": ["alias"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.alias",
+            "keyword": "$ref"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
+        }
+      ]
     }
   ]
 }

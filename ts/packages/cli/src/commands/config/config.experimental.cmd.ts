@@ -145,5 +145,10 @@ export const configExperimentalCmd = Command.make(
       '',
       `Known features: ${knownFeatures.join(', ')}`,
     ].join('\n')
-  )
+  ),
+  Command.withExamples([
+    { command: 'composio config experimental' },
+    { command: 'composio config experimental listen on' },
+    { command: 'composio config experimental listen off' },
+  ])
 );

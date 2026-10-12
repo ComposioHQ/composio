@@ -4,6 +4,42 @@
 
 ### Patch Changes
 
+- `composio execute` (including meta tools), `composio proxy`, the `proxy()`
+  helper in `composio run` scripts, and the custom tool schema lookup in
+  `composio search` now fail with a clear error when the call needs user input,
+  such as an approval, before it can run. The CLI cannot answer input requests
+  yet, and it no longer treats such an answer as a result. The `proxy()` helper
+  used to return an empty `200` response for a call that never ran.
+
+- `composio execute` now reads whether a tool succeeded from the `result_type`
+  the API returns with every execution, so a tool that ran and failed is
+  reported as failed even when the API returns no error text. It used to read a
+  failed execution with a `null` error as successful.
+
+- `composio execute` now validates the arguments before it sends the tool
+  call, so a call that fails local validation is never run. Validation used to
+  race the request, and the tool could execute while the CLI reported a
+  validation failure. The cached schema named in the validation error is now
+  kept on disk instead of being deleted. A schema the CLI cannot compile no
+  longer blocks the call; the server still validates it.
+
+- Generate help from the command definitions, including every supported flag and
+  nested command. Remove help levels and the nonexistent `files` help topic.
+  Install agent skills with `composio setup skill <claude|codex|openclaw>`
+  (optionally `--name <skill-name>`) instead of `--install-skill`.
+  Internal diagnostics are hidden framework commands. `--dangerously-allow`
+  applies only to `dev triggers disable`; refused developer commands exit nonzero.
+  Debug flags after the `run` script boundary now reach the script unchanged.
+  `composio execute <slug> --help` now shows command options. Use
+  `composio execute <slug> --get-schema` to print that tool's input schema as JSON.
+
+- `composio execute` (including meta tools) and `composio proxy` are never
+  retried, so a request that timed out or failed after the backend already
+  acted cannot repeat a side effect such as sending the same email twice.
+
+- API requests and command analytics now report CLI product/version, language,
+  runtime/version, and the installed API client version separately.
+
 - Remove the experimental local-tools stack: the `local-tools` command group,
   the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
   and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
@@ -12,6 +48,28 @@
   Swift. Permission prompts always use the browser approval page. A
   stored `local_tools` setting is now listed as an unknown feature and has no
   effect.
+- Remove `experimental_subAgent()` (alias `invokeAgent`) from `composio run`.
+  Its ACP transport approved every tool call the spawned agent requested, so
+  both transports (ACP and the older `claude -p` / `codex exec` one), the output
+  MCP server, and the bundled ACP adapters are gone. `execute`, `search`,
+  `proxy`, `result.prompt()`, and the `z` / `zod` globals are unchanged. A
+  script that still calls the helper fails at that call with a message naming
+  the removal; tool calls it made earlier have already taken effect. To keep
+  the helper, install an older CLI with the installer:
+  `curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_VERSION=<version> sh`.
+  `composio upgrade <older version>` from this CLI is not a way back. A stored
+  `experimental_subagent` config key is now ignored and preserved; an invalid
+  target used to reset the whole config to defaults. `COMPOSIO_RUN_ACP_ONLY` is
+  no longer read and the hidden `--acp-only` flag is gone. Remove `--logs-off`,
+  which only canceled `--debug` after sub-agent streaming was removed. Helper
+  logs are written to disk; use `--debug` to also print them to stderr. An
+  unknown flag placed before inline `run` code is now rejected by name
+  (`Unrecognized flag: --x in command composio run`) instead of being executed
+  as source; inline source that is exactly one flag-shaped token needs an
+  explicit `--`. Release archives keep ten legacy paths (the four root
+  `run-subagent-*.mjs` files and six `acp-adapters/*` paths) as intentionally
+  empty placeholders so that a CLI installed before this change still passes
+  its upgrade verification. No adapter binaries are downloaded or shipped.
 - Every Composio API call now goes through the `@composio/client` 2.0 runtime,
   the same client `@composio/core` uses. Org, project, session-info, and
   consumer lookups gain the client's retries and redirect handling, and API

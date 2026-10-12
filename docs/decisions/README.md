@@ -11,5 +11,5 @@ Read these when a docs change touches an existing architecture, generated-data p
   search, and Composio For You snapshot rules.
 - `toolkit-page-availability.md` - docs-sync permissions, optional KB isolation,
   and snapshot-miss toolkit page fallback.
-- `toolkits.md` - toolkit page data and rendering decisions.
+- `toolkits.md` - toolkit page data, rendering, and live Instant eligibility filter decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.

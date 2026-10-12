@@ -114,6 +114,10 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.get('x-source')).toBe('CLI');
       expect(headers.get('x-runtime')).toBe('NODEJS');
       expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
+      expect(headers.get('x-client-provenance')).toBe('@composio/cli');
+      expect(headers.get('x-client-version')).toBe(APP_VERSION);
+      expect(headers.get('x-client-language')).toBe('typescript');
+      expect(headers.get('x-runtime-version')).toBe(process.versions.node);
       expect(headers.get('x-cli-session-id')).toBeNull();
     }).pipe(
       Effect.provide(

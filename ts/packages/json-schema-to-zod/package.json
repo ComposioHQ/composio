@@ -60,6 +60,7 @@
   },
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
-    "dequal": "^2.0.3"
+    "dequal": "^2.0.3",
+    "re2js": "^2.8.6"
   }
 }

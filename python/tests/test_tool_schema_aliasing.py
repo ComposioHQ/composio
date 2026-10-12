@@ -353,7 +353,7 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
 
     session = Mock()
     session.execute.return_value = SimpleNamespace(
-        data={"ok": True}, error=None, log_id="log-session"
+        data={"ok": True}, error=None, log_id="log-session", result_type="completed"
     )
     provider.execute_tool.reset_mock()
     result = provider.execute_tool_call(session=session, tool_call=tool_call)

@@ -1,3 +1,4 @@
+import { VERSION as clientLibraryVersion } from '@composio/client';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -15,6 +16,15 @@ import {
 } from '../../src/errors/SDKErrors';
 import { ComposioMCPDestinationError } from '../../src/errors/ToolRouterErrors';
 import logger from '../../src/utils/logger';
+
+const provenanceHeaders = {
+  'x-client-provenance': '@composio/core',
+  'x-client-version': version,
+  'x-client-language': 'typescript',
+  'x-client-library': '@composio/client',
+  'x-client-library-version': clientLibraryVersion,
+  'x-runtime-version': process.versions.node,
+};
 
 describe('Composio Session Management', () => {
   const baseConfig = {
@@ -46,6 +56,8 @@ describe('Composio Session Management', () => {
       'x-framework': 'MockProvider', // from provider
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
 
@@ -90,6 +102,8 @@ describe('Composio Session Management', () => {
       'x-framework': 'MockProvider',
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
 
@@ -99,6 +113,8 @@ describe('Composio Session Management', () => {
       'x-framework': 'MockProvider',
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
 
@@ -117,6 +133,8 @@ describe('Composio Session Management', () => {
       'x-framework': 'MockProvider', // from provider
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
   });
@@ -172,6 +190,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'openai',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -184,6 +204,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'MockProvider',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -195,6 +217,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -209,6 +233,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -230,6 +256,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'openai',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -249,6 +277,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'MockProvider',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -267,7 +297,9 @@ describe('Session Headers Generation', () => {
       expect(headers).toEqual({
         'x-framework': 'openai', // session header takes precedence
         'x-source': 'TYPESCRIPT_SDK', // session header takes precedence
-        'x-runtime': 'NODEJS', // session header takes precedence
+        'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs', // session header takes precedence
+        ...provenanceHeaders,
         'x-sdk-version': version, // session header takes precedence
         'x-custom-header': 'custom-value', // custom header preserved
       });
@@ -281,6 +313,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'openai',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -293,6 +327,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'openai',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -309,6 +345,8 @@ describe('Session Headers Generation', () => {
         'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
+        'x-client-runtime': 'nodejs',
+        ...provenanceHeaders,
         'x-sdk-version': version,
       });
     });
@@ -380,6 +418,8 @@ describe('Session Headers Configuration Integration', () => {
       'x-framework': 'openai',
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
   });
@@ -444,6 +484,8 @@ describe('Session Headers Configuration Integration', () => {
       'x-framework': 'openai',
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
   });
@@ -479,6 +521,8 @@ describe('Session Headers Configuration Integration', () => {
       'x-framework': 'openai', // provider-specific header
       'x-source': 'TYPESCRIPT_SDK',
       'x-runtime': 'NODEJS',
+      'x-client-runtime': 'nodejs',
+      ...provenanceHeaders,
       'x-sdk-version': version,
     });
   });

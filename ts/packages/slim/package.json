@@ -42,7 +42,8 @@
       "edge-light": "./dist/utils/ssrfGuard.workerd.mjs",
       "node": "./dist/utils/ssrfGuard.node.mjs",
       "default": "./dist/utils/ssrfGuard.node.mjs"
-    }
+    },
+    "#client_identity": "./package.json"
   },
   "exports": {
     ".": {
@@ -88,7 +89,7 @@
   "scripts": {
     "clean": "git clean -xdf dist generated node_modules",
     "build": "rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
-    "test": "node -e \"import('./dist/index.mjs').then(() => console.log('@composio/slim import ok'))\""
+    "test": "node test/provenance.mjs"
   },
   "keywords": [
     "composio",

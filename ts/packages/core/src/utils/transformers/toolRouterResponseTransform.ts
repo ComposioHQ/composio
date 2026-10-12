@@ -1,23 +1,57 @@
 /**
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
-import { z } from 'zod/v3';
-import {
-  ToolRouterInstantResponseSchema,
-  type ToolRouterInstantResponse,
-} from '../../types/toolRouter.types';
+import type {
+  SessionExecuteResponse,
+  SessionProxyExecuteResponse,
+} from '@composio/client/resources/tool-router/session/session.mjs';
+import z from 'zod/v3';
+import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
+import { ValidationError } from '../../errors/ValidationErrors';
+import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
 
-const SessionConfigInstantSchema = z.object({
-  instant: z.union([z.literal(false), ToolRouterInstantResponseSchema]).optional(),
-});
+/** The `result_type` values of a call that ran. `input_required` is raised before this is read. */
+const ExecutedResponseSchema = z.object({ result_type: z.enum(['completed', 'failed']) });
 
-/** Session config retains its API casing, including `instant.return_instant_charge`. */
-export function transformSessionConfig<Config extends { premium_usage?: unknown }>(
-  raw: Config
-): Omit<Config, 'premium_usage'> & { instant?: false | ToolRouterInstantResponse } {
-  const { instant } = SessionConfigInstantSchema.parse(raw);
-  const { premium_usage: _previousPolicy, ...config } = raw;
-  return { ...config, ...(instant !== undefined && { instant }) };
+/**
+ * Whether a session tool execution succeeded. `resultType` decides: a `failed`
+ * execution is not successful even when its `error` is `null` or empty.
+ */
+export function isExecutionSuccessful(
+  result: Pick<ToolRouterSessionExecuteResponse, 'resultType'>
+): boolean {
+  return result.resultType === 'completed';
+}
+
+type InputRequiredResponse = Extract<
+  SessionExecuteResponse | SessionProxyExecuteResponse,
+  { result_type: 'input_required' }
+>;
+
+/**
+ * Narrows an execute-family response to the variants that carry a result.
+ * `input_required` means the call did not run: it is raised as a
+ * {@link ComposioToolInputRequiredError} instead of being returned as a result
+ * it is not.
+ */
+export function assertNotInputRequired<
+  Response extends SessionExecuteResponse | SessionProxyExecuteResponse,
+>(raw: Response, subject: string): asserts raw is Exclude<Response, InputRequiredResponse> {
+  if (raw.result_type !== 'input_required') return;
+  throw new ComposioToolInputRequiredError(subject, {
+    inputRequests: Object.fromEntries(
+      Object.entries(raw.input_requests).map(([id, request]) => [
+        id,
+        {
+          type: request.type,
+          mode: request.mode,
+          message: request.message,
+          requestedSchema: request.requested_schema,
+        },
+      ])
+    ),
+    requestState: raw.request_state,
+  });
 }
 
 interface RawSearchResult {
@@ -81,13 +115,6 @@ interface RawSearchResponse {
   next_steps_guidance: string[];
   session: RawSearchSession;
   time_info: RawSearchTimeInfo;
-}
-
-interface RawExecuteResponse {
-  data: Record<string, unknown>;
-  error: string | null;
-  log_id: string;
-  instant_charge?: unknown;
 }
 
 function transformSearchResult(raw: RawSearchResult) {
@@ -173,12 +200,24 @@ export function transformSearchResponse(raw: RawSearchResponse) {
 
 /**
  * Transforms a raw session execute API response to camelCase.
+ *
+ * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
+ * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
-export function transformExecuteResponse(raw: RawExecuteResponse) {
+export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
+  assertNotInputRequired(raw, `Tool ${toolSlug}`);
+  const executed = ExecutedResponseSchema.safeParse(raw);
+  if (!executed.success) {
+    throw new ValidationError(
+      `Tool ${toolSlug} returned an execute response without a known result_type`,
+      { cause: executed.error }
+    );
+  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
+    resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
   };
 }

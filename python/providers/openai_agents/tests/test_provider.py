@@ -183,8 +183,7 @@ def test_strict_mode_optional_enum_param_can_still_be_omitted():
 
     assert wrapped_tool.strict_json_schema is True
     assert wrapped_tool.params_json_schema["properties"]["order"] == {
-        "type": ["string", "null"],
-        "enum": ["asc", "desc", None],
+        "anyOf": [{"type": "string", "enum": ["asc", "desc"]}, {"type": "null"}]
     }
 
 

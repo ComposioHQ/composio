@@ -170,5 +170,16 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 ).pipe(
   Command.withDescription(
     'Interactively remove a connection by toolkit slug, alias, word_id, or connected account ID.'
-  )
+  ),
+  Command.withExamples([
+    {
+      command: 'composio connections remove gmail',
+    },
+    {
+      command: 'composio connections remove work',
+    },
+    {
+      command: 'composio connections remove castle',
+    },
+  ])
 );

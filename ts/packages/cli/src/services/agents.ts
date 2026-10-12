@@ -1,3 +1,4 @@
+import { cliRequestHeaders } from './client-provenance';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Result, Schema } from 'effect';
@@ -228,6 +229,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
           redirect: 'error',
           ...init,
           headers: {
+            ...cliRequestHeaders(),
             Accept: 'application/json',
             ...(init.body ? { 'Content-Type': 'application/json' } : {}),
             ...(init.headers ?? {}),

@@ -2874,6 +2874,7 @@ describe('ToolRouter', () => {
     const sessionId = 'session_123';
 
     const mockExecuteResponse = {
+      result_type: 'completed',
       data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
       error: null,
       log_id: 'log_abc',
@@ -2896,7 +2897,7 @@ describe('ToolRouter', () => {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'user@example.com', subject: 'Hi', body: 'Hello' },
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
@@ -2940,7 +2941,7 @@ describe('ToolRouter', () => {
           tool_slug: 'HACKERNEWS_GET_USER',
           arguments: {},
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -2958,7 +2959,7 @@ describe('ToolRouter', () => {
           arguments: { to: 'user@example.com' },
           account: 'work',
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -2997,7 +2998,7 @@ describe('ToolRouter', () => {
             custom_tools: [expect.objectContaining({ slug: 'GREP' })],
           },
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
   });
@@ -4114,7 +4115,6 @@ describe('ToolRouter', () => {
             ...rawHistoryItem,
             config: {
               ...rawHistoryItem.config,
-              premium_usage: false,
               instant: { toolkits: { enabled: ['exa'] }, return_instant_charge: true },
             },
           },
@@ -4579,6 +4579,7 @@ describe('ToolRouter', () => {
           },
         });
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: {},
           error: null,
           log_id: 'log_1',

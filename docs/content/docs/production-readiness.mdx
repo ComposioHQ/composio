@@ -82,6 +82,12 @@ Run at least one safe, read-only call against a real connected account. Confirm 
 
 Do not treat a successful Connect Link alone as an end-to-end test. Authentication can succeed while a provider API, scope, or tool input still fails.
 
+### Retry failed executions deliberately
+
+The SDKs retry reads — fetching tools, listing toolkits, reading a session — when a request times out or comes back `408`, `409`, `429`, or `5xx`. They never retry an execution. `tools.execute`, `tools.proxy`, and every session `execute` and `proxyExecute` call is sent exactly once, because the backend doesn't deduplicate executions and a silent retry after a read timeout would repeat the side effect, such as sending the same email twice.
+
+A transient failure on an execution therefore reaches your code instead of being absorbed. Before retrying one, decide whether repeating that specific call is safe: a read is, `GMAIL_SEND_EMAIL` isn't. When it isn't, check [Logs](/reference/api-reference/logs) or the provider's own API to find out whether the first attempt landed.
+
 ### Configure SDK logging
 
 Pass `logger` and `logLevel` to the TypeScript `Composio` constructor to send SDK logs to your logging system. The logger must provide `error`, `warn`, `info`, and `debug` methods. Messages have credential-shaped values redacted before reaching the logger, including owned-client deprecation warnings. Logger configuration is process-wide: the last configured instance controls the SDK logger.

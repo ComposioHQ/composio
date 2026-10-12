@@ -263,6 +263,8 @@ export interface TestLiveInput {
   toolsExecutor?: {
     failWith?: unknown;
     respondWith?: ToolExecuteResponse;
+    /** Called each time the mock executor actually runs a tool call. */
+    onExecute?: (slug: string) => void;
   };
 
   /**
@@ -277,19 +279,25 @@ export interface TestLiveInput {
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
     create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
-    /** Override `session.execute`. Receives sessionId and params. */
-    execute?: (sessionId: string, params: SessionExecuteParams) => Promise<SessionExecuteResponse>;
-    /** Override `session.executeMeta`. Receives sessionId and params. */
+    /** Override `session.execute`. Receives sessionId, params, and request options. */
+    execute?: (
+      sessionId: string,
+      params: SessionExecuteParams,
+      options?: { maxRetries?: number }
+    ) => Promise<SessionExecuteResponse>;
+    /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
-      params: SessionExecuteMetaParams
+      params: SessionExecuteMetaParams,
+      options?: { maxRetries?: number }
     ) => Promise<SessionExecuteMetaResponse>;
     /** Override `session.link`. Receives sessionId and params. */
     link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
-    /** Override `session.proxyExecute`. Receives sessionId and params. */
+    /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
     proxyExecute?: (
       sessionId: string,
-      params: SessionProxyExecuteParams
+      params: SessionProxyExecuteParams,
+      options?: { maxRetries?: number }
     ) => Promise<SessionProxyExecuteResponse>;
     /** Override `session.search`. Receives sessionId and params. */
     search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
@@ -913,7 +921,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       },
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
       security: 'auto',
     });
 
@@ -927,7 +934,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
-            experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
         },
@@ -1291,6 +1297,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             execute:
               toolRouterOverrides?.execute ??
               (async (_sessionId: string, params: SessionExecuteParams) => ({
+                result_type: 'completed' as const,
                 data: { tool_slug: params.tool_slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
@@ -1298,6 +1305,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             executeMeta:
               toolRouterOverrides?.executeMeta ??
               (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+                result_type: 'completed' as const,
                 data: { slug: params.slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
@@ -1497,20 +1505,22 @@ export const TestLayer = (input?: TestLiveInput) =>
       ? Layer.succeed(
           ToolsExecutor,
           ToolsExecutor.of({
-            execute: (slug, params) => {
-              if (input.toolsExecutor!.failWith) {
-                return Effect.fail(input.toolsExecutor!.failWith);
-              }
-              if (input.toolsExecutor!.respondWith) {
-                return Effect.succeed(input.toolsExecutor!.respondWith);
-              }
-              return Effect.succeed({
-                data: { slug, params },
-                error: null,
-                successful: true,
-                logId: 'log_test',
-              });
-            },
+            execute: (slug, params) =>
+              Effect.suspend(() => {
+                input.toolsExecutor!.onExecute?.(slug);
+                if (input.toolsExecutor!.failWith) {
+                  return Effect.fail(input.toolsExecutor!.failWith);
+                }
+                if (input.toolsExecutor!.respondWith) {
+                  return Effect.succeed(input.toolsExecutor!.respondWith);
+                }
+                return Effect.succeed({
+                  data: { slug, params },
+                  error: null,
+                  successful: true,
+                  logId: 'log_test',
+                });
+              }),
           })
         )
       : Layer.provide(

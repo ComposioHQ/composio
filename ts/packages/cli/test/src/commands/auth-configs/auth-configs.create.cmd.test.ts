@@ -21,14 +21,7 @@ describe('CLI: composio dev auth-configs create', () => {
     it => {
       it.effect('creates successfully', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -45,15 +38,7 @@ describe('CLI: composio dev auth-configs create', () => {
     it => {
       it.effect('creates with name successfully', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            'my-config',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', 'my-config', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -77,7 +62,6 @@ describe('CLI: composio dev auth-configs create', () => {
             'gmail',
             '--auth-scheme',
             'OAUTH2',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -102,7 +86,7 @@ describe('CLI: composio dev auth-configs create', () => {
   )('[Given] custom create response [Then] shows correct details', it => {
     it.effect('shows custom response data', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack', '--dangerously-allow']);
+        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -128,7 +112,6 @@ describe('CLI: composio dev auth-configs create', () => {
             'OAUTH2',
             '--custom-credentials',
             '{invalid json}',
-            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -144,14 +127,7 @@ describe('CLI: composio dev auth-configs create', () => {
     it => {
       it.effect('warns user to login', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -166,14 +142,7 @@ describe('CLI: composio dev auth-configs create', () => {
     it => {
       it.effect('shows next step hint', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'auth-configs',
-            'create',
-            '--toolkit',
-            'gmail',
-            '--dangerously-allow',
-          ]);
+          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -218,7 +187,6 @@ describe('CLI: composio dev auth-configs create', () => {
             '{"client_id":"my_client_id","client_secret":"my_client_secret"}',
             '--scopes',
             'read_products, write_products',
-            '--dangerously-allow',
           ]);
 
           expect(capturedCreateAuthConfig).toStrictEqual({

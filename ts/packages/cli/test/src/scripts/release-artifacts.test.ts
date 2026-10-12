@@ -1,167 +1,112 @@
-import { Option, Result } from 'effect';
 import { describe, expect, it } from 'vitest';
 
-import {
-  RUN_CODEX_ACP_BINARY_TARGETS,
-  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
-  RUN_COMPANION_MODULE_FILENAMES,
-  RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
-} from '../../../src/services/run-companion-modules';
-import {
-  archiveCompanionEntries,
-  ARTIFACT_NAMES,
-  RELEASE_ARTIFACT_TARGETS,
-  releaseArtifactTargetFor,
-  UnknownReleaseArtifactError,
-} from '../../../scripts/_release-artifacts';
+import { RUN_COMPANION_MODULE_FILENAMES } from '../../../src/services/run-companion-modules';
+import { archiveCompanionEntries } from '../../../scripts/_release-artifacts';
 
 /**
  * Everything `collectExpectedRunCompanionAssetRelativePaths` yields for a fully
- * populated companions directory: the wrappers, their bundled services, and the
- * multi-platform static asset set.
+ * populated companions directory: the wrappers and their bundled services.
  */
-const ALL_COMPANION_RELATIVE_PATHS: ReadonlyArray<string> = [
+const LIVE_COMPANION_RELATIVE_PATHS: ReadonlyArray<string> = [
   ...RUN_COMPANION_MODULE_FILENAMES,
   ...RUN_COMPANION_MODULE_FILENAMES.map(fileName => `services/${fileName}`),
-  ...RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
 ].sort();
 
-const codexAcpRelativePathsIn = (relativePaths: ReadonlyArray<string>): ReadonlyArray<string> =>
-  relativePaths.filter(relativePath => relativePath.endsWith('/codex-acp'));
+const LEGACY_WRAPPERS: ReadonlyArray<string> = [
+  'run-subagent-shared.mjs',
+  'run-subagent-acp.mjs',
+  'run-subagent-legacy.mjs',
+  'run-subagent-output-mcp.mjs',
+];
 
-describe('releaseArtifactTargetFor', () => {
-  it('maps every published artifact name to a Node platform/arch pair', () => {
-    expect(
-      RELEASE_ARTIFACT_TARGETS.map(({ artifactName, platform, arch }) => [
-        artifactName,
-        `${platform}-${arch}`,
-      ])
-    ).toEqual([
-      ['composio-darwin-aarch64', 'darwin-arm64'],
-      ['composio-darwin-x64', 'darwin-x64'],
-      ['composio-linux-x64', 'linux-x64'],
-      ['composio-linux-aarch64', 'linux-arm64'],
+describe('archiveCompanionEntries', () => {
+  // Every archive gets the same entries, whatever platform its binary targets.
+  const entries = archiveCompanionEntries(LIVE_COMPANION_RELATIVE_PATHS);
+
+  const pathsOfKind = (kind: string): ReadonlyArray<string> =>
+    entries.filter(entry => entry.kind === kind).map(entry => entry.relativePath);
+
+  it('writes each of the ten legacy paths as a placeholder', () => {
+    expect(pathsOfKind('placeholder')).toEqual([
+      'run-subagent-shared.mjs',
+      'run-subagent-acp.mjs',
+      'run-subagent-legacy.mjs',
+      'run-subagent-output-mcp.mjs',
+      'acp-adapters/claude-code-acp.mjs',
+      'acp-adapters/cli.js',
+      'acp-adapters/codex/darwin-arm64/codex-acp',
+      'acp-adapters/codex/darwin-x64/codex-acp',
+      'acp-adapters/codex/linux-arm64/codex-acp',
+      'acp-adapters/codex/linux-x64/codex-acp',
     ]);
   });
 
-  it.each(ARTIFACT_NAMES)('resolves %s', artifactName => {
-    const target = releaseArtifactTargetFor(artifactName);
-
-    expect(Result.isSuccess(target)).toBe(true);
-  });
-
-  it('covers every codex-acp binary target exactly once', () => {
-    const artifactTargets = RELEASE_ARTIFACT_TARGETS.map(
-      ({ platform, arch }) => `${platform}-${arch}`
-    ).sort();
-    const codexTargets = RUN_CODEX_ACP_BINARY_TARGETS.map(
-      ({ platform, arch }) => `${platform}-${arch}`
-    ).sort();
-
-    expect(artifactTargets).toEqual(codexTargets);
-  });
-
-  it.each(['composio-linux-arm64', 'composio-windows-x64', 'composio', ''])(
-    'rejects the unknown artifact name %o',
-    artifactName => {
-      const target = releaseArtifactTargetFor(artifactName);
-
-      const error = Option.getOrUndefined(Result.getFailure(target));
-
-      expect(error).toBeInstanceOf(UnknownReleaseArtifactError);
-      expect(error?.message).toContain('Unknown release artifact');
-    }
-  );
-});
-
-describe('archiveCompanionEntries', () => {
-  const pathsOfKind = (
-    entries: ReadonlyArray<{ relativePath: string; kind: string }>,
-    kind: string
-  ): ReadonlyArray<string> =>
-    entries.filter(entry => entry.kind === kind).map(entry => entry.relativePath);
-
-  it.each(RELEASE_ARTIFACT_TARGETS)(
-    'names every codex-acp path in $artifactName so older clients still verify',
-    target => {
-      const entries = archiveCompanionEntries({
-        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-        target,
-      });
-
-      expect(entries.map(entry => entry.relativePath)).toEqual(ALL_COMPANION_RELATIVE_PATHS);
-    }
-  );
-
-  it.each(RELEASE_ARTIFACT_TARGETS)(
-    'carries real bytes only for the $platform-$arch codex-acp binary',
-    target => {
-      const entries = archiveCompanionEntries({
-        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-        target,
-      });
-
-      expect(codexAcpRelativePathsIn(pathsOfKind(entries, 'copy'))).toEqual([
-        `acp-adapters/codex/${target.platform}-${target.arch}/codex-acp`,
-      ]);
-    }
-  );
-
-  it.each(RELEASE_ARTIFACT_TARGETS)(
-    'placeholders exactly the foreign codex-acp binaries in $artifactName',
-    target => {
-      const entries = archiveCompanionEntries({
-        allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-        target,
-      });
-
-      expect(pathsOfKind(entries, 'placeholder')).toEqual(
-        RUN_CODEX_ACP_BINARY_TARGETS.filter(
-          codexTarget =>
-            codexTarget.platform !== target.platform || codexTarget.arch !== target.arch
-        ).map(codexTarget => codexTarget.relativePath)
-      );
-    }
-  );
-
-  it.each(RELEASE_ARTIFACT_TARGETS)('copies the portable assets into $artifactName', target => {
-    const entries = archiveCompanionEntries({
-      allRelativePaths: ALL_COMPANION_RELATIVE_PATHS,
-      target,
-    });
-
-    expect(pathsOfKind(entries, 'copy')).toEqual(
-      expect.arrayContaining([
-        ...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
-        ...RUN_COMPANION_MODULE_FILENAMES,
-        ...RUN_COMPANION_MODULE_FILENAMES.map(fileName => `services/${fileName}`),
-      ])
-    );
+  it('copies the live companions and their bundles, and nothing else', () => {
+    expect(pathsOfKind('copy')).toEqual([
+      'generation-runtime.mjs',
+      'run-helpers-runtime.mjs',
+      'services/generation-runtime.mjs',
+      'services/run-helpers-runtime.mjs',
+    ]);
   });
 });
 
 /**
- * Packaging names {@link RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS} in every
- * archive, because a CLI released before 2026-08-18 verifies an upgrade package
- * against all four codex-acp paths and refuses one that is missing any of them.
+ * An already-released CLI verifies a downloaded upgrade package with its own
+ * path list, by existence only. From 0.2.15 it also follows the relative `.mjs`
+ * imports of each wrapper it requires. The lists below are what each range of
+ * stable releases asks for, spelled out because those binaries no longer change.
  */
-describe('published archive companion coverage', () => {
-  it.each(RUN_CODEX_ACP_BINARY_TARGETS)(
-    'names the $platform-$arch codex-acp binary in every archive',
-    codexTarget => {
-      expect(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS).toContain(codexTarget.relativePath);
-    }
+describe('upgrade from already-released clients', () => {
+  const entries = archiveCompanionEntries(LIVE_COMPANION_RELATIVE_PATHS);
+  const entryPaths = entries.map(entry => entry.relativePath);
+
+  const clientRanges: ReadonlyArray<{
+    readonly range: string;
+    readonly requiredFor: (host: string) => ReadonlyArray<string>;
+  }> = [
+    {
+      range: '0.2.12 - 0.2.14',
+      requiredFor: () => LEGACY_WRAPPERS,
+    },
+    {
+      range: '0.2.15 - 0.3.3',
+      requiredFor: () => [
+        'run-helpers-runtime.mjs',
+        'services/run-helpers-runtime.mjs',
+        ...LEGACY_WRAPPERS,
+        'acp-adapters/claude-code-acp.mjs',
+        'acp-adapters/cli.js',
+        'acp-adapters/codex/darwin-arm64/codex-acp',
+        'acp-adapters/codex/darwin-x64/codex-acp',
+        'acp-adapters/codex/linux-arm64/codex-acp',
+        'acp-adapters/codex/linux-x64/codex-acp',
+      ],
+    },
+    {
+      range: '0.4.0 - 0.4.2',
+      requiredFor: host => [
+        'run-helpers-runtime.mjs',
+        'services/run-helpers-runtime.mjs',
+        'generation-runtime.mjs',
+        'services/generation-runtime.mjs',
+        ...LEGACY_WRAPPERS,
+        'acp-adapters/claude-code-acp.mjs',
+        'acp-adapters/cli.js',
+        `acp-adapters/codex/${host}/codex-acp`,
+      ],
+    },
+  ];
+
+  const cases = clientRanges.flatMap(({ range, requiredFor }) =>
+    ['darwin-arm64', 'darwin-x64', 'linux-x64', 'linux-arm64'].map(host => ({
+      range,
+      host,
+      required: requiredFor(host),
+    }))
   );
 
-  it('covers one codex-acp binary per release artifact', () => {
-    expect(codexAcpRelativePathsIn(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS)).toHaveLength(
-      RELEASE_ARTIFACT_TARGETS.length
-    );
-  });
-
-  it('keeps the portable assets alongside them', () => {
-    expect(RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS).toEqual(
-      expect.arrayContaining([...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS])
-    );
+  it.each(cases)('a $range client finds every path it requires on $host', ({ required }) => {
+    expect(entryPaths).toEqual(expect.arrayContaining([...required]));
   });
 });

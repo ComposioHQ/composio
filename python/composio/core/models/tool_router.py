@@ -1090,8 +1090,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             "user_id": user_id,
         }
         if instant is not None:
-            # The pinned generated client has no `instant` keyword yet.
-            create_params["extra_body"] = {"instant": instant}
+            create_params["instant"] = instant
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {

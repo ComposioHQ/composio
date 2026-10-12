@@ -1,3 +1,4 @@
+import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
 import type { PlatformError } from 'effect/PlatformError';
 import {
@@ -661,6 +662,7 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     const invocation = yield* getCliInvocationContext;
     const body = createCliCodactFailureBody(failure, cliSessionId, invocation);
     const request = yield* HttpClientRequest.post(endpoint).pipe(
+      HttpClientRequest.setHeaders(cliRequestHeaders()),
       HttpClientRequest.setHeader('x-user-api-key', userApiKey),
       HttpClientRequest.bodyJson(body)
     );
