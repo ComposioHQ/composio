@@ -4,6 +4,7 @@ import json
 import typing as t
 
 import pydantic
+import typing_extensions as te
 from agents import FunctionTool
 
 from composio.core.provider import AgenticProvider
@@ -80,7 +81,7 @@ class OpenAIAgentsProvider(
     """
 
     def __init__(
-        self, strict: bool = False, **kwargs: t.Unpack[BaseProviderConfig]
+        self, strict: bool = False, **kwargs: te.Unpack[BaseProviderConfig]
     ) -> None:
         """
         :param strict: Emit wrapped tools with ``strict: true`` and normalize
