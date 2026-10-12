@@ -383,4 +383,37 @@ describe('PusherService unsubscribe disconnect', () => {
     expect(mockPusherClient.subscribe).not.toHaveBeenCalled();
     expect(mockDisconnect.mock.calls.length).toBe(pusherConstructorOptions.length);
   });
+
+  it('resolves quietly when credentials reject after unsubscribe cancelled the setup', async () => {
+    let rejectCredentials!: (error: Error) => void;
+    mockGetCredentials.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectCredentials = reject;
+        })
+    );
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    const pending = service.subscribe(vi.fn());
+    await service.unsubscribe();
+    rejectCredentials(new Error('network down'));
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(pusherConstructorOptions).toHaveLength(0);
+  });
+
+  it('still throws when credentials reject without a cancel', async () => {
+    mockGetCredentials.mockRejectedValueOnce(new Error('network down'));
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await expect(service.subscribe(vi.fn())).rejects.toThrow(
+      'Failed to subscribe to Pusher channel'
+    );
+  });
 });

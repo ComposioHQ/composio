@@ -84,6 +84,10 @@ export class PusherService {
     try {
       sdkRealtimeCredentials = await internalService.getSDKRealtimeCredentials();
     } catch (error) {
+      // Cancelled while waiting: the failure no longer matters to anyone.
+      if (generation !== this.initGeneration) {
+        throw new PusherInitCancelledError();
+      }
       throw new ComposioFailedToGetSDKRealtimeCredentialsError(
         'Failed to get SDK realtime credentials',
         {
@@ -123,8 +127,8 @@ export class PusherService {
         },
       });
     } catch (error) {
-      if (error instanceof PusherInitCancelledError) {
-        throw error;
+      if (error instanceof PusherInitCancelledError || generation !== this.initGeneration) {
+        throw new PusherInitCancelledError();
       }
       throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
         cause: error,
