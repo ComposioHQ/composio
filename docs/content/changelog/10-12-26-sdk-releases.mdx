@@ -34,8 +34,8 @@ Session config and execution types now come from the API client, and Python's In
 
 **Python**
 
-- `session.execute().instant_charge`, `session.config.instant`, and `log.metadata.instant_charge` are models, not dictionaries.
-- `ToolRouterSessionExecuteResponse` and `ToolRouterSessionSearchResponse` alias the client's classes, and the `ToolRouterInstant*` names are gone from `composio.core.models.tool_router_session`.
+- `session.execute().instant_charge` and `session.config.instant` are models, not dictionaries.
+- `ToolRouterSessionExecuteResponse` and `ToolRouterSessionSearchResponse` alias the client's classes. `ToolRouterInstantResponse`, `ToolRouterInstantResponseEnable`, `ToolRouterInstantResponseDisable`, and `ToolRouterInstantAccount` are gone from `composio.core.models.tool_router_session`. The input types `ToolRouterInstantConfig`, `ToolRouterInstantEnable`, and `ToolRouterInstantDisable` are unchanged.
 - `ToolExecuteParams` no longer has `allow_tracing` and `entity_id`, which were never sent to the API.
 
 **Before:**
