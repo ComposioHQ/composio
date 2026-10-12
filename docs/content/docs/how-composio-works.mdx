@@ -128,6 +128,18 @@ const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_
 
 Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
+Read `result.result_type` in Python or `result.resultType` in TypeScript to distinguish `completed` from `failed`. A failed execution can have an empty `error`, so checking `error` alone doesn't tell you whether the tool succeeded. If you pass a custom TypeScript `ToolCallSession` to a provider, its `execute()` method must return `resultType`; providers use it to determine `successful`.
+
+#### Handling requests for user input
+
+A session tool can request user input, such as an approval, before it runs. In Python, catch `ToolInputRequiredError` from `composio.exceptions`. In TypeScript, catch `ComposioToolInputRequiredError` from `@composio/core`. The error carries the questions on `input_requests` / `inputRequests` and opaque continuation state on `request_state` / `requestState`.
+
+This also applies to provider-wrapped session tools, `session.proxy_execute()` / `session.proxyExecute()`, and the session execution helpers passed to custom tools. Present the questions to your user rather than treating the error as an empty tool result.
+
+<Callout type="warn">
+An input-required call has not executed and is not retried. The SDKs don't submit answers yet. Keep the continuation state unchanged for resuming the request; it is excluded from logs and serialized error output, so read it directly from the error object.
+</Callout>
+
 ## Sandbox
 
 Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.

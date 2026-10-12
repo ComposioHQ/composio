@@ -166,6 +166,8 @@ Don't set the `Authorization` header yourself through `parameters`. Composio inj
 
 `status` and `data` reflect exactly what the toolkit API returned, so check `status` and branch on the common failures.
 
+If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/how-composio-works#handling-requests-for-user-input) for the error fields and continuation state.
+
 | Status | Typical cause | How to resolve |
 |---|---|---|
 | `400 Bad Request` | Malformed endpoint path, invalid body, or unsupported `method`. | Check the upstream API docs for the expected shape. The proxy doesn't validate upstream schemas. |
