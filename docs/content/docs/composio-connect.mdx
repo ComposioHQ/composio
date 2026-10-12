@@ -1,7 +1,7 @@
 ---
 title: Composio Connect
 description: Connect Composio to an existing MCP client without using the SDK
-keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent, atomic bot]
+keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, muse, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent, atomic bot]
 ---
 
 Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
@@ -113,6 +113,37 @@ For each new chat, click **+**, choose **More**, then select **Composio** to ena
 Open the [Composio plugin in the Cursor marketplace](https://cursor.com/marketplace/composio), click **Install Composio Plugin for Cursor**, and authorize in your browser.
 
 <Video src="/videos/cursor-plugin-installation.mp4" poster="/videos/cursor-plugin-installation-poster.jpg" caption="Installing the Cursor plugin" />
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="muse" name="Muse" description="Meta's personal agent" icon="/images/clients/muse.svg" category="popular">
+
+Muse builds the connector from a chat message, so there is no settings form. Use `https://connect.composio.dev/mcp` as the URL, not a `backend.composio.dev` URL.
+
+<Steps>
+<Step>
+<StepTitle>Ask Muse to connect to Composio</StepTitle>
+
+Start a new Muse chat and send this message:
+
+```
+Create a Custom Connector for the Composio remote MCP server and connect to it:
+- Name: Composio
+- Transport: remote streamable HTTP
+- URL: https://connect.composio.dev/mcp
+- Auth: API key sent in the x-consumer-api-key header
+Use exactly this URL. Don't look it up in the Composio docs or swap in another host such as backend.composio.dev.
+Open the secure credentials store so I can enter the API key there, not in this chat. Then list its tools to confirm the connection works.
+```
+
+</Step>
+<Step>
+<StepTitle>Add your API key in the secure credentials store</StepTitle>
+
+Copy your consumer API key from the AI Clients setup in the Composio dashboard. Don't paste it into the chat. Tap the button Muse shows to open **Add custom connector**, paste the key, then tap **Add**. Muse lists the Composio tools once it connects.
 
 </Step>
 </Steps>
