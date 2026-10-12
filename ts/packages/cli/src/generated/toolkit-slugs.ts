@@ -47,6 +47,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'ahrefs_mcp',
   'ai_ml_api',
   'aimtell',
+  'aircall',
   'airops_mcp',
   'airparser',
   'airtable',
@@ -146,6 +147,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'better_stack',
   'better_stack_mcp',
   'bettercontact',
+  'bfl',
   'bidsketch',
   'big_data_cloud',
   'bigdata_com_mcp',
@@ -631,6 +633,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'glasp',
   'gleap',
   'gleif',
+  'glide_mcp',
   'globalping',
   'gmail',
   'go_table',
@@ -713,6 +716,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'higgsfield_mcp',
   'highergov',
   'highlevel',
+  'highlevel_agency',
   'highlevel_mcp',
   'hireflix',
   'hitl',
@@ -760,7 +764,6 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'inistate',
   'insighto_ai',
   'inspo_mcp',
-  'instacart',
   'instagram',
   'instantly',
   'instatus',
@@ -865,6 +868,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'linkhut',
   'linkly',
   'linkup',
+  'linq',
   'listclean',
   'listennotes',
   'livesession',
@@ -1120,6 +1124,8 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'placid',
   'plaid_mcp',
   'plain',
+  'plain_mcp',
+  'planetscale',
   'planly',
   'planyo_online_booking',
   'plasmic',
@@ -1492,6 +1498,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'unipile',
   'unisender',
   'uniswap_api',
+  'unleash',
   'updown_io',
   'uplisting',
   'upload_post',
@@ -1504,6 +1511,7 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
   'v0',
   'vantage_mcp',
   'vapi',
+  'vaquill',
   'vast_ai',
   'vectorshift',
   'veo',
@@ -1608,4 +1616,4 @@ export const BAKED_TOOLKIT_SLUGS: ReadonlyArray<string> = [
 ];
 
 /** When the list above was generated. */
-export const BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '2026-10-05T06:42:48.864Z';
+export const BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '2026-10-12T06:43:30.353Z';
