@@ -328,4 +328,59 @@ describe('PusherService unsubscribe disconnect', () => {
     expect(mockGetCredentials).toHaveBeenCalledTimes(2);
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
+
+  it('shares one client between concurrent first subscribes', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await Promise.all([service.subscribe(vi.fn()), service.subscribe(vi.fn())]);
+
+    expect(mockGetCredentials).toHaveBeenCalledTimes(1);
+    expect(pusherConstructorOptions).toHaveLength(1);
+
+    await service.unsubscribe();
+    expect(mockDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels a subscribe that is still fetching credentials', async () => {
+    let releaseCredentials!: () => void;
+    mockGetCredentials.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          releaseCredentials = () =>
+            resolve({ projectId: 'project-id', pusherKey: 'pusher-key', pusherCluster: 'mt1' });
+        })
+    );
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    const pending = service.subscribe(vi.fn());
+    await service.unsubscribe();
+    releaseCredentials();
+    await pending;
+
+    expect(pusherConstructorOptions).toHaveLength(0);
+    expect(mockPusherClient.subscribe).not.toHaveBeenCalled();
+  });
+
+  it('tears down a client created after unsubscribe cancelled the setup', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    const pending = service.subscribe(vi.fn());
+    // let credentials resolve so setup is waiting on the pusher-js import
+    await Promise.resolve();
+    await Promise.resolve();
+    await service.unsubscribe();
+    await pending;
+
+    expect(mockPusherClient.subscribe).not.toHaveBeenCalled();
+    expect(mockDisconnect.mock.calls.length).toBe(pusherConstructorOptions.length);
+  });
 });

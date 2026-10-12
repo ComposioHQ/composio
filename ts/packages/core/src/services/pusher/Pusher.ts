@@ -17,6 +17,14 @@ export type PusherServiceOptions = {
   defaultHeaders?: ComposioRequestHeaders;
 };
 
+/** Internal signal: client setup was cancelled by unsubscribe(). */
+class PusherInitCancelledError extends Error {
+  constructor() {
+    super('Pusher client initialization cancelled by unsubscribe');
+    this.name = 'PusherInitCancelledError';
+  }
+}
+
 export class PusherService {
   // these values are set via the Apollo API `/internal/sdk/realtime/credentials` endpoint
   private clientId!: string;
@@ -27,6 +35,10 @@ export class PusherService {
   private pusherBaseURL!: string;
   private authHeaders!: Record<string, string>;
   private pusherClient?: PusherClient;
+  // Shared by concurrent callers while the first client is being created.
+  private pusherClientInit?: Promise<PusherClient>;
+  // Bumped by unsubscribe(); an init started under an older generation is stale.
+  private initGeneration = 0;
   private composioClient!: ComposioClient;
 
   constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
@@ -48,11 +60,25 @@ export class PusherService {
    * This method is called when the Pusher client is first used.
    * It will fetch the SDK realtime credentials from the Apollo API and create a Pusher client.
    */
-  private async getPusherClient() {
+  private async getPusherClient(): Promise<PusherClient> {
     if (this.pusherClient) {
       return this.pusherClient;
     }
+    // Concurrent first callers share one in-flight creation, so only one
+    // websocket is ever opened.
+    if (!this.pusherClientInit) {
+      const generation = this.initGeneration;
+      const init = this.createPusherClient(generation).finally(() => {
+        if (this.pusherClientInit === init) {
+          this.pusherClientInit = undefined;
+        }
+      });
+      this.pusherClientInit = init;
+    }
+    return this.pusherClientInit;
+  }
 
+  private async createPusherClient(generation: number): Promise<PusherClient> {
     const internalService = new InternalService(this.composioClient);
     let sdkRealtimeCredentials: SDKRealtimeCredentialsResponse;
     try {
@@ -66,9 +92,9 @@ export class PusherService {
       );
     }
 
-    // Another subscribe may have finished while we awaited credentials.
-    if (this.pusherClient) {
-      return this.pusherClient;
+    // unsubscribe() ran while we awaited credentials: do not connect.
+    if (generation !== this.initGeneration) {
+      throw new PusherInitCancelledError();
     }
 
     this.clientId = sdkRealtimeCredentials.projectId;
@@ -81,9 +107,14 @@ export class PusherService {
     );
 
     // create the Pusher client
+    let client: PusherClient;
     try {
       const { default: Pusher } = await import('pusher-js');
-      this.pusherClient = new Pusher(this.pusherKey, {
+      // unsubscribe() ran while we awaited the import: do not connect.
+      if (generation !== this.initGeneration) {
+        throw new PusherInitCancelledError();
+      }
+      client = new Pusher(this.pusherKey, {
         cluster: this.pusherCluster,
         channelAuthorization: {
           endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
@@ -92,12 +123,16 @@ export class PusherService {
         },
       });
     } catch (error) {
+      if (error instanceof PusherInitCancelledError) {
+        throw error;
+      }
       throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
         cause: error,
       });
     }
 
-    return this.pusherClient;
+    this.pusherClient = client;
+    return client;
   }
 
   /**
@@ -190,7 +225,17 @@ export class PusherService {
   ) {
     try {
       logger.debug(`[PusherService] Subscribing to channel: ${this.pusherChannel}`);
-      const pusherClient = await this.getPusherClient();
+      let pusherClient: PusherClient;
+      try {
+        pusherClient = await this.getPusherClient();
+      } catch (error) {
+        // unsubscribe() was called before setup finished; honour it.
+        if (error instanceof PusherInitCancelledError) {
+          logger.debug('[PusherService] Subscribe cancelled by unsubscribe before connecting');
+          return;
+        }
+        throw error;
+      }
       const channel = await pusherClient.subscribe(this.pusherChannel);
 
       // add subscription error handling
@@ -255,6 +300,12 @@ export class PusherService {
       // subscribe (or after a prior disconnect) is a no-op.
       const pusherClient = this.pusherClient;
       if (!pusherClient) {
+        // A subscribe may still be fetching credentials or importing
+        // pusher-js; invalidate it so it never opens a connection.
+        if (this.pusherClientInit) {
+          this.initGeneration++;
+          this.pusherClientInit = undefined;
+        }
         return;
       }
 
@@ -269,6 +320,7 @@ export class PusherService {
       if (!hasActiveSubscription) {
         pusherClient.disconnect?.();
         this.pusherClient = undefined;
+        this.initGeneration++;
       }
 
       logger.info(`✅ Unsubscribed from triggers.`);
