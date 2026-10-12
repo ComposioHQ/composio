@@ -10,7 +10,6 @@ pnpm build:packages
 pnpm test
 pnpm test:e2e
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```
@@ -28,7 +27,7 @@ pnpm --filter @composio/<provider> typecheck
 
 ## When To Use E2E
 
-- Use Node/Deno/Cloudflare E2E for runtime packaging or module-resolution regressions.
+- Use Node/Cloudflare E2E for runtime packaging or module-resolution regressions.
 - Use CLI E2E for CLI binary behavior and output contracts.
 - Docker must be available for runtime and CLI E2E tests.
 

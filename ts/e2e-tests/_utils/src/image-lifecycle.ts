@@ -97,20 +97,6 @@ function defaultNodeLabels(nodeVersion?: string): Record<string, string> {
 }
 
 /**
- * Creates default Docker labels for Deno e2e images.
- */
-function defaultDenoLabels(denoVersion?: string): Record<string, string> {
-  const labels: Record<string, string> = {
-    'composio.e2e': 'true',
-    'composio.runtime': 'deno',
-  };
-  if (denoVersion) {
-    labels['composio.deno_version'] = denoVersion;
-  }
-  return labels;
-}
-
-/**
  * Creates default Docker labels for CLI e2e images.
  */
 function defaultCliLabels(cliVersion?: string): Record<string, string> {
@@ -199,8 +185,8 @@ export async function checkDocker(options: CheckDockerOptions = {}): Promise<Exe
 }
 
 // bun and pnpm are installed inside the images from mise.toml/mise.lock, so only the
-// matrixed runtimes (node, deno) need to be resolved on the host and threaded as build args.
-async function getMiseVersion(tool: 'node' | 'deno', repoRoot: string): Promise<string> {
+// matrixed runtime (node) needs to be resolved on the host and threaded as a build arg.
+async function getMiseVersion(tool: 'node', repoRoot: string): Promise<string> {
   const result = await exec('mise', ['current', tool], { cwd: repoRoot });
   const version = result.stdout.trim();
   if (result.exitCode !== 0 || !version) {
@@ -209,10 +195,6 @@ async function getMiseVersion(tool: 'node' | 'deno', repoRoot: string): Promise<
     );
   }
   return version;
-}
-
-function getMajorVersion(version: string): string {
-  return version.split('.')[0] ?? version;
 }
 
 /**
@@ -357,186 +339,6 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
     dockerArgs.push('sh', '-c', cmd);
   } else {
     throw new Error('runNodeContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
-  }
-
-  return exec('docker', dockerArgs);
-}
-
-// ============================================================================
-// Deno Docker utilities
-// ============================================================================
-
-/**
- * Options for running a Deno container.
- */
-export interface RunDenoContainerOptions {
-  imageTag: string;
-  cmd: string | string[];
-  cwd?: string;
-  mounts?: DockerMount[];
-  /** Named volume mounts (volumes must be created beforehand with `docker volume create`) */
-  volumes?: DockerVolumeMount[];
-  env?: Record<string, string | undefined>;
-  labels?: Record<string, string>;
-  name?: string;
-  /** Whether to auto-remove the container after exit (default: true) */
-  remove?: boolean;
-}
-
-/**
- * Options for ensureDenoImage.
- */
-export interface EnsureDenoImageOptions {
-  repoRoot?: string;
-  dockerfilePath?: string;
-}
-
-/**
- * Creates image tag for a given Deno version.
- */
-function imageTagForDenoVersion(denoVersion: string): string {
-  return `composio-e2e-deno:${denoVersion}`;
-}
-
-/**
- * Parses Deno version from an image tag.
- */
-function parseDenoVersionFromImageTag(imageTag: string): string | undefined {
-  const match = /^composio-e2e-deno:(.+)$/.exec(imageTag);
-  return match?.[1];
-}
-
-/**
- * Ensures a Docker image exists for the given Deno version, building it if necessary.
- */
-export async function ensureDenoImage(
-  denoVersion: string,
-  options: EnsureDenoImageOptions = {}
-): Promise<string> {
-  if (!denoVersion || typeof denoVersion !== 'string') {
-    throw new Error(`ensureDenoImage(${denoVersion}): denoVersion must be a non-empty string`);
-  }
-
-  const repoRoot = options.repoRoot ?? getRepoRoot();
-  const dockerfilePath =
-    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.deno');
-  const imageTag = imageTagForDenoVersion(denoVersion);
-  const nodeVersion = await getMiseVersion('node', repoRoot);
-
-  const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
-  if (inspect.exitCode === 0) {
-    return imageTag;
-  }
-
-  const buildArgs = [
-    'build',
-    '-f',
-    dockerfilePath,
-    '--build-arg',
-    `DENO_VERSION=${denoVersion}`,
-    '--build-arg',
-    `NODE_MAJOR=${getMajorVersion(nodeVersion)}`,
-    ...labelsToArgs(defaultDenoLabels(denoVersion)),
-    '-t',
-    imageTag,
-    repoRoot,
-  ];
-
-  const built = await exec('docker', buildArgs, { cwd: repoRoot });
-  if (built.exitCode !== 0) {
-    // Handle race condition: concurrent builds may fail because another build
-    // already tagged the image. If the image now exists, treat it as success.
-    const output = built.stderr || built.stdout;
-    if (output.includes('already exists')) {
-      const recheck = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
-      if (recheck.exitCode === 0) {
-        return imageTag;
-      }
-    }
-
-    const err = new Error(`Failed to build Docker image ${imageTag}`);
-    (err as Error & { cause: Error }).cause = new Error(output);
-    throw err;
-  }
-
-  return imageTag;
-}
-
-/**
- * Runs a command in a Deno Docker container.
- */
-export async function runDenoContainer(options: RunDenoContainerOptions): Promise<ExecResult> {
-  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name, remove } = options;
-
-  // Validate imageTag is provided, as it determines which Docker image to run.
-  if (!imageTag || typeof imageTag !== 'string') {
-    throw new Error('runDenoContainer({ imageTag, ... }): imageTag must be a non-empty string');
-  }
-
-  const denoVersion = parseDenoVersionFromImageTag(imageTag);
-
-  const dockerArgs = ['run'];
-  if (remove !== false) {
-    dockerArgs.push('--rm');
-  }
-
-  dockerArgs.push(...labelsToArgs({ ...defaultDenoLabels(denoVersion), ...(labels ?? {}) }));
-
-  // Assign a custom container name for easier identification and cleanup.
-  if (name) {
-    dockerArgs.push('--name', name);
-  }
-
-  // Set the working directory inside the container, defaulting relative paths to /app.
-  if (cwd) {
-    const containerCwd = cwd.startsWith('/') ? cwd : `/app/${cwd}`;
-    dockerArgs.push('--workdir', containerCwd);
-  }
-
-  addHostComposioMount(dockerArgs, '/root/.composio');
-
-  // Pass environment variables to the container for runtime configuration.
-  dockerArgs.push(...envToArgs(env));
-
-  // Configure bind mounts to share host directories with the container.
-  if (mounts) {
-    for (const m of mounts) {
-      // Ensure each mount has required source and target paths.
-      if (!m?.source || !m?.target) {
-        throw new Error('runDenoContainer(...): each mount must have { source, target }');
-      }
-      const parts = [`type=bind`, `src=${m.source}`, `dst=${m.target}`];
-      // Mark mount as read-only to prevent container from modifying host files.
-      if (m.readonly) parts.push('readonly');
-      dockerArgs.push('--mount', parts.join(','));
-    }
-  }
-
-  // Configure named volume mounts for sharing state between container runs.
-  if (volumes) {
-    for (const v of volumes) {
-      // Ensure each volume mount has required volume name and target path.
-      if (!v?.volume || !v?.target) {
-        throw new Error('runDenoContainer(...): each volume must have { volume, target }');
-      }
-      const parts = [`type=volume`, `src=${v.volume}`, `dst=${v.target}`];
-      // Mark mount as read-only if specified.
-      if (v.readonly) parts.push('readonly');
-      dockerArgs.push('--mount', parts.join(','));
-    }
-  }
-
-  dockerArgs.push(imageTag);
-
-  // Handle cmd as array for direct execution without shell interpretation.
-  if (Array.isArray(cmd)) {
-    dockerArgs.push(...cmd.map(String));
-    // Preserve the image's configured PATH instead of resetting it in a login shell.
-    // Callers must explicitly use 'deno run --allow-all <file>' when running Deno scripts.
-  } else if (typeof cmd === 'string' && cmd.length > 0) {
-    dockerArgs.push('sh', '-c', cmd);
-  } else {
-    throw new Error('runDenoContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
   }
 
   return exec('docker', dockerArgs);

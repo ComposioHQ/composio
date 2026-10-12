@@ -8,14 +8,13 @@ End-to-end tests for `@composio/core` and the CLI across different runtimes.
 ts/e2e-tests/
 ├── _utils/                                  # Shared test infrastructure
 │   ├── Dockerfile.node                      # Docker image for Node.js tests
-│   ├── Dockerfile.deno                      # Docker image for Deno tests
 │   ├── Dockerfile.cli                       # Docker image for CLI tests (scratch)
 │   ├── scripts/                             # Docker build and cleanup scripts
-│   │   ├── docker-build.ts                  # Pre-build images for all Node/Deno/CLI versions
+│   │   ├── docker-build.ts                  # Pre-build images for all Node/CLI versions
 │   │   └── docker-clean.ts                  # Remove all e2e Docker images
 │   ├── src/                                 # TypeScript runner utilities
 │   │   ├── config.ts                        # Configuration utilities
-│   │   ├── const.ts                         # Well-known Node.js/Deno versions and timeouts
+│   │   ├── const.ts                         # Well-known Node.js versions and timeouts
 │   │   ├── e2e.ts                           # Main e2e test entry point
 │   │   ├── image-lifecycle.ts               # Docker image build/run utilities
 │   │   ├── index.ts                         # Public exports
@@ -39,8 +38,6 @@ ts/e2e-tests/
     │   ├── tool-router-pagination/          # Tool Router session.toolkits() cursor pagination
     │   ├── tool-router-session-update/      # Tool Router session.update() with default options (live API)
     │   └── typescript-mjs-import-nodenext/  # TypeScript moduleResolution: nodenext tests
-    ├── deno/                                # Deno runtime tests
-    │   └── esm-basic/                       # ESM compatibility tests via npm: specifier
     └── cloudflare/                          # Cloudflare runtime tests
         ├── cf-workers-basic/                # Basic Cloudflare Workers tests
         ├── cf-workers-files/                # Cloudflare Workers file handling tests
@@ -74,20 +71,6 @@ To run with a specific Node.js version:
 
 ```bash
 COMPOSIO_E2E_NODE_VERSION=22.22.3 pnpm test:e2e:node
-```
-
-### Deno Tests Only
-
-```bash
-pnpm test:e2e:deno
-```
-
-Runs Deno tests in Docker using `bun test`. The default Deno version is determined by `mise.toml`.
-
-To run with a specific Deno version:
-
-```bash
-COMPOSIO_E2E_DENO_VERSION=2.6.7 pnpm test:e2e:deno
 ```
 
 ### Cloudflare Workers Tests Only
@@ -148,45 +131,6 @@ e2e(import.meta.url, {
 ```
 
 5. Add fixture files in a `fixtures/` directory
-
-### Deno Runtime Tests
-
-1. Create a new directory under `runtimes/deno/` (e.g., `runtimes/deno/my-test`)
-2. Add a `package.json` with name `@e2e-tests/deno-my-test`
-3. Add `test:e2e` and `test:e2e:deno` scripts
-4. Create an `e2e.test.ts` file with inline configuration:
-
-```typescript
-import { e2e, type E2ETestResult } from '@e2e-tests/utils';
-import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-e2e(import.meta.url, {
-  versions: {
-    deno: ['2.6.7'], // Optional: defaults to the current version in mise.toml
-  },
-  usesFixtures: true,
-  defineTests: ({ runtime, runFixture }) => {
-    let result: E2ETestResult;
-
-    beforeAll(async () => {
-      result = await runFixture({ filename: 'test.ts' });
-    }, TIMEOUTS.FIXTURE);
-
-    describe('output', () => {
-      it('exits successfully', () => {
-        expect(result.exitCode).toBe(0);
-      });
-
-      it('contains expected output', () => {
-        expect(result.stdout).toContain('expected text');
-      });
-    });
-  },
-});
-```
-
-5. Add fixture files in a `fixtures/` directory. Fixtures use Deno's `npm:` specifier to import packages.
 
 ### Tests with External Dependencies (npm install)
 

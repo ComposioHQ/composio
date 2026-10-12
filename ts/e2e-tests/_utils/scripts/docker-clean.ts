@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Removes all Docker images used by Node.js, Deno, and CLI e2e tests.
+ * Removes all Docker images used by Node.js and CLI e2e tests.
  * Images are identified by the label `composio.e2e=true`.
  */
 
 import { $ } from 'bun';
 
-async function cleanImages(runtime: 'node' | 'deno' | 'cli'): Promise<number> {
-  const runtimeLabel = runtime === 'node' ? 'Node.js' : runtime === 'deno' ? 'Deno' : 'CLI';
+async function cleanImages(runtime: 'node' | 'cli'): Promise<number> {
+  const runtimeLabel = runtime === 'node' ? 'Node.js' : 'CLI';
   console.log(`Finding e2e ${runtimeLabel} Docker images...`);
 
   // Find all images with the e2e labels
@@ -56,9 +56,6 @@ async function main() {
 
   // Clean Node.js images
   totalFailures += await cleanImages('node');
-
-  // Clean Deno images
-  totalFailures += await cleanImages('deno');
 
   // Clean CLI images
   totalFailures += await cleanImages('cli');
