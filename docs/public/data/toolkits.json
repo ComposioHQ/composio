@@ -13,7 +13,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 2,
-    "version": "20261009_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -5320,7 +5320,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 7,
-    "version": "20261009_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "GOOGLECALENDAR_ACL_DELETE",
@@ -20610,7 +20610,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "FIGMA_ADD_A_COMMENT_TO_A_FILE",
@@ -22334,7 +22334,7 @@
     ],
     "toolCount": 144,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "WRIKE_BULK_MODIFY_GROUPS",
@@ -54232,7 +54232,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "MIXPANEL_ADD_UNIQUE_TO_PROFILE_LIST_PROPERTY",
@@ -55991,7 +55991,7 @@
     ],
     "toolCount": 54,
     "triggerCount": 0,
-    "version": "20260623_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "AMPLITUDE_ASSIGN_ANNOTATIONS_TO_CATEGORY",
@@ -67028,7 +67028,7 @@
     ],
     "toolCount": 507,
     "triggerCount": 48,
-    "version": "20261009_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -82388,7 +82388,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 0,
-    "version": "20260821_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "RECALLAI_CREATE_BOT",
@@ -106816,7 +106816,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA",
@@ -111713,7 +111713,7 @@
     ],
     "toolCount": 133,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "INTERCOM_ADD_SUBSCRIPTION_TO_A_CONTACT",
@@ -123903,6 +123903,344 @@
     ]
   },
   {
+    "slug": "aircall",
+    "name": "Aircall",
+    "logo": "https://logos.composio.dev/api/aircall",
+    "description": "Aircall is a cloud-based phone and call-center platform. This toolkit manages users, teams, phone numbers, calls, contacts, and tags on a single Aircall company account via the Public API.",
+    "category": "communication",
+    "authSchemes": [
+      "OAUTH2",
+      "BASIC"
+    ],
+    "toolCount": 48,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "AIRCALL_ADD_CONTACT_METHOD",
+        "name": "Add Contact Method",
+        "description": "Add a phone number or an email address to an existing Aircall contact. Set method_type='phone' to add a phone number or method_type='email' to add an email address. The value and any supplied label must be nonblank, but this tool does not impose E.164 or strict email formatting. If the label is omitted, Aircall defaults it to 'Main'. Use when a contact already exists and needs another way to be reached; not for creating the contact itself (AIRCALL_CREATE_CONTACT), and not for changing a method that is already on the contact (AIRCALL_UPDATE_CONTACT_METHOD). Returns the created method as 'contact_method' ({id, method_type, label, value}) — keep its id to update or delete it later."
+      },
+      {
+        "slug": "AIRCALL_ADD_USER_TO_TEAM",
+        "name": "Add User to Team",
+        "description": "Add a User to a Team (membership change). Returns the updated team."
+      },
+      {
+        "slug": "AIRCALL_COMMENT_CALL",
+        "name": "Add Comment to Call",
+        "description": "Add a comment/note to a Call (max 5 comments per call; emojis are stripped). Returns success on HTTP 201."
+      },
+      {
+        "slug": "AIRCALL_CREATE_CONTACT",
+        "name": "Create Contact",
+        "description": "Create a shared Aircall contact. Use when adding someone to the shared address book; not for editing an existing one (AIRCALL_UPDATE_CONTACT), and not for attaching a phone number or email address to a contact that already exists — that is AIRCALL_ADD_CONTACT_METHOD with method_type='phone' or method_type='email'. At least one phone_numbers[] entry is required (1-20); emails[] is optional (max 20). Aircall rejects a name-only contact AND an email-only contact with HTTP 400."
+      },
+      {
+        "slug": "AIRCALL_CREATE_TAG",
+        "name": "Create Tag",
+        "description": "Create a Tag. name must be unique per company; color is a hex string (e.g. #00B388). Aircall does not accept a mutable description field."
+      },
+      {
+        "slug": "AIRCALL_CREATE_TEAM",
+        "name": "Create Team",
+        "description": "Create a new Team. Requires a name."
+      },
+      {
+        "slug": "AIRCALL_CREATE_USER",
+        "name": "Create User",
+        "description": "Create an Aircall user and send them a real invitation email, consuming a licensed seat. Use when adding a new teammate to the account; not for changing someone who already exists (AIRCALL_UPDATE_USER). Requires email, first_name and last_name. role_ids takes role NAME strings, one of owner, supervisor, admin or agent, not numeric ids."
+      },
+      {
+        "slug": "AIRCALL_CREATE_WEBHOOK",
+        "name": "Create Webhook",
+        "description": "Create an Aircall webhook targeting a public HTTPS URL. Select one or more events, or explicitly set subscribe_to_all_events=true; omission never silently subscribes the destination to every company event. Aircall permits at most 100 webhooks per company."
+      },
+      {
+        "slug": "AIRCALL_DELETE_CALL_MEDIA",
+        "name": "Delete Call Media",
+        "description": "Request permanent deletion of a Call's audio recording or voicemail, for compliance or data governance. Set media_type='recording' or media_type='voicemail'; a call may have one, both, or neither. The call record is retained, but deleting a recording on an AI Assist/Pro account also permanently removes its transcription and AI insights. Use when an audio artefact and its derived AI data must be purged; not for reading call details (AIRCALL_GET_CALL). Once processed, deletion is irreversible. A successful response means Aircall accepted the request, not that deletion is complete: recordings take 10-15 minutes and voicemails up to 1 minute, and existing download URLs may work during propagation. A recording can arrive up to 24 hours after the call, so retry later when it is not present yet."
+      },
+      {
+        "slug": "AIRCALL_DELETE_CONTACT",
+        "name": "Delete Contact",
+        "description": "Permanently delete a shared Contact and all of its phone numbers and email addresses. Irreversible — there is no undo. Use to remove a contact entirely; not for removing a single phone number or email from a contact (AIRCALL_DELETE_CONTACT_METHOD). Returns 204 (empty body)."
+      },
+      {
+        "slug": "AIRCALL_DELETE_CONTACT_METHOD",
+        "name": "Delete Contact Method",
+        "description": "Permanently remove one phone number or email address from an Aircall contact. Set method_type='phone' or method_type='email' to say which kind method_id refers to. Use when a contact should no longer be reachable that way; not for deleting the whole contact (AIRCALL_DELETE_CONTACT), and not for correcting a method's value or label (AIRCALL_UPDATE_CONTACT_METHOD). IRREVERSIBLE: the method is gone and re-adding it mints a new id. Returns {success: true} on HTTP 204."
+      },
+      {
+        "slug": "AIRCALL_DELETE_TAG",
+        "name": "Delete Tag",
+        "description": "Delete a Tag by id. Returns 204 (empty body)."
+      },
+      {
+        "slug": "AIRCALL_DELETE_TEAM",
+        "name": "Delete Team",
+        "description": "Delete a Team by id. Returns 204 (empty body). Does not delete the users in it."
+      },
+      {
+        "slug": "AIRCALL_DELETE_USER",
+        "name": "Delete User",
+        "description": "Permanently delete a User. The deletion is processed asynchronously and returns HTTP 204 (empty body); it fires a user.deleted webhook. Returns a {success, id} confirmation."
+      },
+      {
+        "slug": "AIRCALL_DELETE_WEBHOOK",
+        "name": "Delete Webhook",
+        "description": "Permanently delete an Aircall webhook. Delivery stops and its configuration is lost; use UPDATE_WEBHOOK with active=false instead when a reversible pause is preferable."
+      },
+      {
+        "slug": "AIRCALL_GET_CALL",
+        "name": "Get Call",
+        "description": "Retrieve a single Call by id, with optional contact / short-url / timeline enrichment via the fetch_* flags."
+      },
+      {
+        "slug": "AIRCALL_GET_COMPANY",
+        "name": "Get Company",
+        "description": "Retrieve information about the connected Aircall company (name, users_count, numbers_count). This is the best true auth-verify endpoint: a 200 confirms the Basic Auth credentials are valid."
+      },
+      {
+        "slug": "AIRCALL_GET_CONTACT",
+        "name": "Get Contact",
+        "description": "Retrieve a single shared Contact by id, with its nested phone_numbers[] and emails[]. NOTE: contact created_at/updated_at are UNIX-epoch INTEGERS."
+      },
+      {
+        "slug": "AIRCALL_GET_NUMBER",
+        "name": "Get Number",
+        "description": "Retrieve a single Aircall phone Number by its numeric id."
+      },
+      {
+        "slug": "AIRCALL_GET_NUMBER_REGISTRATION_STATUS",
+        "name": "Get Number Registration Status",
+        "description": "Check whether an Aircall phone number is registered for compliance (10DLC or other regulatory registration) by reading the `status` field. Use for regulatory registration state only; not for the number's name, availability or Music & Messages (AIRCALL_GET_NUMBER)."
+      },
+      {
+        "slug": "AIRCALL_GET_TAG",
+        "name": "Get Tag",
+        "description": "Retrieve a single Tag by id."
+      },
+      {
+        "slug": "AIRCALL_GET_TEAM",
+        "name": "Get Team",
+        "description": "Retrieve a single Team by id, including its member users."
+      },
+      {
+        "slug": "AIRCALL_GET_USER",
+        "name": "Get User",
+        "description": "Retrieve one Aircall user by numeric id or by email address. Both work in the id field. Use when you already have the id or email; not for browsing the roster (AIRCALL_LIST_USERS). The user's assigned phone numbers are not included. Get them from AIRCALL_LIST_USER_NUMBERS."
+      },
+      {
+        "slug": "AIRCALL_GET_USER_AVAILABILITY",
+        "name": "Get User Availability",
+        "description": "Check the current availability of one User. Returns availability ∈ available | offline | do_not_disturb | in_call | after_call_work."
+      },
+      {
+        "slug": "AIRCALL_GET_WEBHOOK",
+        "name": "Get Webhook",
+        "description": "Retrieve one Aircall webhook by its UUID or legacy numeric id."
+      },
+      {
+        "slug": "AIRCALL_LIST_CALLS",
+        "name": "List Calls",
+        "description": "List the account's calls in chronological order, covering about 6 months of history and at most 10,000 items via pagination. Window past that with the `from` UNIX timestamp. Use for plain date-ordered browsing of call activity; not when filtering by direction, user, phone number or tag, which is what AIRCALL_SEARCH_CALLS is for. An account with no calls returns an empty list with HTTP 200, never 404."
+      },
+      {
+        "slug": "AIRCALL_LIST_CONTACTS",
+        "name": "List Contacts",
+        "description": "List all shared Contacts (hard-capped at 10,000 items via pagination — window past with the `from` timestamp). Each contact embeds nested phone_numbers[] and emails[] ({id, label, value}). NOTE: contact created_at/updated_at are UNIX-epoch INTEGERS (unlike other resources). Paginated via page/per_page; pass next_cursor back as cursor while has_more is true to retrieve subsequent pages."
+      },
+      {
+        "slug": "AIRCALL_LIST_NUMBERS",
+        "name": "List Numbers",
+        "description": "List all Aircall phone Numbers in the account. Each number includes id, digits, name, country, availability and a `messages` object of audio URLs. Paginated via page/per_page; to page, pass the response's next_cursor back as cursor (has_more signals whether more pages remain)."
+      },
+      {
+        "slug": "AIRCALL_LIST_TAGS",
+        "name": "List Tags",
+        "description": "List all Tags in the account. Each tag = {id, name, color (hex), description}. Paginated via page/per_page; to page, pass the response's next_cursor back as cursor (has_more signals whether more pages remain)."
+      },
+      {
+        "slug": "AIRCALL_LIST_TEAMS",
+        "name": "List Teams",
+        "description": "List all Teams in the account. Each team embeds its member users (nested user objects). Paginated via page/per_page; to page, pass the response's next_cursor back as cursor (has_more signals whether more pages remain)."
+      },
+      {
+        "slug": "AIRCALL_LIST_USER_NUMBERS",
+        "name": "List User Numbers (V2)",
+        "description": "List all Aircall Numbers assigned to a specific User (V2, paginated). Returns one page plus a next_cursor to fetch the next. The number ids feed AIRCALL_START_OUTBOUND_CALL. Targets the /v2 API."
+      },
+      {
+        "slug": "AIRCALL_LIST_USERS",
+        "name": "List Users",
+        "description": "List the users in the Aircall account, one page at a time with a next_cursor to continue. Use when you need user ids, names, emails, availability or default_number_id; not for a single known user (AIRCALL_GET_USER), and not for the phone numbers a user can call from (AIRCALL_LIST_USER_NUMBERS)."
+      },
+      {
+        "slug": "AIRCALL_LIST_USERS_AVAILABILITY",
+        "name": "List Users Availability",
+        "description": "List the detailed availability of all Users (whether each user is available/offline/on a call, etc.). Paginated via page/per_page; to page, pass the response's next_cursor back as cursor (has_more signals whether more pages remain)."
+      },
+      {
+        "slug": "AIRCALL_LIST_WEBHOOKS",
+        "name": "List Webhooks",
+        "description": "List webhook subscriptions accessible to the connected Aircall company. This returns one page only. If next_cursor is non-null, call LIST_WEBHOOKS again with that cursor to retrieve the next page; continue until next_cursor is null. Use this to discover a webhook UUID before retrieving, updating, or deleting it."
+      },
+      {
+        "slug": "AIRCALL_PUBLISH_CALL_INSIGHT_CARD",
+        "name": "Publish Call Insight Card",
+        "description": "Display contextual title, short text, links, or Aircall user details to the agent handling an ongoing call. Cards are ephemeral: only ongoing calls show them and Aircall does not store them after the call. The JSON payload must be strictly less than 10KB."
+      },
+      {
+        "slug": "AIRCALL_REMOVE_USER_FROM_TEAM",
+        "name": "Remove User from Team",
+        "description": "Remove a User from a Team (membership change). Returns the updated team when Aircall sends HTTP 200, or a success confirmation for an empty HTTP 204. Does not delete the user."
+      },
+      {
+        "slug": "AIRCALL_SEARCH_CALLS",
+        "name": "Search Calls",
+        "description": "Find calls matching any combination of direction (inbound or outbound), user_id, phone_number and tag ids, optionally narrowed to a from/to date window. Use whenever at least one of those filters applies; not for unfiltered chronological browsing (AIRCALL_LIST_CALLS). Tag ids are AND-matched and come from AIRCALL_LIST_TAGS."
+      },
+      {
+        "slug": "AIRCALL_SEARCH_CONTACTS",
+        "name": "Search Contacts",
+        "description": "Search shared Contacts by phone_number and/or email (optionally within a from/to date window). Pass next_cursor back as cursor while has_more is true to retrieve subsequent pages. NOTE: contact created_at/updated_at are UNIX-epoch INTEGERS."
+      },
+      {
+        "slug": "AIRCALL_SET_CALL_RECORDING_STATE",
+        "name": "Set Call Recording State",
+        "description": "Pause or resume recording on an ongoing Aircall call. This is destructive: audio from a paused interval is never recorded and cannot be recovered by resuming later. The call must still be live and live recording must be enabled on its Aircall number."
+      },
+      {
+        "slug": "AIRCALL_START_OUTBOUND_CALL",
+        "name": "Start Outbound Call",
+        "description": "Place a real, billable outbound phone call from an Aircall user's desktop Workspace to an external number. Use when a specific user should dial someone now. Requires the user's desktop Workspace app to be open, the user to be available, and a number_id the user owns, from AIRCALL_LIST_USER_NUMBERS. Returns acceptance only. No call id comes back and the call may still fail to connect; locate it afterwards with AIRCALL_SEARCH_CALLS. Calling again places a second call."
+      },
+      {
+        "slug": "AIRCALL_TAG_CALL",
+        "name": "Tag Call",
+        "description": "Tag a Call with one or more existing Tag ids (create tags first with AIRCALL_CREATE_TAG). Returns success on HTTP 201."
+      },
+      {
+        "slug": "AIRCALL_TRANSFER_CALL",
+        "name": "Transfer Call",
+        "description": "Cold-transfer a call that is live right now to one user, one team, or one external phone number. The transfer takes effect immediately and cannot be undone. Use only while a call is ringing or connected; not for a call that has already ended, and not for starting a new call (AIRCALL_START_OUTBOUND_CALL). Supply exactly one of user_id, team_id or number. External-number transfers work only for unanswered inbound calls. Returns acceptance on HTTP 204; calling again transfers again."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_CONTACT",
+        "name": "Update Contact",
+        "description": "Update a Contact's core fields (first_name, last_name, company_name, information). Phone numbers and emails are edited via the dedicated contact-method tools (AIRCALL_ADD_CONTACT_METHOD / AIRCALL_UPDATE_CONTACT_METHOD / AIRCALL_DELETE_CONTACT_METHOD), not here."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_CONTACT_METHOD",
+        "name": "Update Contact Method",
+        "description": "Update one phone number or email address that is already on an Aircall contact. Set method_type='phone' or method_type='email' to say which kind method_id refers to, and always send a nonblank value — Aircall requires it on every update even when only the label changes. Use when changing a method that already exists; not for adding a new one (AIRCALL_ADD_CONTACT_METHOD), and not for removing one (AIRCALL_DELETE_CONTACT_METHOD). Answers HTTP 202 Accepted and returns the updated method as 'contact_method'."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_NUMBER",
+        "name": "Update Number",
+        "description": "Update at least one mutable Number field: name changes its display name; availability_status changes the first Time Rule widget and can open or close call routing; live_recording_activated enables or disables inbound and outbound recording, and audio missed while disabled cannot be recovered; priority changes routing priority; messages replaces or clears supplied Music & Messages audio slots heard by live callers. These routing, recording, and audio effects are destructive and no previous value is restored automatically. Capture current values with AIRCALL_GET_NUMBER before updating if you need to revert. Do not assume omitted fields or message slots are preserved or cleared because Aircall does not document partial PUT semantics."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_TAG",
+        "name": "Update Tag",
+        "description": "Update a Tag (PUT, full replace). name and color are both expected. name must remain unique per company. Aircall does not accept a mutable description field."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_USER",
+        "name": "Update User",
+        "description": "Update an existing Aircall user's name, availability_status, substatus, roles or wrap-up time in place. Use when changing a user who already exists; not for creating one (AIRCALL_CREATE_USER), and not for reading their current availability (AIRCALL_GET_USER_AVAILABILITY). substatus applies only when availability_status is 'unavailable'."
+      },
+      {
+        "slug": "AIRCALL_UPDATE_WEBHOOK",
+        "name": "Update Webhook",
+        "description": "Update an Aircall webhook's URL, name, active state, or event subscriptions. event_update_mode makes preserve/replace/add/remove/all explicit. The safe default is preserve, because Aircall otherwise resets omitted events to all."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "aircall_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "public_api"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      },
+      {
+        "mode": "BASIC",
+        "name": "aircall_basic",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "username",
+                "displayName": "API ID",
+                "type": "string",
+                "description": "Your Aircall API ID — the username half of Basic Auth. Create it in the Aircall Dashboard under Company Settings (Integrations & API) > API Keys > \"Add a new API key\". The API ID and API Token are issued together as a pair.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "password",
+                "displayName": "API Token",
+                "type": "string",
+                "description": "Your Aircall API Token — the password half of Basic Auth. Shown only once when the API key pair is created in Company Settings > API Keys; if you lost it, delete the key and add a new one to get a fresh API ID + API Token pair.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "airops_mcp",
     "name": "AirOps MCP",
     "logo": "https://logos.composio.dev/api/airops_mcp",
@@ -133160,7 +133498,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "ASSEMBLYAI_DELETE_TRANSCRIPT",
@@ -146401,7 +146739,7 @@
     ],
     "toolCount": 119,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "BRAZE_BLOCKLIST_EMAILS",
@@ -169608,7 +169946,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 0,
-    "version": "20261006_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "COINGECKO_GET_COIN_BY_CONTRACT",
@@ -208978,6 +209316,9 @@
   {
     "slug": "fal_ai",
     "name": "Fal.ai",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/fal_ai",
     "description": "The generative media platform for developers with 600+ AI models for image, video, voice, and audio generation",
     "category": "ai models",
@@ -208986,7 +209327,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "FAL_AI_CANCEL_QUEUE_REQUEST",
@@ -209016,7 +209357,14 @@
       {
         "slug": "FAL_AI_GET_QUEUE_REQUEST_RESULT",
         "name": "Get Queue Request Result",
-        "description": "Tool to retrieve the final result of a completed queue request. Use when you need to get the output of a model request that was submitted to the queue and has finished processing. Only works after request status transitions to COMPLETED."
+        "description": "Tool to retrieve the final result of a completed queue request. Use when you need to get the output of a model request that was submitted to the queue and has finished processing. BYOK retrieves completed output. Instant checks status once and returns pending/failed status or completed output, without blocking or an additional charge.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0 additional per Instant status/result retrieval; included with the submitted job.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "FAL_AI_QUEUE_GET_STATUS",
@@ -209036,7 +209384,14 @@
       {
         "slug": "FAL_AI_SUBMIT_ASYNC_JOB",
         "name": "Submit Async Inference Job",
-        "description": "Tool to submit an asynchronous inference job to fal.ai's queue (queue.fal.run). Use when you want to run a model without blocking — fal.ai persists the request, auto-scales runners, and you fetch the result later via the returned request_id (use QUEUE_GET_STATUS to poll, GET_QUEUE_REQUEST_RESULT to retrieve, CANCEL_QUEUE_REQUEST to abort, QUEUE_GET_STATUS_STREAM to receive SSE updates). Supports an optional webhook_url that fal.ai will POST results to on completion."
+        "description": "Start image, text-to-video, image-to-video or 3D generation and return a job ID immediately. Instant uses Composio's managed fal account; BYOK means using your own connected fal account. For Instant, choose one of the four model_id/input examples, omit the five BYOK-only queue options, then save request_id and use GET_QUEUE_REQUEST_RESULT with the same model_id, user and complete ID to check progress and retrieve the output. Status/result retrieval is included in the accepted-job price. Instant submissions disable automatic HTTP/provider retries; do not submit a duplicate after an uncertain response. Other queue helpers, cancellation, streams and webhooks are available only with your own fal account.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "Instant per accepted job: Schnell $0.003/image; Wan 2.2 text-to-video/image-to-video $0.04/$0.06/$0.08 per billed second at 480p/580p/720p. Wan billed seconds = num_frames/16; Trellis $0.02/generation. Retrieval included.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "FAL_AI_SUBSCRIBE_ASYNC_JOB",
@@ -230692,7 +231047,7 @@
     ],
     "toolCount": 134,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "GREENHOUSE_ACTIVATE_USER",
@@ -284321,7 +284676,7 @@
     ],
     "toolCount": 159,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "NEW_RELIC_ADD_NOTIFICATION_CHANNELS_TO_POLICY",
@@ -314191,7 +314546,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260826_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "QUO_CREATE_CONTACT",
@@ -386991,7 +387346,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "WISE_CREATE_QUOTE",
@@ -394548,7 +394903,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20261008_00",
+    "version": "20261010_00",
     "tools": [
       {
         "slug": "ZEROBOUNCE_ACTIVITY_DATA",
