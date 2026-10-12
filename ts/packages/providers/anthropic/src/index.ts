@@ -199,7 +199,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       name: tool.slug,
       description: tool.description || '',
       input_schema: schema,
-      cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
+      ...(this.cacheTools ? { cache_control: { type: 'ephemeral' } } : {}),
     };
   }
 

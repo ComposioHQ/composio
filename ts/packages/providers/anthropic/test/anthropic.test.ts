@@ -208,7 +208,9 @@ describe('AnthropicProvider', () => {
 
       const wrapped = provider.wrapTools(tools);
 
-      expect(wrapped.every(tool => tool.cache_control === undefined)).toBe(true);
+      for (const tool of wrapped) {
+        expect(tool).not.toHaveProperty('cache_control');
+      }
     });
   });
 
