@@ -1,6 +1,7 @@
-import { Effect, Match, Schema, type SchemaIssue } from 'effect';
+import { Effect, Match, Option, Predicate, Schema, type SchemaIssue } from 'effect';
 import {
   ConnectedAccountItems,
+  displayNameFromState,
   isKnownConnectedAccountStatus,
 } from 'src/models/connected-accounts';
 import {
@@ -54,6 +55,26 @@ const warnOnUnknownStatuses = (
   });
 
 /**
+ * Gives each item of a raw fallback response the `display_name` that
+ * `ConnectedAccountItem` decodes from its `state`, or none, so a top-level
+ * `display_name` from the server never reaches the output unchecked.
+ */
+const withDecodedDisplayNames = (rawResult: unknown): unknown => {
+  if (!Predicate.isObject(rawResult) || !Array.isArray(rawResult.items)) return rawResult;
+  return {
+    ...rawResult,
+    items: rawResult.items.map((item: unknown) => {
+      if (!Predicate.isObject(item)) return item;
+      const { display_name: _unchecked, ...rest } = item;
+      return Option.match(displayNameFromState(item.state), {
+        onNone: () => rest,
+        onSome: displayName => ({ ...rest, display_name: displayName }),
+      });
+    }),
+  };
+};
+
+/**
  * Decodes a raw `client.connectedAccounts.list(...)` response against
  * `ConnectedAccountListResponse`, falling back to the raw payload on
  * `SchemaError`.
@@ -63,7 +84,8 @@ const warnOnUnknownStatuses = (
  * warning. The raw fallback remains for other shape skew (pagination fields,
  * renames, ...) — safe because the three current call sites only render
  * non-credential fields (`id`, `alias`, `word_id`, `toolkit.slug`,
- * `status`, ...).
+ * `status`, ...). `display_name` is the exception that `state` feeds, so the
+ * fallback decodes it from `state` the same way the schema does.
  */
 export const decodeConnectedAccountListWithFallback = (
   rawResult: unknown
@@ -81,7 +103,7 @@ export const decodeConnectedAccountListWithFallback = (
               `Mismatched fields: ${formatParseErrorRedacted(error)}`
           );
           // Safe: callers only read non-credential fields.
-          return rawResult as ConnectedAccountListResponseType;
+          return withDecodedDisplayNames(rawResult) as ConnectedAccountListResponseType;
         })
       )
     );

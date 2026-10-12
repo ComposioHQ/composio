@@ -49,7 +49,12 @@ const ConnectedAccountProviderIdentity = Schema.Struct({
   }),
 });
 
-const displayNameFromState = (state: unknown): Option.Option<string> =>
+/**
+ * The trimmed provider identity at `state.val.displayName`, or none. Raw
+ * responses that skip `ConnectedAccountItem` use it too, so every path
+ * applies the same rule.
+ */
+export const displayNameFromState = (state: unknown): Option.Option<string> =>
   Schema.decodeUnknownOption(ConnectedAccountProviderIdentity)(state).pipe(
     Option.map(identity => identity.val.displayName)
   );

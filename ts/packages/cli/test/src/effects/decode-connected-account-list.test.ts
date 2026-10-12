@@ -164,6 +164,44 @@ describe('decodeConnectedAccountListWithFallback', () => {
     );
   });
 
+  layer(TestLayer)('[Given] a response whose envelope does not match', it => {
+    it.effect('falls back to raw items whose display_name comes only from state', () =>
+      Effect.gen(function* () {
+        const raw = {
+          items: [
+            makeItem({
+              id: 'con_named',
+              state: { val: { displayName: '  ada@example.com  ' } },
+            }),
+            makeItem({ id: 'con_object', display_name: { email: 'ada@example.com' } }),
+            makeItem({
+              id: 'con_too_long',
+              display_name: 'a'.repeat(CONNECTED_ACCOUNT_DISPLAY_NAME_MAX_LENGTH + 1),
+            }),
+          ],
+          total_items: '3',
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: null,
+        };
+
+        const result = yield* decodeConnectedAccountListWithFallback(raw);
+
+        expect(result.items.map(item => [item.id, item.display_name])).toStrictEqual([
+          ['con_named', 'ada@example.com'],
+          ['con_object', undefined],
+          ['con_too_long', undefined],
+        ]);
+        expect(result.items[1]).not.toHaveProperty('display_name');
+        expect(result.items[2]).not.toHaveProperty('display_name');
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('composio upgrade');
+        expect(output).toContain('total_items');
+      })
+    );
+  });
+
   layer(TestLayer)('[Given] a shape-skewed response carrying credential fields', it => {
     it.effect('falls back to raw but never echoes payload values in the warning', () =>
       Effect.gen(function* () {
