@@ -1,18 +1,9 @@
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
 import type { PlatformError } from 'effect/PlatformError';
-import {
-  Cause,
-  Clock,
-  DateTime,
-  Effect,
-  Encoding,
-  FileSystem,
-  Option,
-  Path,
-  Predicate,
-} from 'effect';
-import { HttpClient, HttpClientRequest } from 'effect/unstable/http';
+import { Cause, Clock, DateTime, Effect, FileSystem, Option, Path, Predicate } from 'effect';
+import { HttpClient, HttpClientRequest } from 'effect/http';
+import { Base64Url } from 'effect/encoding';
 import * as constants from 'src/constants';
 import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
@@ -627,7 +618,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
 
     yield* telemetryDebugLog('enqueue', { envelope });
     const serializedEnvelope = yield* encodeJson(envelope);
-    const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);
+    const encodedPayload = Base64Url.encode(serializedEnvelope);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
@@ -828,7 +819,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const cliSessionId = yield* getCurrentCwdSessionId();
     const invocation = yield* getCliInvocationContext;
     const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
-    const encodedPayload = Encoding.encodeBase64Url(body);
+    const encodedPayload = Base64Url.encode(body);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
       encodedPayload
@@ -845,7 +836,7 @@ export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boole
 
 const decodeWorkerPayload = <A>(encodedPayload: string) =>
   Effect.gen(function* () {
-    const serialized = yield* Effect.fromResult(Encoding.decodeBase64UrlString(encodedPayload));
+    const serialized = yield* Effect.fromResult(Base64Url.decodeString(encodedPayload));
     return (yield* decodeJson(serialized)) as A;
   });
 

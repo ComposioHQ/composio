@@ -6,8 +6,8 @@
 import process from 'node:process';
 import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CliError } from 'effect/unstable/cli';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { CliConfig, CliError } from 'effect/cli';
+import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';

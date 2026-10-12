@@ -4,7 +4,7 @@ import { cliRequestHeaders } from './client-provenance';
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';

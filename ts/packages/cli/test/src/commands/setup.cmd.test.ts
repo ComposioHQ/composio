@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, Effect, Exit, Fiber, Latch } from 'effect';
 import { TestClock } from 'effect/testing';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, vi } from 'vitest';
 import { SkillInstallError } from 'src/effects/install-skill';
 import { CommandRunner } from 'src/services/command-runner';

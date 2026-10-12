@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcessSpawner } from 'effect/process';
 import { ConfigProvider, Effect, Layer, PlatformError } from 'effect';
 import { detectPermissionCallerAgentEffect } from 'src/services/permission-ui';
 import { HOST_CONFIG } from 'src/config';

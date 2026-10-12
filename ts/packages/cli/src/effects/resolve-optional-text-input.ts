@@ -1,5 +1,5 @@
 import { Effect, FileSystem, Option } from 'effect';
-import { CliError } from 'effect/unstable/cli';
+import { CliError } from 'effect/cli';
 
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 

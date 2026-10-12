@@ -1,4 +1,4 @@
-import type { Command } from 'effect/unstable/cli';
+import type { Command } from 'effect/cli';
 
 export type GetCmdParams<T> =
   T extends Command.Command<

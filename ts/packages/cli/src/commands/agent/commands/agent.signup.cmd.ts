@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { runAgentSignup } from '../../signup.cmd';
 
 const noWait = Flag.Boolean('no-wait').pipe(

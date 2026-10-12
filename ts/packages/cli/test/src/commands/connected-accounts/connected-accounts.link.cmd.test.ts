@@ -289,7 +289,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] a blank --alias [Then] fails with a CLI validation error', it => {
-    // v4 migration note: `effect/unstable/cli`'s `CliError.InvalidValue` is a fixed
+    // v4 migration note: `effect/cli`'s `CliError.InvalidValue` is a fixed
     // flag/argument-name-and-value struct produced only by the parser; it can't carry a
     // freeform message. This business-level validation (only knowable after parsing) is
     // now a plain typed domain error (`LinkInputError`), matching the pattern documented in

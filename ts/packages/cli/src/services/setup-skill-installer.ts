@@ -1,6 +1,6 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { HttpClient } from 'effect/unstable/http';
+import { HttpClient } from 'effect/http';
 import { Effect, Context, Layer } from 'effect';
 import {
   inferSkillReleaseChannel,

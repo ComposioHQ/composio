@@ -10,7 +10,7 @@ import {
   Context,
   Layer,
 } from 'effect';
-import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import { HttpClient, HttpClientResponse } from 'effect/http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { APP_VERSION } from '../constants';

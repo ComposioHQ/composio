@@ -1,5 +1,5 @@
 import { Array as Arr, Console, Effect, Layer } from 'effect';
-import { CliOutput, Command } from 'effect/unstable/cli';
+import { CliOutput, Command } from 'effect/cli';
 import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';

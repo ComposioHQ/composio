@@ -1,5 +1,5 @@
 import { Help } from 'src/commands/root-help';
-import { GlobalFlag, type CliConfig } from 'effect/unstable/cli';
+import { GlobalFlag, type CliConfig } from 'effect/cli';
 
 // Help and version use the framework parser. The help formatter keeps version output bare.
 export const ComposioCliConfig = {

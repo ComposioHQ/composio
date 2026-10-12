@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';

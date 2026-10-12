@@ -18,7 +18,7 @@ const capture = (args: ReadonlyArray<string>) =>
   }).pipe(Effect.provide(TestLive()));
 
 const commandPaths = (
-  command: ReturnType<typeof buildRootCommand> | import('effect/unstable/cli').Command.Command.Any,
+  command: ReturnType<typeof buildRootCommand> | import('effect/cli').Command.Command.Any,
   prefix: ReadonlyArray<string> = []
 ): ReadonlyArray<ReadonlyArray<string>> =>
   command.subcommands

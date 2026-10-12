@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Deferred, Effect, Option } from 'effect';
