@@ -1,7 +1,7 @@
 ---
 title: Executing tools directly
 description: Maintain legacy integrations that call composio.tools.execute(); prefer sessions for new integrations
-keywords: [execute, run, tool calling, function calling, direct execution]
+keywords: [execute, run, tool calling, function calling, direct execution, version, pin version]
 llmGuardrails: "direct-execution"
 legacy: true
 ---
@@ -13,6 +13,8 @@ This guide covers legacy direct-execution methods, which remain supported for ex
 LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, act, observe, and adapt.
 
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
+
+To run a specific tool version, pass `version` directly to `composio.tools.execute()`. See [Pin a version](#pin-a-version) for complete Python and TypeScript examples.
 
 ## Canceling TypeScript requests
 
@@ -227,6 +229,50 @@ See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for the full tra
 **CLI**: For Python and TypeScript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
 </Callout>
 
+### Pin a version
+
+Pass `version` on the `tools.execute()` call to select a specific tool version. This overrides SDK initialization and environment defaults for that call without changing other executions.
+
+Choose an available version from the [GitHub toolkit page](/toolkits/github) or [look it up with the SDK](/docs/tools-direct/toolkit-versioning#managing-versions). The examples below use `20250909_00`. Replace it with the version you have tested, and keep that string in your code or configuration.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_composio_key")
+
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    user_id="user-k7334",
+    version="20250909_00",
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_composio_key" });
+
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+  userId: "user-k7334",
+  version: "20250909_00",
+  arguments: { owner: "ComposioHQ", repo: "composio", page: 1, per_page: 5 },
+});
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+A dated `version` satisfies the direct-execution version check. To set a default for all calls to a toolkit, configure [SDK initialization or environment variables](/docs/tools-direct/toolkit-versioning#configuration-methods).
+
+### Use the latest version
+
+If an LLM consumes the output and can handle schema changes, you can use `latest`. Direct execution requires the explicit opt-in shown below.
+
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -234,7 +280,7 @@ from composio import Composio
 
 user_id = "user-k7334"
 # Configure toolkit versions at SDK level for every toolkit you execute.
-# Use "latest", or pin a version (see "Pin a version" below)
+# Use "latest", or pin a version (see "Pin a version" above)
 composio = Composio(
     api_key="your_composio_key",
     toolkit_versions={"github": "latest"}
@@ -245,7 +291,7 @@ result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     user_id=user_id,
     arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
-    # "latest" requires this opt-in; to pin instead, pass version (see "Pin a version" below)
+    # "latest" requires this opt-in; to pin instead, pass version (see "Pin a version" above)
     dangerously_skip_version_check=True,
 )
 print(result)
@@ -257,7 +303,7 @@ import { Composio } from "@composio/core";
 
 const userId = "user-k7334";
 // Configure toolkit versions at SDK level for every toolkit you execute.
-// Use "latest", or pin a version (see "Pin a version" below)
+// Use "latest", or pin a version (see "Pin a version" above)
 const composio = new Composio({
     apiKey: "your_composio_key",
     toolkitVersions: { github: "latest" }
@@ -272,62 +318,13 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     "page": 1,
     "per_page": 5
   },
-  // "latest" requires this opt-in; to pin instead, pass `version` (see "Pin a version" below)
+  // "latest" requires this opt-in; to pin instead, pass `version` (see "Pin a version" above)
   dangerouslySkipVersionCheck: true,
 });
 console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 ```
   </Tab>
 </Tabs>
-
-### Pin a version
-
-When your code parses tool outputs, look up the current version once, then pass that dated string as `version` on every call. Hard-code the string (or keep it in config) rather than looking it up at runtime, so a new release can't change the output shape without you noticing.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(api_key="your_composio_key")
-
-# One-off lookup: prints something like "20250909_00"
-print(composio.toolkits.get(slug="github").meta.version)
-
-result = composio.tools.execute(
-    "GITHUB_LIST_STARGAZERS",
-    user_id="user-k7334",
-    version="20250909_00",
-    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
-)
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-
-const composio = new Composio({ apiKey: "your_composio_key" });
-
-// One-off lookup: prints something like "20250909_00"
-const tool = await composio.tools.getRawComposioToolBySlug("GITHUB_LIST_STARGAZERS");
-console.log(tool.version);
-
-const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
-  userId: "user-k7334",
-  version: "20250909_00",
-  arguments: { owner: "ComposioHQ", repo: "composio", page: 1, per_page: 5 },
-});
-```
-  </Tab>
-</Tabs>
-
-<Callout>
-The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
-</Callout>
-
-<Callout type="info">
-**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
-</Callout>
 
 ### Proxy Execute
 
