@@ -72,7 +72,7 @@ To propose a partnership, including a docs listing or integration, contact us th
 
 ### Prerequisites
 
-Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI. It pins Node.js, pnpm, Bun, Deno, Python, and uv. Install the toolchain with [mise](https://mise.jdx.dev):
+Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI. It pins Node.js, pnpm, Bun, Python, and uv. Install the toolchain with [mise](https://mise.jdx.dev):
 
 ```bash
 mise install
@@ -269,7 +269,6 @@ Then add provider tests and run the relevant Python checks.
 pnpm test                   # Unit tests
 pnpm test:e2e               # All end-to-end tests
 pnpm test:e2e:node          # Runtime-specific end-to-end tests
-pnpm test:e2e:deno
 pnpm test:e2e:cli
 pnpm test:e2e:cloudflare
 pnpm test:ui                # Vitest UI

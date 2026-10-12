@@ -1,7 +1,7 @@
 # Reusable Dockerfile for Node.js e2e tests
 # Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 -t test-name .
 #
-# Uses official node:slim images. For multi-version testing, run the build/run
+# Uses official node:slim images, pulled from the ECR Public mirror. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
 #
 # bun and pnpm are installed from mise.toml/mise.lock (the single source of truth).
@@ -9,12 +9,17 @@
 # mise (MISE_DISABLE_TOOLS) to avoid shadowing the base image's Node.
 
 ARG NODE_VERSION
+# Base images come from the ECR Public mirror of the Docker Official Images, so
+# builds do not depend on Docker Hub's availability or anonymous pull limits.
+ARG BASE_REGISTRY=public.ecr.aws/docker/library
 
-FROM node:${NODE_VERSION}-slim
+# The toolchain stage depends only on the base image and mise.toml/mise.lock, so
+# CI saves its layers to the GitHub Actions cache (see .github/actions/build-e2e-image).
+FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim AS toolchain
 
 ENV MISE_DATA_DIR="/mise"
 ENV MISE_CACHE_DIR="/mise/cache"
-ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV MISE_DISABLE_TOOLS="node,python,uv"
 ENV MISE_TRUSTED_CONFIG_PATHS="/app"
 ENV PATH="/mise/shims:$PATH"
 
@@ -35,6 +40,8 @@ COPY mise.toml mise.lock ./
 RUN mise install && \
     pnpm --version && \
     bun --version
+
+FROM toolchain
 
 # Copy lockfile first for optimal layer caching
 COPY pnpm-lock.yaml ./

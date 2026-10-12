@@ -96,6 +96,7 @@ jobs:
           uv pip install -e providers/google
           uv pip install -e providers/openai_agents
           uv pip install -e providers/claude_agent_sdk
+          uv pip install -e providers/anthropic
           uv pip install hypothesis pytest pytest-mock
 
       - name: Run Import Tests
@@ -147,6 +148,7 @@ jobs:
           # with tests/, which pytest cannot collect in a single session.
           python -m pytest providers/openai_agents/tests -v --tb=short
           python -m pytest providers/claude_agent_sdk/tests -v --tb=short
+          python -m pytest providers/anthropic/tests -v --tb=short
 
       - name: Test Package Installation
         run: |
