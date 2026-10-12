@@ -179,9 +179,9 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
@@ -203,10 +203,10 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', 'v9.9.9'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', 'v9.9.9'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
@@ -227,10 +227,10 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', 'v9.9.9'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', 'v9.9.9'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
@@ -254,10 +254,10 @@ describe('UpgradeBinary', () => {
 
       const tag = '@composio/cli@0.1.24';
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', tag],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', tag],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
@@ -314,9 +314,9 @@ describe('UpgradeBinary', () => {
       });
 
       const result = yield* runUpgradeSuccess([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(result).toBeUndefined();
@@ -367,9 +367,9 @@ describe('UpgradeBinary', () => {
       });
 
       const result = yield* runUpgradeSuccess([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(result).toBeUndefined();
@@ -435,9 +435,9 @@ describe('UpgradeBinary', () => {
 
       const error = yield* runUpgrade(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { prerelease: true }
       );
@@ -690,9 +690,9 @@ describe('UpgradeBinary', () => {
 
       const error = yield* runUpgrade(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { prerelease: true }
       );

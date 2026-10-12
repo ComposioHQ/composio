@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { APIError } from '@composio/client';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -38,7 +37,7 @@ vi.hoisted(() => {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 // `testConfigProvider` pins its env, so it bypasses the per-test
 // `COMPOSIO_CACHE_DIR` stub, and the learned toolkit slugs resolve against the
@@ -57,23 +56,22 @@ const isolatedCacheConfigProvider = (fixture: string) => {
   );
   return ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_CACHE_DIR: cacheDir },
-  }).pipe(extendConfigProvider);
+  });
 };
 
 const runInvocationConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_USER_API_KEY: 'test_api_key',
   COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
-}).pipe(extendConfigProvider);
+});
 
 // Reuse the suite-managed cache directory for artifacts without exposing the
-// empty test cache as the CLI's authenticated config directory. Path
-// transformations apply innermost first, so this rename sees the bare key and
-// `extendConfigProvider` adds the `COMPOSIO_` prefix afterwards.
+// empty test cache as the CLI's authenticated config directory: only
+// `COMPOSIO_SESSION_DIR` resolves, to the stubbed `COMPOSIO_CACHE_DIR`.
 const testArtifactConfigProvider = liveEnvConfigProvider.pipe(
   ConfigProvider.mapInput(configPath =>
     configPath.map(segment =>
-      segment === 'SESSION_DIR'
-        ? 'CACHE_DIR'
+      segment === 'COMPOSIO_SESSION_DIR'
+        ? 'COMPOSIO_CACHE_DIR'
         : typeof segment === 'string'
           ? `UNSET_${segment}`
           : segment
@@ -83,7 +81,7 @@ const testArtifactConfigProvider = liveEnvConfigProvider.pipe(
 
 const largeOutputConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_USER_API_KEY: 'test_api_key',
-}).pipe(ConfigProvider.orElse(testArtifactConfigProvider), extendConfigProvider);
+}).pipe(ConfigProvider.orElse(testArtifactConfigProvider));
 
 const expectInvalidValueMessage = (failure: unknown, message: string) => {
   expect(Predicate.isTagged(failure, 'commands/ParallelExecuteArgumentError')).toBe(true);

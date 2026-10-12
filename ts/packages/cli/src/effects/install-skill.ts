@@ -1,15 +1,14 @@
-import { Config, Data, Effect, FileSystem, Option, Path } from 'effect';
+import { Data, Effect, FileSystem, Path } from 'effect';
 import { HttpClient } from 'effect/unstable/http';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { GITHUB_CONFIG } from 'src/effects/github-config';
+import { GITHUB_CONFIG, type GitHubConfig } from 'src/config';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
 import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import {
   fetchLatestCliRelease,
   fetchCliReleaseByTag,
   type GitHubRelease,
-  type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 
@@ -31,11 +30,6 @@ const SKILL_TARGET_DIRECTORIES: Record<SkillInstallTarget, ReadonlyArray<string>
   claude: ['.claude', 'skills'],
   codex: ['.codex', 'skills'],
   openclaw: ['.openclaw', 'skills'],
-};
-
-type GitHubConfig = GitHubRepoConfig & {
-  TAG: Option.Option<string>;
-  ACCESS_TOKEN: Option.Option<string>;
 };
 
 export class SkillInstallError extends Data.TaggedError('effects/SkillInstallError')<{
@@ -96,7 +90,7 @@ export const resolveSkillReleaseTag = ({
       return releaseTag;
     }
 
-    const configTag = Option.getOrUndefined(githubConfig.TAG);
+    const configTag = githubConfig.tag;
     if (configTag) {
       return configTag;
     }
@@ -138,7 +132,7 @@ export const installSkill = (options?: {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const httpClient = yield* HttpClient.HttpClient;
-    const githubConfig = yield* Config.all(GITHUB_CONFIG);
+    const githubConfig = yield* GITHUB_CONFIG;
     const home = os.homedir;
     const target = options?.target ?? 'claude';
     const skillName = resolveInstalledSkillName(options?.skillName);

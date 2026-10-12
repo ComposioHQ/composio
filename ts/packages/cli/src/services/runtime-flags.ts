@@ -1,7 +1,6 @@
 import { Context, Effect, Layer, Option } from 'effect';
 import { Flag, GlobalFlag } from 'effect/unstable/cli';
-import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
-import { loadHostConfig } from 'src/services/config';
+import { DEBUG_CONFIG } from 'src/config';
 
 export const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 
@@ -75,13 +74,13 @@ const debugFlagOr = <const Name extends string>(
 export const isPerfDebugEnabled = debugFlagOr(
   debugSettings['perf-debug'],
   overrides => overrides.perfDebug,
-  Effect.orDie(APP_CONFIG.PERF_DEBUG)
+  Effect.orDie(DEBUG_CONFIG.PERF_DEBUG)
 );
 
 export const isToolDebugEnabled = debugFlagOr(
   debugSettings['tool-debug'],
   overrides => overrides.toolDebug,
-  Effect.orDie(APP_CONFIG.TOOL_DEBUG)
+  Effect.orDie(DEBUG_CONFIG.TOOL_DEBUG)
 );
 
 /**
@@ -118,5 +117,5 @@ export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.gen(functi
   const bootstrap = yield* Effect.serviceOption(TelemetryDebugMode);
   return Option.isSome(bootstrap)
     ? bootstrap.value
-    : yield* loadHostConfig(UNPREFIXED_CONFIG.TELEMETRY_DEBUG);
+    : yield* Effect.orDie(DEBUG_CONFIG.TELEMETRY_DEBUG);
 });

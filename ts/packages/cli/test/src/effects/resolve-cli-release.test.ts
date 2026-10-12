@@ -4,9 +4,9 @@ import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
 import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
 
 const githubConfig = {
-  API_BASE_URL: 'https://api.github.test',
-  OWNER: 'ComposioHQ',
-  REPO: 'composio',
+  apiBaseUrl: 'https://api.github.test',
+  owner: 'ComposioHQ',
+  repo: 'composio',
 };
 
 const stubHttpClient = (body: unknown) =>

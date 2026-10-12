@@ -1,21 +1,12 @@
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Config, Effect, Stream } from 'effect';
+import { Effect, Stream } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
-import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
-import { loadHostConfig } from 'src/services/config';
+import { HOST_CONFIG, type CallerAgentSignals } from 'src/config';
 
 export type PermissionCallerAgent = 'claude' | 'codex' | 'openclaw' | 'composio';
 
-/**
- * The browser approval page must never open from automated environments. The
- * explicit COMPOSIO_DISABLE_PERMISSION_UI knob wins in both directions; without
- * it, CI and Vitest runs disable the UI.
- */
-export const interactivePermissionUiDisabledConfig =
-  UNPREFIXED_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED;
-
-export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = loadHostConfig(
-  interactivePermissionUiDisabledConfig
+export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = Effect.orDie(
+  HOST_CONFIG.INTERACTIVE_PERMISSION_UI_DISABLED
 );
 
 // Enhanced controls are not offered on Intel Macs (#3421).
@@ -77,12 +68,8 @@ const detectCallerAgentFromProcessTree: Effect.Effect<
   return undefined;
 });
 
-export type PermissionCallerAgentSignals = Config.Success<
-  typeof UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS
->;
-
 const detectCallerAgentFromSignals = (
-  signals: PermissionCallerAgentSignals
+  signals: CallerAgentSignals
 ): PermissionCallerAgent | undefined => {
   const explicit = normalizeCallerAgent(signals.explicit);
   if (explicit) return explicit;
@@ -95,11 +82,10 @@ const detectCallerAgentFromSignals = (
 };
 
 export const detectPermissionCallerAgentEffect = (
-  providedSignals?: PermissionCallerAgentSignals
+  providedSignals?: CallerAgentSignals
 ): Effect.Effect<PermissionCallerAgent, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
-    const signals =
-      providedSignals ?? (yield* loadHostConfig(UNPREFIXED_CONFIG.CALLER_AGENT_SIGNALS));
+    const signals = providedSignals ?? (yield* Effect.orDie(HOST_CONFIG.CALLER_AGENT_SIGNALS));
     const fromEnv = detectCallerAgentFromSignals(signals);
     if (fromEnv !== undefined) return fromEnv;
 

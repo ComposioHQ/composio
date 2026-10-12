@@ -61,12 +61,12 @@ declare class ComposioToolkitsRepository extends Context.Service<
 declare class NodeOs extends Context.Service<NodeOs, object>()('y') {
   static readonly Default: Layer.Layer<NodeOs>;
 }
-declare const ConfigLive: Layer.Layer<never>;
+declare const LogLevelFromConfigLive: Layer.Layer<never>;
 type RequiredLayer = Layer.Layer<ComposioToolkitsRepository>;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 ```
 

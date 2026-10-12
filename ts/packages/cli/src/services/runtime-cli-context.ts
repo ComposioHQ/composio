@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Option } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 
 export const DEFAULT_CLI_INVOCATION_ORIGIN = 'cli';
 

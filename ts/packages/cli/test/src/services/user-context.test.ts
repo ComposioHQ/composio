@@ -8,7 +8,6 @@ import * as tempy from 'tempy';
 import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
-import { extendConfigProvider } from 'src/services/config';
 import { CliUserConfig } from 'src/models/cli-user-config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { makeKeyringService, KeyringService } from '@composio/cli-keyring/effect';
@@ -77,7 +76,7 @@ describe('ComposioUserContext', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
     Layer.succeed(
       ConfigProvider.ConfigProvider,
-      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+      ConfigProvider.fromEnv({ env: Object.fromEntries(map) })
     );
 
   describe('[When] no `~/.composio/user_data.json` config file exists', () => {

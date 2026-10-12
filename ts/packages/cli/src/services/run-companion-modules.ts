@@ -4,11 +4,11 @@
 // outside the CLI runtime (companion runtimes, scripts) provide their own platform layers.
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Config, ConfigProvider, Data, Effect, Option, PlatformError, Schema } from 'effect';
+import { Data, Effect, Option, PlatformError, Schema } from 'effect';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { APP_VERSION, IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
-import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
+import { GITHUB_REPAIR_CONFIG } from 'src/config';
 import { atomicReplaceFile } from 'src/utils/atomic-replace';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 import { CLI_RELEASE_TAG_PREFIX } from 'src/utils/cli-release-version';
@@ -156,12 +156,6 @@ export const collectExpectedRunCompanionAssetRelativePaths = (
 
     return [...collected].sort();
   });
-
-const DEFAULT_GITHUB_CONFIG = {
-  apiBaseUrl: 'https://api.github.com',
-  owner: 'ComposioHQ',
-  repo: 'composio',
-};
 
 const resolveBinaryAssetName = ({
   platform = process.platform,
@@ -391,67 +385,19 @@ const toRepairError = (error: unknown) =>
     cause: error,
   });
 
-// Self-repair honors the unprefixed GITHUB_* contract (set by CI and the binary
-// build workflow) first, then falls back to the
-// CLI-wide COMPOSIO_-prefixed spelling installed by cli-main's config provider.
-//
-// Built lazily (a function, not a memoized module-level constant): each
-// `getBaseConfigProvider()` call snapshots `process.env` at call time, so a
-// frozen constant would never observe env var changes made after this module
-// is first imported (e.g. `vi.stubEnv` in tests).
-const getRepairConfigProvider = (): ConfigProvider.ConfigProvider =>
-  getBaseConfigProvider().pipe(
-    ConfigProvider.orElse(extendConfigProvider(getBaseConfigProvider()))
-  );
-
+// GITHUB_TAG pins the release used for self-repair (set by the binary build workflow).
 const resolveRepairReleaseTag = ({
+  pinnedTag,
   execPath,
   appVersion,
 }: {
+  pinnedTag: string | undefined;
   execPath: string;
   appVersion: string;
 }) =>
-  Effect.gen(function* () {
-    // GITHUB_TAG pins the release used for self-repair (set by the binary build workflow).
-    const pinnedTag = yield* Effect.orDie(
-      Config.option(Config.String('GITHUB_TAG')).pipe(
-        Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
-      )
-    ).pipe(
-      Effect.provideServiceEffect(
-        ConfigProvider.ConfigProvider,
-        Effect.sync(() => getRepairConfigProvider())
-      )
-    );
-    if (pinnedTag) {
-      return pinnedTag;
-    }
-
-    return yield* resolveRunningCliReleaseTag(execPath, appVersion);
-  });
-
-const nonEmptyConfigWithFallback = (name: string, fallback: string) =>
-  Config.String(name).pipe(
-    Config.map(value => value || fallback),
-    Config.withDefault(fallback)
-  );
-
-// The GITHUB_* overrides let CI and forks redirect the self-repair download.
-const githubRepairConfig = Effect.orDie(
-  Effect.all({
-    apiBaseUrl: nonEmptyConfigWithFallback('GITHUB_API_BASE_URL', DEFAULT_GITHUB_CONFIG.apiBaseUrl),
-    owner: nonEmptyConfigWithFallback('GITHUB_OWNER', DEFAULT_GITHUB_CONFIG.owner),
-    repo: nonEmptyConfigWithFallback('GITHUB_REPO', DEFAULT_GITHUB_CONFIG.repo),
-    accessToken: Config.option(Config.String('GITHUB_ACCESS_TOKEN')).pipe(
-      Config.map(Option.getOrUndefined)
-    ),
-  })
-).pipe(
-  Effect.provideServiceEffect(
-    ConfigProvider.ConfigProvider,
-    Effect.sync(() => getRepairConfigProvider())
-  )
-);
+  pinnedTag === undefined
+    ? resolveRunningCliReleaseTag(execPath, appVersion)
+    : Effect.succeed(pinnedTag);
 
 /**
  * Restores a packaged install whose companion wrappers went missing, from the
@@ -494,8 +440,12 @@ export const repairMissingInstalledRunCompanionModules = ({
       return { repaired: false as const };
     }
 
-    const releaseTag = yield* resolveRepairReleaseTag({ execPath, appVersion });
-    const githubConfig = yield* githubRepairConfig;
+    const githubConfig = yield* Effect.orDie(GITHUB_REPAIR_CONFIG);
+    const releaseTag = yield* resolveRepairReleaseTag({
+      pinnedTag: githubConfig.tag,
+      execPath,
+      appVersion,
+    });
 
     const encodedTag = encodeURIComponent(releaseTag);
     const release = yield* Effect.tryPromise({

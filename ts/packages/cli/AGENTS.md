@@ -82,7 +82,7 @@ OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Ke
 
 ### Effects — `src/effects/`
 
-Reusable Effect computations: `app-config` (reads `COMPOSIO_*` env), `debug-config`, `force-config`, `setup-cache-dir`, `toolkit-version-overrides` (parses `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>`), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
+Reusable Effect computations: `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
 
 ### Models — `src/models/`
 
@@ -104,7 +104,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 ### Configuration
 
 - CLI: `cli-config.ts` enables help and version global actions. `commands/root-help.ts` derives the native `help` command tree and delegates documents to Effect. The formatter keeps version output bare and appends a short root overview. Hidden debug settings use `Flag.withHidden`; the diagnostic group uses `Command.unlisted` (the pinned framework's hidden-command API). `commands/argv-compat.ts` preserves optional `listen --stream` values and inserts the native `--` boundary for legacy undelimited `run` script arguments. Effect parses the script tail through `Argument.variadic`; never strip its flags. `setup skill` installs agent skills; `--dangerously-allow` is local to `dev triggers disable`.
-- Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
+- Environment: `src/config/` declares every variable the CLI reads under its full name, grouped into `APP_CONFIG` (user-facing `COMPOSIO_*`, see the README), `DEBUG_CONFIG`, `TELEMETRY_CONFIG`, `HOST_CONFIG` (shell, CI, agent host), and `GITHUB_CONFIG`. Values flow through the ambient `ConfigProvider` (the process environment by default; tests provide `ConfigProvider.fromEnvRecord`). Read a variable through its catalog, never with an inline `Config.String('COMPOSIO_…')`.
 - User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`
 

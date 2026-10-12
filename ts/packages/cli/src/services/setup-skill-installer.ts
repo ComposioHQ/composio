@@ -1,7 +1,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { HttpClient } from 'effect/unstable/http';
-import { Config, Effect, Context, Layer } from 'effect';
+import { Effect, Context, Layer } from 'effect';
 import {
   inferSkillReleaseChannel,
   installSkill,
@@ -10,7 +10,7 @@ import {
   resolveTargetSkillPath,
   SKILL_RELEASE_TAG_FILENAME,
 } from 'src/effects/install-skill';
-import { GITHUB_CONFIG } from 'src/effects/github-config';
+import { GITHUB_CONFIG } from 'src/config';
 import { APP_VERSION } from 'src/constants';
 import { resolveRunningCliReleaseTag } from 'src/services/run-companion-modules';
 import { NodeOs } from './node-os';
@@ -21,7 +21,7 @@ export const resolveSetupSkillReleaseTag = (
 ) =>
   Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
-    const githubConfig = yield* Config.all(GITHUB_CONFIG);
+    const githubConfig = yield* GITHUB_CONFIG;
     const installedReleaseTag = yield* resolveRunningCliReleaseTag(execPath, fallbackVersion);
 
     return yield* resolveSkillReleaseTag({

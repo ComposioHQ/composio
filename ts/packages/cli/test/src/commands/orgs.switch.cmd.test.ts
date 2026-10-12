@@ -1,7 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { afterEach, vi } from 'vitest';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockRequestScope } from 'test/__utils__/services/test-layer';
@@ -31,7 +30,7 @@ describe('CLI: composio orgs switch', () => {
 
   const testConfigProvider = ConfigProvider.fromEnvRecord({
     COMPOSIO_USER_API_KEY: 'uak_switch_test',
-  }).pipe(extendConfigProvider);
+  });
 
   const sessionInfoScopes: MockRequestScope[] = [];
   layer(

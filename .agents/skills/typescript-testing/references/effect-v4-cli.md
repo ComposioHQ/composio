@@ -20,7 +20,6 @@ repo-local `effect-v4` skill.
 ```ts no-check
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 
 describe('CLI: composio', () => {
@@ -34,9 +33,7 @@ describe('CLI: composio', () => {
     );
   });
 
-  const testConfigProvider = ConfigProvider.fromEnv({
-    env: { DEBUG_OVERRIDE_VERSION: '1.2.3-test' },
-  }).pipe(extendConfigProvider);
+  const testConfigProvider = ConfigProvider.fromEnvRecord({ DEBUG_OVERRIDE_VERSION: '1.2.3-test' });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with config override', it => {
     it.effect('[Given] `DEBUG_OVERRIDE_VERSION` env var [Then] prints overridden version', () =>
