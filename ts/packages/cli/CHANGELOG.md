@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- `composio connections remove <account>` accepts `--yes` (`-y`) to remove the
+  connection without asking for confirmation, so scripts and other tools can
+  remove a connection. Without it the command asks as before, and a terminal
+  that cannot prompt still removes nothing.
+
 - `composio execute` (including meta tools), `composio proxy`, the `proxy()`
   helper in `composio run` scripts, and the custom tool schema lookup in
   `composio search` now fail with a clear error when the call needs user input,

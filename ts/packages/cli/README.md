@@ -39,7 +39,7 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio tools list|info`: Inspect available tools and their cached schemas.
 - `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
 - `composio connections list [--toolkit <toolkit>]`: Print toolkit connection statuses as JSON.
-- `composio connections remove <account>`: Interactively remove a toolkit connection after confirmation.
+- `composio connections remove <account>`: Remove a toolkit connection after confirmation, or without a prompt with `--yes`.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.

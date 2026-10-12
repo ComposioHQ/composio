@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -29,6 +29,12 @@ const account = Argument.String('account').pipe(
   Argument.withDescription(
     'Connection selector: toolkit slug, alias, word_id, or connected account ID'
   )
+);
+
+const yes = Flag.Boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Remove without asking for confirmation')
 );
 
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();
@@ -94,7 +100,7 @@ const resolveAccount = (params: {
   };
 };
 
-export const connectionsCmd$Remove = Command.make('remove', { account }, ({ account }) =>
+export const connectionsCmd$Remove = Command.make('remove', { account, yes }, ({ account, yes }) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
@@ -143,9 +149,13 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
       'Remove Connection'
     );
 
-    const confirmed = yield* ui.confirm(`Remove ${resolved.toolkit.slug} connection?`, {
-      defaultValue: false,
-    });
+    // `--yes` is the consent, for scripts and other tools that cannot answer
+    // a prompt; without it a terminal that cannot prompt still answers No.
+    const confirmed =
+      yes ||
+      (yield* ui.confirm(`Remove ${resolved.toolkit.slug} connection?`, {
+        defaultValue: false,
+      }));
     if (!confirmed) {
       yield* ui.log.warn('No connection removed.');
       return;
@@ -169,7 +179,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
   })
 ).pipe(
   Command.withDescription(
-    'Interactively remove a connection by toolkit slug, alias, word_id, or connected account ID.'
+    'Remove a connection by toolkit slug, alias, word_id, or connected account ID. Asks for confirmation unless --yes is given.'
   ),
   Command.withExamples([
     {
@@ -180,6 +190,9 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     },
     {
       command: 'composio connections remove castle',
+    },
+    {
+      command: 'composio connections remove castle --yes',
     },
   ])
 );
