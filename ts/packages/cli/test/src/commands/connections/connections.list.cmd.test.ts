@@ -325,4 +325,56 @@ describe('CLI: composio connections remove', () => {
         })
     );
   });
+
+  // Every prompt in these cases would be denied, so only --yes can remove.
+  const yesDeleteCalls: string[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: testConnections,
+        onDelete: nanoid => yesDeleteCalls.push(nanoid),
+      },
+      terminalUI: terminalUIWithConfirm(false),
+    })
+  )(it => {
+    it.effect.each([
+      ['--yes after the selector', ['castle', '--yes']],
+      ['--yes before the selector', ['--yes', 'castle']],
+      ['-y', ['castle', '-y']],
+    ] as const)('[Given] %s [Then] removes the connection without asking', ([, args]) =>
+      Effect.gen(function* () {
+        yesDeleteCalls.length = 0;
+
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'remove', ...args]);
+
+        expect(yesDeleteCalls).toEqual(['con_github_work']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        expect(lines.join('\n')).toContain('Removed github connection.');
+      })
+    );
+
+    it.effect.each([
+      ['matches several accounts', 'github', 'Multiple connections matched "github"'],
+      ['matches no account', 'calendar', 'No connection matched "calendar"'],
+    ] as const)(
+      '[Given] --yes and a selector that %s [Then] removes nothing',
+      ([, selector, message]) =>
+        Effect.gen(function* () {
+          yesDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          yield* cli(['connections', 'remove', selector, '--yes']);
+
+          expect(yesDeleteCalls).toEqual([]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).toContain(message);
+        })
+    );
+  });
 });
