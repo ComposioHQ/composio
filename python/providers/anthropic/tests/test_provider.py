@@ -18,7 +18,7 @@ def _tool(slug="SEARCH_TOOL", description="Search for information"):
 
 
 def test_wrap_tool_omits_cache_control_by_default():
-    """No `cacheTools` option means no cache_control on the wrapped tool."""
+    """No `cache_tools` option means no cache_control on the wrapped tool."""
     wrapped = AnthropicProvider().wrap_tool(_tool())
 
     assert "cache_control" not in wrapped
@@ -26,8 +26,7 @@ def test_wrap_tool_omits_cache_control_by_default():
 
 def test_wrap_tool_attaches_ephemeral_cache_control_when_cache_tools_enabled():
     """`cache_tools=True` attaches Anthropic's ephemeral cache breakpoint to
-    every wrapped tool, mirroring the TypeScript
-    `AnthropicProvider({ cacheTools: true })` option.
+    the tool `wrap_tool` returns.
     """
     wrapped = AnthropicProvider(cache_tools=True).wrap_tool(_tool())
 
