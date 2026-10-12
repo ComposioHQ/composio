@@ -10,10 +10,12 @@ const {
   mockGetCredentials,
   mockLoggerError,
   mockLoggerInfo,
+  mockDisconnect,
   pusherConstructorOptions,
 } = vi.hoisted(() => {
   const eventBindings = new Map<string, EventHandler>();
   const constructorOptions: Array<Record<string, unknown>> = [];
+  const channels = new Map<string, { name: string; subscriptionCancelled: boolean }>();
   const channel = {
     bind: vi.fn((event: string, callback: EventHandler) => {
       eventBindings.set(event, callback);
@@ -22,13 +24,24 @@ const {
       eventBindings.get(event)?.(data);
     },
   };
+  const disconnect = vi.fn();
 
   return {
     bindings: eventBindings,
     mockChannel: channel,
+    mockDisconnect: disconnect,
     mockPusherClient: {
-      subscribe: vi.fn().mockReturnValue(channel),
-      unsubscribe: vi.fn().mockReturnValue(undefined),
+      subscribe: vi.fn((name: string) => {
+        const entry = { name, subscriptionCancelled: false };
+        channels.set(name, entry);
+        return channel;
+      }),
+      unsubscribe: vi.fn((name: string) => {
+        channels.delete(name);
+      }),
+      allChannels: vi.fn(() => [...channels.values()]),
+      disconnect,
+      _channels: channels,
     },
     mockGetCredentials: vi.fn().mockResolvedValue({
       projectId: 'project-id',
@@ -45,6 +58,8 @@ vi.mock('pusher-js', () => ({
   default: class FakePusher {
     subscribe = mockPusherClient.subscribe;
     unsubscribe = mockPusherClient.unsubscribe;
+    allChannels = mockPusherClient.allChannels;
+    disconnect = mockPusherClient.disconnect;
     constructor(_key: string, options: Record<string, unknown>) {
       pusherConstructorOptions.push(options);
     }
@@ -71,6 +86,10 @@ describe('PusherService subscription errors', () => {
     bindings.clear();
     mockGetCredentials.mockClear();
     mockPusherClient.subscribe.mockClear();
+    mockPusherClient.unsubscribe.mockClear();
+    mockPusherClient.allChannels.mockClear();
+    mockDisconnect.mockClear();
+    mockPusherClient._channels.clear();
     mockLoggerError.mockClear();
     mockLoggerInfo.mockClear();
   });
@@ -208,6 +227,8 @@ describe('PusherService channel authorization credentials', () => {
   beforeEach(() => {
     bindings.clear();
     pusherConstructorOptions.length = 0;
+    mockPusherClient._channels.clear();
+    mockDisconnect.mockClear();
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_foreignAmbientKey');
   });
 
@@ -252,5 +273,59 @@ describe('PusherService channel authorization credentials', () => {
     await service.subscribe(vi.fn());
 
     expect(channelAuthHeaders()).toEqual({ 'x-user-api-key': 'uak_headerKey' });
+  });
+});
+
+describe('PusherService unsubscribe disconnect', () => {
+  beforeEach(() => {
+    bindings.clear();
+    mockGetCredentials.mockClear();
+    mockPusherClient.subscribe.mockClear();
+    mockPusherClient.unsubscribe.mockClear();
+    mockPusherClient.allChannels.mockClear();
+    mockDisconnect.mockClear();
+    mockPusherClient._channels.clear();
+    mockLoggerError.mockClear();
+    mockLoggerInfo.mockClear();
+    pusherConstructorOptions.length = 0;
+  });
+
+  it('closes the realtime connection once nothing is subscribed', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await service.subscribe(vi.fn());
+    await service.unsubscribe();
+
+    expect(mockPusherClient.unsubscribe).toHaveBeenCalledWith('private-project-id_triggers');
+    expect(mockDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not create a client when unsubscribe runs with no prior subscribe', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await service.unsubscribe();
+
+    expect(mockGetCredentials).not.toHaveBeenCalled();
+    expect(mockDisconnect).not.toHaveBeenCalled();
+  });
+
+  it('creates a fresh client for a subscribe after disconnect', async () => {
+    const service = new PusherService({
+      baseURL: 'https://backend.composio.dev',
+      apiKey: 'api-key',
+    } as never);
+
+    await service.subscribe(vi.fn());
+    await service.unsubscribe();
+    await service.subscribe(vi.fn());
+
+    expect(mockGetCredentials).toHaveBeenCalledTimes(2);
+    expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
 });

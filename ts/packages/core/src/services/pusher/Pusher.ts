@@ -26,7 +26,7 @@ export class PusherService {
   // these details are set via the client SDK
   private pusherBaseURL!: string;
   private authHeaders!: Record<string, string>;
-  private pusherClient!: PusherClient;
+  private pusherClient?: PusherClient;
   private composioClient!: ComposioClient;
 
   constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
@@ -49,45 +49,52 @@ export class PusherService {
    * It will fetch the SDK realtime credentials from the Apollo API and create a Pusher client.
    */
   private async getPusherClient() {
-    if (!this.pusherClient) {
-      const internalService = new InternalService(this.composioClient);
-      let sdkRealtimeCredentials: SDKRealtimeCredentialsResponse;
-      try {
-        sdkRealtimeCredentials = await internalService.getSDKRealtimeCredentials();
-      } catch (error) {
-        throw new ComposioFailedToGetSDKRealtimeCredentialsError(
-          'Failed to get SDK realtime credentials',
-          {
-            cause: error,
-          }
-        );
-      }
+    if (this.pusherClient) {
+      return this.pusherClient;
+    }
 
-      this.clientId = sdkRealtimeCredentials.projectId;
-      this.pusherKey = sdkRealtimeCredentials.pusherKey;
-      this.pusherCluster = sdkRealtimeCredentials.pusherCluster;
-      this.pusherChannel = `private-${this.clientId}_triggers`;
-
-      logger.debug(
-        `[PusherService] Creating Pusher client for client ID: ${this.clientId} in cluster ${this.pusherCluster}`
-      );
-
-      // create the Pusher client
-      try {
-        const { default: Pusher } = await import('pusher-js');
-        this.pusherClient = new Pusher(this.pusherKey, {
-          cluster: this.pusherCluster,
-          channelAuthorization: {
-            endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: { ...this.authHeaders },
-            transport: 'ajax',
-          },
-        });
-      } catch (error) {
-        throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
+    const internalService = new InternalService(this.composioClient);
+    let sdkRealtimeCredentials: SDKRealtimeCredentialsResponse;
+    try {
+      sdkRealtimeCredentials = await internalService.getSDKRealtimeCredentials();
+    } catch (error) {
+      throw new ComposioFailedToGetSDKRealtimeCredentialsError(
+        'Failed to get SDK realtime credentials',
+        {
           cause: error,
-        });
-      }
+        }
+      );
+    }
+
+    // Another subscribe may have finished while we awaited credentials.
+    if (this.pusherClient) {
+      return this.pusherClient;
+    }
+
+    this.clientId = sdkRealtimeCredentials.projectId;
+    this.pusherKey = sdkRealtimeCredentials.pusherKey;
+    this.pusherCluster = sdkRealtimeCredentials.pusherCluster;
+    this.pusherChannel = `private-${this.clientId}_triggers`;
+
+    logger.debug(
+      `[PusherService] Creating Pusher client for client ID: ${this.clientId} in cluster ${this.pusherCluster}`
+    );
+
+    // create the Pusher client
+    try {
+      const { default: Pusher } = await import('pusher-js');
+      this.pusherClient = new Pusher(this.pusherKey, {
+        cluster: this.pusherCluster,
+        channelAuthorization: {
+          endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
+          headers: { ...this.authHeaders },
+          transport: 'ajax',
+        },
+      });
+    } catch (error) {
+      throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
+        cause: error,
+      });
     }
 
     return this.pusherClient;
@@ -244,9 +251,26 @@ export class PusherService {
    */
   async unsubscribe() {
     try {
+      // Never create a client just to tear one down. An unsubscribe before any
+      // subscribe (or after a prior disconnect) is a no-op.
+      const pusherClient = this.pusherClient;
+      if (!pusherClient) {
+        return;
+      }
+
       logger.debug(`[PusherService] Unsubscribing from channel: ${this.pusherChannel}`);
-      const pusherClient = await this.getPusherClient();
-      await pusherClient.unsubscribe(this.pusherChannel);
+      pusherClient.unsubscribe(this.pusherChannel);
+
+      // Drop the websocket once nothing is subscribed. Channels whose
+      // subscription was cancelled (pending auth) still sit in allChannels()
+      // until unsubscribe removes them; they must not keep the connection open.
+      const remaining = pusherClient.allChannels?.() ?? [];
+      const hasActiveSubscription = remaining.some(channel => !channel.subscriptionCancelled);
+      if (!hasActiveSubscription) {
+        pusherClient.disconnect?.();
+        this.pusherClient = undefined;
+      }
+
       logger.info(`✅ Unsubscribed from triggers.`);
     } catch (error) {
       throw new ComposioFailedToSubscribeToPusherChannelError(
