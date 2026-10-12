@@ -17,12 +17,6 @@ export const WELL_KNOWN_ENV_VARS = [
 export const WELL_KNOWN_NODE_VERSIONS = [...toolchainVersions.node, 'current'] as const;
 
 /**
- * Deno versions that are well-known to the CI matrix strategy.
- * `current` refers to the Deno version specified in mise.toml.
- */
-export const WELL_KNOWN_DENO_VERSIONS = [...toolchainVersions.deno, 'current'] as const;
-
-/**
  * CLI versions that are well-known to the CI strategy.
  * `current` refers to the version in ts/packages/cli/package.json.
  */

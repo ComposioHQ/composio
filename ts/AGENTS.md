@@ -24,7 +24,6 @@ pnpm typecheck
 pnpm lint:packages
 pnpm test
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```
