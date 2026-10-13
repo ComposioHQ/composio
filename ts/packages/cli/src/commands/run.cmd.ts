@@ -276,7 +276,7 @@ const resolveRunHelperContext = () =>
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
-      webURL: forwardWebURL ? userContext.data.webURL : undefined,
+      ...(forwardWebURL ? { webURL: userContext.data.webURL } : {}),
       orgId,
     } satisfies RunHelperContext;
 
