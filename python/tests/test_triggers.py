@@ -1748,6 +1748,126 @@ class TestTriggerSubscriptionStop:
         assert subscription.is_alive() is False
         assert started.wait(timeout=2)
 
+    def test_has_errored_ignores_socket_flag_while_pysher_retries(self, subscription):
+        """A recoverable drop is not an error while pysher keeps retrying.
+
+        websocket-client's ``has_errored`` stays set through pysher's
+        reconnect backoff, so ``has_errored()`` must not consult it: only
+        the pysher connection thread (alive across reconnects) decides.
+        """
+        connection = Mock()
+        connection.is_alive.return_value = True
+        connection.socket = Mock()
+        connection.socket.has_errored = True
+        subscription._connection = connection
+
+        assert subscription.has_errored() is False
+
+    def test_has_errored_when_pysher_thread_died(self, subscription):
+        """Once pysher gives up for good, the connection counts as errored.
+
+        After an unrecoverable ``pusher:error`` (4000-4099) pysher
+        disconnects and its connection thread exits; websocket-client's
+        flag may never have been set, but ``has_errored()`` must still
+        report the dead connection.
+        """
+        connection = Mock()
+        connection.is_alive.return_value = False
+        connection.socket = Mock()
+        connection.socket.has_errored = False
+        subscription._connection = connection
+
+        assert subscription.has_errored() is True
+
+    def test_wait_forever_returns_when_pysher_gives_up(self, subscription):
+        """``wait_forever`` unblocks once the pysher thread is gone."""
+        connection = Mock()
+        connection.is_alive.return_value = False
+        subscription._connection = connection
+
+        waiter = threading.Thread(target=subscription.wait_forever, daemon=True)
+        waiter.start()
+        try:
+            waiter.join(timeout=2)
+            assert not waiter.is_alive()
+        finally:
+            subscription._alive = False
+            waiter.join(timeout=2)
+
+    def test_restart_preserves_pysher_worker(self, subscription):
+        """Manual reconnect keeps the real worker and subscription wait alive."""
+        connected = threading.Event()
+        reconnected = threading.Event()
+        closed = threading.Event()
+        done = threading.Event()
+        attempts = []
+
+        class Socket:
+            has_errored = False
+
+            def run_forever(self, **kwargs):
+                closed.clear()
+                attempts.append(threading.current_thread())
+                (connected if len(attempts) == 1 else reconnected).set()
+                closed.wait(timeout=5)
+
+            def close(self):
+                closed.set()
+
+        connection = triggers_module.PusherConnection(
+            event_handler=Mock(), url="ws://localhost", reconnect_interval=0
+        )
+        subscription._connection = connection
+        waiter = threading.Thread(
+            target=lambda: (subscription.wait_forever(), done.set()), daemon=True
+        )
+        restarter = threading.Thread(target=subscription.restart, daemon=True)
+        with patch("pysher.connection.websocket.WebSocketApp", return_value=Socket()):
+            connection.start()
+            try:
+                assert connected.wait(timeout=2)
+                waiter.start()
+                restarter.start()
+                assert reconnected.wait(timeout=2)
+                assert subscription.has_errored() is False
+                assert attempts[:2] == [connection, connection]
+                restarter.join(timeout=2)
+                assert not restarter.is_alive()
+                assert not done.wait(timeout=1.1)
+                # Terminal worker death must end a wait already in progress.
+                connection.disconnect(timeout=2)
+                assert done.wait(timeout=2)
+            finally:
+                subscription._alive = False
+                connection.disconnect(timeout=2)
+                restarter.join(timeout=2)
+                if waiter.ident is not None:
+                    waiter.join(timeout=2)
+
+    def test_wait_forever_survives_reconnect_backoff(self, subscription):
+        """``wait_forever`` does not return early on a recoverable drop.
+
+        The pysher thread stays alive through its reconnect backoff even
+        though the socket flagged an error; the wait must survive until
+        ``stop()`` clears ``_alive``.
+        """
+        connection = Mock()
+        connection.is_alive.return_value = True
+        connection.socket = Mock()
+        connection.socket.has_errored = True
+        subscription._connection = connection
+
+        done = threading.Event()
+        waiter = threading.Thread(
+            target=lambda: (subscription.wait_forever(), done.set()),
+            daemon=True,
+        )
+        waiter.start()
+
+        assert not done.wait(timeout=2.5)
+        subscription.stop()
+        assert done.wait(timeout=5)
+
 
 class TestSubscriptionBuilderConnectTimeout:
     """Tests for _SubcriptionBuilder.connect timeout teardown."""
