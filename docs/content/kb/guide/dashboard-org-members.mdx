@@ -1,14 +1,57 @@
 ---
-title: "Organization Members and Administrators"
-description: "Public guidance for transferring organization control and managing administrator roles."
-keywords: ["dashboard","members","organizations","platform","roles","account-and-billing","getting-started","/kb/dashboard-and-projects/transfer-organization-control-to-another-user","transfer-organization-control-to-another-user"]
-sources: [{"sourcePath":"dashboard/org-members/public.md","sourceHeading":"Transfer organization control to another user"}]
-lastVerifiedAt: "2026-08-17"
+title: "Organization Members and Roles"
+description: "What the Admin, Member (Developer), and Viewer roles can do in Composio For You and Platform, and how to transfer organization control."
+keywords: ["dashboard","for-you","members","organizations","permissions","platform","roles","account-and-billing","getting-started","/kb/dashboard-and-projects/transfer-organization-control-to-another-user","transfer-organization-control-to-another-user"]
+sources: [{"sourcePath":"dashboard/org-members/public.md","sourceHeading":"What each organization role can do"},{"sourcePath":"dashboard/org-members/public.md","sourceHeading":"Transfer organization control to another user"}]
+lastVerifiedAt: "2026-10-13"
 reviewAfter: "2026-11-15"
 freshness: "evergreen"
 topics: ["account-and-billing","getting-started"]
 aliases: ["/kb/dashboard-and-projects/transfer-organization-control-to-another-user","transfer-organization-control-to-another-user"]
 ---
+## What each organization role can do
+
+Every member of your organization has one of three roles: **Admin**, **Member**, or **Viewer**. The role applies to the whole organization, so it covers both Composio For You and Platform.
+
+**Member** and **Developer** are the same role. The For You **Members** settings page calls it **Member**, and the Platform **Team Members** settings page calls it **Developer**. If you change someone's role on either page, it changes in both products.
+
+Only Admins can manage the organization itself, in both products:
+
+- Invite people, create invite links, change roles, and remove members.
+- Manage billing, plans, and wallet top-ups.
+- Rename or delete the organization, and set up SSO.
+
+### Composio For You
+
+| Action | Admin | Member | Viewer |
+|---|---|---|---|
+| Open For You | Yes | Yes | No |
+| Connect your own apps | Yes | Yes | No |
+| Use connections an admin or teammate shared with the organization | Yes | Yes | No |
+| Share one of your connections with the organization | Yes | Yes | No |
+| Rename, reconnect, unshare, or delete a shared connection | Only the person who shared it | Only the person who shared it | No |
+| Turn Instant Tools on or off for the organization | Yes | No | No |
+| See tool logs for the whole organization | Yes | Own activity only | No |
+
+Viewers can't use For You at all. Give your team the **Member** role if they need to connect their own apps or use shared connections.
+
+Members only see and manage their own personal connections. Only the person who shared a connection can rename, reconnect, unshare, or delete it. Admins can't change a teammate's shared connection either.
+
+### Composio Platform
+
+| Action | Admin | Developer | Viewer |
+|---|---|---|---|
+| View projects, logs, and settings | Yes | Yes | Yes |
+| Connect apps and manage connected accounts in a project | Yes | Yes | No |
+| Create, edit, enable, or delete auth configs | Yes | Yes | No |
+| Manage triggers, webhook subscriptions, and custom toolkits | Yes | Yes | No |
+| Rename a project | Yes | Yes | No |
+| Create or delete a project | Yes | No | No |
+| Create or revoke project API keys and set IP allowlists | Yes | No | No |
+| Change project security settings, such as 2FA, required MCP API keys, data masking, and log visibility | Yes | No | No |
+
+Developers can build inside existing projects. Ask an Admin to create a project or to issue an API key for it.
+
 ## Transfer organization control to another user
 
 Transfer organization control by assigning the **Admin** role:
