@@ -29,14 +29,14 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.287",
+    "ai": "^6.0.302",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.4",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }

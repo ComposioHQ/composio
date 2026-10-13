@@ -26,14 +26,14 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.55
+  '@ai-sdk/mcp': ^2.0.73
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.5.1'
   '@clack/prompts': '^1.8.1'
-  '@cloudflare/vitest-pool-workers': 0.22.0
-  '@cloudflare/workers-types': ^5.20260922.1
-  '@composio/client': 2.0.0-rc.11
+  '@cloudflare/vitest-pool-workers': 0.23.0
+  '@cloudflare/workers-types': ^5.20261009.1
+  '@composio/client': 2.0.0-rc.12
   '@effect/language-service': ^0.87.4
   '@effect/platform-bun': 4.0.3
   '@effect/vitest': 4.0.3
@@ -42,26 +42,26 @@ catalog:
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.31.0
+  '@modelcontextprotocol/sdk': ^1.32.1
   '@types/bun': ^1.4.2
-  ai: ^7.0.111
-  dotenv: ^18.0.2
+  ai: ^7.0.137
+  dotenv: ^18.0.6
   effect: 4.0.3
-  hono: ^4.13.8
-  openai: ^7.21.0
+  hono: ^4.13.13
+  openai: ^7.31.0
   picocolors: ^1.1.1
-  publint: ^0.3.24
+  publint: ^0.3.25
   tsdown: ^0.23.0
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.1
-  vitest: ^5.0.1
-  wrangler: ^4.136.1
+  '@vitest/ui': ^5.0.3
+  vitest: ^5.0.3
+  wrangler: ^4.149.0
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
 catalogs:
-  # @cloudflare/vitest-pool-workers 0.22 only supports Vitest 4. Keep the
+  # @cloudflare/vitest-pool-workers 0.23 only supports Vitest 4. Keep the
   # Workers test projects on the latest compatible v4 while the rest of the
   # workspace, including @effect/vitest, runs on Vitest 5.
   vitest4:
@@ -81,12 +81,14 @@ catalogs:
 minimumReleaseAge: 4320
 
 minimumReleaseAgeExclude:
+  # Requested Effect 4.0.3 migration; exempt only this verified release family.
+  # Remove after 2026-10-14, once every package is older than the 3-day cutoff.
+  - effect@4.0.3
+  - '@effect/platform-bun@4.0.3'
+  - '@effect/platform-node-shared@4.0.3'
+  - '@effect/vitest@4.0.3'
   - '@mastra/core'
   - '@composio/client'
-  # Exact releases used by the reviewed Effect 4 migration.
-  - 'effect@4.0.3'
-  - '@effect/platform-bun@4.0.3'
-  - '@effect/vitest@4.0.3'
   - chrome-devtools-mcp
   # temporary: 0.6.0 (2026-09-15) is the first release with the API that
   # @composio/typesafe targets. Publisher, provenance, and the absence of install

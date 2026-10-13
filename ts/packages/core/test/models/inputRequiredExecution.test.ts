@@ -92,6 +92,14 @@ const executionPaths: Array<{
     run: client => createSession(client).execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' }),
   },
   {
+    name: 'session.executeMeta',
+    subject: 'Tool COMPOSIO_MULTI_EXECUTE_TOOL',
+    run: client =>
+      createSession(client).executeMeta('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [{ tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'test@test.com' } }],
+      }),
+  },
+  {
     name: 'session.proxyExecute',
     subject: 'POST proxy call for toolkit github',
     run: client => createSession(client).proxyExecute(proxyParams),
@@ -424,14 +432,14 @@ const invalidAnswers = [
 const executePaths = executionPaths.filter(path => !path.name.includes('proxyExecute'));
 
 describe.each(invalidAnswers)('session execute answer with $name', ({ body }) => {
-  it.each(executePaths)('$name raises ValidationError', async ({ run }) => {
+  it.each(executePaths)('$name raises ValidationError', async ({ run, subject }) => {
     const { client, fetch } = createClient(body);
 
     const error = await run(client).catch((caught: unknown) => caught);
 
     assert(error instanceof ValidationError);
     expect(error.message).toContain(
-      'Tool GMAIL_SEND_EMAIL returned an execute response without a known result_type'
+      `${subject} returned an execute response without a known result_type`
     );
     expect(fetch).toHaveBeenCalledTimes(1);
   });

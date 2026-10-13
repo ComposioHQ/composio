@@ -51,10 +51,7 @@ trust the file and fix the reference.
   ESLint bans them in `ts/packages/cli/src`.
 - Treat every remembered v3 package name and API as wrong until verified against
   `ts/vendor/effect` (read-only source oracle — never edit or import from it) and the
-  installed `effect@4.0.3` typings. The vendored source is still the `effect@4.0.0-rc.117`
-  commit, which predates the 4.0.0 module rename: what npm exports as `effect/cli`,
-  `effect/http` and `effect/process` sits under `src/unstable/` there. Where the two disagree,
-  the installed typings win;
+  installed `effect@4.0.3` typings. Source may be ahead of the published package;
   the compiler is the compatibility gate.
 
 ## Verification

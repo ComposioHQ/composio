@@ -110,7 +110,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Key Dependencies
 
-`effect` (pinned `4.0.3`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.11` via the workspace catalog), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned `4.0.3`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.12` via the workspace catalog), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 
@@ -201,12 +201,12 @@ The only code allowed to bypass services sits at declared runtime boundaries: th
 
 ## Vendor Reference Sources
 
-Read-only submodules under `ts/vendor/`. The Effect one is pinned at the `effect@4.0.0-rc.117` release commit, one release behind the `4.0.3` npm pin (do NOT modify — actual deps come from npm). That commit predates the 4.0.0 module rename, so the modules npm exports as `effect/cli`, `effect/http` and `effect/process` still sit under `src/unstable/` there; where the vendored source and the installed typings disagree, the typings win. v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
+Read-only submodules under `ts/vendor/`, pinned at the `effect@4.0.3` release commit (do NOT modify — actual deps come from npm). v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
 
 - `ts/vendor/effect/packages/effect/src/` — core Effect runtime (`Effect`, `Schema`, `Layer`, `Context`, `Result`, `Cause`, `Config`, `FileSystem`, `Path`, `PlatformError`, …)
-- `ts/vendor/effect/packages/effect/src/unstable/cli/` — `effect/cli` (`Command`, `Flag`, `Argument`, `CliError`, `CliConfig`, `CliOutput`, `GlobalFlag`, `HelpDoc`, `Completions`, `Prompt`)
-- `ts/vendor/effect/packages/effect/src/unstable/http/` — `effect/http` (`HttpClient`, `HttpClientRequest`, `HttpClientResponse`, `FetchHttpClient`)
-- `ts/vendor/effect/packages/effect/src/unstable/process/` — `effect/process` (`ChildProcess`, `ChildProcessSpawner`)
+- `ts/vendor/effect/packages/effect/src/cli/` — `effect/cli` (`Command`, `Flag`, `Argument`, `CliError`, `CliConfig`, `CliOutput`, `GlobalFlag`, `HelpDoc`, `Completions`, `Prompt`)
+- `ts/vendor/effect/packages/effect/src/http/` — `effect/http` (`HttpClient`, `HttpClientRequest`, `HttpClientResponse`, `FetchHttpClient`)
+- `ts/vendor/effect/packages/effect/src/process/` — `effect/process` (`ChildProcess`, `ChildProcessSpawner`)
 - `ts/vendor/effect/packages/platform/bun/src/` — `@effect/platform-bun` (`BunFileSystem`, `BunPath`, `BunServices`, `BunRuntime`, `BunChildProcessSpawner`, …)
 - `ts/vendor/effect/migration/` — official v3-to-v4 migration guides (`services.md`, `schema.md`, `cause.md`, `runtime.md`, `v3-to-v4.md`, …)
 - `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (text, select, confirm, spinner, note, task, etc.)

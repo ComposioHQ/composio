@@ -33,6 +33,8 @@ from composio.core.models.tool_router import (
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
     ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
 from composio.core.models.session_context import SessionContextImpl
@@ -2471,7 +2473,7 @@ def _answering_client(
     requests: t.List[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith(("/execute", "/proxy_execute")):
+        if request.url.path.endswith(("/execute", "/execute_meta", "/proxy_execute")):
             requests.append(request)
             return httpx.Response(200, json=body)
         return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
@@ -2506,6 +2508,14 @@ class TestExecutionRequiresUserInput:
                 ),
                 "Tool GMAIL_SEND_EMAIL",
                 id="session.execute",
+            ),
+            pytest.param(
+                lambda client: _created_session(client).execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": [{"tool_slug": "GMAIL_SEND_EMAIL"}]},
+                ),
+                "Tool COMPOSIO_MULTI_EXECUTE_TOOL",
+                id="session.execute_meta",
             ),
             pytest.param(
                 lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
@@ -3377,3 +3387,86 @@ class TestSessionUpdateContract:
             "expected_config_version": 8
         }
         assert reread.config_version == 9
+
+
+class TestSessionExecuteMeta:
+    """``session.execute_meta`` runs a Composio meta tool through the meta
+    endpoint and answers in the same shape as ``session.execute``.
+    """
+
+    def test_sends_the_slug_and_arguments_to_the_meta_endpoint(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta(
+            "COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send an email"}]},
+        )
+
+        assert len(requests) == 1
+        assert requests[0].url.path == (
+            "/api/v3.1/tool_router/session/session_123/execute_meta"
+        )
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_SEARCH_TOOLS",
+            "arguments": {"queries": [{"use_case": "send an email"}]},
+        }
+
+    def test_omits_arguments_when_not_passed(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta("COMPOSIO_MANAGE_CONNECTIONS")
+
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_MANAGE_CONNECTIONS"
+        }
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_returns_the_session_execute_response(self, result_type, error, successful):
+        client, _ = _answering_client(
+            {
+                **_executed_json(result_type, error),
+                "data": {"results": []},
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert result.result_type == result_type
+        assert result.error == error
+        assert result.data == {"results": []}
+        assert result.log_id == "log"
+        assert result.instant_charge is not None
+        assert result.instant_charge.amount == "0.01"
+
+    @pytest.mark.parametrize("body", _INVALID_ANSWERS)
+    def test_raises_without_a_known_result_type(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(
+            ValidationError,
+            match="Tool COMPOSIO_SEARCH_TOOLS returned an execute response "
+            "without a known result_type",
+        ):
+            _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert len(requests) == 1
+
+    def test_slugs_match_the_generated_client(self):
+        from composio_client.resources.tool_router.session import SessionResource
+
+        slug_hint = t.get_type_hints(SessionResource.execute_meta)["slug"]
+        client_slugs = {
+            slug
+            for member in t.get_args(slug_hint)
+            for slug in t.get_args(member)
+            if isinstance(slug, str)
+        }
+
+        assert client_slugs
+        assert set(t.get_args(ToolRouterSessionMetaToolSlug)) == client_slugs

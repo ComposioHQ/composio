@@ -222,6 +222,6 @@ needs translation.
 | `it.scoped` (`@effect/vitest`)                                       | removed — `it.effect` already runs `Effect.scoped`                                                 |
 | `ValidationError`, `HelpDoc`, `CommandDescriptor` (`@effect/cli`)    | `CliError`, plain `HelpDoc` data shape, public `Command` fields only — no descriptor introspection |
 
-For anything not in this table, or any prerelease-to-prerelease drift, verify against
+For anything not in this table, or any release-to-release drift, verify against
 `ts/vendor/effect/migration/*.md` and the actual `ts/vendor/effect/packages/effect/src`
 source before writing code — do not extrapolate from this table alone.
