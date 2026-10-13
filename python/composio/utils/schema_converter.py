@@ -1924,7 +1924,7 @@ def _load_regex_parser() -> t.Tuple[t.Any, t.Any]:
             importlib.import_module("re._parser"),
             importlib.import_module("re._constants"),
         )
-    except ImportError:  # Python 3.10; deprecated aliases from 3.11 on
+    except ImportError:  # Fallback for older Python interpreters
         return (
             importlib.import_module("sre_parse"),
             importlib.import_module("sre_constants"),

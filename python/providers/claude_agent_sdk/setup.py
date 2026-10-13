@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     packages=find_packages(),
     install_requires=["claude-agent-sdk>=0.2.128", "composio"],
     include_package_data=True,
