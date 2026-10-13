@@ -1127,7 +1127,8 @@ function isInlineObjectType(type: string): boolean {
 }
 
 // Shorten a type to at most `maxLength` characters. A union is cut between
-// members so the result never ends inside a string literal.
+// members, or elided entirely when not even its first member fits, so it never
+// ends inside a string literal.
 function truncateType(type: string, maxLength: number): string {
   const members = splitTopLevel(type, '|');
   if (members.length > 1) {
@@ -1138,9 +1139,7 @@ function truncateType(type: string, maxLength: number): string {
       if (next.length + suffix.length > maxLength) break;
       kept = next;
     }
-    if (kept.length + suffix.length <= maxLength) {
-      return kept + suffix;
-    }
+    return kept.length + suffix.length <= maxLength ? kept + suffix : '...';
   }
   return type.substring(0, maxLength - 3) + '...';
 }

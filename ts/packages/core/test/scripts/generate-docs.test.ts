@@ -189,6 +189,13 @@ describe('generate-docs type truncation', () => {
       `'${'a|'.repeat(30)}' | 'COMPOSIO_SEARCH_TOOLS' | ...`
     );
   });
+
+  it('elides a union whose first member does not fit', () => {
+    const type = `'${'a'.repeat(110)}' | 'COMPOSIO_SEARCH_TOOLS'`;
+
+    expect(simplifyTypeForSignature(type)).toBe('...');
+    expect(simplifyTypeForTable(type)).toBe('...');
+  });
 });
 
 describe('generate-docs source lookup', () => {
