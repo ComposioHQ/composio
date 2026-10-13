@@ -86,7 +86,7 @@ in context — v4's default, per above) for the resolved `commandPath`, then re-
 output has already been printed once, to the correct stream.
 
 `CliError.ShowHelp` is not a plain tagged error — it carries two `effect/Runtime`
-markers set on the class itself (`ts/vendor/.../unstable/cli/CliError.ts`):
+markers set on the class itself (`ts/vendor/.../cli/CliError.ts`):
 `[Runtime.errorExitCode] = errors.length ? 1 : 0` and `[Runtime.errorReported] = false`.
 Those markers _are_ the contract: "I already printed my own output; don't log me again
 (`errorReported`), and here is the process exit code to use (`errorExitCode`)."

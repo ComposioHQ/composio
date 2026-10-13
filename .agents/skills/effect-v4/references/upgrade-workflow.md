@@ -6,9 +6,11 @@ cutover is now done: this is a release-to-release upgrade procedure, not a v3→
 ## 1. Check `minimumReleaseAge`
 
 `pnpm-workspace.yaml` sets `minimumReleaseAge: 4320` (minutes — 3 days) with an
-explicit `minimumReleaseAgeExclude` list. `effect` and its satellite packages are
-**not** on that exclude list, so a newly published release must be at least 3 days old
-before pnpm will resolve it. Check the target version's npm publish timestamp
+explicit `minimumReleaseAgeExclude` list. A newly published release normally must
+be at least 3 days old before pnpm will resolve it. For an explicitly requested release inside the cooldown, add temporary exclusions
+for that exact version of the runtime and required satellites, including
+`@effect/platform-node-shared`; do not exclude an entire package family.
+Check the target version's npm publish timestamp
 (`npm view effect@<version> time.<version>`) against `now - 4320m` before touching any
 pin — bumping too early makes `pnpm install` fail to resolve, not silently ignore the
 constraint.
@@ -16,28 +18,24 @@ constraint.
 ## 2. Bump the exact pins together
 
 Every one of these must move to the same new exact version in the same change — never
-bump one and leave the others behind:
+upgrade one and leave the others behind:
 
 - `pnpm-workspace.yaml` catalog: `effect`, `@effect/platform-bun`,
   `@effect/vitest`.
-- `ts/packages/cli-keyring/package.json`: its `effect` dependency is pinned exactly
-  (not via `catalog:`) — bump it directly, in both `dependencies` and wherever else it
-  is repeated in that file.
+- `ts/packages/cli-keyring/package.json`: its `effect` peer dependency uses an exact
+  version (not `catalog:`); update that pin too.
 - Any other package pinning `effect` outside the catalog — grep for `"effect":` across
   `ts/packages/*/package.json` before assuming the catalog covers everything.
 
-Keep every pin an exact version string (no `^`, no `@next`, no range) — this matches
-the existing convention, not a new rule.
+Keep every pin an exact version string (no `^`, no `@next`, no range).
+Confirm the lockfile resolves matching versions.
 
 ## 3. Advance the vendored source oracle
 
 `ts/vendor/effect` is a git submodule pinned at a commit on the canonical
 `Effect-TS/effect` repo, currently
-`14a3f140095fdebbff9162944fe7d4ea83e054e6` (tagged `effect@4.0.0-rc.117`
-at the time of writing — confirm with `git submodule status ts/vendor/effect`). The npm
-pins moved to `4.0.3` without advancing it, so the oracle currently lags the installed
-package and still keeps the `effect/cli`, `effect/http` and `effect/process` sources under
-`src/unstable/`. Advance
+`967a7dc5963a23d3705259d60ccac1ce9f060a3b` (tagged `effect@4.0.3`
+at the time of writing — confirm with `git submodule status ts/vendor/effect`). Advance
 it to the commit/tag matching the new npm version:
 
 ```bash
