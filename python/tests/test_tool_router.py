@@ -185,13 +185,21 @@ class TestToolRouter:
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
 
-    @pytest.mark.parametrize("proxy_execute", [{"enable": True}, {"enable": False}])
-    def test_create_sends_proxy_execute_as_given(
-        self, tool_router, mock_client, proxy_execute
+    @pytest.mark.parametrize(
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+        ],
+    )
+    def test_create_sends_proxy_execute_block(
+        self, tool_router, mock_client, proxy_execute, expected
     ):
         tool_router.create(user_id="user_123", proxy_execute=proxy_execute)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["proxy_execute"] == proxy_execute
+        assert kwargs["proxy_execute"] == expected
 
     def test_create_omits_proxy_execute_by_default(self, tool_router, mock_client):
         tool_router.create(user_id="user_123")
@@ -3209,12 +3217,21 @@ class TestSessionUpdateContract:
         assert session.config_version == 7
 
     @pytest.mark.parametrize(
-        "proxy_execute", [{"enable": True}, {"enable": False}, None]
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+            (None, None),
+        ],
     )
-    def test_proxy_execute_is_sent_as_given(self, session, mock_client, proxy_execute):
+    def test_proxy_execute_is_sent_as_block(
+        self, session, mock_client, proxy_execute, expected
+    ):
         session.update(proxy_execute=proxy_execute)
         kwargs = mock_client.tool_router.session.patch.call_args.kwargs
-        assert kwargs["proxy_execute"] == proxy_execute
+        assert kwargs["proxy_execute"] == expected
 
     def test_proxy_execute_is_omitted_by_default(self, session, mock_client):
         session.update(toolkits={"enable": ["gmail"]})

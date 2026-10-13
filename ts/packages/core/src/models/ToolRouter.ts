@@ -51,6 +51,7 @@ import {
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
   transformToolRouterInstantParams,
+  transformToolRouterProxyExecuteParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
@@ -283,7 +284,7 @@ export class ToolRouter<
       workbench: sandboxPayload,
       multi_account: multiAccountPayload,
       ...(routerConfig.proxyExecute !== undefined && {
-        proxy_execute: routerConfig.proxyExecute,
+        proxy_execute: transformToolRouterProxyExecuteParams(routerConfig.proxyExecute),
       }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {

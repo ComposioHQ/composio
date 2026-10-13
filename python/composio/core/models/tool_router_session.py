@@ -1158,7 +1158,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[ToolRouterUpdateMultiAccountConfig],
             "Omit",
         ] = omit,
-        proxy_execute: t.Union[t.Optional[ToolRouterProxyExecuteConfig], "Omit"] = omit,
+        proxy_execute: t.Union[
+            t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]], "Omit"
+        ] = omit,
         preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
         search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
         execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
@@ -1182,8 +1184,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         access or an object to set its filters; it does not accept ``None``.
         Any object, even one that only sets ``return_instant_charge``,
         re-enables Instant usage on a Session set to ``False``.
-        ``proxy_execute`` is sent as given: ``{"enable": True}`` exposes the
-        ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``{"enable": False}`` also turns
+        ``proxy_execute`` takes a bool or ``{"enable": bool}``; ``True``
+        exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``False`` also turns
         off the sandbox ``proxy_execute()`` helper, and ``None`` removes the
         stored block.
 
@@ -1277,7 +1279,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     t.Union[t.Optional[session_patch_params.MultiAccount], "Omit"],
                     multi_account,
                 ),
-                proxy_execute=proxy_execute,
+                proxy_execute=(
+                    {"enable": proxy_execute}
+                    if isinstance(proxy_execute, bool)
+                    else proxy_execute
+                ),
                 preload=t.cast(t.Union[session_patch_params.Preload, "Omit"], preload),
                 search=t.cast(t.Union[session_patch_params.Search, "Omit"], search),
                 execute=t.cast(t.Union[session_patch_params.Execute, "Omit"], execute),

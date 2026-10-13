@@ -222,17 +222,21 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty('instant');
     });
 
-    it('sends proxyExecute.enable as given and omits the block otherwise', async () => {
+    it('sends proxyExecute as given, expands the boolean shorthand, and omits the block otherwise', async () => {
       mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
 
       await toolRouter.create(userId, { proxyExecute: { enable: true } });
       await toolRouter.create(userId, { proxyExecute: { enable: false } });
+      await toolRouter.create(userId, { proxyExecute: true });
+      await toolRouter.create(userId, { proxyExecute: false });
       await toolRouter.create(userId);
 
       const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
       expect(bodies[0]).toMatchObject({ proxy_execute: { enable: true } });
       expect(bodies[1]).toMatchObject({ proxy_execute: { enable: false } });
-      expect(bodies[2]).not.toHaveProperty('proxy_execute');
+      expect(bodies[2]).toMatchObject({ proxy_execute: { enable: true } });
+      expect(bodies[3]).toMatchObject({ proxy_execute: { enable: false } });
+      expect(bodies[4]).not.toHaveProperty('proxy_execute');
     });
 
     it('rejects a proxyExecute block without enable', async () => {
@@ -4379,6 +4383,34 @@ describe('ToolRouter', () => {
         await session.update({ manageConnections: { callbackUrl: null } });
 
         expect(patchCall().body.manage_connections).toEqual({ callback_url: null });
+      });
+
+      it('sends proxyExecute as given, expands the boolean shorthand, and null removes the block', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await session.update({ proxyExecute: { enable: true } });
+        await session.update({ proxyExecute: { enable: false } });
+        await session.update({ proxyExecute: true });
+        await session.update({ proxyExecute: false });
+        await session.update({ proxyExecute: null });
+        await session.update({ toolkits: ['gmail'] });
+
+        expect(patchCall(0).body.proxy_execute).toEqual({ enable: true });
+        expect(patchCall(1).body.proxy_execute).toEqual({ enable: false });
+        expect(patchCall(2).body.proxy_execute).toEqual({ enable: true });
+        expect(patchCall(3).body.proxy_execute).toEqual({ enable: false });
+        expect(patchCall(4).body.proxy_execute).toBeNull();
+        expect(patchCall(5).body).not.toHaveProperty('proxy_execute');
+      });
+
+      it('rejects a proxyExecute block without enable', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await expect(
+          // @ts-expect-error enable is required
+          session.update({ proxyExecute: {} })
+        ).rejects.toThrow();
+        expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
       });
 
       it('preserves an empty toolkit allowlist instead of omitting it', async () => {

@@ -194,11 +194,17 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
-  it('maps proxyExecute as given, and null clears it', () => {
+  it('maps proxyExecute as given, expands a boolean, and null clears it', () => {
     expect(transformToolRouterUpdateParams({ proxyExecute: { enable: true } })).toEqual({
       proxy_execute: { enable: true },
     });
     expect(transformToolRouterUpdateParams({ proxyExecute: { enable: false } })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: true })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: false })).toEqual({
       proxy_execute: { enable: false },
     });
     expect(transformToolRouterUpdateParams({ proxyExecute: null })).toEqual({
