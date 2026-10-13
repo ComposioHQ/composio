@@ -129,8 +129,8 @@ console.log("MCP Server URL:", instance.url);
     Pass an `x-api-key` header when connecting to Composio MCP. This is required when `require_mcp_api_key` is enabled (default for newly created organizations).
     </Callout>
 
-    <Callout type="warn" title="backend.composio.dev is not the Composio Connect URL">
-    These `backend.composio.dev` URLs only work for MCP servers you create with the SDK. To connect an existing client such as Claude, ChatGPT, Cursor or Muse, use [Composio Connect](/docs/composio-connect) at `https://connect.composio.dev/mcp`.
+    <Callout type="warn">
+    For consumer connections, use `https://connect.composio.dev/mcp`, not this URL.
     </Callout>
 
     <Tabs items={['OpenAI (Python)', 'Anthropic (Python)', 'Mastra (TypeScript)']}>
