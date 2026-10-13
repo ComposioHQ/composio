@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -10,11 +10,6 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
-
-class ToolkitsListRequestError extends Data.TaggedError('commands/ToolkitsListRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
 
 const query = Flag.String('query').pipe(
   Flag.withDescription('Text search by name, slug, or description'),
@@ -141,15 +136,8 @@ export const toolkitsCmd$List = Command.make(
             undecoded
           )
           .pipe(
-            Effect.mapError(
-              cause =>
-                new ToolkitsListRequestError({
-                  message: 'Failed to fetch session toolkits.',
-                  cause,
-                })
-            ),
             Effect.map(r => r.items),
-            Effect.catchTag('commands/ToolkitsListRequestError', error =>
+            Effect.catch(error =>
               Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
                 Effect.as(
                   [] as ReadonlyArray<

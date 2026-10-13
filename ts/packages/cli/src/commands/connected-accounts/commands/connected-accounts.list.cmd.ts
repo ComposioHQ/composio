@@ -1,19 +1,17 @@
 import { Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { resolveCommandProject } from 'src/services/command-project';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
 
-class ConnectedAccountsListRequestError extends Data.TaggedError(
+class ConnectedAccountsListRequestError extends requestError(
   'commands/ConnectedAccountsListRequestError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+) {}
 
 const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
@@ -81,15 +79,7 @@ export const connectedAccountsCmd$List = Command.make(
             },
             { decode: false }
           )
-          .pipe(
-            Effect.mapError(
-              cause =>
-                new ConnectedAccountsListRequestError({
-                  message: 'Failed to list connected accounts.',
-                  cause,
-                })
-            )
-          )
+          .pipe(failedWith(ConnectedAccountsListRequestError, 'Failed to list connected accounts.'))
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);
 

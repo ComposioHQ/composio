@@ -1,5 +1,6 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { undecoded } from 'src/services/composio-request';
@@ -10,10 +11,7 @@ import { decodeTriggerLogRecord } from '../trigger-log-record';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
 
-class TriggerLogsRequestError extends Data.TaggedError('commands/TriggerLogsRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class TriggerLogsRequestError extends requestError('commands/TriggerLogsRequestError') {}
 
 const cursor = Flag.String('cursor').pipe(
   Flag.withDescription('Cursor for pagination'),
@@ -153,15 +151,11 @@ export const logsCmd$Triggers = Command.make(
       if (triggerLogId) {
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
-          client.logs.triggers.retrieve(triggerLogId, undecoded).pipe(
-            Effect.mapError(
-              cause =>
-                new TriggerLogsRequestError({
-                  message: `Failed to fetch trigger log "${triggerLogId}".`,
-                  cause,
-                })
+          client.logs.triggers
+            .retrieve(triggerLogId, undecoded)
+            .pipe(
+              failedWith(TriggerLogsRequestError, `Failed to fetch trigger log "${triggerLogId}".`)
             )
-          )
         );
         const record = decodeTriggerLogRecord(triggerLog);
 
@@ -189,15 +183,7 @@ export const logsCmd$Triggers = Command.make(
             },
             undecoded
           )
-          .pipe(
-            Effect.mapError(
-              cause =>
-                new TriggerLogsRequestError({
-                  message: 'Failed to fetch trigger logs.',
-                  cause,
-                })
-            )
-          )
+          .pipe(failedWith(TriggerLogsRequestError, 'Failed to fetch trigger logs.'))
       );
 
       const logs = response.data ?? [];

@@ -1,7 +1,8 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { undecoded } from 'src/services/composio-request';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -9,10 +10,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
-class ToolkitsInfoRequestError extends Data.TaggedError('commands/ToolkitsInfoRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ToolkitsInfoRequestError extends requestError('commands/ToolkitsInfoRequestError') {}
 
 const slug = Argument.String('slug').pipe(
   Argument.withDescription('Toolkit slug (e.g. "gmail")'),
@@ -95,13 +93,7 @@ export const toolkitsCmd$Info = Command.make(
                 // Only the first item is read, and only a few of its fields.
                 .toolkits(sessionId, { toolkits: [slugValue] }, undecoded)
                 .pipe(
-                  Effect.mapError(
-                    cause =>
-                      new ToolkitsInfoRequestError({
-                        message: `Failed to fetch toolkit "${slugValue}".`,
-                        cause,
-                      })
-                  )
+                  failedWith(ToolkitsInfoRequestError, `Failed to fetch toolkit "${slugValue}".`)
                 );
               return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
             }

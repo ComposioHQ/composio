@@ -1,6 +1,7 @@
 import { Data, Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -16,10 +17,7 @@ class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-class ConnectionsListRequestError extends Data.TaggedError('commands/ConnectionsListRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ConnectionsListRequestError extends requestError('commands/ConnectionsListRequestError') {}
 
 const toolkit = Flag.String('toolkit').pipe(
   Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
@@ -86,15 +84,7 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
         },
         { decode: false }
       )
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new ConnectionsListRequestError({
-              message: 'Failed to list connections.',
-              cause,
-            })
-        )
-      );
+      .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,

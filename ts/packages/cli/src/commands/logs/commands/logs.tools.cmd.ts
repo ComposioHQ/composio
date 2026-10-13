@@ -1,5 +1,6 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { undecoded } from 'src/services/composio-request';
@@ -9,10 +10,7 @@ import { formatToolLogInfo, formatToolLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
 
-class ToolLogsRequestError extends Data.TaggedError('commands/ToolLogsRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ToolLogsRequestError extends requestError('commands/ToolLogsRequestError') {}
 
 type ToolLogFilterInput = {
   tool?: string;
@@ -188,15 +186,9 @@ export const logsCmd$Tools = Command.make(
       if (toolLogId) {
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
-          client.logs.tools.retrieve(toolLogId, undecoded).pipe(
-            Effect.mapError(
-              cause =>
-                new ToolLogsRequestError({
-                  message: `Failed to fetch tool log "${toolLogId}".`,
-                  cause,
-                })
-            )
-          )
+          client.logs.tools
+            .retrieve(toolLogId, undecoded)
+            .pipe(failedWith(ToolLogsRequestError, `Failed to fetch tool log "${toolLogId}".`))
         );
 
         yield* ui.log.info(
@@ -220,15 +212,7 @@ export const logsCmd$Tools = Command.make(
             },
             undecoded
           )
-          .pipe(
-            Effect.mapError(
-              cause =>
-                new ToolLogsRequestError({
-                  message: 'Failed to fetch tool logs.',
-                  cause,
-                })
-            )
-          )
+          .pipe(failedWith(ToolLogsRequestError, 'Failed to fetch tool logs.'))
       );
 
       const logs = response.data ?? [];
