@@ -1,4 +1,8 @@
 {
   "node": ["22.22.3", "24.17.0", "25.9.0"],
-  "python": ["3.11", "3.15"]
+  "python": [
+    { "version": "3.11", "excluded-packages": [] },
+    { "version": "3.13", "excluded-packages": [] },
+    { "version": "3.15", "excluded-packages": ["crewai", "langchain", "langgraph"] }
+  ]
 }
