@@ -240,9 +240,13 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
   /**
    * Retrieves detailed info about a single tool by slug.
    * @param slug - Tool slug (e.g. "GMAIL_SEND_EMAIL")
+   *
+   * Not client-decoded: `execute` treats a failed lookup as "no cached
+   * definition" and would skip input validation and file uploads on drift
+   * in a field it never reads.
    */
   getToolDetailed: (slug: string) =>
-    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' })),
+    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' }, undecoded)),
   /**
    * Retrieves detailed info about a single trigger type by slug.
    * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")

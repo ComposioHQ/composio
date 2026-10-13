@@ -27,6 +27,7 @@ import {
   Layer,
   Option,
   Path,
+  Predicate,
   References,
   Schedule,
   String,
@@ -47,6 +48,7 @@ import {
   ComposioToolkitsRepository,
   type ToolkitProjectScope,
 } from 'src/services/composio-clients';
+import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
 import {
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
@@ -1319,15 +1321,37 @@ export const TestLayer = (input?: TestLiveInput) =>
       Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
+    // The real client refuses, before sending, a typed call that neither has a
+    // response schema loader nor passes `decode: false`. A shadow replaces the
+    // call, so it repeats that check; the raw `get`/`post` methods are exempt.
+    const isUndecodedCall = (args: ReadonlyArray<unknown>): boolean => {
+      const options = args.at(-1);
+      return Predicate.hasProperty(options, 'decode') && options.decode === false;
+    };
+    const hasSchemaLoader = (operation: string): boolean =>
+      operation.replace(/Stream$/, '') in composioSchemaLoaders;
+
     // Each shadow answers with an Effect or a promise; a rejection becomes
     // the call's failure as it is.
-    const withShadows = <Resources extends object>(base: Resources, shadows: object): Resources => {
+    const withShadows = <Resources extends object>(
+      base: Resources,
+      shadows: object,
+      chain: ReadonlyArray<string> = []
+    ): Resources => {
       const shadowed = { ...base } as Record<string, unknown>;
       for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
+        const operation = [...chain, key].join('.');
         shadowed[key] =
           typeof shadow === 'function'
             ? (...args: ReadonlyArray<unknown>) =>
                 Effect.suspend(() => {
+                  if (chain.length > 0 && !isUndecodedCall(args) && !hasSchemaLoader(operation)) {
+                    return Effect.die(
+                      new Error(
+                        `'${operation}' has no response schema loader and was called without decode: false`
+                      )
+                    );
+                  }
                   const answer: unknown = shadow(...args);
                   return Effect.isEffect(answer)
                     ? answer
@@ -1336,7 +1360,7 @@ export const TestLayer = (input?: TestLiveInput) =>
                         catch: cause => cause,
                       });
                 })
-            : withShadows((shadowed[key] ?? {}) as object, shadow as object);
+            : withShadows((shadowed[key] ?? {}) as object, shadow as object, [...chain, key]);
       }
       return shadowed as Resources;
     };

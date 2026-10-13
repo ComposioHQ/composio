@@ -1,4 +1,9 @@
-import { APIConnectionError, InternalServerError, RateLimitError } from '@composio/client/effect';
+import {
+  APIConnectionError,
+  DecodeError,
+  InternalServerError,
+  RateLimitError,
+} from '@composio/client/effect';
 import { describe, expect, it } from 'vitest';
 import {
   extractApiErrorDetails,
@@ -121,6 +126,22 @@ describe('extractMessage', () => {
     const error = badGatewayError({ message: 'Bad gateway' }, '502 {"message":"Bad gateway"}');
 
     expect(extractMessage(error)).toBe('Bad gateway');
+  });
+
+  it('reports a response that failed decoding by operation and request id, with the remedy', () => {
+    const clientError = new DecodeError({
+      message: "The response body does not match the schema of 'toolRouter.session.toolkits'.",
+      method: 'GET',
+      url: 'https://backend.composio.dev/api/v3.1/tool_router/session/{session_id}/toolkits',
+      status: 200,
+      requestId: 'req_toolkits',
+      operation: 'toolRouter.session.toolkits',
+      issues: [{ path: ['items', 0, 'slug'], kind: 'MissingKey' }],
+    });
+
+    expect(extractMessage({ cause: clientError })).toBe(
+      "The API response for 'toolRouter.session.toolkits' is not in the shape this version of the CLI expects (request id: req_toolkits).\nUpgrade the CLI, then retry:\n> composio upgrade"
+    );
   });
 
   it('reads the transport text of a connection error', () => {

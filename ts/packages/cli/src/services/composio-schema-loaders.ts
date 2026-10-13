@@ -11,9 +11,6 @@ import type { SchemaLoaders } from '@composio/client/effect';
  * before sending anything.
  */
 export const composioSchemaLoaders = {
-  'auth.session.retrieveInfo': async () =>
-    (await import('@composio/client/effect/schemas/auth/session/retrieve-info'))
-      .SessionRetrieveInfoResponse,
   'cli.realtime.credentials': async () =>
     (await import('@composio/client/effect/schemas/cli/realtime/credentials'))
       .RealtimeCredentialsResponse,
@@ -41,6 +38,4 @@ export const composioSchemaLoaders = {
       .SessionToolkitsResponse,
   'tools.list': async () =>
     (await import('@composio/client/effect/schemas/tools/list')).ToolListResponse,
-  'tools.retrieve': async () =>
-    (await import('@composio/client/effect/schemas/tools/retrieve')).ToolRetrieveResponse,
 } satisfies SchemaLoaders;

@@ -1,5 +1,4 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { DecodeError } from '@composio/client/effect';
 import { Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeOrgProject } from 'test/__utils__/models/account';
@@ -63,40 +62,6 @@ describe('CLI: composio dev init', () => {
             'No test data for auth.session.retrieveInfo',
           ]);
           expect(lines[4]).toMatch(/^Project initialized in /);
-        })
-      );
-    });
-
-    layer(
-      TestLive({
-        fixture: 'user-config-with-global-context',
-        accountData: {
-          projects: [makeOrgProject({ id: 'p1', name: 'One' })],
-          sessionInfo: () => {
-            throw new DecodeError({
-              message:
-                "The response body does not match the schema of 'auth.session.retrieveInfo'.",
-              method: 'GET',
-              url: 'https://backend.composio.dev/api/v3.1/auth/session/info',
-              status: 200,
-              requestId: 'req_session',
-              operation: 'auth.session.retrieveInfo',
-              issues: [{ path: ['project'], kind: 'MissingKey' }],
-            });
-          },
-        },
-      })
-    )(it => {
-      it.effect('[Given] session info in an unexpected shape [Then] suggests an upgrade', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'init', '--yes']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-
-          expect(lines.slice(2, 5)).toEqual([
-            'Could not create .env.local from session info.',
-            "The API response for 'auth.session.retrieveInfo' is not in the shape this version of the CLI expects (request id: req_session).",
-            'Upgrade the CLI, then retry:\n> composio upgrade',
-          ]);
         })
       );
     });

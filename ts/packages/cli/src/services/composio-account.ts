@@ -186,7 +186,9 @@ export const getSessionInfo = (params: {
       orgId: params.orgId,
       projectId: params.projectId,
     });
-    const info = yield* client.auth.session.retrieveInfo();
+    // Read through a few fields only, and called after login has already
+    // linked the session: drift in a field the CLI never reads must not fail it.
+    const info = yield* client.auth.session.retrieveInfo(undecoded);
     return yield* requireSessionProject(info);
   });
 
@@ -208,7 +210,10 @@ export const getSessionInfoByUserApiKey = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.userApiKey });
-    const info = yield* client.auth.session.retrieveInfo(orgScopedOptions(params.orgId));
+    const info = yield* client.auth.session.retrieveInfo({
+      ...orgScopedOptions(params.orgId),
+      ...undecoded,
+    });
     return yield* requireSessionProject(info);
   });
 

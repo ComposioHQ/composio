@@ -120,6 +120,13 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
       return value.details?.message ?? extractMessage(value.body, visited) ?? value.message;
     }
 
+    // A response that failed client decoding is reported by operation and
+    // request id, with the remedy, never by the client's raw message.
+    if (isClientDecodeError(value)) {
+      const { message, hint } = describeDecodeError(value);
+      return `${message}\n${hint}`;
+    }
+
     // A client connection error has no cause chain; the transport text is in .description.
     if (isClientConnectionError(value)) {
       return value.description ?? value.message;
