@@ -1,5 +1,4 @@
-import { APIError } from '@composio/client';
-import { BadRequestError as ClientBadRequestError } from '@composio/client/effect';
+import { BadRequestError, InternalServerError } from '@composio/client/effect';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -8,28 +7,19 @@ import {
   mapOnlyComposioOverrideError,
 } from 'src/services/composio-error-overrides';
 
-const apiError = (
-  status: number,
-  envelope: { code: number; slug: string; message: string } | Record<string, unknown>
-) =>
-  APIError.generate(
-    status,
-    'code' in envelope ? { error: { status, ...envelope } } : envelope,
-    undefined,
-    new Headers({ 'x-request-id': 'req_test' })
-  );
+const url = 'https://backend.composio.dev/api/v3.1/tools/execute/{tool_slug}';
 
-// The client error the Effect client fails with for the same 400 response.
-const clientApiError = (envelope: { code: number; slug: string; message: string }) => {
-  const error = apiError(400, envelope);
-  return new ClientBadRequestError({
-    message: error.message,
+// The client's error for a 400 answered with `envelope`.
+const apiError = (envelope: { code: number; slug: string; message: string }) => {
+  const details = { status: 400, ...envelope };
+  return new BadRequestError({
+    message: `400 ${JSON.stringify({ error: details })}`,
     method: 'POST',
-    url: 'https://backend.composio.dev/api/v3.1/tools/execute/{tool_slug}',
+    url,
     status: 400,
-    requestId: error.requestId,
-    details: error.details,
-    body: error.error,
+    requestId: 'req_test',
+    details,
+    body: { error: details },
   });
 };
 
@@ -37,7 +27,7 @@ describe('composio-error-overrides', () => {
   it('rewrites a 4302 API error by toolkit', () => {
     const result = mapComposioError({
       toolkit: 'gmail',
-      error: apiError(400, {
+      error: apiError({
         code: 4302,
         slug: 'SomethingElse',
         message: 'No active connection',
@@ -54,7 +44,7 @@ describe('composio-error-overrides', () => {
   it('rewrites an execute no-connection slug by tool slug', () => {
     const result = mapComposioError({
       toolSlug: 'SLACK_SEND_MESSAGE',
-      error: apiError(400, {
+      error: apiError({
         code: 1,
         slug: 'ActionExecute_ConnectedAccountNotFound',
         message: 'Missing connected account',
@@ -72,7 +62,7 @@ describe('composio-error-overrides', () => {
       toolkit: 'gmail',
       error: {
         _tag: 'UnknownException',
-        cause: apiError(400, {
+        cause: apiError({
           code: 1,
           slug: 'ToolRouterV2_NoActiveConnection',
           message: 'No active connection',
@@ -95,7 +85,15 @@ describe('composio-error-overrides', () => {
   });
 
   it('keeps a non-envelope API error unmapped, with the error message', () => {
-    const error = apiError(502, { message: 'Bad gateway' });
+    const error = new InternalServerError({
+      message: '502 {"message":"Bad gateway"}',
+      method: 'POST',
+      url,
+      status: 502,
+      requestId: 'req_test',
+      details: undefined,
+      body: { message: 'Bad gateway' },
+    });
 
     const result = mapComposioError({ error });
 
@@ -131,7 +129,7 @@ describe('composio-error-overrides', () => {
   it('still rewrites override-class Composio errors at the top level', () => {
     const mapped = mapOnlyComposioOverrideError({
       toolkit: 'gmail',
-      error: apiError(400, {
+      error: apiError({
         code: 4302,
         slug: 'ToolRouterV2_NoActiveConnection',
         message: 'No active connection',
@@ -141,54 +139,18 @@ describe('composio-error-overrides', () => {
     expect(mapped).toBeInstanceOf(ComposioNoActiveConnectionError);
   });
 
-  describe('with a client error', () => {
-    it('rewrites a 4302 API error by toolkit', () => {
-      const result = mapComposioError({
-        toolkit: 'gmail',
-        error: clientApiError({
-          code: 4302,
-          slug: 'SomethingElse',
-          message: 'No active connection',
-        }),
-      });
-
-      expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
-      expect(result.message).toBe(
-        'No active connection found for toolkit "gmail". Run `composio link gmail`, then retry.'
-      );
-      expect(result.apiDetails).toMatchObject({ code: 4302, status: 400, request_id: 'req_test' });
+  it('keeps an unrelated API error unmapped, with the envelope message', () => {
+    const error = apiError({
+      code: 1803,
+      slug: 'Tool_NotFound',
+      message: 'Tool not found',
     });
 
-    it('rewrites a no-connection slug by tool slug', () => {
-      const result = mapComposioError({
-        toolSlug: 'SLACK_SEND_MESSAGE',
-        error: clientApiError({
-          code: 1,
-          slug: 'ToolRouterV2_NoActiveConnection',
-          message: 'No active connection',
-        }),
-      });
+    const result = mapComposioError({ error });
 
-      expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
-      expect(result.slugValue).toBe('ToolRouterV2_NoActiveConnection');
-      expect(result.message).toBe(
-        'No active connection found for toolkit "slack". Run `composio link slack`, then retry.'
-      );
-    });
-
-    it('keeps an unrelated API error unmapped, with the envelope message', () => {
-      const error = clientApiError({
-        code: 1803,
-        slug: 'Tool_NotFound',
-        message: 'Tool not found',
-      });
-
-      const result = mapComposioError({ error });
-
-      expect(result.override).toBeNull();
-      expect(result.normalized).toBe(error);
-      expect(result.message).toBe('Tool not found');
-      expect(mapOnlyComposioOverrideError({ error })).toBe(error);
-    });
+    expect(result.override).toBeNull();
+    expect(result.normalized).toBe(error);
+    expect(result.message).toBe('Tool not found');
+    expect(mapOnlyComposioOverrideError({ error })).toBe(error);
   });
 });

@@ -16,7 +16,7 @@ import {
   listOrganizations,
   listOrgProjects,
 } from 'src/services/composio-clients';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
 import { isClientApiError } from 'src/utils/api-error-extraction';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -449,6 +449,26 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withRepository))
     );
 
+    it.effect('searchTools fails with DecodeError when the page breaks the API contract', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          // No `total_items`, which the API's response schema requires.
+          jsonResponse({ items: [], next_cursor: null, total_pages: 1, current_page: 1 }, 200, {
+            'x-request-id': 'req_tools',
+          })
+        );
+        const repository = yield* ComposioToolkitsRepository;
+
+        const error = yield* repository.searchTools({ search: 'send' }).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: '@composio/client/DecodeError',
+          operation: 'tools.list',
+          requestId: 'req_tools',
+        });
+      }).pipe(Effect.provide(withRepository))
+    );
+
     it.effect('an API error envelope arrives as the status error with its details', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -503,7 +523,7 @@ describe('composio-clients', () => {
           },
         });
         const previousExitCode = process.exitCode;
-        yield* handleHttpServerError(ui, {
+        yield* handleClientApiError(ui, {
           fallbackMessage: 'fallback',
           hint: 'hint',
           fallbackValue: undefined,

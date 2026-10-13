@@ -39,6 +39,8 @@ export const composioSchemaLoaders = {
   'toolRouter.session.toolkits': async () =>
     (await import('@composio/client/effect/schemas/tool-router/session/toolkits'))
       .SessionToolkitsResponse,
+  'tools.list': async () =>
+    (await import('@composio/client/effect/schemas/tools/list')).ToolListResponse,
   'tools.retrieve': async () =>
     (await import('@composio/client/effect/schemas/tools/retrieve')).ToolRetrieveResponse,
 } satisfies SchemaLoaders;

@@ -1,17 +1,15 @@
 /**
  * Adapters from failures to the Composio API error envelope.
  *
- * `@composio/client` rejects with an `APIError` whose `details` is the parsed
- * `{ error: { message, code, slug, ... } }` envelope. Effect wrappers keep the
- * original rejection in `.cause`, so the adapter walks that chain to the first
- * `APIError`. The Effect client fails with a tagged status error that carries
- * the same `details`, and is recognized by its tag.
+ * `@composio/client/effect` fails a non-success response with a tagged status
+ * error whose `details` is the parsed `{ error: { message, code, slug, ... } }`
+ * envelope. The CLI's own errors keep that failure in `.cause`, so the adapter
+ * walks that chain to the first status error, recognized by its tag.
  *
  * Used by both the `ToolsExecutor` service (for error classification) and the
  * `tools execute` command (for error display).
  */
 
-import { APIError } from '@composio/client';
 import {
   isAPIError,
   isComposioError,
@@ -64,15 +62,15 @@ export interface ApiErrorDetails {
 }
 
 /**
- * Returns the first `APIError` or client status error along the `.cause`
- * chain, starting at `value`.
+ * Returns the first client status error along the `.cause` chain, starting at
+ * `value`.
  */
-export const findApiError = (value: unknown): APIError | APIStatusError | undefined => {
+export const findApiError = (value: unknown): APIStatusError | undefined => {
   const seen = new Set<unknown>();
   let current: unknown = value;
 
   while (Predicate.isObject(current) && !seen.has(current)) {
-    if (current instanceof APIError || isAPIError(current)) return current;
+    if (isAPIError(current)) return current;
     seen.add(current);
     current = Predicate.hasProperty(current, 'cause') ? current.cause : undefined;
   }
@@ -81,7 +79,7 @@ export const findApiError = (value: unknown): APIError | APIStatusError | undefi
 };
 
 /**
- * The API error envelope carried by the first `APIError` in the cause chain,
+ * The API error envelope carried by the first status error in the cause chain,
  * with the HTTP status and request id. A body that is not the envelope keeps
  * the status and falls back to the error's own message.
  */
@@ -108,8 +106,8 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
   if (typeof value === 'string') return value;
 
   // Walk the .cause / .error chain to find the deepest meaningful message.
-  // Effect's UnknownException stores the real error in .cause; the Composio SDK
-  // stores the API response body in .error (which itself has .error.message).
+  // A wrapper stores the failure it wraps in .cause; an API response body
+  // stores its envelope in .error (which itself has .error.message).
   // We prefer the deepest message because outer wrappers often have generic
   // messages like "An unknown error occurred in Effect.tryPromise".
   if (Predicate.isObject(value)) {
@@ -117,7 +115,7 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
     if (visited.has(value)) return undefined;
     visited.add(value);
 
-    // A client status error keeps the response body in .body, not .error.
+    // A client status error keeps the response body in .body.
     if (isAPIError(value)) {
       return value.details?.message ?? extractMessage(value.body, visited) ?? value.message;
     }
@@ -127,13 +125,13 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
       return value.description ?? value.message;
     }
 
-    // Try .cause chain first (Effect's UnknownException → real SDK error)
+    // Try .cause chain first (wrapper → the failure it wraps)
     if (Predicate.hasProperty(value, 'cause')) {
       const causeMsg = extractMessage(value.cause, visited);
       if (causeMsg) return causeMsg;
     }
 
-    // Try .error chain (SDK error → API response body → nested .error.message)
+    // Try .error chain (API response body → nested .error.message)
     if (Predicate.hasProperty(value, 'error')) {
       const inner = value.error;
       const innerMsg = extractMessage(inner, visited);

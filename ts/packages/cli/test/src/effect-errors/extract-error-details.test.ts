@@ -1,4 +1,3 @@
-import { APIConnectionError, APIConnectionTimeoutError, APIError } from '@composio/client';
 import {
   APIConnectionError as ClientAPIConnectionError,
   APIConnectionTimeoutError as ClientAPIConnectionTimeoutError,
@@ -8,7 +7,6 @@ import {
 import { describe, expect, it } from 'vitest';
 import { Data } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
-import { HttpServerError } from 'src/services/composio-clients';
 
 class RequestError extends Data.TaggedError('RequestError')<{
   readonly message: string;
@@ -86,53 +84,6 @@ const notFoundDetail =
   '404 {"error":{"message":"Toolkit not found","code":1803,"slug":"Toolkit_NotFound","status":404,"request_id":"req_body","suggested_fix":"Check the toolkit slug"}}';
 
 describe('extractErrorDetails for an uncaught API failure', () => {
-  describe('raised as an HttpServerError', () => {
-    it('shows the status and response body of a 404 as the cause detail', () => {
-      const cause = APIError.generate(
-        404,
-        notFoundEnvelope,
-        undefined,
-        new Headers({ 'x-request-id': 'req_header' })
-      );
-      const error = new HttpServerError({
-        cause,
-        status: 404,
-        requestId: 'req_header',
-        details: {
-          message: 'Toolkit not found',
-          code: 1803,
-          suggestedFix: 'Check the toolkit slug',
-        },
-      });
-
-      expect(extractErrorDetails(error)).toStrictEqual({
-        isPlainString: false,
-        type: 'services/HttpServerError',
-        message: `\nCaused by: ${notFoundDetail}`,
-      });
-    });
-
-    it('shows the transport reason of a connection failure', () => {
-      const error = new HttpServerError({
-        cause: new APIConnectionError({
-          cause: new TypeError('fetch failed', {
-            cause: new Error('connect ECONNREFUSED 127.0.0.1:1'),
-          }),
-        }),
-      });
-
-      expect(extractErrorDetails(error).message).toBe(
-        '\nCaused by: connect ECONNREFUSED 127.0.0.1:1'
-      );
-    });
-
-    it('shows a timeout', () => {
-      const error = new HttpServerError({ cause: new APIConnectionTimeoutError() });
-
-      expect(extractErrorDetails(error).message).toBe('\nCaused by: Request timed out.');
-    });
-  });
-
   describe('raised as a client error', () => {
     const url = 'https://backend.composio.dev/api/v3.1/toolkits/{slug}';
 
@@ -207,6 +158,46 @@ describe('extractErrorDetails for an uncaught API failure', () => {
         message:
           "The API response for 'toolkits.retrieve' is not in the shape this version of the CLI expects (request id: req_decode).\nUpgrade the CLI, then retry:\n> composio upgrade",
       });
+    });
+  });
+
+  describe('raised as a command error wrapping a client error', () => {
+    const url = 'https://backend.composio.dev/api/v3.1/internal/action_execution/logs';
+
+    it('shows the transport reason of a connection failure', () => {
+      const error = new RequestError({
+        message: 'Failed to fetch tool logs.',
+        cause: new ClientAPIConnectionError({
+          message: 'Connection error.',
+          method: 'POST',
+          url,
+          reason: 'TransportError',
+          description: 'fetch failed: connect ECONNREFUSED 127.0.0.1:1',
+        }),
+      });
+
+      expect(extractErrorDetails(error).message).toBe(
+        'Failed to fetch tool logs.\nCaused by: fetch failed: connect ECONNREFUSED 127.0.0.1:1'
+      );
+    });
+
+    it('names the operation and request id of a decode failure and suggests an upgrade', () => {
+      const error = new RequestError({
+        message: 'Failed to fetch tool logs.',
+        cause: new ClientDecodeError({
+          message: "The response body does not match the schema of 'logs.tools.list'.",
+          method: 'POST',
+          url,
+          status: 200,
+          requestId: 'req_logs',
+          operation: 'logs.tools.list',
+          issues: [{ path: ['data', 0, 'status'], kind: 'InvalidValue' }],
+        }),
+      });
+
+      expect(extractErrorDetails(error).message).toBe(
+        "Failed to fetch tool logs.\nCaused by: The API response for 'logs.tools.list' is not in the shape this version of the CLI expects (request id: req_logs).\nUpgrade the CLI, then retry:\n> composio upgrade"
+      );
     });
   });
 });

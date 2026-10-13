@@ -190,14 +190,15 @@ export const logsCmd$Tools = Command.make(
       if (toolLogId) {
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
-          Effect.tryPromise({
-            try: () => client.logs.tools.retrieve(toolLogId),
-            catch: cause =>
-              new ToolLogsRequestError({
-                message: `Failed to fetch tool log "${toolLogId}".`,
-                cause,
-              }),
-          })
+          client.logs.tools.retrieve(toolLogId).pipe(
+            Effect.mapError(
+              cause =>
+                new ToolLogsRequestError({
+                  message: `Failed to fetch tool log "${toolLogId}".`,
+                  cause,
+                })
+            )
+          )
         );
 
         yield* ui.log.info(
@@ -209,22 +210,24 @@ export const logsCmd$Tools = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching tool logs...',
-        Effect.tryPromise({
-          try: () =>
-            client.logs.tools.list({
-              cursor: Option.getOrUndefined(cursor) ?? null,
-              from: Option.getOrUndefined(from),
-              to: Option.getOrUndefined(to),
-              limit: clampedLimit,
-              case_sensitive: caseSensitive,
-              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-            }),
-          catch: cause =>
-            new ToolLogsRequestError({
-              message: 'Failed to fetch tool logs.',
-              cause,
-            }),
-        })
+        client.logs.tools
+          .list({
+            cursor: Option.getOrUndefined(cursor) ?? null,
+            from: Option.getOrUndefined(from),
+            to: Option.getOrUndefined(to),
+            limit: clampedLimit,
+            case_sensitive: caseSensitive,
+            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+          })
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new ToolLogsRequestError({
+                  message: 'Failed to fetch tool logs.',
+                  cause,
+                })
+            )
+          )
       );
 
       const logs = response.data ?? [];

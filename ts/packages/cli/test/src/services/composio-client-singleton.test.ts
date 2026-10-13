@@ -80,6 +80,11 @@ const writeCliSessionCache = (
     );
   });
 
+// The canned responses here are not a tools page, so the call opts out of
+// client decoding.
+const listTools = (client: ComposioClientShape) =>
+  client.tools.list({ limit: 1, toolkit_versions: 'latest' }, { decode: false });
+
 describe('ComposioClientSingleton headers', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -98,12 +103,7 @@ describe('ComposioClientSingleton headers', () => {
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() =>
-        client.tools
-          .list({ limit: 1, toolkit_versions: 'latest' })
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* listTools(client);
 
       expect(fetchSpy).toHaveBeenCalledOnce();
       const [, init] = fetchSpy.mock.calls[0]!;
@@ -150,12 +150,7 @@ describe('ComposioClientSingleton headers', () => {
       });
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() =>
-        client.tools
-          .list({ limit: 1, toolkit_versions: 'latest' })
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* listTools(client);
 
       const [, init] = fetchSpy.mock.calls[0]!;
       const headers = new Headers((init as RequestInit).headers);
@@ -184,12 +179,7 @@ describe('ComposioClientSingleton headers', () => {
       });
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() =>
-        client.tools
-          .list({ limit: 1, toolkit_versions: 'latest' })
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* listTools(client);
 
       const [, init] = fetchSpy.mock.calls[0]!;
       const headers = new Headers((init as RequestInit).headers);
@@ -212,12 +202,7 @@ describe('ComposioClientSingleton headers', () => {
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() =>
-        client.tools
-          .list({ limit: 1, toolkit_versions: 'latest' })
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* listTools(client);
 
       expect(fetchSpy).toHaveBeenCalledOnce();
       const [, init] = fetchSpy.mock.calls[0]!;
@@ -248,12 +233,7 @@ describe('ComposioClientSingleton headers', () => {
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() =>
-        client.tools
-          .list({ limit: 1, toolkit_versions: 'latest' })
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* listTools(client);
 
       const [, init] = fetchSpy.mock.calls[0]!;
       const headers = new Headers((init as RequestInit).headers);
@@ -283,12 +263,7 @@ describe('ComposioClientSingleton headers', () => {
       const client = yield* clientSingleton.get();
       // `auth.session.retrieveInfo` is an operation where the client would
       // attach its own `userApiKey` credential; the caller-placed header wins.
-      yield* Effect.promise(() =>
-        client.auth.session
-          .retrieveInfo()
-          .then(() => undefined)
-          .catch(() => undefined)
-      );
+      yield* client.auth.session.retrieveInfo({ decode: false });
 
       const [input, init] = fetchSpy.mock.calls[0]!;
       expect(String(input)).toContain('/api/v3.1/auth/session/info');
@@ -313,33 +288,12 @@ describe('ComposioClientSingleton headers', () => {
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      yield* Effect.promise(() => client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+      yield* listTools(client);
 
       expect(fetchSpy).toHaveBeenCalledOnce();
       const [input, init] = fetchSpy.mock.calls[0]!;
       expect(String(input)).toContain('http://host.docker.internal:9900/');
       expect(new Headers((init as RequestInit).headers).get('x-user-api-key')).toBe('uak_insecure');
-    }).pipe(
-      Effect.provide(
-        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
-  });
-
-  it.effect('caches one client per key, org, and project', () => {
-    const homedir = tempy.temporaryDirectory();
-    const configMap = new Map([['COMPOSIO_BASE_URL', 'https://backend.composio.dev']]);
-
-    return Effect.gen(function* () {
-      const clientSingleton = yield* ComposioClientSingleton;
-      const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
-
-      const first = yield* clientSingleton.getFor(scope);
-      const second = yield* clientSingleton.getFor(scope);
-      const otherProject = yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' });
-
-      expect(second).toBe(first);
-      expect(otherProject).not.toBe(first);
     }).pipe(
       Effect.provide(
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
@@ -378,14 +332,11 @@ describe('ComposioClientSingleton headers', () => {
         .mockResolvedValueOnce(sized(10))
         .mockResolvedValueOnce(sized(20))
         .mockResolvedValueOnce(unsized());
-      const list = () =>
-        Effect.promise(() => client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
-
-      yield* list();
-      yield* list();
+      yield* listTools(client);
+      yield* listTools(client);
       expect(yield* clientSingleton.getMetrics()).toEqual({ requests: 2, byteSize: 30 });
 
-      yield* list();
+      yield* listTools(client);
       expect(yield* clientSingleton.getMetrics()).toEqual({
         requests: 3,
         byteSize: 30 + '{"items":[]}'.length,
@@ -398,7 +349,7 @@ describe('ComposioClientSingleton headers', () => {
   });
 });
 
-describe('ComposioClientSingleton Effect client', () => {
+describe('ComposioClientSingleton client', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
@@ -413,11 +364,6 @@ describe('ComposioClientSingleton Effect client', () => {
       withConfigLayer(configMap, tempy.temporaryDirectory())
     );
 
-  // `tools.list` is an operation the CLI validates with its own schema, so it
-  // opts out of client decoding.
-  const listTools = (client: ComposioClientShape) =>
-    client.tools.list({ limit: 1, toolkit_versions: 'latest' }, { decode: false });
-
   const sentHeaders = (call: Parameters<typeof globalThis.fetch>) =>
     new Headers((call[1] as RequestInit).headers);
 
@@ -426,7 +372,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffectFor({
+      const client = yield* clientSingleton.getFor({
         userApiKey: 'uak_scope',
         orgId: 'org_a',
         projectId: 'proj_a',
@@ -457,7 +403,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffectFor({
+      const client = yield* clientSingleton.getFor({
         userApiKey: 'uak_scope',
         orgId: 'org_a',
       });
@@ -475,9 +421,9 @@ describe('ComposioClientSingleton Effect client', () => {
       const clientSingleton = yield* ComposioClientSingleton;
       const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
 
-      const first = yield* clientSingleton.getEffectFor(scope);
-      const second = yield* clientSingleton.getEffectFor(scope);
-      const otherProject = yield* clientSingleton.getEffectFor({ ...scope, projectId: 'proj_b' });
+      const first = yield* clientSingleton.getFor(scope);
+      const second = yield* clientSingleton.getFor(scope);
+      const otherProject = yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' });
 
       expect(second).toBe(first);
       expect(otherProject).not.toBe(first);
@@ -491,7 +437,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffectFor({ userApiKey: 'uak_scope' });
+      const client = yield* clientSingleton.getFor({ userApiKey: 'uak_scope' });
       yield* listTools(client);
 
       const call = fetchSpy.mock.calls[0]!;
@@ -507,7 +453,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffect();
+      const client = yield* clientSingleton.get();
       yield* listTools(client);
       expect(firstSpy).toHaveBeenCalledOnce();
 
@@ -538,7 +484,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffect();
+      const client = yield* clientSingleton.get();
 
       expect(yield* client.tools.retrieveEnum({ decode: false })).toEqual(['GITHUB_CREATE_ISSUE']);
       expect((yield* clientSingleton.getMetrics()).requests).toBe(2);
@@ -550,7 +496,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffect();
+      const client = yield* clientSingleton.get();
       yield* listTools(client);
 
       expect((yield* clientSingleton.getMetrics()).requests).toBe(1);
@@ -591,7 +537,7 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffect();
+      const client = yield* clientSingleton.get();
       yield* listTools(client);
 
       expect(records).toEqual([]);
@@ -610,9 +556,9 @@ describe('ComposioClientSingleton Effect client', () => {
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getEffect();
-      // No opt-out, and `tools.list` has no entry in the CLI's loader table.
-      const error = yield* Effect.flip(client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+      const client = yield* clientSingleton.get();
+      // No opt-out, and `toolkits.list` has no entry in the CLI's loader table.
+      const error = yield* Effect.flip(client.toolkits.list({ limit: 1 }));
 
       expect(error._tag).toBe('@composio/client/ConfigurationError');
       expect(fetchSpy).not.toHaveBeenCalled();
@@ -622,7 +568,7 @@ describe('ComposioClientSingleton Effect client', () => {
   it.effect('reports an invalid base URL as a configuration error', () =>
     Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const error = yield* Effect.flip(clientSingleton.getEffectFor({ userApiKey: 'uak_a' }));
+      const error = yield* Effect.flip(clientSingleton.getFor({ userApiKey: 'uak_a' }));
 
       expect(error._tag).toBe('services/ComposioClientConfigurationError');
     }).pipe(Effect.provide(singletonLayer(new Map([['COMPOSIO_BASE_URL', 'not a url']]))))

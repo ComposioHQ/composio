@@ -88,10 +88,8 @@ const permissionsClientLayer = (responses: {
     Layer.succeed(
       ComposioClientSingleton,
       ComposioClientSingleton.of({
-        get: () => Effect.die(new Error('Unexpected promise client request')),
-        getFor: () => Effect.die(new Error('Unexpected promise client request')),
-        getEffect: () => Effect.succeed(client),
-        getEffectFor: () =>
+        get: () => Effect.succeed(client),
+        getFor: () =>
           responses.clientUnavailable === true
             ? Effect.fail(
                 new ComposioClientConfigurationError({

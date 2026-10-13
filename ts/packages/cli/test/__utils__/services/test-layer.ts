@@ -1,21 +1,15 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import {
-  APIConnectionError,
-  Composio as RawComposioClient,
-  NotFoundError,
-  type RequestOptions,
-} from '@composio/client';
 import type {
   AuthConfigCreateParams,
   AuthConfigCreateResponse,
 } from '@composio/client/resources/auth-configs';
 import {
-  APIConnectionError as EffectAPIConnectionError,
-  NotFoundError as EffectNotFoundError,
-  make as makeEffectClient,
+  APIConnectionError,
+  NotFoundError,
+  make as makeComposioClient,
   type ComposioError,
-  type RequestOptions as EffectRequestOptions,
+  type RequestOptions,
 } from '@composio/client/effect';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
@@ -111,7 +105,7 @@ const notFoundError = (
   message: string,
   envelope?: { readonly message: string; readonly suggested_fix: string }
 ) =>
-  new EffectNotFoundError({
+  new NotFoundError({
     message,
     method: 'GET',
     url: 'https://mock.invalid',
@@ -212,10 +206,7 @@ export interface TestLiveInput {
    */
   accountData?: {
     sessionInfo?:
-      | SessionRetrieveInfoResponse
-      | ((
-          scope: MockRequestScope
-        ) => SessionRetrieveInfoResponse | Promise<SessionRetrieveInfoResponse>);
+      SessionRetrieveInfoResponse | ((scope: MockRequestScope) => SessionRetrieveInfoResponse);
     organizations?: ReadonlyArray<OrganizationSummary>;
     projects?: ReadonlyArray<OrgProject>;
     connectedToolkits?: ReadonlyArray<string>;
@@ -300,47 +291,49 @@ export interface TestLiveInput {
    * Controls the mock `ComposioClientSingleton`'s `toolRouter.session.*` methods.
    * Each method can be overridden individually; defaults are provided for all.
    *
-   * `create`, `execute`, and `executeMeta` may answer with an Effect instead of
-   * a promise, which is how a test fails a call with one of the client's own
-   * errors or routes it to a client over a stub transport.
+   * Each override answers with an Effect, so a test can fail a call with one
+   * of the client's own errors or route it to a client over a stub transport.
    *
    * When `toolsExecutor` is also set, its mock takes precedence for `tools execute`
    * (the Tool Router mock is still used by `toolkits list`, `toolkits info`, etc.).
    */
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
-    create?: (
-      params: SessionCreateParams
-    ) => Promise<SessionCreateResponse> | Effect.Effect<SessionCreateResponse, ComposioError>;
+    create?: (params: SessionCreateParams) => Effect.Effect<SessionCreateResponse, ComposioError>;
     /** Override `session.execute`. Receives sessionId, params, and request options. */
     execute?: (
       sessionId: string,
       params: SessionExecuteParams,
-      options?: EffectRequestOptions
-    ) => Promise<SessionExecuteResponse> | Effect.Effect<SessionExecuteResponse, ComposioError>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteResponse, ComposioError>;
     /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
       params: SessionExecuteMetaParams,
-      options?: EffectRequestOptions
-    ) =>
-      | Promise<SessionExecuteMetaResponse>
-      | Effect.Effect<SessionExecuteMetaResponse, ComposioError>;
-    /** Override `session.link`. Receives sessionId and params. */
-    link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteMetaResponse, ComposioError>;
+    /** Override `session.link`. Receives sessionId, params, and request options. */
+    link?: (
+      sessionId: string,
+      params: SessionLinkParams,
+      options?: RequestOptions
+    ) => Effect.Effect<SessionLinkResponse, ComposioError>;
     /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
     proxyExecute?: (
       sessionId: string,
       params: SessionProxyExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionProxyExecuteResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionProxyExecuteResponse, ComposioError>;
     /** Override `session.search`. Receives sessionId and params. */
-    search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
+    search?: (
+      sessionId: string,
+      params: SessionSearchParams
+    ) => Effect.Effect<SessionSearchResponse, ComposioError>;
     /** Override `session.toolkits`. Receives sessionId and optional params. */
     toolkits?: (
       sessionId: string,
       params?: SessionToolkitsParams | null
-    ) => Promise<SessionToolkitsResponse>;
+    ) => Effect.Effect<SessionToolkitsResponse, ComposioError>;
   };
 
   /**
@@ -1097,16 +1090,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const failOnNetworkCall: typeof globalThis.fetch = Object.assign(
-      (input: RequestInfo | URL): Promise<Response> => {
-        const url =
-          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        throw new Error(`unexpected network call from the mock Composio client: ${url}`);
-      },
-      { preconnect: () => undefined }
-    );
-
-    // What the mock clients answer with instead of calling the network.
+    // What the mock client answers with instead of calling the network.
     const resourceShadows = {
       link: {
         create: async (params: { auth_config_id: string; user_id: string }) => {
@@ -1191,19 +1175,13 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       },
       triggersTypes: {
-        retrieve: async (slug: string) => {
+        retrieve: (slug: string) => {
           const found = toolkitsData.triggerTypes.find(
             trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
           );
-          if (!found) {
-            throw new NotFoundError(
-              404,
-              { error: { message: `Trigger type "${slug}" not found` } },
-              `Trigger type "${slug}" not found`,
-              new Headers()
-            );
-          }
-          return found;
+          return found
+            ? Effect.succeed(found)
+            : Effect.fail(notFoundError(`Trigger type "${slug}" not found`));
         },
       },
       triggerInstances: {
@@ -1334,62 +1312,15 @@ export const TestLayer = (input?: TestLiveInput) =>
       },
     };
 
-    // `fromEnv({}, ...)` is what production uses, so the mock cannot read the
-    // developer's COMPOSIO_* variables either. The throwing `fetch` turns a
-    // resource this mock forgot to shadow into a named test failure instead of
-    // a live request against the real backend.
-    const mockComposioClient = Object.assign(
-      RawComposioClient.fromEnv(
-        {},
-        {
-          apiKey: 'test',
-          userApiKey: null,
-          orgApiKey: null,
-          baseURL: 'https://mock.invalid',
-          logLevel: 'off',
-          fetch: failOnNetworkCall,
-        }
-      ),
-      resourceShadows
-    );
-
-    // --- Effect client mock ---
-    // The same shadows as the promise mock, each returning an Effect. A
-    // resource they do not cover reaches the transport, which dies with the
-    // URL instead of sending a live request.
+    // A resource the shadows do not cover reaches the transport, which dies
+    // with the URL instead of sending a live request.
     const dieOnNetworkCall = HttpClient.make(request =>
       Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
-    // The promise client's errors the shadows throw, as the Effect client's
-    // tagged errors. Anything else is passed through unchanged.
-    const toEffectClientError = (cause: unknown): unknown => {
-      const request = { method: 'GET', url: 'https://mock.invalid' };
-      if (cause instanceof NotFoundError) {
-        return new EffectNotFoundError({
-          ...request,
-          message: cause.message,
-          status: 404,
-          requestId: undefined,
-          details: undefined,
-          body: cause.error,
-        });
-      }
-      if (cause instanceof APIConnectionError) {
-        return new EffectAPIConnectionError({
-          ...request,
-          message: cause.message,
-          reason: 'TransportError',
-          description: cause.message,
-        });
-      }
-      return cause;
-    };
-
-    const withEffectShadows = <Resources extends object>(
-      base: Resources,
-      shadows: object
-    ): Resources => {
+    // Each shadow answers with an Effect or a promise; a rejection becomes
+    // the call's failure as it is.
+    const withShadows = <Resources extends object>(base: Resources, shadows: object): Resources => {
       const shadowed = { ...base } as Record<string, unknown>;
       for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
         shadowed[key] =
@@ -1401,16 +1332,16 @@ export const TestLayer = (input?: TestLiveInput) =>
                     ? answer
                     : Effect.tryPromise({
                         try: () => answer as Promise<unknown>,
-                        catch: toEffectClientError,
+                        catch: cause => cause,
                       });
                 })
-            : withEffectShadows((shadowed[key] ?? {}) as object, shadow as object);
+            : withShadows((shadowed[key] ?? {}) as object, shadow as object);
       }
       return shadowed as Resources;
     };
 
-    const mockEffectClient = withEffectShadows(
-      makeEffectClient(
+    const mockComposioClient = withShadows(
+      makeComposioClient(
         {
           apiKey: 'test',
           userApiKey: null,
@@ -1428,7 +1359,13 @@ export const TestLayer = (input?: TestLiveInput) =>
     // project the real client would have placed in its default headers.
     const accountData = input?.accountData ?? {};
     const noTestData = (operation: MockAccountRequest['operation']) =>
-      new APIConnectionError({ message: `No test data for ${operation}` });
+      new APIConnectionError({
+        message: `No test data for ${operation}`,
+        method: 'GET',
+        url: 'https://mock.invalid',
+        reason: 'TransportError',
+        description: `No test data for ${operation}`,
+      });
 
     const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
       // The CLI only ever passes plain header records.
@@ -1458,7 +1395,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
 
       return {
-        org: Object.assign(Object.create(mockComposioClient.org) as typeof mockComposioClient.org, {
+        org: {
           list: async (query?: { limit?: number } | null, options?: RequestOptions) => {
             record('org.list', options, query);
             if (!accountData.organizations) throw noTestData('org.list');
@@ -1517,7 +1454,7 @@ export const TestLayer = (input?: TestLiveInput) =>
               return { toolkits: [...accountData.connectedToolkits] };
             },
           },
-        }),
+        },
         auth: {
           session: {
             retrieveInfo: async (options?: RequestOptions) => {
@@ -1547,26 +1484,15 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const perScope = <Client>(build: (scope: MockRequestScope) => Client) => {
-      const scopedClients = new Map<string, Client>();
-      return (scope: MockRequestScope) => {
-        const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
-        const cached = scopedClients.get(key);
-        if (cached) return cached;
-        const scoped = build(scope);
-        scopedClients.set(key, scoped);
-        return scoped;
-      };
+    const scopedClients = new Map<string, typeof mockComposioClient>();
+    const mockClientFor = (scope: MockRequestScope) => {
+      const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
+      const cached = scopedClients.get(key);
+      if (cached) return cached;
+      const scoped = withShadows(mockComposioClient, accountBranches(scope));
+      scopedClients.set(key, scoped);
+      return scoped;
     };
-    const mockClientFor = perScope(scope =>
-      Object.assign(
-        Object.create(mockComposioClient) as typeof mockComposioClient,
-        accountBranches(scope)
-      )
-    );
-    const mockEffectClientFor = perScope(scope =>
-      withEffectShadows(mockEffectClient, accountBranches(scope))
-    );
 
     const ComposioClientSingletonTest = Layer.succeed(
       ComposioClientSingleton,
@@ -1576,12 +1502,6 @@ export const TestLayer = (input?: TestLiveInput) =>
         }),
         getFor: Effect.fn(function* (params: MockRequestScope) {
           return mockClientFor(params);
-        }),
-        getEffect: Effect.fn(function* () {
-          return mockEffectClientFor({});
-        }),
-        getEffectFor: Effect.fn(function* (params: MockRequestScope) {
-          return mockEffectClientFor(params);
         }),
         getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
       })

@@ -13,6 +13,17 @@ interface ErrorDetails {
   message: unknown;
 }
 
+// A client error has no cause chain: its own message is the status line and
+// response body, and a connection error's description is the transport's text.
+// A response that failed decoding is reported by operation and request id.
+const clientApiErrorDetail = (error: ClientApiError): string => {
+  if (isClientDecodeError(error)) {
+    const { message, hint } = describeDecodeError(error);
+    return `${message}\n${hint}`;
+  }
+  return isClientConnectionError(error) ? (error.description ?? error.message) : error.message;
+};
+
 // Wrappers like UpgradeBinaryError carry the actionable specifics (a
 // ParseError path, an HTTP body) in `cause`; surface the deepest message so
 // the rendered error is debuggable, not just the wrapper's summary line.
@@ -26,6 +37,8 @@ const causeDetail = (cause: unknown): string | undefined => {
       if (seen.has(current)) break;
       seen.add(current);
     }
+
+    if (isClientApiError(current)) return clientApiErrorDetail(current);
 
     if (typeof current === 'string' && current.length > 0) {
       detail = current;
@@ -48,18 +61,10 @@ const withCauseDetail = (message: string, cause: unknown): string => {
   return detail !== undefined && detail !== message ? `${message}\nCaused by: ${detail}` : message;
 };
 
-// A client error has no cause chain: its own message is the status line and
-// response body, and a connection error's description is the transport's text.
-const clientApiErrorMessage = (error: ClientApiError): string => {
-  if (isClientDecodeError(error)) {
-    const { message, hint } = describeDecodeError(error);
-    return `${message}\n${hint}`;
-  }
-  const detail = isClientConnectionError(error)
-    ? (error.description ?? error.message)
-    : error.message;
-  return withCauseDetail('', detail);
-};
+const clientApiErrorMessage = (error: ClientApiError): string =>
+  isClientDecodeError(error)
+    ? clientApiErrorDetail(error)
+    : withCauseDetail('', clientApiErrorDetail(error));
 
 export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (typeof error === 'string') {

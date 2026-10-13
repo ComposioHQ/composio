@@ -92,19 +92,18 @@ export const toolkitsCmd$Info = Command.make(
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
-              const effectClient = yield* clientSingleton.getEffect();
-              const { sessionId } = yield* resolveToolRouterSession(
-                effectClient,
-                resolvedUserId.value
-              );
-              const sessionToolkits = yield* Effect.tryPromise({
-                try: () => client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] }),
-                catch: cause =>
-                  new ToolkitsInfoRequestError({
-                    message: `Failed to fetch toolkit "${slugValue}".`,
-                    cause,
-                  }),
-              });
+              const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
+              const sessionToolkits = yield* client.toolRouter.session
+                .toolkits(sessionId, { toolkits: [slugValue] })
+                .pipe(
+                  Effect.mapError(
+                    cause =>
+                      new ToolkitsInfoRequestError({
+                        message: `Failed to fetch toolkit "${slugValue}".`,
+                        cause,
+                      })
+                  )
+                );
               return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
             }
 

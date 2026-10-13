@@ -155,14 +155,15 @@ export const logsCmd$Triggers = Command.make(
       if (triggerLogId) {
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
-          Effect.tryPromise({
-            try: () => client.logs.triggers.retrieve(triggerLogId),
-            catch: cause =>
-              new TriggerLogsRequestError({
-                message: `Failed to fetch trigger log "${triggerLogId}".`,
-                cause,
-              }),
-          })
+          client.logs.triggers.retrieve(triggerLogId).pipe(
+            Effect.mapError(
+              cause =>
+                new TriggerLogsRequestError({
+                  message: `Failed to fetch trigger log "${triggerLogId}".`,
+                  cause,
+                })
+            )
+          )
         );
         const record = decodeTriggerLogRecord(triggerLog);
 
@@ -176,24 +177,26 @@ export const logsCmd$Triggers = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
-        Effect.tryPromise({
-          try: () =>
-            client.logs.triggers.list({
-              cursor: Option.getOrUndefined(cursor),
-              from: Option.getOrUndefined(from),
-              to: Option.getOrUndefined(to),
-              limit: clampedLimit,
-              time: Option.getOrUndefined(time),
-              search: Option.getOrUndefined(search),
-              include_payload: includePayload,
-              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-            }),
-          catch: cause =>
-            new TriggerLogsRequestError({
-              message: 'Failed to fetch trigger logs.',
-              cause,
-            }),
-        })
+        client.logs.triggers
+          .list({
+            cursor: Option.getOrUndefined(cursor),
+            from: Option.getOrUndefined(from),
+            to: Option.getOrUndefined(to),
+            limit: clampedLimit,
+            time: Option.getOrUndefined(time),
+            search: Option.getOrUndefined(search),
+            include_payload: includePayload,
+            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+          })
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new TriggerLogsRequestError({
+                  message: 'Failed to fetch trigger logs.',
+                  cause,
+                })
+            )
+          )
       );
 
       const logs = response.data ?? [];

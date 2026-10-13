@@ -160,7 +160,7 @@ export const ToolsExecutorLive = Layer.effect(
   ToolsExecutor,
   Effect.gen(function* () {
     // Resolve the client singleton at layer construction time.
-    // The `getEffect` instance method is an Effect.fn that lazily initializes
+    // The `get` instance method is an Effect.fn that lazily initializes
     // the Composio client on first call — no environment requirements.
     const clientSingleton = yield* ComposioClientSingleton;
 
@@ -172,10 +172,10 @@ export const ToolsExecutorLive = Layer.effect(
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
-          // Resolved lazily: `getEffect()` walks the project context off disk, and every
+          // Resolved lazily: `get()` walks the project context off disk, and every
           // caller on the execute path already hands in a client built for the
           // resolved org/project.
-          const resolvedClient = params.client ?? (yield* clientSingleton.getEffect());
+          const resolvedClient = params.client ?? (yield* clientSingleton.get());
           // One session per invocation — CLI runs one tool per process.
           const { sessionId, permissionSnapshot, connectedAccounts, connectedAccountWordIds } =
             yield* createToolRouterSessionContext(resolvedClient, params.userId, {

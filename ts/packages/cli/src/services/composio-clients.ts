@@ -15,9 +15,8 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
-import { Composio as _RawComposioClient } from '@composio/client';
 import {
-  make as makeEffectClient,
+  make as makeComposioClient,
   VERSION as clientLibraryVersion,
   type ComposioClientShape,
   type ComposioError,
@@ -56,29 +55,6 @@ type NoSuchElementError = Cause.NoSuchElementError;
 /**
  * Error types
  */
-
-/**
- * Structured error details from the Composio API error envelope.
- */
-export interface HttpErrorDetails {
-  readonly message: string;
-  readonly suggestedFix?: string;
-  readonly code: number;
-}
-
-/**
- * Error thrown when a HTTP request fails.
- *
- * `status`, `details`, and `requestId` are populated from the client's
- * `APIError` when the failure is an API response; a connection failure or an
- * unexpected rejection carries only `cause`.
- */
-export class HttpServerError extends Data.TaggedError('services/HttpServerError')<{
-  readonly cause?: unknown;
-  readonly status?: number;
-  readonly details?: HttpErrorDetails;
-  readonly requestId?: string;
-}> {}
 
 /**
  * Error thrown when a client cannot be constructed from the current configuration.
@@ -501,26 +477,18 @@ const buildDefaultHeaders = (params: {
  * Shape exposed by {@link ComposioClientSingleton}.
  */
 export interface ComposioClientSingletonShape {
-  readonly get: () => Effect.Effect<
-    _RawComposioClient,
-    ComposioClientConfigurationError | NoSuchElementError
-  >;
-  readonly getFor: (params: {
-    userApiKey?: string;
-    orgId?: string;
-    projectId?: string;
-  }) => Effect.Effect<_RawComposioClient, ComposioClientConfigurationError | NoSuchElementError>;
   /**
-   * The Effect client for the scope {@link get} resolves.
+   * The client for the user's key and, when the working directory resolves to
+   * a project, that project's org and project.
    */
-  readonly getEffect: () => Effect.Effect<
+  readonly get: () => Effect.Effect<
     ComposioClientShape,
     ComposioClientConfigurationError | NoSuchElementError
   >;
   /**
-   * The Effect client for an explicit scope, as {@link getFor}.
+   * The client for an explicit scope. `userApiKey` defaults to the user's key.
    */
-  readonly getEffectFor: (params: {
+  readonly getFor: (params: {
     userApiKey?: string;
     orgId?: string;
     projectId?: string;
@@ -537,11 +505,11 @@ export interface ComposioClientSingletonShape {
 
 /**
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
- * a raw (uneffectful, Promise-based) Composio client instance.
+ * a Composio client instance from `@composio/client/effect`.
  *
- * Clients are built with `Composio.fromEnv({}, ...)` so the ambient process
- * environment is never consulted: every credential and the base URL come from
- * the CLI's own configuration. Custom HTTP base URLs remain supported. The user key is
+ * Clients are built with `make`, which never consults the ambient process
+ * environment: every credential and the base URL come from the CLI's own
+ * configuration. Custom HTTP base URLs remain supported. The user key is
  * placed in `defaultHeaders` as `x-user-api-key`, which keeps today's wire
  * bytes on every operation; it is also passed as `userApiKey`, while the
  * caller-placed header still wins at dispatch.
@@ -561,113 +529,84 @@ const makeComposioClientSingleton = Effect.gen(function* () {
     Layer.provide(FetchHttpClient.layer, Layer.succeed(FetchHttpClient.Fetch, metrics.fetch)),
     { local: true }
   );
+  const cache = new Map<string, ComposioClientShape>();
 
-  type ClientScope = { userApiKey?: string; orgId?: string; projectId?: string };
+  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+    Effect.gen(function* () {
+      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
+      const cacheKey = JSON.stringify({
+        apiKey: apiKey ?? null,
+        orgId: params?.orgId ?? null,
+        projectId: params?.projectId ?? null,
+      });
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
 
-  /** The construction options the promise client and the Effect client share. */
-  interface ScopedClientOptions {
-    readonly apiKey: null;
-    readonly userApiKey: string | null;
-    readonly orgApiKey: null;
-    readonly baseURL: string;
-    readonly allowInsecureHTTP: true;
-    readonly defaultHeaders: Record<string, string> | undefined;
-  }
+      const cliSessionId = yield* getCurrentCwdSessionId().pipe(
+        Effect.provideService(FileSystem.FileSystem, fs),
+        Effect.provideService(Path.Path, path),
+        Effect.provideService(NodeOs, os)
+      );
 
-  // One cache per client kind, keyed the same way.
-  const cachedPerScope = <Client>(build: (options: ScopedClientOptions) => Client) => {
-    const cache = new Map<string, Client>();
-
-    return (params?: ClientScope) =>
-      Effect.gen(function* () {
-        const apiKey = normalizeApiKey(
-          params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
-        );
-        const cacheKey = JSON.stringify({
-          apiKey: apiKey ?? null,
-          orgId: params?.orgId ?? null,
-          projectId: params?.projectId ?? null,
-        });
-        const cached = cache.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-
-        const cliSessionId = yield* getCurrentCwdSessionId().pipe(
-          Effect.provideService(FileSystem.FileSystem, fs),
-          Effect.provideService(Path.Path, path),
-          Effect.provideService(NodeOs, os)
-        );
-
-        const client = yield* Effect.try({
-          try: () =>
-            build({
+      const client = yield* Effect.try({
+        try: () =>
+          // Responses are validated against the CLI's loader table unless a
+          // call passes `decode: false`.
+          makeComposioClient(
+            {
               apiKey: null,
               userApiKey: apiKey ?? null,
               orgApiKey: null,
               baseURL: ctx.data.baseURL,
               // Preserve support for explicitly configured HTTP backends.
               allowInsecureHTTP: true,
+              deprecationNotices: 'off',
               defaultHeaders: buildDefaultHeaders({
                 userApiKey: apiKey,
                 orgId: params?.orgId,
                 projectId: params?.projectId,
                 cliSessionId,
               }),
-            }),
-          catch: cause =>
-            new ComposioClientConfigurationError({
-              message: cause instanceof Error ? cause.message : global.String(cause),
-              cause,
-            }),
-        });
-
-        cache.set(cacheKey, client);
-        return client;
+              decode: true,
+              schemas: composioSchemaLoaders,
+            },
+            httpClient
+          ),
+        catch: cause =>
+          new ComposioClientConfigurationError({
+            message: cause instanceof Error ? cause.message : global.String(cause),
+            cause,
+          }),
       });
-  };
 
-  const getFor = cachedPerScope(options =>
-    // An empty environment prevents implicit env reads, including COMPOSIO_CUSTOM_HEADERS.
-    _RawComposioClient.fromEnv({}, { ...options, logLevel: 'off', fetch: metrics.fetch })
-  );
+      cache.set(cacheKey, client);
+      return client;
+    });
 
-  // `make` reads no environment. Responses are validated against the CLI's
-  // loader table unless a call passes `decode: false`.
-  const getEffectFor = cachedPerScope(options =>
-    makeEffectClient(
-      { ...options, deprecationNotices: 'off', decode: true, schemas: composioSchemaLoaders },
-      httpClient
-    )
-  );
-
-  const forResolvedProject = <Client, E>(
-    clientFor: (params?: ClientScope) => Effect.Effect<Client, E>
-  ) =>
-    Effect.fn(function* () {
+  return {
+    get: Effect.fn(function* () {
       const resolvedProjectContext = yield* Option.match(projectContextOpt, {
         onNone: () => Effect.succeed(Option.none()),
         onSome: projectContext =>
           projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
       });
       return yield* Option.match(resolvedProjectContext, {
-        onNone: () => clientFor(),
+        onNone: () => getFor(),
         onSome: keys =>
-          clientFor({
+          getFor({
             orgId: keys.orgId,
             projectId: keys.projectId,
           }),
       });
-    });
-
-  return {
-    get: forResolvedProject(getFor),
-    getFor: Effect.fn(function* (params: ClientScope) {
-      return yield* getFor(params);
     }),
-    getEffect: forResolvedProject(getEffectFor),
-    getEffectFor: Effect.fn(function* (params: ClientScope) {
-      return yield* getEffectFor(params);
+    getFor: Effect.fn(function* (params: {
+      userApiKey?: string;
+      orgId?: string;
+      projectId?: string;
+    }) {
+      return yield* getFor(params);
     }),
     getMetrics: metrics.getMetrics,
   } satisfies ComposioClientSingletonShape;
@@ -710,7 +649,7 @@ export const listOrganizations = (params: {
 }): Effect.Effect<OrganizationListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     const response = yield* client.org.list({ limit: params.limit ?? 50 });
     const organizations = response.organizations.map(
       (organization: OrgListResponse.Organization) =>
@@ -733,7 +672,7 @@ export const listOrganizationProjects = (params: {
 }): Effect.Effect<OrganizationProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     const response = yield* client.org.project.list(
       { limit: params.limit ?? 50 },
       orgScopedOptions(params.orgId)
@@ -763,7 +702,7 @@ export const listOrgProjects = (params: {
 }): Effect.Effect<OrgProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.project.list(
       { list_all_org_projects: true, limit: params.limit ?? 50 },
       orgScopedOptions(params.orgId)
@@ -780,7 +719,7 @@ export const getSessionInfo = (params: {
 }): Effect.Effect<SessionInfoResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({
+    const client = yield* clientSingleton.getFor({
       userApiKey: params.apiKey,
       orgId: params.orgId,
       projectId: params.projectId,
@@ -806,7 +745,7 @@ export const getSessionInfoByUserApiKey = (params: {
 }): Effect.Effect<SessionInfoResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.userApiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.userApiKey });
     const info = yield* client.auth.session.retrieveInfo(orgScopedOptions(params.orgId));
     return yield* requireSessionProject(info);
   });
@@ -857,7 +796,7 @@ export const createProjectApiKey = (params: {
 }): Effect.Effect<string, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({
+    const client = yield* clientSingleton.getFor({
       userApiKey: params.apiKey,
       orgId: params.orgId,
       projectId: params.projectId,
@@ -885,7 +824,7 @@ export const resolveConsumerProject = (params: {
 }): Effect.Effect<ConsumerProjectResolveResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.consumer.project.resolve(
       { 'x-user-api-key': params.apiKey, 'x-org-id': params.orgId },
       undecoded
@@ -913,7 +852,7 @@ export const getLatestToolVersion = (params: {
       ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
       ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
     };
-    const client = yield* clientSingleton.getEffectFor({
+    const client = yield* clientSingleton.getFor({
       userApiKey: params.apiKey,
       orgId: params.orgId,
       projectId: params.projectId,
@@ -932,7 +871,7 @@ export const getConsumerConnectedToolkits = (params: {
 }): Effect.Effect<ConsumerConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.consumer.listConnectedToolkits({
       user_id: params.consumerUserId,
       'x-user-api-key': params.apiKey,
@@ -1152,10 +1091,10 @@ const resourceOperations = (client: Effect.Effect<ComposioClientShape, ClientErr
 
 const makeComposioToolkitsRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
-  const client = clientSingleton.getEffect();
+  const client = clientSingleton.get();
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
-    collectAll(scope ? clientSingleton.getEffectFor(scope) : client, c =>
+    collectAll(scope ? clientSingleton.getFor(scope) : client, c =>
       c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, undecoded)
     ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
@@ -1378,17 +1317,14 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
       cursor?: string;
     }) =>
       Effect.flatMap(client, c =>
-        c.tools.list(
-          {
-            search: params.search,
-            toolkit_slug: params.toolkit_slug,
-            tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
-            limit: params.limit,
-            cursor: params.cursor,
-            toolkit_versions: 'latest',
-          },
-          undecoded
-        )
+        c.tools.list({
+          search: params.search,
+          toolkit_slug: params.toolkit_slug,
+          tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
+          limit: params.limit,
+          cursor: params.cursor,
+          toolkit_versions: 'latest',
+        })
       ),
     /**
      * Retrieves detailed info about a single tool by slug.
@@ -1414,7 +1350,7 @@ export class ComposioToolkitsRepository extends Context.Service<
 
 const makeComposioSessionRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
-  const client = clientSingleton.getEffect();
+  const client = clientSingleton.get();
 
   return {
     /**

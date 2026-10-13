@@ -1,6 +1,7 @@
 import { make, type ComposioClientShape } from '@composio/client/effect';
-import { Effect, Result } from 'effect';
+import { Effect, Layer, Result } from 'effect';
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
 
 /** One request as it reached the stub transport. */
@@ -51,4 +52,31 @@ export const stubComposioClient = (
     httpClient
   );
   return { client, requests };
+};
+
+/**
+ * A layer over a test layer's `ComposioClientSingleton` that swaps the named
+ * resources of every client it hands out for those of a client built by
+ * {@link stubComposioClient}. Calls to those resources go through the real
+ * client to `respond`; every other resource keeps the test layer's answers.
+ */
+export const stubClientResources = (
+  resources: ReadonlyArray<keyof ComposioClientShape>,
+  respond: (request: StubRequest) => Response
+) => {
+  const stub = stubComposioClient(respond);
+  const overlay = Object.fromEntries(resources.map(resource => [resource, stub.client[resource]]));
+  const stubbed = (client: ComposioClientShape): ComposioClientShape => ({ ...client, ...overlay });
+  const layer = Layer.effect(
+    ComposioClientSingleton,
+    Effect.gen(function* () {
+      const base = yield* ComposioClientSingleton;
+      return ComposioClientSingleton.of({
+        ...base,
+        get: () => Effect.map(base.get(), stubbed),
+        getFor: params => Effect.map(base.getFor(params), stubbed),
+      });
+    })
+  );
+  return { requests: stub.requests, layer };
 };

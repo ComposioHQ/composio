@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { isAPIError } from '@composio/client/effect';
 import { Effect } from 'effect';
-import type { HttpServerError } from 'src/services/composio-clients';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import {
   describeDecodeError,
@@ -17,7 +16,7 @@ export interface Suggestion {
 
 const noSuggestions: ReadonlyArray<Suggestion> = [];
 
-export interface HandleHttpServerErrorOptions<A> {
+export interface HandleClientApiErrorOptions<A> {
   readonly fallbackMessage: string;
   readonly hint: string;
   readonly fallbackValue: A;
@@ -31,10 +30,7 @@ interface ErrorReport {
   readonly hint?: string;
 }
 
-const reportOf = (e: HttpServerError | ClientApiError): ErrorReport => {
-  if (!isClientApiError(e)) {
-    return { message: e.details?.message, suggestedFix: e.details?.suggestedFix };
-  }
+const reportOf = (e: ClientApiError): ErrorReport => {
   if (isClientDecodeError(e)) return describeDecodeError(e);
   if (isAPIError(e)) {
     return { message: e.details?.message, suggestedFix: e.details?.suggested_fix };
@@ -43,9 +39,9 @@ const reportOf = (e: HttpServerError | ClientApiError): ErrorReport => {
 };
 
 /**
- * Create a handler for an HttpServerError or a client API error that logs the
- * structured error details (or a fallback message) and a contextual hint, then
- * returns a fallback value.
+ * Create a handler for a client API error that logs the structured error
+ * details (or a fallback message) and a contextual hint, then returns a
+ * fallback value.
  *
  * The process exit code is set to 1 so callers such as scripts and agents can
  * detect the failure. Decorated logs only render when stderr is a TTY, so the
@@ -63,8 +59,8 @@ const reportOf = (e: HttpServerError | ClientApiError): ErrorReport => {
  * @example
  * ```ts
  * .pipe(
- *   Effect.catchTag('services/HttpServerError',
- *     handleHttpServerError(ui, {
+ *   Effect.catchTag('@composio/client/NotFoundError',
+ *     handleClientApiError(ui, {
  *       fallbackMessage: `Failed to fetch auth config "${id}".`,
  *       hint: 'Browse available auth configs:\n> composio dev auth-configs list',
  *       fallbackValue: Option.none(),
@@ -73,9 +69,9 @@ const reportOf = (e: HttpServerError | ClientApiError): ErrorReport => {
  * )
  * ```
  */
-export const handleHttpServerError =
-  <A>(ui: TerminalUI, opts: HandleHttpServerErrorOptions<A>) =>
-  (e: HttpServerError | ClientApiError) =>
+export const handleClientApiError =
+  <A>(ui: TerminalUI, opts: HandleClientApiErrorOptions<A>) =>
+  (e: ClientApiError) =>
     Effect.gen(function* () {
       process.exitCode = 1;
 
@@ -114,7 +110,7 @@ export const handleHttpServerError =
 /**
  * Recover from any client API error (a non-success status, a connection
  * failure, a timeout, or a response that failed decoding) with
- * `handleHttpServerError`. Every other failure passes through.
+ * `handleClientApiError`. Every other failure passes through.
  *
  * @example
  * ```ts
@@ -128,12 +124,12 @@ export const handleHttpServerError =
  * ```
  */
 export const catchClientApiError =
-  <B>(ui: TerminalUI, opts: HandleHttpServerErrorOptions<B>) =>
+  <B>(ui: TerminalUI, opts: HandleClientApiErrorOptions<B>) =>
   <A, E, R>(
     self: Effect.Effect<A, E, R>
   ): Effect.Effect<A | B, Exclude<E, Extract<E, ClientApiError>>, R> =>
     Effect.catchIf<A, E, R, Extract<E, ClientApiError>, B, never, never>(
       self,
       (e): e is Extract<E, ClientApiError> => isClientApiError(e),
-      handleHttpServerError(ui, opts)
+      handleClientApiError(ui, opts)
     );

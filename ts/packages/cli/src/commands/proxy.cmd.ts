@@ -22,7 +22,7 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { assertNotInputRequired } from 'src/utils/tool-input-required';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Argument.String('url').pipe(
@@ -335,19 +335,15 @@ export const proxyCmd = Command.make('proxy', {
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
-          const effectClient = yield* clientSingleton.getEffectFor({
-            orgId: resolvedProject.orgId,
-            projectId: resolvedProject.projectId,
-          });
           const selectedConnectedAccountId = Option.isSome(account)
             ? yield* resolveConnectedAccountForToolkit({
-                client: effectClient,
+                client,
                 toolkitSlug: normalizedToolkit,
                 userId: consumerUserId,
                 selector: account,
               })
             : undefined;
-          const { sessionId } = yield* resolveToolRouterSession(effectClient, consumerUserId, {
+          const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
             toolkits: [normalizedToolkit],
             connectedAccounts: selectedConnectedAccountId
               ? { [normalizedToolkit]: selectedConnectedAccountId }
@@ -359,44 +355,52 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          return yield* Effect.tryPromise({
-            try: async () => {
-              const response = await client.toolRouter.session.proxyExecute(
-                sessionId,
-                {
-                  toolkit_slug: normalizedToolkit,
-                  endpoint,
-                  method: normalizedMethod,
-                  ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-                  ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-                },
-                // Never retry a proxied call: a retry after the upstream API
-                // already acted duplicates the side effect.
-                { maxRetries: 0 }
-              );
-              assertNotInputRequired(
-                `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
-                response
-              );
-              return response;
-            },
-            catch: cause =>
-              new ProxyRequestError({
-                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
-                cause,
-              }),
-          }).pipe(
-            Effect.matchEffect({
-              onFailure: error =>
-                handleProxyExecutionError({
-                  ui,
-                  error,
-                  toolkit: normalizedToolkit,
-                  endpoint,
-                }),
-              onSuccess: Effect.succeed,
-            })
-          );
+          const failed = (cause: unknown) =>
+            new ProxyRequestError({
+              message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+              cause,
+            });
+
+          return yield* client.toolRouter.session
+            .proxyExecute(
+              sessionId,
+              {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              },
+              // Never retry a proxied call: a retry after the upstream API
+              // already acted duplicates the side effect. The response is not
+              // validated either, for the same reason.
+              { maxRetries: 0, decode: false }
+            )
+            .pipe(
+              Effect.mapError(failed),
+              Effect.flatMap(response =>
+                response.result_type === 'input_required'
+                  ? Effect.fail(
+                      failed(
+                        toolInputRequiredError(
+                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                          response
+                        )
+                      )
+                    )
+                  : Effect.succeed(response)
+              ),
+              Effect.matchEffect({
+                onFailure: error =>
+                  handleProxyExecutionError({
+                    ui,
+                    error,
+                    toolkit: normalizedToolkit,
+                    endpoint,
+                  }),
+                onSuccess: Effect.succeed,
+              })
+            );
         })
       );
 

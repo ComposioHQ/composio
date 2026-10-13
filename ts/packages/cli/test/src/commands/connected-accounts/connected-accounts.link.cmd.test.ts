@@ -1,4 +1,4 @@
-import { APIError } from '@composio/client';
+import { BadRequestError } from '@composio/client/effect';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -54,6 +54,13 @@ const connectedAccountWithCredentialFields = {
   data: { refresh_token: 'must-not-leak' },
 };
 
+const noManagedAuth = {
+  message: 'No managed auth',
+  code: 400,
+  slug: 'ToolRouterV2_NoManagedAuth',
+  status: 400,
+};
+
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
@@ -97,25 +104,29 @@ const RecordingTerminalUI = TerminalUI.of({
 });
 
 describe('CLI: composio dev connected-accounts link', () => {
-  const toolRouterCreateSpy = vi.fn(async () => ({
-    session_id: 'trs_test_session',
-    config: {
-      user_id: 'consumer-user-org_test',
-      execute: {},
-      search: {},
-      preload: { tools: [] },
-      instant: false as const,
-    },
-    config_version: 1,
-    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-    tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-  }));
-  const toolRouterLinkSpy = vi.fn(async () => ({
-    connected_account_id: 'con_test_link',
-    link_token: 'lt_test_token',
-    redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
-    account_type: 'PRIVATE' as const,
-  }));
+  const toolRouterCreateSpy = vi.fn(() =>
+    Effect.succeed({
+      session_id: 'trs_test_session',
+      config: {
+        user_id: 'consumer-user-org_test',
+        execute: {},
+        search: {},
+        preload: { tools: [] },
+        instant: false as const,
+      },
+      config_version: 1,
+      mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+      tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+    })
+  );
+  const toolRouterLinkSpy = vi.fn(() =>
+    Effect.succeed({
+      connected_account_id: 'con_test_link',
+      link_token: 'lt_test_token',
+      redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+      account_type: 'PRIVATE' as const,
+    })
+  );
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -360,21 +371,18 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
       toolRouter: {
-        link: async () => {
-          throw APIError.generate(
-            400,
-            {
-              error: {
-                message: 'No managed auth',
-                code: 400,
-                slug: 'ToolRouterV2_NoManagedAuth',
-                status: 400,
-              },
-            },
-            undefined,
-            new Headers()
-          );
-        },
+        link: () =>
+          Effect.fail(
+            new BadRequestError({
+              message: `400 ${JSON.stringify({ error: noManagedAuth })}`,
+              method: 'POST',
+              url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/link',
+              status: 400,
+              requestId: undefined,
+              details: noManagedAuth,
+              body: { error: noManagedAuth },
+            })
+          ),
       },
       accountData: {
         sessionInfo: scope => {
@@ -432,12 +440,13 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
       toolRouter: {
-        link: async () => ({
-          connected_account_id: '',
-          link_token: 'lt_test_token',
-          redirect_url: '',
-          account_type: 'PRIVATE' as const,
-        }),
+        link: () =>
+          Effect.succeed({
+            connected_account_id: '',
+            link_token: 'lt_test_token',
+            redirect_url: '',
+            account_type: 'PRIVATE' as const,
+          }),
       },
     })
   )(
@@ -508,10 +517,11 @@ describe('CLI: composio dev connected-accounts link', () => {
           }),
           { decode: false }
         );
-        expect(toolRouterLinkSpy).toHaveBeenCalledWith('trs_test_session', {
-          toolkit: 'gmail',
-          alias: 'work',
-        });
+        expect(toolRouterLinkSpy).toHaveBeenCalledWith(
+          'trs_test_session',
+          { toolkit: 'gmail', alias: 'work' },
+          { decode: false }
+        );
       })
     );
   });
@@ -521,12 +531,13 @@ describe('CLI: composio dev connected-accounts link', () => {
       baseConfigProvider: testConfigProvider,
       connectedAccountsData: makeConnectedAccountsData(),
       toolRouter: {
-        link: async () => ({
-          connected_account_id: 'con_second_link',
-          link_token: 'lt_test_token',
-          redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
-          account_type: 'PRIVATE' as const,
-        }),
+        link: () =>
+          Effect.succeed({
+            connected_account_id: 'con_second_link',
+            link_token: 'lt_test_token',
+            redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+            account_type: 'PRIVATE' as const,
+          }),
       },
       fixture: 'global-test-user-id',
     })

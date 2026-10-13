@@ -1,9 +1,4 @@
-import { APIConnectionError, APIError } from '@composio/client';
-import {
-  APIConnectionError as ClientAPIConnectionError,
-  InternalServerError as ClientInternalServerError,
-  RateLimitError as ClientRateLimitError,
-} from '@composio/client/effect';
+import { APIConnectionError, InternalServerError, RateLimitError } from '@composio/client/effect';
 import { describe, expect, it } from 'vitest';
 import {
   extractApiErrorDetails,
@@ -22,38 +17,45 @@ const envelope = {
   },
 };
 
-// The client error the Effect client fails with for the response behind `error`.
-const clientRateLimitError = (error: APIError) =>
-  new ClientRateLimitError({
-    message: error.message,
+const url = 'https://backend.composio.dev/api/v3.1/toolkits';
+
+// The client's error for a 429 answered with `envelope`.
+const rateLimitError = (requestId: string | undefined) =>
+  new RateLimitError({
+    message: `429 ${JSON.stringify(envelope)}`,
     method: 'GET',
-    url: 'https://backend.composio.dev/api/v3.1/toolkits',
+    url,
     status: 429,
-    requestId: error.requestId,
-    details: error.details,
-    body: error.error,
+    requestId: requestId ?? envelope.error.request_id,
+    details: envelope.error,
+    body: envelope,
   });
 
-const clientBadGatewayError = (body: unknown, message: string) =>
-  new ClientInternalServerError({
+const badGatewayError = (body: unknown, message: string) =>
+  new InternalServerError({
     message,
     method: 'GET',
-    url: 'https://backend.composio.dev/api/v3.1/toolkits',
+    url,
     status: 502,
     requestId: undefined,
     details: undefined,
     body,
   });
 
-describe('extractApiErrorDetails', () => {
-  it('reads the envelope, status, and header request id from an APIError', () => {
-    const error = APIError.generate(
-      429,
-      envelope,
-      undefined,
-      new Headers({ 'x-request-id': 'req_header' })
-    );
+const connectionError = (description: string) =>
+  new APIConnectionError({
+    message: 'Connection error.',
+    method: 'GET',
+    url,
+    reason: 'TransportError',
+    description,
+  });
 
+describe('extractApiErrorDetails', () => {
+  it('reads the envelope, status, and header request id from a status error', () => {
+    const error = rateLimitError('req_header');
+
+    expect(findApiError(error)).toBe(error);
     expect(extractApiErrorDetails(error)).toEqual({
       message: 'Rate limited',
       code: 42901,
@@ -64,8 +66,8 @@ describe('extractApiErrorDetails', () => {
     });
   });
 
-  it('follows the cause chain to the first APIError', () => {
-    const error = APIError.generate(429, envelope, undefined, new Headers());
+  it('follows the cause chain to the first status error', () => {
+    const error = rateLimitError(undefined);
     const wrapper = Object.assign(new Error('generic wrapper'), {
       cause: { _tag: 'UnknownException', cause: error },
     });
@@ -75,7 +77,7 @@ describe('extractApiErrorDetails', () => {
   });
 
   it('falls back to the error message when the body is not the envelope', () => {
-    const error = APIError.generate(502, { message: 'Bad gateway' }, undefined, new Headers());
+    const error = badGatewayError({ message: 'Bad gateway' }, '502 {"message":"Bad gateway"}');
 
     expect(extractApiErrorDetails(error)).toMatchObject({
       message: error.message,
@@ -85,38 +87,10 @@ describe('extractApiErrorDetails', () => {
     });
   });
 
-  it('reports a connection error without a status', () => {
-    const details = extractApiErrorDetails(new APIConnectionError({ message: 'offline' }));
+  it('falls back to the status-prefixed message when the body is not JSON', () => {
+    const error = badGatewayError(undefined, '502 status code (no body)');
 
-    expect(details?.status).toBeUndefined();
-    expect(details?.message).toBe('offline');
-  });
-
-  it('reads the same details from a client error as from the equivalent APIError', () => {
-    const error = APIError.generate(
-      429,
-      envelope,
-      undefined,
-      new Headers({ 'x-request-id': 'req_header' })
-    );
-    const clientError = clientRateLimitError(error);
-
-    expect(findApiError(clientError)).toBe(clientError);
-    expect(extractApiErrorDetails(clientError)).toEqual(extractApiErrorDetails(error));
-    expect(extractApiErrorDetails(clientError)).toEqual({
-      message: 'Rate limited',
-      code: 42901,
-      slug: 'rate_limited',
-      status: 429,
-      request_id: 'req_header',
-      suggested_fix: 'Slow down',
-    });
-  });
-
-  it('falls back to the status-prefixed message of a client error without a JSON body', () => {
-    const clientError = clientBadGatewayError(undefined, '502 status code (no body)');
-
-    expect(extractApiErrorDetails(clientError)).toEqual({
+    expect(extractApiErrorDetails(error)).toEqual({
       message: '502 status code (no body)',
       code: undefined,
       slug: undefined,
@@ -126,19 +100,11 @@ describe('extractApiErrorDetails', () => {
     });
   });
 
-  it('reports no details for a client connection error', () => {
-    const clientError = new ClientAPIConnectionError({
-      message: 'Connection error.',
-      method: 'GET',
-      url: 'https://backend.composio.dev/api/v3.1/toolkits',
-      reason: 'TransportError',
-      description: 'fetch failed',
-    });
-
-    expect(extractApiErrorDetails(clientError)).toBeUndefined();
+  it('reports no details for a connection error', () => {
+    expect(extractApiErrorDetails(connectionError('fetch failed'))).toBeUndefined();
   });
 
-  it('returns undefined when no APIError is in the chain', () => {
+  it('returns undefined when no status error is in the chain', () => {
     expect(extractApiErrorDetails({ error: envelope.error })).toBeUndefined();
     expect(extractApiErrorDetails(new Error('plain'))).toBeUndefined();
     expect(extractApiErrorDetails(undefined)).toBeUndefined();
@@ -147,56 +113,25 @@ describe('extractApiErrorDetails', () => {
 });
 
 describe('extractMessage', () => {
-  it('reads the envelope message from an APIError', () => {
-    const error = APIError.generate(429, envelope, undefined, new Headers());
-
-    expect(extractMessage(error)).toBe('Rate limited');
+  it('reads the envelope message', () => {
+    expect(extractMessage(rateLimitError(undefined))).toBe('Rate limited');
   });
 
   it('reads the message of a body that is not the envelope', () => {
-    const error = APIError.generate(502, { message: 'Bad gateway' }, undefined, new Headers());
+    const error = badGatewayError({ message: 'Bad gateway' }, '502 {"message":"Bad gateway"}');
 
     expect(extractMessage(error)).toBe('Bad gateway');
   });
 
-  it('falls back to the status-prefixed message when there is no body', () => {
-    const error = APIError.generate(502, undefined, undefined, new Headers());
-
-    expect(extractMessage(error)).toBe('502 status code (no body)');
-  });
-});
-
-describe('extractMessage for a client error', () => {
-  it('reads the envelope message', () => {
-    const error = APIError.generate(429, envelope, undefined, new Headers());
-
-    expect(extractMessage(clientRateLimitError(error))).toBe('Rate limited');
-  });
-
-  it('reads the message of a body that is not the envelope', () => {
-    const clientError = clientBadGatewayError(
-      { message: 'Bad gateway' },
-      '502 {"message":"Bad gateway"}'
-    );
-
-    expect(extractMessage(clientError)).toBe('Bad gateway');
-  });
-
   it('reads the transport text of a connection error', () => {
-    const clientError = new ClientAPIConnectionError({
-      message: 'Connection error.',
-      method: 'GET',
-      url: 'https://backend.composio.dev/api/v3.1/toolkits',
-      reason: 'TransportError',
-      description: 'fetch failed: connect ECONNREFUSED 127.0.0.1:1',
-    });
+    const error = connectionError('fetch failed: connect ECONNREFUSED 127.0.0.1:1');
 
-    expect(extractMessage(clientError)).toBe('fetch failed: connect ECONNREFUSED 127.0.0.1:1');
+    expect(extractMessage(error)).toBe('fetch failed: connect ECONNREFUSED 127.0.0.1:1');
   });
 
   it('falls back to the status-prefixed message when the body is not JSON', () => {
-    const clientError = clientBadGatewayError(undefined, '502 status code (no body)');
+    const error = badGatewayError(undefined, '502 status code (no body)');
 
-    expect(extractMessage(clientError)).toBe('502 status code (no body)');
+    expect(extractMessage(error)).toBe('502 status code (no body)');
   });
 });

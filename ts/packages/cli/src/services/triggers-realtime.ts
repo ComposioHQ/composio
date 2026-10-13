@@ -289,7 +289,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
     onEvent: (data: RawRealtimeEvent) => void
   ) =>
     Effect.gen(function* () {
-      const client = yield* clientSingleton.getEffectFor({
+      const client = yield* clientSingleton.getFor({
         orgId: scope.orgId,
         projectId: scope.projectId,
       });

@@ -340,7 +340,7 @@ const permissionsClient = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     return yield* clientSingleton
-      .getEffectFor({
+      .getFor({
         userApiKey: params.apiKey,
         orgId: params.orgId,
         projectId: params.projectId,
