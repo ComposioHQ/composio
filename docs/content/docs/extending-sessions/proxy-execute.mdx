@@ -29,7 +29,7 @@ For a profile lookup during onboarding, use the proxy with the exact connected a
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123", toolkits=["github"])
+session = composio.create(user_id="user_123", toolkits=["github"])
 
 response = session.proxy_execute(
     toolkit="github",
@@ -83,7 +83,7 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 <Tab value="Python">
 ```python
 session = composio.create(
-    "user_123",
+    user_id="user_123",
     toolkits=["github"],
     proxy_execute=True,
 )
