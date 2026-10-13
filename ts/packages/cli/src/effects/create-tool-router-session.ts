@@ -208,26 +208,5 @@ export const createToolRouterSessionContext = (
       );
   });
 
-/** Backward-compatible helper for callers that only need the session id. */
-export const createToolRouterSession = (
-  client: ComposioClientShape,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => session.sessionId)
-  );
-
-/**
- * Resolve the Composio client and create a Tool Router session in one step.
- * Returns `{ client, sessionId }` — eliminates the 3-step boilerplate
- * (resolve singleton, get client, create session) repeated across commands.
- */
-export const resolveToolRouterSession = (
-  client: ComposioClientShape,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => ({ client, ...session }))
-  );
+/** The name commands create their Tool Router session by. */
+export const resolveToolRouterSession = createToolRouterSessionContext;

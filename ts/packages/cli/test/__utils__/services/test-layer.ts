@@ -12,6 +12,10 @@ import {
   type RequestOptions,
 } from '@composio/client/effect';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
+import type {
+  TriggerInstanceListActiveParams,
+  TriggerInstanceUpsertParams,
+} from '@composio/client/resources/trigger-instances';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
 import { TIMESTAMP } from '../models/account';
@@ -233,7 +237,6 @@ export interface TestLiveInput {
   connectedAccountsData?: {
     items?: ConnectedAccountItem[];
     linkResponse?: LinkCreateResponse;
-    onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
     onDelete?: (nanoid: string) => void;
   };
 
@@ -724,51 +727,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             }
           );
         },
-        deleteAuthConfig: (nanoid: string) => {
-          const found = authConfigsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              notFoundError(`Auth config "${nanoid}" not found`, {
-                message: `Auth config "${nanoid}" not found.`,
-                suggested_fix: 'Check the auth config ID and try again.',
-              })
-            );
-          }
-          return Effect.succeed({ success: true, message: 'Auth config deleted' });
-        },
-        listConnectedAccounts: (params: {
-          toolkit_slugs?: string[];
-          user_ids?: string[];
-          statuses?: ReadonlyArray<string> | null;
-          limit?: number;
-        }) => {
-          let results = [...connectedAccountsData.items];
-
-          if (params.toolkit_slugs && params.toolkit_slugs.length > 0) {
-            const slugs = params.toolkit_slugs.map(s => s.toLowerCase());
-            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
-          }
-
-          if (params.user_ids && params.user_ids.length > 0) {
-            const ids = new Set(params.user_ids);
-            results = results.filter(item => ids.has(item.user_id));
-          }
-
-          if (params.statuses && params.statuses.length > 0) {
-            const statuses = new Set(params.statuses);
-            results = results.filter(item => statuses.has(item.status));
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          });
-        },
         getConnectedAccount: (nanoid: string) => {
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
@@ -781,38 +739,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        deleteConnectedAccount: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              notFoundError(`Connected account "${nanoid}" not found`, {
-                message: `Connected account "${nanoid}" not found.`,
-                suggested_fix: 'Check the connected account ID and try again.',
-              })
-            );
-          }
-          return Effect.succeed({ success: true });
-        },
-        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) => {
-          if (connectedAccountsData.linkResponse) {
-            return Effect.succeed(connectedAccountsData.linkResponse);
-          }
-          return Effect.succeed({
-            connected_account_id: 'con_test_link',
-            expires_at: '2026-12-31T23:59:59Z',
-            link_token: 'lt_test_token',
-            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-          } satisfies LinkCreateResponse);
-        },
-        listActiveTriggers: (params: {
-          user_ids?: string[];
-          connected_account_ids?: string[];
-          auth_config_ids?: string[];
-          trigger_ids?: string[];
-          trigger_names?: string[];
-          show_disabled?: boolean;
-          limit?: number;
-        }) => {
+        listActiveTriggers: (params: TriggerInstanceListActiveParams) => {
           let results = [...triggersData.items];
 
           const userIds = params.user_ids;
@@ -860,19 +787,12 @@ export const TestLayer = (input?: TestLiveInput) =>
             next_cursor: null,
           });
         },
-        createTrigger: (
-          triggerSlug: string,
-          params?: {
-            connected_account_id?: string;
-            trigger_config?: Record<string, unknown>;
-          }
-        ) =>
+        createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
           }),
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
-        deleteTrigger: triggerId => Effect.succeed({ trigger_id: triggerId }),
       })
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
@@ -1111,28 +1031,6 @@ export const TestLayer = (input?: TestLiveInput) =>
           return response;
         },
       },
-      patch: (path: string, options?: { body?: Record<string, unknown> }) => {
-        connectedAccountsData.onPatch?.({ path, body: options?.body });
-
-        const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
-        if (!match) {
-          return Effect.die(new Error(`Unhandled PATCH path "${path}"`));
-        }
-
-        const connectedAccountId = match[1];
-        const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
-        if (!account) {
-          return Effect.fail(notFoundError(`Connected account "${connectedAccountId}" not found`));
-        }
-
-        if (typeof options?.body?.alias === 'string') {
-          Object.assign(account as { alias?: string | null }, {
-            alias: options.body.alias,
-          });
-        }
-
-        return Effect.succeed(account);
-      },
       connectedAccounts: {
         list: async (params?: {
           toolkit_slugs?: string[];
@@ -1216,7 +1114,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             trigger_id: triggerId,
             status: params.status,
           }),
-          delete: async (triggerId: string) => ({ trigger_id: triggerId }),
         },
       },
       toolkits: {
@@ -1312,9 +1209,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             })),
           search: toolRouterOverrides?.search ?? defaultSearchHandler,
           toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
-          tools: async () => ({
-            items: [],
-          }),
         },
       },
     };

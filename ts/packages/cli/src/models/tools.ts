@@ -1,4 +1,4 @@
-import { Brand, Schema } from 'effect';
+import { Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
 export const ToolAsEnum = Schema.String.annotate({ identifier: 'ToolAsEnum' });
@@ -13,14 +13,6 @@ export type ToolsAsEnums = Schema.Schema.Type<typeof ToolsAsEnums>;
 export const ToolsAsEnumsJSON = JSONTransformSchema(ToolsAsEnums);
 export const toolsAsEnumsFromJSON = Schema.decodeEffect(ToolsAsEnumsJSON);
 export const toolsAsEnumsToJSON = Schema.encodeEffect(ToolsAsEnumsJSON);
-
-// E.g., `SEND_EMAIL`
-export type ToolName = string & Brand.Brand<'ToolName'>;
-export const ToolName = Brand.nominal<ToolName>();
-
-// E.g., `GMAIL_SEND_EMAIL`
-export type ToolNameWithToolkitPrefix = string & Brand.Brand<'ToolNameWithToolkitPrefix'>;
-export const ToolNameWithToolkitPrefix = Brand.nominal<ToolNameWithToolkitPrefix>();
 
 /**
  * Tool with payload

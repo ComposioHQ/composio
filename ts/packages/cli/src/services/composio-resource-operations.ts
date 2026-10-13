@@ -1,33 +1,21 @@
 import { Effect } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
-import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
+import type {
+  TriggerInstanceListActiveParams,
+  TriggerInstanceUpsertParams,
+} from '@composio/client/resources/trigger-instances';
 import {
   AuthConfigCreateResponse,
   AuthConfigItem,
   AuthConfigListResponse,
 } from 'src/models/auth-configs';
-import { ConnectedAccountItem, ConnectedAccountListResponse } from 'src/models/connected-accounts';
+import { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { Toolkits, type ToolkitSearchResult } from 'src/models/toolkits';
 import { TriggerInstanceItems } from 'src/models/triggers';
 import { TriggerType } from 'src/models/trigger-types';
 import type { ClientError } from './composio-errors';
 import { decode, undecoded } from './composio-request';
-
-export interface TriggerInstancesListActiveParams {
-  user_ids?: string[];
-  connected_account_ids?: string[];
-  auth_config_ids?: string[];
-  trigger_ids?: string[];
-  trigger_names?: string[];
-  show_disabled?: boolean;
-  limit?: number;
-}
-
-export interface TriggerInstanceUpsertParams {
-  connected_account_id?: string;
-  trigger_config?: Record<string, unknown>;
-}
 
 /**
  * Auth config, connected account, and trigger instance operations: single-page
@@ -77,36 +65,6 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
       Effect.flatMap(decode(AuthConfigCreateResponse))
     ),
   /**
-   * Soft-deletes an auth config by its nanoid.
-   * @param nanoid - Auth config ID
-   */
-  deleteAuthConfig: (nanoid: string) =>
-    Effect.flatMap(client, c => c.authConfigs.delete(nanoid, undefined, undecoded)),
-  /**
-   * List connected accounts with optional filters. Returns a single page of results.
-   * @param params - Search/filter parameters
-   */
-  listConnectedAccounts: (params: {
-    toolkit_slugs?: string[];
-    user_ids?: string[];
-    statuses?: ConnectedAccountListParams['statuses'];
-    limit?: number;
-  }) =>
-    client.pipe(
-      Effect.flatMap(c =>
-        c.connectedAccounts.list(
-          {
-            toolkit_slugs: params.toolkit_slugs,
-            user_ids: params.user_ids,
-            statuses: params.statuses,
-            limit: params.limit,
-          },
-          undecoded
-        )
-      ),
-      Effect.flatMap(decode(ConnectedAccountListResponse))
-    ),
-  /**
    * Retrieves detailed info about a single connected account by its nanoid.
    * @param nanoid - Connected account ID (e.g. "con_1a2b3c4d5e6f")
    */
@@ -116,22 +74,10 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
       Effect.flatMap(decode(ConnectedAccountItem))
     ),
   /**
-   * Soft-deletes a connected account by its nanoid.
-   * @param nanoid - Connected account ID
-   */
-  deleteConnectedAccount: (nanoid: string) =>
-    Effect.flatMap(client, c => c.connectedAccounts.delete(nanoid, undefined, undecoded)),
-  /**
-   * Creates a new authentication link session for connecting an external account.
-   * @param params - auth_config_id and user_id
-   */
-  createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
-    Effect.flatMap(client, c => c.link.create(params, undecoded)),
-  /**
    * Lists active trigger instances with optional filters.
    * Returns a single page of results.
    */
-  listActiveTriggers: (params: TriggerInstancesListActiveParams) =>
+  listActiveTriggers: (params: TriggerInstanceListActiveParams) =>
     client.pipe(
       Effect.flatMap(c =>
         c.triggerInstances.listActive(
@@ -172,8 +118,6 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
     Effect.flatMap(client, c =>
       c.triggerInstances.manage.update(triggerId, { status: 'disable' }, undecoded)
     ),
-  deleteTrigger: (triggerId: string) =>
-    Effect.flatMap(client, c => c.triggerInstances.manage.delete(triggerId, undecoded)),
 });
 
 /**

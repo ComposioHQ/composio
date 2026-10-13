@@ -71,33 +71,15 @@ export const sessionProjectApiKeyOf = (info: SessionInfoResponse): string | null
  */
 export type OrgProject = ProjectListResponse.Data;
 
-/**
- * Response from GET /api/v3.1/org/project/list.
- */
-export type OrgProjectListResponse = ProjectListResponse;
-
 export interface OrganizationSummary {
   readonly id: string;
   readonly name: string;
 }
 
-export interface OrganizationListResponse {
+interface OrganizationSummaryList {
   readonly data: ReadonlyArray<OrganizationSummary>;
   readonly total_items: number;
 }
-
-export interface OrganizationProjectSummary {
-  readonly id: string;
-  readonly name: string;
-}
-
-export interface OrganizationProjectListResponse {
-  readonly data: ReadonlyArray<OrganizationProjectSummary>;
-  readonly total_items: number;
-}
-
-export type ConsumerProjectResolveResponse = ProjectResolveResponse;
-export type ConsumerConnectedToolkitsResponse = ConsumerListConnectedToolkitsResponse;
 
 const orgScopedOptions = (orgId: string | undefined): RequestOptions | undefined =>
   orgId ? { headers: { 'x-org-id': orgId } } : undefined;
@@ -108,7 +90,7 @@ const orgScopedOptions = (orgId: string | undefined): RequestOptions | undefined
 export const listOrganizations = (params: {
   apiKey: string;
   limit?: number;
-}): Effect.Effect<OrganizationListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<OrganizationSummaryList, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
@@ -135,7 +117,7 @@ export const listOrganizationProjects = (params: {
   apiKey: string;
   orgId: string;
   limit?: number;
-}): Effect.Effect<OrganizationProjectListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<OrganizationSummaryList, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
@@ -145,7 +127,7 @@ export const listOrganizationProjects = (params: {
     );
     const projects = response.data.map(
       (project: OrgProject) =>
-        ({ id: project.id, name: project.name }) satisfies OrganizationProjectSummary
+        ({ id: project.id, name: project.name }) satisfies OrganizationSummary
     );
 
     return {
@@ -165,7 +147,7 @@ export const listOrgProjects = (params: {
   apiKey: string;
   orgId: string;
   limit?: number;
-}): Effect.Effect<OrgProjectListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
@@ -292,7 +274,7 @@ export const createProjectApiKey = (params: {
 export const resolveConsumerProject = (params: {
   apiKey: string;
   orgId: string;
-}): Effect.Effect<ConsumerProjectResolveResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ProjectResolveResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
@@ -339,7 +321,7 @@ export const getConsumerConnectedToolkits = (params: {
   apiKey: string;
   orgId: string;
   consumerUserId: string;
-}): Effect.Effect<ConsumerConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ConsumerListConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
@@ -362,7 +344,7 @@ export class AmbiguousDeveloperProjectNameError extends Data.TaggedError(
 )<{
   readonly orgId: string;
   readonly projectName: string;
-  readonly matches: ReadonlyArray<OrganizationProjectSummary>;
+  readonly matches: ReadonlyArray<OrganizationSummary>;
 }> {}
 
 export const findDeveloperProjectByName = (params: {
@@ -371,7 +353,7 @@ export const findDeveloperProjectByName = (params: {
   name: string;
   limit?: number;
 }): Effect.Effect<
-  OrganizationProjectSummary,
+  OrganizationSummary,
   DeveloperProjectNotFoundError | AmbiguousDeveloperProjectNameError | ClientError,
   ComposioClientSingleton
 > =>
