@@ -408,7 +408,7 @@ def _materialized_value_to_python(value: t.Any) -> t.Any:
     """Convert a previous materializer result back into validation input."""
     if isinstance(value, BaseModel):
         if getattr(type(value), "__pydantic_root_model__", False):
-            return _materialized_value_to_python(value.root)
+            return _materialized_value_to_python(t.cast(t.Any, value).root)
         included_fields = set(value.model_fields_set)
         included_fields.update(
             getattr(type(value), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())

@@ -154,7 +154,11 @@ def _serialize_present_arguments(
     if isinstance(validated, BaseModel) and getattr(
         type(validated), "__pydantic_root_model__", False
     ):
-        return _serialize_present_arguments(validated.root, serialized, supplied)
+        return _serialize_present_arguments(
+            t.cast(t.Any, validated).root,
+            serialized,
+            supplied,
+        )
 
     if isinstance(validated, BaseModel) and isinstance(serialized, dict):
         fields = _model_field_aliases(type(validated))
