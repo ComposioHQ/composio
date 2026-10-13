@@ -5,7 +5,7 @@ import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,

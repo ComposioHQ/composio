@@ -129,11 +129,11 @@
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
               {
                 "name": "child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "node:child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "fs",
@@ -245,11 +245,11 @@
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
               {
                 "name": "child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "node:child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "fs",

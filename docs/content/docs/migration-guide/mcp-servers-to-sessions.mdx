@@ -124,6 +124,10 @@ re-auth.
 Swap the generated server URL for `session.mcp.url` wherever your agent connects. Nothing else about
 the client changes.
 
+<Callout type="warn">
+For consumer connections, use `https://connect.composio.dev/mcp`, not this URL.
+</Callout>
+
 ```python
 # Before: https://backend.composio.dev/v3/mcp/<SERVER_ID>?user_id=<USER_ID>
 # After:  session.mcp.url

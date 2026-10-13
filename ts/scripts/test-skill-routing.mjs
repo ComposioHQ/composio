@@ -41,7 +41,7 @@ const probes = [
   {
     task: 'implement a new Effect CLI command and wire it into the command tree',
     expect: 'cli-command',
-    terms: ['effect/unstable/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
+    terms: ['effect/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
   },
   {
     task: 'write a Docker-based end-to-end test for the composio CLI binary',

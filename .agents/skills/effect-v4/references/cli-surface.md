@@ -1,6 +1,6 @@
-# effect/unstable/cli surface, as used in this repo
+# effect/cli surface, as used in this repo
 
-`@effect/cli` no longer exists. The CLI framework lives under `effect/unstable/cli`:
+`@effect/cli` no longer exists. The CLI framework lives under `effect/cli`:
 `Command`, `Flag` (was `Options`), `Argument` (was `Args`), `GlobalFlag` (was
 `BuiltInOptions`), `CliConfig`, `CliOutput`, `CliError` (was `ValidationError`/
 `HelpDoc`). Ground truth for this reference is
@@ -10,7 +10,7 @@ full module docstrings before touching the runner, not just the excerpts below.
 ## Command shape
 
 ```ts
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 
 declare const toolsCmd$List: Command.Command<'list', {}, never, never>;
 declare const toolsCmd$Info: Command.Command<'info', {}, never, never>;
@@ -36,7 +36,7 @@ v4's `CliConfig.Service` shrank to one field, `builtIns` — the ordered list of
 global flags. `ts/packages/cli/src/cli-config.ts`:
 
 ```ts
-import { GlobalFlag, type CliConfig } from 'effect/unstable/cli';
+import { GlobalFlag, type CliConfig } from 'effect/cli';
 
 export const ComposioCliConfig = {
   builtIns: [GlobalFlag.Help],
@@ -119,7 +119,7 @@ prefix internally. `cli-main.ts` still passes the _full_ `process.argv` into
 boundary without updating both sides together.
 
 Composio also does argv rewriting _before_ the parser ever sees the tokens, for cases
-`effect/unstable/cli`'s lexer cannot express on its own — e.g. `composio run`'s
+`effect/cli`'s lexer cannot express on its own — e.g. `composio run`'s
 passthrough of arbitrary `-`-prefixed tokens to the spawned script (the lexer treats
 every `-`-prefixed token as an option unless a literal `--` precedes it, and that `--`
 split does not propagate into subcommands). Look at `normalizeRunPassthroughArgs` and

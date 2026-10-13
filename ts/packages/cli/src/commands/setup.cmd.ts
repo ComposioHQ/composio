@@ -1,5 +1,5 @@
 import { setupSkillCmd } from './setup-skill.cmd';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {

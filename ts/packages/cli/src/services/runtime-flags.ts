@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Option } from 'effect';
-import { Flag, GlobalFlag } from 'effect/unstable/cli';
+import { Flag, GlobalFlag } from 'effect/cli';
 import { DEBUG_CONFIG } from 'src/config';
 
 export const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';

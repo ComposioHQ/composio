@@ -6,7 +6,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as Path from 'effect/Path';
 import { Cause, ConfigProvider, Effect, Exit, Layer, Option, Sink, Stream } from 'effect';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import {
