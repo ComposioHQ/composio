@@ -902,9 +902,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
-            # TODO: pass `user_id` natively once composio-client is regenerated
-            # with it on the proxy endpoint.
-            extra_body={"user_id": user_id} if user_id is not None else None,
+            user_id=user_id if user_id is not None else omit,
         )
 
 

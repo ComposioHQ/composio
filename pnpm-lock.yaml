@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20261009.1
       version: 5.20261009.1
     '@composio/client':
-      specifier: 2.0.0-rc.11
-      version: 2.0.0-rc.11
+      specifier: 2.0.0-rc.12
+      version: 2.0.0-rc.12
     '@effect/language-service':
       specifier: ^0.87.4
       version: 0.87.4
@@ -958,7 +958,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.11
+        version: 2.0.0-rc.12(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1206,7 +1206,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.11
+        version: 2.0.0-rc.12(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1312,7 +1312,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.11
+        version: 2.0.0-rc.12(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1717,7 +1717,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.11
+        version: 2.0.0-rc.12(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2279,9 +2279,14 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.11':
-    resolution: {integrity: sha512-jACnskE/mH0dETIBY5C8wpbeszlr1UdPH+y5bCB+CYome2zPVXi41V5bEF+vCDOowOTXhT37y3uyWsezB8gkkw==}
+  '@composio/client@2.0.0-rc.12':
+    resolution: {integrity: sha512-9LtmqSPweCU6yD9u51gE146indNQcn0ckEGA1SPiexwpNkEm0/1qWN3NEobs661wowDhLsr2i2IYzhpFUhqjEw==}
     engines: {node: '>=22'}
+    peerDependencies:
+      effect: '*'
+    peerDependenciesMeta:
+      effect:
+        optional: true
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -7471,7 +7476,9 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.11': {}
+  '@composio/client@2.0.0-rc.12(effect@4.0.3)':
+    optionalDependencies:
+      effect: 4.0.3
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
