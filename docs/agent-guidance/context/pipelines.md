@@ -23,7 +23,7 @@ Reference for all GitHub Actions workflows related to docs.
 | **Generate SDK Docs**     | `generate-sdk-docs.yml`     | Manual, schedule        | Generates SDK reference documentation.                            |
 | **TS Build**              | `ts.build.yml`              | PR changes to `ts/`     | Builds TypeScript packages.                                       |
 | **TS Test**               | `ts.test.yml`               | PR changes to `ts/`     | Runs TypeScript tests.                                            |
-| **TS E2E**                | `ts.test-e2e.yml`           | PR changes to `ts/`     | Runs E2E tests (Node, Deno, Cloudflare).                          |
+| **TS E2E**                | `ts.test-e2e.yml`           | PR changes to `ts/`     | Runs E2E tests (Node, Cloudflare, CLI).                           |
 | **TS Typecheck**          | `ts.typecheck.yml`          | PR changes to `ts/`     | TypeScript type checking for SDK.                                 |
 | **TS Release**            | `ts.release.yml`            | Push to `next`, manual  | Creates Changesets release PRs and publishes TypeScript packages. |
 | **TS Audit**              | `ts.audit.yml`              | Cron                    | Security audit of npm dependencies.                               |

@@ -2,7 +2,7 @@ import { cliRequestHeaders } from './client-provenance';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Result, Schema } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';

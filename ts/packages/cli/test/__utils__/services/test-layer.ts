@@ -30,9 +30,10 @@ import {
   Schedule,
   String,
 } from 'effect';
-import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { CliConfig, type Command as CliCommand } from 'effect/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { ComposioCliConfig } from 'src/cli-config';
+import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
@@ -93,7 +94,7 @@ import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,
 } from 'src/services/setup-skill-installer';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 
 /**
@@ -128,8 +129,10 @@ export interface MockAccountRequest {
 
 export interface TestLiveInput {
   /**
-   * Base config provider to use in test.
-   * If not provided, the default `ConfigProvider.fromEnv({ env: {} })` is used.
+   * Config provider to use in test. Its values win; anything it leaves unset falls through to
+   * `hostOnlyEnvConfigProvider`, the live host environment without any `COMPOSIO_*`,
+   * `DEBUG_OVERRIDE_*`, or `FORCE_*` variable, so `HOST_CONFIG` (`CI`, `VITEST`, `PATH`, the
+   * agent-host markers) keeps reading the real process the way the old raw-provider bypass did.
    */
   baseConfigProvider?: ConfigProvider.ConfigProvider;
 
@@ -921,7 +924,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       },
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
       security: 'auto',
     });
 
@@ -935,7 +937,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
-            experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
         },
@@ -1614,7 +1615,11 @@ export const TestLayer = (input?: TestLiveInput) =>
     // `ConfigProvider` reference instead of the test's `baseConfigProvider`. `Layer.provideMerge`
     // keeps `ConfigProvider` in the output so it stays visible to everything `TestLayer` provides.
     Layer.provideMerge(
-      ConfigProvider.layer(input?.baseConfigProvider ?? ConfigProvider.fromEnv({ env: {} }))
+      ConfigProvider.layer(
+        input?.baseConfigProvider === undefined
+          ? hostOnlyEnvConfigProvider
+          : ConfigProvider.orElse(input.baseConfigProvider, hostOnlyEnvConfigProvider)
+      )
     )
   );
 

@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Match, Option } from 'effect';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { NodeProcess } from 'src/services/node-process';

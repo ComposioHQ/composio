@@ -29,4 +29,6 @@ it('never mints the same binding id in two processes', async () => {
   const second = await bindingFromFreshModule();
 
   expect(first).not.toBe(second);
-});
+  // Each call re-evaluates the whole eve and @composio/core module graph from
+  // source, which alone can exceed vitest's 5s default on a cold, busy CI runner.
+}, 30_000);

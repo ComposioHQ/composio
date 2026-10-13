@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
@@ -52,7 +52,7 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
 
 export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(

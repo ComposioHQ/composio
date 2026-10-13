@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, ConfigProvider, Effect, Exit } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -51,7 +50,7 @@ const toolkitsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(

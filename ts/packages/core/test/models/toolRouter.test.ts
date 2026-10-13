@@ -60,6 +60,7 @@ const createMockClient = () => ({
       toolkits: vi.fn(),
       search: vi.fn(),
       execute: vi.fn(),
+      executeMeta: vi.fn(),
       configHistory: vi.fn(),
     },
   },
@@ -2994,6 +2995,106 @@ describe('ToolRouter', () => {
         {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'user@example.com' },
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+          },
+        },
+        { maxRetries: 0 }
+      );
+    });
+  });
+
+  describe('executeMeta function', () => {
+    const userId = 'user_123';
+    const sessionId = 'session_123';
+
+    const mockExecuteMetaResponse = {
+      result_type: 'completed',
+      data: { results: [] },
+      error: null,
+      log_id: 'log_abc',
+    };
+
+    it('should call executeMeta with correct params and return camelCase response', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'send an email' }],
+      });
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        {
+          slug: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: { queries: [{ use_case: 'send an email' }] },
+        },
+        { maxRetries: 0 }
+      );
+      expect(mockClient.toolRouter.session.execute).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        data: { results: [] },
+        error: null,
+        logId: 'log_abc',
+        resultType: 'completed',
+      });
+    });
+
+    it('should default arguments to empty object when omitted', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.executeMeta('COMPOSIO_MANAGE_CONNECTIONS');
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        { slug: 'COMPOSIO_MANAGE_CONNECTIONS', arguments: {} },
+        { maxRetries: 0 }
+      );
+    });
+
+    it('should propagate executeMeta API errors', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(new Error('Execute failed'));
+
+      const session = await toolRouter.create(userId);
+
+      await expect(session.executeMeta('COMPOSIO_SEARCH_TOOLS')).rejects.toThrow('Execute failed');
+    });
+
+    it('should pass inline custom tools to executeMeta when custom tools are bound', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      mockClient.toolRouter.session.create.mockResolvedValueOnce({
+        ...mockSessionCreateResponse,
+        experimental: {
+          custom_tools: [
+            {
+              slug: 'LOCAL_GREP',
+              original_slug: 'GREP',
+              extends_toolkit: null,
+            },
+          ],
+        },
+      });
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId, {
+        experimental: { customTools: [grepTool] },
+      });
+      await session.executeMeta('COMPOSIO_SEARCH_TOOLS', { queries: [{ use_case: 'grep' }] });
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        {
+          slug: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: { queries: [{ use_case: 'grep' }] },
           experimental: {
             custom_tools: [expect.objectContaining({ slug: 'GREP' })],
           },

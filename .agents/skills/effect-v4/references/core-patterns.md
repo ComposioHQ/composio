@@ -61,12 +61,12 @@ declare class ComposioToolkitsRepository extends Context.Service<
 declare class NodeOs extends Context.Service<NodeOs, object>()('y') {
   static readonly Default: Layer.Layer<NodeOs>;
 }
-declare const ConfigLive: Layer.Layer<never>;
+declare const LogLevelFromConfigLive: Layer.Layer<never>;
 type RequiredLayer = Layer.Layer<ComposioToolkitsRepository>;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 ```
 
@@ -200,7 +200,7 @@ needs translation.
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `Context.Tag`, `Context.GenericTag`, `Effect.Service`                | `Context.Service`                                                                                  |
 | generated `.Default` layer                                           | explicit static `Default`/`layer` you define with `Layer.succeed`/`Layer.effect`/`Layer.provide`   |
-| `@effect/cli`, `@effect/platform`                                    | `effect/unstable/cli`, `effect` core / `effect/unstable/*`                                         |
+| `@effect/cli`, `@effect/platform`                                    | `effect/cli`, `effect` core / `effect/*`                                                           |
 | `Effect.catchAll` / `catchAllCause` / `catchAllDefect` / `catchSome` | `Effect.catch` / `catchCause` / `catchDefect` / `catchFilter`                                      |
 | `Either`                                                             | `Result` (not Effect-yieldable directly — wrap with `Effect.fromResult(...)` inside `Effect.gen`)  |
 | `ParseResult.ParseError`, `ParseResult.*`                            | `Schema.SchemaError`, `SchemaIssue.*`                                                              |
@@ -222,6 +222,6 @@ needs translation.
 | `it.scoped` (`@effect/vitest`)                                       | removed — `it.effect` already runs `Effect.scoped`                                                 |
 | `ValidationError`, `HelpDoc`, `CommandDescriptor` (`@effect/cli`)    | `CliError`, plain `HelpDoc` data shape, public `Command` fields only — no descriptor introspection |
 
-For anything not in this table, or any prerelease-to-prerelease drift, verify against
+For anything not in this table, or any release-to-release drift, verify against
 `ts/vendor/effect/migration/*.md` and the actual `ts/vendor/effect/packages/effect/src`
 source before writing code — do not extrapolate from this table alone.

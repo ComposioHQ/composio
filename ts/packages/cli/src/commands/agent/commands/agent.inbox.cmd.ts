@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { fetchAgentInbox, resolveStoredAgentKey } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';

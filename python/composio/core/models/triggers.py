@@ -861,15 +861,32 @@ class TriggerSubscription(Resource):
         return self._alive
 
     def has_errored(self) -> bool:
-        """Check if the connection errored and disconnected."""
-        return self._connection.socket is None or self._connection.socket.has_errored
+        """Check if the connection errored and disconnected.
+
+        This follows pysher's own lifecycle instead of websocket-client's
+        ``has_errored`` flag. That flag stays set through pysher's reconnect
+        backoff (and, on websocket-client 1.9.0 and older, for the rest of
+        the reused socket), so it cannot tell a drop pysher will recover
+        from apart from a connection pysher has given up on. pysher's
+        connection thread stays alive across reconnects and exits once the
+        connection is dead for good (unrecoverable ``pusher:error``, or
+        ``stop()``), which is exactly when ``wait_forever`` should return.
+        """
+        connection = getattr(self, "_connection", None)
+        if connection is None:
+            return True
+        return not connection.is_alive()
 
     def set_alive(self) -> None:
         """Set `_alive` to True."""
         self._alive = True
 
     def wait_forever(self) -> None:
-        """Wait infinitely."""
+        """Wait until stopped or the connection worker exits.
+
+        Recoverable connection failures keep waiting while pysher retries,
+        including throughout an extended network outage.
+        """
         while self.is_alive() and not self.has_errored():
             time.sleep(1)
 
@@ -896,9 +913,10 @@ class TriggerSubscription(Resource):
         thread.start()
 
     def restart(self) -> None:
-        """Restart the subscription connection"""
-        self._connection.disconnect()
-        self._connection._connect()  # pylint: disable=protected-access
+        """Request a reconnect on the running subscription worker."""
+        # Disconnect joins the worker; calling _connect afterwards runs the
+        # socket on the caller while has_errored sees a terminated worker.
+        self._connection.reconnect(reconnect_interval=0)
 
 
 def _silent_pysher_logger() -> logging.Logger:

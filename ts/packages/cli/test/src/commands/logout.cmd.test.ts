@@ -6,7 +6,6 @@ import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -107,7 +106,7 @@ describe('CLI: composio logout', () => {
   describe('[When] logged in', () => {
     const testConfigProvider = ConfigProvider.fromEnv({
       env: { COMPOSIO_USER_API_KEY: 'api_key_already_logged_in' },
-    }).pipe(extendConfigProvider);
+    });
 
     layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
       it.effect('[Then] it persists user data', () =>

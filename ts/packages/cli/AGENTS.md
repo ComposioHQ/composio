@@ -14,9 +14,9 @@ The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-ori
 
 ### Entry Point — `src/bin.ts` / `src/cli-main.ts`
 
-`bin.ts` is a thin bootstrap: it routes background-worker invocations (analytics dispatch) through a minimal layer set and otherwise passes argv unchanged to the dynamically imported `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/unstable/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
+`bin.ts` is a thin bootstrap: it routes background-worker invocations (analytics dispatch) through a minimal layer set and otherwise passes argv unchanged to the dynamically imported `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
 
-- `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [Help, GlobalFlag.Version]` (see Configuration below); a small `CliOutput.Formatter` keeps versions bare and appends a short root overview; Effect generates command help and parse errors
+- `CliConfigLive` — `effect/cli` `CliConfig` restricted to `builtIns: [Help, GlobalFlag.Version]` (see Configuration below); a small `CliOutput.Formatter` keeps versions bare and appends a short root overview; Effect generates command help and parse errors
 - `ComposioUserContextLive` — User authentication state from `~/.composio/`
 - `ComposioSessionRepositoryLive` — OAuth2 session management
 - `ComposioToolkitsRepositoryCachedLive` — Cached API client for toolkits/tools
@@ -29,7 +29,7 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 ### Commands — `src/commands/`
 
-Each command uses `effect/unstable/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
+Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
 | Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -59,7 +59,7 @@ Each command uses `effect/unstable/cli`'s `Command.make()` pattern. Top-level co
 | `dev` | Developer-only utilities |
 | `artifacts` | Manage generated artifacts |
 
-Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/unstable/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
+Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
 ### Services — `src/services/`
 
@@ -82,7 +82,7 @@ OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Ke
 
 ### Effects — `src/effects/`
 
-Reusable Effect computations: `app-config` (reads `COMPOSIO_*` env), `debug-config`, `force-config`, `setup-cache-dir`, `toolkit-version-overrides` (parses `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>`), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
+Reusable Effect computations: `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
 
 ### Models — `src/models/`
 
@@ -104,13 +104,13 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 ### Configuration
 
 - CLI: `cli-config.ts` enables help and version global actions. `commands/root-help.ts` derives the native `help` command tree and delegates documents to Effect. The formatter keeps version output bare and appends a short root overview. Hidden debug settings use `Flag.withHidden`; the diagnostic group uses `Command.unlisted` (the pinned framework's hidden-command API). `commands/argv-compat.ts` preserves optional `listen --stream` values and inserts the native `--` boundary for legacy undelimited `run` script arguments. Effect parses the script tail through `Argument.variadic`; never strip its flags. `setup skill` installs agent skills; `--dangerously-allow` is local to `dev triggers disable`.
-- Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
+- Environment: `src/config/` declares every variable the CLI reads under its full name, grouped into `APP_CONFIG` (user-facing `COMPOSIO_*`, see the README), `DEBUG_CONFIG`, `TELEMETRY_CONFIG`, `HOST_CONFIG` (shell, CI, agent host), and `GITHUB_CONFIG`. Values flow through the ambient `ConfigProvider` (the process environment by default; tests provide `ConfigProvider.fromEnvRecord`). Read a variable through its catalog, never with an inline `Config.String('COMPOSIO_…')`.
 - User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`
 
 ### Key Dependencies
 
-`effect` (pinned `4.0.0-rc.115`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/unstable/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.8` via the workspace catalog), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned `4.0.3`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.12` via the workspace catalog), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 
@@ -170,21 +170,21 @@ Each `Arr.bind` adds one independent axis to the generated cases.
 - Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Result`, `Exit`, `Cause`, `CliError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
 - Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
 - Treat `unknown`, JSON, and persisted state as trust boundaries. Decode them with `effect/Schema` or narrow them with `Predicate`; an `as` assertion is not validation, and hand-rolled structural guards (`'x' in obj` / `typeof` chains) are not a substitute for a schema. A Composio API response that `@composio/client` types is already a contract the CLI owns end to end, so trust it the way `@composio/core` does rather than re-decoding it. Keep `effect/Schema` for the payloads the client does not type for you: the persisted catalog cache files (`src/models/toolkits.ts`, `tools.ts`, `trigger-types.ts`), anything printed to stdout that must exclude credential-bearing fields (the auth-config and connected-account allowlists, including the `auth-configs create` response), the `ToolkitSlug` path-safety check, the `Session` `DateTime` transform, `TriggerInstanceItems`, and every escape-hatch response fetched with `client.get`/`client.post` (`LatestToolVersionResponse`, and the consumer config and permission payloads in `tool-permissions.ts`). `effect/Schema` is the CLI's schema tool — do not introduce zod here (zod is the convention in the SDK packages and docs).
-- Do not inspect private `effect/unstable/cli` internals (parser state, `HelpDoc` string shapes, `CliError` suggestion machinery). `Command.runWith` renders help and parse/validation errors itself — see the entry-point section above — so command-tree introspection must stay on the public `Command.Any` surface (`name`, `alias`, `subcommands`). `CliError.InvalidValue` takes structured `{ option, value, expected, kind }` fields, not a free-form message — commands that need a custom validation message raise a local `Data.TaggedError` instead (see `src/commands/login.cmd.ts`'s `LoginOptionError`) and let it flow through the existing `effect-errors` pretty-printer, not a hand-built `CliError`.
+- Do not inspect private `effect/cli` internals (parser state, `HelpDoc` string shapes, `CliError` suggestion machinery). `Command.runWith` renders help and parse/validation errors itself — see the entry-point section above — so command-tree introspection must stay on the public `Command.Any` surface (`name`, `alias`, `subcommands`). `CliError.InvalidValue` takes structured `{ option, value, expected, kind }` fields, not a free-form message — commands that need a custom validation message raise a local `Data.TaggedError` instead (see `src/commands/login.cmd.ts`'s `LoginOptionError`) and let it flow through the existing `effect-errors` pretty-printer, not a hand-built `CliError`.
 - Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `Effect.catch` blocks (the v4 name for what was `Effect.catchAll`) that flatten distinct failures into one message-only error.
 
 ### Effect Boundary Policy
 
 All platform access goes through Effect services. `node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are lint-banned (oxlint) in `src/`. Use the sanctioned equivalents:
 
-| Need                                                          | Use                                                                                                                                         |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `effect/Path` (`const path = yield* Path.Path`)                                                                         |
-| Filesystem I/O                                                | `FileSystem` service from `effect/FileSystem` (`const fs = yield* FileSystem.FileSystem`)                                                   |
-| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                                   |
-| Subprocesses                                                  | `ChildProcess` / `ChildProcessSpawner` from `effect/unstable/process`; children that outlive the CLI via `src/services/detached-process.ts` |
-| Environment reads                                             | `effect/Config`                                                                                                                             |
-| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Result.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                                      |
+| Need                                                          | Use                                                                                                                                |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `effect/Path` (`const path = yield* Path.Path`)                                                                |
+| Filesystem I/O                                                | `FileSystem` service from `effect/FileSystem` (`const fs = yield* FileSystem.FileSystem`)                                          |
+| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                          |
+| Subprocesses                                                  | `ChildProcess` / `ChildProcessSpawner` from `effect/process`; children that outlive the CLI via `src/services/detached-process.ts` |
+| Environment reads                                             | `effect/Config`                                                                                                                    |
+| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Result.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                             |
 
 Import platform modules by subpath (`import * as FileSystem from 'effect/FileSystem'`, `import * as BunFileSystem from '@effect/platform-bun/BunFileSystem'`), never from the `@effect/platform-bun` package barrel; oxlint rejects the barrel in `src/`.
 
@@ -195,18 +195,18 @@ Conversion patterns, in order of preference:
 3. Pass the resolved service instance (e.g. `Path.Path`, `FileSystem.FileSystem`) as a plain parameter into sync callbacks or promise pipelines that cannot become Effects (see `tool-permissions.ts`, `generation/typescript/virtual-compiler-host.ts`).
 4. Modules that self-provide layers add `BunPath.layer` / `BunFileSystem.layer` / `NodeOs.Default` to their stack instead of reaching for Node builtins.
 
-The only code allowed to bypass services sits at declared runtime boundaries: the `bin.ts` bootstrap, the child-process companion runtime (`run-helpers-runtime.ts`, `run-subagent-*` — bundled into `.mjs` files that run in the user's spawned process), import-time UI setup (`ui/colors.ts`, `ui/redact.ts`), environment **writes** and whole-environment enumeration (which `effect/Config` cannot express), and spawn-time env handshakes between parent and child `composio run` processes. Every such boundary is an inline `// eslint-disable-next-line <rule> -- <reason>` comment registered in `lint-boundaries.json`. (oxlint honors both the `eslint-disable` and `oxlint-disable` spellings; only `eslint-disable-next-line` is sanctioned here, and the boundary validator rejects `oxlint-disable` comments in `src/`. The restricted-syntax rule ships from a JS plugin, so its disables name it `eslint-js/no-restricted-syntax`.)
+The only code allowed to bypass services sits at declared runtime boundaries: the `bin.ts` bootstrap, the child-process companion runtime (`run-helpers-runtime.ts` — bundled into a `.mjs` file that runs in the user's spawned process), import-time UI setup (`ui/colors.ts`, `ui/redact.ts`), environment **writes** and whole-environment enumeration (which `effect/Config` cannot express), and spawn-time env handshakes between parent and child `composio run` processes. Every such boundary is an inline `// eslint-disable-next-line <rule> -- <reason>` comment registered in `lint-boundaries.json`. (oxlint honors both the `eslint-disable` and `oxlint-disable` spellings; only `eslint-disable-next-line` is sanctioned here, and the boundary validator rejects `oxlint-disable` comments in `src/`. The restricted-syntax rule ships from a JS plugin, so its disables name it `eslint-js/no-restricted-syntax`.)
 
 **Enforcement**: `pnpm run validate:boundaries` (part of `pnpm test`, CI-blocking) fails when any eslint-disable in `src/` is missing from the manifest, lacks a `-- reason`, or uses a file-wide form. Do not add new disables — thread the service instead. If code genuinely cannot run inside the Effect runtime, that is a new boundary: regenerate the manifest with `pnpm run validate:boundaries -- --update` and justify the boundary in the PR.
 
 ## Vendor Reference Sources
 
-Read-only submodules under `ts/vendor/`, pinned at the `effect@4.0.0-rc.115` release commit (do NOT modify — actual deps come from npm). v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
+Read-only submodules under `ts/vendor/`, pinned at the `effect@4.0.3` release commit (do NOT modify — actual deps come from npm). v4 folded `@effect/cli`/`@effect/platform` into the core `effect` package, so there is no longer a separate `packages/cli` or `packages/platform` — everything lives under `packages/effect/src/`:
 
 - `ts/vendor/effect/packages/effect/src/` — core Effect runtime (`Effect`, `Schema`, `Layer`, `Context`, `Result`, `Cause`, `Config`, `FileSystem`, `Path`, `PlatformError`, …)
-- `ts/vendor/effect/packages/effect/src/unstable/cli/` — `effect/unstable/cli` (`Command`, `Flag`, `Argument`, `CliError`, `CliConfig`, `CliOutput`, `GlobalFlag`, `HelpDoc`, `Completions`, `Prompt`)
-- `ts/vendor/effect/packages/effect/src/unstable/http/` — `effect/unstable/http` (`HttpClient`, `HttpClientRequest`, `HttpClientResponse`, `FetchHttpClient`)
-- `ts/vendor/effect/packages/effect/src/unstable/process/` — `effect/unstable/process` (`ChildProcess`, `ChildProcessSpawner`)
+- `ts/vendor/effect/packages/effect/src/cli/` — `effect/cli` (`Command`, `Flag`, `Argument`, `CliError`, `CliConfig`, `CliOutput`, `GlobalFlag`, `HelpDoc`, `Completions`, `Prompt`)
+- `ts/vendor/effect/packages/effect/src/http/` — `effect/http` (`HttpClient`, `HttpClientRequest`, `HttpClientResponse`, `FetchHttpClient`)
+- `ts/vendor/effect/packages/effect/src/process/` — `effect/process` (`ChildProcess`, `ChildProcessSpawner`)
 - `ts/vendor/effect/packages/platform/bun/src/` — `@effect/platform-bun` (`BunFileSystem`, `BunPath`, `BunServices`, `BunRuntime`, `BunChildProcessSpawner`, …)
 - `ts/vendor/effect/migration/` — official v3-to-v4 migration guides (`services.md`, `schema.md`, `cause.md`, `runtime.md`, `v3-to-v4.md`, …)
 - `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (text, select, confirm, spinner, note, task, etc.)

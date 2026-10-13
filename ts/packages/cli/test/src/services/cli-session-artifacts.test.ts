@@ -11,19 +11,16 @@ import {
   storeCliSessionArtifact,
 } from 'src/services/cli-session-artifacts';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TestLive } from 'test/__utils__';
 
 // Backed by the live `process.env` record so `vi.stubEnv` calls made inside a test are
 // observed by later config reads; `ConfigProvider.fromEnv()` would snapshot the environment.
-const environmentTestConfigProvider = ConfigProvider.fromEnvRecord(process.env).pipe(
-  extendConfigProvider
-);
+const environmentTestConfigProvider = ConfigProvider.fromEnvRecord(process.env);
 
 const cacheEnabledTestConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'false',
-}).pipe(ConfigProvider.orElse(ConfigProvider.fromEnvRecord(process.env)), extendConfigProvider);
+}).pipe(ConfigProvider.orElse(ConfigProvider.fromEnvRecord(process.env)));
 
 describe('CLI session artifacts', () => {
   beforeEach(() => {

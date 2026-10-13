@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
-import { cli, TestLive } from 'test/__utils__';
+import { cli, liveEnvConfigProvider, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import {
@@ -1031,6 +1031,7 @@ describe('CLI: composio generate ts', () => {
         TestLive({
           fixture: 'typescript-project-with-composio-core',
           toolkitsData: appClientData,
+          baseConfigProvider: liveEnvConfigProvider,
         })
       )(it => {
         it.effect(

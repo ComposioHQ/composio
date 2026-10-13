@@ -8,6 +8,7 @@ import { ConnectedAccountExperimentalSchema } from './connectedAccounts.types';
 import type {
   SessionConfigHistoryResponse,
   SessionCreateResponse,
+  SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import type {
   CustomTool,
@@ -709,6 +710,18 @@ export interface ToolRouterSessionExecuteOptions {
   account?: string;
 }
 
+/**
+ * Slug of a Composio meta tool (`COMPOSIO_*`) that `session.executeMeta()` can
+ * run, for example `COMPOSIO_SEARCH_TOOLS`.
+ */
+export type ToolRouterSessionMetaToolSlug = SessionExecuteMetaParams['slug'];
+
+export type ToolRouterSessionExecuteMetaFn = (
+  slug: ToolRouterSessionMetaToolSlug,
+  arguments_?: Record<string, unknown>,
+  requestOptions?: ComposioRequestOptions
+) => Promise<ToolRouterSessionExecuteResponse>;
+
 export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
 
 export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
@@ -1137,6 +1150,8 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
+  /** Execute a Composio meta tool (`COMPOSIO_*`) within the session */
+  executeMeta: ToolRouterSessionExecuteMetaFn;
   /** Update the session configuration. Mutates this session in-place and resolves to the updated `config`. */
   update: ToolRouterSessionUpdateFn;
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */

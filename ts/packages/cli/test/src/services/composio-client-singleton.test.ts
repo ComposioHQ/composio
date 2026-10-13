@@ -9,7 +9,6 @@ import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
-import { extendConfigProvider } from 'src/services/config';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -37,7 +36,7 @@ const withConfigLayer = (map: Map<string, string>, homedir: string) =>
     Layer.succeed(NodeOs, defaultNodeOs({ homedir })),
     Layer.succeed(
       ConfigProvider.ConfigProvider,
-      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+      ConfigProvider.fromEnv({ env: Object.fromEntries(map) })
     )
   );
 

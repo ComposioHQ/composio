@@ -6,6 +6,7 @@ import { Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucid
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
+import { descriptionLinks } from '@/lib/description-links';
 import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
 import { InstantBadge } from './instant-badge';
 import { PageActions } from '@/components/page-actions';
@@ -359,7 +360,11 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             </div>
 
             {/* Description */}
-            <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
+            <p className="mt-1.5 text-sm text-fd-muted-foreground">
+              {descriptionLinks(toolkit.description).map((part, index) => part.href ? (
+                <a key={index} href={part.href} className="underline hover:text-fd-foreground">{part.text}</a>
+              ) : part.text)}
+            </p>
             {instantSupported && (
               <p className="mt-1.5 text-sm text-fd-muted-foreground">
                 <Link href="/docs/instant-tools" className="underline">Instant</Link> is available on the latest version. Check each tool for support and pricing.

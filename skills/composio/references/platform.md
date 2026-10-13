@@ -105,6 +105,8 @@ Pass the session tools to the repository's existing model or agent using its nat
 
 ## Choose tools and authentication behavior
 
+For Instant Tools, read https://docs.composio.dev/docs/instant-tools.md before choosing authentication or usage settings. Use that guide for current eligibility, pricing, project access, Session controls, account routing, and charge reporting.
+
 Sessions expose a small set of meta tools by default so the agent can discover integrations and authenticate at runtime:
 
 - `COMPOSIO_SEARCH_TOOLS`
@@ -138,7 +140,7 @@ Do not force advanced requests through first-time setup. Route them to current d
 
 For a first-time setup or integration request, success means a programmatic, safe, read-only tool call from the developer's real execution path returns an actual provider result and a non-empty Composio log ID.
 
-Ask which integration the developer wants to try unless the application already makes the choice clear. Discover the real toolkit and tool at runtime. If the current user is not connected, return the Connect Link, wait for authorization, and retry.
+Ask which integration the developer wants to try unless the application already makes the choice clear. Discover the real toolkit and tool at runtime. If the current user is not connected, check the Instant Tools guide before assuming a connection is required. When authentication is required, return the Connect Link, wait for authorization, and retry.
 
 A mock, Playground run, tool search, schema fetch, session creation, or Connect Link alone does not prove the integration. If the repository has no runnable agent loop, add only the smallest entrypoint compatible with its existing provider; do not require another hosted model.
 
