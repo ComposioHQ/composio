@@ -28,6 +28,20 @@ _VERTEX_SCHEMA_FIELDS = frozenset(
 )
 
 
+def _merge(base: t.Dict[str, t.Any], over: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    """Merge two schema nodes; ``over`` wins, but property maps and required lists combine."""
+    merged = {**base, **over}
+    if isinstance(base.get("properties"), dict) and isinstance(
+        over.get("properties"), dict
+    ):
+        merged["properties"] = {**base["properties"], **over["properties"]}
+    if isinstance(base.get("required"), list) and isinstance(
+        over.get("required"), list
+    ):
+        merged["required"] = list(dict.fromkeys(base["required"] + over["required"]))
+    return merged
+
+
 def _to_vertex_schema(schema: t.Any) -> t.Any:
     """Reduce a JSON Schema node to the subset the Vertex AI ``Schema`` accepts.
 
@@ -93,13 +107,13 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
             elif isinstance(option, dict):
                 options.append(option)
         if len(options) == 1:
-            return _to_vertex_schema({**options[0], **node})
+            return _to_vertex_schema(_merge(options[0], node))
         if options:
             rest = _to_vertex_schema(node)
             flat = []  # a converted option may itself be a lone anyOf: inline it
             for option in _to_vertex_schema(options):
                 flat.extend(option.get("anyOf", [option]))
-            return {"anyOf": [{**rest, **option} for option in flat]}
+            return {"anyOf": [_merge(rest, option) for option in flat]}
 
     result: t.Dict[str, t.Any] = {}
     for key, value in node.items():
