@@ -34,10 +34,10 @@ catalogs:
       specifier: ^0.87.4
       version: 0.87.4
     '@effect/platform-bun':
-      specifier: ^4.0.3
+      specifier: 4.0.3
       version: 4.0.3
     '@effect/vitest':
-      specifier: ^4.0.3
+      specifier: 4.0.3
       version: 4.0.3
     '@mastra/core':
       specifier: 1.53.0
@@ -58,7 +58,7 @@ catalogs:
       specifier: ^18.0.6
       version: 18.0.7
     effect:
-      specifier: ^4.0.3
+      specifier: 4.0.3
       version: 4.0.3
     hono:
       specifier: ^4.13.13
@@ -9133,7 +9133,7 @@ snapshots:
 
   '@types/ws@8.18.2':
     dependencies:
-      '@types/node': 26.6.2
+      '@types/node': 26.6.5
 
   '@types/yauzl@2.10.3':
     dependencies:

@@ -1,7 +1,7 @@
-# Bumping the Effect v4 version
+# Bumping the Effect v4 pin
 
 Adapted from the pre-migration prep work's stop-conditions, updated for the fact the
-cutover is now done: this is a v4 upgrade procedure, not a v3→v4 port.
+cutover is now done: this is a release-to-release upgrade procedure, not a v3→v4 port.
 
 ## 1. Check `minimumReleaseAge`
 
@@ -15,20 +15,20 @@ Check the target version's npm publish timestamp
 pin — bumping too early makes `pnpm install` fail to resolve, not silently ignore the
 constraint.
 
-## 2. Update the version ranges together
+## 2. Bump the exact pins together
 
-Every one of these must move to the same compatible version range in the same change — never
+Every one of these must move to the same new exact version in the same change — never
 upgrade one and leave the others behind:
 
 - `pnpm-workspace.yaml` catalog: `effect`, `@effect/platform-bun`,
   `@effect/vitest`.
-- `ts/packages/cli-keyring/package.json`: its `effect` peer dependency uses an explicit
-  range (not `catalog:`); update that range too.
+- `ts/packages/cli-keyring/package.json`: its `effect` peer dependency uses an exact
+  version (not `catalog:`); update that pin too.
 - Any other package pinning `effect` outside the catalog — grep for `"effect":` across
   `ts/packages/*/package.json` before assuming the catalog covers everything.
 
-Use the same stable range (`^4.0.3` currently) for the runtime and satellite
-packages. Confirm the lockfile resolves matching versions.
+Keep every pin an exact version string (no `^`, no `@next`, no range).
+Confirm the lockfile resolves matching versions.
 
 ## 3. Advance the vendored source oracle
 
@@ -64,7 +64,7 @@ before treating the bump as done — a green typecheck is necessary but not suff
 CLI parsing, help rendering, and error output can change between releases while types stay
 valid. Cross-check any API you touch during the bump against the freshly-advanced
 `ts/vendor/effect/packages/effect/src` and the installed `effect` typings, not against
-what compiled under the previous release.
+what compiled under the old release.
 
 ## Stop conditions
 

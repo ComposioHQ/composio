@@ -35,8 +35,8 @@ catalog:
   '@cloudflare/workers-types': ^5.20261009.1
   '@composio/client': 2.0.0-rc.11
   '@effect/language-service': ^0.87.4
-  '@effect/platform-bun': ^4.0.3
-  '@effect/vitest': ^4.0.3
+  '@effect/platform-bun': 4.0.3
+  '@effect/vitest': 4.0.3
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -46,7 +46,7 @@ catalog:
   '@types/bun': ^1.4.2
   ai: ^7.0.137
   dotenv: ^18.0.6
-  effect: ^4.0.3
+  effect: 4.0.3
   hono: ^4.13.13
   openai: ^7.31.0
   picocolors: ^1.1.1

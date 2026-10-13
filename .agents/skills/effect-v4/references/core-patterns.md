@@ -200,7 +200,7 @@ needs translation.
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `Context.Tag`, `Context.GenericTag`, `Effect.Service`                | `Context.Service`                                                                                  |
 | generated `.Default` layer                                           | explicit static `Default`/`layer` you define with `Layer.succeed`/`Layer.effect`/`Layer.provide`   |
-| `@effect/cli`, `@effect/platform`                                    | `effect/cli`, `effect` core / `effect/*`                                         |
+| `@effect/cli`, `@effect/platform`                                    | `effect/cli`, `effect` core / `effect/*`                                                           |
 | `Effect.catchAll` / `catchAllCause` / `catchAllDefect` / `catchSome` | `Effect.catch` / `catchCause` / `catchDefect` / `catchFilter`                                      |
 | `Either`                                                             | `Result` (not Effect-yieldable directly — wrap with `Effect.fromResult(...)` inside `Effect.gen`)  |
 | `ParseResult.ParseError`, `ParseResult.*`                            | `Schema.SchemaError`, `SchemaIssue.*`                                                              |

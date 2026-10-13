@@ -8,7 +8,7 @@
 
 ## Effect Patterns
 
-The CLI is on `effect@4.0.3` (stable range `^4.0.3`) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
+The CLI is on `effect@4.0.3` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
 
 Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.ts`:
 

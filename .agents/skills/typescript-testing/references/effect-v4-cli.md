@@ -1,7 +1,7 @@
 # Effect v4 CLI testing
 
 The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.3` and
-`@effect/vitest@4.0.3` (range `^4.0.3`, matching `ts/packages/cli/package.json` and the
+`@effect/vitest@4.0.3` (pinned exactly, matching `ts/packages/cli/package.json` and the
 workspace catalog in `pnpm-workspace.yaml`). `@effect/cli` and `@effect/platform` no longer exist
 as dependencies — their functionality moved into `effect`/`effect/*`. Read
 `ts/packages/cli/test/__utils__/services/test-layer.ts` before writing a new test suite; it is the
@@ -106,7 +106,7 @@ choice.
   everything downstream (see the `ConfigProvider` comment in `test-layer.ts` for the bug this
   distinction fixed).
 - `TestClock` lives under `effect/testing`. The FastCheck bridge was removed in rc.113; native
-  arbitrary generation lives under `effect/arbitrary/Arbitrary`.
+  arbitrary generation lives under `effect/Arbitrary`.
 
 ## CLI behavior matrix
 
