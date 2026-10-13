@@ -1,4 +1,11 @@
 import { hasProperty, isFunction } from 'effect/Predicate';
+import {
+  describeDecodeError,
+  isClientApiError,
+  isClientConnectionError,
+  isClientDecodeError,
+  type ClientApiError,
+} from 'src/utils/api-error-extraction';
 
 interface ErrorDetails {
   isPlainString: boolean;
@@ -41,11 +48,32 @@ const withCauseDetail = (message: string, cause: unknown): string => {
   return detail !== undefined && detail !== message ? `${message}\nCaused by: ${detail}` : message;
 };
 
+// A client error has no cause chain: its own message is the status line and
+// response body, and a connection error's description is the transport's text.
+const clientApiErrorMessage = (error: ClientApiError): string => {
+  if (isClientDecodeError(error)) {
+    const { message, hint } = describeDecodeError(error);
+    return `${message}\n${hint}`;
+  }
+  const detail = isClientConnectionError(error)
+    ? (error.description ?? error.message)
+    : error.message;
+  return withCauseDetail('', detail);
+};
+
 export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (typeof error === 'string') {
     return {
       isPlainString: true,
       message: error,
+    };
+  }
+
+  if (isClientApiError(error)) {
+    return {
+      isPlainString: false,
+      type: error.name,
+      message: clientApiErrorMessage(error),
     };
   }
 

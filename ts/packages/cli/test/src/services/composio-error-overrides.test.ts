@@ -1,4 +1,5 @@
 import { APIError } from '@composio/client';
+import { BadRequestError as ClientBadRequestError } from '@composio/client/effect';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -17,6 +18,20 @@ const apiError = (
     undefined,
     new Headers({ 'x-request-id': 'req_test' })
   );
+
+// The client error the Effect client fails with for the same 400 response.
+const clientApiError = (envelope: { code: number; slug: string; message: string }) => {
+  const error = apiError(400, envelope);
+  return new ClientBadRequestError({
+    message: error.message,
+    method: 'POST',
+    url: 'https://backend.composio.dev/api/v3.1/tools/execute/{tool_slug}',
+    status: 400,
+    requestId: error.requestId,
+    details: error.details,
+    body: error.error,
+  });
+};
 
 describe('composio-error-overrides', () => {
   it('rewrites a 4302 API error by toolkit', () => {
@@ -124,5 +139,56 @@ describe('composio-error-overrides', () => {
     });
 
     expect(mapped).toBeInstanceOf(ComposioNoActiveConnectionError);
+  });
+
+  describe('with a client error', () => {
+    it('rewrites a 4302 API error by toolkit', () => {
+      const result = mapComposioError({
+        toolkit: 'gmail',
+        error: clientApiError({
+          code: 4302,
+          slug: 'SomethingElse',
+          message: 'No active connection',
+        }),
+      });
+
+      expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
+      expect(result.message).toBe(
+        'No active connection found for toolkit "gmail". Run `composio link gmail`, then retry.'
+      );
+      expect(result.apiDetails).toMatchObject({ code: 4302, status: 400, request_id: 'req_test' });
+    });
+
+    it('rewrites a no-connection slug by tool slug', () => {
+      const result = mapComposioError({
+        toolSlug: 'SLACK_SEND_MESSAGE',
+        error: clientApiError({
+          code: 1,
+          slug: 'ToolRouterV2_NoActiveConnection',
+          message: 'No active connection',
+        }),
+      });
+
+      expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
+      expect(result.slugValue).toBe('ToolRouterV2_NoActiveConnection');
+      expect(result.message).toBe(
+        'No active connection found for toolkit "slack". Run `composio link slack`, then retry.'
+      );
+    });
+
+    it('keeps an unrelated API error unmapped, with the envelope message', () => {
+      const error = clientApiError({
+        code: 1803,
+        slug: 'Tool_NotFound',
+        message: 'Tool not found',
+      });
+
+      const result = mapComposioError({ error });
+
+      expect(result.override).toBeNull();
+      expect(result.normalized).toBe(error);
+      expect(result.message).toBe('Tool not found');
+      expect(mapOnlyComposioOverrideError({ error })).toBe(error);
+    });
   });
 });
