@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import {
   escapeTextForMdx,
   escapeTypeForMdx,
   generateClassMdx,
+  getSourceFileText,
   isParameterRequired,
   parseSourceSignatureTypesAtLine,
   runTypeDocCommand,
@@ -158,6 +159,65 @@ class Example {
   });
 });
 
+describe('generate-docs type truncation', () => {
+  const slugUnion = [
+    'COMPOSIO_GET_TOOL_SCHEMAS',
+    'COMPOSIO_SEARCH_TOOLS',
+    'COMPOSIO_MULTI_EXECUTE_TOOL',
+    'COMPOSIO_MANAGE_CONNECTIONS',
+    'COMPOSIO_WAIT_FOR_CONNECTIONS',
+  ]
+    .map(slug => `'${slug}'`)
+    .join(' | ');
+
+  it('cuts a long union between members in signatures', () => {
+    expect(simplifyTypeForSignature(slugUnion)).toBe(
+      "'COMPOSIO_GET_TOOL_SCHEMAS' | 'COMPOSIO_SEARCH_TOOLS' | 'COMPOSIO_MULTI_EXECUTE_TOOL' | ..."
+    );
+  });
+
+  it('cuts a long union between members in parameter tables', () => {
+    expect(simplifyTypeForTable(slugUnion)).toBe(
+      "'COMPOSIO_GET_TOOL_SCHEMAS' | 'COMPOSIO_SEARCH_TOOLS' | ..."
+    );
+  });
+
+  it('does not split a union member that contains a pipe', () => {
+    const type = `'${'a|'.repeat(30)}' | 'COMPOSIO_SEARCH_TOOLS' | ${slugUnion}`;
+
+    expect(simplifyTypeForSignature(type)).toBe(
+      `'${'a|'.repeat(30)}' | 'COMPOSIO_SEARCH_TOOLS' | ...`
+    );
+  });
+});
+
+describe('generate-docs source lookup', () => {
+  let packageDir: string;
+
+  beforeEach(async () => {
+    packageDir = await mkdtemp(join(tmpdir(), 'composio-generate-docs-'));
+  });
+
+  afterEach(async () => {
+    await rm(packageDir, { recursive: true, force: true });
+  });
+
+  it('resolves TypeDoc source paths against the package directory', async () => {
+    await mkdir(join(packageDir, 'src/models'), { recursive: true });
+    await writeFile(join(packageDir, 'src/models/Example.ts'), 'export class Example {}\n');
+
+    expect(getSourceFileText('src/models/Example.ts', packageDir)).toBe(
+      'export class Example {}\n'
+    );
+  });
+
+  it('throws when a TypeDoc source path does not resolve', () => {
+    expect(() => getSourceFileText('ts/packages/core/src/models/Example.ts', packageDir)).toThrow(
+      /ENOENT/
+    );
+  });
+});
+
 describe('generate-docs command construction', () => {
   let modelsDir: string;
 
@@ -210,6 +270,7 @@ writeFileSync(outputJson, args.join('\\n'));
     const args = (await readFile(outputJson, 'utf8')).split('\n');
     expect(args[0]).toBe('--json');
     expect(args).toContain('src/models/a b.ts');
+    expect(args[args.indexOf('--displayBasePath') + 1]).toBe(modelsDir);
     expect(args.some(arg => arg.includes('npx'))).toBe(false);
     expect(args.slice(-2)).toEqual(['src/composio.ts', 'src/models/a b.ts']);
   });
