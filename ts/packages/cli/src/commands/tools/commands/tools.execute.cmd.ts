@@ -941,7 +941,6 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     // The consumer surface executes through the Dashboard. `dev
     // playground-execute` and developer projects stay on the backend.
     const executesViaDashboard =
-      params.projectMode === 'consumer' &&
       resolvedProject.projectType === 'CONSUMER' &&
       (yield* resolveConsumerExecutionTransport) === 'dashboard';
 
