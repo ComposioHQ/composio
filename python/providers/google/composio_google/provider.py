@@ -38,7 +38,8 @@ def _merge(base: t.Dict[str, t.Any], over: t.Dict[str, t.Any]) -> t.Dict[str, t.
     if isinstance(base.get("required"), list) and isinstance(
         over.get("required"), list
     ):
-        merged["required"] = list(dict.fromkeys(base["required"] + over["required"]))
+        names = base["required"] + over["required"]
+        merged["required"] = list(dict.fromkeys(n for n in names if isinstance(n, str)))
     return merged
 
 
