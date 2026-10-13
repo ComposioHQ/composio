@@ -420,7 +420,7 @@
       {
         "slug": "COMPOSIO_CREATE_PLAN",
         "name": "Create Plan",
-        "description": "\nThis is a workflow builder that ensures the LLM produces a complete, step-by-step plan for any use case.\nWHEN TO CALL:\n- Call this tool based on COMPOSIO_SEARCH_TOOLS output. If search tools response indicates create_plan should be called and the usecase is not easy, call it.\n- Use this tool after COMPOSIO_SEARCH_TOOLS or COMPOSIO_MANAGE_CONNECTIONS to generate an execution plan for the user's use case.\n- USE for medium or hard tasks — skip it for easy ones.\n- If the user switches to a new use case in the same chat and COMPOSIO_SEARCH_TOOLS again instructs you to call the planner, you MUST call this tool again for that new use case.\n\nMemory Integration:\n- You can choose to add the memory received from the search tool into the known_fields parameter of the plan function to enhance planning with discovered relationships and information.\n\nOutputs a complete plan with sections such as \"workflow_steps\", \"complexity_assessment\", \"decision_matrix\", \"failure_handling\" \"output_format\", and more as needed.\n\nIf you skip this step for non-easy tasks, workflows will likely be incomplete, or fail during execution for complex tasks.\nCalling it guarantees reliable, accurate, and end-to-end workflows aligned with the available tools and connections.\n    "
+        "description": "IMPORTANT - ALWAYS CALL THIS AFTER MANAGE CONNECTIONS TOOL IS EXECUTED. You are an efficient workflow builder, your job is to guide the LLM to create a plan for the given use_case"
       },
       {
         "slug": "COMPOSIO_ENABLE_TRIGGER",
