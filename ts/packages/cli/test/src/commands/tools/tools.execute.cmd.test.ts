@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Option } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option } from 'effect';
 import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -12,6 +12,7 @@ import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
@@ -2677,6 +2678,81 @@ describe('CLI: composio execute', () => {
       })
     );
   });
+
+  // --- Execution order (flows through real ToolsExecutorLive) ---
+
+  it.effect(
+    'creates the session before the permission gate and sends nothing once it denies',
+    () => {
+      const toolRouterCalls: Array<string> = [];
+      // Enhanced controls ask before every call; with no one to answer the
+      // prompt (as under test), the gate denies.
+      vi.spyOn(toolPermissions, 'getConsumerPermissionSnapshot').mockImplementation(params =>
+        Effect.succeed({
+          orgId: params.orgId,
+          projectId: params.projectId,
+          consumerUserId: params.consumerUserId,
+          enhancedControlsEnabled: true,
+          permissions: { default: 'ask_every_call' as const, overrides: {} },
+          connectedAccountIds: [],
+          fetchedAt: 1_767_225_600_000,
+        })
+      );
+
+      return Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(lines.join('\n')).toContain('requires interactive approval');
+        expect(toolRouterCalls).toEqual(['create']);
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            stdin: { isTTY: true, data: '' },
+            toolRouter: {
+              create: params =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('create');
+                  return {
+                    session_id: 'trs_backend_session',
+                    config: {
+                      user_id: params.user_id,
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
+              execute: () =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('execute');
+                  return {
+                    result_type: 'completed' as const,
+                    data: {},
+                    error: null,
+                    log_id: 'log_test',
+                  };
+                }),
+            },
+          })
+        ),
+        Effect.scoped
+      );
+    }
+  );
 
   // --- Tool Router error path (flows through real ToolsExecutorLive) ---
 
