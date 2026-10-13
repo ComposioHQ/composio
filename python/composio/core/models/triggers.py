@@ -861,8 +861,21 @@ class TriggerSubscription(Resource):
         return self._alive
 
     def has_errored(self) -> bool:
-        """Check if the connection errored and disconnected."""
-        return self._connection.socket is None or self._connection.socket.has_errored
+        """Check if the connection errored and disconnected.
+
+        This follows pysher's own lifecycle instead of websocket-client's
+        ``has_errored`` flag. That flag stays set through pysher's reconnect
+        backoff (and, on websocket-client 1.9.0 and older, for the rest of
+        the reused socket), so it cannot tell a drop pysher will recover
+        from apart from a connection pysher has given up on. pysher's
+        connection thread stays alive across reconnects and exits once the
+        connection is dead for good (unrecoverable ``pusher:error``, or
+        ``stop()``), which is exactly when ``wait_forever`` should return.
+        """
+        connection = getattr(self, "_connection", None)
+        if connection is None:
+            return True
+        return not connection.is_alive()
 
     def set_alive(self) -> None:
         """Set `_alive` to True."""
