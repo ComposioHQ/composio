@@ -85,7 +85,7 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 session = composio.create(
     "user_123",
     toolkits=["github"],
-    proxy_execute={"enable": True},
+    proxy_execute=True,
 )
 tools = session.tools()
 ```
@@ -97,7 +97,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
   toolkits: ["github"],
-  proxyExecute: { enable: true },
+  proxyExecute: true,
 });
 const tools = await session.tools();
 ```
@@ -106,7 +106,7 @@ const tools = await session.tools();
 
 The session's tools now include the [`COMPOSIO_PROXY_EXECUTE`](/toolkits/meta-tools/proxy_execute) meta tool. Its arguments mirror `session.proxyExecute()`, with three differences: the toolkit is `toolkit_slug`, each parameter names its location in `type` instead of `in`, and `method` also accepts `HEAD`.
 
-The tool is off and unlisted by default. Updating a session to turn it off takes effect on the agent's next call. This setting controls only the agent's tool: `session.proxyExecute()` follows the sandbox's `enable_proxy_execution`, which is on by default.
+The tool is off and unlisted by default. Updating a session to turn it off (`session.update({ proxyExecute: false })`) takes effect on the agent's next call. This setting controls only the agent's tool: `session.proxyExecute()` follows the sandbox's `enable_proxy_execution`, which is on by default.
 
 The agent's calls follow the same rules as `session.proxyExecute()`: the session's connected account for the toolkit, its [session restrictions](#session-restrictions), and the same-domain check. Two things differ:
 
