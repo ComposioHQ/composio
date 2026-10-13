@@ -6,16 +6,15 @@ import { ConfigProvider, Effect, Fiber, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
   AmbiguousDeveloperProjectNameError,
-  ComposioClientSingleton,
-  ComposioToolkitsRepository,
   createProjectApiKey,
   findDeveloperProjectByName,
   getLatestToolVersion,
   getSessionInfoByUserApiKey,
-  InvalidToolkitsError,
   listOrganizations,
   listOrgProjects,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
+import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { InvalidToolkitsError } from 'src/services/toolkit-version-validation';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { isClientApiError } from 'src/utils/api-error-extraction';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';

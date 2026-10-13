@@ -63,3 +63,15 @@ export type ConnectedAccountItem = Schema.Schema.Type<typeof ConnectedAccountIte
 
 export const ConnectedAccountItems = Schema.Array(ConnectedAccountItem);
 export type ConnectedAccountItems = Schema.Schema.Type<typeof ConnectedAccountItems>;
+
+// Connected account list response (single page with total_items for "Listing X of Y" display)
+export const ConnectedAccountListResponse = Schema.Struct({
+  items: ConnectedAccountItems,
+  total_items: Schema.Int,
+  total_pages: Schema.Int,
+  current_page: Schema.Int,
+  next_cursor: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'ConnectedAccountListResponse' });
+export type ConnectedAccountListResponse = Schema.Schema.Type<typeof ConnectedAccountListResponse>;

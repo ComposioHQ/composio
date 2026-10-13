@@ -14,7 +14,7 @@ import {
   sessionProjectApiKeyOf,
   sessionUserIdOf,
   type OrgProject,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';

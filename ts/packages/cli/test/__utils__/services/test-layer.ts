@@ -45,13 +45,14 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
+import {
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
   type InvalidVersionDetail,
-  type OrganizationSummary,
-  type OrgProject,
-  type ToolkitProjectScope,
-} from 'src/services/composio-clients';
+} from 'src/services/toolkit-version-validation';
+import { type OrganizationSummary, type OrgProject } from 'src/services/composio-account';
 import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tool, Tools } from 'src/models/tools';

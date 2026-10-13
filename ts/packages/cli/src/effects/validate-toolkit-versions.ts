@@ -3,10 +3,8 @@ import { Data, Effect } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
 import { TerminalUI } from 'src/services/terminal-ui';
-import type {
-  ComposioToolkitsRepositoryShape,
-  InvalidVersionDetail,
-} from 'src/services/composio-clients';
+import type { ComposioToolkitsRepositoryShape } from 'src/services/composio-clients';
+import type { InvalidVersionDetail } from 'src/services/toolkit-version-validation';
 import type { ToolkitVersionOverrides } from './toolkit-version-overrides';
 
 /**

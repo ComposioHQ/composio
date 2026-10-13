@@ -23,10 +23,8 @@ import {
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 import { NodeOs } from 'src/services/node-os';
-import {
-  ComposioClientConfigurationError,
-  ComposioClientSingleton,
-} from 'src/services/composio-clients';
+import { ComposioClientConfigurationError } from 'src/services/composio-errors';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
 

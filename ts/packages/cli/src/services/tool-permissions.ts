@@ -22,7 +22,8 @@ import {
   isInteractivePermissionUiDisabled,
   type PermissionCallerAgent,
 } from 'src/services/permission-ui';
-import { ComposioClientSingleton, type ClientError } from 'src/services/composio-clients';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { type ClientError } from 'src/services/composio-errors';
 import { ComposioUserContext } from 'src/services/user-context';
 
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';

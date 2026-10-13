@@ -8,7 +8,8 @@ import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
-import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import {
   formatResolveCommandProjectError,

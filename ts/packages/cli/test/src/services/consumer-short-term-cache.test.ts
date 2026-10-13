@@ -4,7 +4,7 @@ import * as FileSystem from 'effect/FileSystem';
 import { ConfigProvider, DateTime, Effect, Option } from 'effect';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import * as composioClients from 'src/services/composio-clients';
+import * as composioAccount from 'src/services/composio-account';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   getFreshConsumerToolRouterAuthConfigsFromCache,
@@ -112,7 +112,7 @@ describe('consumer short-term cache', () => {
   )('[Given] no-auth toolkits [Then] refresh caches them as connected', it => {
     it.effect('stores connected and no-auth toolkit slugs together', () =>
       Effect.gen(function* () {
-        vi.spyOn(composioClients, 'getConsumerConnectedToolkits').mockReturnValue(
+        vi.spyOn(composioAccount, 'getConsumerConnectedToolkits').mockReturnValue(
           Effect.succeed({ toolkits: ['github'] })
         );
 

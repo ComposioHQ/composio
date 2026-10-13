@@ -10,7 +10,8 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
-import * as composioClients from 'src/services/composio-clients';
+import * as composioAccount from 'src/services/composio-account';
+import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
@@ -145,7 +146,7 @@ describe('CLI: composio execute', () => {
   );
 
   beforeEach(() => {
-    vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
+    vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(() =>
       Effect.fail(
         new APIConnectionError({
           message: 'Connection error.',
@@ -168,7 +169,7 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
-  let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
+  let recordedProjectToolkitScopes: Array<ToolkitProjectScope | undefined> = [];
   let recordedExecuteOptions: Array<{ maxRetries?: number; decode?: boolean } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
@@ -420,7 +421,7 @@ describe('CLI: composio execute', () => {
     it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
       Effect.gen(function* () {
         const latestVersion = vi
-          .spyOn(composioClients, 'getLatestToolVersion')
+          .spyOn(composioAccount, 'getLatestToolVersion')
           .mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
@@ -1299,7 +1300,7 @@ describe('CLI: composio execute', () => {
             }),
             'utf8'
           );
-          vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
+          vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
 
@@ -1441,7 +1442,7 @@ describe('CLI: composio execute', () => {
     // so a tool call that does not wait for validation always gets through.
     const slowSchemaLookup = () =>
       vi
-        .spyOn(composioClients, 'getLatestToolVersion')
+        .spyOn(composioAccount, 'getLatestToolVersion')
         .mockImplementation(({ toolSlug }) =>
           Effect.promise(() => new Promise<void>(resolve => setTimeout(resolve, 25))).pipe(
             Effect.as({ tool_slug: toolSlug, version: '20260101_00' })
