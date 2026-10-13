@@ -1,13 +1,21 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Context, Effect, Layer } from 'effect';
-import { isComposioError, type ComposioClientShape } from '@composio/client/effect';
+import {
+  isComposioError,
+  type ComposioClientShape,
+  type ComposioError,
+} from '@composio/client/effect';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
-import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
+import {
+  createToolRouterSessionFromContext,
+  resolveToolRouterSessionContext,
+  type ToolRouterSessionContext,
+} from 'src/effects/create-tool-router-session';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
@@ -19,7 +27,7 @@ import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-fil
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
-import { toolInputRequiredError } from 'src/utils/tool-input-required';
+import { toolInputRequiredError, type ToolInputRequiredError } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
@@ -115,10 +123,16 @@ export const isExecutionSuccessful = (raw: {
   readonly result_type: 'completed' | 'failed';
 }): boolean => raw.result_type === 'completed';
 
+/** A Tool Router answer that carries a result rather than a request for more input. */
 type ExecutedSessionResponse = Exclude<
   SessionExecuteResponse | SessionExecuteMetaResponse,
   { result_type: 'input_required' }
 >;
+
+/** Sends the prepared arguments to where the tool runs. Called once per invocation. */
+type ToolExecutionSend = (
+  arguments_: Record<string, unknown>
+) => Effect.Effect<ExecutedSessionResponse, ComposioError | ToolInputRequiredError>;
 
 const toInstantCharge = (raw: ExecutedSessionResponse): InstantCharge | undefined => {
   if (!raw.instant_charge) return undefined;
@@ -180,6 +194,98 @@ export const detectInBandWarning = (
   return null;
 };
 
+/**
+ * The backend transport: creates the Tool Router session and returns the
+ * handle that executes on it. One session per invocation — CLI runs one tool
+ * per process.
+ */
+const createBackendSend = (
+  client: ComposioClientShape,
+  userId: string,
+  slug: string,
+  sessionContext: ToolRouterSessionContext
+) =>
+  createToolRouterSessionFromContext(client, userId, sessionContext).pipe(
+    Effect.map(
+      ({ sessionId }): ToolExecutionSend =>
+        arguments_ =>
+          Effect.gen(function* () {
+            // An execution is not `idempotent`, so it is sent once: a retry after the backend
+            // already acted duplicates the side effect (e.g. sends the same email twice). The
+            // response is not validated either, for the same reason.
+            const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* isMetaToolSlug(
+              slug
+            )
+              ? client.toolRouter.session.executeMeta(sessionId, { slug, arguments: arguments_ })
+              : client.toolRouter.session.execute(sessionId, {
+                  tool_slug: slug,
+                  arguments: arguments_,
+                });
+            if (raw.result_type === 'input_required') {
+              return yield* toolInputRequiredError(`Tool ${slug}`, raw);
+            }
+            return raw;
+          })
+    )
+  );
+
+/**
+ * What has to happen before the call is sent, whichever transport sends it:
+ * the permission gate, then the arguments with their file inputs uploaded.
+ */
+const prepareToolExecution = (
+  client: ComposioClientShape,
+  slug: string,
+  params: ToolExecuteParams,
+  { permissionSnapshot, connectedAccounts, connectedAccountWordIds }: ToolRouterSessionContext
+) =>
+  Effect.gen(function* () {
+    const toolkitSlug = yield* toolkitFromToolSlug(slug, toolkitProjectScope(params));
+    const permissionGateResult = yield* gateToolExecution({
+      toolSlug: slug,
+      connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
+      connectedAccountWordId: toolkitSlug ? connectedAccountWordIds?.[toolkitSlug] : undefined,
+      snapshot: permissionSnapshot,
+    });
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const preparedArguments = isMetaToolSlug(slug)
+      ? params.arguments
+      : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
+          Effect.catch(() => Effect.succeed(null)),
+          Effect.flatMap(definition => {
+            if (!definition) {
+              return Effect.succeed(params.arguments);
+            }
+
+            // A presigned-URL request the API refused is reported as
+            // an upload failure of the source, with the client's error
+            // as its cause.
+            return uploadToolInputFiles({
+              fs,
+              path,
+              toolSlug: slug,
+              toolkitSlug,
+              arguments_: params.arguments,
+              inputSchema: definition.schema,
+              client,
+            }).pipe(
+              Effect.catchIf(
+                isComposioError,
+                cause =>
+                  new ToolFileUploadError({
+                    cause,
+                    message: cause.message,
+                    reason: 'source-read',
+                  })
+              )
+            );
+          })
+        );
+
+    return { permissionGateResult, preparedArguments };
+  });
+
 export const ToolsExecutorLive = Layer.effect(
   ToolsExecutor,
   Effect.gen(function* () {
@@ -200,75 +306,29 @@ export const ToolsExecutorLive = Layer.effect(
           // caller on the execute path already hands in a client built for the
           // resolved org/project.
           const resolvedClient = params.client ?? (yield* clientSingleton.get());
-          // One session per invocation — CLI runs one tool per process.
-          const { sessionId, permissionSnapshot, connectedAccounts, connectedAccountWordIds } =
-            yield* createToolRouterSessionContext(resolvedClient, params.userId, {
+          const sessionContext = yield* resolveToolRouterSessionContext(
+            resolvedClient,
+            params.userId,
+            {
               manageConnections: true,
               connectedAccounts: params.connectedAccounts,
               cacheScope: params.cacheScope,
-            });
-          const toolkitSlug = yield* toolkitFromToolSlug(slug, toolkitProjectScope(params));
-          const permissionGateResult = yield* gateToolExecution({
-            toolSlug: slug,
-            connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
-            connectedAccountWordId: toolkitSlug
-              ? connectedAccountWordIds?.[toolkitSlug]
-              : undefined,
-            snapshot: permissionSnapshot,
-          });
-          const fs = yield* FileSystem.FileSystem;
-          const path = yield* Path.Path;
-          const normalizedArguments = isMetaToolSlug(slug)
-            ? params.arguments
-            : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
-                Effect.catch(() => Effect.succeed(null)),
-                Effect.flatMap(definition => {
-                  if (!definition) {
-                    return Effect.succeed(params.arguments);
-                  }
+            }
+          );
+          const send = yield* createBackendSend(
+            resolvedClient,
+            params.userId,
+            slug,
+            sessionContext
+          );
+          const { permissionGateResult, preparedArguments } = yield* prepareToolExecution(
+            resolvedClient,
+            slug,
+            params,
+            sessionContext
+          );
 
-                  // A presigned-URL request the API refused is reported as
-                  // an upload failure of the source, with the client's error
-                  // as its cause.
-                  return uploadToolInputFiles({
-                    fs,
-                    path,
-                    toolSlug: slug,
-                    toolkitSlug,
-                    arguments_: params.arguments,
-                    inputSchema: definition.schema,
-                    client: resolvedClient,
-                  }).pipe(
-                    Effect.catchIf(
-                      isComposioError,
-                      cause =>
-                        new ToolFileUploadError({
-                          cause,
-                          message: cause.message,
-                          reason: 'source-read',
-                        })
-                    )
-                  );
-                })
-              );
-
-          // An execution is not `idempotent`, so it is sent once: a retry after the backend already acted
-          // duplicates the side effect (e.g. sends the same email twice). The
-          // response is not validated either, for the same reason.
-          const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* isMetaToolSlug(
-            slug
-          )
-            ? resolvedClient.toolRouter.session.executeMeta(sessionId, {
-                slug,
-                arguments: normalizedArguments,
-              })
-            : resolvedClient.toolRouter.session.execute(sessionId, {
-                tool_slug: slug,
-                arguments: normalizedArguments,
-              });
-          if (raw.result_type === 'input_required') {
-            return yield* toolInputRequiredError(`Tool ${slug}`, raw);
-          }
+          const raw = yield* send(preparedArguments);
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(
