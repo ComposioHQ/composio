@@ -34,9 +34,9 @@ catalog:
   '@cloudflare/vitest-pool-workers': 0.22.0
   '@cloudflare/workers-types': ^5.20260922.1
   '@composio/client': 2.0.0-rc.11
-  '@effect/language-service': ^0.87.2
-  '@effect/platform-bun': 4.0.0-rc.117
-  '@effect/vitest': 4.0.0-rc.117
+  '@effect/language-service': ^0.87.4
+  '@effect/platform-bun': 4.0.3
+  '@effect/vitest': 4.0.3
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -46,7 +46,7 @@ catalog:
   '@types/bun': ^1.4.2
   ai: ^7.0.111
   dotenv: ^18.0.2
-  effect: 4.0.0-rc.117
+  effect: 4.0.3
   hono: ^4.13.8
   openai: ^7.21.0
   picocolors: ^1.1.1
@@ -83,6 +83,10 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
+  # Exact releases used by the reviewed Effect 4 migration.
+  - 'effect@4.0.3'
+  - '@effect/platform-bun@4.0.3'
+  - '@effect/vitest@4.0.3'
   - chrome-devtools-mcp
   # temporary: 0.6.0 (2026-09-15) is the first release with the API that
   # @composio/typesafe targets. Publisher, provenance, and the absence of install

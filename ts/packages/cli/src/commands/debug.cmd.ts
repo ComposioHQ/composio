@@ -1,4 +1,4 @@
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';

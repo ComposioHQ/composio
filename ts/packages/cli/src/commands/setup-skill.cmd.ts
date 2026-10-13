@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Option } from 'effect';
 import { installSkill } from 'src/effects/install-skill';
 

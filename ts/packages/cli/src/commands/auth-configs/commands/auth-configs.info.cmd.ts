@@ -1,5 +1,5 @@
 import { Effect, Option } from 'effect';
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command } from 'effect/cli';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';

@@ -1,7 +1,7 @@
-# Bumping the Effect v4 prerelease pin
+# Bumping the Effect v4 pin
 
 Adapted from the pre-migration prep work's stop-conditions, updated for the fact the
-cutover is now done: this is a prerelease-to-prerelease upgrade procedure, not a v3→v4 port.
+cutover is now done: this is a release-to-release upgrade procedure, not a v3→v4 port.
 
 ## 1. Check `minimumReleaseAge`
 
@@ -34,7 +34,10 @@ the existing convention, not a new rule.
 `ts/vendor/effect` is a git submodule pinned at a commit on the canonical
 `Effect-TS/effect` repo, currently
 `14a3f140095fdebbff9162944fe7d4ea83e054e6` (tagged `effect@4.0.0-rc.117`
-at the time of writing — confirm with `git submodule status ts/vendor/effect`). Advance
+at the time of writing — confirm with `git submodule status ts/vendor/effect`). The npm
+pins moved to `4.0.3` without advancing it, so the oracle currently lags the installed
+package and still keeps the `effect/cli`, `effect/http` and `effect/process` sources under
+`src/unstable/`. Advance
 it to the commit/tag matching the new npm version:
 
 ```bash
@@ -60,10 +63,10 @@ pnpm --filter @composio/cli build
 
 Also run the CLI's Docker-based end-to-end suite (see the repo-local `cli-e2e` skill)
 before treating the bump as done — a green typecheck is necessary but not sufficient;
-CLI parsing, help rendering, and error output can change between prereleases while types stay
+CLI parsing, help rendering, and error output can change between releases while types stay
 valid. Cross-check any API you touch during the bump against the freshly-advanced
 `ts/vendor/effect/packages/effect/src` and the installed `effect` typings, not against
-what compiled under the old prerelease.
+what compiled under the old release.
 
 ## Stop conditions
 

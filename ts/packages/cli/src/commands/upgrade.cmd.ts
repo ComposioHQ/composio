@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { UpgradeBinary } from 'src/services/upgrade-binary';

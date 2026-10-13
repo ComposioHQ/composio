@@ -30,8 +30,8 @@ import {
   Schedule,
   String,
 } from 'effect';
-import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { CliConfig, type Command as CliCommand } from 'effect/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { ComposioCliConfig } from 'src/cli-config';
 import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import * as MockConsole from './mock-console';
@@ -94,7 +94,7 @@ import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,
 } from 'src/services/setup-skill-installer';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 
 /**

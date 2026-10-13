@@ -1,4 +1,4 @@
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { orgsCmd$List } from './commands/orgs.list.cmd';
 import { orgsCmd$Switch } from './commands/orgs.switch.cmd';
 

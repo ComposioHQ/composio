@@ -1,6 +1,6 @@
 import { Data, Effect, FileSystem, Match, Path } from 'effect';
-import { ChildProcess } from 'effect/unstable/process';
-import { ChildProcessSpawner } from 'effect/unstable/process/ChildProcessSpawner';
+import { ChildProcess } from 'effect/process';
+import { ChildProcessSpawner } from 'effect/process/ChildProcessSpawner';
 import {
   JsPackageManagerDetector,
   type PackageManager,

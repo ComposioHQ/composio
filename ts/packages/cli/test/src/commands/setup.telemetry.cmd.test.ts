@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { NodeOs } from 'src/services/node-os';

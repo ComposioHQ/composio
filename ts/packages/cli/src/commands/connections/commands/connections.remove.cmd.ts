@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';

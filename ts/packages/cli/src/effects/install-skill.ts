@@ -1,5 +1,5 @@
 import { Data, Effect, FileSystem, Path } from 'effect';
-import { HttpClient } from 'effect/unstable/http';
+import { HttpClient } from 'effect/http';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG, type GitHubConfig } from 'src/config';

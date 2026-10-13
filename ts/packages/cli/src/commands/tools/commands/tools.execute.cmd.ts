@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';

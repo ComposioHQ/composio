@@ -20,10 +20,10 @@ for (const [packageName, version] of Object.entries(versions)) {
 
 const effectVersion = versions.effect;
 if (
-  !/^4\.0\.0-(?:beta|rc)\.\d+$/.test(effectVersion) ||
+  !/^4\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/.test(effectVersion) ||
   effectPackageNames.some(packageName => versions[packageName] !== effectVersion)
 ) {
-  throw new Error(`Effect packages must share one exact v4 prerelease, received ${effectVersion}`);
+  throw new Error(`Effect packages must share one exact v4 version, received ${effectVersion}`);
 }
 
 const dependencySpecs = [
