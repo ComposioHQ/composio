@@ -407,6 +407,8 @@ class _DynamicKeyValidator(t.NamedTuple):
 def _materialized_value_to_python(value: t.Any) -> t.Any:
     """Convert a previous materializer result back into validation input."""
     if isinstance(value, BaseModel):
+        if getattr(type(value), "__pydantic_root_model__", False):
+            return _materialized_value_to_python(value.root)
         included_fields = set(value.model_fields_set)
         included_fields.update(
             getattr(type(value), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
@@ -2764,6 +2766,18 @@ def _convert_with_library(
             )
             return _with_exact_validation_annotation(
                 t.Any,
+                schema,
+                document_root,
+            )
+
+        if getattr(base_model, "__pydantic_root_model__", False) and (
+            "patternProperties" in schema or "additionalProperties" in schema
+        ):
+            # RootModel cannot carry extra object keys through its wrapped
+            # union members. Exact JSON Schema validation already enforces
+            # those members, so retain the validated object as a plain dict.
+            return _with_exact_validation_annotation(
+                t.Dict[str, t.Any],
                 schema,
                 document_root,
             )
