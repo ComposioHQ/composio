@@ -7,6 +7,10 @@ from pathlib import Path
 
 import typing_extensions as te
 from composio_client import APIStatusError, omit
+from composio_client.types.tool_router.session_execute_meta_response import (
+    SessionExecuteMetaInputRequiredResponse,
+    SessionExecuteMetaResponse,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteInputRequiredResponse,
     SessionExecuteResponse,
@@ -130,6 +134,7 @@ def require_executed(
     response: t.Union[
         _ExecutedT,
         SessionExecuteInputRequiredResponse,
+        SessionExecuteMetaInputRequiredResponse,
         SessionProxyExecuteInputRequiredResponse,
     ],
     subject: str,
@@ -142,7 +147,11 @@ def require_executed(
     """
     if not isinstance(
         response,
-        (SessionExecuteInputRequiredResponse, SessionProxyExecuteInputRequiredResponse),
+        (
+            SessionExecuteInputRequiredResponse,
+            SessionExecuteMetaInputRequiredResponse,
+            SessionProxyExecuteInputRequiredResponse,
+        ),
     ):
         return response
     raise ToolInputRequiredError(
@@ -181,6 +190,33 @@ def require_execute_result(
             f"Tool {slug} returned an execute response without a known result_type"
         )
     return executed
+
+
+def require_execute_meta_result(
+    response: t.Union[
+        SessionExecuteMetaResponse, SessionExecuteMetaInputRequiredResponse
+    ],
+    slug: str,
+) -> SessionExecuteResponse:
+    """Narrow a session execute_meta response to a meta tool that ran.
+
+    The meta endpoint answers in the same shape as session execute, so the
+    result is returned as the session execute response and follows the rules of
+    :func:`require_execute_result`.
+
+    :raises ToolInputRequiredError: If the tool asked for user input instead of
+        running.
+    :raises ValidationError: If ``result_type`` is missing or unknown.
+    """
+    executed = require_executed(response, f"Tool {slug}")
+    # Carry the fields over as the client parsed them instead of validating
+    # them a second time.
+    return require_execute_result(
+        SessionExecuteResponse.model_construct(
+            _fields_set=executed.model_fields_set, **dict(executed)
+        ),
+        slug,
+    )
 
 
 def is_execution_successful(result_type: t.Optional[str]) -> bool:
@@ -902,9 +938,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
-            # TODO: pass `user_id` natively once composio-client is regenerated
-            # with it on the proxy endpoint.
-            extra_body={"user_id": user_id} if user_id is not None else None,
+            user_id=user_id if user_id is not None else omit,
         )
 
 

@@ -59,6 +59,7 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
+    inline_custom_tools_execute_meta_experimental,
     inline_custom_tools_search_experimental,
 )
 from composio.core.models.session_context import (
@@ -72,6 +73,7 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
+    require_execute_meta_result,
     require_execute_result,
 )
 from composio.core.provider import TTool, TToolCollection
@@ -160,6 +162,20 @@ ToolRouterSessionExecuteResponse = SessionExecuteResponse
 """Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
 only when the Session sets ``instant.return_instant_charge`` and a charge is
 available."""
+
+ToolRouterSessionMetaToolSlug = t.Literal[
+    "COMPOSIO_SEARCH_TOOLS",
+    "COMPOSIO_MULTI_EXECUTE_TOOL",
+    "COMPOSIO_MANAGE_CONNECTIONS",
+    "COMPOSIO_WAIT_FOR_CONNECTIONS",
+    "COMPOSIO_REMOTE_WORKBENCH",
+    "COMPOSIO_REMOTE_BASH_TOOL",
+    "COMPOSIO_GET_TOOL_SCHEMAS",
+    "COMPOSIO_SUBMIT_FEEDBACK",
+    "COMPOSIO_PROXY_EXECUTE",
+]
+"""Slug of a Composio meta tool (``COMPOSIO_*``) that
+:meth:`ToolRouterSession.execute_meta` can run."""
 
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
@@ -952,6 +968,50 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 ),
             ),
             tool_slug,
+        )
+
+    def execute_meta(
+        self,
+        slug: ToolRouterSessionMetaToolSlug,
+        *,
+        arguments: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> ToolRouterSessionExecuteResponse:
+        """
+        Execute a Composio meta tool (``COMPOSIO_*``) within the session.
+
+        :meth:`execute` also runs meta tools. This method only accepts meta
+        tool slugs, so a typo is a type error instead of a failed request. The
+        call is sent to the Composio backend as is: custom tools named in a
+        ``COMPOSIO_MULTI_EXECUTE_TOOL`` call are not run in-process here.
+
+        :param slug: The meta tool slug to execute.
+        :param arguments: Optional meta tool arguments.
+        :returns: The tool execution result, in the same shape as
+            :meth:`execute`.
+        :raises ToolInputRequiredError: If the tool needs input from the user
+            (for example an approval) before it can run. Nothing was executed.
+        :raises ValidationError: If the API response carries no ``result_type``,
+            or one this SDK does not know.
+
+        Example:
+            result = session.execute_meta(
+                "COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "send an email"}]},
+            )
+            print(result.result_type, result.data)
+        """
+        # Disable retries: a session execution is a non-idempotent write, and a
+        # silent retry after a read timeout can duplicate the side effect.
+        return require_execute_meta_result(
+            self._client.without_retries.tool_router.session.execute_meta(
+                session_id=self.session_id,
+                slug=slug,
+                arguments=arguments if arguments is not None else omit,
+                experimental=inline_custom_tools_execute_meta_experimental(
+                    self._inline_custom_tools_payload
+                ),
+            ),
+            slug,
         )
 
     def custom_tools(
