@@ -2,6 +2,8 @@ Use these checks to troubleshoot Composio MCP connection failures in Hermes / No
 
 ## Production MCP API paths and direct transport tests
 
+**Warning:** these `backend.composio.dev` URLs are for MCP servers you create through the Composio API or SDK. To connect Hermes to Composio Connect instead, use `https://connect.composio.dev/mcp`.
+
 Use HTTPS and the full production API path:
 
 ```text
