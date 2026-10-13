@@ -553,6 +553,16 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/node/tool-router-proxy-execute:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/tool-router-session-update:
     dependencies:
       '@composio/core':
