@@ -13,7 +13,13 @@ import {
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { Cause } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import { Composio as _RawComposioClient, APIError, type RequestOptions } from '@composio/client';
+import {
+  make as makeEffectClient,
+  VERSION as clientLibraryVersion,
+  type ComposioClientShape,
+} from '@composio/client/effect';
 import { paginate, type CursorPage } from '@composio/client/pagination';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
@@ -35,12 +41,12 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
-import { VERSION as clientLibraryVersion } from '@composio/client';
 import { cliRequestHeaders } from './client-provenance';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector } from './composio-client-metrics';
+import { composioSchemaLoaders } from './composio-schema-loaders';
 import { NodeOs } from './node-os';
 
 type NoSuchElementError = Cause.NoSuchElementError;
@@ -534,6 +540,21 @@ export interface ComposioClientSingletonShape {
     projectId?: string;
   }) => Effect.Effect<_RawComposioClient, ComposioClientConfigurationError | NoSuchElementError>;
   /**
+   * The Effect client for the scope {@link get} resolves.
+   */
+  readonly getEffect: () => Effect.Effect<
+    ComposioClientShape,
+    ComposioClientConfigurationError | NoSuchElementError
+  >;
+  /**
+   * The Effect client for an explicit scope, as {@link getFor}.
+   */
+  readonly getEffectFor: (params: {
+    userApiKey?: string;
+    orgId?: string;
+    projectId?: string;
+  }) => Effect.Effect<ComposioClientShape, ComposioClientConfigurationError | NoSuchElementError>;
+  /**
    * Returns a snapshot of the accumulated metrics (total bytes received and
    * request count) across every client this singleton built.
    */
@@ -561,82 +582,121 @@ const makeComposioClientSingleton = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
   const metrics = makeClientMetricsCollector();
-  const cache = new Map<string, _RawComposioClient>();
+  // A private memo map: under an application that already built
+  // `FetchHttpClient.layer`, a shared one would hand back that transport,
+  // which calls `globalThis.fetch` directly and counts nothing.
+  const httpClient = yield* Effect.provide(
+    HttpClient.HttpClient,
+    Layer.provide(FetchHttpClient.layer, Layer.succeed(FetchHttpClient.Fetch, metrics.fetch)),
+    { local: true }
+  );
 
-  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
-    Effect.gen(function* () {
-      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
-      const cacheKey = JSON.stringify({
-        apiKey: apiKey ?? null,
-        orgId: params?.orgId ?? null,
-        projectId: params?.projectId ?? null,
-      });
-      const cached = cache.get(cacheKey);
-      if (cached) {
-        return cached;
-      }
+  type ClientScope = { userApiKey?: string; orgId?: string; projectId?: string };
 
-      const cliSessionId = yield* getCurrentCwdSessionId().pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-        Effect.provideService(Path.Path, path),
-        Effect.provideService(NodeOs, os)
-      );
+  /** The construction options the promise client and the Effect client share. */
+  interface ScopedClientOptions {
+    readonly apiKey: null;
+    readonly userApiKey: string | null;
+    readonly orgApiKey: null;
+    readonly baseURL: string;
+    readonly allowInsecureHTTP: true;
+    readonly defaultHeaders: Record<string, string> | undefined;
+  }
 
-      const client = yield* Effect.try({
-        try: () =>
-          // An empty environment prevents implicit env reads, including COMPOSIO_CUSTOM_HEADERS.
-          _RawComposioClient.fromEnv(
-            {},
-            {
+  // One cache per client kind, keyed the same way.
+  const cachedPerScope = <Client>(build: (options: ScopedClientOptions) => Client) => {
+    const cache = new Map<string, Client>();
+
+    return (params?: ClientScope) =>
+      Effect.gen(function* () {
+        const apiKey = normalizeApiKey(
+          params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
+        );
+        const cacheKey = JSON.stringify({
+          apiKey: apiKey ?? null,
+          orgId: params?.orgId ?? null,
+          projectId: params?.projectId ?? null,
+        });
+        const cached = cache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
+        const cliSessionId = yield* getCurrentCwdSessionId().pipe(
+          Effect.provideService(FileSystem.FileSystem, fs),
+          Effect.provideService(Path.Path, path),
+          Effect.provideService(NodeOs, os)
+        );
+
+        const client = yield* Effect.try({
+          try: () =>
+            build({
               apiKey: null,
               userApiKey: apiKey ?? null,
               orgApiKey: null,
               baseURL: ctx.data.baseURL,
               // Preserve support for explicitly configured HTTP backends.
               allowInsecureHTTP: true,
-              logLevel: 'off',
               defaultHeaders: buildDefaultHeaders({
                 userApiKey: apiKey,
                 orgId: params?.orgId,
                 projectId: params?.projectId,
                 cliSessionId,
               }),
-              fetch: metrics.fetch,
-            }
-          ),
-        catch: cause =>
-          new ComposioClientConfigurationError({
-            message: cause instanceof Error ? cause.message : global.String(cause),
-            cause,
-          }),
+            }),
+          catch: cause =>
+            new ComposioClientConfigurationError({
+              message: cause instanceof Error ? cause.message : global.String(cause),
+              cause,
+            }),
+        });
+
+        cache.set(cacheKey, client);
+        return client;
       });
+  };
 
-      cache.set(cacheKey, client);
-      return client;
-    });
+  const getFor = cachedPerScope(options =>
+    // An empty environment prevents implicit env reads, including COMPOSIO_CUSTOM_HEADERS.
+    _RawComposioClient.fromEnv({}, { ...options, logLevel: 'off', fetch: metrics.fetch })
+  );
 
-  return {
-    get: Effect.fn(function* () {
+  // `make` reads no environment. Responses are validated against the CLI's
+  // loader table unless a call passes `decode: false`.
+  const getEffectFor = cachedPerScope(options =>
+    makeEffectClient(
+      { ...options, deprecationNotices: 'off', decode: true, schemas: composioSchemaLoaders },
+      httpClient
+    )
+  );
+
+  const forResolvedProject = <Client, E>(
+    clientFor: (params?: ClientScope) => Effect.Effect<Client, E>
+  ) =>
+    Effect.fn(function* () {
       const resolvedProjectContext = yield* Option.match(projectContextOpt, {
         onNone: () => Effect.succeed(Option.none()),
         onSome: projectContext =>
           projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
       });
       return yield* Option.match(resolvedProjectContext, {
-        onNone: () => getFor(),
+        onNone: () => clientFor(),
         onSome: keys =>
-          getFor({
+          clientFor({
             orgId: keys.orgId,
             projectId: keys.projectId,
           }),
       });
-    }),
-    getFor: Effect.fn(function* (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) {
+    });
+
+  return {
+    get: forResolvedProject(getFor),
+    getFor: Effect.fn(function* (params: ClientScope) {
       return yield* getFor(params);
+    }),
+    getEffect: forResolvedProject(getEffectFor),
+    getEffectFor: Effect.fn(function* (params: ClientScope) {
+      return yield* getEffectFor(params);
     }),
     getMetrics: metrics.getMetrics,
   } satisfies ComposioClientSingletonShape;

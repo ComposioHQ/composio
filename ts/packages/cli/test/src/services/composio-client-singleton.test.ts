@@ -4,8 +4,10 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Logger } from 'effect';
+import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
@@ -394,4 +396,235 @@ describe('ComposioClientSingleton headers', () => {
       )
     );
   });
+});
+
+describe('ComposioClientSingleton Effect client', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  const baseConfig = (entries: ReadonlyArray<readonly [string, string]> = []) =>
+    new Map([['COMPOSIO_BASE_URL', 'https://backend.composio.dev'], ...entries]);
+
+  const singletonLayer = (configMap: Map<string, string>) =>
+    Layer.provide(
+      ComposioClientSingleton.Default,
+      withConfigLayer(configMap, tempy.temporaryDirectory())
+    );
+
+  // `tools.list` is an operation the CLI validates with its own schema, so it
+  // opts out of client decoding.
+  const listTools = (client: ComposioClientShape) =>
+    client.tools.list({ limit: 1, toolkit_versions: 'latest' }, { decode: false });
+
+  const sentHeaders = (call: Parameters<typeof globalThis.fetch>) =>
+    new Headers((call[1] as RequestInit).headers);
+
+  it.effect('sends the scope credentials and the provenance headers, never x-api-key', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffectFor({
+        userApiKey: 'uak_scope',
+        orgId: 'org_a',
+        projectId: 'proj_a',
+      });
+      yield* listTools(client);
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const headers = sentHeaders(fetchSpy.mock.calls[0]!);
+
+      expect(headers.get('x-user-api-key')).toBe('uak_scope');
+      expect(headers.get('x-org-id')).toBe('org_a');
+      expect(headers.get('x-project-id')).toBe('proj_a');
+      expect(headers.has('x-api-key')).toBe(false);
+      expect(headers.get('x-framework')).toBe('cli');
+      expect(headers.get('x-source')).toBe('CLI');
+      expect(headers.get('x-runtime')).toBe('NODEJS');
+      expect(headers.get('x-client-runtime')).toBe('nodejs');
+      expect(headers.get('x-runtime-version')).toBe(process.versions.node);
+      expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
+      expect(headers.get('x-client-provenance')).toBe('@composio/cli');
+      expect(headers.get('x-client-version')).toBe(APP_VERSION);
+      expect(headers.get('x-client-language')).toBe('typescript');
+    }).pipe(Effect.provide(singletonLayer(baseConfig())));
+  });
+
+  it.effect('omits the org header when the scope has no project', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffectFor({
+        userApiKey: 'uak_scope',
+        orgId: 'org_a',
+      });
+      yield* listTools(client);
+
+      const headers = sentHeaders(fetchSpy.mock.calls[0]!);
+      expect(headers.get('x-user-api-key')).toBe('uak_scope');
+      expect(headers.has('x-org-id')).toBe(false);
+      expect(headers.has('x-project-id')).toBe(false);
+    }).pipe(Effect.provide(singletonLayer(baseConfig())));
+  });
+
+  it.effect('caches one client per key, org, and project', () =>
+    Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
+
+      const first = yield* clientSingleton.getEffectFor(scope);
+      const second = yield* clientSingleton.getEffectFor(scope);
+      const otherProject = yield* clientSingleton.getEffectFor({ ...scope, projectId: 'proj_b' });
+
+      expect(second).toBe(first);
+      expect(otherProject).not.toBe(first);
+    }).pipe(Effect.provide(singletonLayer(baseConfig())))
+  );
+
+  it.effect('ignores ambient COMPOSIO_API_KEY and COMPOSIO_BASE_URL', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    vi.stubEnv('COMPOSIO_API_KEY', 'ak_ambient');
+    vi.stubEnv('COMPOSIO_BASE_URL', 'https://ambient.invalid');
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffectFor({ userApiKey: 'uak_scope' });
+      yield* listTools(client);
+
+      const call = fetchSpy.mock.calls[0]!;
+      expect(String(call[0])).toContain('https://backend.composio.dev/');
+      const headers = sentHeaders(call);
+      expect(headers.get('x-user-api-key')).toBe('uak_scope');
+      expect(headers.has('x-api-key')).toBe(false);
+    }).pipe(Effect.provide(singletonLayer(baseConfig())));
+  });
+
+  it.effect('resolves globalThis.fetch on every request', () => {
+    const firstSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffect();
+      yield* listTools(client);
+      expect(firstSpy).toHaveBeenCalledOnce();
+
+      firstSpy.mockRestore();
+      const secondSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+      yield* listTools(client);
+
+      expect(secondSpy).toHaveBeenCalledOnce();
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_late']]))));
+  });
+
+  // Live clock: the retry backoff is a real sleep, cut to nothing by the
+  // `retry-after-ms` response header.
+  it.live('counts every attempt of a retried call', () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response('{}', {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'retry-after-ms': '0' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(['GITHUB_CREATE_ISSUE']), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffect();
+
+      expect(yield* client.tools.retrieveEnum()).toEqual(['GITHUB_CREATE_ISSUE']);
+      expect((yield* clientSingleton.getMetrics()).requests).toBe(2);
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_retry']]))));
+  });
+
+  it.effect('counts requests when the application already provides a fetch transport', () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffect();
+      yield* listTools(client);
+
+      expect((yield* clientSingleton.getMetrics()).requests).toBe(1);
+    }).pipe(
+      Effect.provide(
+        Layer.provide(
+          ComposioClientSingleton.Default,
+          Layer.mergeAll(
+            withConfigLayer(
+              baseConfig([['COMPOSIO_USER_API_KEY', 'uak_metrics']]),
+              tempy.temporaryDirectory()
+            ),
+            FetchHttpClient.layer
+          )
+        )
+      )
+    );
+  });
+
+  it.effect('logs nothing for a response that announces a deprecation', () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          Deprecation: 'true',
+          Sunset: 'Wed, 31 Dec 2027 23:59:59 GMT',
+          Link: '<https://docs.composio.dev/migration>; rel="deprecation"',
+        },
+      })
+    );
+    const records: Array<unknown> = [];
+    const capturingLogger = Logger.layer([
+      Logger.make<unknown, void>(({ message }) => {
+        records.push(message);
+      }),
+    ]);
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffect();
+      yield* listTools(client);
+
+      expect(records).toEqual([]);
+    }).pipe(
+      Effect.provide(
+        Layer.merge(
+          singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_quiet']])),
+          capturingLogger
+        )
+      )
+    );
+  });
+
+  it.effect('rejects an undecodable typed call before sending it', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getEffect();
+      // No opt-out, and `tools.list` has no entry in the CLI's loader table.
+      const error = yield* Effect.flip(client.tools.list({ limit: 1, toolkit_versions: 'latest' }));
+
+      expect(error._tag).toBe('@composio/client/ConfigurationError');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_strict']]))));
+  });
+
+  it.effect('reports an invalid base URL as a configuration error', () =>
+    Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const error = yield* Effect.flip(clientSingleton.getEffectFor({ userApiKey: 'uak_a' }));
+
+      expect(error._tag).toBe('services/ComposioClientConfigurationError');
+    }).pipe(Effect.provide(singletonLayer(new Map([['COMPOSIO_BASE_URL', 'not a url']]))))
+  );
 });

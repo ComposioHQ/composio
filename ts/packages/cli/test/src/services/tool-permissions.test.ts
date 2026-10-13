@@ -95,6 +95,8 @@ const permissionsClientLayer = (responses: {
                 })
               )
             : Effect.succeed(client),
+        getEffect: () => Effect.die(new Error('Unexpected Effect client request')),
+        getEffectFor: () => Effect.die(new Error('Unexpected Effect client request')),
         getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
       })
     ),
