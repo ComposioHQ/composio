@@ -556,9 +556,30 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
+    // The logger serializes an object argument with JSON.stringify, which turns
+    // an Error into `{}` and throws on a circular value. Log an Error's message,
+    // keep a thrown object's fields, and never throw here: this also runs as a
+    // rejection handler, where a throw would escape as an unhandled rejection.
+    // JSON.stringify and String() can both throw (a circular value, an object
+    // without a prototype), so each is tried in turn.
     const logCallbackFailure = (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('❌ Error in trigger callback:', errorMessage);
+      let details = '[unprintable value]';
+      try {
+        if (error instanceof Error) {
+          details = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+          details = JSON.stringify(error) ?? String(error);
+        } else {
+          details = String(error);
+        }
+      } catch {
+        try {
+          details = String(error);
+        } catch {
+          // keep the placeholder
+        }
+      }
+      logger.error('❌ Error in trigger callback:', details);
     };
 
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
