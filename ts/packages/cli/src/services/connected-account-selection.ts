@@ -291,12 +291,38 @@ export const resolveConnectedAccountForToolkit = (params: {
       )
     );
 
+    // A selector that is empty or all-whitespace (e.g. `--account=`) is
+    // treated as "no selector" by resolveConnectedAccountSelection below; the
+    // ambiguity guard below it must agree, or an empty --account value would
+    // silently reach the "exactly one choice" fallback instead of failing.
+    const effectiveSelector = Option.filter(params.selector, value => value.trim().length > 0);
+
     const selected = resolveConnectedAccountSelection(
       selectableAccounts,
-      Option.getOrUndefined(params.selector)
+      Option.getOrUndefined(effectiveSelector)
     );
-    if (selected) return selected.id;
-    if (Option.isNone(params.selector)) return undefined;
+
+    if (selected) {
+      // No --account given: if more than one usable account exists and none
+      // is the explicit alias=default, picking one silently is dangerous
+      // (e.g. an agent reading/writing the wrong mailbox). Fail the same way
+      // an unmatched selector already does, instead of guessing.
+      if (Option.isNone(effectiveSelector)) {
+        const usable = selectableAccounts.filter(isUsableConnectedAccount);
+        const hasExplicitDefault = usable.some(
+          item => normalizeSelector(item.alias ?? '') === 'default'
+        );
+        if (!hasExplicitDefault && usable.length > 1) {
+          const choices = formatConnectedAccountChoices(selectableAccounts);
+          return yield* new ConnectedAccountResolutionError({
+            message: `Multiple connected accounts exist for toolkit "${toolkitSlug}" and no --account was given. Available accounts: ${choices.join(', ')}. Pass --account <alias or id> to choose one.`,
+            toolkitSlug,
+          });
+        }
+      }
+      return selected.id;
+    }
+    if (Option.isNone(effectiveSelector)) return undefined;
 
     const choices = formatConnectedAccountChoices(selectableAccounts);
     const hint =
@@ -304,7 +330,7 @@ export const resolveConnectedAccountForToolkit = (params: {
         ? ` Available accounts: ${choices.join(', ')}.`
         : ' No active connected accounts were found for that toolkit.';
     return yield* new ConnectedAccountResolutionError({
-      message: `No connected account matched "${params.selector.value}" for toolkit "${toolkitSlug}".${hint}`,
+      message: `No connected account matched "${effectiveSelector.value}" for toolkit "${toolkitSlug}".${hint}`,
       toolkitSlug,
     });
   });
