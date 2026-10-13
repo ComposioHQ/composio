@@ -6,6 +6,10 @@ keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, muse, ope
 
 Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
 
+<Callout type="warn" title="backend.composio.dev is not the MCP URL">
+The Composio Connect URL is `https://connect.composio.dev/mcp`. Don't use a `backend.composio.dev` URL here: that host serves the Composio REST API and MCP servers you create with the SDK.
+</Callout>
+
 If you use Codex or Claude Code and did not explicitly choose MCP, install the native [Composio agent plugin](/docs/agent-plugins) instead. The plugin uses the Composio CLI and is the shortest path for those agents.
 
 If you are building an application, start with the [SDK Quickstart](/docs/quickstart) or create a [session MCP endpoint](/docs/sessions-via-mcp) instead.
