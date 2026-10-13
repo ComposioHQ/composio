@@ -16,7 +16,10 @@ export function descriptionLinks(description: string): DescriptionPart[] {
       text = text.slice(0, -1);
     }
     text = text.replace(/[\]}]+$/, '');
-    const href = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+    const explicitUrl = /^https?:\/\//i.test(text);
+    // Bare .js names refer to JavaScript libraries (for example, Chart.js and Node.js).
+    if (!explicitUrl && /^[^/?#:]+\.js(?:[/?#:]|$)/i.test(text)) continue;
+    const href = explicitUrl ? text : `https://${text}`;
     try {
       new URL(href);
     } catch {
