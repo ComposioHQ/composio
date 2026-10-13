@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option, Schedule } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';

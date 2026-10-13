@@ -1,5 +1,5 @@
 import { Effect, Option, Result } from 'effect';
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';

@@ -11,7 +11,7 @@ describe('CLI: composio', () => {
   });
 
   // v4 migration note: v3's `Command.run` returned a `ValidationError.CommandMismatch` for the
-  // caller to render by hand. `effect/unstable/cli`'s `Command.runWith` renders parse/validation
+  // caller to render by hand. `effect/cli`'s `Command.runWith` renders parse/validation
   // errors itself (see `src/cli-main.ts` module docs) before re-failing with `CliError.ShowHelp`,
   // so these tests now assert on the printed `MockConsole` output instead of inspecting the error
   // value directly.

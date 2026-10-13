@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { requireAuth } from 'src/effects/require-auth';

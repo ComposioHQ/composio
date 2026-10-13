@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command } from 'effect/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {
   ensureAgentSignupAllowed,

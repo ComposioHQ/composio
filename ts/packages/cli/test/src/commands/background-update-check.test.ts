@@ -1,6 +1,6 @@
 import { describe, expect, layer, vi } from '@effect/vitest';
 import { Effect } from 'effect';
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { $defaultCmd } from 'src/commands/$default.cmd';
 import { withBackgroundUpdateCheck } from 'src/commands/background-update-check';
 import { versionCmd } from 'src/commands/version.cmd';

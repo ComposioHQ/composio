@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as PlatformError from 'effect/PlatformError';

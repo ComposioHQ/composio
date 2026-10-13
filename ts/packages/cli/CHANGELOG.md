@@ -149,6 +149,10 @@ orgs` shows the same page as `composio orgs --help`, with the same longest-prefi
 info <unknown-slug>` used to print nothing and exit 0 when piped.
 - Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
   instead of a removed Slack tool slug and a trigger without configuration.
+- The CLI now runs on the stable Effect 4 line (`effect@4.0.3`, up from
+  `4.0.0-rc.117`). No command changes on purpose. One parsing difference comes
+  with the framework: an argument that is a negative number, such as `-5`, is
+  now read as a value instead of as a flag.
 
 ## 0.3.3
 

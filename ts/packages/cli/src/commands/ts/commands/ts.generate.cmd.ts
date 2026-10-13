@@ -15,7 +15,7 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';

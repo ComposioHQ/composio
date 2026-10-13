@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,

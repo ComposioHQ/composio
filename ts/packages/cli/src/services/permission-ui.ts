@@ -1,6 +1,6 @@
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect, Stream } from 'effect';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { HOST_CONFIG, type CallerAgentSignals } from 'src/config';
 
 export type PermissionCallerAgent = 'claude' | 'codex' | 'openclaw' | 'composio';

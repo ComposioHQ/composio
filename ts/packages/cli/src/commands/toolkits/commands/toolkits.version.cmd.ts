@@ -1,4 +1,4 @@
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioClientSingleton } from 'src/services/composio-clients';

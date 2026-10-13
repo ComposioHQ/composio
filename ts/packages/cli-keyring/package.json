@@ -56,7 +56,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "effect": "4.0.0-rc.117"
+    "effect": "4.0.3"
   },
   "peerDependenciesMeta": {
     "effect": {

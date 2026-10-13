@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect } from 'effect';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {

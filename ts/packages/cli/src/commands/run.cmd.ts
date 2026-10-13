@@ -1,8 +1,8 @@
 import process from 'node:process';
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
@@ -323,7 +323,7 @@ class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
 /**
  * Sends `signal` to the child's process group and reports whether it was delivered.
  *
- * The `effect/unstable/process` spawner spawns with `detached: true` on POSIX, so the script leads its
+ * The `effect/process` spawner spawns with `detached: true` on POSIX, so the script leads its
  * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
  * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
  */
