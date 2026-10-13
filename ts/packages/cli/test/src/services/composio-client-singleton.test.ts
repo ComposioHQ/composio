@@ -540,7 +540,7 @@ describe('ComposioClientSingleton Effect client', () => {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getEffect();
 
-      expect(yield* client.tools.retrieveEnum()).toEqual(['GITHUB_CREATE_ISSUE']);
+      expect(yield* client.tools.retrieveEnum({ decode: false })).toEqual(['GITHUB_CREATE_ISSUE']);
       expect((yield* clientSingleton.getMetrics()).requests).toBe(2);
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_retry']]))));
   });

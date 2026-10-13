@@ -1,6 +1,6 @@
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { catchClientApiError } from 'src/effects/handle-http-error';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -91,14 +91,11 @@ export const triggersCmd$Status = Command.make(
         )
         .pipe(
           Effect.asSome,
-          Effect.catchTag(
-            'services/HttpServerError',
-            handleHttpServerError(ui, {
-              fallbackMessage: 'Failed to fetch trigger status.',
-              hint: 'Retry with:\n> composio dev triggers status --show-disabled',
-              fallbackValue: Option.none(),
-            })
-          )
+          catchClientApiError(ui, {
+            fallbackMessage: 'Failed to fetch trigger status.',
+            hint: 'Retry with:\n> composio dev triggers status --show-disabled',
+            fallbackValue: Option.none(),
+          })
         );
 
       if (Option.isNone(resultOpt)) {

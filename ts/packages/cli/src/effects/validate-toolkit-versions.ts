@@ -1,3 +1,4 @@
+import { isComposioError } from '@composio/client/effect';
 import { Data, Effect } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
@@ -189,7 +190,7 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('services/HttpServerError', error =>
+        Effect.catchIf(isComposioError, error =>
           Effect.fail(
             new ToolkitVersionValidationError({
               cause: error,

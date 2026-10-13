@@ -41,9 +41,4 @@ export const composioSchemaLoaders = {
       .SessionToolkitsResponse,
   'tools.retrieve': async () =>
     (await import('@composio/client/effect/schemas/tools/retrieve')).ToolRetrieveResponse,
-  'tools.retrieveEnum': async () =>
-    (await import('@composio/client/effect/schemas/tools/retrieve-enum')).ToolRetrieveEnumResponse,
-  'triggersTypes.retrieveEnum': async () =>
-    (await import('@composio/client/effect/schemas/triggers-types/retrieve-enum'))
-      .TriggersTypeRetrieveEnumResponse,
 } satisfies SchemaLoaders;

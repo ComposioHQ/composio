@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@effect/vitest';
+import { afterEach, assert, describe, expect, it } from '@effect/vitest';
 import { vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -12,12 +12,12 @@ import {
   findDeveloperProjectByName,
   getLatestToolVersion,
   getSessionInfoByUserApiKey,
-  HttpServerError,
   InvalidToolkitsError,
   listOrganizations,
   listOrgProjects,
 } from 'src/services/composio-clients';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { isClientApiError } from 'src/utils/api-error-extraction';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
@@ -172,6 +172,31 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withSingleton))
     );
 
+    it.effect('listOrganizations fails with DecodeError when an organization has no name', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          jsonResponse(
+            {
+              organizations: [{ id: 'org_a', created_at: 'x', updated_at: 'x' }],
+              total_pages: 1,
+              current_page: 1,
+              total_items: 1,
+            },
+            200,
+            { 'x-request-id': 'req_orgs' }
+          )
+        );
+
+        const error = yield* listOrganizations({ apiKey: 'uak_test' }).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: '@composio/client/DecodeError',
+          operation: 'org.list',
+          requestId: 'req_orgs',
+        });
+      }).pipe(Effect.provide(withSingleton))
+    );
+
     it.effect('listOrgProjects asks for every org project, scoped to the org only', () =>
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -254,12 +279,14 @@ describe('composio-clients', () => {
         }).pipe(Effect.flip);
 
         expect(fetchSpy).toHaveBeenCalledOnce();
-        expect(error).toBeInstanceOf(HttpServerError);
-        expect((error as HttpServerError).status).toBe(500);
+        expect(error).toMatchObject({
+          _tag: '@composio/client/InternalServerError',
+          status: 500,
+        });
       }).pipe(Effect.provide(withSingleton))
     );
 
-    it.effect('a connection failure maps to HttpServerError without a status', () =>
+    it.effect('a connection failure fails with APIConnectionError naming the transport', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
 
@@ -270,18 +297,21 @@ describe('composio-clients', () => {
           name: 'cli',
         }).pipe(Effect.flip);
 
-        expect(error).toBeInstanceOf(HttpServerError);
-        expect((error as HttpServerError).status).toBeUndefined();
+        expect(error).toMatchObject({
+          _tag: '@composio/client/APIConnectionError',
+          description: 'fetch failed',
+        });
       }).pipe(Effect.provide(withSingleton))
     );
 
-    it.effect('retries a retryable failure and reports the eventual success', () =>
+    // Live: the client sleeps between attempts on Effect's clock.
+    it.live('retries a retryable failure and reports the eventual success', () =>
       Effect.gen(function* () {
         // No `x-should-retry: false` here: this scenario is about the retry
         // the owned client performs and the old hand-rolled fetch did not.
         const fetchSpy = vi
           .spyOn(globalThis, 'fetch')
-          .mockResolvedValueOnce(jsonResponse({ message: 'flaky' }, 500))
+          .mockResolvedValueOnce(jsonResponse({ message: 'flaky' }, 500, { 'retry-after-ms': '0' }))
           .mockResolvedValueOnce(jsonResponse(makeSessionInfo({ orgName: 'Retried Org' })));
 
         const info = yield* getSessionInfoByUserApiKey({ userApiKey: 'uak_test' });
@@ -349,31 +379,59 @@ describe('composio-clients', () => {
             jsonResponse({
               items: [toolkitListItem('slack'), toolkitListItem('gmail')],
               next_cursor: 'page_2',
-              total_pages: 2,
+              total_pages: 3,
               current_page: 1,
-              total_items: 3,
+              total_items: 4,
+            })
+          )
+          .mockResolvedValueOnce(
+            jsonResponse({
+              items: [toolkitListItem('zoom')],
+              next_cursor: 'page_3',
+              total_pages: 3,
+              current_page: 2,
+              total_items: 4,
             })
           )
           .mockResolvedValueOnce(
             jsonResponse({
               items: [toolkitListItem('asana')],
               next_cursor: null,
-              total_pages: 2,
-              current_page: 2,
-              total_items: 3,
+              total_pages: 3,
+              current_page: 3,
+              total_items: 4,
             })
           );
         const repository = yield* ComposioToolkitsRepository;
 
         const toolkits = yield* repository.getToolkits();
 
-        expect(toolkits.map(t => t.slug)).toEqual(['asana', 'gmail', 'slack']);
-        expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(requestOf(fetchSpy.mock.calls[0]).url.searchParams.get('limit')).toBe('1000');
-        expect(requestOf(fetchSpy.mock.calls[1]).url.searchParams.get('cursor')).toBe('page_2');
+        expect(toolkits.map(t => t.slug)).toEqual(['asana', 'gmail', 'slack', 'zoom']);
+        expect(fetchSpy).toHaveBeenCalledTimes(3);
+        const requests = fetchSpy.mock.calls.map(call => requestOf(call).url.searchParams);
+        expect(requests.map(query => query.get('limit'))).toEqual(['1000', '1000', '1000']);
+        expect(requests.map(query => query.get('cursor'))).toEqual([null, 'page_2', 'page_3']);
         const metrics = yield* repository.getMetrics();
-        expect(metrics.requests).toBe(2);
+        expect(metrics.requests).toBe(3);
         expect(metrics.byteSize).toBeGreaterThan(0);
+      }).pipe(Effect.provide(withRepository))
+    );
+
+    it.effect('a cursor the server repeats fails the listing instead of looping', () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+          jsonResponse({
+            items: [toolkitListItem('gmail')],
+            next_cursor: 'page_2',
+            total_pages: 2,
+          })
+        );
+        const repository = yield* ComposioToolkitsRepository;
+
+        const error = yield* repository.getToolkits().pipe(Effect.flip);
+
+        expect(error._tag).toBe('@composio/client/ConfigurationError');
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
       }).pipe(Effect.provide(withRepository))
     );
 
@@ -391,7 +449,7 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withRepository))
     );
 
-    it.effect('an API error envelope maps onto status, details, and suggestedFix', () =>
+    it.effect('an API error envelope arrives as the status error with its details', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
           errorResponse(
@@ -403,10 +461,10 @@ describe('composio-clients', () => {
 
         const error = yield* repository.getAuthConfig('ac_missing').pipe(Effect.flip);
 
-        expect(error).toBeInstanceOf(HttpServerError);
         expect(error).toMatchObject({
+          _tag: '@composio/client/NotFoundError',
           status: 404,
-          details: { message: 'Not found', code: 404, suggestedFix: 'Check the id' },
+          details: { message: 'Not found', code: 404, suggested_fix: 'Check the id' },
         });
       }).pipe(Effect.provide(withRepository))
     );
@@ -431,9 +489,8 @@ describe('composio-clients', () => {
         );
         const repository = yield* ComposioToolkitsRepository;
         const error = yield* repository.getAuthConfig('ac_1').pipe(Effect.flip);
-        expect(error).toMatchObject({
-          details: { message: 'Bad input', code: 1001, suggestedFix: undefined },
-        });
+        expect(error).toMatchObject({ details: { message: 'Bad input', code: 1001 } });
+        assert(isClientApiError(error));
 
         const errors: string[] = [];
         const steps: string[] = [];
@@ -450,7 +507,7 @@ describe('composio-clients', () => {
           fallbackMessage: 'fallback',
           hint: 'hint',
           fallbackValue: undefined,
-        })(error as HttpServerError);
+        })(error);
         process.exitCode = previousExitCode;
 
         expect(errors).toEqual(['Bad input']);
@@ -517,6 +574,87 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withRepository))
     );
 
+    it.effect(
+      'listConnectedAccounts returns an account whose status this build does not know',
+      () =>
+        Effect.gen(function* () {
+          vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            jsonResponse({
+              items: [
+                {
+                  id: 'con_1',
+                  status: 'QUARANTINED',
+                  status_reason: null,
+                  is_disabled: false,
+                  user_id: 'default',
+                  toolkit: { slug: 'gmail' },
+                  auth_config: {
+                    id: 'ac_1',
+                    auth_scheme: 'OAUTH2',
+                    is_composio_managed: true,
+                    is_disabled: false,
+                  },
+                  created_at: '2026-01-01T00:00:00Z',
+                  updated_at: '2026-01-01T00:00:00Z',
+                },
+              ],
+              total_items: 1,
+              total_pages: 1,
+              current_page: 1,
+              next_cursor: null,
+            })
+          );
+          const repository = yield* ComposioToolkitsRepository;
+
+          const accounts = yield* repository.listConnectedAccounts({});
+
+          expect(accounts.items.map(item => item.status)).toEqual(['QUARANTINED']);
+        }).pipe(Effect.provide(withRepository))
+    );
+
+    it.effect('listActiveTriggers defaults the page counts a response leaves out', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          jsonResponse({ items: [{ id: 'ti_1' }, { id: 'ti_2' }] })
+        );
+        const repository = yield* ComposioToolkitsRepository;
+
+        const triggers = yield* repository.listActiveTriggers({});
+
+        expect(triggers).toMatchObject({
+          total_items: 2,
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: null,
+        });
+        expect(triggers.items.map(item => item.id)).toEqual(['ti_1', 'ti_2']);
+      }).pipe(Effect.provide(withRepository))
+    );
+
+    it.effect('createAuthConfig returns only the allowlisted fields of the response', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          jsonResponse({
+            auth_config: {
+              id: 'ac_new',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: false,
+              credentials: { client_secret: 'secret_credentials' },
+            },
+            toolkit: { slug: 'gmail' },
+          })
+        );
+        const repository = yield* ComposioToolkitsRepository;
+
+        const created = yield* repository.createAuthConfig({ toolkit: { slug: 'gmail' } });
+
+        expect(created).toEqual({
+          auth_config: { id: 'ac_new', auth_scheme: 'OAUTH2', is_composio_managed: false },
+          toolkit: { slug: 'gmail' },
+        });
+      }).pipe(Effect.provide(withRepository))
+    );
+
     it.effect('getToolkitsBySlugs turns a 404 into InvalidToolkitsError naming the slug', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -531,7 +669,7 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withRepository))
     );
 
-    it.effect('getToolkitsBySlugs propagates a 500 as HttpServerError', () =>
+    it.effect('getToolkitsBySlugs propagates a 500 as the client status error', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
           errorResponse(500, errorEnvelope({ message: 'Server error', code: 500 }))
@@ -540,8 +678,10 @@ describe('composio-clients', () => {
 
         const error = yield* repository.getToolkitsBySlugs(['gmail']).pipe(Effect.flip);
 
-        expect(error).toBeInstanceOf(HttpServerError);
-        expect((error as HttpServerError).status).toBe(500);
+        expect(error).toMatchObject({
+          _tag: '@composio/client/InternalServerError',
+          status: 500,
+        });
       }).pipe(Effect.provide(withRepository))
     );
 

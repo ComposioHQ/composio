@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from '@effect/vitest';
 import { Effect } from 'effect';
 import {
   getSessionInfoByUserApiKey,
-  HttpServerError,
   listOrganizations,
   resolveConsumerProject,
 } from 'src/services/composio-clients';
@@ -53,8 +52,7 @@ describe('TestLayer', () => {
         Effect.flip
       );
 
-      expect(error).toBeInstanceOf(HttpServerError);
-      expect((error as HttpServerError).status).toBeUndefined();
+      expect(error).toMatchObject({ _tag: '@composio/client/APIConnectionError' });
     })
   );
 });

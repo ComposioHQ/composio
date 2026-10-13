@@ -6,6 +6,7 @@ import {
   Option,
   Predicate,
   Schema,
+  Stream,
   Array,
   Order,
   String,
@@ -14,13 +15,14 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
-import { Composio as _RawComposioClient, APIError, type RequestOptions } from '@composio/client';
+import { Composio as _RawComposioClient } from '@composio/client';
 import {
   make as makeEffectClient,
   VERSION as clientLibraryVersion,
   type ComposioClientShape,
+  type ComposioError,
+  type RequestOptions,
 } from '@composio/client/effect';
-import { paginate, type CursorPage } from '@composio/client/pagination';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import type { OrgListResponse, ProjectListResponse } from '@composio/client/resources/org';
@@ -121,11 +123,12 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
   readonly cause?: unknown;
 }> {}
 
-export type HttpError = HttpServerError | HttpDecodingError;
+export type HttpError = ComposioError | HttpDecodingError;
 
 /**
- * Every failure a client call can produce: the request itself, decoding a
- * CLI-owned contract, or obtaining a client from the singleton.
+ * Every failure a client call can produce: the request itself, as the client's
+ * own tagged error, decoding a CLI-owned contract, or obtaining a client from
+ * the singleton.
  */
 export type ClientError = HttpError | ComposioClientConfigurationError | NoSuchElementError;
 
@@ -139,52 +142,25 @@ const MAX_PAGE_SIZE = 1000;
 // Maximum concurrent requests per each endpoint
 const MAX_CONCURRENT_REQUESTS_PER_ENDPOINT = 4;
 
-const toHttpServerError = (cause: unknown): HttpServerError => {
-  if (cause instanceof APIError) {
-    const details = cause.details;
-    return new HttpServerError({
-      cause,
-      status: cause.status,
-      requestId: cause.requestId,
-      details: details
-        ? { message: details.message, code: details.code, suggestedFix: details.suggested_fix }
-        : undefined,
-    });
-  }
-  return new HttpServerError({ cause });
-};
+/**
+ * The client validates a response against its own schema unless a call opts
+ * out. A call opts out when the CLI decodes the response with a schema it
+ * owns, when the endpoint is one the CLI reads leniently on purpose, or when
+ * the call is not a read: failing after the server acted would invite a retry
+ * that repeats the side effect.
+ */
+const undecoded = { decode: false } satisfies RequestOptions;
 
 /**
- * Runs one client call. The client parses JSON and rejects on non-2xx, so the
- * only work left is mapping its rejection onto `HttpServerError`.
+ * Runs a paginated listing to exhaustion and returns every item. A page is
+ * requested only once the one before it arrived, so interrupting the listing
+ * sends no further request.
  */
-const request = <A, E>(
-  client: Effect.Effect<_RawComposioClient, E>,
-  call: (client: _RawComposioClient, signal: AbortSignal) => PromiseLike<A>
-): Effect.Effect<A, E | HttpServerError> =>
-  client.pipe(
-    Effect.flatMap(resolved =>
-      Effect.tryPromise({ try: signal => call(resolved, signal), catch: toHttpServerError })
-    )
-  );
-
-/**
- * Runs a paginated client call to exhaustion and returns every item, asking
- * for `MAX_PAGE_SIZE` items per page.
- */
-const requestAll = <Page extends CursorPage<unknown>, E>(
-  client: Effect.Effect<_RawComposioClient, E>,
-  fetchPage: (
-    client: _RawComposioClient,
-    page: { readonly cursor: string | undefined; readonly limit: number },
-    signal: AbortSignal
-  ) => PromiseLike<Page>
-) =>
-  request(client, (resolved, signal) =>
-    paginate<Page>(({ cursor }) =>
-      fetchPage(resolved, { cursor, limit: MAX_PAGE_SIZE }, signal)
-    ).toArray()
-  );
+const collectAll = <A, E, E2>(
+  client: Effect.Effect<ComposioClientShape, E>,
+  list: (client: ComposioClientShape) => Stream.Stream<A, E2>
+): Effect.Effect<Array<A>, E | E2> =>
+  Effect.flatMap(client, resolved => Stream.runCollect(list(resolved)));
 
 /**
  * Decodes a payload against a CLI-owned contract.
@@ -217,18 +193,13 @@ const sortBySlug = <T extends { readonly slug: string }>(
  * that slug; every other failure propagates unchanged.
  */
 const invalidToolkitOn404 = <A>(slug: string, toolkit: Effect.Effect<A, ClientError>) =>
-  Effect.catchTag(
-    toolkit,
-    'services/HttpServerError',
-    (e): Effect.Effect<never, InvalidToolkitsError | HttpServerError> =>
-      e.status === 404
-        ? Effect.fail(
-            new InvalidToolkitsError({
-              invalidToolkits: [slug],
-              availableToolkits: [],
-            })
-          )
-        : Effect.fail(e)
+  Effect.catchTag(toolkit, '@composio/client/NotFoundError', () =>
+    Effect.fail(
+      new InvalidToolkitsError({
+        invalidToolkits: [slug],
+        availableToolkits: [],
+      })
+    )
   );
 
 const validateToolkitVersionsImpl = (
@@ -739,9 +710,8 @@ export const listOrganizations = (params: {
 }): Effect.Effect<OrganizationListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const response = yield* request(clientSingleton.getFor({ userApiKey: params.apiKey }), client =>
-      client.org.list({ limit: params.limit ?? 50 })
-    );
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const response = yield* client.org.list({ limit: params.limit ?? 50 });
     const organizations = response.organizations.map(
       (organization: OrgListResponse.Organization) =>
         ({ id: organization.id, name: organization.name }) satisfies OrganizationSummary
@@ -763,8 +733,10 @@ export const listOrganizationProjects = (params: {
 }): Effect.Effect<OrganizationProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const response = yield* request(clientSingleton.getFor({ userApiKey: params.apiKey }), client =>
-      client.org.project.list({ limit: params.limit ?? 50 }, orgScopedOptions(params.orgId))
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    const response = yield* client.org.project.list(
+      { limit: params.limit ?? 50 },
+      orgScopedOptions(params.orgId)
     );
     const projects = response.data.map(
       (project: OrgProject) =>
@@ -791,11 +763,10 @@ export const listOrgProjects = (params: {
 }): Effect.Effect<OrgProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    return yield* request(clientSingleton.getFor({ userApiKey: params.apiKey }), client =>
-      client.org.project.list(
-        { list_all_org_projects: true, limit: params.limit ?? 50 },
-        orgScopedOptions(params.orgId)
-      )
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    return yield* client.org.project.list(
+      { list_all_org_projects: true, limit: params.limit ?? 50 },
+      orgScopedOptions(params.orgId)
     );
   });
 
@@ -809,14 +780,12 @@ export const getSessionInfo = (params: {
 }): Effect.Effect<SessionInfoResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const info = yield* request(
-      clientSingleton.getFor({
-        userApiKey: params.apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-      }),
-      client => client.auth.session.retrieveInfo()
-    );
+    const client = yield* clientSingleton.getEffectFor({
+      userApiKey: params.apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+    });
+    const info = yield* client.auth.session.retrieveInfo();
     return yield* requireSessionProject(info);
   });
 
@@ -837,9 +806,8 @@ export const getSessionInfoByUserApiKey = (params: {
 }): Effect.Effect<SessionInfoResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const info = yield* request(clientSingleton.getFor({ userApiKey: params.userApiKey }), client =>
-      client.auth.session.retrieveInfo(orgScopedOptions(params.orgId))
-    );
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.userApiKey });
+    const info = yield* client.auth.session.retrieveInfo(orgScopedOptions(params.orgId));
     return yield* requireSessionProject(info);
   });
 
@@ -889,18 +857,15 @@ export const createProjectApiKey = (params: {
 }): Effect.Effect<string, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const payload = yield* request(
-      clientSingleton.getFor({
-        userApiKey: params.apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-      }),
-      client =>
-        client.post<unknown>(`/api/v3/org/project/${params.projectId}/api_keys/create`, {
-          body: { name: params.name },
-          maxRetries: 0,
-        })
-    );
+    const client = yield* clientSingleton.getEffectFor({
+      userApiKey: params.apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+    });
+    const payload = yield* client.post(`/api/v3/org/project/${params.projectId}/api_keys/create`, {
+      body: { name: params.name },
+      maxRetries: 0,
+    });
     const createdApiKey = getApiKeyFromPayload(payload);
 
     if (!createdApiKey) {
@@ -920,11 +885,10 @@ export const resolveConsumerProject = (params: {
 }): Effect.Effect<ConsumerProjectResolveResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    return yield* request(clientSingleton.getFor({ userApiKey: params.apiKey }), client =>
-      client.org.consumer.project.resolve({
-        'x-user-api-key': params.apiKey,
-        'x-org-id': params.orgId,
-      })
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    return yield* client.org.consumer.project.resolve(
+      { 'x-user-api-key': params.apiKey, 'x-org-id': params.orgId },
+      undecoded
     );
   });
 
@@ -949,17 +913,14 @@ export const getLatestToolVersion = (params: {
       ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
       ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
     };
-    const payload = yield* request(
-      clientSingleton.getFor({
-        userApiKey: params.apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-      }),
-      client =>
-        client.get<unknown>(
-          `/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
-          { headers }
-        )
+    const client = yield* clientSingleton.getEffectFor({
+      userApiKey: params.apiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+    });
+    const payload = yield* client.get(
+      `/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
+      { headers }
     );
     return yield* decode(LatestToolVersionResponse)(payload);
   });
@@ -971,13 +932,12 @@ export const getConsumerConnectedToolkits = (params: {
 }): Effect.Effect<ConsumerConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    return yield* request(clientSingleton.getFor({ userApiKey: params.apiKey }), client =>
-      client.org.consumer.listConnectedToolkits({
-        user_id: params.consumerUserId,
-        'x-user-api-key': params.apiKey,
-        'x-org-id': params.orgId,
-      })
-    );
+    const client = yield* clientSingleton.getEffectFor({ userApiKey: params.apiKey });
+    return yield* client.org.consumer.listConnectedToolkits({
+      user_id: params.consumerUserId,
+      'x-user-api-key': params.apiKey,
+      'x-org-id': params.orgId,
+    });
   });
 
 export class DeveloperProjectNotFoundError extends Data.TaggedError(
@@ -1047,7 +1007,7 @@ export const findDeveloperProjectByName = (params: {
  * Auth config, connected account, and trigger instance operations: single-page
  * CRUD with no catalog caching.
  */
-const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientError>) => ({
+const resourceOperations = (client: Effect.Effect<ComposioClientShape, ClientError>) => ({
   /**
    * Lists auth configs with optional filters. Returns a single page of results.
    * @param params - Search/filter parameters
@@ -1058,20 +1018,27 @@ const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientErro
     limit?: number;
     show_disabled?: boolean;
   }) =>
-    request(client, c =>
-      c.authConfigs.list({
-        search: params.search,
-        toolkit_slug: params.toolkit_slug,
-        limit: params.limit,
-        show_disabled: params.show_disabled ?? true,
-      })
-    ).pipe(Effect.flatMap(decode(AuthConfigListResponse))),
+    client.pipe(
+      Effect.flatMap(c =>
+        c.authConfigs.list(
+          {
+            search: params.search,
+            toolkit_slug: params.toolkit_slug,
+            limit: params.limit,
+            show_disabled: params.show_disabled ?? true,
+          },
+          undecoded
+        )
+      ),
+      Effect.flatMap(decode(AuthConfigListResponse))
+    ),
   /**
    * Retrieves detailed info about a single auth config by its nanoid.
    * @param nanoid - Auth config ID
    */
   getAuthConfig: (nanoid: string) =>
-    request(client, c => c.authConfigs.retrieve(nanoid)).pipe(
+    client.pipe(
+      Effect.flatMap(c => c.authConfigs.retrieve(nanoid, undecoded)),
       Effect.flatMap(decode(AuthConfigItem))
     ),
   /**
@@ -1079,14 +1046,16 @@ const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientErro
    * @param params - Create parameters (discriminated union: use_composio_managed_auth | use_custom_auth)
    */
   createAuthConfig: (params: AuthConfigCreateParams) =>
-    request(client, c => c.authConfigs.create(params)).pipe(
+    client.pipe(
+      Effect.flatMap(c => c.authConfigs.create(params, undecoded)),
       Effect.flatMap(decode(AuthConfigCreateResponse))
     ),
   /**
    * Soft-deletes an auth config by its nanoid.
    * @param nanoid - Auth config ID
    */
-  deleteAuthConfig: (nanoid: string) => request(client, c => c.authConfigs.delete(nanoid)),
+  deleteAuthConfig: (nanoid: string) =>
+    Effect.flatMap(client, c => c.authConfigs.delete(nanoid, undefined, undecoded)),
   /**
    * List connected accounts with optional filters. Returns a single page of results.
    * @param params - Search/filter parameters
@@ -1097,20 +1066,27 @@ const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientErro
     statuses?: ConnectedAccountListParams['statuses'];
     limit?: number;
   }) =>
-    request(client, c =>
-      c.connectedAccounts.list({
-        toolkit_slugs: params.toolkit_slugs,
-        user_ids: params.user_ids,
-        statuses: params.statuses,
-        limit: params.limit,
-      })
-    ).pipe(Effect.flatMap(decode(ConnectedAccountListResponse))),
+    client.pipe(
+      Effect.flatMap(c =>
+        c.connectedAccounts.list(
+          {
+            toolkit_slugs: params.toolkit_slugs,
+            user_ids: params.user_ids,
+            statuses: params.statuses,
+            limit: params.limit,
+          },
+          undecoded
+        )
+      ),
+      Effect.flatMap(decode(ConnectedAccountListResponse))
+    ),
   /**
    * Retrieves detailed info about a single connected account by its nanoid.
    * @param nanoid - Connected account ID (e.g. "con_1a2b3c4d5e6f")
    */
   getConnectedAccount: (nanoid: string) =>
-    request(client, c => c.connectedAccounts.retrieve(nanoid)).pipe(
+    client.pipe(
+      Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid, undecoded)),
       Effect.flatMap(decode(ConnectedAccountItem))
     ),
   /**
@@ -1118,29 +1094,33 @@ const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientErro
    * @param nanoid - Connected account ID
    */
   deleteConnectedAccount: (nanoid: string) =>
-    request(client, c => c.connectedAccounts.delete(nanoid)),
+    Effect.flatMap(client, c => c.connectedAccounts.delete(nanoid, undefined, undecoded)),
   /**
    * Creates a new authentication link session for connecting an external account.
    * @param params - auth_config_id and user_id
    */
   createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
-    request(client, c => c.link.create(params)),
+    Effect.flatMap(client, c => c.link.create(params, undecoded)),
   /**
    * Lists active trigger instances with optional filters.
    * Returns a single page of results.
    */
   listActiveTriggers: (params: TriggerInstancesListActiveParams) =>
-    request(client, c =>
-      c.triggerInstances.listActive({
-        user_ids: params.user_ids,
-        connected_account_ids: params.connected_account_ids,
-        auth_config_ids: params.auth_config_ids,
-        trigger_ids: params.trigger_ids,
-        trigger_names: params.trigger_names,
-        show_disabled: params.show_disabled,
-        limit: params.limit,
-      })
-    ).pipe(
+    client.pipe(
+      Effect.flatMap(c =>
+        c.triggerInstances.listActive(
+          {
+            user_ids: params.user_ids,
+            connected_account_ids: params.connected_account_ids,
+            auth_config_ids: params.auth_config_ids,
+            trigger_ids: params.trigger_ids,
+            trigger_names: params.trigger_names,
+            show_disabled: params.show_disabled,
+            limit: params.limit,
+          },
+          undecoded
+        )
+      ),
       Effect.flatMap(response =>
         decode(TriggerInstanceItems)(response.items).pipe(
           // `triggers status` prints `total_items` directly, so a response that
@@ -1157,26 +1137,33 @@ const resourceOperations = (client: Effect.Effect<_RawComposioClient, ClientErro
       )
     ),
   createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
-    request(client, c => c.triggerInstances.upsert(triggerSlug, params)),
+    Effect.flatMap(client, c => c.triggerInstances.upsert(triggerSlug, params, undecoded)),
   enableTrigger: (triggerId: string) =>
-    request(client, c => c.triggerInstances.manage.update(triggerId, { status: 'enable' })),
+    Effect.flatMap(client, c =>
+      c.triggerInstances.manage.update(triggerId, { status: 'enable' }, undecoded)
+    ),
   disableTrigger: (triggerId: string) =>
-    request(client, c => c.triggerInstances.manage.update(triggerId, { status: 'disable' })),
+    Effect.flatMap(client, c =>
+      c.triggerInstances.manage.update(triggerId, { status: 'disable' }, undecoded)
+    ),
   deleteTrigger: (triggerId: string) =>
-    request(client, c => c.triggerInstances.manage.delete(triggerId)),
+    Effect.flatMap(client, c => c.triggerInstances.manage.delete(triggerId, undecoded)),
 });
 
 const makeComposioToolkitsRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
-  const client = clientSingleton.get();
+  const client = clientSingleton.getEffect();
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
-    requestAll(scope ? clientSingleton.getFor(scope) : client, (c, { cursor, limit }, signal) =>
-      c.toolkits.list({ cursor, limit, managed_by: managedBy }, { signal })
+    collectAll(scope ? clientSingleton.getEffectFor(scope) : client, c =>
+      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, undecoded)
     ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
   const getToolkitDetailed = (slug: string) =>
-    request(client, c => c.toolkits.retrieve(slug)).pipe(Effect.flatMap(decode(ToolkitDetailed)));
+    client.pipe(
+      Effect.flatMap(c => c.toolkits.retrieve(slug, undefined, undecoded)),
+      Effect.flatMap(decode(ToolkitDetailed))
+    );
 
   // The retrieve endpoint omits `auth_schemes`; fill it so the result
   // satisfies the catalog `Toolkit` contract.
@@ -1211,9 +1198,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ).pipe(Effect.map(sortBySlug));
 
   const listTools = (query: { toolkit_slug?: string; toolkit_versions: string }) =>
-    requestAll(client, (c, { cursor, limit }, signal) =>
-      c.tools.list({ ...query, cursor, limit }, { signal })
-    ).pipe(Effect.flatMap(decode(Tools)));
+    collectAll(client, c => c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE }, undecoded)).pipe(
+      Effect.flatMap(decode(Tools))
+    );
 
   return {
     getToolkits,
@@ -1224,7 +1211,10 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      * Retrieve a list of all available tool enumeration values (tool slugs) for the project.
      */
     getToolsAsEnums: () =>
-      request(client, c => c.tools.retrieveEnum()).pipe(Effect.flatMap(decode(ToolsAsEnums))),
+      client.pipe(
+        Effect.flatMap(c => c.tools.retrieveEnum(undecoded)),
+        Effect.flatMap(decode(ToolsAsEnums))
+      ),
     /**
      * Fetches tools with optional toolkit filtering, always at the latest
      * toolkit version. For per-toolkit versions use `getToolsByVersionSpecs`.
@@ -1251,7 +1241,8 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      * Retrieves a list of all available trigger type enum values that can be used across the API.
      */
     getTriggerTypesAsEnums: () =>
-      request(client, c => c.triggersTypes.retrieveEnum()).pipe(
+      client.pipe(
+        Effect.flatMap(c => c.triggersTypes.retrieveEnum(undecoded)),
         Effect.flatMap(decode(TriggerTypesAsEnums))
       ),
     /**
@@ -1259,7 +1250,8 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
      */
     getTriggerTypeDetailed: (slug: string) =>
-      request(client, c => c.triggersTypes.retrieve(slug)).pipe(
+      client.pipe(
+        Effect.flatMap(c => c.triggersTypes.retrieve(slug, undefined, undecoded)),
         Effect.flatMap(decode(TriggerType))
       ),
     /**
@@ -1268,14 +1260,10 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      * @param toolkitSlugs - Optional array of toolkit slugs to filter by
      */
     getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
-      requestAll(client, (c, { cursor, limit }, signal) =>
-        c.triggersTypes.list(
-          {
-            cursor,
-            limit,
-            toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
-          },
-          { signal }
+      collectAll(client, c =>
+        c.triggersTypes.listStream(
+          { limit: MAX_PAGE_SIZE, toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined },
+          undecoded
         )
       ).pipe(Effect.flatMap(decode(TriggerTypes)), Effect.map(sortBySlug)),
     /**
@@ -1348,13 +1336,16 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
       limit?: number;
       cursor?: string;
     }): Effect.Effect<ToolkitSearchResult, ClientError> =>
-      request(client, c =>
-        c.toolkits.list({
-          search: params.search,
-          category: params.category,
-          limit: params.limit,
-          cursor: params.cursor,
-        })
+      Effect.flatMap(client, c =>
+        c.toolkits.list(
+          {
+            search: params.search,
+            category: params.category,
+            limit: params.limit,
+            cursor: params.cursor,
+          },
+          undecoded
+        )
       ).pipe(
         Effect.flatMap(response =>
           decode(Toolkits)(response.items).pipe(
@@ -1386,22 +1377,25 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
       limit?: number;
       cursor?: string;
     }) =>
-      request(client, c =>
-        c.tools.list({
-          search: params.search,
-          toolkit_slug: params.toolkit_slug,
-          tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
-          limit: params.limit,
-          cursor: params.cursor,
-          toolkit_versions: 'latest',
-        })
+      Effect.flatMap(client, c =>
+        c.tools.list(
+          {
+            search: params.search,
+            toolkit_slug: params.toolkit_slug,
+            tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
+            limit: params.limit,
+            cursor: params.cursor,
+            toolkit_versions: 'latest',
+          },
+          undecoded
+        )
       ),
     /**
      * Retrieves detailed info about a single tool by slug.
      * @param slug - Tool slug (e.g. "GMAIL_SEND_EMAIL")
      */
     getToolDetailed: (slug: string) =>
-      request(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' })),
+      Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' })),
     ...resourceOperations(client),
   };
 });
@@ -1420,7 +1414,7 @@ export class ComposioToolkitsRepository extends Context.Service<
 
 const makeComposioSessionRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
-  const client = clientSingleton.get();
+  const client = clientSingleton.getEffect();
 
   return {
     /**
@@ -1428,19 +1422,21 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      * @param params.scope - 'user' for login, 'project' for init (future)
      */
     createSession: (params?: { scope?: 'user' | 'project' }) =>
-      request(client, c => c.cli.createSession({ scope: params?.scope ?? 'user' })).pipe(
+      client.pipe(
+        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' }, undecoded)),
         Effect.flatMap(decode(Session))
       ),
     /**
      * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
      */
     getSession: (session: { id: string }) =>
-      request(client, c => c.cli.getSession({ id: session.id })).pipe(
+      client.pipe(
+        Effect.flatMap(c => c.cli.getSession({ id: session.id }, undecoded)),
         Effect.flatMap(decode(RetrievedSession))
       ),
-    getRealtimeCredentials: () => request(client, c => c.cli.realtime.credentials()),
+    getRealtimeCredentials: () => Effect.flatMap(client, c => c.cli.realtime.credentials()),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-      request(client, c => c.cli.realtime.auth(params)),
+      Effect.flatMap(client, c => c.cli.realtime.auth(params, undecoded)),
   };
 });
 

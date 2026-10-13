@@ -49,7 +49,6 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
-  HttpServerError,
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
   type InvalidVersionDetail,
@@ -101,6 +100,24 @@ import {
 } from 'src/services/setup-skill-installer';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
+
+/**
+ * A 404 as the Effect client reports one, with the API error envelope when the
+ * scenario has one.
+ */
+const notFoundError = (
+  message: string,
+  envelope?: { readonly message: string; readonly suggested_fix: string }
+) =>
+  new EffectNotFoundError({
+    message,
+    method: 'GET',
+    url: 'https://mock.invalid',
+    status: 404,
+    requestId: undefined,
+    details: envelope ? { ...envelope, code: 404, slug: 'Not_Found', status: 404 } : undefined,
+    body: envelope ? { error: envelope } : undefined,
+  });
 
 /**
  * The credentials and scope one mock-client request carries: the parameters
@@ -474,9 +491,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
           );
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Trigger type "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Trigger type "${slug}" not found`));
           }
           return Effect.succeed(found);
         },
@@ -639,9 +654,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         getToolDetailed: (slug: string) => {
           const found = toolkitsData.tools.find(t => t.slug.toUpperCase() === slug.toUpperCase());
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Tool "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Tool "${slug}" not found`));
           }
           return Effect.succeed(toClientTool(found));
         },
@@ -650,9 +663,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             t => t.slug.toLowerCase() === slug.toLowerCase()
           );
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Toolkit "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Toolkit "${slug}" not found`));
           }
           return Effect.succeed(found);
         },
@@ -690,14 +701,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Auth config "${nanoid}" not found`, {
+                message: `Auth config "${nanoid}" not found.`,
+                suggested_fix: 'Check the auth config ID and try again.',
               })
             );
           }
@@ -716,14 +722,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Auth config "${nanoid}" not found`, {
+                message: `Auth config "${nanoid}" not found.`,
+                suggested_fix: 'Check the auth config ID and try again.',
               })
             );
           }
@@ -766,14 +767,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Connected account "${nanoid}" not found`, {
+                message: `Connected account "${nanoid}" not found.`,
+                suggested_fix: 'Check the connected account ID and try again.',
               })
             );
           }
@@ -783,14 +779,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Connected account "${nanoid}" not found`, {
+                message: `Connected account "${nanoid}" not found.`,
+                suggested_fix: 'Check the connected account ID and try again.',
               })
             );
           }
@@ -1379,7 +1370,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           ...request,
           message: cause.message,
           reason: 'TransportError',
-          description: undefined,
+          description: cause.message,
         });
       }
       return cause;

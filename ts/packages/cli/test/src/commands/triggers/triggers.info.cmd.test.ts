@@ -124,6 +124,13 @@ describe('CLI: composio dev triggers info', () => {
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
+          // Once plainly for a captured stderr, once through the decorated log.
+          expect(lines).toEqual([
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+          ]);
           expect(process.exitCode).toBe(1);
         })
       );

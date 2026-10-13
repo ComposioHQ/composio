@@ -1,7 +1,7 @@
 import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { catchClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 
@@ -33,14 +33,11 @@ export const triggersCmd$Enable = Command.make('enable', { id }, ({ id }) =>
       .withSpinner(`Enabling trigger "${idValue}"...`, repo.enableTrigger(idValue))
       .pipe(
         Effect.as(true),
-        Effect.catchTag(
-          'services/HttpServerError',
-          handleHttpServerError(ui, {
-            fallbackMessage: `Failed to enable trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio dev triggers status --show-disabled',
-            fallbackValue: false,
-          })
-        )
+        catchClientApiError(ui, {
+          fallbackMessage: `Failed to enable trigger "${idValue}".`,
+          hint: 'Browse available triggers:\n> composio dev triggers status --show-disabled',
+          fallbackValue: false,
+        })
       );
 
     if (!enabled) return;

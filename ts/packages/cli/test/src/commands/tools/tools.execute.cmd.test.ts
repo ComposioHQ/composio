@@ -5,6 +5,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
 import { APIError } from '@composio/client';
+import { APIConnectionError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -124,7 +125,15 @@ describe('CLI: composio execute', () => {
 
   beforeEach(() => {
     vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
-      Effect.fail(new composioClients.HttpServerError({}))
+      Effect.fail(
+        new APIConnectionError({
+          message: 'Connection error.',
+          method: 'GET',
+          url: 'https://backend.composio.dev/api/v3/tools/{tool_slug}/get_latest_version',
+          reason: 'TransportError',
+          description: undefined,
+        })
+      )
     );
     vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
       Effect.succeed(Option.some(['gmail', 'github']))
