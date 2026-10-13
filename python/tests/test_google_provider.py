@@ -77,6 +77,18 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
                     "type": ["string", "null"],
                     "anyOf": [{"type": "string"}, {"type": "boolean"}],
                 },
+                "shape": {
+                    "type": "object",
+                    "properties": {"kind": {"type": "string"}},
+                    "required": ["kind"],
+                    "oneOf": [
+                        {"properties": {"r": {"type": "number"}}, "required": ["r"]},
+                        {
+                            "properties": {"side": {"type": "number"}},
+                            "required": ["side"],
+                        },
+                    ],
+                },
                 "direction": {"type": "null"},
                 "label": {"type": ["string", "null"]},
                 "value": {"type": ["string", "integer"]},
@@ -124,6 +136,12 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
         ]
     }
     assert properties["flag"] == {"type": "STRING", "nullable": True}
+    shapes = properties["shape"]["any_of"]
+    assert [sorted(s["properties"]) for s in shapes] == [
+        ["kind", "r"],
+        ["kind", "side"],
+    ]
+    assert [s["required"] for s in shapes] == [["kind", "r"], ["kind", "side"]]
     assert properties["direction"] == {"nullable": True}
     assert properties["label"] == {"type": "STRING", "nullable": True}
     assert properties["value"]["any_of"] == [{"type": "STRING"}, {"type": "INTEGER"}]
