@@ -86,7 +86,7 @@
     "lint-staged": "^17.6.0",
     "oxlint": "1.87.0",
     "oxlint-plugin-eslint": "1.87.0",
-    "prettier": "^3.9.8",
+    "prettier": "^3.9.10",
     "publint": "catalog:",
     "semver": "^7.8.5",
     "tsdown": "catalog:",
