@@ -1157,6 +1157,13 @@ def apply_object_policy(
 ) -> t.Type[BaseModel]:
     """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
     policy = _compile_object_policy(schema, root_schema)
+    if getattr(base_model, "__pydantic_root_model__", False):
+        # RootModel rejects `extra` config and cannot be combined with
+        # `_DynamicObjectModel`. Its root annotation already preserves the
+        # literal object shape; `_with_exact_validation` enforces the source
+        # schema's dynamic-key policy around it.
+        return base_model
+
     name = model_name or base_model.__name__
     json_schema_extra: t.Dict[str, t.Any] = {}
     if "patternProperties" in schema:
