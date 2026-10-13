@@ -162,6 +162,7 @@ describe('CLI: composio proxy', () => {
             connected_accounts: { gmail: 'con_gmail_work' },
             manage_connections: { enable: false },
             toolkits: { enable: ['gmail'] },
+            instant: { return_instant_charge: true },
           });
           expect(proxyParams).toEqual({
             sessionId: 'trs_proxy_test',

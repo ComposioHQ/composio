@@ -188,6 +188,47 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async (_sessionId, params) => ({
+          result_type: 'completed' as const,
+          data: { tool_slug: params.tool_slug },
+          error: null,
+          log_id: 'log_instant_charge',
+          instant_charge: {
+            amount: '0.005',
+            currency: 'USD' as const,
+            charged_by: 'composio' as const,
+          },
+        }),
+      },
+    })
+  )('[Given] an instant charge [Then] execute reports it in the success line and output', it => {
+    it.effect('prints the charge before the log id', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'EXA_SEARCH', '--skip-connection-check', '-d', '{"query":"a"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const text = lines.join('\n');
+        const output = parseLastJson(lines) as ReturnType<typeof parseLastJson> & {
+          readonly instantCharge?: Record<string, string>;
+        };
+
+        expect(text).toContain(
+          'Execution successful (instant charge: 0.005 USD, logId: log_instant_charge)'
+        );
+        expect(output.instantCharge).toEqual({
+          amount: '0.005',
+          currency: 'USD',
+          chargedBy: 'composio',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
     })
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.effect('executes via Tool Router with defaults', () =>
@@ -209,6 +250,7 @@ describe('CLI: composio execute', () => {
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
         expect(output.logId).toBe('log_test');
+        expect(output).not.toHaveProperty('instantCharge');
       })
     );
   });
@@ -908,6 +950,9 @@ describe('CLI: composio execute', () => {
           });
           expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
             posthog: 'con_posthog_active',
+          });
+          expect(recordedSessionCreateParams[0]?.instant).toEqual({
+            return_instant_charge: true,
           });
         })
       );
