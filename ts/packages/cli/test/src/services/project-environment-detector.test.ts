@@ -2,7 +2,8 @@ import path from 'node:path';
 import * as tempy from 'tempy';
 import { describe, expect, layer, assert } from '@effect/vitest';
 import { beforeAll, afterAll } from 'vitest';
-import { Effect, Layer, Result } from 'effect';
+import { ConfigProvider, Effect, Layer, Result } from 'effect';
+import { liveEnvConfigProvider } from 'test/__utils__';
 import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
@@ -10,7 +11,11 @@ import {
   ProjectEnvironmentDetectorError,
 } from 'src/services/project-environment-detector';
 
-const testLayer = Layer.provideMerge(ProjectEnvironmentDetector.Default, BunFileSystem.layer);
+// The package-manager cases below set `npm_config_user_agent` on the live process environment.
+const testLayer = Layer.provideMerge(
+  ProjectEnvironmentDetector.Default,
+  Layer.mergeAll(BunFileSystem.layer, ConfigProvider.layer(liveEnvConfigProvider))
+);
 
 const writeFile = (fs: FileSystem.FileSystem, filePath: string, content: string) =>
   Effect.gen(function* () {

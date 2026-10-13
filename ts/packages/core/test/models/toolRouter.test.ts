@@ -2874,6 +2874,7 @@ describe('ToolRouter', () => {
     const sessionId = 'session_123';
 
     const mockExecuteResponse = {
+      result_type: 'completed',
       data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
       error: null,
       log_id: 'log_abc',
@@ -4578,6 +4579,7 @@ describe('ToolRouter', () => {
           },
         });
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: {},
           error: null,
           log_id: 'log_1',

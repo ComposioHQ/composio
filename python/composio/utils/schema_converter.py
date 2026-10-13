@@ -10,6 +10,8 @@ We handle those by pre-filtering them before passing to the library.
 """
 
 import decimal
+import functools
+import importlib
 import re
 import types
 import typing as t
@@ -435,7 +437,9 @@ class _ObjectPolicy(t.NamedTuple):
     """
 
     declared: t.FrozenSet[str]
-    patterns: t.Tuple[t.Tuple[t.Pattern[str], _DynamicKeyValidator], ...]
+    # Key matchers come from `_linear_pattern_matcher`, never Python `re`: keys
+    # are attacker-influenced and the schema's patterns are untrusted.
+    patterns: t.Tuple[t.Tuple[t.Callable[[str], bool], _DynamicKeyValidator], ...]
     additional: t.Optional[_DynamicKeyValidator]
     rejects_unmatched: bool
 
@@ -813,13 +817,32 @@ def _dynamic_key_validator(
     )
 
 
-def _compile_pattern_property(pattern: str) -> t.Pattern[str]:
+def _compile_pattern_property(pattern: str) -> t.Callable[[str], bool]:
+    """Compile a `patternProperties` key on the linear-time engine only.
+
+    A key pattern decides which subschema validates a value, so it cannot be
+    dropped the way an unenforceable `pattern` constraint is. Patterns that
+    engine rejects (look-around, backreferences) fail conversion instead of
+    running on Python's backtracking `re` against attacker-chosen keys.
+    """
+    matcher = _linear_pattern_matcher(pattern)
+    if matcher is not None:
+        return matcher
     try:
-        return re.compile(pattern)
-    except re.error as exc:
+        re.compile(pattern)
+    except (re.error, OverflowError, RecursionError, TypeError) as exc:
         raise ValueError(
             f"Invalid patternProperties regular expression: {pattern!r}"
         ) from exc
+    raise ValueError(_unsupported_pattern_property_message(pattern))
+
+
+def _unsupported_pattern_property_message(pattern: t.Any) -> str:
+    return (
+        f"Unsupported patternProperties regular expression: {pattern!r}; "
+        "only patterns the linear-time regex engine accepts are supported "
+        "(look-around and backreferences can backtrack catastrophically)"
+    )
 
 
 def _validate_object_policy_schema(
@@ -827,9 +850,11 @@ def _validate_object_policy_schema(
     root_schema: t.Dict[str, t.Any],
 ) -> None:
     """Validate a dynamic object policy without materializing defaults."""
-    validator_type = jsonschema_validators.validator_for(
-        root_schema,
-        default=jsonschema_validators.Draft7Validator,
+    validator_type = _with_safe_regex_keywords(
+        jsonschema_validators.validator_for(
+            root_schema,
+            default=jsonschema_validators.Draft7Validator,
+        )
     )
     root_validator = validator_type(root_schema)
 
@@ -853,9 +878,11 @@ def _compile_object_policy(
     document_root = root_schema if root_schema is not None else schema
     declared = frozenset(schema.get("properties") or {})
     additional = schema.get("additionalProperties", _MISSING)
-    validator_type = jsonschema_validators.validator_for(
-        document_root,
-        default=jsonschema_validators.Draft7Validator,
+    validator_type = _with_safe_regex_keywords(
+        jsonschema_validators.validator_for(
+            document_root,
+            default=jsonschema_validators.Draft7Validator,
+        )
     )
     root_validator = validator_type(document_root)
 
@@ -888,18 +915,32 @@ def _compile_object_policy(
 def _iter_reachable_schemas(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
-    visited: t.Optional[t.Set[int]] = None,
+    visited: t.Optional[t.Set[t.Tuple[int, t.Any]]] = None,
+    validator_class: t.Any = None,
 ) -> t.Iterator[t.Dict[str, t.Any]]:
-    """Yield schema nodes reached through Draft 7 schema-valued keywords."""
+    """Yield schema nodes and local targets under their effective dialect."""
     if visited is None:
         visited = set()
+    if validator_class is None:
+        validator_class = jsonschema_validators.validator_for(
+            root_schema, default=jsonschema_validators.Draft7Validator
+        )
     if isinstance(schema, list):
         for item in schema:
-            yield from _iter_reachable_schemas(item, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                item, root_schema, visited, validator_class
+            )
         return
-    if not isinstance(schema, dict) or id(schema) in visited:
+    if not isinstance(schema, dict):
         return
-    visited.add(id(schema))
+    if "$schema" in schema:
+        validator_class = jsonschema_validators.validator_for(
+            schema, default=validator_class
+        )
+    visit_key = (id(schema), validator_class)
+    if visit_key in visited:
+        return
+    visited.add(visit_key)
     yield schema
 
     reference = schema.get("$ref")
@@ -912,33 +953,52 @@ def _iter_reachable_schemas(
             # validated.
             resolved = None
         if isinstance(resolved, (dict, list)):
-            yield from _iter_reachable_schemas(resolved, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                resolved, root_schema, visited, validator_class
+            )
 
-    for keyword in ("properties", "patternProperties"):
+    for keyword in ("properties", "patternProperties", "dependentSchemas"):
+        if keyword == "dependentSchemas" and keyword not in validator_class.VALIDATORS:
+            continue
         values = schema.get(keyword)
         if isinstance(values, dict):
             for child in values.values():
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
-    for keyword in _SCHEMA_VALUED_KEYWORDS:
+    value_keywords = _SCHEMA_VALUED_KEYWORDS | (
+        {"unevaluatedItems", "unevaluatedProperties"}
+        & validator_class.VALIDATORS.keys()
+    )
+    for keyword in value_keywords:
         child = schema.get(keyword)
         if isinstance(child, (dict, list)):
-            yield from _iter_reachable_schemas(child, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                child, root_schema, visited, validator_class
+            )
 
-    for keyword in _SCHEMA_LIST_KEYWORDS:
+    list_keywords = _SCHEMA_LIST_KEYWORDS | (
+        {"prefixItems"} & validator_class.VALIDATORS.keys()
+    )
+    for keyword in list_keywords:
         children = schema.get(keyword)
         if isinstance(children, list):
-            yield from _iter_reachable_schemas(children, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                children, root_schema, visited, validator_class
+            )
 
     items = schema.get("items")
     if isinstance(items, (dict, list)):
-        yield from _iter_reachable_schemas(items, root_schema, visited)
+        yield from _iter_reachable_schemas(items, root_schema, visited, validator_class)
 
     dependencies = schema.get("dependencies")
     if isinstance(dependencies, dict):
         for child in dependencies.values():
             if isinstance(child, (dict, bool)):
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
 
 def _has_dynamic_object_policy(schema: t.Dict[str, t.Any]) -> bool:
@@ -1040,8 +1100,8 @@ class _DynamicObjectModel(BaseModel):
         unrecognized = []
         for key, item in value.items():
             matched = False
-            for regex, validator in policy.patterns:
-                if regex.search(key):
+            for matches_key, validator in policy.patterns:
+                if matches_key(key):
                     matched = True
                     validator.validate(item)
 
@@ -1074,8 +1134,8 @@ class _DynamicObjectModel(BaseModel):
 
         for key, value in list(extra.items()):
             matched = False
-            for regex, validator in policy.patterns:
-                if regex.search(key):
+            for matches_key, validator in policy.patterns:
+                if matches_key(key):
                     matched = True
                     extra[key] = validator.materialize(extra[key])
 
@@ -1347,17 +1407,6 @@ def _multiple_of_validator(multiple: t.Any) -> t.Callable[[t.Any], t.Any]:
     return validate
 
 
-def _compile_pattern(pattern: str) -> t.Optional[t.Pattern[str]]:
-    try:
-        return re.compile(pattern)
-    except re.error:
-        logger.warning(
-            "Ignoring JSON Schema pattern %r: not a valid Python regular expression",
-            pattern,
-        )
-        return None
-
-
 def _with_string_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t.Any:
     field_constraints: t.Dict[str, t.Any] = {}
     if "minLength" in schema:
@@ -1372,9 +1421,10 @@ def _with_string_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t
 
 
 def _with_pattern_constraint(annotation: t.Any, pattern: str) -> t.Any:
-    """Prefer pydantic's native pattern; fall back to Python `re` when the Rust
-    regex crate rejects an ECMA construct such as look-around (legal in
-    Draft 7, whose regex dialect is ECMA-262)."""
+    """Prefer pydantic's native pattern; otherwise use the guarded matcher,
+    which covers ECMA constructs such as look-around (legal in Draft 7, whose
+    regex dialect is ECMA-262) only when they cannot backtrack catastrophically.
+    """
     candidate = t.Annotated[annotation, Field(pattern=pattern)]
     try:
         TypeAdapter(candidate)
@@ -1382,12 +1432,12 @@ def _with_pattern_constraint(annotation: t.Any, pattern: str) -> t.Any:
     except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
         pass
 
-    compiled = _compile_pattern(pattern)
-    if compiled is None:
+    matcher = _string_pattern_matcher(pattern)
+    if matcher is None:
         return annotation
 
     def validate(value: t.Any) -> t.Any:
-        if isinstance(value, str) and compiled.search(value) is None:
+        if isinstance(value, str) and not matcher(value):
             raise ValueError(f"string does not match pattern {pattern!r}")
         return value
 
@@ -1453,8 +1503,8 @@ def _typeless_constraint_validator(
     if not _SCALAR_CONSTRAINT_KEYWORDS.intersection(schema):
         return None
 
-    compiled_pattern = (
-        _compile_pattern(schema["pattern"]) if "pattern" in schema else None
+    pattern_matcher = (
+        _string_pattern_matcher(schema["pattern"]) if "pattern" in schema else None
     )
 
     def validate(value: t.Any) -> t.Any:
@@ -1467,7 +1517,7 @@ def _typeless_constraint_validator(
                 raise ValueError(
                     f"string must contain at most {schema['maxLength']} characters"
                 )
-            if compiled_pattern is not None and compiled_pattern.search(value) is None:
+            if pattern_matcher is not None and not pattern_matcher(value):
                 raise ValueError(f"string does not match pattern {schema['pattern']!r}")
         if _is_numeric(value):
             _check_numeric_keywords(schema, value)
@@ -1805,36 +1855,247 @@ def _exact_validation_multiple_of(
         )
 
 
-_PATTERN_MATCHER_CACHE: t.Dict[str, t.Optional[t.Callable[[str], bool]]] = {}
+# Schema-supplied regular expressions.
+#
+# Tool schemas are third-party input, and so are the strings matched against
+# their patterns: LLM tool arguments, including object keys. Python's `re`
+# backtracks, so a schema pattern such as `^(a+)+$` can freeze a worker on a
+# short argument. Every schema regex is evaluated through one of two helpers:
+#
+# - `_linear_pattern_matcher`: pydantic-core's Rust regex engine, which runs in
+#   time linear in the input. `patternProperties` keys use only this, because a
+#   key pattern decides routing and cannot be dropped.
+# - `_string_pattern_matcher`: the same engine, plus a guarded Python `re`
+#   fallback for the ECMA constructs the Rust engine rejects (look-around,
+#   backreferences). The fallback runs only when `_fallback_pattern_is_safe`
+#   proves the pattern cannot backtrack catastrophically, and only on input of
+#   at most `_BACKTRACKING_FALLBACK_MAX_INPUT` characters. Anything else is not
+#   enforced. Widening is safe: a hostile schema could omit the pattern.
+#
+# The static check matches the TypeScript SDK's fallback check.
+
+_PATTERN_CACHE_SIZE = 1024
+
+# Longer input is treated as matching on the `re` fallback. This bounds the
+# quadratic scan over start positions that unanchored search performs.
+_BACKTRACKING_FALLBACK_MAX_INPUT = 1000
+
+# A quantifier is "large" when it is unbounded or spans more than this many
+# repetitions (`m - n` in `{n,m}`).
+_LARGE_QUANTIFIER_SPAN = 16
+
+# Polynomial degree budget: one implicit factor for unanchored search, plus
+# the large quantifiers outside look-around, plus the most in one look-around.
+_MAX_FALLBACK_DEGREE = 2
+
+# Budget for the product of small quantifier spans and alternation widths.
+_MAX_FALLBACK_CHOICES = 64
+
+# Absolute explicit repeat bounds also limit zero-width assertion work.
+_MAX_FALLBACK_REPEAT_COUNT = 64
 
 
-def _pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
-    """Match `pattern` with pydantic's linear-time Rust regex when it can
-    compile it, falling back to Python `re` only for ECMA-only constructs."""
-    if pattern in _PATTERN_MATCHER_CACHE:
-        return _PATTERN_MATCHER_CACHE[pattern]
-    matcher: t.Optional[t.Callable[[str], bool]] = None
-    if _pattern_supported_by_pydantic(pattern):
+@functools.lru_cache(maxsize=_PATTERN_CACHE_SIZE)
+def _linear_pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
+    """Unanchored (search) matcher on pydantic's linear-time Rust regex, or
+    None when that engine cannot compile `pattern`."""
+    try:
         adapter = TypeAdapter(t.Annotated[str, Field(pattern=pattern)])
+    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
+        return None
 
-        def match_with_pydantic(value: str) -> bool:
-            try:
-                adapter.validate_python(value, strict=True)
-            except ValidationError:
-                return False
+    def match_with_pydantic(value: str) -> bool:
+        try:
+            adapter.validate_python(value, strict=True)
+        except ValidationError:
+            return False
+        return True
+
+    return match_with_pydantic
+
+
+def _pattern_supported_by_pydantic(pattern: str) -> bool:
+    return _linear_pattern_matcher(pattern) is not None
+
+
+def _load_regex_parser() -> t.Tuple[t.Any, t.Any]:
+    try:  # Python 3.11+
+        return (
+            importlib.import_module("re._parser"),
+            importlib.import_module("re._constants"),
+        )
+    except ImportError:  # Python 3.10; deprecated aliases from 3.11 on
+        return (
+            importlib.import_module("sre_parse"),
+            importlib.import_module("sre_constants"),
+        )
+
+
+_REGEX_PARSER, _REGEX_CONSTANTS = _load_regex_parser()
+_REGEX_REPEATS = frozenset(
+    op
+    for op in (
+        _REGEX_CONSTANTS.MAX_REPEAT,
+        _REGEX_CONSTANTS.MIN_REPEAT,
+        getattr(_REGEX_CONSTANTS, "POSSESSIVE_REPEAT", None),
+    )
+    if op is not None
+)
+_REGEX_LOOKAROUNDS = frozenset({_REGEX_CONSTANTS.ASSERT, _REGEX_CONSTANTS.ASSERT_NOT})
+_REGEX_ATOMS = frozenset(
+    {
+        _REGEX_CONSTANTS.ANY,
+        _REGEX_CONSTANTS.AT,
+        _REGEX_CONSTANTS.CATEGORY,
+        _REGEX_CONSTANTS.IN,
+        _REGEX_CONSTANTS.LITERAL,
+        _REGEX_CONSTANTS.NOT_LITERAL,
+    }
+)
+_REGEX_ATOMIC_GROUP = getattr(_REGEX_CONSTANTS, "ATOMIC_GROUP", None)
+
+
+class _BacktrackingRisk(Exception):
+    """The pattern may backtrack catastrophically under Python `re`."""
+
+
+class _FallbackPatternCheck:
+    """Conservative static check over a `re` parse tree.
+
+    False positives only leave a pattern unenforced, so every construct that
+    is not clearly bounded counts as a risk.
+    """
+
+    def __init__(self) -> None:
+        self.max_large_in_lookaround = 0
+        self.choices = 1
+
+    def multiply_choices(self, factor: int) -> None:
+        self.choices *= factor
+        if self.choices > _MAX_FALLBACK_CHOICES:
+            raise _BacktrackingRisk("too many backtracking choices")
+
+    def visit(
+        self,
+        subpattern: t.Any,
+        *,
+        in_repeat: bool,
+        in_lookaround: bool,
+    ) -> int:
+        """Return the large quantifiers in `subpattern` outside look-around."""
+        large = 0
+        for op, av in subpattern.data:
+            if op in _REGEX_REPEATS:
+                if in_repeat:
+                    raise _BacktrackingRisk("quantified group contains a quantifier")
+                low, high, body = av
+                if low > _MAX_FALLBACK_REPEAT_COUNT or (
+                    high != _REGEX_CONSTANTS.MAXREPEAT
+                    and high > _MAX_FALLBACK_REPEAT_COUNT
+                ):
+                    raise _BacktrackingRisk("repeat count exceeds the work budget")
+                if high == _REGEX_CONSTANTS.MAXREPEAT or (
+                    high - low > _LARGE_QUANTIFIER_SPAN
+                ):
+                    large += 1
+                elif high > low:
+                    self.multiply_choices(high - low + 1)
+                large += self.visit(body, in_repeat=True, in_lookaround=in_lookaround)
+            elif op == _REGEX_CONSTANTS.BRANCH:
+                if in_repeat:
+                    raise _BacktrackingRisk("quantified group contains alternation")
+                _, alternatives = av
+                self.multiply_choices(len(alternatives))
+                for alternative in alternatives:
+                    large += self.visit(
+                        alternative,
+                        in_repeat=in_repeat,
+                        in_lookaround=in_lookaround,
+                    )
+            elif op in _REGEX_LOOKAROUNDS:
+                if in_lookaround:
+                    raise _BacktrackingRisk("nested look-around")
+                _, body = av
+                self.max_large_in_lookaround = max(
+                    self.max_large_in_lookaround,
+                    self.visit(body, in_repeat=in_repeat, in_lookaround=True),
+                )
+            elif op == _REGEX_CONSTANTS.SUBPATTERN:
+                large += self.visit(
+                    av[-1], in_repeat=in_repeat, in_lookaround=in_lookaround
+                )
+            elif _REGEX_ATOMIC_GROUP is not None and op == _REGEX_ATOMIC_GROUP:
+                large += self.visit(
+                    av, in_repeat=in_repeat, in_lookaround=in_lookaround
+                )
+            elif op not in _REGEX_ATOMS:
+                # Backreferences (GROUPREF, GROUPREF_EXISTS) and anything this
+                # check does not model.
+                raise _BacktrackingRisk(f"unsupported regex construct {op}")
+        return large
+
+
+def _fallback_pattern_is_safe(pattern: str) -> bool:
+    """Whether Python `re` cannot backtrack catastrophically on `pattern`.
+
+    Rejects backreferences, quantified groups (look-around included) that
+    contain a quantifier or alternation, excessive explicit repeat bounds,
+    nested look-around, more than
+    `_MAX_FALLBACK_DEGREE` nested polynomial factors, and more than
+    `_MAX_FALLBACK_CHOICES` combined small-quantifier and alternation choices.
+
+    :raises re.error: `pattern` is not a valid Python regular expression.
+    """
+    parsed = _REGEX_PARSER.parse(pattern)
+    check = _FallbackPatternCheck()
+    try:
+        large_outside = check.visit(parsed, in_repeat=False, in_lookaround=False)
+    except _BacktrackingRisk:
+        return False
+    anchored = (
+        bool(parsed.data)
+        and parsed.data[0]
+        == (
+            _REGEX_CONSTANTS.AT,
+            _REGEX_CONSTANTS.AT_BEGINNING,
+        )
+        and not parsed.state.flags & re.MULTILINE
+    )
+    degree = (0 if anchored else 1) + large_outside + check.max_large_in_lookaround
+    return degree <= _MAX_FALLBACK_DEGREE
+
+
+@functools.lru_cache(maxsize=_PATTERN_CACHE_SIZE)
+def _string_pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
+    """Search-semantics matcher for a `pattern` string constraint, or None
+    (with a warning) when it cannot be enforced in bounded time."""
+    linear = _linear_pattern_matcher(pattern)
+    if linear is not None:
+        return linear
+
+    try:
+        safe = _fallback_pattern_is_safe(pattern)
+        compiled = re.compile(pattern)
+    except (re.error, OverflowError, RecursionError):
+        logger.warning(
+            "Ignoring JSON Schema pattern %r: not a valid Python regular expression",
+            pattern,
+        )
+        return None
+    if not safe:
+        logger.warning(
+            "Ignoring JSON Schema pattern %r: the linear-time regex engine does "
+            "not support it and Python's backtracking engine could stall on it",
+            pattern,
+        )
+        return None
+
+    def match_with_re(value: str) -> bool:
+        if len(value) > _BACKTRACKING_FALLBACK_MAX_INPUT:
             return True
+        return compiled.search(value) is not None
 
-        matcher = match_with_pydantic
-    else:
-        compiled = _compile_pattern(pattern)
-        if compiled is not None:
-
-            def match_with_re(value: str) -> bool:
-                return compiled.search(value) is not None
-
-            matcher = match_with_re
-    _PATTERN_MATCHER_CACHE[pattern] = matcher
-    return matcher
+    return match_with_re
 
 
 def _exact_validation_pattern(
@@ -1845,11 +2106,227 @@ def _exact_validation_pattern(
 ) -> t.Iterator[t.Any]:
     if not isinstance(instance, str) or not isinstance(pattern, str):
         return
-    matcher = _pattern_matcher(pattern)
+    matcher = _string_pattern_matcher(pattern)
     if matcher is not None and not matcher(instance):
         yield jsonschema_exceptions.ValidationError(
             f"{instance!r} does not match {pattern!r}"
         )
+
+
+def _safe_pattern_properties(
+    validator: t.Any,
+    pattern_properties: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    """jsonschema's `patternProperties` with keys matched in linear time."""
+    if not validator.is_type(instance, "object"):
+        return
+
+    for pattern, subschema in pattern_properties.items():
+        matches_key = _linear_pattern_matcher(pattern)
+        if matches_key is None:
+            # Conversion rejects these first; fail closed if one slips past.
+            yield jsonschema_exceptions.ValidationError(
+                _unsupported_pattern_property_message(pattern)
+            )
+            continue
+        for key, value in instance.items():
+            if matches_key(key):
+                yield from validator.descend(
+                    value,
+                    subschema,
+                    path=key,
+                    schema_path=pattern,
+                )
+
+
+def _extras_msg(extras: t.Sequence[t.Any]) -> t.Tuple[str, str]:
+    verb = "was" if len(extras) == 1 else "were"
+    return ", ".join(repr(extra) for extra in extras), verb
+
+
+def _safe_additional_properties(
+    validator: t.Any,
+    additional: t.Any,
+    instance: t.Any,
+    schema: t.Any,
+) -> t.Iterator[t.Any]:
+    """jsonschema's `additionalProperties` with keys matched in linear time."""
+    if not validator.is_type(instance, "object"):
+        return
+
+    properties = schema.get("properties", {})
+    patterns = list(schema.get("patternProperties", {}))
+    matchers = []
+    # jsonschema searches the `|`-joined patterns, so a lone "" matches nothing.
+    if "|".join(patterns):
+        for pattern in patterns:
+            matches_key = _linear_pattern_matcher(pattern)
+            if matches_key is None:
+                yield jsonschema_exceptions.ValidationError(
+                    _unsupported_pattern_property_message(pattern)
+                )
+                return
+            matchers.append(matches_key)
+    extras = {
+        key
+        for key in instance
+        if key not in properties
+        and not any(matches_key(key) for matches_key in matchers)
+    }
+
+    if validator.is_type(additional, "object"):
+        for extra in extras:
+            yield from validator.descend(instance[extra], additional, path=extra)
+    elif not additional and extras:
+        if "patternProperties" in schema:
+            verb = "does" if len(extras) == 1 else "do"
+            joined = ", ".join(repr(each) for each in sorted(extras))
+            joined_patterns = ", ".join(
+                repr(each) for each in sorted(schema["patternProperties"])
+            )
+            yield jsonschema_exceptions.ValidationError(
+                f"{joined} {verb} not match any of the regexes: {joined_patterns}"
+            )
+        else:
+            error = "Additional properties are not allowed (%s %s unexpected)"
+            yield jsonschema_exceptions.ValidationError(
+                error % _extras_msg(sorted(extras, key=str))
+            )
+
+
+class _LinearRegexModule:
+    """Stands in for `re` inside jsonschema's evaluated-property helpers, whose
+    only regex use is `re.search(pattern, key)` over `patternProperties`."""
+
+    @staticmethod
+    def search(pattern: t.Any, string: t.Any) -> t.Optional[bool]:
+        matches_key = _linear_pattern_matcher(pattern)
+        if matches_key is None:
+            raise ValueError(_unsupported_pattern_property_message(pattern))
+        return True if matches_key(string) else None
+
+
+def _unsupported_unevaluated_properties(
+    validator: t.Any,
+    _unevaluated: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if validator.is_type(instance, "object"):
+        yield jsonschema_exceptions.ValidationError(
+            "unevaluatedProperties is not supported with the installed jsonschema"
+        )
+
+
+def _linear_unevaluated_properties(keyword: t.Any) -> t.Any:
+    """Rebind jsonschema's `unevaluatedProperties` (2019-09 and 2020-12) so its
+    `patternProperties` key matching uses `_LinearRegexModule`.
+
+    The keyword's semantics are long and version-specific, so the original
+    code objects run unchanged against copied module globals; nothing global
+    is patched. If the helper no longer reaches regexes through a module-level
+    `re`, the keyword fails closed instead of silently using `re`.
+    """
+    module_globals = getattr(keyword, "__globals__", None)
+    finder = (module_globals or {}).get("find_evaluated_property_keys_by_schema")
+    finder_globals = getattr(finder, "__globals__", None)
+    if (
+        not isinstance(keyword, types.FunctionType)
+        or not isinstance(finder, types.FunctionType)
+        or keyword.__closure__ is not None
+        or finder.__closure__ is not None
+        or finder_globals is None
+        or finder_globals.get("re") is not re
+        or "re" not in finder.__code__.co_names
+        or "re" in keyword.__code__.co_names
+    ):
+        return _unsupported_unevaluated_properties
+
+    linear_finder_globals = dict(finder_globals)
+    linear_finder = types.FunctionType(
+        finder.__code__,
+        linear_finder_globals,
+        finder.__name__,
+        finder.__defaults__,
+    )
+    linear_finder_globals["re"] = _LinearRegexModule
+    linear_finder_globals["find_evaluated_property_keys_by_schema"] = linear_finder
+
+    linear_keyword_globals = dict(keyword.__globals__)
+    linear_keyword_globals["re"] = _LinearRegexModule
+    linear_keyword_globals["find_evaluated_property_keys_by_schema"] = linear_finder
+    return types.FunctionType(
+        keyword.__code__,
+        linear_keyword_globals,
+        keyword.__name__,
+        keyword.__defaults__,
+    )
+
+
+_SAFE_REGEX_VALIDATOR_CLASSES: t.Set[t.Any] = set()
+
+
+@functools.lru_cache(maxsize=None)
+def _with_safe_regex_keywords(validator_class: t.Any) -> t.Any:
+    """Extend a jsonschema validator class so no keyword evaluates a schema
+    regex with Python `re` on unbounded input.
+
+    jsonschema's `evolve` (used by `descend` for every subschema) switches to
+    the stock class of any subschema that declares `$schema`, which would drop
+    these overrides. The returned class keeps the dialect switch but re-applies
+    the regex overrides to the class it switches to.
+    """
+    if validator_class in _SAFE_REGEX_VALIDATOR_CLASSES:
+        return validator_class
+    overrides = {
+        "additionalProperties": _safe_additional_properties,
+        "pattern": _exact_validation_pattern,
+        "patternProperties": _safe_pattern_properties,
+    }
+    unevaluated = validator_class.VALIDATORS.get("unevaluatedProperties")
+    if unevaluated is not None:
+        overrides["unevaluatedProperties"] = _linear_unevaluated_properties(unevaluated)
+    return _install_safe_regex_evolve(
+        jsonschema_validators.extend(validator_class, overrides)
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _exact_validator_class() -> t.Any:
+    # Align multipleOf with the decimal-scaled checks in the Zod and Effect
+    # converters instead of raw float modulo.
+    return _install_safe_regex_evolve(
+        jsonschema_validators.extend(
+            _with_safe_regex_keywords(jsonschema_validators.Draft7Validator),
+            {"multipleOf": _exact_validation_multiple_of},
+        )
+    )
+
+
+def _install_safe_regex_evolve(validator_class: t.Any) -> t.Any:
+    stock_evolve = validator_class.evolve
+
+    def evolve(self: t.Any, **changes: t.Any) -> t.Any:
+        evolved = stock_evolve(self, **changes)
+        evolved_class: t.Any = type(evolved)
+        if evolved_class in _SAFE_REGEX_VALIDATOR_CLASSES:
+            return evolved
+        # Rebuild on the safe variant, copying init fields exactly as
+        # jsonschema's own `evolve` does.
+        safe_class = _with_safe_regex_keywords(evolved_class)
+        return safe_class(
+            **{
+                field.alias: getattr(evolved, field.name)
+                for field in evolved_class.__attrs_attrs__
+                if field.init
+            }
+        )
+
+    validator_class.evolve = evolve
+    _SAFE_REGEX_VALIDATOR_CLASSES.add(validator_class)
+    return validator_class
 
 
 # A bare registry resolves only references inside the schema document and
@@ -1942,6 +2419,19 @@ def _close_all_of_branches(schema: t.Any) -> t.Any:
     return result
 
 
+def _reject_unsupported_pattern_properties(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Fail at conversion time on any reachable `patternProperties` key the
+    linear-time engine cannot match."""
+    for candidate in _iter_reachable_schemas(schema, root_schema):
+        pattern_properties = candidate.get("patternProperties")
+        if isinstance(pattern_properties, dict):
+            for pattern in pattern_properties:
+                _compile_pattern_property(pattern)
+
+
 def _validate_json_schema(
     schema: t.Dict[str, t.Any],
     root_schema: t.Dict[str, t.Any],
@@ -1958,19 +2448,11 @@ def _validate_json_schema(
     # The SDK contract is Draft 7 plus the OpenAPI 3.0 boolean spelling for
     # exclusive bounds. Falling the entire document back to Draft 4 would make
     # `contains`, `const`, `if`/`then`/`else`, and `propertyNames` disappear.
-    validator_class = jsonschema_validators.Draft7Validator
-    # Align multipleOf with the decimal-scaled checks in the Zod and Effect
-    # converters instead of raw float modulo.
-    # `pattern` goes through pydantic's Rust regex where possible so a
-    # backtracking pattern cannot stall validation (Python `re` is exponential
-    # on inputs such as `(a+)+$`).
-    validator_class = jsonschema_validators.extend(
-        validator_class,
-        {
-            "multipleOf": _exact_validation_multiple_of,
-            "pattern": _exact_validation_pattern,
-        },
-    )
+    # Schema regexes (`pattern`, `patternProperties`, `additionalProperties`
+    # key matching) never run on unbounded Python `re`, which is exponential
+    # on inputs such as `(a+)+$`.
+    _reject_unsupported_pattern_properties(validation_schema, validation_root)
+    validator_class = _exact_validator_class()
     validator = validator_class(
         validation_root,
         registry=_LOCAL_ONLY_REGISTRY,
@@ -2112,22 +2594,6 @@ _TYPE_ARRAY_CHILD_KEYWORDS_SCHEMAS = (
     "then",
     "else",
 )
-
-
-_PYDANTIC_PATTERN_SUPPORT_CACHE: t.Dict[str, bool] = {}
-
-
-def _pattern_supported_by_pydantic(pattern: str) -> bool:
-    cached = _PYDANTIC_PATTERN_SUPPORT_CACHE.get(pattern)
-    if cached is not None:
-        return cached
-    try:
-        TypeAdapter(t.Annotated[str, Field(pattern=pattern)])
-        supported = True
-    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
-        supported = False
-    _PYDANTIC_PATTERN_SUPPORT_CACHE[pattern] = supported
-    return supported
 
 
 def _normalize_schema_for_library(schema: t.Any) -> t.Any:

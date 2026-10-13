@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option, Result } from 'effect';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { requireAuth } from 'src/effects/require-auth';

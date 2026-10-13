@@ -1,7 +1,6 @@
 import { APIError } from '@composio/client';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockRequestScope } from 'test/__utils__/services/test-layer';
@@ -57,7 +56,7 @@ const connectedAccountWithCredentialFields = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const RecordingTerminalUI = TerminalUI.of({
   capabilities: Effect.succeed(
@@ -290,7 +289,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] a blank --alias [Then] fails with a CLI validation error', it => {
-    // v4 migration note: `effect/unstable/cli`'s `CliError.InvalidValue` is a fixed
+    // v4 migration note: `effect/cli`'s `CliError.InvalidValue` is a fixed
     // flag/argument-name-and-value struct produced only by the parser; it can't carry a
     // freeform message. This business-level validation (only knowable after parsing) is
     // now a plain typed domain error (`LinkInputError`), matching the pattern documented in

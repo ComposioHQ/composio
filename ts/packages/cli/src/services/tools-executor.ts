@@ -117,20 +117,14 @@ export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecu
 /**
  * Whether an execution answer describes a tool that ran and succeeded.
  *
- * `result_type` decides when the API sent one: a `failed` execution is not
- * successful even when its `error` is `null` or empty. Without a known
- * `result_type`, for example from a server that predates it, an execution is
- * successful when it carries no error text. `@composio/core` applies the same
- * rule to session executions.
+ * `result_type` decides: a `failed` execution is not successful even when its
+ * `error` is `null` or empty. `@composio/core` applies the same rule to
+ * session executions.
  */
 export const isExecutionSuccessful = (raw: {
-  readonly result_type?: string;
+  readonly result_type?: 'completed' | 'failed';
   readonly error?: string | null;
-}): boolean => {
-  if (raw.result_type === 'completed') return true;
-  if (raw.result_type === 'failed') return false;
-  return !raw.error;
-};
+}): boolean => raw.result_type === 'completed' || (raw.result_type === undefined && !raw.error);
 
 /**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.

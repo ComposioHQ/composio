@@ -1,5 +1,5 @@
 import { LogLevel, type Option } from 'effect';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
 
 const logLevel = Flag.Literals('log-level', LogLevel.values).pipe(

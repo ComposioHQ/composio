@@ -1,13 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, ConfigProvider, Effect, Exit } from 'effect';
 import { ListenCommandError } from 'src/commands/listen.cmd';
-import { extendConfigProvider } from 'src/services/config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const enableListen = Effect.gen(function* () {
   const config = yield* ComposioCliUserConfig;

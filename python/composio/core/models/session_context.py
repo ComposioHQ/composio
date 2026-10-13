@@ -27,7 +27,11 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
-from composio.core.models.tools import _serialize_arguments, require_executed
+from composio.core.models.tools import (
+    _serialize_arguments,
+    require_execute_result,
+    require_executed,
+)
 from composio.exceptions import ValidationError
 
 
@@ -173,7 +177,7 @@ class SessionContextImpl:
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return require_executed(
+        return require_execute_result(
             self._client.without_retries.tool_router.session.execute(
                 session_id=self._session_id,
                 tool_slug=tool_slug,
@@ -182,7 +186,7 @@ class SessionContextImpl:
                     self._inline_custom_tools_payload
                 ),
             ),
-            f"Tool {tool_slug}",
+            tool_slug,
         )
 
     def proxy_execute(

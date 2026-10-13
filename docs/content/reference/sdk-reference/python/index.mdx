@@ -46,7 +46,7 @@ result = composio.tools.execute(
 
 ### before_execute
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L280)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L278)
 
 ```python
 @before_execute(modifier: BeforeExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
@@ -56,7 +56,7 @@ def my_modifier(...):
 
 ### after_execute
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L241)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L239)
 
 ```python
 @after_execute(modifier: AfterExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
@@ -68,7 +68,7 @@ def my_modifier(...):
 
 Build a `Modifier` for the file-upload hook (same scoping pattern as `before_execute`).  Your callable may take **either**:  - a single `context` argument (`BeforeFileUploadContext`) — the preferred form, exposes `context["source"]` (`"path"` or `"url"`), or - three positional arguments `(path, tool, toolkit)` — legacy form, kept for back-compat.  Return a new path/URL string to substitute, or `False` to abort the upload (raises `FileUploadAbortedError`).  Pass the returned `Modifier` in `modifiers=[...]` on `composio.core.models.tools.Tools.execute` or `tools.get`. Multiple such modifiers are composed in list order.
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L319)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L317)
 
 ```python
 @before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
@@ -78,7 +78,7 @@ def my_modifier(...):
 
 ### schema_modifier
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L377)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L375)
 
 ```python
 @schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)

@@ -7,7 +7,6 @@ import { APIError } from '@composio/client';
 import type { SessionExecuteResponse } from '@composio/client/resources/tool-router';
 import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
 import { TestClock } from 'effect/testing';
-import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
@@ -33,9 +32,7 @@ vi.hoisted(() => {
 const DEFAULT_DASHBOARD = 'https://dashboard.composio.dev';
 
 const configProvider = (env: Record<string, string> = {}) =>
-  ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env } }).pipe(
-    extendConfigProvider
-  );
+  ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env } });
 
 const temporaryCacheDirs: Array<string> = [];
 

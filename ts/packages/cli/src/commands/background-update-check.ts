@@ -1,5 +1,5 @@
 import { Effect, Predicate } from 'effect';
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { versionCmd } from './version.cmd';
 import { checkForUpdateInBackground } from 'src/services/update-check';
 
@@ -10,7 +10,7 @@ const isExplicitVersionCheck = (commandName: string, input: unknown): boolean =>
  * Builds the root command so the background update request starts only after the CLI has parsed
  * the selected command, and never for an explicit `composio version --check`.
  *
- * `effect/unstable/cli` keeps the selected subcommand private to the parent's dispatcher, so the
+ * `effect/cli` keeps the selected subcommand private to the parent's dispatcher, so the
  * hook is attached per subcommand (each sees its own parsed input) plus the root itself for the
  * no-subcommand path, before the tree is assembled with `Command.withSubcommands`.
  */

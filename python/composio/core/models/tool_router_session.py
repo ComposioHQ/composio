@@ -72,7 +72,7 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
-    require_executed,
+    require_execute_result,
 )
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -643,6 +643,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_future:
                 try:
                     remote_result = remote_future.result()
+                except exceptions.ToolInputRequiredError:
+                    # An input request is not a per-tool failure: re-raise it so
+                    # the caller gets `input_requests` and `request_state`.
+                    # Accepted: local tools in this batch already ran and their results are discarded.
+                    raise
                 except Exception as error:
                     remote_error_message = str(error) or "Remote tool execution failed"
 
@@ -914,11 +919,12 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``error``, ``log_id``, ``result_type``, and ``instant_charge``
         attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
         execution can carry a ``None`` or empty ``error``, so read
-        ``result_type`` to tell the two apart. It is ``None`` when the API sent
-        none.
+        ``result_type`` to tell the two apart.
 
         :raises ToolInputRequiredError: If the tool needs input from the user
             (for example an approval) before it can run. Nothing was executed.
+        :raises ValidationError: If the API response carries no ``result_type``,
+            or one this SDK does not know.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
@@ -935,7 +941,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return require_executed(
+        return require_execute_result(
             self._client.without_retries.tool_router.session.execute(
                 session_id=self.session_id,
                 tool_slug=tool_slug,
@@ -945,7 +951,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     self._inline_custom_tools_payload
                 ),
             ),
-            f"Tool {tool_slug}",
+            tool_slug,
         )
 
     def custom_tools(

@@ -625,6 +625,7 @@ describe('AnthropicProvider key sanitization', () => {
         data: { ok: true },
         error: null,
         logId: 'log-session',
+        resultType: 'completed',
       }),
     };
     provider._setExecuteToolFn(directExecute);

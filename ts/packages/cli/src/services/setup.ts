@@ -1,6 +1,6 @@
 import * as PlatformError from 'effect/PlatformError';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {

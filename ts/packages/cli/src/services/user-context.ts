@@ -10,7 +10,7 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/effect';
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
 import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
@@ -167,9 +167,9 @@ export const rawComposioUserContextLive = Layer.effect(
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const apiKey = yield* APP_CONFIG['USER_API_KEY'];
-    const baseURL = yield* APP_CONFIG['BASE_URL'];
-    const webURL = yield* APP_CONFIG['WEB_URL'];
+    const apiKey = Option.fromNullishOr(yield* APP_CONFIG.USER_API_KEY);
+    const baseURL = yield* APP_CONFIG.BASE_URL;
+    const webURL = yield* APP_CONFIG.WEB_URL;
     const cliConfig = yield* ComposioCliUserConfig;
     const keyring = yield* KeyringService;
 

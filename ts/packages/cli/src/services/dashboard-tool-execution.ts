@@ -1,9 +1,9 @@
 import { APIError } from '@composio/client';
 import { Config, Context, Data, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
-import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/unstable/http';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
 import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
@@ -159,17 +159,15 @@ const resolveDashboardBase = (webURL: string) =>
  * deployment's Dashboard.
  */
 export const resolveConsumerExecutionTransport = Effect.gen(function* () {
-  const webURL = yield* Config.option(Config.String('WEB_URL'));
+  const webURL = yield* Config.option(Config.String('COMPOSIO_WEB_URL'));
   if (Option.isSome(webURL)) return 'dashboard' as const;
 
-  const baseURL = yield* Config.option(Config.String('BASE_URL'));
+  const baseURL = yield* Config.option(Config.String('COMPOSIO_BASE_URL'));
   if (Option.isNone(baseURL)) return 'dashboard' as const;
 
   const environment = yield* APP_CONFIG.ENVIRONMENT;
   const environmentBaseURL =
-    Option.getOrUndefined(environment) === 'staging'
-      ? constants.STAGING_BASE_URL
-      : constants.DEFAULT_BASE_URL;
+    environment === 'staging' ? constants.STAGING_BASE_URL : constants.DEFAULT_BASE_URL;
 
   return withoutTrailingSlashes(baseURL.value) === withoutTrailingSlashes(environmentBaseURL)
     ? ('dashboard' as const)

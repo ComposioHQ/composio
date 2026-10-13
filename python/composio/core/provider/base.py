@@ -78,7 +78,7 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
     This is automatically injected by the core SDK.
     """
 
-    def __init__(self, **kwargs: t.Unpack[BaseProviderConfig]) -> None:
+    def __init__(self, **kwargs: te.Unpack[BaseProviderConfig]) -> None:
         self.skip_default = kwargs.get("schema_config", {}).get(
             "skip_defaults", self.__schema_skip_defaults__
         )
@@ -128,7 +128,5 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
         return {
             "data": t.cast(t.Dict, result.data),
             "error": result.error,
-            "successful": is_execution_successful(
-                getattr(result, "result_type", None), result.error
-            ),
+            "successful": is_execution_successful(result.result_type),
         }

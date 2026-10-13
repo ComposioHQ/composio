@@ -5,7 +5,7 @@ import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
 import { inspect, format } from 'node:util';
-import { ComposioError, ComposioToolInputRequiredError } from '../../src/errors';
+import { ComposioError, ComposioToolInputRequiredError, ValidationError } from '../../src/errors';
 import logger from '../../src/utils/logger';
 import { buildCustomToolsMap, createCustomTool } from '../../src/models/CustomTool';
 import type { CustomToolsMap, SessionContext } from '../../src/types/customTool.types';
@@ -326,11 +326,10 @@ describe('custom tool whose body requires user input', () => {
 });
 
 // `result_type` says whether a tool that ran succeeded. A failed execution can
-// carry a `null` or empty `error`, so success is read from `result_type` and
-// only falls back to the error text when the API sent no `result_type`.
+// carry a `null` or empty `error`, so success is read from `result_type` alone.
 const executedAnswers: Array<{
   name: string;
-  result_type?: 'completed' | 'failed';
+  result_type: 'completed' | 'failed';
   error: string | null;
   successful: boolean;
 }> = [
@@ -338,12 +337,10 @@ const executedAnswers: Array<{
   { name: 'failed with an empty error', result_type: 'failed', error: '', successful: false },
   { name: 'failed with a message', result_type: 'failed', error: 'Boom', successful: false },
   { name: 'completed', result_type: 'completed', error: null, successful: true },
-  { name: 'no result_type and no error', error: null, successful: true },
-  { name: 'no result_type and an error', error: 'Boom', successful: false },
 ];
 
 const wireBody = ({ result_type, error }: (typeof executedAnswers)[number]) => ({
-  ...(result_type !== undefined && { result_type }),
+  result_type,
   data: {},
   error,
   log_id: 'log',
@@ -411,17 +408,39 @@ describe('session execution success', () => {
       expect(result.error).toBe(answer.error);
     }
   );
+});
 
-  it('falls back to the error text when result_type is a value the SDK does not know', async () => {
-    const { client } = createClient({
-      result_type: 'deferred',
-      data: {},
-      error: null,
-      log_id: 'l',
-    });
+// Every session execute answer carries a `result_type`. One without it, or with
+// a value this SDK does not know, is not a result: reading it as a success or
+// as a failure would be a guess, so each path raises instead.
+const invalidAnswers = [
+  { name: 'no result_type', body: { data: {}, error: null, log_id: 'log' } },
+  {
+    name: 'an unknown result_type',
+    body: { result_type: 'deferred', data: {}, error: null, log_id: 'log' },
+  },
+];
 
-    const result = await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+const executePaths = executionPaths.filter(path => !path.name.includes('proxyExecute'));
 
-    expect(result.resultType).toBeUndefined();
+describe.each(invalidAnswers)('session execute answer with $name', ({ body }) => {
+  it.each(executePaths)('$name raises ValidationError', async ({ run }) => {
+    const { client, fetch } = createClient(body);
+
+    const error = await run(client).catch((caught: unknown) => caught);
+
+    assert(error instanceof ValidationError);
+    expect(error.message).toContain(
+      'Tool GMAIL_SEND_EMAIL returned an execute response without a known result_type'
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('provider tool call bound to a session raises ValidationError', async () => {
+    const { client } = createClient(body);
+
+    await expect(new TargetProvider().executeFor(createSession(client))).rejects.toBeInstanceOf(
+      ValidationError
+    );
   });
 });

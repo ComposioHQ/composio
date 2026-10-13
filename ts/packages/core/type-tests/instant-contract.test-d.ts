@@ -35,17 +35,6 @@ async function instantContract(): Promise<void> {
   const log = await composio.logs.get('log_1');
   const loggedCharge: string | undefined = log.metadata.instant_charge;
   void loggedCharge;
-
-  // @ts-expect-error the previous policy name is no longer an SDK input
-  await composio.create('user_123', { premiumUsage: false });
-  // @ts-expect-error the previous visibility field is no longer accepted
-  await session.update({ instant: { returnPremiumCharge: true } });
-  // @ts-expect-error server-side config exposes the Instant policy
-  void session.config.premium_usage;
-  // @ts-expect-error config history exposes the Instant policy
-  void historical?.config.premium_usage;
-  // @ts-expect-error usage summaries expose the Instant charge
-  void summary.premiumUsageCharge;
 }
 
 void instantContract;

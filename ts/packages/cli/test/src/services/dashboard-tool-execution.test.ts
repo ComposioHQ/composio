@@ -14,14 +14,13 @@ import {
   HttpClientError,
   HttpClientResponse,
   type HttpClientRequest,
-} from 'effect/unstable/http';
+} from 'effect/http';
 import {
   DashboardToolExecution,
   DashboardToolExecutionError,
   resolveConsumerExecutionTransport,
 } from 'src/services/dashboard-tool-execution';
 import { cliRequestHeaders } from 'src/services/client-provenance';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ComposioUserContext } from 'src/services/user-context';
 import { extractApiErrorDetails } from 'src/utils/api-error-extraction';
@@ -130,7 +129,18 @@ const withDashboard = <A, E>(
         )
       )
     ),
-    Effect.provide(platform(overrides?.home ?? emptyHome()))
+    Effect.provide(platform(overrides?.home ?? emptyHome())),
+    Effect.provide(
+      ConfigProvider.layer(
+        ConfigProvider.fromEnv({
+          env: Object.fromEntries(
+            Object.entries(process.env).filter(
+              (entry): entry is [string, string] => entry[1] !== undefined
+            )
+          ),
+        })
+      )
+    )
   );
 };
 
@@ -596,9 +606,7 @@ describe('DashboardToolExecution install ID header', () => {
 describe('resolveConsumerExecutionTransport', () => {
   const resolveWith = (env: Record<string, string>) =>
     resolveConsumerExecutionTransport.pipe(
-      Effect.provide(
-        ConfigProvider.layer(ConfigProvider.fromEnv({ env }).pipe(extendConfigProvider))
-      )
+      Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env })))
     );
 
   const cases: ReadonlyArray<{

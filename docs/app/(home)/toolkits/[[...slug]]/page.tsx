@@ -28,8 +28,7 @@ export const dynamicParams = true;
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
 async function fetchDetailedTools(
-  toolkitSlug: string,
-  version?: string | null
+  toolkitSlug: string
 ): Promise<Tool[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
@@ -38,7 +37,7 @@ async function fetchDetailedTools(
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=10000${version ? `&version=${encodeURIComponent(version)}` : ''}`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=10000`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +240,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
       const [detailedTools, detailedTriggers, faq] = await Promise.all([
-        fetchDetailedTools(toolkit.slug, toolkit.version),
+        fetchDetailedTools(toolkit.slug),
         fetchDetailedTriggers(toolkit.slug, toolkit.version),
         readToolkitFaq(toolkit.slug),
       ]);

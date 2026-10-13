@@ -6,8 +6,8 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync }
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
+import { HOST_CONFIG } from 'src/config';
 import { APP_VERSION } from 'src/constants';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { detectPluginHost } from 'src/services/agent-host-env';
@@ -99,11 +99,14 @@ describe('detectPluginHost', () => {
     ).toBe('claude');
   });
 
-  it('ignores empty and whitespace-only markers', () => {
-    expect(
-      detectPluginHost({ claudeCode: '', codexThreadId: '  ', codexSandbox: '\t' })
-    ).toBeUndefined();
-  });
+  it.effect('ignores empty and whitespace-only markers', () =>
+    Effect.gen(function* () {
+      const markers = yield* HOST_CONFIG.AGENT_HOST.parse(
+        ConfigProvider.fromEnvRecord({ CLAUDECODE: '', CODEX_THREAD_ID: '  ', CODEX_SANDBOX: '\t' })
+      );
+      expect(detectPluginHost(markers)).toBeUndefined();
+    })
+  );
 });
 
 describe('resolvePluginHintConfig', () => {
@@ -119,10 +122,7 @@ describe('resolvePluginHintConfig', () => {
       expect(config.host).toBe('claude');
       expect(config.commandName).toBe('version');
     }).pipe(
-      Effect.provideService(
-        ConfigProvider.ConfigProvider,
-        extendConfigProvider(ConfigProvider.fromEnv())
-      ),
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
     );
   });
@@ -139,10 +139,7 @@ describe('resolvePluginHintConfig', () => {
       );
       expect(config.codexConfigFile).toBe(join(tempDir, '.codex', 'config.toml'));
     }).pipe(
-      Effect.provideService(
-        ConfigProvider.ConfigProvider,
-        extendConfigProvider(ConfigProvider.fromEnv())
-      ),
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
     );
   });
@@ -161,10 +158,7 @@ describe('resolvePluginHintConfig', () => {
       );
       expect(config.codexConfigFile).toBe(join(codexHome, 'config.toml'));
     }).pipe(
-      Effect.provideService(
-        ConfigProvider.ConfigProvider,
-        extendConfigProvider(ConfigProvider.fromEnv())
-      ),
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
     );
   });
@@ -181,10 +175,7 @@ describe('resolvePluginHintConfig', () => {
       );
       expect(config.codexConfigFile).toBe(join(tempDir, 'codex-relative', 'config.toml'));
     }).pipe(
-      Effect.provideService(
-        ConfigProvider.ConfigProvider,
-        extendConfigProvider(ConfigProvider.fromEnv())
-      ),
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
     );
   });
