@@ -898,7 +898,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       });
     }
 
-    const client = yield* clientSingleton.getFor({
+    const client = yield* clientSingleton.getEffectFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });

@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { it as effectIt } from '@effect/vitest';
-import { Effect } from 'effect';
-import type { Composio } from '@composio/client';
+import { Effect, Option } from 'effect';
 import {
+  ConnectedAccountResolutionError,
   formatConnectedAccountChoices,
   groupCachedConnectedAccountsByToolkit,
   listConnectedAccountsForToolkit,
+  resolveConnectedAccountForToolkit,
   resolveConnectedAccountSelection,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
+import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
 const makeAccount = (overrides: Partial<ConnectedAccountItem>): ConnectedAccountItem => ({
   id: 'con_default',
@@ -104,34 +107,31 @@ type ListParams = {
   readonly limit?: number;
 };
 
-// A stand-in for the SDK client: one page of accounts, plus a log of every
-// `connectedAccounts.list` call so a test can see which path ran.
+// The client over a transport that serves one page of accounts, plus a log of
+// every `GET /connected_accounts` query so a test can see which path ran.
 const makeListClient = (
   items: ReadonlyArray<ConnectedAccountItem>,
   page?: { readonly total_items?: number; readonly next_cursor?: string | null }
 ) => {
   const calls: ListParams[] = [];
-  const client = {
-    connectedAccounts: {
-      list: async (params: ListParams) => {
-        calls.push(params);
-        const filtered = params.toolkit_slugs
-          ? items.filter(item =>
-              params.toolkit_slugs!.some(
-                slug => slug.trim().toLowerCase() === item.toolkit.slug.trim().toLowerCase()
-              )
-            )
-          : items;
-        return {
-          items: filtered.slice(0, params.limit ?? 30),
-          total_items: page?.total_items ?? filtered.length,
-          total_pages: 1,
-          current_page: 1,
-          next_cursor: page?.next_cursor ?? null,
-        };
-      },
-    },
-  } as unknown as Composio;
+  const { client } = stubComposioClient(request => {
+    const query = new URL(request.path, 'https://stub.invalid').searchParams;
+    const slugs = query.get('toolkit_slugs')?.split(',');
+    const limit = Number(query.get('limit') ?? 30);
+    calls.push({ ...(slugs ? { toolkit_slugs: slugs } : {}), limit });
+    const filtered = slugs
+      ? items.filter(item =>
+          slugs.some(slug => slug.trim().toLowerCase() === item.toolkit.slug.trim().toLowerCase())
+        )
+      : items;
+    return Response.json({
+      items: filtered.slice(0, limit),
+      total_items: page?.total_items ?? filtered.length,
+      total_pages: 1,
+      current_page: 1,
+      next_cursor: page?.next_cursor ?? null,
+    });
+  });
   return { client, calls };
 };
 
@@ -202,6 +202,29 @@ describe('listConnectedAccountsForToolkit', () => {
       expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
       expect(calls).toHaveLength(2);
       expect(calls[1]?.toolkit_slugs).toEqual(['gmail']);
+    })
+  );
+});
+
+describe('resolveConnectedAccountForToolkit', () => {
+  effectIt.effect('reports a rejected account listing in the wording it has always used', () =>
+    Effect.gen(function* () {
+      const body = {
+        error: { message: 'Invalid user id', code: 301, slug: 'Invalid_UserId', status: 400 },
+      };
+      const { client } = stubComposioClient(() => Response.json(body, { status: 400 }));
+
+      const failure = yield* resolveConnectedAccountForToolkit({
+        client,
+        toolkitSlug: 'gmail',
+        userId: 'default',
+        selector: Option.none(),
+      }).pipe(Effect.flip, Effect.provide(TerminalUITest));
+
+      expect(failure).toBeInstanceOf(ConnectedAccountResolutionError);
+      expect(failure.message).toBe(
+        `Failed to load connected accounts for toolkit "gmail": Error: 400 ${JSON.stringify(body)}`
+      );
     })
   );
 });

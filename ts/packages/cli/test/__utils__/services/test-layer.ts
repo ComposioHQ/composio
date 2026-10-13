@@ -14,6 +14,8 @@ import {
   APIConnectionError as EffectAPIConnectionError,
   NotFoundError as EffectNotFoundError,
   make as makeEffectClient,
+  type ComposioError,
+  type RequestOptions as EffectRequestOptions,
 } from '@composio/client/effect';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
@@ -298,24 +300,32 @@ export interface TestLiveInput {
    * Controls the mock `ComposioClientSingleton`'s `toolRouter.session.*` methods.
    * Each method can be overridden individually; defaults are provided for all.
    *
+   * `create`, `execute`, and `executeMeta` may answer with an Effect instead of
+   * a promise, which is how a test fails a call with one of the client's own
+   * errors or routes it to a client over a stub transport.
+   *
    * When `toolsExecutor` is also set, its mock takes precedence for `tools execute`
    * (the Tool Router mock is still used by `toolkits list`, `toolkits info`, etc.).
    */
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
-    create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
+    create?: (
+      params: SessionCreateParams
+    ) => Promise<SessionCreateResponse> | Effect.Effect<SessionCreateResponse, ComposioError>;
     /** Override `session.execute`. Receives sessionId, params, and request options. */
     execute?: (
       sessionId: string,
       params: SessionExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteResponse>;
+      options?: EffectRequestOptions
+    ) => Promise<SessionExecuteResponse> | Effect.Effect<SessionExecuteResponse, ComposioError>;
     /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
       params: SessionExecuteMetaParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteMetaResponse>;
+      options?: EffectRequestOptions
+    ) =>
+      | Promise<SessionExecuteMetaResponse>
+      | Effect.Effect<SessionExecuteMetaResponse, ComposioError>;
     /** Override `session.link`. Receives sessionId and params. */
     link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
     /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
@@ -1385,9 +1395,14 @@ export const TestLayer = (input?: TestLiveInput) =>
         shadowed[key] =
           typeof shadow === 'function'
             ? (...args: ReadonlyArray<unknown>) =>
-                Effect.tryPromise({
-                  try: () => shadow(...args) as Promise<unknown>,
-                  catch: toEffectClientError,
+                Effect.suspend(() => {
+                  const answer: unknown = shadow(...args);
+                  return Effect.isEffect(answer)
+                    ? answer
+                    : Effect.tryPromise({
+                        try: () => answer as Promise<unknown>,
+                        catch: toEffectClientError,
+                      });
                 })
             : withEffectShadows((shadowed[key] ?? {}) as object, shadow as object);
       }

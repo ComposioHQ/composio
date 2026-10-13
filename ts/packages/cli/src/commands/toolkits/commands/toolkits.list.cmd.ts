@@ -101,7 +101,12 @@ export const toolkitsCmd$List = Command.make(
       const sessionContextEffect = Option.isSome(resolvedUserId)
         ? Effect.gen(function* () {
             const client = yield* clientSingleton.get();
-            return yield* resolveToolRouterSession(client, resolvedUserId.value);
+            const effectClient = yield* clientSingleton.getEffect();
+            const { sessionId } = yield* resolveToolRouterSession(
+              effectClient,
+              resolvedUserId.value
+            );
+            return { client, sessionId };
           }).pipe(
             Effect.catch(error =>
               Effect.logDebug('Failed to create session:', error).pipe(Effect.as(undefined))

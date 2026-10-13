@@ -1,11 +1,11 @@
-// This module's upload pipeline is plain async/await around the raw
-// @composio/client promise API. The Effect caller resolves the platform
-// FileSystem and Path services and passes the instances in as parameters;
-// `readLocalFileBytes` below is the single point where a FileSystem effect
+// This module's upload pipeline is plain async/await. The Effect caller
+// resolves the platform FileSystem and Path services and the Composio client
+// and passes the instances in as parameters; `runToPromise` below is the
+// single point where an effect (a FileSystem read, the presigned-URL request)
 // is run to completion inside this promise pipeline.
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -176,16 +176,20 @@ const readFileFromUrl = async (path: Path.Path, url: string) => {
   };
 };
 
-// Runs the FileSystem read to completion for the plain-async pipeline above.
-// A failed read rejects with the underlying platform error (not a FiberFailure
-// wrapper), matching this module's throw-based error contract.
-const readLocalFileBytes = (fs: FileSystem.FileSystem, filePath: string): Promise<Uint8Array> =>
-  Effect.runPromiseExit(fs.readFile(filePath)).then(exit =>
+// Runs an effect to completion for the plain-async pipeline above. A failure
+// rejects with the underlying error (the platform error of a read, the
+// client's error of a request), not a FiberFailure wrapper, matching this
+// module's throw-based error contract.
+const runToPromise = <A, E>(effect: Effect.Effect<A, E>): Promise<A> =>
+  Effect.runPromiseExit(effect).then(exit =>
     Exit.match(exit, {
-      onFailure: cause => Promise.reject<Uint8Array>(Cause.squash(cause)),
-      onSuccess: bytes => Promise.resolve(bytes),
+      onFailure: cause => Promise.reject<A>(Cause.squash(cause)),
+      onSuccess: value => Promise.resolve(value),
     })
   );
+
+const readLocalFileBytes = (fs: FileSystem.FileSystem, filePath: string): Promise<Uint8Array> =>
+  runToPromise(fs.readFile(filePath));
 
 const readFileFromDisk = async (fs: FileSystem.FileSystem, path: Path.Path, filePath: string) => {
   // Enforce the sensitive-path denylist at the lowest-level local read, so any
@@ -249,19 +253,24 @@ const uploadFile = async (params: {
   readonly file: string | File;
   readonly toolSlug: string;
   readonly toolkitSlug: string;
-  readonly client: RawComposioClient;
+  readonly client: ComposioClientShape;
 }) => {
   const fileData = await readUploadSource(params.fs, params.path, params.file);
   // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
   const { createHash } = await import('node:crypto');
   const md5 = createHash('md5').update(fileData.bytes).digest('hex');
-  const presigned = await params.client.files.createPresignedURL({
-    filename: fileData.fileName,
-    mimetype: fileData.mimeType,
-    md5,
-    tool_slug: params.toolSlug,
-    toolkit_slug: params.toolkitSlug,
-  });
+  const presigned = await runToPromise(
+    params.client.files.createPresignedURL(
+      {
+        filename: fileData.fileName,
+        mimetype: fileData.mimeType,
+        md5,
+        tool_slug: params.toolSlug,
+        toolkit_slug: params.toolkitSlug,
+      },
+      { decode: false }
+    )
+  );
 
   const { ssrfSafeFetch } = await loadSsrfSafeFetch();
   const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
@@ -298,7 +307,7 @@ const hydrateFileUploads = async (
     readonly path: Path.Path;
     readonly toolSlug: string;
     readonly toolkitSlug: string;
-    readonly client: RawComposioClient;
+    readonly client: ComposioClientShape;
   }
 ): Promise<unknown> => {
   if (schema?.file_uploadable === true) {
@@ -359,7 +368,7 @@ export const uploadToolInputFiles = async (params: {
   readonly toolSlug: string;
   readonly arguments_: Record<string, unknown>;
   readonly inputSchema: JsonSchema;
-  readonly client: RawComposioClient;
+  readonly client: ComposioClientShape;
   readonly toolkitSlug?: string;
 }): Promise<Record<string, unknown>> => {
   if (!schemaHasFileUploadable(params.inputSchema)) {

@@ -360,7 +360,11 @@ const runToolsSearch = (params: {
           consumerUserId: resolvedUserId.value,
         });
       }
-      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
+      const effectClient = yield* clientSingleton.getEffectFor({
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
+      const { sessionId } = yield* resolveToolRouterSession(effectClient, resolvedUserId.value, {
         toolkits: toolkitList,
         cacheScope:
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId

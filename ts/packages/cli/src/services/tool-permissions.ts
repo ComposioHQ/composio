@@ -1,7 +1,7 @@
 import http from 'node:http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import {
   Data,
@@ -303,25 +303,29 @@ const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
 
 // These two consumer endpoints are absent from the v3.1 spec, so they go
 // through the client's generic escape hatch rather than a typed resource. The
-// client still supplies credentials, retries, and redirect handling.
-const requestJson = async <S extends Schema.ConstraintDecoder<unknown>>(
+// client still supplies credentials, retries, and redirect handling. Every
+// failure, of the request or of the decode, is a `ToolPermissionsRequestError`:
+// the callers fail closed on that tag.
+const requestJson = <S extends Schema.ConstraintDecoder<unknown>>(
   responseSchema: S,
   {
     client,
     path,
     method = 'GET',
     body,
+    message,
   }: {
-    readonly client: RawComposioClient;
+    readonly client: ComposioClientShape;
     readonly path: string;
     readonly method?: 'GET' | 'POST';
     readonly body?: unknown;
+    readonly message: string;
   }
-): Promise<S['Type']> => {
-  const responseBody: unknown =
-    method === 'GET' ? await client.get(path) : await client.post(path, { body });
-  return Schema.decodeUnknownPromise(responseSchema)(responseBody);
-};
+): Effect.Effect<S['Type'], ToolPermissionsRequestError> =>
+  (method === 'GET' ? client.get(path) : client.post(path, { body })).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(responseSchema)),
+    Effect.mapError(cause => new ToolPermissionsRequestError({ path, message, cause }))
+  );
 
 /**
  * The client for the caller's org and project, with a failure the permission
@@ -332,11 +336,11 @@ const permissionsClient = (params: {
   readonly orgId: string;
   readonly projectId: string;
   readonly path: string;
-}): Effect.Effect<RawComposioClient, ToolPermissionsRequestError, ComposioClientSingleton> =>
+}): Effect.Effect<ComposioClientShape, ToolPermissionsRequestError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     return yield* clientSingleton
-      .getFor({
+      .getEffectFor({
         userApiKey: params.apiKey,
         orgId: params.orgId,
         projectId: params.projectId,
@@ -353,19 +357,11 @@ const permissionsClient = (params: {
       );
   });
 
-const fetchConsumerConfig = (client: RawComposioClient) =>
-  Effect.tryPromise({
-    try: () =>
-      requestJson(ConsumerConfigResponseSchema, {
-        client,
-        path: ORG_CONSUMER_CONFIG_PATH,
-      }),
-    catch: cause =>
-      new ToolPermissionsRequestError({
-        path: ORG_CONSUMER_CONFIG_PATH,
-        message: 'Failed to fetch the org consumer config.',
-        cause,
-      }),
+const fetchConsumerConfig = (client: ComposioClientShape) =>
+  requestJson(ConsumerConfigResponseSchema, {
+    client,
+    path: ORG_CONSUMER_CONFIG_PATH,
+    message: 'Failed to fetch the org consumer config.',
   });
 
 export const refreshConsumerPermissionSnapshot = (params: {
@@ -401,23 +397,15 @@ export const refreshConsumerPermissionSnapshot = (params: {
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
     const resolved =
       enhancedControlsEnabled && connectedAccountIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              requestJson(PermissionResolveResponseSchema, {
-                client,
-                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
-                method: 'POST',
-                body: {
-                  connected_account_ids: connectedAccountIds,
-                  default: 'ask_every_call',
-                },
-              }),
-            catch: cause =>
-              new ToolPermissionsRequestError({
-                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
-                message: 'Failed to resolve consumer permissions.',
-                cause,
-              }),
+        ? yield* requestJson(PermissionResolveResponseSchema, {
+            client,
+            path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
+            method: 'POST',
+            body: {
+              connected_account_ids: connectedAccountIds,
+              default: 'ask_every_call',
+            },
+            message: 'Failed to resolve consumer permissions.',
           }).pipe(
             Effect.map(response => ({
               permissions: response.experimental?.permissions,

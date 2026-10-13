@@ -92,7 +92,11 @@ export const toolkitsCmd$Info = Command.make(
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
-              const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
+              const effectClient = yield* clientSingleton.getEffect();
+              const { sessionId } = yield* resolveToolRouterSession(
+                effectClient,
+                resolvedUserId.value
+              );
               const sessionToolkits = yield* Effect.tryPromise({
                 try: () => client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] }),
                 catch: cause =>

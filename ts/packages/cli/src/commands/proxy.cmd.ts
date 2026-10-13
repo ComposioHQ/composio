@@ -335,15 +335,19 @@ export const proxyCmd = Command.make('proxy', {
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
+          const effectClient = yield* clientSingleton.getEffectFor({
+            orgId: resolvedProject.orgId,
+            projectId: resolvedProject.projectId,
+          });
           const selectedConnectedAccountId = Option.isSome(account)
             ? yield* resolveConnectedAccountForToolkit({
-                client,
+                client: effectClient,
                 toolkitSlug: normalizedToolkit,
                 userId: consumerUserId,
                 selector: account,
               })
             : undefined;
-          const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
+          const { sessionId } = yield* resolveToolRouterSession(effectClient, consumerUserId, {
             toolkits: [normalizedToolkit],
             connectedAccounts: selectedConnectedAccountId
               ? { [normalizedToolkit]: selectedConnectedAccountId }

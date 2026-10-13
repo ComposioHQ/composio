@@ -4,8 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
-import { APIError } from '@composio/client';
-import { APIConnectionError } from '@composio/client/effect';
+import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -39,6 +38,28 @@ vi.hoisted(() => {
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+type ApiErrorEnvelope = NonNullable<BadRequestError['details']>;
+
+// The client's error for a 400 answered with `envelope`.
+const clientBadRequest = (envelope: ApiErrorEnvelope) =>
+  new BadRequestError({
+    message: `400 ${JSON.stringify({ error: envelope })}`,
+    method: 'POST',
+    url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+    status: 400,
+    requestId: envelope.request_id,
+    details: envelope,
+    body: { error: envelope },
+  });
+
+const noActiveConnectionEnvelope: ApiErrorEnvelope = {
+  message: "No active connection found for toolkit(s) 'gmail' in this session",
+  code: 4302,
+  slug: 'ToolRouterV2_NoActiveConnection',
+  status: 400,
+  request_id: 'test-request-id',
+};
 
 // `testConfigProvider` pins its env, so it bypasses the per-test
 // `COMPOSIO_CACHE_DIR` stub, and the learned toolkit slugs resolve against the
@@ -148,7 +169,7 @@ describe('CLI: composio execute', () => {
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
   let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
-  let recordedExecuteOptions: Array<{ maxRetries?: number } | undefined> = [];
+  let recordedExecuteOptions: Array<{ maxRetries?: number; decode?: boolean } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
     recordedProjectToolkitScopes = [];
@@ -379,9 +400,9 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
-        // An execution is never retried: a retry after the backend already
-        // acted would duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+        // An execution is never retried, and its response never validated: a
+        // retry after the backend already acted would duplicate the side effect.
+        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0, decode: false });
       })
     );
 
@@ -389,7 +410,7 @@ describe('CLI: composio execute', () => {
       Effect.gen(function* () {
         yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
 
-        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0, decode: false }]);
       })
     );
 
@@ -2588,22 +2609,7 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => {
-          throw APIError.generate(
-            400,
-            {
-              error: {
-                message: "No active connection found for toolkit(s) 'gmail' in this session",
-                code: 4302,
-                slug: 'ToolRouterV2_NoActiveConnection',
-                status: 400,
-                request_id: 'test-request-id',
-              },
-            },
-            undefined,
-            new Headers()
-          );
-        },
+        execute: () => Effect.fail(clientBadRequest(noActiveConnectionEnvelope)),
       },
     })
   )('[Given] Tool Router NoActiveConnection error [Then] prints connection tips', it => {
@@ -2767,19 +2773,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: APIError.generate(
-          400,
-          {
-            error: {
-              message: 'API error: invalid input',
-              code: 1001,
-              slug: 'Validation_Failed',
-              status: 400,
-            },
-          },
-          undefined,
-          new Headers()
-        ),
+        failWith: clientBadRequest({
+          message: 'API error: invalid input',
+          code: 1001,
+          slug: 'Validation_Failed',
+          status: 400,
+        }),
       },
     })
   )('[Given] executor throws an API error [Then] prints message and details', it => {

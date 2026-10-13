@@ -505,7 +505,8 @@ describe('CLI: composio dev connected-accounts link', () => {
               max_accounts_per_toolkit: undefined,
               require_explicit_selection: undefined,
             },
-          })
+          }),
+          { decode: false }
         );
         expect(toolRouterLinkSpy).toHaveBeenCalledWith('trs_test_session', {
           toolkit: 'gmail',

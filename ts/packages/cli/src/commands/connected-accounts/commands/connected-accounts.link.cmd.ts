@@ -890,16 +890,24 @@ const runConnectedAccountsLink = (params: {
       .withSpinner(
         `Linking ${toolkitSlug}...`,
         Effect.gen(function* () {
-          const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
-            manageConnections: true,
-            cacheScope: getConsumerCacheScope(resolvedProject),
-            excludeConnectedAccountsForToolkits: [toolkitSlug],
-            multiAccount: Option.isSome(normalizedAliasOption)
-              ? {
-                  enable: true,
-                }
-              : undefined,
+          const effectClient = yield* clientSingleton.getEffectFor({
+            orgId: resolvedProject.orgId,
+            projectId: resolvedProject.projectId,
           });
+          const { sessionId } = yield* resolveToolRouterSession(
+            effectClient,
+            resolvedUserId.value,
+            {
+              manageConnections: true,
+              cacheScope: getConsumerCacheScope(resolvedProject),
+              excludeConnectedAccountsForToolkits: [toolkitSlug],
+              multiAccount: Option.isSome(normalizedAliasOption)
+                ? {
+                    enable: true,
+                  }
+                : undefined,
+            }
+          );
           return yield* Effect.tryPromise({
             try: () =>
               client.toolRouter.session.link(sessionId, {
