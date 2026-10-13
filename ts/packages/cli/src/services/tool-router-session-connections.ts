@@ -57,15 +57,12 @@ const listConnectedAccountsForToolkits = (
   userId: string,
   toolkits: ReadonlyArray<string>
 ) =>
-  client.connectedAccounts.list(
-    {
-      user_ids: [userId],
-      statuses: ['ACTIVE'],
-      toolkit_slugs: [...toolkits],
-      limit: 1000,
-    },
-    { decode: false }
-  );
+  client.connectedAccounts.list({
+    user_ids: [userId],
+    statuses: ['ACTIVE'],
+    toolkit_slugs: [...toolkits],
+    limit: 1000,
+  });
 
 export const resolveToolRouterSessionConnections = (
   client: ComposioClientShape,

@@ -14,7 +14,6 @@ import {
   ComposioSensitiveFilePathBlockedError,
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
-import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
 import {
   schemaHasFileUploadable,
   ToolFileUploadError,
@@ -235,8 +234,6 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
         orgApiKey: null,
         baseURL: 'https://stub.invalid',
         deprecationNotices: 'off',
-        decode: true,
-        schemas: composioSchemaLoaders,
       },
       HttpClient.make(() =>
         Effect.sync(() => reached.resolve()).pipe(

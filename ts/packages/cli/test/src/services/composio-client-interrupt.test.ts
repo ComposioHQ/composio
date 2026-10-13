@@ -110,10 +110,7 @@ describe('interrupting a single-shot client request', () => {
       const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
 
       const fiber = yield* Effect.forkChild(
-        client.connectedAccounts.list(
-          { user_ids: ['default'], statuses: ['ACTIVE'] },
-          { decode: false }
-        )
+        client.connectedAccounts.list({ user_ids: ['default'], statuses: ['ACTIVE'] })
       );
       const requestSignal = yield* pending.signal;
       expect(requestSignal.aborted).toBe(false);

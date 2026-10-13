@@ -261,12 +261,12 @@ export const ToolsExecutorLive = Layer.effect(
             ? resolvedClient.toolRouter.session.executeMeta(
                 sessionId,
                 { slug, arguments: normalizedArguments },
-                { maxRetries: 0, decode: false }
+                { maxRetries: 0 }
               )
             : resolvedClient.toolRouter.session.execute(
                 sessionId,
                 { tool_slug: slug, arguments: normalizedArguments },
-                { maxRetries: 0, decode: false }
+                { maxRetries: 0 }
               );
           if (raw.result_type === 'input_required') {
             return yield* toolInputRequiredError(`Tool ${slug}`, raw);

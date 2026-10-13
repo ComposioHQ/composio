@@ -14,6 +14,7 @@ import * as Str from 'effect/String';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import {
+  // oxlint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
   VERSION as clientLibraryVersion,
   type ComposioClientShape,
@@ -35,9 +36,9 @@ import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
 import { isClientConfigurationError } from 'src/utils/api-error-extraction';
-import { MAX_CONCURRENT_REQUESTS_PER_ENDPOINT, decode, undecoded } from './composio-request';
+import { MAX_CONCURRENT_REQUESTS_PER_ENDPOINT, decode, validated } from './composio-request';
 import { lookupOperations, resourceOperations } from './composio-resource-operations';
-import { composioSchemaLoaders } from './composio-schema-loaders';
+import { schemaLoaders } from '@composio/client/effect/schemas';
 import {
   InvalidToolkitsError,
   invalidToolkitOn404,
@@ -110,6 +111,15 @@ const buildDefaultHeaders = (params: {
 };
 
 /**
+ * Whose requests a client sends. The org and project headers are only sent
+ * together, so a scope names both or neither.
+ */
+export type ClientScope = { readonly userApiKey?: string } & (
+  | { readonly orgId: string; readonly projectId: string }
+  | { readonly orgId?: undefined; readonly projectId?: undefined }
+);
+
+/**
  * Shape exposed by {@link ComposioClientSingleton}.
  */
 export interface ComposioClientSingletonShape {
@@ -121,11 +131,9 @@ export interface ComposioClientSingletonShape {
   /**
    * The client for an explicit scope. `userApiKey` defaults to the user's key.
    */
-  readonly getFor: (params: {
-    userApiKey?: string;
-    orgId?: string;
-    projectId?: string;
-  }) => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
+  readonly getFor: (
+    params: ClientScope
+  ) => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * Returns a snapshot of the accumulated metrics (total bytes received and
    * request count) across every client this singleton built.
@@ -143,11 +151,11 @@ export interface ComposioClientSingletonShape {
 export type ClientBuildError = ConfigurationError | ComposioClientConfigurationError;
 
 /**
- * The scope a client is built for. A plain record is compared and hashed
- * structurally by `Equal` and `Hash`, so two lookups with the same fields
- * resolve to the same cache entry.
+ * The scope a client is built for, with the user key resolved. A plain record
+ * is compared and hashed structurally by `Equal` and `Hash`, so two lookups
+ * with the same fields resolve to the same cache entry.
  */
-interface ClientScope {
+interface ResolvedClientScope {
   readonly userApiKey: string | undefined;
   readonly orgId: string | undefined;
   readonly projectId: string | undefined;
@@ -170,14 +178,14 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
     const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
     const httpClient = yield* HttpClient.HttpClient;
 
-    const buildClient = (scope: ClientScope) =>
+    const buildClient = (scope: ResolvedClientScope) =>
       Effect.gen(function* () {
         const cliSessionId = yield* getCurrentCwdSessionId();
 
         return yield* Effect.try({
           try: () =>
-            // Responses are validated against the CLI's loader table unless a
-            // call passes `decode: false`.
+            // A call that passes `decode: true` has its response validated
+            // against the client's schema for that operation.
             makeComposioClient(
               {
                 apiKey: null,
@@ -193,8 +201,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                   projectId: scope.projectId,
                   cliSessionId,
                 }),
-                decode: true,
-                schemas: composioSchemaLoaders,
+                schemas: schemaLoaders,
               },
               httpClient
             ),
@@ -222,7 +229,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
 
     // `ctx.data` is read per call: a login or logout changes the user key,
     // and with it the scope.
-    const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+    const getFor = (params?: ClientScope) =>
       Effect.suspend(() =>
         Cache.get(clients, {
           userApiKey: normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)),
@@ -247,11 +254,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
             }),
         });
       }),
-      getFor: Effect.fn(function* (params: {
-        userApiKey?: string;
-        orgId?: string;
-        projectId?: string;
-      }) {
+      getFor: Effect.fn(function* (params: ClientScope) {
         return yield* getFor(params);
       }),
       getMetrics: metrics.getMetrics,
@@ -299,12 +302,12 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
     collectAll(scope ? clientSingleton.getFor(scope) : client, c =>
-      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, undecoded)
+      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy })
     ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
   const getToolkitDetailed = (slug: string) =>
     client.pipe(
-      Effect.flatMap(c => c.toolkits.retrieve(slug, undefined, undecoded)),
+      Effect.flatMap(c => c.toolkits.retrieve(slug)),
       Effect.flatMap(decode(ToolkitDetailed))
     );
 
@@ -341,7 +344,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ).pipe(Effect.map(sortBySlug));
 
   const listTools = (query: { toolkit_slug?: string; toolkit_versions: string }) =>
-    collectAll(client, c => c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE }, undecoded)).pipe(
+    collectAll(client, c => c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE })).pipe(
       Effect.flatMap(decode(Tools))
     );
 
@@ -355,7 +358,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getToolsAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.tools.retrieveEnum(undecoded)),
+        Effect.flatMap(c => c.tools.retrieveEnum()),
         Effect.flatMap(decode(ToolsAsEnums))
       ),
     /**
@@ -385,7 +388,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getTriggerTypesAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.triggersTypes.retrieveEnum(undecoded)),
+        Effect.flatMap(c => c.triggersTypes.retrieveEnum()),
         Effect.flatMap(decode(TriggerTypesAsEnums))
       ),
     /**
@@ -395,10 +398,10 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
       collectAll(client, c =>
-        c.triggersTypes.listStream(
-          { limit: MAX_PAGE_SIZE, toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined },
-          undecoded
-        )
+        c.triggersTypes.listStream({
+          limit: MAX_PAGE_SIZE,
+          toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+        })
       ).pipe(Effect.flatMap(decode(TriggerTypes)), Effect.map(sortBySlug)),
     /**
      * Validates that the given toolkit slugs are valid by comparing them against the list
@@ -493,7 +496,7 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     createSession: (params?: { scope?: 'user' | 'project' }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' }, undecoded)),
+        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' })),
         Effect.flatMap(decode(Session))
       ),
     /**
@@ -501,12 +504,13 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     getSession: (session: { id: string }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.getSession({ id: session.id }, undecoded)),
+        Effect.flatMap(c => c.cli.getSession({ id: session.id })),
         Effect.flatMap(decode(RetrievedSession))
       ),
-    getRealtimeCredentials: () => Effect.flatMap(client, c => c.cli.realtime.credentials()),
+    getRealtimeCredentials: () =>
+      Effect.flatMap(client, c => c.cli.realtime.credentials(validated)),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-      Effect.flatMap(client, c => c.cli.realtime.auth(params, undecoded)),
+      Effect.flatMap(client, c => c.cli.realtime.auth(params)),
   };
 });
 

@@ -70,15 +70,12 @@ export const connectedAccountsCmd$List = Command.make(
       const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
         client.connectedAccounts
-          .list(
-            {
-              toolkit_slugs: toolkitSlugs,
-              user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-              statuses: Option.isSome(status) ? [status.value] : undefined,
-              limit: clampLimit(limit),
-            },
-            { decode: false }
-          )
+          .list({
+            toolkit_slugs: toolkitSlugs,
+            user_ids: Option.isSome(userId) ? [userId.value] : undefined,
+            statuses: Option.isSome(status) ? [status.value] : undefined,
+            limit: clampLimit(limit),
+          })
           .pipe(failedWith(ConnectedAccountsListRequestError, 'Failed to list connected accounts.'))
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);

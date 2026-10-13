@@ -76,14 +76,11 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       projectId: resolvedProject.projectId,
     });
     const rawResult = yield* client.connectedAccounts
-      .list(
-        {
-          toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-          user_ids: [consumerUserId],
-          limit: 1000,
-        },
-        { decode: false }
-      )
+      .list({
+        toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+        user_ids: [consumerUserId],
+        limit: 1000,
+      })
       .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({

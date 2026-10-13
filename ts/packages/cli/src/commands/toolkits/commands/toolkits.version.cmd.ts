@@ -24,7 +24,7 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
         `Fetching versions for toolkit "${slug}"...`,
         // Only the name, slug and version list are read, so a toolkit that
         // lacks other catalog fields still prints its versions.
-        client.toolkits.retrieve(slug, undefined, { decode: false })
+        client.toolkits.retrieve(slug)
       )
       .pipe(
         Effect.asSome,

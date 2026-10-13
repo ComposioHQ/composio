@@ -3,7 +3,6 @@ import { Effect, Option } from 'effect';
 import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { undecoded } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
@@ -152,7 +151,7 @@ export const logsCmd$Triggers = Command.make(
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
           client.logs.triggers
-            .retrieve(triggerLogId, undecoded)
+            .retrieve(triggerLogId)
             .pipe(
               failedWith(TriggerLogsRequestError, `Failed to fetch trigger log "${triggerLogId}".`)
             )
@@ -170,19 +169,16 @@ export const logsCmd$Triggers = Command.make(
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
         client.logs.triggers
-          .list(
-            {
-              cursor: Option.getOrUndefined(cursor),
-              from: Option.getOrUndefined(from),
-              to: Option.getOrUndefined(to),
-              limit: clampedLimit,
-              time: Option.getOrUndefined(time),
-              search: Option.getOrUndefined(search),
-              include_payload: includePayload,
-              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-            },
-            undecoded
-          )
+          .list({
+            cursor: Option.getOrUndefined(cursor),
+            from: Option.getOrUndefined(from),
+            to: Option.getOrUndefined(to),
+            limit: clampedLimit,
+            time: Option.getOrUndefined(time),
+            search: Option.getOrUndefined(search),
+            include_payload: includePayload,
+            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+          })
           .pipe(failedWith(TriggerLogsRequestError, 'Failed to fetch trigger logs.'))
       );
 

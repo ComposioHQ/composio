@@ -167,27 +167,24 @@ export const createToolRouterSessionContext = (
         })
       : undefined;
     return yield* client.toolRouter.session
-      .create(
-        {
-          user_id: userId,
-          auth_configs: connectionContext.authConfigs,
-          connected_accounts: connectionContext.connectedAccounts,
-          manage_connections: { enable: options?.manageConnections ?? false },
-          multi_account: options?.multiAccount
-            ? {
-                enable: options.multiAccount.enable,
-                max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
-                require_explicit_selection: options.multiAccount.requireExplicitSelection,
-              }
-            : undefined,
-          toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
-          instant: { return_instant_charge: true },
-          experimental: permissionSnapshot?.enhancedControlsEnabled
-            ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
-            : undefined,
-        },
-        { decode: false }
-      )
+      .create({
+        user_id: userId,
+        auth_configs: connectionContext.authConfigs,
+        connected_accounts: connectionContext.connectedAccounts,
+        manage_connections: { enable: options?.manageConnections ?? false },
+        multi_account: options?.multiAccount
+          ? {
+              enable: options.multiAccount.enable,
+              max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
+              require_explicit_selection: options.multiAccount.requireExplicitSelection,
+            }
+          : undefined,
+        toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+        instant: { return_instant_charge: true },
+        experimental: permissionSnapshot?.enhancedControlsEnabled
+          ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
+          : undefined,
+      })
       .pipe(
         Effect.mapError(
           cause =>
