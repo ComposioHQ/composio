@@ -4935,6 +4935,11 @@
                     "description": "The ID of the connected account to use for authentication (if not provided, will use the default account for the project)",
                     "example": "ca_1a2b3c4d5e6f"
                   },
+                  "user_id": {
+                    "type": "string",
+                    "description": "The user id (entity id) that owns connected_account_id. When the project has 2FA enabled, it is validated against the owner of that connection. Also selects which custom toolkits the request may use.",
+                    "example": "user_4567"
+                  },
                   "endpoint": {
                     "type": "string",
                     "description": "The API endpoint to call (absolute URL or path relative to base URL of the connected account)",
@@ -5376,7 +5381,7 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid request parameters or body format",
+            "description": "Bad request - Invalid request parameters or body format, or user_id missing or not the owner of connected_account_id on a project with 2FA enabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -5396,7 +5401,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - Connected account does not have permission to access the requested resource",
+            "description": "Forbidden - Connected account does not have permission to access the requested resource, or user_id is not allowed to use the shared connected account",
             "content": {
               "application/json": {
                 "schema": {
