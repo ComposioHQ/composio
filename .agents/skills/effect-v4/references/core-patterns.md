@@ -86,7 +86,7 @@ The established convention in this repo — stated in `ts/packages/cli/AGENTS.md
 `Effect.fail` for an expected failure; give it a `Data.TaggedError` with structured
 fields and a preserved cause, then recover with `catchTag`/`catchTags`. This is
 unchanged from v3 and is what nearly every error in `src/services/*.ts` uses, e.g.
-`ts/packages/cli/src/services/composio-clients.ts`:
+`ts/packages/cli/src/services/toolkit-version-validation.ts`:
 
 ```ts
 import { Data } from 'effect';
