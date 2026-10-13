@@ -18,11 +18,6 @@ export const composioSchemaLoaders = {
     (await import('@composio/client/effect/schemas/logs/tools/list')).ToolListResponse,
   'logs.tools.retrieve': async () =>
     (await import('@composio/client/effect/schemas/logs/tools/retrieve')).ToolRetrieveResponse,
-  'logs.triggers.list': async () =>
-    (await import('@composio/client/effect/schemas/logs/triggers/list')).TriggerListResponse,
-  'logs.triggers.retrieve': async () =>
-    (await import('@composio/client/effect/schemas/logs/triggers/retrieve'))
-      .TriggerRetrieveResponse,
   'org.consumer.listConnectedToolkits': async () =>
     (await import('@composio/client/effect/schemas/org/consumer/list-connected-toolkits'))
       .ConsumerListConnectedToolkitsResponse,
