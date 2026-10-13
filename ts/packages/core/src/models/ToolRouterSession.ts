@@ -21,6 +21,7 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionMetaToolSlug,
   ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
@@ -71,6 +72,7 @@ import type {
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
+  SessionExecuteMetaParams,
   SessionExecuteParams,
   SessionLinkParams,
   SessionPatchParams,
@@ -739,6 +741,55 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
     const transformed = transformExecuteResponse(response, toolSlug);
+    return ToolRouterSessionExecuteResponseSchema.parse(transformed);
+  }
+
+  /**
+   * Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+   *
+   * `session.execute()` also runs meta tools. This method only accepts meta
+   * tool slugs, so a typo is a type error instead of a failed request. The call
+   * is sent to the Composio backend as is: custom tools named in a
+   * `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+   *
+   * @param slug - The meta tool slug to execute
+   * @param arguments_ - Optional meta tool arguments
+   * @returns The tool execution result, in the same shape as `session.execute()`
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
+   *
+   * @example
+   * ```typescript
+   * const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+   *   queries: [{ use_case: 'send an email' }],
+   * });
+   * ```
+   */
+  async executeMeta(
+    slug: ToolRouterSessionMetaToolSlug,
+    arguments_?: Record<string, unknown>,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionExecuteResponse> {
+    const executeMetaParams: SessionExecuteMetaParams = {
+      slug,
+      arguments: arguments_ ?? {},
+    };
+    const experimental = inlineCustomToolsExperimental<SessionExecuteMetaParams.Experimental>(
+      this.inlineCustomToolsPayload
+    );
+    if (experimental) {
+      executeMetaParams.experimental = experimental;
+    }
+
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.executeMeta(
+          this.sessionId,
+          executeMetaParams,
+          withoutRetries(requestOptions)
+        ),
+      requestOptions?.signal
+    );
+    const transformed = transformExecuteResponse(response, slug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 
