@@ -882,7 +882,11 @@ class TriggerSubscription(Resource):
         self._alive = True
 
     def wait_forever(self) -> None:
-        """Wait infinitely."""
+        """Wait until stopped or the connection worker exits.
+
+        Recoverable connection failures keep waiting while pysher retries,
+        including throughout an extended network outage.
+        """
         while self.is_alive() and not self.has_errored():
             time.sleep(1)
 
@@ -909,9 +913,10 @@ class TriggerSubscription(Resource):
         thread.start()
 
     def restart(self) -> None:
-        """Restart the subscription connection"""
-        self._connection.disconnect()
-        self._connection._connect()  # pylint: disable=protected-access
+        """Request a reconnect on the running subscription worker."""
+        # Disconnect joins the worker; calling _connect afterwards runs the
+        # socket on the caller while has_errored sees a terminated worker.
+        self._connection.reconnect(reconnect_interval=0)
 
 
 def _silent_pysher_logger() -> logging.Logger:

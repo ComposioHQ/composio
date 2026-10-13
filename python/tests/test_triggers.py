@@ -1785,7 +1785,64 @@ class TestTriggerSubscriptionStop:
         connection.is_alive.return_value = False
         subscription._connection = connection
 
-        subscription.wait_forever()
+        waiter = threading.Thread(target=subscription.wait_forever, daemon=True)
+        waiter.start()
+        try:
+            waiter.join(timeout=2)
+            assert not waiter.is_alive()
+        finally:
+            subscription._alive = False
+            waiter.join(timeout=2)
+
+    def test_restart_preserves_pysher_worker(self, subscription):
+        """Manual reconnect keeps the real worker and subscription wait alive."""
+        connected = threading.Event()
+        reconnected = threading.Event()
+        closed = threading.Event()
+        done = threading.Event()
+        attempts = []
+
+        class Socket:
+            has_errored = False
+
+            def run_forever(self, **kwargs):
+                closed.clear()
+                attempts.append(threading.current_thread())
+                (connected if len(attempts) == 1 else reconnected).set()
+                closed.wait(timeout=5)
+
+            def close(self):
+                closed.set()
+
+        connection = triggers_module.PusherConnection(
+            event_handler=Mock(), url="ws://localhost", reconnect_interval=0
+        )
+        subscription._connection = connection
+        waiter = threading.Thread(
+            target=lambda: (subscription.wait_forever(), done.set()), daemon=True
+        )
+        restarter = threading.Thread(target=subscription.restart, daemon=True)
+        with patch("pysher.connection.websocket.WebSocketApp", return_value=Socket()):
+            connection.start()
+            try:
+                assert connected.wait(timeout=2)
+                waiter.start()
+                restarter.start()
+                assert reconnected.wait(timeout=2)
+                assert subscription.has_errored() is False
+                assert attempts[:2] == [connection, connection]
+                restarter.join(timeout=2)
+                assert not restarter.is_alive()
+                assert not done.wait(timeout=1.1)
+                # Terminal worker death must end a wait already in progress.
+                connection.disconnect(timeout=2)
+                assert done.wait(timeout=2)
+            finally:
+                subscription._alive = False
+                connection.disconnect(timeout=2)
+                restarter.join(timeout=2)
+                if waiter.ident is not None:
+                    waiter.join(timeout=2)
 
     def test_wait_forever_survives_reconnect_backoff(self, subscription):
         """``wait_forever`` does not return early on a recoverable drop.
