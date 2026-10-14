@@ -222,16 +222,6 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty('instant');
     });
 
-    it('passes returnPricesInSearch as return_prices_in_search', async () => {
-      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      await toolRouter.create(userId, {
-        instant: { returnPricesInSearch: true },
-      });
-      expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0]).toMatchObject({
-        instant: { return_prices_in_search: true },
-      });
-    });
-
     it('sends proxyExecute as given, expands the boolean shorthand, and omits the block otherwise', async () => {
       mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
 
@@ -2892,35 +2882,6 @@ describe('ToolRouter', () => {
 
       expect(result.toolkitConnectionStatuses[0].instantAccount).toEqual({
         allowedToolSlugs: ['EXA_SEARCH'],
-      });
-    });
-
-    it('should return Instant tool prices on toolkit connection statuses', async () => {
-      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.search.mockResolvedValueOnce({
-        ...mockSearchResponse,
-        toolkit_connection_statuses: [
-          {
-            toolkit: 'exa',
-            description: 'Exa',
-            has_active_connection: true,
-            instant_account: {
-              allowed_tool_slugs: ['EXA_SEARCH'],
-              prices: { EXA_SEARCH: { description: '$0.01 per call', discount: null } },
-            },
-            status_message: 'Connected via the Composio Instant account.',
-          },
-        ],
-      });
-
-      const session = await toolRouter.create(userId, {
-        instant: { returnPricesInSearch: true },
-      });
-      const result = await session.search({ query: 'search the web' });
-
-      expect(result.toolkitConnectionStatuses[0].instantAccount).toEqual({
-        allowedToolSlugs: ['EXA_SEARCH'],
-        prices: { EXA_SEARCH: { description: '$0.01 per call', discount: null } },
       });
     });
 

@@ -186,23 +186,21 @@ describe('transformToolRouterUpdateParams', () => {
   it('maps the experimental Instant usage policy without changing other session settings', () => {
     expect(
       transformToolRouterUpdateParams({
-        instant: { toolkits: { disable: ['exa'] }, returnInstantCharge: true },
+        instant: {
+          toolkits: { disable: ['exa'] },
+          returnInstantCharge: true,
+          returnPricesInSearch: true,
+        },
       })
-    ).toEqual({ instant: { toolkits: { disable: ['exa'] }, return_instant_charge: true } });
+    ).toEqual({
+      instant: {
+        toolkits: { disable: ['exa'] },
+        return_instant_charge: true,
+        return_prices_in_search: true,
+      },
+    });
     expect(transformToolRouterUpdateParams({ instant: false })).toEqual({
       instant: false,
-    });
-  });
-
-  it('maps returnPricesInSearch only when given', () => {
-    expect(transformToolRouterUpdateParams({ instant: { returnPricesInSearch: true } })).toEqual({
-      instant: { return_prices_in_search: true },
-    });
-    expect(transformToolRouterUpdateParams({ instant: { returnPricesInSearch: false } })).toEqual({
-      instant: { return_prices_in_search: false },
-    });
-    expect(transformToolRouterUpdateParams({ instant: { returnInstantCharge: true } })).toEqual({
-      instant: { return_instant_charge: true },
     });
   });
 

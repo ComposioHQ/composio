@@ -210,17 +210,9 @@ export const transformToolRouterProxyExecuteParams = (
 ): NonNullable<SessionCreateParams['proxy_execute']> =>
   typeof config === 'boolean' ? { enable: config } : config;
 
-/**
- * `instant` as sent on create and update. Adds `return_prices_in_search`,
- * which the generated client does not type yet.
- */
-export type SessionInstantBody =
-  | false
-  | (Exclude<NonNullable<SessionCreateParams['instant']>, false> & {
-      return_prices_in_search?: boolean;
-    });
-
-export const transformToolRouterInstantParams = (config: ToolRouterInstant): SessionInstantBody => {
+export const transformToolRouterInstantParams = (
+  config: ToolRouterInstant
+): NonNullable<SessionCreateParams['instant']> => {
   if (config === false) return false;
   return {
     ...(config.toolkits !== undefined && { toolkits: config.toolkits }),

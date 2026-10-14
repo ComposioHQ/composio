@@ -100,42 +100,13 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
-class ToolRouterInstantPolicy(t.Protocol):
-    """Stored Instant policy in a Session config, as the generated client
-    models it, plus ``return_prices_in_search``. SDK-owned until the generated
-    client adopts that field."""
-
-    toolkits: t.Union[
-        session_create_response.CurrentConfigInstantVariant1ToolkitsVariant0,
-        session_create_response.CurrentConfigInstantVariant1ToolkitsVariant1,
-        None,
-    ]
-    tools: t.Optional[
-        t.Dict[
-            str,
-            t.Union[
-                session_create_response.CurrentConfigInstantVariant1ToolsValueVariant0,
-                session_create_response.CurrentConfigInstantVariant1ToolsValueVariant1,
-            ],
-        ]
-    ]
-    return_instant_charge: bool
-    return_prices_in_search: bool
-    """Experimental. Whether Session search results show each Instant tool's
-    price under ``instant_account.prices``."""
-
-    def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
-
-    def model_dump_json(self, **kwargs: t.Any) -> str: ...
-
-    def model_copy(self, **kwargs: t.Any) -> ToolRouterInstantPolicy: ...
-
-
 class ToolRouterSessionConfig(t.Protocol):
     """Server-side Session config, as the generated client models it."""
 
     user_id: str
-    instant: t.Union[t.Literal[False], ToolRouterInstantPolicy]
+    instant: t.Union[
+        t.Literal[False], session_create_response.CurrentConfigInstantVariant1
+    ]
     auth_configs: t.Optional[t.Dict[str, str]]
     connected_accounts: t.Optional[t.Dict[str, t.List[str]]]
     execute: session_create_response.ConfigExecute
@@ -224,9 +195,8 @@ ToolRouterSessionMetaToolSlug = t.Literal[
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
 lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
-connection status. When the Session sets ``instant.return_prices_in_search``,
-``instant_account.prices`` maps each tool slug to its published price
-(``{"description": ..., "discount": ...}``)."""
+connection status, and their prices at ``instant_account.prices`` when the
+Session sets ``instant.return_prices_in_search``."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):

@@ -191,7 +191,7 @@ session = composio.sessions.create(
 results = session.search(query="scrape a web page")
 for status in results.toolkit_connection_statuses:
     if status.instant_account is not None:
-        print(status.toolkit, status.instant_account.model_dump().get("prices"))
+        print(status.toolkit, status.instant_account.prices)
 ```
 </Tab>
 <Tab value="TypeScript">
