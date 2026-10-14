@@ -240,6 +240,11 @@ export class ToolRouter<
       experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
     }
 
+    if (routerConfig.experimental?.noElicitationSupportFallback !== undefined) {
+      experimentalPayload.no_elicitation_support_fallback =
+        routerConfig.experimental.noElicitationSupportFallback;
+    }
+
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
         user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,

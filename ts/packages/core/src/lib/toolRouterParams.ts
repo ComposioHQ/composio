@@ -29,14 +29,18 @@ type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSche
 /** Parsed update input; the public `ToolRouterUpdateSessionConfig` is a union over it. */
 type ParsedUpdateSessionConfig = TypeOf<typeof ToolRouterUpdateSessionConfigSchema>;
 
+/** A toolkit's entry in the session `tools` map, as sent on create and update. */
+type SessionToolsEntry = NonNullable<SessionCreateParams['tools']>[string];
+
+/** `require_approval` when the caller set an approval list, nothing otherwise. */
+const requireApprovalParam = <T extends string>(
+  requireApproval: T[] | undefined
+): { require_approval?: T[] } =>
+  requireApproval !== undefined ? { require_approval: requireApproval } : {};
+
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
-):
-  | Record<
-      string,
-      SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-    >
-  | undefined => {
+): Record<string, SessionToolsEntry> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -53,14 +57,16 @@ export const transformToolRouterToolsParams = (
             if (Array.isArray(data)) {
               acc[key] = { enable: data };
             } else if ('enable' in data) {
-              acc[key] = { enable: data.enable };
+              acc[key] = { enable: data.enable, ...requireApprovalParam(data.requireApproval) };
             } else if ('disable' in data) {
-              acc[key] = { disable: data.disable };
+              acc[key] = { disable: data.disable, ...requireApprovalParam(data.requireApproval) };
             } else if ('tags' in data) {
               const tags = transformToolRouterTagsParams(data.tags);
               if (tags) {
-                acc[key] = { tags };
+                acc[key] = { tags, ...requireApprovalParam(data.requireApproval) };
               }
+            } else {
+              acc[key] = { require_approval: data.requireApproval };
             }
           } else {
             throw new ValidationError(parsedResult.error.message);
@@ -70,10 +76,7 @@ export const transformToolRouterToolsParams = (
         }
         return acc;
       },
-      {} as Record<
-        string,
-        SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-      >
+      {} as Record<string, SessionToolsEntry>
     );
     return result;
   }
@@ -91,6 +94,7 @@ export const transformToolRouterTagsParams = (
     return {
       enable: params.enable,
       disable: params.disable,
+      ...requireApprovalParam(params.requireApproval),
     };
   }
 };
@@ -273,6 +277,9 @@ const transformToolRouterUpdateExperimentalParams = (
   if (config.sessionConfigId !== undefined) {
     result.session_config_id = config.sessionConfigId;
   }
+  if (config.noElicitationSupportFallback !== undefined) {
+    result.no_elicitation_support_fallback = config.noElicitationSupportFallback;
+  }
   return result;
 };
 
@@ -329,7 +336,7 @@ export const transformToolRouterMultiAccountParams = (
 
 export const transformToolRouterToolkitsParams = (
   params?: ParsedCreateSessionConfig['toolkits']
-): SessionCreateParams.Enable | SessionCreateParams.Disable | undefined => {
+): NonNullable<SessionCreateParams['toolkits']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -339,8 +346,13 @@ export const transformToolRouterToolkitsParams = (
     return { enable: params };
   }
 
-  // Otherwise return as-is (already in enable/disable format)
-  return params as SessionCreateParams.Enable | SessionCreateParams.Disable;
+  if ('enable' in params) {
+    return { enable: params.enable, ...requireApprovalParam(params.requireApproval) };
+  }
+  if ('disable' in params) {
+    return { disable: params.disable, ...requireApprovalParam(params.requireApproval) };
+  }
+  return { require_approval: params.requireApproval };
 };
 
 /**
