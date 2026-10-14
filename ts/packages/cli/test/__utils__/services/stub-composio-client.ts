@@ -46,6 +46,7 @@ export const stubComposioClient = (
       orgApiKey: null,
       baseURL: 'https://stub.invalid',
       deprecationNotices: 'off',
+      maxRetries: 0,
       schemas: schemaLoaders,
     },
     httpClient

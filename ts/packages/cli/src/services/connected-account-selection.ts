@@ -4,6 +4,7 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
+import { idempotent } from 'src/services/composio-request';
 
 // `status` is an open enum, so this is shape-identical to
 // `ConnectedAccountItem`; tool-router rows normalize statuses outside the
@@ -173,11 +174,14 @@ export const listActiveConnectedAccounts = memoizeInProcess({
   keyOf: (input: { readonly client: ComposioClientShape; readonly userId: string }) =>
     `${clientId(input.client)}\u0000${input.userId}`,
   make: ({ client, userId }) =>
-    client.connectedAccounts.list({
-      user_ids: [userId],
-      statuses: ['ACTIVE'],
-      limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
-    }),
+    client.connectedAccounts.list(
+      {
+        user_ids: [userId],
+        statuses: ['ACTIVE'],
+        limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
+      },
+      idempotent
+    ),
 });
 
 const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
@@ -191,12 +195,15 @@ const fetchConnectedAccountsForToolkit = (params: {
   readonly toolkitSlug: string;
 }) =>
   params.client.connectedAccounts
-    .list({
-      toolkit_slugs: [params.toolkitSlug],
-      user_ids: [params.userId],
-      statuses: ['ACTIVE'],
-      limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
-    })
+    .list(
+      {
+        toolkit_slugs: [params.toolkitSlug],
+        user_ids: [params.userId],
+        statuses: ['ACTIVE'],
+        limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
+      },
+      idempotent
+    )
     .pipe(Effect.map(response => response.items));
 
 /**

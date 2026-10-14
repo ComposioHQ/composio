@@ -10,6 +10,7 @@ import {
   getConnectedAccountPermissionGroup,
   getConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { idempotent } from 'src/services/composio-request';
 
 class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
   'commands/MissingConnectionsConsumerUserIdError'
@@ -76,11 +77,14 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       projectId: resolvedProject.projectId,
     });
     const rawResult = yield* client.connectedAccounts
-      .list({
-        toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-        user_ids: [consumerUserId],
-        limit: 1000,
-      })
+      .list(
+        {
+          toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+          user_ids: [consumerUserId],
+          limit: 1000,
+        },
+        idempotent
+      )
       .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({

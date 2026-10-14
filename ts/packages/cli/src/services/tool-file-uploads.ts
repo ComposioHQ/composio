@@ -8,6 +8,7 @@ import type * as Path from 'effect/Path';
 import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
 import { Data, Effect, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { idempotent } from 'src/services/composio-request';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -283,13 +284,17 @@ const uploadFile = (params: {
     // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
     const { createHash } = yield* Effect.promise(() => import('node:crypto'));
     const md5 = createHash('md5').update(fileData.bytes).digest('hex');
-    const presigned = yield* params.client.files.createPresignedURL({
-      filename: fileData.fileName,
-      mimetype: fileData.mimeType,
-      md5,
-      tool_slug: params.toolSlug,
-      toolkit_slug: params.toolkitSlug,
-    });
+    // Issuing an upload URL changes nothing until the upload, so a retry is safe.
+    const presigned = yield* params.client.files.createPresignedURL(
+      {
+        filename: fileData.fileName,
+        mimetype: fileData.mimeType,
+        md5,
+        tool_slug: params.toolSlug,
+        toolkit_slug: params.toolkitSlug,
+      },
+      idempotent
+    );
 
     const { ssrfSafeFetch } = yield* loadSsrfSafeFetch;
     const uploadResponse = yield* Effect.tryPromise({

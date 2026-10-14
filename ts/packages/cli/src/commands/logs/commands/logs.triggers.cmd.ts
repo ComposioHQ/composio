@@ -10,6 +10,7 @@ import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { decodeTriggerLogRecord } from '../trigger-log-record';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
+import { idempotent } from 'src/services/composio-request';
 
 class TriggerLogsRequestError extends requestError('commands/TriggerLogsRequestError') {}
 
@@ -152,7 +153,7 @@ export const logsCmd$Triggers = Command.make(
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
           client.logs.triggers
-            .retrieve(triggerLogId)
+            .retrieve(triggerLogId, idempotent)
             .pipe(
               failedWith(TriggerLogsRequestError, `Failed to fetch trigger log "${triggerLogId}".`)
             )
@@ -170,12 +171,15 @@ export const logsCmd$Triggers = Command.make(
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
         client.logs.triggers
-          .list({
-            ...optionalParams({ cursor, from, to, time, search }),
-            limit: clampedLimit,
-            include_payload: includePayload,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
+          .list(
+            {
+              ...optionalParams({ cursor, from, to, time, search }),
+              limit: clampedLimit,
+              include_payload: includePayload,
+              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+            },
+            idempotent
+          )
           .pipe(failedWith(TriggerLogsRequestError, 'Failed to fetch trigger logs.'))
       );
 

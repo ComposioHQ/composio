@@ -8,6 +8,7 @@ import {
   resolveDefaultConnectedAccountsByToolkit,
   type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
+import { idempotent } from 'src/services/composio-request';
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -57,12 +58,15 @@ const listConnectedAccountsForToolkits = (
   userId: string,
   toolkits: ReadonlyArray<string>
 ) =>
-  client.connectedAccounts.list({
-    user_ids: [userId],
-    statuses: ['ACTIVE'],
-    toolkit_slugs: [...toolkits],
-    limit: 1000,
-  });
+  client.connectedAccounts.list(
+    {
+      user_ids: [userId],
+      statuses: ['ACTIVE'],
+      toolkit_slugs: [...toolkits],
+      limit: 1000,
+    },
+    idempotent
+  );
 
 export const resolveToolRouterSessionConnections = (
   client: ComposioClientShape,

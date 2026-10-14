@@ -8,6 +8,7 @@ import { resolveCommandProject } from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
+import { idempotent } from 'src/services/composio-request';
 
 class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
   'commands/MissingConnectionRemovalConsumerUserIdError'
@@ -110,7 +111,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     const rawResult = yield* ui.withSpinner(
       'Fetching connections...',
       client.connectedAccounts
-        .list({ user_ids: [consumerUserId], limit: 1000 })
+        .list({ user_ids: [consumerUserId], limit: 1000 }, idempotent)
         .pipe(failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.'))
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);

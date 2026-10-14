@@ -432,9 +432,10 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
-        // An execution is never retried, and its response never validated: a
-        // retry after the backend already acted would duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+        // An execution does not ask for retries or validation, so the client
+        // sends it once: a retry after the backend already acted would
+        // duplicate the side effect.
+        expect(recordedExecuteOptions.at(-1)).toBeUndefined();
       })
     );
 
@@ -442,7 +443,7 @@ describe('CLI: composio execute', () => {
       Effect.gen(function* () {
         yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
 
-        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
+        expect(recordedExecuteOptions).toEqual([undefined]);
       })
     );
 

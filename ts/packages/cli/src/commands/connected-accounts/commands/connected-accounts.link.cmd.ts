@@ -25,6 +25,7 @@ import {
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
+import { idempotent } from 'src/services/composio-request';
 
 class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
   readonly message: string;
@@ -154,7 +155,7 @@ const waitForActiveConnection = (
       Effect.retry(
         Effect.gen(function* () {
           const account = yield* client.connectedAccounts
-            .retrieve(connectedAccountId)
+            .retrieve(connectedAccountId, idempotent)
             .pipe(
               failedWith(
                 ConnectedAccountsRequestError,
@@ -308,13 +309,16 @@ const listActiveConnectedAccounts = (params: {
   readonly toolkitSlug?: string;
   readonly authConfigId?: string;
 }) =>
-  params.client.connectedAccounts.list({
-    user_ids: [params.userId],
-    toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
-    auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
-    statuses: ['ACTIVE'],
-    limit: 100,
-  });
+  params.client.connectedAccounts.list(
+    {
+      user_ids: [params.userId],
+      toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
+      auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
+      statuses: ['ACTIVE'],
+      limit: 100,
+    },
+    idempotent
+  );
 
 const formatExistingAccountLabels = (
   items: ReadonlyArray<{
@@ -513,12 +517,15 @@ const handleListConnectedAccounts = (params: {
     const accounts = yield* params.ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
       client.connectedAccounts
-        .list({
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [resolvedUserId.value],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        })
+        .list(
+          {
+            toolkit_slugs: [toolkitSlug],
+            user_ids: [resolvedUserId.value],
+            statuses: ['ACTIVE'],
+            limit: 100,
+          },
+          idempotent
+        )
         .pipe(
           failedWith(
             ConnectedAccountsRequestError,

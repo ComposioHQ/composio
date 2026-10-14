@@ -252,22 +252,20 @@ export const ToolsExecutorLive = Layer.effect(
                 })
               );
 
-          // Never retry an execution: a retry after the backend already acted
+          // An execution is not `idempotent`, so it is sent once: a retry after the backend already acted
           // duplicates the side effect (e.g. sends the same email twice). The
           // response is not validated either, for the same reason.
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* isMetaToolSlug(
             slug
           )
-            ? resolvedClient.toolRouter.session.executeMeta(
-                sessionId,
-                { slug, arguments: normalizedArguments },
-                { maxRetries: 0 }
-              )
-            : resolvedClient.toolRouter.session.execute(
-                sessionId,
-                { tool_slug: slug, arguments: normalizedArguments },
-                { maxRetries: 0 }
-              );
+            ? resolvedClient.toolRouter.session.executeMeta(sessionId, {
+                slug,
+                arguments: normalizedArguments,
+              })
+            : resolvedClient.toolRouter.session.execute(sessionId, {
+                tool_slug: slug,
+                arguments: normalizedArguments,
+              });
           if (raw.result_type === 'input_required') {
             return yield* toolInputRequiredError(`Tool ${slug}`, raw);
           }

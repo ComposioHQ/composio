@@ -2,6 +2,7 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { idempotent } from 'src/services/composio-request';
 import { failedWith, requestError } from 'src/effects/request-error';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -90,7 +91,7 @@ export const toolkitsCmd$Info = Command.make(
               const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
               const sessionToolkits = yield* client.toolRouter.session
                 // Only the first item is read, and only a few of its fields.
-                .toolkits(sessionId, { toolkits: [slugValue] })
+                .toolkits(sessionId, { toolkits: [slugValue] }, idempotent)
                 .pipe(
                   failedWith(ToolkitsInfoRequestError, `Failed to fetch toolkit "${slugValue}".`)
                 );

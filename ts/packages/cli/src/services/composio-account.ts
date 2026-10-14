@@ -9,7 +9,7 @@ import type { SessionRetrieveInfoResponse } from '@composio/client/resources/aut
 import { LatestToolVersionResponse } from 'src/models/tools';
 import { ComposioClientSingleton } from './composio-clients';
 import { HttpDecodingError, type ClientError } from './composio-errors';
-import { decode, validated } from './composio-request';
+import { decode, idempotent, validated } from './composio-request';
 
 /**
  * Account, session-info, and consumer helpers
@@ -94,7 +94,10 @@ export const listOrganizations = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    const response = yield* client.org.list({ limit: params.limit ?? 50 }, validated);
+    const response = yield* client.org.list(
+      { limit: params.limit ?? 50 },
+      { ...idempotent, ...validated }
+    );
     const organizations = response.organizations.map(
       (organization: OrgListResponse.Organization) =>
         ({ id: organization.id, name: organization.name }) satisfies OrganizationSummary
@@ -123,7 +126,7 @@ export const listOrganizationProjects = (params: {
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     const response = yield* client.org.project.list(
       { limit: params.limit ?? 50 },
-      orgScopedOptions(params.orgId)
+      { ...orgScopedOptions(params.orgId), ...idempotent }
     );
     const projects = response.data.map(
       (project: OrgProject) =>
@@ -153,7 +156,7 @@ export const listOrgProjects = (params: {
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.project.list(
       { list_all_org_projects: true, limit: params.limit ?? 50 },
-      orgScopedOptions(params.orgId)
+      { ...orgScopedOptions(params.orgId), ...idempotent }
     );
   });
 
@@ -174,7 +177,7 @@ export const getSessionInfo = (params: {
     });
     // Read through a few fields only, and called after login has already
     // linked the session: drift in a field the CLI never reads must not fail it.
-    const info = yield* client.auth.session.retrieveInfo();
+    const info = yield* client.auth.session.retrieveInfo(idempotent);
     return yield* requireSessionProject(info);
   });
 
@@ -196,7 +199,10 @@ export const getSessionInfoByUserApiKey = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.userApiKey });
-    const info = yield* client.auth.session.retrieveInfo(orgScopedOptions(params.orgId));
+    const info = yield* client.auth.session.retrieveInfo({
+      ...orgScopedOptions(params.orgId),
+      ...idempotent,
+    });
     return yield* requireSessionProject(info);
   });
 
@@ -253,7 +259,6 @@ export const createProjectApiKey = (params: {
     });
     const payload = yield* client.post(`/api/v3/org/project/${params.projectId}/api_keys/create`, {
       body: { name: params.name },
-      maxRetries: 0,
     });
     const createdApiKey = getApiKeyFromPayload(payload);
 
@@ -275,10 +280,13 @@ export const resolveConsumerProject = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    return yield* client.org.consumer.project.resolve({
-      'x-user-api-key': params.apiKey,
-      'x-org-id': params.orgId,
-    });
+    return yield* client.org.consumer.project.resolve(
+      {
+        'x-user-api-key': params.apiKey,
+        'x-org-id': params.orgId,
+      },
+      idempotent
+    );
   });
 
 /**
@@ -310,7 +318,7 @@ export const getLatestToolVersion = (params: {
     );
     const payload = yield* client.get(
       `/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
-      { headers }
+      { headers, ...idempotent }
     );
     return yield* decode(LatestToolVersionResponse)(payload);
   });
@@ -329,7 +337,7 @@ export const getConsumerConnectedToolkits = (params: {
         'x-user-api-key': params.apiKey,
         'x-org-id': params.orgId,
       },
-      validated
+      { ...idempotent, ...validated }
     );
   });
 

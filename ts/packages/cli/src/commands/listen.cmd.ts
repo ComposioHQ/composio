@@ -23,6 +23,7 @@ import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
+import { idempotent } from 'src/services/composio-request';
 
 type TriggerCreateParams = NonNullable<
   Parameters<ComposioClientShape['triggerInstances']['upsert']>[1]
@@ -158,7 +159,7 @@ const assertTriggerTypeExists = (params: {
   slug: string;
   toolkitSlug?: string;
 }) =>
-  params.client.triggersTypes.retrieve(params.slug).pipe(
+  params.client.triggersTypes.retrieve(params.slug, undefined, idempotent).pipe(
     Effect.catchTag(
       '@composio/client/NotFoundError',
       cause =>
@@ -195,12 +196,15 @@ const resolveConnectedAccountIdForTrigger = (params: {
     }
 
     const connectedAccounts = yield* params.client.connectedAccounts
-      .list({
-        toolkit_slugs: [toolkitSlug],
-        user_ids: [params.consumerUserId],
-        statuses: ['ACTIVE'],
-        limit: 100,
-      })
+      .list(
+        {
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [params.consumerUserId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        },
+        idempotent
+      )
       .pipe(
         Effect.mapError(
           cause =>

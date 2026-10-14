@@ -361,11 +361,11 @@ export const proxyCmd = Command.make('proxy', {
                 method: normalizedMethod,
                 ...(parsedBody !== undefined ? { body: parsedBody } : {}),
                 ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-              },
-              // Never retry a proxied call: a retry after the upstream API
-              // already acted duplicates the side effect. The response is not
-              // validated either, for the same reason.
-              { maxRetries: 0 }
+              }
+              // A proxied call is not `idempotent`, so it is sent once: a retry
+              // after the upstream API already acted duplicates the side
+              // effect. The response is not validated either, for the same
+              // reason.
             )
             .pipe(
               Effect.mapError(failed),
