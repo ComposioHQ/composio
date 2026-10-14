@@ -16,6 +16,7 @@ try {
   await session.execute('GMAIL_SEND_EMAIL', args);
 } catch (error) {
   if (!(error instanceof ComposioToolInputRequiredError)) throw error;
+  const [id] = Object.keys(error.inputRequests);
   await session.execute('GMAIL_SEND_EMAIL', args, {
     inputResponses: { [id]: { action: 'accept', content: { decision: 'approve' } } },
     requestState: error.requestState,
