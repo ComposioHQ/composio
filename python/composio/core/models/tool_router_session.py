@@ -156,6 +156,9 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
     tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
     return_instant_charge: bool
+    return_prices_in_search: bool
+    """Experimental. Show each Instant tool's price in Session search results,
+    under ``instant_account.prices``. Controls visibility only."""
 
 
 class ToolRouterProxyExecuteConfig(te.TypedDict):
@@ -192,7 +195,8 @@ ToolRouterSessionMetaToolSlug = t.Literal[
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
 lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
-connection status."""
+connection status, and their prices at ``instant_account.prices`` when the
+Session sets ``instant.return_prices_in_search``."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
