@@ -37,6 +37,8 @@ async function instantContract(): Promise<void> {
   if (historical?.config.instant) {
     const returnedCharge: boolean = historical.config.instant.return_instant_charge;
     void returnedCharge;
+    const returnedPrices: boolean = historical.config.instant.return_prices_in_search;
+    void returnedPrices;
   }
 
   const summary = await composio.experimental.usage.summary();
