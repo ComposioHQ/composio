@@ -1067,10 +1067,16 @@
                             "return_instant_charge": {
                               "type": "boolean",
                               "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                            },
+                            "return_prices_in_search": {
+                              "type": "boolean",
+                              "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                              "x-experimental": true
                             }
                           },
                           "required": [
-                            "return_instant_charge"
+                            "return_instant_charge",
+                            "return_prices_in_search"
                           ],
                           "additionalProperties": false
                         }
@@ -6992,6 +6998,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -8093,10 +8104,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -8972,10 +8989,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -9839,6 +9862,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -10552,10 +10580,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -11729,10 +11763,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -12930,6 +12970,13 @@
                                   "type": "string"
                                 },
                                 "description": "Tools of this toolkit that run on the Composio instant account"
+                              },
+                              "prices": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "$ref": "#/components/schemas/ToolPricing"
+                                },
+                                "description": "Price of each tool, keyed by tool slug."
                               }
                             },
                             "required": [
@@ -26545,7 +26592,8 @@
                   "managed_auth_by_composio": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Flag indicating if Composio manages authentication",
+                    "description": "Flag indicating if Composio manages authentication. When true, the generated URLs include the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
+                    "deprecated": true,
                     "example": true
                   },
                   "user_ids": {
@@ -26619,17 +26667,17 @@
                     "mcp_url": {
                       "type": "string",
                       "description": "Base MCP URL without any query parameters",
-                      "example": "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000"
+                      "example": "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000"
                     },
                     "connected_account_urls": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each connected account ID",
+                      "description": "List of URLs generated for each connected account ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
                       ]
                     },
                     "user_ids_url": {
@@ -26637,10 +26685,10 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each user ID",
+                      "description": "List of URLs generated for each user ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
                       ]
                     }
                   },
