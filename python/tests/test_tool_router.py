@@ -2390,6 +2390,11 @@ class TestInstantContractTransport:
         assert not isinstance(attached.config.instant, bool)
         assert attached.config.instant.return_instant_charge is True
         assert attached.config.instant.return_prices_in_search is True
+        assert json.loads(attached.config.instant.model_dump_json())[
+            "return_prices_in_search"
+        ]
+        copied = attached.config.instant.model_copy()
+        assert copied.return_prices_in_search is True
 
     def test_execute_selector_charge_and_search_coverage(self):
         requests: t.List[httpx.Request] = []

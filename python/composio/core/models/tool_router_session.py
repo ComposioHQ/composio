@@ -126,6 +126,10 @@ class ToolRouterInstantPolicy(t.Protocol):
 
     def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
 
+    def model_dump_json(self, **kwargs: t.Any) -> str: ...
+
+    def model_copy(self, **kwargs: t.Any) -> ToolRouterInstantPolicy: ...
+
 
 class ToolRouterSessionConfig(t.Protocol):
     """Server-side Session config, as the generated client models it."""
