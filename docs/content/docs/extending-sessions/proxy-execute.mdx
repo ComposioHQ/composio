@@ -75,6 +75,40 @@ The `endpoint` is appended to the base URL, and many base URLs already include a
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>
 
+## Exposing proxy execution to your agent
+
+Set `proxyExecute: true` (`proxy_execute=True` in Python) when creating a Session to expose the `COMPOSIO_PROXY_EXECUTE` meta tool:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.create("user_123", toolkits=["github"], proxy_execute=True)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["github"],
+  proxyExecute: true,
+});
+```
+</Tab>
+</Tabs>
+
+The option also accepts `{ enable: true }` (`{"enable": True}` in Python). If you omit it at creation, the meta tool is off and `sandbox.enableProxyExecution` (`sandbox.enable_proxy_execution` in Python) controls the sandbox's `proxy_execute()` helper.
+
+Change the setting with `session.update({ proxyExecute: false })` or Python `session.update(proxy_execute=False)`. Disabling it also disables the sandbox helper. Pass `null` (`None` in Python) on update to remove the stored setting.
+
+<Callout type="warn">
+At creation, the API rejects a disabled proxy setting combined with an enabled sandbox proxy setting. Disable both, or omit the sandbox proxy setting.
+</Callout>
+
 ## Session restrictions
 
 Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.

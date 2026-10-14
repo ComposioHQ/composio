@@ -948,7 +948,7 @@ await session.update({ manageConnections: { callbackUrl: null } });
 
 ### Clearing a block with null
 
-Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `multiAccount`, `search`, `execute`, and `experimental`.
+Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `proxyExecute`, `multiAccount`, `search`, `execute`, and `experimental`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -1119,6 +1119,42 @@ const tools = await session.tools();
 ```
 </Tab>
 </Tabs>
+
+### executeMeta() / execute_meta()
+
+Run a `COMPOSIO_*` [meta tool](/toolkits/meta-tools) directly from your session with a slug and optional arguments:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.create("user_123")
+result = session.execute_meta(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "send an email"}]},
+)
+print(result.data, result.result_type)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const result = await session.executeMeta("COMPOSIO_SEARCH_TOOLS", {
+  queries: [{ use_case: "send an email" }],
+});
+console.log(result.data, result.resultType);
+```
+</Tab>
+</Tabs>
+
+The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The response includes `resultType` (`result_type` in Python). If execution needs input, such as approval, the SDK raises `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python). Calls are sent once without retries, so retry only when the operation is safe to repeat.
+
+`COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Custom tools named in those calls are not executed in your process.
 
 ### authorize()
 
