@@ -26,10 +26,10 @@ All 13 Python provider packages are released at `0.27.0`. This release also publ
 ### Bug fixes
 
 - **Python trigger listeners.** `wait_forever()` keeps waiting through recoverable network drops while Pysher reconnects, and returns when the connection worker stops. `restart()` requests a reconnect on the running worker.
-- **Nullable OAuth ID tokens.** OAuth connection data types accept a `null` `id_token`, matching API responses for providers that do not return one.
 
 ### Improvements
 
+- **API client types.** The updated API clients accept a `null` `id_token` in OAuth connection data types. TypeScript's SDK connection-state validation is unchanged.
 - **Provider compatibility.** TypeScript provider peer ranges accept Anthropic SDK `0.132` and OpenAI Agents `0.20`. The experimental provider also accepts Pi coding-agent `1.x`.
 
 ### Deprecations
