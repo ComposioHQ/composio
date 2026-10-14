@@ -14,7 +14,7 @@ import * as Str from 'effect/String';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import {
-  // oxlint-disable-next-line no-restricted-imports -- this module is the one place the client is built
+  // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
   VERSION as clientLibraryVersion,
   type ComposioClientShape,
