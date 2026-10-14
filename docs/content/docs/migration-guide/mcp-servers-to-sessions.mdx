@@ -8,6 +8,10 @@ written: "June 2026"
 This guide is for developers using Composio's **MCP servers** (`composio.mcp.create` /
 `composio.mcp.generate`, the "Single Toolkit MCP" flow) who want to migrate to **sessions**.
 
+<Callout type="warn">
+Python's `composio.mcp.generate()` warns once because its URLs depend on the deprecated `include_composio_helper_actions` query parameter. Use a [Session's MCP endpoint](/docs/sessions-via-mcp), available through `session.mcp.url`, instead.
+</Callout>
+
 Sessions are the next generation of the same idea: you still get an MCP URL that any MCP-compatible
 client connects to — but instead of standing up and managing a separate server config per toolkit,
 you create a session that handles tool discovery, authentication, context, and versioning for you.

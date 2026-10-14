@@ -214,6 +214,8 @@ for (const status of results.toolkitConnectionStatuses) {
 
 Each price has a `description` and, when one applies, a `discount`. Like charge reporting, this setting only controls what the response shows. It does not turn Instant usage on or off.
 
+You can also change price reporting on an existing Session with `session.update(instant={"return_prices_in_search": True})` in Python or `await session.update({ instant: { returnPricesInSearch: true } })` in TypeScript.
+
 ## Know which account runs the tool
 
 Composio uses your user's connection first, then an available shared connection, then an Instant account. Only calls through an Instant account incur an Instant charge. Your provider may separately bill calls made with your own account.

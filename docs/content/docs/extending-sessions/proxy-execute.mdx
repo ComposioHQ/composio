@@ -75,6 +75,40 @@ The `endpoint` is appended to the base URL, and many base URLs already include a
 Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the same domain as the toolkit's connected account (a GitHub connection can only call `api.github.com` paths). This is an intentional security boundary, not a quota, so you can't work around it by reshaping the request.
 </Callout>
 
+## Expose proxy execution to your agent
+
+Set `proxyExecute: true` in TypeScript or `proxy_execute=True` in Python when creating a Session to expose the `COMPOSIO_PROXY_EXECUTE` meta tool. Your agent can then make authenticated API requests through its Session tools.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github"],
+    proxy_execute=True,
+)
+session.update(proxy_execute=False)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["github"],
+  proxyExecute: true,
+});
+await session.update({ proxyExecute: false });
+```
+</Tab>
+</Tabs>
+
+The option also accepts an object with `enable`, such as `proxyExecute: { enable: true }` or `proxy_execute={"enable": True}`. You can change it through `session.update()`. Setting it to `false` (`False` in Python) also disables the sandbox's `proxy_execute()` helper. Passing `null` (`None` in Python) on update removes the stored proxy setting. At creation, the API rejects a disabled proxy setting combined with `sandbox.enableProxyExecution: true` (`sandbox.enable_proxy_execution=True` in Python).
+
 ## Session restrictions
 
 Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.

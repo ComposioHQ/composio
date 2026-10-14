@@ -1120,6 +1120,40 @@ const tools = await session.tools();
 </Tab>
 </Tabs>
 
+### executeMeta() / execute_meta()
+
+Run a `COMPOSIO_*` meta tool directly from your code, with a slug and optional arguments. Use the exported `ToolRouterSessionMetaToolSlug` type to restrict slugs to supported meta tools.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.sessions.create(user_id="user_123")
+result = session.execute_meta(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "send an email"}]},
+)
+print(result.result_type, result.data)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const result = await session.executeMeta("COMPOSIO_SEARCH_TOOLS", {
+  queries: [{ use_case: "send an email" }],
+});
+console.log(result.resultType, result.data);
+```
+</Tab>
+</Tabs>
+
+The response has the same shape as `session.execute()`, including `resultType` (`result_type` in Python). If the tool needs input such as approval, the call raises `ComposioToolInputRequiredError` in TypeScript or `ToolInputRequiredError` in Python. Calls are sent once without automatic retries. Custom tools named in a `COMPOSIO_MULTI_EXECUTE_TOOL` call are sent to the backend rather than executed in your process.
+
 ### authorize()
 
 Manually authenticate a user to a toolkit outside of the chat flow.
