@@ -10,6 +10,7 @@ import typing as t
 import warnings
 
 import typing_extensions as te
+from composio_client import omit
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
 from composio.client import HttpClient
@@ -103,8 +104,10 @@ def _add_generate_method(
 
 
 # ``managed_auth_by_composio`` is deprecated upstream, but dropping it would strip
-# the connection-management tools from generated URLs. Keep sending it, silence
-# the API client's notice (it names an internal call), and warn in SDK terms.
+# the connection-management tools from generated URLs. Keep sending it and warn
+# once per process in SDK terms. The API client still raises its own notice once
+# per client instance: it has no per-call switch, and ``warnings.catch_warnings``
+# would reset every module's "already shown" registry on each call.
 _MANAGED_AUTH_DEPRECATION = (
     "composio.mcp.generate() returns URLs that rely on the deprecated "
     "include_composio_helper_actions query parameter, which the API will remove "
@@ -113,6 +116,7 @@ _MANAGED_AUTH_DEPRECATION = (
     "connection-management tools built in. "
     "https://docs.composio.dev/docs/sessions-via-mcp"
 )
+_managed_auth_deprecation_warned = False
 
 
 class MCP(Resource):
@@ -487,22 +491,20 @@ class MCP(Resource):
 
             # Generate server URLs (matching TS: this.client.mcp.generate.url)
             managed_auth_by_composio = not manually_manage_connections
-            if managed_auth_by_composio:
+            global _managed_auth_deprecation_warned
+            if managed_auth_by_composio and not _managed_auth_deprecation_warned:
+                _managed_auth_deprecation_warned = True
                 # 3: past ``Resource``'s trace wrapper to the caller's line.
                 warnings.warn(
                     _MANAGED_AUTH_DEPRECATION, ComposioDeprecationWarning, stacklevel=3
                 )
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    message=r".*`managed_auth_by_composio`",
-                    category=ComposioDeprecationWarning,
-                )
-                url_response = self._client.mcp.generate.url(
-                    mcp_server_id=mcp_config_id,
-                    user_ids=[user_id],
-                    managed_auth_by_composio=managed_auth_by_composio,
-                )
+            # The API defaults the field to false, so opting out omits it and
+            # raises no client notice.
+            url_response = self._client.mcp.generate.url(
+                mcp_server_id=mcp_config_id,
+                user_ids=[user_id],
+                managed_auth_by_composio=True if managed_auth_by_composio else omit,
+            )
 
             # Get the generated URL (matching TS: urlResponse.user_ids_url[0])
             if hasattr(url_response, "user_ids_url") and url_response.user_ids_url:
