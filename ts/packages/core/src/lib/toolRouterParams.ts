@@ -224,6 +224,9 @@ export const transformToolRouterInstantParams = (
     ...(config.returnInstantCharge !== undefined && {
       return_instant_charge: config.returnInstantCharge,
     }),
+    ...(config.returnPricesInSearch !== undefined && {
+      return_prices_in_search: config.returnPricesInSearch,
+    }),
   };
 };
 

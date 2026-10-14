@@ -2310,7 +2310,10 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
-            "instant": {"return_instant_charge": True},
+            "instant": {
+                "return_instant_charge": True,
+                "return_prices_in_search": True,
+            },
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2332,7 +2335,10 @@ def _search_json() -> t.Dict[str, t.Any]:
                 "description": "Search",
                 "has_active_connection": True,
                 "status_message": "Instant account available",
-                "instant_account": {"allowed_tool_slugs": ["EXA_SEARCH"]},
+                "instant_account": {
+                    "allowed_tool_slugs": ["EXA_SEARCH"],
+                    "prices": {"EXA_SEARCH": {"description": "$0.01 per call"}},
+                },
             }
         ],
         "next_steps_guidance": [],
@@ -2349,7 +2355,14 @@ class TestInstantContractTransport:
     """Exercise new wire fields through the pinned generated client."""
 
     @pytest.mark.parametrize(
-        "policy", [False, {}, {"return_instant_charge": True}, None]
+        "policy",
+        [
+            False,
+            {},
+            {"return_instant_charge": True},
+            {"return_prices_in_search": True},
+            None,
+        ],
     )
     def test_create_and_patch_send_new_policy(self, policy):
         client, requests = _transport_client(
@@ -2364,6 +2377,7 @@ class TestInstantContractTransport:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
+        assert session.config.instant.return_prices_in_search is True
 
         if policy is None:
             session.update(expected_config_version=3)
@@ -2377,6 +2391,7 @@ class TestInstantContractTransport:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
+        assert session.config.instant.return_prices_in_search is True
 
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
@@ -2420,6 +2435,10 @@ class TestInstantContractTransport:
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert status.instant_account.prices is not None
+        assert status.instant_account.prices["EXA_SEARCH"].description == (
+            "$0.01 per call"
+        )
         assert "hosted_account" not in status.model_dump()
 
     def test_search_keeps_lenient_generated_response(self):

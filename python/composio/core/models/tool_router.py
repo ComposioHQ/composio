@@ -116,7 +116,12 @@ def _origin(url: str, role: str) -> str:
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "createHint",
+    "updateHint",
+    "destructiveHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -885,8 +890,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                       Example: ['readOnlyHint', 'idempotentHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
-                    Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    Available tag values: 'readOnlyHint', 'createHint',
+                    'updateHint', 'destructiveHint', 'idempotentHint',
+                    'openWorldHint'.
                     Experimental: the dict can also carry 'require_approval',
                     tags whose tools need the user's approval.
                     Example: {'require_approval': ['destructiveHint']}
