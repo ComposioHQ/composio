@@ -100,13 +100,38 @@ class ToolRouterSessionPreloadConfig:
     tools: t.Union[t.List[str], t.Literal["all"]]
 
 
+class ToolRouterInstantPolicy(t.Protocol):
+    """Stored Instant policy in a Session config, as the generated client
+    models it, plus ``return_prices_in_search``. SDK-owned until the generated
+    client adopts that field."""
+
+    toolkits: t.Union[
+        session_create_response.CurrentConfigInstantVariant1ToolkitsVariant0,
+        session_create_response.CurrentConfigInstantVariant1ToolkitsVariant1,
+        None,
+    ]
+    tools: t.Optional[
+        t.Dict[
+            str,
+            t.Union[
+                session_create_response.CurrentConfigInstantVariant1ToolsValueVariant0,
+                session_create_response.CurrentConfigInstantVariant1ToolsValueVariant1,
+            ],
+        ]
+    ]
+    return_instant_charge: bool
+    return_prices_in_search: bool
+    """Experimental. Whether Session search results show each Instant tool's
+    price under ``instant_account.prices``."""
+
+    def model_dump(self, **kwargs: t.Any) -> t.Dict[str, t.Any]: ...
+
+
 class ToolRouterSessionConfig(t.Protocol):
     """Server-side Session config, as the generated client models it."""
 
     user_id: str
-    instant: t.Union[
-        t.Literal[False], session_create_response.CurrentConfigInstantVariant1
-    ]
+    instant: t.Union[t.Literal[False], ToolRouterInstantPolicy]
     auth_configs: t.Optional[t.Dict[str, str]]
     connected_accounts: t.Optional[t.Dict[str, t.List[str]]]
     execute: session_create_response.ConfigExecute
@@ -156,6 +181,9 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
     tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
     return_instant_charge: bool
+    return_prices_in_search: bool
+    """Experimental. Show each Instant tool's price in Session search results,
+    under ``instant_account.prices``. Controls visibility only."""
 
 
 class ToolRouterProxyExecuteConfig(te.TypedDict):
@@ -192,7 +220,9 @@ ToolRouterSessionMetaToolSlug = t.Literal[
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
 lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
-connection status."""
+connection status. When the Session sets ``instant.return_prices_in_search``,
+``instant_account.prices`` maps each tool slug to its published price
+(``{"description": ..., "discount": ...}``)."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -1182,8 +1212,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``callback_url=None`` removes only the stored callback URL.
         Experimental ``instant`` accepts ``False`` to disable billed
         access or an object to set its filters; it does not accept ``None``.
-        Any object, even one that only sets ``return_instant_charge``,
-        re-enables Instant usage on a Session set to ``False``.
+        Any object, even one that only sets ``return_instant_charge`` or
+        ``return_prices_in_search``, re-enables Instant usage on a Session
+        set to ``False``.
         ``proxy_execute`` takes a bool or ``{"enable": bool}``; ``True``
         exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``False`` also turns
         off the sandbox ``proxy_execute()`` helper, and ``None`` removes the

@@ -916,6 +916,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
+                        ``return_instant_charge`` returns the charge with each
+                        call, and ``return_prices_in_search`` shows each Instant
+                        tool's price in ``session.search()`` results.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint

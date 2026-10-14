@@ -2308,7 +2308,10 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
-            "instant": {"return_instant_charge": True},
+            "instant": {
+                "return_instant_charge": True,
+                "return_prices_in_search": True,
+            },
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2347,7 +2350,14 @@ class TestInstantContractTransport:
     """Exercise new wire fields through the pinned generated client."""
 
     @pytest.mark.parametrize(
-        "policy", [False, {}, {"return_instant_charge": True}, None]
+        "policy",
+        [
+            False,
+            {},
+            {"return_instant_charge": True},
+            {"return_prices_in_search": True},
+            None,
+        ],
     )
     def test_create_and_patch_send_new_policy(self, policy):
         client, requests = _transport_client(
@@ -2379,6 +2389,7 @@ class TestInstantContractTransport:
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
         assert attached.config.instant.return_instant_charge is True
+        assert attached.config.instant.return_prices_in_search is True
 
     def test_execute_selector_charge_and_search_coverage(self):
         requests: t.List[httpx.Request] = []
@@ -2447,6 +2458,30 @@ class TestInstantContractTransport:
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
         assert result.to_dict() == payload
+
+    def test_search_returns_instant_tool_prices(self):
+        payload = _search_json()
+        prices = {"EXA_SEARCH": {"description": "$0.01 per call", "discount": None}}
+        payload["toolkit_connection_statuses"][0]["instant_account"]["prices"] = prices
+
+        def handler(request):
+            if request.url.path.endswith("/search"):
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
+
+        client = HttpClient(
+            provider="test",
+            api_key="ak_test",
+            base_url="https://backend.composio.dev",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123", instant={"return_prices_in_search": True}
+        )
+        status = session.search(query="search").toolkit_connection_statuses[0]
+
+        assert status.instant_account is not None
+        assert status.instant_account.model_dump()["prices"] == prices
 
 
 _INPUT_REQUIRED_JSON: t.Dict[str, t.Any] = {

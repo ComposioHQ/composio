@@ -103,7 +103,10 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
-  instant_account?: { allowed_tool_slugs: string[] };
+  instant_account?: {
+    allowed_tool_slugs: string[];
+    prices?: Record<string, { description?: string; discount?: string | null }>;
+  };
 }
 
 interface RawSearchResponse {
@@ -162,7 +165,10 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
     ...(raw.instant_account !== undefined && {
-      instantAccount: { allowedToolSlugs: raw.instant_account.allowed_tool_slugs },
+      instantAccount: {
+        allowedToolSlugs: raw.instant_account.allowed_tool_slugs,
+        ...(raw.instant_account.prices !== undefined && { prices: raw.instant_account.prices }),
+      },
     }),
   };
 }

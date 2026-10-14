@@ -194,6 +194,18 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
+  it('maps returnPricesInSearch only when given', () => {
+    expect(transformToolRouterUpdateParams({ instant: { returnPricesInSearch: true } })).toEqual({
+      instant: { return_prices_in_search: true },
+    });
+    expect(transformToolRouterUpdateParams({ instant: { returnPricesInSearch: false } })).toEqual({
+      instant: { return_prices_in_search: false },
+    });
+    expect(transformToolRouterUpdateParams({ instant: { returnInstantCharge: true } })).toEqual({
+      instant: { return_instant_charge: true },
+    });
+  });
+
   it('maps proxyExecute as given, expands a boolean, and null clears it', () => {
     expect(transformToolRouterUpdateParams({ proxyExecute: { enable: true } })).toEqual({
       proxy_execute: { enable: true },

@@ -169,7 +169,46 @@ describe('toolRouterResponseTransform', () => {
       const [instantAccount, notInstantAccount] =
         transformSearchResponse(raw).toolkitConnectionStatuses;
       expect(instantAccount.instantAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(instantAccount.instantAccount).not.toHaveProperty('prices');
       expect(notInstantAccount).not.toHaveProperty('instantAccount');
+    });
+
+    it('maps Instant tool prices when the API sends them', () => {
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: {
+              allowed_tool_slugs: ['EXA_SEARCH'],
+              prices: { EXA_SEARCH: { description: '$0.01 per call', discount: '10%' } },
+            },
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_1',
+          generate_id: false,
+          instructions: 'Use session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const [status] = transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(status.instantAccount).toEqual({
+        allowedToolSlugs: ['EXA_SEARCH'],
+        prices: { EXA_SEARCH: { description: '$0.01 per call', discount: '10%' } },
+      });
     });
   });
 

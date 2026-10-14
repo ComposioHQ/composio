@@ -132,6 +132,12 @@ export const ToolRouterInstantSchema = z.union([
        * usage on a Session set to `false`.
        */
       returnInstantCharge: z.boolean().optional(),
+      /**
+       * Experimental. Show each Instant tool's price in Session search results,
+       * under `instantAccount.prices`. Controls visibility only; on update, any
+       * policy object still re-enables Instant usage on a Session set to `false`.
+       */
+      returnPricesInSearch: z.boolean().optional(),
     })
     .strict(),
 ]);
@@ -635,6 +641,15 @@ const ToolRouterSessionSearchToolSchemaSchema = z.object({
   schemaRef: ToolRouterSessionSearchToolSchemasSchemaRefSchema.optional(),
 });
 
+/** Published pricing for an Instant tool, as returned in Session search results. */
+export const ToolRouterToolPricingSchema = z.object({
+  /** Human-readable pricing description. */
+  description: z.string().optional(),
+  /** Discount on top of provider charges. */
+  discount: z.string().nullable().optional(),
+});
+export type ToolRouterToolPricing = z.infer<typeof ToolRouterToolPricingSchema>;
+
 const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   toolkit: z.string(),
   description: z.string(),
@@ -643,7 +658,16 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
   /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
-  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
+  instantAccount: z
+    .object({
+      allowedToolSlugs: z.array(z.string()),
+      /**
+       * Published price of each tool, keyed by tool slug. Present only when the
+       * Session sets `instant.returnPricesInSearch`.
+       */
+      prices: z.record(z.string(), ToolRouterToolPricingSchema).optional(),
+    })
+    .optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -762,12 +786,25 @@ export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Work
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
 /**
+ * Adds `instant.return_prices_in_search` to a generated Session config type.
+ * SDK-owned until the generated client adopts the field.
+ */
+type WithInstantReturnPricesInSearch<T extends { instant: unknown }> = Omit<T, 'instant'> & {
+  instant:
+    | Extract<T['instant'], false>
+    | (Exclude<T['instant'], false> & {
+        /** Experimental. Whether Session search results show each Instant tool's price. */
+        return_prices_in_search?: boolean;
+      });
+};
+
+/**
  * Server-side session configuration as returned by the API: toolkit/tool
  * allowlists, tags, auth configs, connected accounts, manage_connections,
  * preload, sandbox (`workbench`), search, execute, proxy execute and Instant
  * settings.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+export type ToolRouterSessionConfig = WithInstantReturnPricesInSearch<SessionCreateResponse.Config>;
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -1088,7 +1125,8 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
  * The session configuration at one version, as stored by the API. This is
  * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+export type ToolRouterSessionConfigHistoryConfig =
+  WithInstantReturnPricesInSearch<SessionConfigHistoryResponse.Item.Config>;
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */
