@@ -13,7 +13,12 @@ import {
 } from '../utils/toolExecuteUtils';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
-import { ComposioToolFetchError, ComposioToolNotFoundError } from '../../src/errors/ToolErrors';
+import {
+  ComposioToolFetchError,
+  ComposioToolNotFoundError,
+  ComposioToolSchemaInvalidError,
+} from '../../src/errors/ToolErrors';
+import logger from '../../src/utils/logger';
 
 // Minimal structural shape for a ComposioError-like value (possibly wrapping
 // another error as its `cause`), used to narrow `catch (error: unknown)`
@@ -510,7 +515,7 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] });
 
-      expect(result.map((tool) => tool.slug)).toEqual(['COMPOSIO_TOOL', 'CUSTOM_TOOL']);
+      expect(result.map(tool => tool.slug)).toEqual(['COMPOSIO_TOOL', 'CUSTOM_TOOL']);
     });
 
     it('should keep a tool whose output schema cannot be repaired, minus that schema', async () => {
@@ -556,7 +561,57 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] });
 
-      expect(result.map((tool) => tool.slug)).toEqual(['COMPOSIO_TOOL']);
+      expect(result.map(tool => tool.slug)).toEqual(['COMPOSIO_TOOL']);
+    });
+
+    it('should still throw for a broken identity when a schema is also malformed', async () => {
+      // Skipping the tool must not swallow a failure that is not about the
+      // parameters: a tool with no name is broken data either way.
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            name: undefined as unknown as string,
+            input_parameters: {
+              type: 'object',
+              properties: { query: { type: 'not-a-json-schema-type' } },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      await expect(
+        context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] })
+      ).rejects.toThrow();
+    });
+
+    it('should not let a schema property name forge lines in the warning', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.customTool,
+            slug: 'FORGERY_TOOL',
+            input_parameters: {
+              type: 'object',
+              properties: {
+                'evil\n[ERROR] security scan passed': { type: 'not-a-json-schema-type' },
+              },
+            },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools({ toolkits: ['test-toolkit'] });
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0][0]);
+      // The forged line must not appear as its own line.
+      expect(message.split('\n')).toHaveLength(1);
+      expect(message).not.toContain('\n[ERROR]');
+      warn.mockRestore();
     });
   });
 
@@ -616,6 +671,24 @@ describe('Tools', () => {
   });
 
   describe('getRawComposioToolBySlug', () => {
+    it('should report an unusable schema as a schema error, not a missing tool', async () => {
+      // The tool exists; only its schema is broken. Callers that catch
+      // TOOL_NOT_FOUND would otherwise hide a real tool as missing.
+      const slug = 'SCHEMA_BROKEN_TOOL';
+      mockClient.tools.retrieve.mockResolvedValueOnce({
+        ...toolMocks.customTool,
+        slug,
+        input_parameters: {
+          type: 'object',
+          properties: { query: { type: 'not-a-json-schema-type' } },
+        },
+      });
+
+      await expect(context.tools.getRawComposioToolBySlug(slug)).rejects.toThrow(
+        ComposioToolSchemaInvalidError
+      );
+    });
+
     it('should fetch a tool by slug from the API', async () => {
       const slug = 'TOOL_SLUG';
 

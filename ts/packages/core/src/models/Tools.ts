@@ -46,6 +46,7 @@ import {
   ComposioToolFetchError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
+  ComposioToolSchemaInvalidError,
   ComposioToolVersionRequiredError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -84,6 +85,18 @@ type JsonSchemaNode = Record<string, unknown>;
 
 const isSchemaRecord = (value: unknown): value is JsonSchemaNode =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Flatten a value for interpolation into a log line.
+ *
+ * The logger writes straight to the console sink, and the slug and the zod
+ * issue paths here are built from property names a remote toolkit controls. A
+ * name carrying a newline could otherwise forge or erase a line in the host's
+ * log, and an ANSI clear-line sequence could hide what came before it.
+ */
+const sanitizeForLog = (value: string): string =>
+  // eslint-disable-next-line no-control-regex
+  value.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
 
 /**
  * Rewrite one JSON-Schema node into the strict subset `ParametersSchema`
@@ -279,15 +292,19 @@ export class Tools<
     // "Tool input parameters are not defined", so an unrepairable input schema
     // would fail the provider's whole wrapTools pass one layer later. Such a
     // tool is skipped instead, with the same warning. A failure outside the
-    // parameters is genuinely broken data and stays loud.
+    // parameters is genuinely broken data and stays loud — including alongside
+    // a parameter failure, where skipping the tool would otherwise hide it.
     const failingSides = new Set<'inputParameters' | 'outputParameters'>();
+    let hasNonParameterIssue = false;
     for (const issue of parsed.error.issues) {
       const root = issue.path[0];
       if (root === 'inputParameters' || root === 'outputParameters') {
         failingSides.add(root);
+      } else {
+        hasNonParameterIssue = true;
       }
     }
-    if (failingSides.size === 0) throw parsed.error;
+    if (hasNonParameterIssue || failingSides.size === 0) throw parsed.error;
 
     this.warnMalformedToolParameters(tool, parsed.error, [...failingSides]);
     if (failingSides.has('inputParameters')) return undefined;
@@ -315,11 +332,11 @@ export class Tools<
     if (slug) this.warnedMalformedToolParametersSlugs.add(slug);
     const inputFailed = droppedSides.includes('inputParameters');
     logger.warn(
-      `Tool "${slug || '(unknown slug)'}" has ${droppedSides.join(' and ')} that do not ` +
+      `Tool "${sanitizeForLog(slug) || '(unknown slug)'}" has ${droppedSides.join(' and ')} that do not ` +
         `match the expected schema, so the tool was ` +
         `${inputFailed ? 'skipped' : 'returned without those parameters'}. ` +
         `${inputFailed ? 'It cannot be offered without an input schema.' : 'The tool still executes, but LLM callers will not see those parameters.'} ` +
-        `Issues: ${error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`
+        `Issues: ${error.issues.map(issue => `${sanitizeForLog(issue.path.join('.'))}: ${sanitizeForLog(issue.message)}`).join('; ')}`
     );
   }
 
@@ -859,9 +876,13 @@ export class Tools<
     // change the case of the tool to camel case and apply default modifiers
     const transformedTool = this.transformToolCases(tool);
     if (transformedTool === undefined) {
-      throw new ComposioToolNotFoundError(`Tool with slug ${slug} has an unusable input schema`, {
-        meta: { slug },
-      });
+      // The tool exists; its schema is what could not be parsed. Reporting that
+      // as TOOL_NOT_FOUND makes a caller that treats the code as "no such tool"
+      // hide a real one.
+      throw new ComposioToolSchemaInvalidError(
+        `Tool with slug ${slug} has an unusable input schema`,
+        { meta: { slug } }
+      );
     }
     let [modifiedTool] = await this.applyDefaultSchemaModifiers([transformedTool]);
     // apply local modifiers if they are provided
