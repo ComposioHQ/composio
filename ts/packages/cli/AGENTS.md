@@ -4,7 +4,7 @@ Instructions for AI agents working on `@composio/cli`. The sibling `CLAUDE.md` i
 
 ## Required Checks
 
-When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typecheck` from the repo root before pushing. Fix all type errors. Build/lint failures block CI.
+When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typecheck` from the repo root before pushing. Fix all type errors. Build/lint failures block CI. Also run `pnpm --filter @composio/cli run lint:effect`, which runs the Effect language service over `src/` and `test/` and fails on its error-level diagnostics; the main one is `floatingEffect`, an Effect that is created and never yielded (a dropped `client.…(...)` call compiles and silently sends nothing). CI runs it in the typecheck workflow.
 
 This package pins its `typescript` dependency to TypeScript 6 (`catalog:ts6` in `package.json`) because `src/generation/typescript/*` drives the JS compiler API, which TS7 (tsgo) does not ship. The pin only affects `import ts from 'typescript'` resolution — the `tsc` binary the typecheck scripts invoke still comes from the workspace root (TS7), since the TS6 alias package only ships a `tsc6` bin. Keep the pin until the generation pipeline moves off the compiler API.
 

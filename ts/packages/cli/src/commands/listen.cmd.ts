@@ -671,8 +671,7 @@ export const listenCmd = Command.make(
             }
 
             if (maxEventsLimit === undefined && timeoutMs === undefined) {
-              yield* listenEffect;
-              return;
+              return yield* listenEffect;
             }
 
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
