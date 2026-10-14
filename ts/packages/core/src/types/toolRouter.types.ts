@@ -132,6 +132,12 @@ export const ToolRouterInstantSchema = z.union([
        * usage on a Session set to `false`.
        */
       returnInstantCharge: z.boolean().optional(),
+      /**
+       * Experimental. Show each Instant tool's price in Session search
+       * results, under `toolkitConnectionStatuses[].instantAccount.prices`.
+       * Controls visibility only.
+       */
+      returnPricesInSearch: z.boolean().optional(),
     })
     .strict(),
 ]);
@@ -150,7 +156,16 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 
 // Tags
 export const ToolRouterTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
+  .array(
+    z.enum([
+      'readOnlyHint',
+      'createHint',
+      'updateHint',
+      'destructiveHint',
+      'idempotentHint',
+      'openWorldHint',
+    ])
+  )
   .describe('The tags to filter the tools by');
 export const ToolRouterTagsEnableDisableSchema = z
   .object({
@@ -643,7 +658,24 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
   /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
-  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
+  instantAccount: z
+    .object({
+      allowedToolSlugs: z.array(z.string()),
+      /**
+       * Price of each tool, keyed by tool slug. Present only when the Session
+       * sets `instant.returnPricesInSearch`.
+       */
+      prices: z
+        .record(
+          z.string(),
+          z.object({
+            description: z.string().optional(),
+            discount: z.string().nullable().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({

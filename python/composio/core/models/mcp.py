@@ -7,13 +7,14 @@ This module provides MCP server operations
 from __future__ import annotations
 
 import typing as t
+import warnings
 
 import typing_extensions as te
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
-from composio.exceptions import ValidationError
+from composio.exceptions import ComposioDeprecationWarning, ValidationError
 from composio.utils.pydantic import none_to_omit
 
 # Data Types (matching TypeScript specification)
@@ -99,6 +100,19 @@ def _add_generate_method(
     # Add the generate method to the response object and cast to MCPCreateResponse
     response.generate = generate  # type: ignore
     return t.cast(MCPCreateResponse, response)
+
+
+# ``managed_auth_by_composio`` is deprecated upstream, but dropping it would strip
+# the connection-management tools from generated URLs. Keep sending it, silence
+# the API client's notice (it names an internal call), and warn in SDK terms.
+_MANAGED_AUTH_DEPRECATION = (
+    "composio.mcp.generate() returns URLs that rely on the deprecated "
+    "include_composio_helper_actions query parameter, which the API will remove "
+    "in a future version. Switch to a session MCP endpoint: "
+    "composio.create(user_id, mcp=True) exposes session.mcp.url with "
+    "connection-management tools built in. "
+    "https://docs.composio.dev/docs/sessions-via-mcp"
+)
 
 
 class MCP(Resource):
@@ -472,11 +486,23 @@ class MCP(Resource):
             server_details = self._client.mcp.retrieve(mcp_config_id)
 
             # Generate server URLs (matching TS: this.client.mcp.generate.url)
-            url_response = self._client.mcp.generate.url(
-                mcp_server_id=mcp_config_id,
-                user_ids=[user_id],
-                managed_auth_by_composio=False if manually_manage_connections else True,
-            )
+            managed_auth_by_composio = not manually_manage_connections
+            if managed_auth_by_composio:
+                # 3: past ``Resource``'s trace wrapper to the caller's line.
+                warnings.warn(
+                    _MANAGED_AUTH_DEPRECATION, ComposioDeprecationWarning, stacklevel=3
+                )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r".*`managed_auth_by_composio`",
+                    category=ComposioDeprecationWarning,
+                )
+                url_response = self._client.mcp.generate.url(
+                    mcp_server_id=mcp_config_id,
+                    user_ids=[user_id],
+                    managed_auth_by_composio=managed_auth_by_composio,
+                )
 
             # Get the generated URL (matching TS: urlResponse.user_ids_url[0])
             if hasattr(url_response, "user_ids_url") and url_response.user_ids_url:

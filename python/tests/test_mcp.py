@@ -10,10 +10,14 @@ Regression coverage for the hackathon Area 5 (MCP lifecycle) findings:
 - ``create`` uses the non-deprecated ``allowed_tools`` field.
 """
 
+import warnings
 from unittest.mock import Mock
 
+import httpx
 import pytest
 
+from composio import ComposioDeprecationWarning
+from composio.client import HttpClient
 from composio.core.models.mcp import MCP
 
 
@@ -111,3 +115,60 @@ def test_create_inverts_manually_manage_connections(mcp):
         mcp._client.mcp.custom.create.call_args.kwargs["managed_auth_via_composio"]
         is True
     )
+
+
+def _transport_mcp() -> MCP:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/generate"):
+            return httpx.Response(
+                200,
+                json={
+                    "mcp_url": "https://mcp.test",
+                    "connected_account_urls": [],
+                    "user_ids_url": ["https://mcp.test/u"],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "id": "mcp_123",
+                "name": "server",
+                "allowed_tools": [],
+                "auth_config_ids": [],
+            },
+        )
+
+    client = HttpClient(
+        provider="test",
+        api_key="ak_test",
+        base_url="https://backend.composio.dev",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    return MCP(client)
+
+
+def test_generate_replaces_client_managed_auth_notice_with_sdk_notice():
+    """The SDK still sends `managed_auth_by_composio` (deprecated upstream);
+    users see one SDK-level notice, not the client's internal-call notice."""
+    mcp = _transport_mcp()
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        server = mcp.generate("user_123", "mcp_123")
+
+    assert server["url"] == "https://mcp.test/u"
+    messages = [str(w.message) for w in caught]
+    assert len(messages) == 1
+    assert caught[0].category is ComposioDeprecationWarning
+    assert "include_composio_helper_actions" in messages[0]
+    assert caught[0].filename == __file__
+
+
+def test_generate_without_managed_auth_does_not_warn():
+    mcp = _transport_mcp()
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        mcp.generate("user_123", "mcp_123", manually_manage_connections=True)
+
+    assert caught == []
