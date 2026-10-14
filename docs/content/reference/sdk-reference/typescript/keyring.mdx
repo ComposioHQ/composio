@@ -28,7 +28,7 @@ The organization behind the API key must have an ACTIVE customer keyring
 instance; otherwise the API answers 404.
 
 ```typescript
-async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<{ activeKid: string; keys: { alg: string; e: string; kid: string; kty: string; n: string; use: string }[] }>
+async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<KeyringTransferKeysResponse>
 ```
 
 **Parameters**
@@ -39,7 +39,7 @@ async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<{ activ
 
 **Returns**
 
-`Promise<\{ activeKid: string; keys: \{ alg: string; e: string; kid: string; kty: string; n: string; use: string \}[] \}>` — The active key ID and every accepted public JWK, newest first
+`Promise<KeyringTransferKeysResponse>` — The active key ID and every accepted public JWK, newest first
 
 **Example**
 
