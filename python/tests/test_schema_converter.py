@@ -251,38 +251,6 @@ def test_dynamic_default_materialization_preserves_plain_python_values():
     assert getattr(result, "item_a") == {"defaulted": 1}
 
 
-def test_root_model_object_with_pattern_properties_preserves_dynamic_keys():
-    schema = {
-        "type": "object",
-        "patternProperties": {"^x-": {"type": "string"}},
-        "oneOf": [
-            {
-                "type": "object",
-                "properties": {
-                    "type": {"const": "a"},
-                    "value": {"type": "string"},
-                },
-                "required": ["type", "value"],
-            },
-            {
-                "type": "object",
-                "properties": {
-                    "type": {"const": "b"},
-                    "value": {"type": "string"},
-                },
-                "required": ["type", "value"],
-            },
-        ],
-    }
-    adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
-
-    result = adapter.validate_python({"type": "a", "value": "hi", "x-k": "v"})
-
-    assert result == {"type": "a", "value": "hi", "x-k": "v"}
-    with pytest.raises(ValidationError):
-        adapter.validate_python({"type": "a", "value": "hi", "x-k": 1})
-
-
 @pytest.mark.parametrize(
     "invalid_object_schema,error_type,error_match",
     [

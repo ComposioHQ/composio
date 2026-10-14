@@ -36,6 +36,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
+    WithJsonSchema,
     model_validator,
 )
 from pydantic import (
@@ -407,8 +408,6 @@ class _DynamicKeyValidator(t.NamedTuple):
 def _materialized_value_to_python(value: t.Any) -> t.Any:
     """Convert a previous materializer result back into validation input."""
     if isinstance(value, BaseModel):
-        if getattr(type(value), "__pydantic_root_model__", False):
-            return _materialized_value_to_python(t.cast(t.Any, value).root)
         included_fields = set(value.model_fields_set)
         included_fields.update(
             getattr(type(value), _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE, ())
@@ -1159,13 +1158,6 @@ def apply_object_policy(
 ) -> t.Type[BaseModel]:
     """Wrap ``base_model`` with the covered dynamic-key policy for ``schema``."""
     policy = _compile_object_policy(schema, root_schema)
-    if getattr(base_model, "__pydantic_root_model__", False):
-        # RootModel rejects `extra` config and cannot be combined with
-        # `_DynamicObjectModel`. Its root annotation already preserves the
-        # literal object shape; `_with_exact_validation` enforces the source
-        # schema's dynamic-key policy around it.
-        return base_model
-
     name = model_name or base_model.__name__
     json_schema_extra: t.Dict[str, t.Any] = {}
     if "patternProperties" in schema:
@@ -1933,7 +1925,7 @@ def _load_regex_parser() -> t.Tuple[t.Any, t.Any]:
             importlib.import_module("re._parser"),
             importlib.import_module("re._constants"),
         )
-    except ImportError:  # Fallback for older Python interpreters
+    except ImportError:  # Python 3.10; deprecated aliases from 3.11 on
         return (
             importlib.import_module("sre_parse"),
             importlib.import_module("sre_constants"),
@@ -2704,6 +2696,17 @@ def _convert_with_library(
     # references must fail closed instead of silently changing the field to str.
     if schema.get("type") == "object":
         document_root = root_schema if root_schema is not None else schema
+        if "const" in schema or "enum" in schema:
+            # Object literals must retain their exact value; model defaults
+            # would change it, and RootModel cannot use the extra-key mixin.
+            return _with_exact_validation_annotation(
+                t.Annotated[
+                    t.Dict[str, t.Any],
+                    WithJsonSchema(_schema_for_exact_validation(schema)),
+                ],
+                schema,
+                document_root,
+            )
         if _contains_unsatisfiable_schema(schema.get("properties", {})):
             try:
                 base_model = _convert_object_with_unsatisfiable_properties(
@@ -2766,18 +2769,6 @@ def _convert_with_library(
             )
             return _with_exact_validation_annotation(
                 t.Any,
-                schema,
-                document_root,
-            )
-
-        if getattr(base_model, "__pydantic_root_model__", False) and (
-            "patternProperties" in schema or "additionalProperties" in schema
-        ):
-            # RootModel cannot carry extra object keys through its wrapped
-            # union members. Exact JSON Schema validation already enforces
-            # those members, so retain the validated object as a plain dict.
-            return _with_exact_validation_annotation(
-                t.Dict[str, t.Any],
                 schema,
                 document_root,
             )
