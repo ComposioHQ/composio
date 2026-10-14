@@ -1,0 +1,37 @@
+---
+title: 'Python SDK 0.27.0 and TypeScript SDK 0.24.0 add Session meta-tool execution and Instant search prices'
+description: 'Execute Composio meta tools from a Session, configure proxy execution, and inspect Instant tool prices in search results.'
+date: '2026-10-14'
+---
+
+You can now execute Composio meta tools directly from a Session in both SDKs, enable proxy execution when creating or updating a Session, and request Instant tool prices in search results.
+
+### Release versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`            | `0.27.0` |
+| TypeScript `@composio/core`   | `0.24.0` |
+| TypeScript `@composio/slim`   | `0.24.0` |
+
+All 13 Python provider packages are released at `0.27.0`. This release also publishes `@composio/experimental` `0.2.8`, `@composio/anthropic` `0.11.5`, `@composio/claude-agent-sdk` `0.12.2`, `@composio/langchain` `0.11.2`, `@composio/mastra` `0.10.6`, and `@composio/openai-agents` `0.11.2`.
+
+### What's new
+
+- **Execute meta tools.** Use `session.executeMeta()` in TypeScript or `session.execute_meta()` in Python to run a `COMPOSIO_*` meta tool with a slug and optional arguments. The response includes `resultType` (`result_type` in Python), and input requests raise `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python). Calls are sent once without retries. The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs.
+- **Configure Session proxy execution.** Pass `proxyExecute: true` when creating a TypeScript Session, or `proxy_execute=True` in Python, to expose `COMPOSIO_PROXY_EXECUTE`. The option also accepts an object with `enable`, and you can change it through `session.update()`. Set it to `false` (`False` in Python) to disable the sandbox's `proxy_execute()` helper too. Set it to `null` (`None` in Python) when updating to remove the stored setting. The API rejects a disabled proxy setting combined with an enabled sandbox proxy setting at creation.
+- **Inspect Instant prices in search.** The experimental `instant.returnPricesInSearch` Session option (`instant.return_prices_in_search` in Python) returns each Instant tool's price under `toolkitConnectionStatuses[].instantAccount.prices` (`toolkit_connection_statuses[].instant_account.prices` in Python). You can set it when creating or updating a Session.
+- **Filter by hint tags.** Session tag filters accept `createHint` and `updateHint`.
+
+### Bug fixes
+
+- **Python trigger listeners.** `wait_forever()` keeps waiting through recoverable network drops while Pysher reconnects, and returns when the connection worker stops. `restart()` requests a reconnect on the running worker.
+- **Nullable OAuth ID tokens.** OAuth connection data types accept a `null` `id_token`, matching API responses for providers that do not return one.
+
+### Improvements
+
+- **Provider compatibility.** TypeScript provider peer ranges accept Anthropic SDK `0.132` and OpenAI Agents `0.20`. The experimental provider also accepts Pi coding-agent `1.x`.
+
+### Deprecations
+
+`composio.mcp.generate()` now warns once that its URLs depend on the deprecated `include_composio_helper_actions` query parameter. Use a Session's MCP endpoint instead.
