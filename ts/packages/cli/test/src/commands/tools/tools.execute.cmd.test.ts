@@ -1765,6 +1765,58 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        executeMeta: async () => ({
+          result_type: 'failed' as const,
+          data: { results: [], total_count: 2, success_count: 1, error_count: 1 },
+          error: '1 out of 2 tools failed',
+          log_id: 'log_parallel_batch',
+          instant_charge: {
+            amount: '0.025000',
+            currency: 'USD' as const,
+            charged_by: 'composio' as const,
+          },
+        }),
+      },
+    })
+  )('[Given] a parallel multi-execute batch fails with a charge [Then] the charge is kept', it => {
+    it.effect('reports instantCharge on the failed parallel result', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'COMPOSIO_MULTI_EXECUTE_TOOL',
+          '-d',
+          '{"tools":[]}',
+        ]).pipe(Effect.catch(() => Effect.void));
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+        const results =
+          Predicate.hasProperty(output, 'results') && Array.isArray(output.results)
+            ? output.results
+            : [];
+
+        expect(output.successful).toBe(false);
+        expect(results).toEqual([
+          expect.objectContaining({
+            slug: 'COMPOSIO_MULTI_EXECUTE_TOOL',
+            successful: false,
+            error: '1 out of 2 tools failed',
+            logId: 'log_parallel_batch',
+            instantCharge: { amount: '0.025000', currency: 'USD', chargedBy: 'composio' },
+          }),
+        ]);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
       toolkitsData: {
         tools: [
           {

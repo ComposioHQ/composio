@@ -1801,12 +1801,14 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
           const result = yield* context.executor.execute(toolSlug, context.executeParams);
           if (!result.successful) {
-            return {
+            const failed = {
               slug: toolSlug,
-              successful: false,
+              successful: false as const,
               error: result.error ?? 'Execution failed.',
               logId: result.logId,
             };
+            if (!result.instantCharge) return failed;
+            return { ...failed, instantCharge: result.instantCharge };
           }
 
           const output = yield* prepareExecuteOutput(toolSlug, result, context.executeOutputDir);
