@@ -31,7 +31,7 @@ import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
-import { getDefaultHeaders } from './utils/session';
+import { getClientIdentity } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { Sessions } from './models/Sessions';
@@ -171,8 +171,15 @@ export type ComposioConfig<
    * `x-user-api-key` is the one header the SDK treats as a credential: together
    * with `apiKey: null` it authenticates requests with a Composio user API key
    * instead of a project key. The project key is only ever set from `apiKey`:
-   * an `x-api-key` entry is rejected when `apiKey` is `null`. Every other
-   * header is passed through untouched.
+   * an `x-api-key` entry is rejected when `apiKey` is `null`.
+   *
+   * The SDK reports itself through the API client's identity headers
+   * (`x-client-provenance`, `x-client-version`, `x-client-library`,
+   * `x-client-library-version`, `x-client-language`, `x-client-runtime`,
+   * `x-sdk-version`, `x-source`, `x-framework`, `x-runtime` and
+   * `x-runtime-version`); an entry naming one of them is rejected with a
+   * `ComposioError` from `@composio/client`. Every other header is passed
+   * through untouched.
    * @example
    * ```typescript
    * const composio = new Composio({
@@ -514,14 +521,12 @@ export class Composio<
 
     // The resolved scope is the single source of the x-org-id / x-project-id
     // headers: it travels via `this.config` to clones and to the MCP export.
-    const defaultHeaders = getDefaultHeaders(
-      { ...this.config.defaultHeaders, ...getScopeHeaders(scope) },
-      this.provider
-    );
+    const defaultHeaders = { ...this.config.defaultHeaders, ...getScopeHeaders(scope) };
 
     /**
      * Initialize the Composio SDK client.
-     * The client is used to make API calls to the Composio API.
+     * The client is used to make API calls to the Composio API. It sends the
+     * SDK's identity headers from `identity`, and refuses them in `defaultHeaders`.
      */
     this.client = new ComposioClient({
       apiKey: apiKeyParsed,
@@ -529,6 +534,7 @@ export class Composio<
       orgApiKey: config?.orgApiKey,
       baseURL: baseURLParsed,
       defaultHeaders: defaultHeaders,
+      identity: getClientIdentity(this.provider),
       logger: clientLoggerAdapter,
       logLevel: toClientLogLevel(logger.getLevel()),
     });
@@ -638,8 +644,8 @@ export class Composio<
    *   instance directly with the headers you need: `new Composio({ ...existingConfig, defaultHeaders })`.
    *   For one-off overrides, pass per-call `requestOptions` where supported.
    *
-   * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
-   *                                          This follows the Fetch API RequestInit interface with additional options.
+   * @param {object} [options] - Options for the new instance.
+   * @param {ComposioRequestHeaders} [options.headers] - Headers sent with every API call the new instance makes.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
    *
    * @example
@@ -669,12 +675,9 @@ export class Composio<
     const userApiKeyHeader = getUserApiKeyHeader(options?.headers)
       ? undefined
       : getUserApiKeyHeader(this.config.defaultHeaders);
-    const sessionHeaders = getDefaultHeaders(
-      userApiKeyHeader
-        ? { [userApiKeyHeader.name]: userApiKeyHeader.value, ...options?.headers }
-        : options?.headers,
-      this.provider
-    );
+    const sessionHeaders = userApiKeyHeader
+      ? { [userApiKeyHeader.name]: userApiKeyHeader.value, ...options?.headers }
+      : options?.headers;
     return new Composio({
       ...this.config,
       defaultHeaders: sessionHeaders,

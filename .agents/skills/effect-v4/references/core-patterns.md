@@ -190,6 +190,59 @@ When in doubt: value → `Effect.gen`; function → a plain arrow returning `Eff
 upgrading to `Effect.fn` when failure attribution in error reports is worth the annotation.
 Do not migrate one form to the other wholesale.
 
+## `Option`: combinators, not `isSome` ternaries
+
+Transform an `Option` with the module's combinators instead of unwrapping it with
+`Option.isSome(x) ? … x.value … : …` and rebuilding it. The combinator names the intent,
+and the `None` branch cannot be forgotten or written twice. Rewrites checked against
+`effect@4.0.3` (`ts/vendor/effect/packages/effect/src/Option.ts`, `Effect.ts`):
+
+| Instead of                                                                              | Write                                                                                                           |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Option.map(o, () => b)`                                                                | `Option.as(o, b)`                                                                                               |
+| `cond ? Option.none() : Option.map(o, f)`                                               | `Option.map(Option.filter(o, () => !cond), f)`; filter once into a local when the condition guards several uses |
+| `Option.match(o, { onNone: () => true, onSome: a => a === b })`                         | `Option.isNone(o) \|\| Option.contains(o, b)` (there is no `Option.forAll`)                                     |
+| `Option.match(o, { onNone: () => false, onSome: p })`, `Option.isSome(o) && p(o.value)` | `Option.exists(o, p)`                                                                                           |
+| `Option.flatMap(Option.filter(o, p), f)`                                                | `pipe(o, Option.filter(p), Option.flatMap(f))`                                                                  |
+| `Option.isSome(o) ? f(o.value) : x`                                                     | `Option.match(o, { onNone: () => x, onSome: f })`                                                               |
+| `Option.isSome(o) ? f(o.value) : undefined`                                             | `Option.getOrUndefined(Option.map(o, f))`                                                                       |
+| `Option.getOrUndefined(o) ?? x`                                                         | `Option.getOrElse(o, () => x)`                                                                                  |
+| `Option.getOrUndefined(a) ?? Option.getOrUndefined(b)`                                  | `Option.getOrUndefined(Option.orElse(a, () => b))`                                                              |
+| `Option.isSome(o) ? Option.some(yield* f(o.value)) : Option.none()`                     | `yield* Effect.transposeOption(Option.map(o, f))`                                                               |
+| `Option.isSome(o) ? o.value : yield* fallback`                                          | `yield* Option.match(o, { onSome: Effect.succeed, onNone: () => fallback })`                                    |
+
+The `??` rows are equivalent only while the `Option`'s value type excludes `null` and
+`undefined`. Keep fallbacks lazy (`() => x`) so a `None`-only computation or effect still
+runs only on `None`.
+
+Call `Option.getOrUndefined` only where the value leaves for a plain `?: T` parameter. From
+`upgradeCmd` in `ts/packages/cli/src/commands/upgrade.cmd.ts`, where `tag` feeds
+`upgrade(options: { prerelease?: boolean; tag?: string })`:
+
+```ts no-check
+({ beta, version }) =>
+  Effect.gen(function* () {
+    const upgradeBinary = yield* UpgradeBinary;
+    const tag = Option.getOrUndefined(Option.map(version, normalizeReleaseTag));
+    const newReleaseTag = yield* upgradeBinary.upgrade({ prerelease: beta, tag });
+    // ...
+  });
+```
+
+A fallback lookup that runs only when the `Option` is empty, from `isTelemetryDebugEnabled`
+in `ts/packages/cli/src/services/runtime-flags.ts`:
+
+```ts no-check
+export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.gen(function* () {
+  // ...
+  const bootstrap = yield* Effect.serviceOption(TelemetryDebugMode);
+  return yield* Option.match(bootstrap, {
+    onSome: Effect.succeed,
+    onNone: () => Effect.orDie(DEBUG_CONFIG.TELEMETRY_DEBUG),
+  });
+});
+```
+
 ## Time in tests: drive `TestClock`, never wait on a real clock
 
 `it.effect` from `@effect/vitest` runs the test on a `TestClock` parked at epoch. Any sleep

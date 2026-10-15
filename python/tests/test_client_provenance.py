@@ -1,10 +1,11 @@
-"""Product provenance must reach the HTTP transport alongside legacy headers."""
+"""Product provenance must reach the HTTP transport through the client's identity."""
 
 import platform
 from importlib.metadata import version
 
 import httpx
 import pytest
+from composio_client import ComposioError as ClientComposioError
 
 from composio.client import HttpClient
 
@@ -56,3 +57,37 @@ def test_product_provenance_is_not_added_to_another_origin():
 
     assert "x-client-provenance" not in requests[0].headers
     assert "x-framework" not in requests[0].headers
+
+
+@pytest.mark.parametrize(
+    "header", ["x-framework", "x-source", "X-Client-Provenance", "x-client-library"]
+)
+def test_identity_headers_are_refused_in_default_headers(header):
+    with pytest.raises(
+        ClientComposioError, match="cannot be passed in `default_headers`"
+    ):
+        HttpClient(
+            provider="test-provider",
+            api_key="test-key",
+            base_url="https://backend.invalid",
+            default_headers={header: "caller-value"},
+        )
+
+
+@pytest.mark.parametrize("provider", ["café", " padded ", "", "openai\n", "openai\r\n"])
+def test_unsendable_provider_name_is_reported_as_unknown(provider):
+    requests = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"items": []})
+
+    with HttpClient(
+        provider=provider,
+        api_key="test-key",
+        base_url="https://backend.invalid",
+        http_client=httpx.Client(transport=httpx.MockTransport(respond)),
+    ) as client:
+        client.tools.list(limit=1)
+
+    assert requests[0].headers["x-framework"] == "unknown"
