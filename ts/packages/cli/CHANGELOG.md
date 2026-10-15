@@ -22,6 +22,11 @@ toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
   on a flag they cannot honor, now with a usage error naming it instead of an
   unrecognized-flag error: `--project-name` on all of them, `--user-id` on all
   but `dev logs`. `composio dev --mode` rejects both.
+  Without `--user-id`, a `dev` command given `--project-name` for another
+  project falls back to the global test user instead of the directory's
+  `test_user_id`, which belongs to the directory's project:
+  `dev playground-execute`, `dev connected-accounts link`,
+  `dev toolkits info` and `dev toolkits list`.
 - `composio link --help` now lists `--auth-config`. The root command still
   rejects it, now with the message ``Top-level `composio link` is
 consumer-only and does not accept `--auth-config`.`` (exit 1) after the login

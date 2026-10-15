@@ -7,7 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
-import { CommandSurface, namedProjectClient } from 'src/commands/surface';
+import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
@@ -39,10 +39,13 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
 
     const slugValue = slug.value;
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const projectClient = yield* namedProjectClient;
+    const project = yield* namedProject;
     const repo = yield* ComposioToolkitsRepository;
     const resolvedProjectContext = yield* projectContext.resolve;
-    const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+    const testUserId = directoryTestUserId(
+      resolvedProjectContext,
+      Option.map(project, named => named.projectId)
+    );
     const globalTestUserId = userContext.data.testUserId;
     const resolvedUserId = Option.match(userId, {
       onSome: value => Option.some(value),
@@ -66,8 +69,8 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
           const detailedToolkitOpt = yield* repo.getToolkitDetailed(slugValue).pipe(Effect.option);
 
           if (Option.isSome(resolvedUserId)) {
-            const client = Option.isSome(projectClient)
-              ? projectClient.value
+            const client = Option.isSome(project)
+              ? project.value.client
               : yield* clientSingleton.get();
             const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
             const sessionToolkits = yield* client.toolRouter.session

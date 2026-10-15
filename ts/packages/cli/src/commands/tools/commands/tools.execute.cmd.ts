@@ -1,5 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, directoryTestUserId } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
@@ -843,10 +843,11 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
+    // The root tree has no --project-name.
+    const projectName = Option.filter(params.projectName, () => params.surface !== 'root');
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
-      projectName:
-        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+      projectName: Option.getOrUndefined(projectName),
     });
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
@@ -855,7 +856,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catch(() => Effect.succeed(Option.none()))
     );
-    const localTestUserId = Option.flatMap(localProjectContext, keys => keys.testUserId);
+    const localTestUserId = directoryTestUserId(
+      localProjectContext,
+      Option.as(projectName, resolvedProject.projectId)
+    );
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
         ? Option.fromNullishOr(resolvedProject.consumerUserId)

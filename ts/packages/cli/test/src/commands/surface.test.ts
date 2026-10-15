@@ -1,11 +1,14 @@
 import { describe, expect, it, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Path } from 'effect';
 import { buildRootCommand } from 'src/commands';
 import { CommandInputError } from 'src/commands/errors';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ProjectResolutionError } from 'src/services/command-project';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { NodeProcess } from 'src/services/node-process';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { makeOrgProject } from 'test/__utils__/models/account';
 
 const SHARED_PROJECT_DESCRIPTION =
   'Developer project to use instead of the one configured in this directory';
@@ -356,5 +359,191 @@ describe('CommandSurface: the developer-mode toggle rejects the shared flags', (
       yield* cli(['dev', '--mode', 'off']);
       expect((yield* ComposioCliUserConfig).isDevModeEnabled()).toBe(false);
     }).pipe(Effect.provide(TestLive()), Effect.scoped)
+  );
+});
+
+describe('CommandSurface: a named project does not borrow the directory test user', () => {
+  // The directory belongs to `dir-project` and configures its own test user; the global one is
+  // what login stores. A `--project-name` naming another project must fall back to the global one.
+  const writeDirectoryProject = Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const { cwd } = yield* NodeProcess;
+    yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+    yield* fs.writeFileString(
+      path.join(cwd, '.composio', 'project.json'),
+      JSON.stringify({ org_id: 'org_test', project_id: 'proj_dir', test_user_id: 'directory_user' })
+    );
+  });
+
+  const sessionUser = (args: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const userIds: Array<string> = [];
+      yield* Effect.gen(function* () {
+        yield* writeDirectoryProject;
+        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+        yield* Effect.exit(cli(args));
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: ConfigProvider.fromEnv({
+              env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+            }),
+            accountData: { projects },
+            stdin: { isTTY: true, data: '' },
+            toolRouter: {
+              create: params =>
+                Effect.sync(() => {
+                  userIds.push(params.user_id);
+                  return {
+                    session_id: 'trs_test_session',
+                    config: {
+                      user_id: params.user_id,
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
+            },
+          })
+        ),
+        Effect.scoped
+      );
+      return [...new Set(userIds)];
+    });
+
+  const projects = [
+    makeOrgProject({ id: 'proj_dir', name: 'dir-project', orgId: 'org_test' }),
+    makeOrgProject({ id: 'proj_other', name: 'other-project', orgId: 'org_test' }),
+  ];
+  const sessionCommands = [
+    { command: 'toolkits list', args: ['dev', 'toolkits', 'list'] },
+    { command: 'toolkits info', args: ['dev', 'toolkits', 'info', 'gmail'] },
+    {
+      command: 'playground-execute',
+      args: ['dev', 'playground-execute', 'GMAIL_SEND_EMAIL', '-d', '{}', '--skip-checks'],
+    },
+  ];
+  const projectCases = [
+    { project: ['--project-name', 'other-project'], expected: 'global_user' },
+    { project: ['--project-name', 'dir-project'], expected: 'directory_user' },
+    { project: [], expected: 'directory_user' },
+  ];
+
+  it.effect.each(
+    sessionCommands.flatMap(({ command, args }) =>
+      projectCases.map(({ project, expected }) => ({
+        args: [...args, ...project],
+        expected,
+        name: `${command} ${project.join(' ') || 'without --project-name'}`,
+      }))
+    )
+  )('`$name` opens its session as $expected', ({ args, expected }) =>
+    Effect.gen(function* () {
+      expect(yield* sessionUser(args)).toEqual([expected]);
+    })
+  );
+
+  const accountFor = (userId: string, id: string): ConnectedAccountItem => ({
+    id,
+    alias: id,
+    word_id: id,
+    status: 'ACTIVE',
+    status_reason: null,
+    is_disabled: false,
+    user_id: userId,
+    toolkit: { slug: 'gmail' },
+    auth_config: {
+      id: 'ac_gmail_oauth',
+      auth_scheme: 'OAUTH2',
+      is_composio_managed: true,
+      is_disabled: false,
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-15T00:00:00Z',
+    test_request_endpoint: '',
+  });
+
+  // `link --list` without --project-name resolves the consumer project and its own user, so only
+  // the named cases apply.
+  it.effect.each([
+    { project: 'other-project', expected: 'ca_global', other: 'ca_dir' },
+    { project: 'dir-project', expected: 'ca_dir', other: 'ca_global' },
+  ])(
+    '`connected-accounts link --list --project-name $project` lists $expected',
+    ({ project, expected, other }) =>
+      Effect.gen(function* () {
+        yield* writeDirectoryProject;
+        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+        yield* cli([
+          'dev',
+          'connected-accounts',
+          'link',
+          'gmail',
+          '--list',
+          '--project-name',
+          project,
+        ]);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain(expected);
+        expect(output).not.toContain(other);
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: ConfigProvider.fromEnv({
+              env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+            }),
+            accountData: { projects },
+            connectedAccountsData: {
+              items: [
+                accountFor('global_user', 'ca_global'),
+                accountFor('directory_user', 'ca_dir'),
+              ],
+            },
+          })
+        ),
+        Effect.scoped
+      )
+  );
+
+  it.effect.each([
+    { project: 'other-project', expected: 'Using global test user id "global_user"' },
+    { project: 'dir-project', expected: 'Using test user id "directory_user"' },
+  ])(
+    '`connected-accounts link --auth-config --project-name $project` warns `$expected`',
+    ({ project, expected }) =>
+      Effect.gen(function* () {
+        yield* writeDirectoryProject;
+        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+        yield* Effect.exit(
+          cli([
+            'dev',
+            'connected-accounts',
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--no-wait',
+            '--project-name',
+            project,
+          ])
+        );
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain(expected);
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: ConfigProvider.fromEnv({
+              env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+            }),
+            accountData: { projects },
+          })
+        ),
+        Effect.scoped
+      )
   );
 });

@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, Effect, Layer, Option, pipe } from 'effect';
 import { Command } from 'effect/cli';
 import { commandInputError } from 'src/commands/errors';
 import { resolveCommandProject, type ProjectMode } from 'src/services/command-project';
@@ -50,20 +50,43 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
   });
 
 /**
- * The client for the developer project the `dev` group's `--project-name` names, or none when
- * the flag is absent and the command keeps its default client.
+ * The developer project the `dev` group's `--project-name` names, with its client, or none when
+ * the flag is absent and the command keeps the directory's project and its default client.
  */
-export const namedProjectClient = Effect.gen(function* () {
+export const namedProject = Effect.gen(function* () {
   const surface = yield* CommandSurface;
   if (Option.isNone(surface.projectName)) {
     return Option.none();
   }
   const project = yield* resolveSurfaceProject('developer');
   const clientSingleton = yield* ComposioClientSingleton;
-  return Option.some(
-    yield* clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
-  );
+  const client = yield* clientSingleton.getFor({
+    orgId: project.orgId,
+    projectId: project.projectId,
+  });
+  return Option.some({ projectId: project.projectId, client });
 });
+
+/**
+ * The test user the directory configures (`.composio/project.json`), for a command that runs
+ * against the directory's project. A `--project-name` that names another project does not
+ * borrow it, so the command falls back to the global test user; `namedProjectId` is the id of
+ * the project `--project-name` resolved to, or none without the flag.
+ */
+export const directoryTestUserId = (
+  directoryProject: Option.Option<{
+    readonly projectId: string;
+    readonly testUserId: Option.Option<string>;
+  }>,
+  namedProjectId: Option.Option<string>
+): Option.Option<string> =>
+  pipe(
+    directoryProject,
+    Option.filter(
+      keys => Option.isNone(namedProjectId) || Option.contains(namedProjectId, keys.projectId)
+    ),
+    Option.flatMap(keys => keys.testUserId)
+  );
 
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';

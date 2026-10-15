@@ -2,7 +2,7 @@ import { Effect, Option, Schedule } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { commandInputError } from 'src/commands/errors';
-import { CommandSurface, type CommandTree } from 'src/commands/surface';
+import { CommandSurface, directoryTestUserId, type CommandTree } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
@@ -364,9 +364,11 @@ const resolveLinkUserId = (params: {
     readonly consumerUserId?: string;
   };
   readonly requestedUserId: Option.Option<string>;
+  /** The project `--project-name` resolved to, or none without the flag. */
+  readonly namedProjectId: Option.Option<string>;
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -381,7 +383,7 @@ const resolveLinkUserId = (params: {
       Effect.option,
       Effect.map(Option.flatten)
     );
-    const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+    const localTestUserId = directoryTestUserId(resolvedProjectContext, params.namedProjectId);
 
     const resolvedUserId =
       params.resolvedProject.projectType === 'CONSUMER'
@@ -413,7 +415,7 @@ const handleListConnectedAccounts = (params: {
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -447,6 +449,7 @@ const handleListConnectedAccounts = (params: {
     const { resolvedUserId } = yield* resolveLinkUserId({
       resolvedProject,
       requestedUserId: params.userId,
+      namedProjectId: Option.as(params.projectName, resolvedProject.projectId),
       projectContext: params.projectContext,
       userContext: params.userContext,
     });
@@ -542,7 +545,7 @@ const handleLegacyAuthConfigLink = (params: {
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -557,7 +560,16 @@ const handleLegacyAuthConfigLink = (params: {
       Effect.option,
       Effect.map(Option.flatten)
     );
-    const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+    // A named project is looked up first: its id decides whether the directory's test user applies.
+    const namedResolvedProject = yield* Effect.transposeOption(
+      Option.map(params.projectName, projectName =>
+        resolveCommandProject({ mode: 'developer', projectName })
+      )
+    );
+    const localTestUserId = directoryTestUserId(
+      resolvedProjectContext,
+      Option.map(namedResolvedProject, project => project.projectId)
+    );
     const globalTestUserId = params.userContext.data.testUserId;
     const resolvedUserId = Option.match(params.requestedUserId, {
       onSome: value => Option.some(value),
@@ -582,9 +594,9 @@ const handleLegacyAuthConfigLink = (params: {
       yield* params.ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
     }
 
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'developer',
-      projectName: Option.getOrUndefined(params.projectName),
+    const resolvedProject = yield* Option.match(namedResolvedProject, {
+      onSome: Effect.succeed,
+      onNone: () => resolveCommandProject({ mode: 'developer' }),
     });
     const client = yield* params.clientSingleton.getFor({
       orgId: resolvedProject.orgId,

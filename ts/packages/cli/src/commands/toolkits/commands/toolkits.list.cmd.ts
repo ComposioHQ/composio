@@ -7,7 +7,7 @@ import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/service
 import { idempotent } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
-import { CommandSurface, namedProjectClient } from 'src/commands/surface';
+import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
@@ -56,9 +56,12 @@ export const toolkitsCmd$List = Command.make(
 
       const clampedLimit = clampLimit(limit);
       // Resolved outside the session lookup, whose failures only drop the connection status.
-      const projectClient = yield* namedProjectClient;
+      const project = yield* namedProject;
       const resolvedProjectContext = yield* projectContext.resolve;
-      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const testUserId = directoryTestUserId(
+        resolvedProjectContext,
+        Option.map(project, named => named.projectId)
+      );
       const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
@@ -92,8 +95,8 @@ export const toolkitsCmd$List = Command.make(
       // Resolve session context in parallel with catalog fetch (saves one round trip).
       const sessionContextEffect = Option.isSome(resolvedUserId)
         ? Effect.gen(function* () {
-            const client = Option.isSome(projectClient)
-              ? projectClient.value
+            const client = Option.isSome(project)
+              ? project.value.client
               : yield* clientSingleton.get();
             const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
             return { client, sessionId };
