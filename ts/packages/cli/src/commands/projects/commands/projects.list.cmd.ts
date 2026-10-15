@@ -27,7 +27,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
       return;
     }
 
-    const resolvedOrgId = Option.getOrUndefined(orgId) ?? Option.getOrUndefined(ctx.data.orgId);
+    const resolvedOrgId = Option.getOrUndefined(Option.orElse(orgId, () => ctx.data.orgId));
     if (!resolvedOrgId) {
       yield* ui.log.warn('No current org is configured.');
       yield* ui.outro('Hint: run `composio orgs switch` first, or pass `--org-id`.');

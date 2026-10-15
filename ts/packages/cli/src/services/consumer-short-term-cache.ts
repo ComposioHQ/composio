@@ -474,20 +474,18 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         toolRouterAuthConfigs: mergeAuthConfigMappings({
           current: currentEntry?.toolRouterAuthConfigs,
-          next: Option.isSome(directToolkits)
-            ? {
-                authConfigs: directToolkits.value.authConfigs,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ authConfigs }) => ({ authConfigs }))
+          ),
         }),
         toolRouterConnectedAccounts: mergeConnectedAccountMappings({
           current: currentEntry?.toolRouterConnectedAccounts,
-          next: Option.isSome(directToolkits)
-            ? {
-                connectedAccounts: directToolkits.value.connectedAccounts,
-                availableConnectedAccounts: directToolkits.value.availableConnectedAccounts,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ connectedAccounts, availableConnectedAccounts }) => ({
+              connectedAccounts,
+              availableConnectedAccounts,
+            }))
+          ),
         }),
         ...searchSessionFields,
       },

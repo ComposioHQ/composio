@@ -45,7 +45,7 @@ export const upgradeCmd = Command.make(
   ({ beta, version }) =>
     Effect.gen(function* () {
       const upgradeBinary = yield* UpgradeBinary;
-      const tag = Option.isSome(version) ? normalizeReleaseTag(version.value) : undefined;
+      const tag = Option.getOrUndefined(Option.map(version, normalizeReleaseTag));
       const newReleaseTag = yield* upgradeBinary.upgrade({ prerelease: beta, tag });
       yield* installSkillSafe({
         releaseTag: newReleaseTag ?? tag ?? `@composio/cli@${APP_VERSION}`,
