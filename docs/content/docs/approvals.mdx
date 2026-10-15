@@ -15,18 +15,14 @@ Approvals are experimental. They need `composio` newer than 0.27.0 or `@composio
 
 ## Requiring approval
 
-You configure which tools require approval when you create or update a session. There are two ways to choose them:
-
-- **By tag.** Every tool has a [tag](/docs/tool-tags) for the type of action it takes, such as `createHint` for tools that create something or `destructiveHint` for tools that delete something. Add tags to `tags.require_approval` to require approval for every tool with those tags, in every toolkit.
-- **Per toolkit.** Set approval for one toolkit's tools under `tools.<toolkit>`. This overrides the session-wide `tags` for that toolkit, so you can treat it differently from the rest of the session.
-
-This session requires approval for every tool that creates, updates or deletes something:
+You choose which tools require approval when you create or update a session. To require approval for every tool with a [tag](/docs/tool-tags), in every toolkit:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
+    # Every tool that creates, updates or deletes something
     tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
 )
 ```
@@ -38,13 +34,14 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
+  // Every tool that creates, updates or deletes something
   tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
 });
 ```
 </Tab>
 </Tabs>
 
-This session limits Gmail to two tools, and requires approval before sending an email. List the tools the agent can use in `enable` and the ones that need approval in `require_approval`. Always set `require_approval` when you list tools, even to `[]`. Otherwise the session-wide `tags.require_approval` still applies to them:
+To handle one toolkit differently, override `tags` for it under `tools.<toolkit>`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -53,7 +50,9 @@ session = composio.create(
     user_id="user_123",
     tools={
         "gmail": {
+            # The Gmail tools the agent can use
             "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            # The ones that need approval. Set this even if it's empty.
             "require_approval": ["GMAIL_SEND_EMAIL"],
         },
     },
@@ -69,7 +68,9 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create('user_123', {
   tools: {
     gmail: {
+      // The Gmail tools the agent can use
       enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      // The ones that need approval. Set this even if it's empty.
       requireApproval: ['GMAIL_SEND_EMAIL'],
     },
   },
