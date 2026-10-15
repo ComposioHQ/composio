@@ -239,14 +239,12 @@ describe('CLI: composio execute', () => {
         yield* cli(['execute', 'EXA_SEARCH', '--skip-connection-check', '-d', '{"query":"a"}']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const text = lines.join('\n');
-        const output = parseLastJson(lines) as ReturnType<typeof parseLastJson> & {
-          readonly instantCharge?: Record<string, string>;
-        };
+        const output = parseLastJson(lines);
 
         expect(text).toContain(
           'Execution successful (instant charge: 0.005 USD, logId: log_instant_charge)'
         );
-        expect(output.instantCharge).toEqual({
+        expect(output).toHaveProperty('instantCharge', {
           amount: '0.005',
           currency: 'USD',
           chargedBy: 'composio',
@@ -1844,21 +1842,18 @@ describe('CLI: composio execute', () => {
         const output = parseLastJson(lines);
         expect(Predicate.isTagged(error, 'ReportedToolExecutionError')).toBe(true);
         expect(error).toMatchObject({ reason: 'parallel_failed' });
-        const results =
-          Predicate.hasProperty(output, 'results') && Array.isArray(output.results)
-            ? output.results
-            : [];
-
-        expect(output.successful).toBe(false);
-        expect(results).toEqual([
-          expect.objectContaining({
-            slug: 'COMPOSIO_MULTI_EXECUTE_TOOL',
-            successful: false,
-            error: '1 out of 2 tools failed',
-            logId: 'log_parallel_batch',
-            instantCharge: { amount: '0.025000', currency: 'USD', chargedBy: 'composio' },
-          }),
-        ]);
+        expect(output).toMatchObject({
+          successful: false,
+          results: [
+            {
+              slug: 'COMPOSIO_MULTI_EXECUTE_TOOL',
+              successful: false,
+              error: '1 out of 2 tools failed',
+              logId: 'log_parallel_batch',
+              instantCharge: { amount: '0.025000', currency: 'USD', chargedBy: 'composio' },
+            },
+          ],
+        });
       })
     );
   });
