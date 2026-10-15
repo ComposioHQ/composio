@@ -34,23 +34,23 @@ const TEST_ARCHIVE_RELATIVE_PATHS = [
 // What a complete install holds next to the executable.
 const writeLiveCompanions = (installDirectory: string) => {
   fs.mkdirSync(path.join(installDirectory, 'services'));
-  for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+  RUN_COMPANION_MODULE_FILENAMES.forEach(fileName => {
     fs.writeFileSync(
       path.join(installDirectory, fileName),
       `export * from "./services/${fileName}";\n`
     );
     fs.writeFileSync(path.join(installDirectory, 'services', fileName), 'export {};\n');
-  }
+  });
 };
 
 // What an install upgraded from an older release still holds: every legacy
 // placeholder, empty.
 const writeLegacyPlaceholders = (installDirectory: string) => {
-  for (const relativePath of RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS) {
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.forEach(relativePath => {
     const filePath = path.join(installDirectory, relativePath);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, '');
-  }
+  });
 };
 
 const stubRepairFetch = () => {
@@ -79,8 +79,9 @@ const mockArchiveContents = (missingRelativePath?: string) => {
   extractZipMock.mockImplementation(
     async (archivePath: string, options: { readonly dir: string }) => {
       const packageDirectory = path.join(options.dir, path.parse(archivePath).name);
-      for (const relativePath of TEST_ARCHIVE_RELATIVE_PATHS) {
-        if (relativePath === missingRelativePath) continue;
+      TEST_ARCHIVE_RELATIVE_PATHS.filter(
+        relativePath => relativePath !== missingRelativePath
+      ).forEach(relativePath => {
         const filePath = path.join(packageDirectory, relativePath);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(
@@ -89,7 +90,7 @@ const mockArchiveContents = (missingRelativePath?: string) => {
             ? ''
             : `new:${relativePath}`
         );
-      }
+      });
     }
   );
 };

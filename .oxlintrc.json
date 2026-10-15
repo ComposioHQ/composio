@@ -194,6 +194,14 @@
         "eslint-js/no-restricted-syntax": [
           "error",
           {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
           },
@@ -246,6 +254,18 @@
         "max-lines-per-function": "off",
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": ":matches(ForStatement, ForInStatement, ForOfStatement)",
+            "message": "No for loops in tests: parameterize with it.each/describe.each, and use array methods in helpers."
+          },
           {
             "selector": "MemberExpression[object.name='Effect'][property.name=/^run/]",
             "message": "Run Effects through @effect/vitest (it.effect, it.live) instead of Effect.run* in tests."
@@ -322,6 +342,14 @@
         "eslint-js/no-restricted-syntax": [
           "error",
           {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
           },
@@ -382,6 +410,14 @@
         // TerminalUI is the sole CLI boundary for Node's stdout and stderr streams.
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
           {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."

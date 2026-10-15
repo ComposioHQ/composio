@@ -53,10 +53,10 @@ const okResponse = () =>
 // (djb2Hash + base36): the seeded cache key below must be byte-identical to what
 // the service computes for process.cwd() when it looks up the CLI session.
 const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
+  const hash = Array.from({ length: cwd.length }, (_, index) => cwd.charCodeAt(index)).reduce(
+    (acc, code) => (acc * 33) ^ code,
+    5381
+  );
   return Math.abs(hash >>> 0).toString(36);
 };
 
