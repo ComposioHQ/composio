@@ -14,24 +14,41 @@ Approval mode is experimental, and its SDK options may change. Answering questio
 
 ## Requiring approval
 
-Set approval rules when you create or update a session:
-
-- **`tags.require_approval`** requires approval for every tool with one of these [tags](/docs/tool-tags).
-- **`tools.<toolkit>`** overrides the session-wide `tags` for one toolkit. Set `tags.require_approval` inside it, or list the toolkit's tools in `enable` and the ones that need approval in `require_approval`. When you list tools, always set `require_approval`, even to `[]`.
-
-For example:
+Require approval for every tool with a [tag](/docs/tool-tags):
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
-    toolkits={"enable": ["gmail", "github"]},
     tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
+});
+```
+</Tab>
+</Tabs>
+
+Or set it per toolkit, which overrides `tags` for that toolkit:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
     tools={
         "gmail": {
             "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
-            "require_approval": ["GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],  # set even if empty
         },
     },
 )
@@ -44,12 +61,10 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
-  toolkits: { enable: ['gmail', 'github'] },
-  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
   tools: {
     gmail: {
       enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
-      requireApproval: ['GMAIL_SEND_EMAIL'],
+      requireApproval: ['GMAIL_SEND_EMAIL'], // set even if empty
     },
   },
 });
@@ -57,13 +72,11 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-In this session, GitHub tools that create, update or delete need approval. Gmail is limited to fetching and sending emails, and sending needs approval.
-
 Tools that need approval stay visible to the agent. It can find and call them, and each call waits for the user's approval. This includes calls the agent makes through `COMPOSIO_MULTI_EXECUTE_TOOL`: a batch with two calls that need approval returns two questions.
 
 ## Asking the user
 
-Say the agent in the session above asks to call `GMAIL_SEND_EMAIL`. Because it needs approval, the email isn't sent. Instead, `session.execute()` raises `ToolInputRequiredError` in Python and `ComposioToolInputRequiredError` in TypeScript:
+Say the agent in the Gmail session above asks to call `GMAIL_SEND_EMAIL`. Because it needs approval, the email isn't sent. Instead, `session.execute()` raises `ToolInputRequiredError` in Python and `ComposioToolInputRequiredError` in TypeScript:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
