@@ -65,13 +65,21 @@ export const namedProjectClient = Effect.gen(function* () {
   );
 });
 
+/** A shared flag of the `dev` group. */
+export type SharedFlag = '--user-id' | '--project-name';
+
+const unsupportedSharedFlag = (command: string): Record<SharedFlag, string> => ({
+  '--project-name': `\`composio ${command}\` does not support --project-name yet; run it from a directory configured for that project.`,
+  '--user-id': `\`composio ${command}\` does not act for a user and does not take --user-id.`,
+});
+
 /**
  * Makes a `dev` command, or a group entry and every subcommand under it, fail with a
- * `CommandInputError` when the `dev` group's `--project-name` is given, for commands that
- * cannot target another project yet. Without it the flag would be accepted and ignored.
+ * `CommandInputError` when it is given one of the `dev` group's shared flags it cannot honor.
+ * Without it the flag would be accepted and ignored. `flags` defaults to both.
  */
-export const rejectsProjectName =
-  (command: string) =>
+export const rejectsSharedFlags =
+  (command: string, flags: ReadonlyArray<SharedFlag> = ['--project-name', '--user-id']) =>
   <const Name extends string, Input, ContextInput, E, R>(
     self: Command.Command<Name, Input, ContextInput, E, R>
   ) =>
@@ -79,11 +87,13 @@ export const rejectsProjectName =
       self,
       Effect.gen(function* () {
         const surface = yield* CommandSurface;
-        if (Option.isSome(surface.projectName)) {
-          return yield* commandInputError(command)(
-            `\`composio ${command}\` does not support --project-name yet; run it from a directory configured for that project.`,
-            '--project-name'
-          );
+        const values: Record<SharedFlag, Option.Option<string>> = {
+          '--project-name': surface.projectName,
+          '--user-id': surface.userId,
+        };
+        const given = flags.find(flag => Option.isSome(values[flag]));
+        if (given !== undefined) {
+          return yield* commandInputError(command)(unsupportedSharedFlag(command)[given], given);
         }
       })
     );

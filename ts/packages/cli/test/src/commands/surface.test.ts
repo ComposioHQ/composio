@@ -291,7 +291,31 @@ describe('CommandSurface: playground-execute --parallel keeps the shared flags',
   });
 });
 
-describe('CommandSurface: dev commands that cannot target another project reject --project-name', () => {
+// `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
+const rejectingCommands = [
+  { path: ['init'], flags: ['--project-name', '--user-id'] },
+  { path: ['logs', 'tools'], flags: ['--project-name'] },
+  { path: ['logs', 'triggers'], flags: ['--project-name'] },
+  { path: ['auth-configs', 'list'], flags: ['--project-name', '--user-id'] },
+  { path: ['projects', 'list'], flags: ['--project-name', '--user-id'] },
+  { path: ['toolkits', 'search', 'email'], flags: ['--project-name', '--user-id'] },
+  { path: ['toolkits', 'version', 'gmail'], flags: ['--project-name', '--user-id'] },
+  { path: ['connected-accounts', 'info', 'ca_1'], flags: ['--project-name', '--user-id'] },
+  { path: ['connected-accounts', 'whoami', 'ca_1'], flags: ['--project-name', '--user-id'] },
+  { path: ['triggers', 'list', 'gmail'], flags: ['--project-name', '--user-id'] },
+  { path: ['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name', '--user-id'] },
+  { path: ['triggers', 'status'], flags: ['--project-name', '--user-id'] },
+  {
+    path: ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
+    flags: ['--project-name', '--user-id'],
+  },
+  { path: ['triggers', 'enable', 'ti_1'], flags: ['--project-name', '--user-id'] },
+  { path: ['triggers', 'disable', 'ti_1'], flags: ['--project-name', '--user-id'] },
+].flatMap(({ path, flags }) =>
+  flags.map(flag => ({ path, flag, name: `dev ${path.join(' ')} ${flag}` }))
+);
+
+describe('CommandSurface: dev commands that cannot honor a shared flag reject it', () => {
   layer(
     TestLive({
       baseConfigProvider: ConfigProvider.fromEnv({
@@ -299,31 +323,13 @@ describe('CommandSurface: dev commands that cannot target another project reject
       }),
     })
   )(it => {
-    it.effect.each(
-      [
-        ['init'],
-        ['logs', 'tools'],
-        ['logs', 'triggers'],
-        ['auth-configs', 'list'],
-        ['projects', 'list'],
-        ['toolkits', 'search', 'email'],
-        ['toolkits', 'version', 'gmail'],
-        ['connected-accounts', 'info', 'ca_1'],
-        ['connected-accounts', 'whoami', 'ca_1'],
-        ['triggers', 'list', 'gmail'],
-        ['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE'],
-        ['triggers', 'status'],
-        ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
-        ['triggers', 'enable', 'ti_1'],
-        ['triggers', 'disable', 'ti_1'],
-      ].map(path => ({ path, name: `dev ${path.join(' ')}` }))
-    )('rejects it on `$name`', ({ path }) =>
+    it.effect.each(rejectingCommands)('rejects `$name`', ({ path, flag }) =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        const error = yield* Effect.flip(cli(['dev', '--project-name', 'other', ...path]));
+        const error = yield* Effect.flip(cli(['dev', flag, 'other', ...path]));
         expect(error).toBeInstanceOf(CommandInputError);
-        expect(error).toMatchObject({ option: '--project-name' });
+        expect(error).toMatchObject({ option: flag });
       })
     );
   });

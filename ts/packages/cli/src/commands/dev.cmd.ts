@@ -15,7 +15,7 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
-import { CommandSurface, rejectsProjectName } from './surface';
+import { CommandSurface, rejectsSharedFlags } from './surface';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
@@ -40,15 +40,15 @@ const projectName = Flag.String('project-name').pipe(
 );
 
 export const devSubcommands = [
-  initCmd.pipe(rejectsProjectName('dev init')),
+  initCmd.pipe(rejectsSharedFlags('dev init')),
   devToolsCmd$Execute,
   triggersCmd$Listen.pipe(requireLogin),
-  logsCmd.pipe(rejectsProjectName('dev logs')),
+  logsCmd.pipe(rejectsSharedFlags('dev logs', ['--project-name'])),
   toolkitsCmd,
-  authConfigsCmd.pipe(rejectsProjectName('dev auth-configs')),
+  authConfigsCmd.pipe(rejectsSharedFlags('dev auth-configs')),
   connectedAccountsCmd,
   triggersCmd,
-  projectsCmd.pipe(rejectsProjectName('dev projects')),
+  projectsCmd.pipe(rejectsSharedFlags('dev projects')),
 ] as const;
 
 const describeCurrentMode = (enabled: boolean) =>
