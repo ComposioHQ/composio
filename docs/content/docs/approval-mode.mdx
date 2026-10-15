@@ -50,11 +50,13 @@ tags={
 }
 ```
 
-### 3. Override toolkits
+### 3. Override the tags for a toolkit
 
-You can override step 2 for a toolkit, either by tag or by tool.
+The global `tags` from step 2 apply to every toolkit. To treat a toolkit differently, add an override for it under `tools.<toolkit>`.
 
-**By tag.** Set `tools.<toolkit>.tags`, the same way as step 2. This replaces the session-wide `tags` for that toolkit rather than adding to them, so list every tag you want it to ask about or block. For example, this lets GitHub's destructive actions run after the user approves them, rather than blocking them:
+An override replaces the global `tags` for that toolkit. The global `tags` no longer apply to it at all, so the override has to say everything about the toolkit. An override is either by tag or by tool.
+
+**By tag.** Set `tools.<toolkit>.tags` the same way as step 2. Repeat any global settings you still want for the toolkit. For example, this override makes GitHub's destructive actions ask first instead of being blocked. Creates and updates are listed again so they still ask first:
 
 ```python
 tools={
@@ -64,7 +66,7 @@ tools={
 }
 ```
 
-**By tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones to ask about first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. Always set `require_approval`, even to `[]`. Otherwise the session-wide `tags.require_approval` still applies to the listed tools. For example, this lets the agent read and send Gmail, and asks before sending:
+**By tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that ask first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and asks before sending:
 
 ```python
 tools={
@@ -74,6 +76,8 @@ tools={
     }
 }
 ```
+
+Always set `require_approval` in a by-tool override, even to `[]`. Without it, the global `tags.require_approval` isn't overridden and still applies to the listed tools.
 
 Use one or the other for a toolkit, not both.
 
@@ -127,11 +131,11 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-With this session, the agent can:
+With this session:
 
-- read GitHub freely, and create, update or delete things in GitHub after the user approves
-- fetch Gmail emails freely, and send emails after the user approves
-- use no other Gmail tools, and no other toolkits
+- **GitHub** has a by-tag override. Reads run freely, and creates, updates and deletes ask first.
+- **Gmail** has a by-tool override. Fetching emails runs freely, sending asks first, and no other Gmail tools are available.
+- **Any other toolkit** isn't enabled. If you enabled one without an override, the global `tags` would apply to it: reads run freely, creates and updates ask first, and destructive actions are blocked.
 
 Asking first doesn't hide a tool from the agent. It can still find and call it, and the call waits for the user's approval. This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
 
