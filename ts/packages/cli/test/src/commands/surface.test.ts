@@ -295,6 +295,52 @@ describe('CommandSurface: playground-execute --parallel keeps the shared flags',
   });
 });
 
+describe('CommandSurface: playground-execute --parallel finds its command name', () => {
+  const executedSlugs: Array<string> = [];
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: {
+          COMPOSIO_USER_API_KEY: 'test_api_key',
+          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_PROJECT_ID: 'dev_project_test',
+        },
+      }),
+      stdin: { isTTY: true, data: '' },
+      accountData: {
+        projects: [
+          makeOrgProject({ id: 'proj_pe', name: 'playground-execute', orgId: 'org_test' }),
+        ],
+      },
+      toolsExecutor: { onExecute: slug => executedSlugs.push(slug) },
+    })
+  )(it => {
+    it.effect.each([
+      { flag: '--user-id', args: ['--user-id', 'playground-execute'] },
+      { flag: '--project-name', args: ['--project-name', 'playground-execute'] },
+    ])('does not take a $flag value that spells it for the command', ({ args }) =>
+      Effect.gen(function* () {
+        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+        executedSlugs.length = 0;
+        yield* cli([
+          'dev',
+          ...args,
+          'playground-execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{}',
+          'GITHUB_CREATE_ISSUE',
+          '-d',
+          '{}',
+        ]);
+        expect(executedSlugs.toSorted()).toEqual(['GITHUB_CREATE_ISSUE', 'GMAIL_SEND_EMAIL']);
+      })
+    );
+  });
+});
+
 // `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
 const rejectingCommands = [
   { path: ['init'], flags: ['--project-name', '--user-id'] },

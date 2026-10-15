@@ -1868,6 +1868,21 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
   });
 
+// Flags that can precede the command name and take the next token as their value
+// (`$default.cmd.ts`, `dev.cmd.ts`), so a value equal to the command name is not the command.
+const VALUE_FLAGS_BEFORE_COMMAND = new Set([
+  '--log-level',
+  '--mode',
+  '--user-id',
+  '--project-name',
+]);
+
+/** The index of the command name in argv, skipping a flag value that spells the same word. */
+const commandNameIndex = (argv: ReadonlyArray<string>, name: string) =>
+  argv.findIndex(
+    (token, index) => token === name && !VALUE_FLAGS_BEFORE_COMMAND.has(argv[index - 1] ?? '')
+  );
+
 const runParallelFromCommand = (config: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
@@ -1880,7 +1895,7 @@ const runParallelFromCommand = (config: {
   Effect.gen(function* () {
     const argv = yield* ExecuteInvocationArgs;
     const name = config.surface === 'root' ? 'execute' : 'playground-execute';
-    const tail = argv.slice(argv.indexOf(name) + 1);
+    const tail = argv.slice(commandNameIndex(argv, name) + 1);
     const parsed = yield* parseParallelExecuteArgs(tail, {
       ...config,
       allowUserId: config.surface === 'dev',
