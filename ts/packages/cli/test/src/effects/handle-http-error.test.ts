@@ -4,12 +4,14 @@ import {
   BadRequestError as ClientBadRequestError,
   ConfigurationError as ClientConfigurationError,
   DecodeError as ClientDecodeError,
+  type ComposioError,
 } from '@composio/client/effect';
 import { describe, expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
-import { afterEach } from 'vitest';
-import { catchClientApiError, handleClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const envelope = {
@@ -52,7 +54,8 @@ const options = {
 };
 
 // A TerminalUI whose stderr is not a TTY, recording every line the handler
-// writes together with the channel it went to.
+// writes together with the channel it went to, and a NodeProcess recording
+// the exit code it sets.
 const recordingUI = () => {
   const lines: Array<string> = [];
   const record = (channel: string) => (message: string) =>
@@ -64,19 +67,16 @@ const recordingUI = () => {
     error: record('stderr'),
     log: { ...terminalUITestImpl.log, error: record('log.error'), step: record('log.step') },
   });
-  return { ui, lines };
+  const proc = recordingNodeProcess();
+  return { ui, lines, exitCode: proc.exitCode, provide: Effect.provide(proc.layer) };
 };
 
 describe('handleClientApiError', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   it.effect('prints the envelope message and the suggested fix, and fails the process', () =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, exitCode, provide } = recordingUI();
 
-      const result = yield* handleClientApiError(ui, options)(clientStatusError);
+      const result = yield* handleClientApiError(ui, options)(clientStatusError).pipe(provide);
 
       expect(result).toBe('fallback');
       expect(lines).toStrictEqual([
@@ -86,7 +86,7 @@ describe('handleClientApiError', () => {
         'log.step: Check the auth config id',
         'log.step: Browse available auth configs:\n> composio dev auth-configs list',
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCode()).toBe(1);
     })
   );
 
@@ -101,9 +101,9 @@ describe('handleClientApiError', () => {
     new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'GET', url }),
   ])('prints the fallback message for $_tag', error =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, exitCode, provide } = recordingUI();
 
-      const result = yield* handleClientApiError(ui, options)(error);
+      const result = yield* handleClientApiError(ui, options)(error).pipe(provide);
 
       expect(result).toBe('fallback');
       expect(lines).toStrictEqual([
@@ -112,19 +112,19 @@ describe('handleClientApiError', () => {
         'log.error: Failed to fetch auth config "ac_missing".',
         'log.step: Browse available auth configs:\n> composio dev auth-configs list',
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCode()).toBe(1);
     })
   );
 
   it.effect('names the operation and request id of a decode failure and suggests an upgrade', () =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, exitCode, provide } = recordingUI();
 
       const result = yield* handleClientApiError(ui, {
         ...options,
         searchForSuggestions: () =>
           Effect.succeed([{ label: 'ac_similar', command: '> composio dev auth-configs info' }]),
-      })(clientDecodeError);
+      })(clientDecodeError).pipe(provide);
 
       expect(result).toBe('fallback');
       expect(lines).toStrictEqual([
@@ -133,13 +133,13 @@ describe('handleClientApiError', () => {
         "log.error: The API response for 'authConfigs.retrieve' is not in the shape this version of the CLI expects (request id: req_decode).",
         'log.step: Upgrade the CLI, then retry:\n> composio upgrade',
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCode()).toBe(1);
     })
   );
 
   it.effect('replaces the hint with suggestions when the search finds some', () =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, provide } = recordingUI();
 
       yield* handleClientApiError(ui, {
         ...options,
@@ -147,7 +147,7 @@ describe('handleClientApiError', () => {
           Effect.succeed([
             { label: 'ac_similar', command: '> composio dev auth-configs info "ac_similar"' },
           ]),
-      })(clientStatusError);
+      })(clientStatusError).pipe(provide);
 
       expect(lines.at(-1)).toBe(
         'log.step: Did you mean?\n  ac_similar\n\n> composio dev auth-configs info "ac_similar"'
@@ -156,11 +156,7 @@ describe('handleClientApiError', () => {
   );
 });
 
-describe('catchClientApiError', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
+describe('Effect.catchTag(CLIENT_API_ERROR_TAGS, handleClientApiError(...))', () => {
   it.effect.each([
     clientStatusError,
     clientDecodeError,
@@ -174,28 +170,34 @@ describe('catchClientApiError', () => {
     new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'GET', url }),
   ])('recovers from $_tag with the fallback value', error =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, exitCode, provide } = recordingUI();
 
-      const result = yield* Effect.fail(error).pipe(catchClientApiError(ui, options));
+      // The tag list recovers from the client's whole error union.
+      const result = yield* Effect.fail<ComposioError>(error).pipe(
+        Effect.catchTag(CLIENT_API_ERROR_TAGS, handleClientApiError(ui, options)),
+        provide
+      );
 
       expect(result).toBe('fallback');
       expect(lines).not.toStrictEqual([]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCode()).toBe(1);
     })
   );
 
   it.effect('leaves other failures alone', () =>
     Effect.gen(function* () {
-      const { ui, lines } = recordingUI();
+      const { ui, lines, exitCode, provide } = recordingUI();
       const error = new ClientConfigurationError({ message: 'No credential.' });
 
-      const failure = yield* Effect.fail<ClientConfigurationError | ClientBadRequestError>(
-        error
-      ).pipe(catchClientApiError(ui, options), Effect.flip);
+      const failure = yield* Effect.fail<ComposioError>(error).pipe(
+        Effect.catchTag(CLIENT_API_ERROR_TAGS, handleClientApiError(ui, options)),
+        provide,
+        Effect.flip
+      );
 
       expect(failure).toBe(error);
       expect(lines).toStrictEqual([]);
-      expect(process.exitCode).toBeUndefined();
+      expect(exitCode()).toBeUndefined();
     })
   );
 });

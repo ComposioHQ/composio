@@ -1,13 +1,9 @@
-import process from 'node:process';
 import { isAPIError } from '@composio/client/effect';
 import { Effect } from 'effect';
+import type { ClientApiError } from 'src/services/composio-errors';
+import { NodeProcess } from 'src/services/node-process';
 import type { TerminalUI } from 'src/services/terminal-ui';
-import {
-  describeDecodeError,
-  isClientApiError,
-  isClientDecodeError,
-  type ClientApiError,
-} from 'src/utils/api-error-extraction';
+import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
 
 export interface Suggestion {
   readonly label: string;
@@ -56,10 +52,15 @@ const reportOf = (e: ClientApiError): ErrorReport => {
  * A response that failed client decoding is reported by operation and request
  * id with an upgrade hint, in place of the fallback message and the hint.
  *
+ * Recover from every client API error (a non-success status, a connection
+ * failure, a timeout, or a response that failed decoding) with
+ * `Effect.catchTag(CLIENT_API_ERROR_TAGS, ...)`; every other failure passes
+ * through. A single tag narrows the recovery to that status.
+ *
  * @example
  * ```ts
  * .pipe(
- *   Effect.catchTag('@composio/client/NotFoundError',
+ *   Effect.catchTag(CLIENT_API_ERROR_TAGS,
  *     handleClientApiError(ui, {
  *       fallbackMessage: `Failed to fetch auth config "${id}".`,
  *       hint: 'Browse available auth configs:\n> composio dev auth-configs list',
@@ -73,7 +74,8 @@ export const handleClientApiError =
   <A>(ui: TerminalUI, opts: HandleClientApiErrorOptions<A>) =>
   (e: ClientApiError) =>
     Effect.gen(function* () {
-      process.exitCode = 1;
+      const proc = yield* NodeProcess;
+      yield* proc.setExitCode(1);
 
       const report = reportOf(e);
       const message = report.message ?? opts.fallbackMessage;
@@ -106,30 +108,3 @@ export const handleClientApiError =
       yield* ui.log.step(hint);
       return opts.fallbackValue;
     });
-
-/**
- * Recover from any client API error (a non-success status, a connection
- * failure, a timeout, or a response that failed decoding) with
- * `handleClientApiError`. Every other failure passes through.
- *
- * @example
- * ```ts
- * .pipe(
- *   catchClientApiError(ui, {
- *     fallbackMessage: `Failed to fetch auth config "${id}".`,
- *     hint: 'Browse available auth configs:\n> composio dev auth-configs list',
- *     fallbackValue: Option.none(),
- *   })
- * )
- * ```
- */
-export const catchClientApiError =
-  <B>(ui: TerminalUI, opts: HandleClientApiErrorOptions<B>) =>
-  <A, E, R>(
-    self: Effect.Effect<A, E, R>
-  ): Effect.Effect<A | B, Exclude<E, Extract<E, ClientApiError>>, R> =>
-    Effect.catchIf<A, E, R, Extract<E, ClientApiError>, B, never, never>(
-      self,
-      (e): e is Extract<E, ClientApiError> => isClientApiError(e),
-      handleClientApiError(ui, opts)
-    );

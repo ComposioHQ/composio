@@ -3,7 +3,8 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { bold } from 'src/ui/colors';
@@ -44,23 +45,26 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
       .withSpinner(`Fetching tool "${slugValue}"...`, repo.getToolDetailed(slugValue))
       .pipe(
         Effect.asSome,
-        catchClientApiError(ui, {
-          fallbackMessage: `Tool "${slugValue}" not found.`,
-          hint: [
-            commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
-            commandHintStep('Then list tools', 'root.tools.list'),
-          ].join('\n'),
-          fallbackValue: Option.none(),
-          searchForSuggestions: () =>
-            repo.searchTools({ search: slugValue, limit: 3 }).pipe(
-              Effect.map(r =>
-                r.items.map(s => ({
-                  label: `${s.slug} — ${s.description}`,
-                  command: `> composio tools info "${s.slug}"`,
-                }))
-              )
-            ),
-        })
+        Effect.catchTag(
+          CLIENT_API_ERROR_TAGS,
+          handleClientApiError(ui, {
+            fallbackMessage: `Tool "${slugValue}" not found.`,
+            hint: [
+              commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
+              commandHintStep('Then list tools', 'root.tools.list'),
+            ].join('\n'),
+            fallbackValue: Option.none(),
+            searchForSuggestions: () =>
+              repo.searchTools({ search: slugValue, limit: 3 }).pipe(
+                Effect.map(r =>
+                  r.items.map(s => ({
+                    label: `${s.slug} — ${s.description}`,
+                    command: `> composio tools info "${s.slug}"`,
+                  }))
+                )
+              ),
+          })
+        )
       );
 
     if (Option.isNone(toolOpt)) {

@@ -430,6 +430,50 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig())))
   );
 
+  it.effect('hands concurrent first callers of a scope the same client', () =>
+    Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
+
+      const [first, second, third] = yield* Effect.all(
+        [
+          clientSingleton.getFor(scope),
+          clientSingleton.getFor({ ...scope }),
+          clientSingleton.getFor(scope),
+        ],
+        { concurrency: 'unbounded' }
+      );
+
+      expect(second).toBe(first);
+      expect(third).toBe(first);
+    }).pipe(Effect.provide(singletonLayer(baseConfig())))
+  );
+
+  it.effect('counts requests on its own transport beside an application FetchHttpClient', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getFor({ userApiKey: 'uak_scope' });
+      yield* listTools(client);
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      expect((yield* clientSingleton.getMetrics()).requests).toBe(1);
+    }).pipe(
+      // The application's transport is built first, so a memoized
+      // `FetchHttpClient.layer` would be the one that counts nothing.
+      Effect.provide(
+        Layer.provide(
+          ComposioClientSingleton.Default,
+          Layer.merge(
+            withConfigLayer(baseConfig(), tempy.temporaryDirectory()),
+            FetchHttpClient.layer
+          )
+        )
+      )
+    );
+  });
+
   it.effect('ignores ambient COMPOSIO_API_KEY and COMPOSIO_BASE_URL', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     vi.stubEnv('COMPOSIO_API_KEY', 'ak_ambient');
@@ -565,12 +609,25 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_strict']]))));
   });
 
-  it.effect('reports an invalid base URL as a configuration error', () =>
+  it.effect("reports an invalid base URL as the client's own configuration error", () =>
     Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const error = yield* Effect.flip(clientSingleton.getFor({ userApiKey: 'uak_a' }));
 
-      expect(error._tag).toBe('services/ComposioClientConfigurationError');
+      expect(error._tag).toBe('@composio/client/ConfigurationError');
+    }).pipe(Effect.provide(singletonLayer(new Map([['COMPOSIO_BASE_URL', 'not a url']]))))
+  );
+
+  it.effect('does not keep a client that could not be built', () =>
+    Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const scope = { userApiKey: 'uak_a' };
+
+      const first = yield* Effect.flip(clientSingleton.getFor(scope));
+      const second = yield* Effect.flip(clientSingleton.getFor(scope));
+
+      expect(first._tag).toBe('@composio/client/ConfigurationError');
+      expect(second).not.toBe(first);
     }).pipe(Effect.provide(singletonLayer(new Map([['COMPOSIO_BASE_URL', 'not a url']]))))
   );
 });

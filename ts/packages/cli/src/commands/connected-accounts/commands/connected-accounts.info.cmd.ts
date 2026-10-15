@@ -3,7 +3,8 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { formatConnectedAccountInfo } from '../format';
 
 const id = Argument.String('id').pipe(
@@ -41,11 +42,14 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
       .withSpinner(`Fetching connected account "${idValue}"...`, repo.getConnectedAccount(idValue))
       .pipe(
         Effect.asSome,
-        catchClientApiError(ui, {
-          fallbackMessage: `Failed to fetch connected account "${idValue}".`,
-          hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
-          fallbackValue: Option.none(),
-        })
+        Effect.catchTag(
+          CLIENT_API_ERROR_TAGS,
+          handleClientApiError(ui, {
+            fallbackMessage: `Failed to fetch connected account "${idValue}".`,
+            hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
+            fallbackValue: Option.none(),
+          })
+        )
       );
 
     if (Option.isNone(itemOpt)) {

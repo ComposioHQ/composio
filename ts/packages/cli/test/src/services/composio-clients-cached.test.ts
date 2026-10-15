@@ -239,6 +239,39 @@ describe('ComposioToolkitsRepositoryCached', () => {
     )
   );
 
+  it.effect('shares one in-flight project fetch between concurrent first callers', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scope = { orgId: 'org_a', projectId: 'pr_a' };
+
+          const results = yield* Effect.all(
+            [
+              repository.getProjectToolkits(scope),
+              repository.getProjectToolkits({ ...scope }),
+              repository.getProjectToolkits(scope),
+            ],
+            { concurrency: 'unbounded' }
+          );
+
+          expect(results.map(toolkits => toolkits.map(t => t.slug))).toEqual([
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+          ]);
+          expect(projectCalls()).toBe(1);
+        }),
+      [],
+      // The fetch yields before answering, so every caller is waiting on it.
+      scope =>
+        Effect.yieldNow.pipe(
+          Effect.as([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
+        )
+    )
+  );
+
   it.effect('passes an uncached method straight through to the underlying repository', () =>
     Effect.gen(function* () {
       const searchTools = vi.fn(() =>

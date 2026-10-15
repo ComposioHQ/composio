@@ -1,12 +1,23 @@
-import { Context, Effect, Layer, Option, Stream, Array, Order, String } from 'effect';
-import * as FileSystem from 'effect/FileSystem';
-import * as Path from 'effect/Path';
+import {
+  Cache,
+  Context,
+  Duration,
+  Effect,
+  Exit,
+  Layer,
+  Option,
+  Stream,
+  Array,
+  Order,
+} from 'effect';
+import * as Str from 'effect/String';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import {
   make as makeComposioClient,
   VERSION as clientLibraryVersion,
   type ComposioClientShape,
+  type ConfigurationError,
 } from '@composio/client/effect';
 import { Toolkit, Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools } from 'src/models/tools';
@@ -21,12 +32,12 @@ import { cliRequestHeaders } from './client-provenance';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
-import { makeClientMetricsCollector } from './composio-client-metrics';
+import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
+import { isClientConfigurationError } from 'src/utils/api-error-extraction';
 import { MAX_CONCURRENT_REQUESTS_PER_ENDPOINT, decode, undecoded } from './composio-request';
 import { lookupOperations, resourceOperations } from './composio-resource-operations';
 import { composioSchemaLoaders } from './composio-schema-loaders';
-import { NodeOs } from './node-os';
 import {
   InvalidToolkitsError,
   invalidToolkitOn404,
@@ -106,10 +117,7 @@ export interface ComposioClientSingletonShape {
    * The client for the user's key and, when the working directory resolves to
    * a project, that project's org and project.
    */
-  readonly get: () => Effect.Effect<
-    ComposioClientShape,
-    ComposioClientConfigurationError | NoSuchElementError
-  >;
+  readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * The client for an explicit scope. `userApiKey` defaults to the user's key.
    */
@@ -117,7 +125,7 @@ export interface ComposioClientSingletonShape {
     userApiKey?: string;
     orgId?: string;
     projectId?: string;
-  }) => Effect.Effect<ComposioClientShape, ComposioClientConfigurationError | NoSuchElementError>;
+  }) => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * Returns a snapshot of the accumulated metrics (total bytes received and
    * request count) across every client this singleton built.
@@ -126,6 +134,23 @@ export interface ComposioClientSingletonShape {
     readonly byteSize: number;
     readonly requests: number;
   }>;
+}
+
+/**
+ * Why a client could not be built: the client's own `ConfigurationError`
+ * (a base URL it refuses, say) or a failure the CLI only knows as a thrown value.
+ */
+export type ClientBuildError = ConfigurationError | ComposioClientConfigurationError;
+
+/**
+ * The scope a client is built for. A plain record is compared and hashed
+ * structurally by `Equal` and `Hash`, so two lookups with the same fields
+ * resolve to the same cache entry.
+ */
+interface ClientScope {
+  readonly userApiKey: string | undefined;
+  readonly orgId: string | undefined;
+  readonly projectId: string | undefined;
 }
 
 /**
@@ -139,103 +164,99 @@ export interface ComposioClientSingletonShape {
  * bytes on every operation; it is also passed as `userApiKey`, while the
  * caller-placed header still wins at dispatch.
  */
-const makeComposioClientSingleton = Effect.gen(function* () {
-  const ctx = yield* ComposioUserContext;
-  const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
-  const fs = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
-  const os = yield* NodeOs;
-  const metrics = makeClientMetricsCollector();
-  // A private memo map: under an application that already built
-  // `FetchHttpClient.layer`, a shared one would hand back that transport,
-  // which calls `globalThis.fetch` directly and counts nothing.
-  const httpClient = yield* Effect.provide(
-    HttpClient.HttpClient,
-    Layer.provide(FetchHttpClient.layer, Layer.succeed(FetchHttpClient.Fetch, metrics.fetch)),
-    { local: true }
-  );
-  const cache = new Map<string, ComposioClientShape>();
+const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
+  Effect.gen(function* () {
+    const ctx = yield* ComposioUserContext;
+    const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
+    const httpClient = yield* HttpClient.HttpClient;
 
-  const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
-    Effect.gen(function* () {
-      const apiKey = normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
-      const cacheKey = JSON.stringify({
-        apiKey: apiKey ?? null,
-        orgId: params?.orgId ?? null,
-        projectId: params?.projectId ?? null,
-      });
-      const cached = cache.get(cacheKey);
-      if (cached) {
-        return cached;
-      }
+    const buildClient = (scope: ClientScope) =>
+      Effect.gen(function* () {
+        const cliSessionId = yield* getCurrentCwdSessionId();
 
-      const cliSessionId = yield* getCurrentCwdSessionId().pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-        Effect.provideService(Path.Path, path),
-        Effect.provideService(NodeOs, os)
-      );
-
-      const client = yield* Effect.try({
-        try: () =>
-          // Responses are validated against the CLI's loader table unless a
-          // call passes `decode: false`.
-          makeComposioClient(
-            {
-              apiKey: null,
-              userApiKey: apiKey ?? null,
-              orgApiKey: null,
-              baseURL: ctx.data.baseURL,
-              // Preserve support for explicitly configured HTTP backends.
-              allowInsecureHTTP: true,
-              deprecationNotices: 'off',
-              defaultHeaders: buildDefaultHeaders({
-                userApiKey: apiKey,
-                orgId: params?.orgId,
-                projectId: params?.projectId,
-                cliSessionId,
-              }),
-              decode: true,
-              schemas: composioSchemaLoaders,
-            },
-            httpClient
-          ),
-        catch: cause =>
-          new ComposioClientConfigurationError({
-            message: cause instanceof Error ? cause.message : global.String(cause),
-            cause,
-          }),
+        return yield* Effect.try({
+          try: () =>
+            // Responses are validated against the CLI's loader table unless a
+            // call passes `decode: false`.
+            makeComposioClient(
+              {
+                apiKey: null,
+                userApiKey: scope.userApiKey ?? null,
+                orgApiKey: null,
+                baseURL: ctx.data.baseURL,
+                // Preserve support for explicitly configured HTTP backends.
+                allowInsecureHTTP: true,
+                deprecationNotices: 'off',
+                defaultHeaders: buildDefaultHeaders({
+                  userApiKey: scope.userApiKey,
+                  orgId: scope.orgId,
+                  projectId: scope.projectId,
+                  cliSessionId,
+                }),
+                decode: true,
+                schemas: composioSchemaLoaders,
+              },
+              httpClient
+            ),
+          // The client's own error is kept as it is; anything else thrown is
+          // reported as the CLI's configuration error.
+          catch: (cause): ClientBuildError =>
+            isClientConfigurationError(cause)
+              ? cause
+              : new ComposioClientConfigurationError({
+                  message: cause instanceof Error ? cause.message : String(cause),
+                  cause,
+                }),
+        });
       });
 
-      cache.set(cacheKey, client);
-      return client;
+    // One client per scope, built once: concurrent first callers share the
+    // in-flight build. The lookup reads the session id from disk with the
+    // services captured here. A failed build is not kept (its entry's time to
+    // live is zero), so the next caller builds again instead of replaying a
+    // configuration error that a later login may have fixed.
+    const clients = yield* Cache.makeWith(buildClient, {
+      capacity: 64,
+      timeToLive: exit => (Exit.isSuccess(exit) ? Duration.infinity : Duration.zero),
     });
 
-  return {
-    get: Effect.fn(function* () {
-      const resolvedProjectContext = yield* Option.match(projectContextOpt, {
-        onNone: () => Effect.succeed(Option.none()),
-        onSome: projectContext =>
-          projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
-      });
-      return yield* Option.match(resolvedProjectContext, {
-        onNone: () => getFor(),
-        onSome: keys =>
-          getFor({
-            orgId: keys.orgId,
-            projectId: keys.projectId,
-          }),
-      });
-    }),
-    getFor: Effect.fn(function* (params: {
-      userApiKey?: string;
-      orgId?: string;
-      projectId?: string;
-    }) {
-      return yield* getFor(params);
-    }),
-    getMetrics: metrics.getMetrics,
-  } satisfies ComposioClientSingletonShape;
-});
+    // `ctx.data` is read per call: a login or logout changes the user key,
+    // and with it the scope.
+    const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+      Effect.suspend(() =>
+        Cache.get(clients, {
+          userApiKey: normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)),
+          orgId: params?.orgId,
+          projectId: params?.projectId,
+        })
+      );
+
+    return {
+      get: Effect.fn(function* () {
+        const resolvedProjectContext = yield* Option.match(projectContextOpt, {
+          onNone: () => Effect.succeed(Option.none()),
+          onSome: projectContext =>
+            projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
+        });
+        return yield* Option.match(resolvedProjectContext, {
+          onNone: () => getFor(),
+          onSome: keys =>
+            getFor({
+              orgId: keys.orgId,
+              projectId: keys.projectId,
+            }),
+        });
+      }),
+      getFor: Effect.fn(function* (params: {
+        userApiKey?: string;
+        orgId?: string;
+        projectId?: string;
+      }) {
+        return yield* getFor(params);
+      }),
+      getMetrics: metrics.getMetrics,
+    } satisfies ComposioClientSingletonShape;
+  });
 
 /**
  * The org/project a project-scoped request is made for, as a command resolved it.
@@ -249,9 +270,24 @@ export class ComposioClientSingleton extends Context.Service<
   ComposioClientSingleton,
   ComposioClientSingletonShape
 >()('services/ComposioClientSingleton') {
-  static readonly Default = Layer.effect(ComposioClientSingleton, makeComposioClientSingleton).pipe(
-    Layer.provide(ComposioUserContextLive)
-  );
+  // The singleton and its transport share one metrics collector, created
+  // when the layer is built. The transport is a fresh `FetchHttpClient.layer`
+  // rather than the memoized one an application may already have built
+  // (`cli-main.ts` provides its own), because that one calls
+  // `globalThis.fetch` directly and counts nothing; this one is built over
+  // the counting `fetch`.
+  static readonly Default = Layer.unwrap(
+    Effect.sync(() => {
+      const metrics = makeClientMetricsCollector();
+      return Layer.effect(ComposioClientSingleton, makeComposioClientSingleton(metrics)).pipe(
+        Layer.provide(
+          Layer.fresh(FetchHttpClient.layer).pipe(
+            Layer.provide(Layer.succeed(FetchHttpClient.Fetch, metrics.fetch))
+          )
+        )
+      );
+    })
+  ).pipe(Layer.provide(ComposioUserContextLive));
 }
 /**
  * Repositories
@@ -374,11 +410,11 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ): Effect.Effect<ReadonlyArray<string>, InvalidToolkitsError | ClientError> =>
       Effect.gen(function* () {
         // Normalize input slugs to lowercase for comparison
-        const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+        const normalizedInputSlugs = toolkitSlugs.map(slug => Str.toLowerCase(slug));
 
         // Fetch all available toolkits
         const allToolkits = yield* getToolkits();
-        const availableSlugs = allToolkits.map(toolkit => String.toLowerCase(toolkit.slug));
+        const availableSlugs = allToolkits.map(toolkit => Str.toLowerCase(toolkit.slug));
 
         // Find invalid slugs
         const invalidSlugs = normalizedInputSlugs.filter(slug => !availableSlugs.includes(slug));
@@ -403,8 +439,8 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
       toolkits: ReadonlyArray<Toolkit>,
       toolkitSlugs: ReadonlyArray<string>
     ): ReadonlyArray<Toolkit> => {
-      const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
-      return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+      const normalizedSlugs = new Set(toolkitSlugs.map(slug => Str.toLowerCase(slug)));
+      return toolkits.filter(toolkit => normalizedSlugs.has(Str.toLowerCase(toolkit.slug)));
     },
     /**
      * Validates that the requested toolkit versions exist in the API's available_versions.

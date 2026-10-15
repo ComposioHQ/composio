@@ -5,7 +5,8 @@ import { parseJsonRecord } from 'src/utils/parse-json';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigCreated } from '../format';
 
@@ -117,11 +118,14 @@ export const authConfigsCmd$Create = Command.make(
         .withSpinner('Creating auth config...', repo.createAuthConfig(params))
         .pipe(
           Effect.asSome,
-          catchClientApiError(ui, {
-            fallbackMessage: 'Failed to create auth config.',
-            hint: `Check available auth schemes for "${toolkit}":\n> composio dev toolkits info "${toolkit}"`,
-            fallbackValue: Option.none(),
-          })
+          Effect.catchTag(
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
+              fallbackMessage: 'Failed to create auth config.',
+              hint: `Check available auth schemes for "${toolkit}":\n> composio dev toolkits info "${toolkit}"`,
+              fallbackValue: Option.none(),
+            })
+          )
         );
 
       if (Option.isNone(resultOpt)) {

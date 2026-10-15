@@ -21,11 +21,5 @@ export const decode =
   <S extends Schema.Top>(schema: S) =>
   (input: unknown): Effect.Effect<S['Type'], HttpDecodingError, S['DecodingServices']> =>
     Schema.decodeUnknownEffect(schema)(input).pipe(
-      Effect.catchTag(
-        'SchemaError',
-        e =>
-          new HttpDecodingError({
-            cause: `SchemaError\n   ${e.message}`,
-          })
-      )
+      Effect.catchTag('SchemaError', cause => new HttpDecodingError({ cause }))
     );
