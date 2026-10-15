@@ -233,12 +233,12 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-## Limitations
+## Current limitations
 
-- **Workbench and bash scripts.** Composio reviews `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` scripts on a best-effort basis to find the tools they call. If any of those tools need approval, the script picks tools while it runs, or the review fails, the user approves the whole script. Calls the script makes aren't asked about again, and there's no **Always approve**.
-- **Proxy execute.** A proxy request can't be matched to a tool, so `session.proxy_execute()` is disabled for a toolkit when any of its tools can need approval.
+- **Workbench and bash scripts.** Composio uses a model to find the tools a `COMPOSIO_REMOTE_WORKBENCH` or `COMPOSIO_REMOTE_BASH_TOOL` script calls, so it can miss some. If approval must never be skipped, [disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox).
+- **Proxy execute.** `session.proxy_execute()` is currently disabled for a toolkit when any of its tools need approval.
 - **Tags.** Rules based on [tags](/docs/tool-tags) are only as accurate as the tags, which Composio assigns on a best-effort basis. List tools explicitly for anything you must gate.
-- **Providers.** `handle_tool_calls` and framework providers don't handle approval yet. Run tool calls with `session.execute()`, as in the [full example](#full-example) below.
+- **Providers.** The SDK's `handle_tool_calls` and framework providers don't handle approval yet. Run tool calls with `session.execute()`, as in the [full example](#full-example) below.
 
 ## Full example
 
