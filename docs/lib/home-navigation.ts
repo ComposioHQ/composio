@@ -129,6 +129,7 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/session-configs',
       '/docs/instant-tools',
       '/docs/toolkits',
       '/docs/authentication',
@@ -164,7 +165,7 @@ export const DOCS_PRODUCTS = {
             links: [
               { url: '/docs/how-composio-works', label: 'What is a Session?' },
               { url: '/docs/configuring-sessions' },
-
+              { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
             ],
           },
