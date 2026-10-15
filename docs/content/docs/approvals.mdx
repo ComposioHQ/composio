@@ -1,11 +1,11 @@
 ---
 title: Approvals
 experimental: true
-description: Ask the user before your agent runs tools that send, post or delete things on their behalf
+description: Ask the user before your agent runs the tools you choose
 keywords: [approval, human in the loop, elicitation, require_approval, input_required, confirmation]
 ---
 
-By default, your agent can run any tool in a session as soon as it decides to. For tools that send, post or delete things on your users' behalf, you can configure the session to require the user's approval first.
+By default, your agent can run any tool in a session as soon as it decides to. You can configure the session to require the user's approval before any tool runs, such as tools that send, post or delete things on their behalf.
 
 When your agent calls a tool that requires approval, Composio doesn't run it. It returns an elicitation that asks the user to approve the call, and runs the tool once it receives their answer.
 
