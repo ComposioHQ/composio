@@ -88,7 +88,24 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-A tool needs approval if any `require_approval` list matches it, whether it's set on the tool's toolkit, the tool itself or one of its [tags](/docs/configuring-sessions#filtering-tools-by-tags). `require_approval` doesn't hide any tools from the agent. It can still find and call them, and the call waits for the user's approval.
+A tool needs approval if:
+
+- its toolkit is in `toolkits.require_approval`,
+- its slug is in `tools.<toolkit>.require_approval`, or
+- one of its [tags](/docs/configuring-sessions#filtering-tools-by-tags) is in the tag list that applies to its toolkit.
+
+The session-wide `tags.require_approval` list applies to every toolkit that doesn't set approval rules of its own. Once a toolkit has its own `require_approval` under `tools.<toolkit>`, its own tag list (`tools.<toolkit>.tags.require_approval`) replaces the session-wide one, the same way its tag filter replaces the session-wide filter. If it has no tag list of its own, no tags apply to it. For example:
+
+```json
+{
+  "tags": { "require_approval": ["destructiveHint"] },
+  "tools": { "gmail": { "require_approval": ["GMAIL_SEND_EMAIL"] } }
+}
+```
+
+Here, Gmail only asks before `GMAIL_SEND_EMAIL`, and its destructive tools run without asking. Every other toolkit asks before its destructive tools. To keep asking before Gmail's destructive tools too, add `"tags": { "require_approval": ["destructiveHint"] }` to the `gmail` entry.
+
+`require_approval` doesn't hide any tools from the agent. It can still find and call them, and the call waits for the user's approval.
 
 This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
 
@@ -443,7 +460,7 @@ While approval mode is experimental, only `session.execute()` and `session.execu
 
 - **Providers.** `handle_tool_calls` (`handleToolCalls` in TypeScript) and the tools that framework providers wrap don't ask the user. Depending on the provider, a call that needs approval either raises the error or returns it to the agent as a tool error. Run tool calls with `session.execute()`, as in the example above.
 - **Custom tools.** If a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) runs a tool that needs approval through `ctx.execute()`, it raises the error, and there's no way to pass the answer back through the custom tool yet.
-- **Proxy execute.** `session.proxy_execute()` (`proxyExecute()` in TypeScript) raises the error when a call needs approval, but can't send an answer.
+- **Proxy execute.** A proxy request can't be matched to a tool, so it can't be approved. `session.proxy_execute()` (`proxyExecute()` in TypeScript) is disabled for any toolkit where approval could apply to one of its tools.
 
 ## Next
 
