@@ -29,30 +29,9 @@ All 13 Python provider packages are released at `0.28.0`.
 TypeScript `session.executeMeta()` now takes input-response options as its third argument. Move request options to the fourth argument.
 </Callout>
 
-Before:
+Before: `session.executeMeta(slug, args, requestOptions)`.
 
-```ts
-import { Composio, type ToolRouterSessionMetaToolSlug } from '@composio/core';
-const session = await new Composio({ apiKey: 'your_api_key' }).create('user_123');
-declare const slug: ToolRouterSessionMetaToolSlug;
-declare const args: Record<string, unknown>;
-const requestOptions = { timeout: 30000 };
-// ---cut---
-// @errors: 2559
-await session.executeMeta(slug, args, requestOptions);
-```
-
-After:
-
-```ts
-import { Composio, type ToolRouterSessionMetaToolSlug } from '@composio/core';
-const session = await new Composio({ apiKey: 'your_api_key' }).create('user_123');
-declare const slug: ToolRouterSessionMetaToolSlug;
-declare const args: Record<string, unknown>;
-const requestOptions = { timeout: 30000 };
-// ---cut---
-await session.executeMeta(slug, args, undefined, requestOptions);
-```
+After: `session.executeMeta(slug, args, undefined, requestOptions)`.
 
 Both SDKs now pass product and runtime identity through the API client's `identity` option. Remove identity headers such as `x-source`, `x-framework`, `x-sdk-version`, and `x-client-*` from custom default or request headers: the client now rejects attempts to override its identity headers instead of silently replacing them. In TypeScript, Cloudflare Workers and Vercel Edge with Node.js compatibility enabled report their actual runtime, and custom provider names that cannot be sent as header values are reported as `unknown`.
 
