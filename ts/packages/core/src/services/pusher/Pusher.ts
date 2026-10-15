@@ -1,5 +1,5 @@
 import ComposioClient from '@composio/client';
-import { PusherClient, TChunkedTriggerData } from '../../types/pusher.types';
+import { PusherChannel, PusherClient, TChunkedTriggerData } from '../../types/pusher.types';
 import { InternalService } from '../internal/InternalService';
 import { SDKRealtimeCredentialsResponse } from '../internal/InternalService.types';
 import {
@@ -8,6 +8,7 @@ import {
   ComposioFailedToSubscribeToPusherChannelError,
 } from '../../errors/TriggerErrors';
 import logger from '../../utils/logger';
+import { invokeUserCallback } from '../../utils/userCallback';
 import { telemetry } from '../../telemetry/Telemetry';
 import { resolveCredentialHeaders } from '../../utils/sdk';
 import type { ComposioRequestHeaders } from '../../types/composio.types';
@@ -17,17 +18,41 @@ export type PusherServiceOptions = {
   defaultHeaders?: ComposioRequestHeaders;
 };
 
+/** A pusher-js client and the triggers channel it subscribed to. */
+type TriggerConnection = {
+  client: PusherClient;
+  channel: PusherChannel;
+  channelName: string;
+};
+
+/**
+ * Setup of the connection for one subscription period, which runs from the first `subscribe()`
+ * to the next `unsubscribe()`. Concurrent `subscribe()` calls share `ready`; `unsubscribe()`
+ * aborts `controller` so that setup still in flight neither connects nor installs handlers.
+ */
+type ConnectionAttempt = {
+  controller: AbortController;
+  ready: Promise<TriggerConnection>;
+};
+
+/**
+ * Owns the realtime connection that delivers trigger events.
+ *
+ * Each subscription period gets its own pusher-js client, which `unsubscribe()` disconnects.
+ * Reusing one client across periods is unsafe: pusher-js keeps a channel, its bound handlers and
+ * its cancellation flag through `disconnect()` and resubscribes every kept channel on the next
+ * `connect()`, and a channel-auth reply requested on the old socket can arrive after a reconnect
+ * and be sent on the new one.
+ */
 export class PusherService {
-  // these values are set via the Apollo API `/internal/sdk/realtime/credentials` endpoint
-  private clientId!: string;
-  private pusherKey!: string;
-  private pusherCluster!: string;
-  private pusherChannel!: string;
   // these details are set via the client SDK
   private pusherBaseURL!: string;
   private authHeaders!: Record<string, string>;
-  private pusherClient!: PusherClient;
   private composioClient!: ComposioClient;
+  private attempt?: ConnectionAttempt;
+  // Set as soon as the current attempt creates its client, so that `unsubscribe()` can close it
+  // before the `subscribe()` calls waiting on `attempt.ready` resume.
+  private connection?: TriggerConnection;
 
   constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
@@ -43,54 +68,86 @@ export class PusherService {
   }
 
   /**
-   * Creates a Pusher client
-   *
-   * This method is called when the Pusher client is first used.
-   * It will fetch the SDK realtime credentials from the Apollo API and create a Pusher client.
+   * Returns the connection attempt of the current subscription period, starting one if needed.
+   * A failed attempt is forgotten, so the next `subscribe()` retries.
    */
-  private async getPusherClient() {
-    if (!this.pusherClient) {
-      const internalService = new InternalService(this.composioClient);
-      let sdkRealtimeCredentials: SDKRealtimeCredentialsResponse;
-      try {
-        sdkRealtimeCredentials = await internalService.getSDKRealtimeCredentials();
-      } catch (error) {
-        throw new ComposioFailedToGetSDKRealtimeCredentialsError(
-          'Failed to get SDK realtime credentials',
-          {
-            cause: error,
-          }
-        );
-      }
+  private connect(): ConnectionAttempt {
+    if (this.attempt) return this.attempt;
 
-      this.clientId = sdkRealtimeCredentials.projectId;
-      this.pusherKey = sdkRealtimeCredentials.pusherKey;
-      this.pusherCluster = sdkRealtimeCredentials.pusherCluster;
-      this.pusherChannel = `private-${this.clientId}_triggers`;
+    const controller = new AbortController();
+    const ready = this.openConnection(controller.signal);
+    const attempt = { controller, ready };
+    this.attempt = attempt;
+    ready.catch(() => {
+      if (this.attempt === attempt) this.attempt = undefined;
+    });
+    return attempt;
+  }
 
-      logger.debug(
-        `[PusherService] Creating Pusher client for client ID: ${this.clientId} in cluster ${this.pusherCluster}`
-      );
-
-      // create the Pusher client
-      try {
-        const { default: Pusher } = await import('pusher-js');
-        this.pusherClient = new Pusher(this.pusherKey, {
-          cluster: this.pusherCluster,
-          channelAuthorization: {
-            endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: { ...this.authHeaders },
-            transport: 'ajax',
-          },
-        });
-      } catch (error) {
-        throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
+  /**
+   * Fetches the SDK realtime credentials from the Apollo API, creates a Pusher client and
+   * subscribes it to the triggers channel.
+   */
+  private async openConnection(signal: AbortSignal): Promise<TriggerConnection> {
+    const internalService = new InternalService(this.composioClient);
+    let sdkRealtimeCredentials: SDKRealtimeCredentialsResponse;
+    try {
+      sdkRealtimeCredentials = await internalService.getSDKRealtimeCredentials();
+    } catch (error) {
+      throw new ComposioFailedToGetSDKRealtimeCredentialsError(
+        'Failed to get SDK realtime credentials',
+        {
           cause: error,
-        });
-      }
+        }
+      );
     }
 
-    return this.pusherClient;
+    const { projectId, pusherKey, pusherCluster } = sdkRealtimeCredentials;
+    const channelName = `private-${projectId}_triggers`;
+
+    let Pusher: (typeof import('pusher-js'))['default'];
+    try {
+      ({ default: Pusher } = await import('pusher-js'));
+    } catch (error) {
+      throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
+        cause: error,
+      });
+    }
+
+    // unsubscribe() ran while the credentials or pusher-js were loading. Everything below is
+    // synchronous, so this is the last point at which it can cancel the attempt.
+    if (signal.aborted) {
+      throw new Error('Connection attempt cancelled by unsubscribe()');
+    }
+
+    logger.debug(
+      `[PusherService] Creating Pusher client for client ID: ${projectId} in cluster ${pusherCluster}`
+    );
+
+    let client: PusherClient;
+    try {
+      client = new Pusher(pusherKey, {
+        cluster: pusherCluster,
+        channelAuthorization: {
+          endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
+          headers: { ...this.authHeaders },
+          transport: 'ajax',
+        },
+      });
+    } catch (error) {
+      throw new ComposioFailedToCreatePusherClientError('Failed to create Pusher client', {
+        cause: error,
+      });
+    }
+
+    logger.debug(`[PusherService] Subscribing to channel: ${channelName}`);
+    try {
+      this.connection = { client, channel: client.subscribe(channelName), channelName };
+    } catch (error) {
+      client.disconnect();
+      throw error;
+    }
+    return this.connection;
   }
 
   /**
@@ -102,7 +159,7 @@ export class PusherService {
    * @param callback - The function to call when the event is received
    */
   private bindWithChunking(
-    channel: PusherClient,
+    channel: PusherChannel,
     event: string,
     callback: (data: Record<string, unknown>) => void
   ): void {
@@ -167,11 +224,10 @@ export class PusherService {
   /**
    * Subscribes to pusher to receive events from the server
    *
-   * This method is used to subscribe to a Pusher channel.
-   * It will create a Pusher client if it doesn't exist.
+   * The first call of a subscription period creates the Pusher client; concurrent calls share
+   * it. A call still waiting for the client when `unsubscribe()` runs resolves without
+   * subscribing.
    *
-   * @param channelName - The name of the Pusher channel to subscribe to
-   * @param event - The event to subscribe to
    * @param fn - The function to call when the event is received
    * @param onSubscriptionError - Optional callback invoked with the raw payload when the
    * Pusher subscription fails (for example on auth or permission rejection). Errors thrown
@@ -181,30 +237,38 @@ export class PusherService {
     fn: (data: Record<string, unknown>) => void,
     onSubscriptionError?: (data: Record<string, unknown>) => void
   ) {
+    const attempt = this.connect();
+    let connection: TriggerConnection;
     try {
-      logger.debug(`[PusherService] Subscribing to channel: ${this.pusherChannel}`);
-      const pusherClient = await this.getPusherClient();
-      const channel = await pusherClient.subscribe(this.pusherChannel);
+      connection = await attempt.ready;
+    } catch (error) {
+      if (attempt.controller.signal.aborted) {
+        logger.debug('[PusherService] Subscribe cancelled by unsubscribe() before it connected');
+        return;
+      }
+      throw new ComposioFailedToSubscribeToPusherChannelError(
+        'Failed to subscribe to Pusher channel',
+        {
+          cause: error,
+        }
+      );
+    }
+    // unsubscribe() ran after the client was created but before this call resumed.
+    if (attempt.controller.signal.aborted) {
+      logger.debug('[PusherService] Subscribe cancelled by unsubscribe() before it connected');
+      return;
+    }
 
-      // add subscription error handling
-      const logCallbackFailure = (callbackError: unknown) => {
-        const errorMessage =
-          callbackError instanceof Error ? callbackError.message : String(callbackError);
-        logger.error('❌ Error in subscription error callback:', errorMessage);
-      };
+    try {
+      const { channel } = connection;
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
         logger.error('Trigger subscription error:', data);
 
         // surface the failure to the caller without letting a faulty
         // handler crash the host (same containment as the trigger callback).
-        // A handler may be async: contain rejected promises too, or the
-        // rejection escapes as an unhandled rejection after subscribe()
-        // already resolved.
-        try {
-          Promise.resolve(onSubscriptionError?.(data)).catch(logCallbackFailure);
-        } catch (callbackError: unknown) {
-          logCallbackFailure(callbackError);
-        }
+        invokeUserCallback('❌ Error in subscription error callback:', () =>
+          onSubscriptionError?.(data)
+        );
       });
 
       // log success only when Pusher itself confirms the subscription
@@ -212,18 +276,12 @@ export class PusherService {
         logger.info(`✅ Subscribed to triggers. You should start receiving events now.`);
       });
 
-      // wrap the callback to handle errors
+      // don't let a failing callback break the subscription
       const safeCallback = (data: Record<string, unknown>) => {
-        try {
-          fn(data);
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error('❌ Error in trigger callback:', errorMessage);
-          // don't throw here to prevent breaking the subscription
-        }
+        invokeUserCallback('❌ Error in trigger callback:', () => fn(data));
       };
 
-      this.bindWithChunking(channel as PusherClient, 'trigger_to_client', safeCallback);
+      this.bindWithChunking(channel, 'trigger_to_client', safeCallback);
     } catch (error) {
       throw new ComposioFailedToSubscribeToPusherChannelError(
         'Failed to subscribe to Pusher channel',
@@ -235,19 +293,29 @@ export class PusherService {
   }
 
   /**
-   * Unsubscribes from a Pusher channel
+   * Unsubscribes from the triggers channel and closes the connection
    *
-   * This method is used to unsubscribe from a Pusher channel.
-   * It will create a Pusher client if it doesn't exist.
-   *
-   * @param channelName - The name of the Pusher channel to unsubscribe from
+   * This ends the subscription period: setup still in flight is cancelled, the handlers bound by
+   * every `subscribe()` call are removed, and the Pusher client is disconnected. Without a prior
+   * `subscribe()` this does nothing; it never creates a client or fetches credentials.
    */
   async unsubscribe() {
+    const { attempt, connection } = this;
+    this.attempt = undefined;
+    this.connection = undefined;
+    attempt?.controller.abort();
+
+    if (!connection) {
+      logger.debug('[PusherService] No open connection to unsubscribe from');
+      return;
+    }
+
+    logger.debug(`[PusherService] Unsubscribing from channel: ${connection.channelName}`);
     try {
-      logger.debug(`[PusherService] Unsubscribing from channel: ${this.pusherChannel}`);
-      const pusherClient = await this.getPusherClient();
-      await pusherClient.unsubscribe(this.pusherChannel);
-      logger.info(`✅ Unsubscribed from triggers.`);
+      // pusher-js keeps a reference to every client it creates, so release the handlers this
+      // service bound and the user callbacks they hold.
+      connection.channel.unbind_all();
+      connection.client.unsubscribe(connection.channelName);
     } catch (error) {
       throw new ComposioFailedToSubscribeToPusherChannelError(
         'Failed to unsubscribe from Pusher channel',
@@ -255,6 +323,9 @@ export class PusherService {
           cause: error,
         }
       );
+    } finally {
+      connection.client.disconnect();
     }
+    logger.info(`✅ Unsubscribed from triggers.`);
   }
 }

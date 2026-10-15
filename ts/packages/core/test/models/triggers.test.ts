@@ -1103,8 +1103,115 @@ describe('Triggers', () => {
       expect(errorCallback).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         '❌ Error in trigger callback:',
-        Error('Error in user callback')
+        'Error in user callback'
       );
+    });
+
+    it('should contain rejections from async user callbacks', async () => {
+      const unhandledRejection = vi.fn();
+      process.on('unhandledRejection', unhandledRejection);
+      try {
+        // A plain async function: a vi.fn() spy would attach its own handlers
+        // to the returned promise and hide an unhandled rejection.
+        let calls = 0;
+        const asyncErrorCallback = async () => {
+          calls++;
+          throw new Error('Async error in user callback');
+        };
+
+        await triggers.subscribe(asyncErrorCallback);
+
+        const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+        const filterCallback = subscribeCall[0];
+
+        expect(() => filterCallback(mockTriggerData)).not.toThrow();
+
+        // let the rejected promise settle and the containment log run
+        await new Promise<void>(resolve => {
+          setImmediate(resolve);
+        });
+
+        expect(calls).toBe(1);
+        expect(logger.error).toHaveBeenCalledWith(
+          '❌ Error in trigger callback:',
+          'Async error in user callback'
+        );
+        expect(unhandledRejection).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandledRejection);
+      }
+    });
+
+    it('should log the details of a thrown non-Error value', async () => {
+      vi.mocked(logger.error).mockClear();
+      const failure = { message: 'Request failed', code: 429 };
+
+      await triggers.subscribe(() => {
+        throw failure;
+      });
+      await triggers.subscribe(async () => {
+        throw failure;
+      });
+
+      for (const [filterCallback] of vi.mocked(mockPusherService.subscribe).mock.calls) {
+        filterCallback(mockTriggerData);
+      }
+      await new Promise<void>(resolve => {
+        setImmediate(resolve);
+      });
+
+      // Once for the synchronous throw, once for the rejection.
+      expect(
+        vi
+          .mocked(logger.error)
+          .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+      ).toEqual([
+        ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
+        ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
+      ]);
+    });
+
+    it('should log rejection values that JSON.stringify or String() cannot handle without letting them escape', async () => {
+      // The failure log runs as a rejection handler, so it must not throw for
+      // any value, or the rejection escapes again. The logger is mocked here,
+      // so these pin the string that is logged: passing a circular value to
+      // the real logger would make its own JSON.stringify throw.
+      vi.mocked(logger.error).mockClear();
+      const unhandledRejection = vi.fn();
+      process.on('unhandledRejection', unhandledRejection);
+      try {
+        const circular: Record<string, unknown> = { code: 429 };
+        circular.self = circular;
+        // String() throws on an object without a prototype.
+        const nullPrototype = Object.assign(Object.create(null), { code: 429 });
+        const nullPrototypeCircular = Object.create(null);
+        nullPrototypeCircular.self = nullPrototypeCircular;
+
+        for (const value of [circular, nullPrototype, nullPrototypeCircular]) {
+          await triggers.subscribe(async () => {
+            throw value;
+          });
+        }
+        for (const [filterCallback] of vi.mocked(mockPusherService.subscribe).mock.calls) {
+          filterCallback(mockTriggerData);
+        }
+        await new Promise<void>(resolve => {
+          setImmediate(resolve);
+        });
+
+        expect(
+          vi
+            .mocked(logger.error)
+            .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+        ).toEqual([
+          ['❌ Error in trigger callback:', '[object Object]'],
+          ['❌ Error in trigger callback:', '{"code":429}'],
+          ['❌ Error in trigger callback:', '[unprintable value]'],
+        ]);
+        expect(unhandledRejection).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandledRejection);
+      }
     });
   });
 
