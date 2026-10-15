@@ -1,0 +1,62 @@
+---
+title: Tool tags
+description: How Composio tags each tool by the type of action it takes, and how sessions use the tags
+keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, governance, permissions]
+---
+
+Every Composio tool has a tag for the type of action it takes: it reads, creates, updates or deletes. Sessions use these tags so you can decide what your agent may do by type of action, without listing every tool. For example, you can let the agent read anything, ask the user before it creates or updates something, and block deletes.
+
+## The four tags
+
+| Tag | Type of action | For example |
+|---|---|---|
+| `readOnlyHint` | Reads, searches, lists or computes something. Changes nothing | Fetch emails, list issues, export a report |
+| `createHint` | Adds something new | Send an email, open an issue, create a calendar event |
+| `updateHint` | Changes something that already exists | Edit an issue, rename a file, change a channel's topic |
+| `destructiveHint` | Can make something stop existing | Delete a file, remove a repository |
+
+## How a tool's tag is chosen
+
+A tool gets one tag. To choose it, ask these questions in order and stop at the first yes, so the most severe tag wins:
+
+```txt
+Can any call make something stop existing?         → destructiveHint
+Can it change something that already exists?       → updateHint
+Can it add something new?                          → createHint
+Otherwise                                          → readOnlyHint
+```
+
+The tag describes what the user sees happen, not how the provider's API works:
+
+- A `POST` isn't always a create. An endpoint that takes a query and returns data is `readOnlyHint`.
+- A `GET` isn't always a read. Endpoints that cancel, reset or resend something change state.
+- Returning output isn't a change. Tools that compute, parse, convert, summarize or export data without changing anything are `readOnlyHint`.
+- Adding an item to a list or folder is `createHint`, even though the list now looks different.
+
+Some older tools still carry two tags, such as an upsert tagged `createHint` and `updateHint`. They're being moved to a single tag.
+
+## Where tags come from
+
+**Composio toolkits.** Each tool declares its tag in its definition, and CI reviews the tag against the tool's code with an automated check.
+
+**MCP toolkits.** Managed MCP toolkits, such as `granola_mcp`, and [custom MCP toolkits](/docs/extending-sessions/custom-mcp) take `readOnlyHint` from the MCP server's tool annotations. Every other tool is classified into `createHint`, `updateHint` or `destructiveHint` when the toolkit syncs. A toolkit that hasn't synced since classification was added may carry only the server's annotations. Tag rules don't reach a tool without a matching tag, and an `enable` filter hides it.
+
+To see a tool's tags, read its `tags` field with [Get a tool](/reference/api-reference/tools/getToolsByToolSlug). Sessions use the latest version of each tool, but the v3 tools endpoints default to the pinned version `00000000_00`, so pass `version=latest` (or use v3.1) to see the tags a session uses.
+
+## Using tags in a session
+
+Use the four tags to:
+
+- **Filter tools.** Hide tools by tag across the session or per toolkit. See [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
+- **Ask first.** Have the session ask the user before tools with a tag run. See [Approval mode](/docs/approval-mode).
+
+Sessions also accept the MCP hints `idempotentHint` and `openWorldHint`, but only some tools set them, so don't use them for access control. Session configs in the Composio Dashboard only accept the four tags above.
+
+## Next
+
+<Card
+  icon={<Wrench />}
+  title="Approval mode"
+  href="/docs/approval-mode"
+  description="Allow, ask first or block each tag, and override them per toolkit."
+/>

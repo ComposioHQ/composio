@@ -133,6 +133,7 @@ export const DOCS_PRODUCTS = {
       '/docs/approval-mode',
       '/docs/instant-tools',
       '/docs/toolkits',
+      '/docs/tool-tags',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -174,7 +175,7 @@ export const DOCS_PRODUCTS = {
           {
             type: 'group',
             label: 'Toolkits & Tools',
-            links: [{ url: '/docs/toolkits' }, { url: '/docs/instant-tools' }],
+            links: [{ url: '/docs/toolkits' }, { url: '/docs/tool-tags' }, { url: '/docs/instant-tools' }],
           },
           {
             type: 'group',
