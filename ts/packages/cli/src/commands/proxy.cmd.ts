@@ -365,7 +365,7 @@ export const proxyCmd = Command.make('proxy', {
               // Never retry a proxied call: a retry after the upstream API
               // already acted duplicates the side effect. The response is not
               // validated either, for the same reason.
-              { maxRetries: 0, decode: false }
+              { maxRetries: 0 }
             )
             .pipe(
               Effect.mapError(failed),

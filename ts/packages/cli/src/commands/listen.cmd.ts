@@ -100,22 +100,20 @@ const disableTemporaryTrigger = (params: {
   slug: string;
   triggerId: string;
 }) =>
-  params.client.triggerInstances.manage
-    .update(params.triggerId, { status: 'disable' }, { decode: false })
-    .pipe(
-      Effect.mapError(
-        cause =>
-          new ListenCommandError({
-            reason: 'disable_trigger',
-            // "Error: " is how these messages have always introduced the client's failure.
-            message: `Failed to disable temporary trigger "${params.triggerId}": Error: ${cause.message}`,
-            slug: params.slug,
-            cause,
-          })
-      ),
-      Effect.tapError(error => params.ui.log.warn(error.message)),
-      Effect.ignore
-    );
+  params.client.triggerInstances.manage.update(params.triggerId, { status: 'disable' }).pipe(
+    Effect.mapError(
+      cause =>
+        new ListenCommandError({
+          reason: 'disable_trigger',
+          // "Error: " is how these messages have always introduced the client's failure.
+          message: `Failed to disable temporary trigger "${params.triggerId}": Error: ${cause.message}`,
+          slug: params.slug,
+          cause,
+        })
+    ),
+    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.ignore
+  );
 
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
 
@@ -160,7 +158,7 @@ const assertTriggerTypeExists = (params: {
   slug: string;
   toolkitSlug?: string;
 }) =>
-  params.client.triggersTypes.retrieve(params.slug, undefined, { decode: false }).pipe(
+  params.client.triggersTypes.retrieve(params.slug).pipe(
     Effect.catchTag(
       '@composio/client/NotFoundError',
       cause =>
@@ -197,15 +195,12 @@ const resolveConnectedAccountIdForTrigger = (params: {
     }
 
     const connectedAccounts = yield* params.client.connectedAccounts
-      .list(
-        {
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [params.consumerUserId],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        },
-        { decode: false }
-      )
+      .list({
+        toolkit_slugs: [toolkitSlug],
+        user_ids: [params.consumerUserId],
+        statuses: ['ACTIVE'],
+        limit: 100,
+      })
       .pipe(
         Effect.mapError(
           cause =>
@@ -542,7 +537,7 @@ export const listenCmd = Command.make(
       yield* Effect.acquireUseRelease(
         listeningToProjectEvent
           ? Effect.succeed<null | { trigger_id: string }>(null)
-          : client.triggerInstances.upsert(slug, createParams, { decode: false }).pipe(
+          : client.triggerInstances.upsert(slug, createParams).pipe(
               Effect.mapError(
                 cause =>
                   new ListenCommandError({

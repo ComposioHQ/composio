@@ -283,16 +283,13 @@ const uploadFile = (params: {
     // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
     const { createHash } = yield* Effect.promise(() => import('node:crypto'));
     const md5 = createHash('md5').update(fileData.bytes).digest('hex');
-    const presigned = yield* params.client.files.createPresignedURL(
-      {
-        filename: fileData.fileName,
-        mimetype: fileData.mimeType,
-        md5,
-        tool_slug: params.toolSlug,
-        toolkit_slug: params.toolkitSlug,
-      },
-      { decode: false }
-    );
+    const presigned = yield* params.client.files.createPresignedURL({
+      filename: fileData.fileName,
+      mimetype: fileData.mimeType,
+      md5,
+      tool_slug: params.toolSlug,
+      toolkit_slug: params.toolkitSlug,
+    });
 
     const { ssrfSafeFetch } = yield* loadSsrfSafeFetch;
     const uploadResponse = yield* Effect.tryPromise({

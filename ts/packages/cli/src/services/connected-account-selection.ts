@@ -173,14 +173,11 @@ export const listActiveConnectedAccounts = memoizeInProcess({
   keyOf: (input: { readonly client: ComposioClientShape; readonly userId: string }) =>
     `${clientId(input.client)}\u0000${input.userId}`,
   make: ({ client, userId }) =>
-    client.connectedAccounts.list(
-      {
-        user_ids: [userId],
-        statuses: ['ACTIVE'],
-        limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
-      },
-      { decode: false }
-    ),
+    client.connectedAccounts.list({
+      user_ids: [userId],
+      statuses: ['ACTIVE'],
+      limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
+    }),
 });
 
 const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
@@ -194,15 +191,12 @@ const fetchConnectedAccountsForToolkit = (params: {
   readonly toolkitSlug: string;
 }) =>
   params.client.connectedAccounts
-    .list(
-      {
-        toolkit_slugs: [params.toolkitSlug],
-        user_ids: [params.userId],
-        statuses: ['ACTIVE'],
-        limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
-      },
-      { decode: false }
-    )
+    .list({
+      toolkit_slugs: [params.toolkitSlug],
+      user_ids: [params.userId],
+      statuses: ['ACTIVE'],
+      limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
+    })
     .pipe(Effect.map(response => response.items));
 
 /**

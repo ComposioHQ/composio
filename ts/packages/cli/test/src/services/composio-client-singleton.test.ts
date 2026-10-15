@@ -4,11 +4,12 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer, Logger } from 'effect';
+import { ConfigProvider, Effect, Exit, Layer, Logger } from 'effect';
 import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 
@@ -80,10 +81,8 @@ const writeCliSessionCache = (
     );
   });
 
-// The canned responses here are not a tools page, so the call opts out of
-// client decoding.
 const listTools = (client: ComposioClientShape) =>
-  client.tools.list({ limit: 1, toolkit_versions: 'latest' }, { decode: false });
+  client.tools.list({ limit: 1, toolkit_versions: 'latest' });
 
 describe('ComposioClientSingleton headers', () => {
   afterEach(() => {
@@ -261,7 +260,7 @@ describe('ComposioClientSingleton headers', () => {
       const client = yield* clientSingleton.get();
       // `auth.session.retrieveInfo` is an operation where the client would
       // attach its own `userApiKey` credential; the caller-placed header wins.
-      yield* client.auth.session.retrieveInfo({ decode: false });
+      yield* client.auth.session.retrieveInfo();
 
       const [input, init] = fetchSpy.mock.calls[0]!;
       expect(String(input)).toContain('/api/v3.1/auth/session/info');
@@ -396,15 +395,13 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig())));
   });
 
-  it.effect('omits the org header when the scope has no project', () => {
+  it.effect('rejects a scope with an org and no project, and would send neither header', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.getFor({
-        userApiKey: 'uak_scope',
-        orgId: 'org_a',
-      });
+      // @ts-expect-error a scope names the org and the project together
+      const client = yield* clientSingleton.getFor({ userApiKey: 'uak_scope', orgId: 'org_a' });
       yield* listTools(client);
 
       const headers = sentHeaders(fetchSpy.mock.calls[0]!);
@@ -528,7 +525,7 @@ describe('ComposioClientSingleton client', () => {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
 
-      expect(yield* client.tools.retrieveEnum({ decode: false })).toEqual(['GITHUB_CREATE_ISSUE']);
+      expect(yield* client.tools.retrieveEnum()).toEqual(['GITHUB_CREATE_ISSUE']);
       expect((yield* clientSingleton.getMetrics()).requests).toBe(2);
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_retry']]))));
   });
@@ -593,17 +590,19 @@ describe('ComposioClientSingleton client', () => {
     );
   });
 
-  it.effect('rejects an undecodable typed call before sending it', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+  it.effect('validates a response only for a call that asks for it', () => {
+    // `okResponse` is not a toolkits page.
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(okResponse()));
 
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      // No opt-out, and `toolkits.list` has no entry in the CLI's loader table.
-      const error = yield* Effect.flip(client.toolkits.list({ limit: 1 }));
 
-      expect(error._tag).toBe('@composio/client/ConfigurationError');
-      expect(fetchSpy).not.toHaveBeenCalled();
+      const lenient = yield* Effect.exit(client.toolkits.list({ limit: 1 }));
+      const strict = yield* Effect.flip(client.toolkits.list({ limit: 1 }, validated));
+
+      expect(Exit.isSuccess(lenient)).toBe(true);
+      expect(strict._tag).toBe('@composio/client/DecodeError');
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_strict']]))));
   });
 

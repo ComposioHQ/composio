@@ -4,7 +4,6 @@ import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
-import { undecoded } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -126,15 +125,11 @@ export const toolkitsCmd$List = Command.make(
         // The session items only add connection status to the catalog rows,
         // and a failed read is already a silent fallback.
         sessionItems = yield* client.toolRouter.session
-          .toolkits(
-            sessionId,
-            {
-              search: Option.getOrUndefined(query),
-              limit: clampedLimit,
-              is_connected: Option.getOrUndefined(connected),
-            },
-            undecoded
-          )
+          .toolkits(sessionId, {
+            search: Option.getOrUndefined(query),
+            limit: clampedLimit,
+            is_connected: Option.getOrUndefined(connected),
+          })
           .pipe(
             Effect.map(r => r.items),
             Effect.catch(error =>

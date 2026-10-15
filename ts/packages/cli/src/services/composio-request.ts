@@ -6,13 +6,17 @@ import { HttpDecodingError } from './composio-errors';
 export const MAX_CONCURRENT_REQUESTS_PER_ENDPOINT = 4;
 
 /**
- * The client validates a response against its own schema unless a call opts
- * out. A call opts out when the CLI decodes the response with a schema it
- * owns, when the endpoint is one the CLI reads leniently on purpose, or when
- * the call is not a read: failing after the server acted would invite a retry
- * that repeats the side effect.
+ * Request options that make the client validate the response against its own
+ * schema for the operation, so a response in an unexpected shape fails the
+ * call with a `DecodeError` instead of surfacing later as a missing field.
+ *
+ * Pass it on a read whose fields the command uses through the client's types.
+ * Leave it off when the CLI decodes the response with a schema it owns, when
+ * the endpoint is read leniently on purpose, and on every call that is not a
+ * read: failing after the server acted would invite a retry that repeats the
+ * side effect.
  */
-export const undecoded = { decode: false } satisfies RequestOptions;
+export const validated = { decode: true } satisfies RequestOptions;
 
 /**
  * Decodes a payload against a CLI-owned contract.

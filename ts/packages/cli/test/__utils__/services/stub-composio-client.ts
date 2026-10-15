@@ -2,7 +2,7 @@ import { make, type ComposioClientShape } from '@composio/client/effect';
 import { Effect, Layer, Result } from 'effect';
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
+import { schemaLoaders } from '@composio/client/effect/schemas';
 
 /** One request as it reached the stub transport. */
 export interface StubRequest {
@@ -14,9 +14,9 @@ export interface StubRequest {
 }
 
 /**
- * The Effect client the CLI builds in production (response decoding on, the
- * CLI's loader table), over a transport that records each request and answers
- * it with `respond`. Retries, status errors, and decoding are the client's own.
+ * The Effect client the CLI builds in production, over a transport that
+ * records each request and answers it with `respond`. Retries, status errors,
+ * and the validation a call asks for are the client's own.
  *
  * A retried call sleeps on Effect's clock, so a test whose answer is retryable
  * runs under `it.live` and answers with a `retry-after-ms: 0` header.
@@ -46,8 +46,7 @@ export const stubComposioClient = (
       orgApiKey: null,
       baseURL: 'https://stub.invalid',
       deprecationNotices: 'off',
-      decode: true,
-      schemas: composioSchemaLoaders,
+      schemas: schemaLoaders,
     },
     httpClient
   );

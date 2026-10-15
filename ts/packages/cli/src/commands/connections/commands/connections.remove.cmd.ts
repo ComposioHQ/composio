@@ -110,7 +110,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     const rawResult = yield* ui.withSpinner(
       'Fetching connections...',
       client.connectedAccounts
-        .list({ user_ids: [consumerUserId], limit: 1000 }, { decode: false })
+        .list({ user_ids: [consumerUserId], limit: 1000 })
         .pipe(failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.'))
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
@@ -137,7 +137,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     yield* ui.withSpinner(
       `Removing ${resolved.toolkit.slug} connection...`,
       client.connectedAccounts
-        .delete(resolved.id, undefined, { decode: false })
+        .delete(resolved.id)
         .pipe(
           failedWith(
             ConnectionsRemovalRequestError,

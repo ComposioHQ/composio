@@ -15,7 +15,7 @@ import { Toolkits, type ToolkitSearchResult } from 'src/models/toolkits';
 import { TriggerInstanceItems } from 'src/models/triggers';
 import { TriggerType } from 'src/models/trigger-types';
 import type { ClientError } from './composio-errors';
-import { decode, undecoded } from './composio-request';
+import { decode } from './composio-request';
 
 /**
  * Auth config, connected account, and trigger instance operations: single-page
@@ -34,15 +34,12 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
   }) =>
     client.pipe(
       Effect.flatMap(c =>
-        c.authConfigs.list(
-          {
-            search: params.search,
-            toolkit_slug: params.toolkit_slug,
-            limit: params.limit,
-            show_disabled: params.show_disabled ?? true,
-          },
-          undecoded
-        )
+        c.authConfigs.list({
+          search: params.search,
+          toolkit_slug: params.toolkit_slug,
+          limit: params.limit,
+          show_disabled: params.show_disabled ?? true,
+        })
       ),
       Effect.flatMap(decode(AuthConfigListResponse))
     ),
@@ -52,7 +49,7 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    */
   getAuthConfig: (nanoid: string) =>
     client.pipe(
-      Effect.flatMap(c => c.authConfigs.retrieve(nanoid, undecoded)),
+      Effect.flatMap(c => c.authConfigs.retrieve(nanoid)),
       Effect.flatMap(decode(AuthConfigItem))
     ),
   /**
@@ -61,7 +58,7 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    */
   createAuthConfig: (params: AuthConfigCreateParams) =>
     client.pipe(
-      Effect.flatMap(c => c.authConfigs.create(params, undecoded)),
+      Effect.flatMap(c => c.authConfigs.create(params)),
       Effect.flatMap(decode(AuthConfigCreateResponse))
     ),
   /**
@@ -70,7 +67,7 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    */
   getConnectedAccount: (nanoid: string) =>
     client.pipe(
-      Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid, undecoded)),
+      Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid)),
       Effect.flatMap(decode(ConnectedAccountItem))
     ),
   /**
@@ -80,18 +77,15 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
   listActiveTriggers: (params: TriggerInstanceListActiveParams) =>
     client.pipe(
       Effect.flatMap(c =>
-        c.triggerInstances.listActive(
-          {
-            user_ids: params.user_ids,
-            connected_account_ids: params.connected_account_ids,
-            auth_config_ids: params.auth_config_ids,
-            trigger_ids: params.trigger_ids,
-            trigger_names: params.trigger_names,
-            show_disabled: params.show_disabled,
-            limit: params.limit,
-          },
-          undecoded
-        )
+        c.triggerInstances.listActive({
+          user_ids: params.user_ids,
+          connected_account_ids: params.connected_account_ids,
+          auth_config_ids: params.auth_config_ids,
+          trigger_ids: params.trigger_ids,
+          trigger_names: params.trigger_names,
+          show_disabled: params.show_disabled,
+          limit: params.limit,
+        })
       ),
       Effect.flatMap(response =>
         decode(TriggerInstanceItems)(response.items).pipe(
@@ -109,15 +103,11 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
       )
     ),
   createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
-    Effect.flatMap(client, c => c.triggerInstances.upsert(triggerSlug, params, undecoded)),
+    Effect.flatMap(client, c => c.triggerInstances.upsert(triggerSlug, params)),
   enableTrigger: (triggerId: string) =>
-    Effect.flatMap(client, c =>
-      c.triggerInstances.manage.update(triggerId, { status: 'enable' }, undecoded)
-    ),
+    Effect.flatMap(client, c => c.triggerInstances.manage.update(triggerId, { status: 'enable' })),
   disableTrigger: (triggerId: string) =>
-    Effect.flatMap(client, c =>
-      c.triggerInstances.manage.update(triggerId, { status: 'disable' }, undecoded)
-    ),
+    Effect.flatMap(client, c => c.triggerInstances.manage.update(triggerId, { status: 'disable' })),
 });
 
 /**
@@ -136,15 +126,12 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
     cursor?: string;
   }): Effect.Effect<ToolkitSearchResult, ClientError> =>
     Effect.flatMap(client, c =>
-      c.toolkits.list(
-        {
-          search: params.search,
-          category: params.category,
-          limit: params.limit,
-          cursor: params.cursor,
-        },
-        undecoded
-      )
+      c.toolkits.list({
+        search: params.search,
+        category: params.category,
+        limit: params.limit,
+        cursor: params.cursor,
+      })
     ).pipe(
       Effect.flatMap(response =>
         decode(Toolkits)(response.items).pipe(
@@ -176,35 +163,32 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
     cursor?: string;
   }) =>
     Effect.flatMap(client, c =>
-      c.tools.list(
-        {
-          search: params.search,
-          toolkit_slug: params.toolkit_slug,
-          tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
-          limit: params.limit,
-          cursor: params.cursor,
-          toolkit_versions: 'latest',
-        },
-        undecoded
-      )
+      c.tools.list({
+        search: params.search,
+        toolkit_slug: params.toolkit_slug,
+        tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
+        limit: params.limit,
+        cursor: params.cursor,
+        toolkit_versions: 'latest',
+      })
     ),
   /**
    * Retrieves detailed info about a single tool by slug.
    * @param slug - Tool slug (e.g. "GMAIL_SEND_EMAIL")
    *
-   * Not client-decoded: `execute` treats a failed lookup as "no cached
+   * Not validated by the client: `execute` treats a failed lookup as "no cached
    * definition" and would skip input validation and file uploads on drift
    * in a field it never reads.
    */
   getToolDetailed: (slug: string) =>
-    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' }, undecoded)),
+    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' })),
   /**
    * Retrieves detailed info about a single trigger type by slug.
    * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
    */
   getTriggerTypeDetailed: (slug: string) =>
     client.pipe(
-      Effect.flatMap(c => c.triggersTypes.retrieve(slug, undefined, undecoded)),
+      Effect.flatMap(c => c.triggersTypes.retrieve(slug)),
       Effect.flatMap(decode(TriggerType))
     ),
 });

@@ -166,6 +166,21 @@
                 "name": "@composio/client/pagination",
                 "allowTypeImports": true,
                 "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination.js",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination.mjs",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/effect",
+                "importNames": ["make", "layer", "layerConfig", "layerFetch"],
+                "message": "Get the client from ComposioClientSingleton, which scopes it to the user, org and project and counts its requests."
               }
             ],
             "patterns": [

@@ -434,7 +434,7 @@ describe('CLI: composio execute', () => {
         });
         // An execution is never retried, and its response never validated: a
         // retry after the backend already acted would duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0, decode: false });
+        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
       })
     );
 
@@ -442,7 +442,7 @@ describe('CLI: composio execute', () => {
       Effect.gen(function* () {
         yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
 
-        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0, decode: false }]);
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
       })
     );
 

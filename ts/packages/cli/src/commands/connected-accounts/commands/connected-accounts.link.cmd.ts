@@ -154,7 +154,7 @@ const waitForActiveConnection = (
       Effect.retry(
         Effect.gen(function* () {
           const account = yield* client.connectedAccounts
-            .retrieve(connectedAccountId, { decode: false })
+            .retrieve(connectedAccountId)
             .pipe(
               failedWith(
                 ConnectedAccountsRequestError,
@@ -308,16 +308,13 @@ const listActiveConnectedAccounts = (params: {
   readonly toolkitSlug?: string;
   readonly authConfigId?: string;
 }) =>
-  params.client.connectedAccounts.list(
-    {
-      user_ids: [params.userId],
-      toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
-      auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
-      statuses: ['ACTIVE'],
-      limit: 100,
-    },
-    { decode: false }
-  );
+  params.client.connectedAccounts.list({
+    user_ids: [params.userId],
+    toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
+    auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
+    statuses: ['ACTIVE'],
+    limit: 100,
+  });
 
 const formatExistingAccountLabels = (
   items: ReadonlyArray<{
@@ -516,15 +513,12 @@ const handleListConnectedAccounts = (params: {
     const accounts = yield* params.ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
       client.connectedAccounts
-        .list(
-          {
-            toolkit_slugs: [toolkitSlug],
-            user_ids: [resolvedUserId.value],
-            statuses: ['ACTIVE'],
-            limit: 100,
-          },
-          { decode: false }
-        )
+        .list({
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [resolvedUserId.value],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        })
         .pipe(
           failedWith(
             ConnectedAccountsRequestError,
@@ -667,14 +661,11 @@ const handleLegacyAuthConfigLink = (params: {
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
-        client.link.create(
-          {
-            auth_config_id: params.authConfigId,
-            user_id: resolvedUserId.value,
-            ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
-          },
-          { decode: false }
-        )
+        client.link.create({
+          auth_config_id: params.authConfigId,
+          user_id: resolvedUserId.value,
+          ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
+        })
       )
       .pipe(
         Effect.asSome,
@@ -873,16 +864,12 @@ const runConnectedAccountsLink = (params: {
               : undefined,
           });
           return yield* client.toolRouter.session
-            .link(
-              sessionId,
-              {
-                toolkit: toolkitSlug,
-                ...(Option.isSome(normalizedAliasOption) && {
-                  alias: normalizedAliasOption.value,
-                }),
-              },
-              { decode: false }
-            )
+            .link(sessionId, {
+              toolkit: toolkitSlug,
+              ...(Option.isSome(normalizedAliasOption) && {
+                alias: normalizedAliasOption.value,
+              }),
+            })
             .pipe(
               failedWith(
                 ConnectedAccountsRequestError,
