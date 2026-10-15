@@ -3,7 +3,8 @@ import { vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { APIConnectionError } from '@composio/client/effect';
-import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { ConfigProvider, Effect, Fiber, Layer, Option } from 'effect';
+import { TestClock } from 'effect/testing';
 import * as tempy from 'tempy';
 import { ProjectResolutionError, resolveCommandProject } from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -157,15 +158,19 @@ describe('resolveCommandProject', () => {
     }).pipe(Effect.provide(testLayer))
   );
 
-  // Live clock: the client retries a connection failure with a real backoff before giving up.
-  it.live('passes a connection failure through with its own type', () =>
+  it.effect('passes a connection failure through with its own type', () =>
     Effect.gen(function* () {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
 
-      const error = yield* resolveCommandProject({
-        mode: 'developer',
-        projectName: 'Any',
-      }).pipe(Effect.flip);
+      // The client retries a connection failure with a backoff on Effect's clock, so run the
+      // lookup on its own fiber and move the test clock past every retry before joining.
+      const fiber = yield* resolveCommandProject({ mode: 'developer', projectName: 'Any' }).pipe(
+        Effect.flip,
+        Effect.forkChild
+      );
+      yield* Effect.yieldNow;
+      yield* TestClock.adjust('1 minute');
+      const error = yield* Fiber.join(fiber);
 
       expect(error).not.toBeInstanceOf(ProjectResolutionError);
       expect(error).toBeInstanceOf(APIConnectionError);
