@@ -379,17 +379,6 @@ terminal.close();
 </Tab>
 </Tabs>
 
-### Answering later
-
-In a web app, the user answers in your UI, perhaps minutes later, so you can't wait in a loop for their answer. When `session.execute()` raises, save these with the conversation:
-
-- the tool call: its ID, tool name and arguments
-- the error's `input_requests` and `request_state`
-
-Then send the questions to your frontend and end the request. When the user answers, call `session.execute()` again with the saved tool name and arguments, their answers in `input_responses`, and the saved `request_state`. Add the result to the conversation as that tool call's result, and continue the agent loop.
-
-Keep `request_state` on your server, not in the browser.
-
 ## Using MCP
 
 If your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. Clients that don't support it can't ask, so calls that need approval are denied by default. You can set `no_elicitation_support_fallback` to `"allow"` to run them without asking instead:
