@@ -1,6 +1,5 @@
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -18,8 +17,6 @@ const limit = Flag.Int('limit').pipe(
 
 export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId, limit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     yield* ui.intro('composio orgs switch');

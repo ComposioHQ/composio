@@ -3,7 +3,6 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
@@ -31,8 +30,6 @@ const limit = Flag.Int('limit').pipe(
  */
 export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ query, limit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 

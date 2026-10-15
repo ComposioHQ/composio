@@ -1,16 +1,13 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   resolveArtifactsRoot,
   resolveCliSessionArtifacts,
@@ -489,8 +486,6 @@ export const listenCmd = Command.make(
   { slug, params, maxEvents, timeout, stream, account, debug },
   ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
@@ -498,17 +493,7 @@ export const listenCmd = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(cause => {
-          const formatted = formatResolveCommandProjectError(cause);
-          return new ListenCommandError({
-            reason: 'project_context',
-            message: formatted.message,
-            slug,
-            cause,
-          });
-        })
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
@@ -760,5 +745,6 @@ export const listenCmd = Command.make(
     {
       command: "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
     },
-  ])
+  ]),
+  requireLogin
 );

@@ -5,10 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { ComposioUserContext } from 'src/services/user-context';
 import { detectMasterFromHost } from 'src/services/master-detector';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 
 const debugError = commandInputError('debug');
 
@@ -33,9 +30,15 @@ const printDebugApiInfo = Effect.gen(function* () {
     return yield* debugError('No user API key found in the current CLI session.');
   }
   const orgId = Option.getOrUndefined(ctx.data.orgId);
+  // A project the user has not set up yet is a legitimate "none" here; a failed lookup is not,
+  // and keeps its typed error so cli-main prints it and exits non-zero.
   const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-    Effect.mapError(formatResolveCommandProjectError),
-    Effect.option
+    Effect.map(Option.some),
+    Effect.catchTag('services/ProjectResolutionError', error =>
+      error.reason === 'missing_org' || error.reason === 'missing_developer_project'
+        ? Effect.succeed(Option.none())
+        : Effect.fail(error)
+    )
   );
   return yield* ui.output(
     JSON.stringify(

@@ -1,13 +1,9 @@
 import { Data, Effect } from 'effect';
 import { Argument, Command } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
@@ -96,13 +92,11 @@ const resolveAccount = (params: {
 
 export const connectionsCmd$Remove = Command.make('remove', { account }, ({ account }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {

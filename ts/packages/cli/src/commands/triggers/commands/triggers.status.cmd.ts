@@ -2,7 +2,6 @@ import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
-import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -69,8 +68,6 @@ export const triggersCmd$Status = Command.make(
   },
   ({ userIds, connectedAccountIds, toolkits, triggerIds, triggerNames, showDisabled, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 

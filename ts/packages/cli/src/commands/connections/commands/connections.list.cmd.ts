@@ -1,13 +1,9 @@
 import { Data, Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 import {
   getConnectedAccountPermissionGroup,
@@ -63,14 +59,12 @@ const formatConnectionsJson = (
 
 export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {

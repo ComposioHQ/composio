@@ -1,6 +1,6 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { listOrganizationProjects } from 'src/services/composio-account';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -18,8 +18,6 @@ const limit = Flag.Int('limit').pipe(
 
 export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId, limit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     yield* ui.intro('composio dev projects list');
@@ -79,4 +77,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
       )
     );
   })
-).pipe(Command.withDescription('List developer projects for the current organization.'));
+).pipe(
+  Command.withDescription('List developer projects for the current organization.'),
+  requireLogin
+);

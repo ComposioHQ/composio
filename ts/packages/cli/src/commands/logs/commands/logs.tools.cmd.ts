@@ -1,6 +1,5 @@
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { undecoded } from 'src/services/composio-request';
@@ -169,8 +168,6 @@ export const logsCmd$Tools = Command.make(
     sessionId,
   }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();

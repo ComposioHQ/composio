@@ -2,7 +2,6 @@ import process from 'node:process';
 import { Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { undecoded } from 'src/services/composio-request';
@@ -57,8 +56,6 @@ export const toolkitsCmd$List = Command.make(
   { query, limit, connected, userId },
   ({ query, limit, connected, userId }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const clientSingleton = yield* ComposioClientSingleton;

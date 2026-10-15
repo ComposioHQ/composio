@@ -2,7 +2,6 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolkitSlug } from 'src/utils/remote-custom-toolkit';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -42,8 +41,6 @@ export const toolsCmd$List = Command.make(
   { toolkit, query, tags, limit },
   ({ toolkit, query, tags, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 

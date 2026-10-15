@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { CommandInputError } from './errors';
@@ -23,7 +24,7 @@ const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
 export const devSubcommands = [
   initCmd,
   devToolsCmd$Execute,
-  triggersCmd$Listen,
+  triggersCmd$Listen.pipe(requireLogin),
   logsCmd,
   toolkitsCmd,
   authConfigsCmd,

@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
 import { triggersCmd$Info } from './commands/triggers.info.cmd';
 import { triggersCmd$List } from './commands/triggers.list.cmd';
@@ -25,5 +26,6 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$Create,
     triggersCmd$Enable,
     triggersCmd$Disable,
-  ])
+  ]),
+  requireLogin
 );

@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
@@ -5,7 +6,6 @@ import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
   getOrFetchToolInputDefinition,
@@ -35,10 +35,7 @@ import {
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
@@ -873,7 +870,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
@@ -980,7 +977,7 @@ const resolveSchemaContext = (params: SharedRunToolsExecuteParams) =>
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const ui = yield* TerminalUI;
 
     return {
@@ -1324,8 +1321,6 @@ const runExecuteWithSpinner = (params: {
 
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
@@ -1713,8 +1708,6 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
 
 const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     if (params.getSchema) {
       return yield* runParallelSchemaFetchFromParsed(params);
     }
@@ -2008,7 +2001,8 @@ export const rootToolsCmd$Execute = Command.make(
   Command.withShortDescription(
     'Execute a tool by slug. Validates inputs against cached schemas and checks connections'
   ),
-  Command.withExamples(executeExamples)
+  Command.withExamples(executeExamples),
+  requireLogin
 );
 
 export const devToolsCmd$Execute = Command.make(
@@ -2082,5 +2076,6 @@ export const devToolsCmd$Execute = Command.make(
       ...example,
       command: example.command.replace('composio execute', 'composio dev playground-execute'),
     }))
-  )
+  ),
+  requireLogin
 );

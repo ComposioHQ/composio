@@ -1,4 +1,6 @@
-import { Data, Effect, Option, Predicate } from 'effect';
+import { isAPIError } from '@composio/client/effect';
+import { Data, Effect, Option } from 'effect';
+import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from './project-context';
 import { ComposioUserContext } from './user-context';
 import {
@@ -24,27 +26,62 @@ export interface ResolvedCommandProject {
   readonly source: CliProjectResolutionSource;
 }
 
-export class MissingDefaultOrgError extends Data.TaggedError('services/MissingDefaultOrgError') {}
+/**
+ * The command's project could not be determined from the CLI's state and flags. The message
+ * names the command that fixes it; `cli-main.ts` prints it as one line and exits 1.
+ */
+export class ProjectResolutionError extends Data.TaggedError('services/ProjectResolutionError')<{
+  readonly reason:
+    | 'missing_org'
+    | 'missing_developer_project'
+    | 'project_not_found'
+    | 'ambiguous_project_name'
+    | 'request_failed';
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
-export class MissingDeveloperProjectError extends Data.TaggedError(
-  'services/MissingDeveloperProjectError'
-) {}
-
-const requireDefaultOrg = (orgId: Option.Option<string>) =>
-  Option.match(orgId, {
-    onNone: () => Effect.fail(new MissingDefaultOrgError()),
-    onSome: value => Effect.succeed(value),
+const missingOrg = () =>
+  new ProjectResolutionError({
+    reason: 'missing_org',
+    message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
   });
+
+/**
+ * Lookup failures a user can act on become `ProjectResolutionError`; other client errors
+ * (connection, configuration) keep their type.
+ */
+const normalizeLookupError = <E>(error: E): ProjectResolutionError | E => {
+  if (error instanceof DeveloperProjectNotFoundError) {
+    return new ProjectResolutionError({
+      reason: 'project_not_found',
+      message: `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio dev init\` or \`composio dev projects list\`.`,
+    });
+  }
+  if (error instanceof AmbiguousDeveloperProjectNameError) {
+    return new ProjectResolutionError({
+      reason: 'ambiguous_project_name',
+      message: `Developer project name "${error.projectName}" is ambiguous in org "${error.orgId}". Use an exact unique project name.`,
+    });
+  }
+  const apiMessage = isAPIError(error) ? extractMessage(error) : undefined;
+  return apiMessage === undefined
+    ? error
+    : new ProjectResolutionError({ reason: 'request_failed', message: apiMessage, cause: error });
+};
 
 export const resolveCommandProject = (params: { mode: ProjectMode; projectName?: string }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
     const apiKey = Option.getOrUndefined(ctx.data.apiKey);
-    const currentOrgId = yield* requireDefaultOrg(ctx.data.orgId);
+    const currentOrgId = yield* Option.match(ctx.data.orgId, {
+      onNone: () => Effect.fail(missingOrg()),
+      onSome: value => Effect.succeed(value),
+    });
 
     if (!apiKey) {
-      return yield* Effect.fail(new MissingDefaultOrgError());
+      return yield* Effect.fail(missingOrg());
     }
 
     if (params.mode === 'consumer') {
@@ -97,7 +134,12 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
 
     const localProject = yield* projectContext.resolve;
     if (Option.isNone(localProject)) {
-      return yield* Effect.fail(new MissingDeveloperProjectError());
+      return yield* Effect.fail(
+        new ProjectResolutionError({
+          reason: 'missing_developer_project',
+          message: 'No developer project configured for this directory. Run `composio dev init`.',
+        })
+      );
     }
 
     return {
@@ -107,38 +149,4 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       projectType: 'DEVELOPER',
       source: 'developer-local-config',
     } satisfies ResolvedCommandProject;
-  });
-
-export const formatResolveCommandProjectError = (error: unknown): Error => {
-  if (error instanceof MissingDefaultOrgError) {
-    return new Error(
-      'No current org configured. Run `composio login` or `composio dev orgs switch`.'
-    );
-  }
-  if (error instanceof MissingDeveloperProjectError) {
-    return new Error(
-      'No developer project configured for this directory. Run `composio dev init`.'
-    );
-  }
-  if (error instanceof DeveloperProjectNotFoundError) {
-    return new Error(
-      `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio dev init\` or \`composio dev projects list\`.`
-    );
-  }
-  if (error instanceof AmbiguousDeveloperProjectNameError) {
-    return new Error(
-      `Developer project name "${error.projectName}" is ambiguous in org "${error.orgId}". Use an exact unique project name.`
-    );
-  }
-  if (
-    Predicate.hasProperty(error, 'details') &&
-    Predicate.hasProperty(error.details, 'message') &&
-    Predicate.isString(error.details.message)
-  ) {
-    return new Error(error.details.message);
-  }
-  if (error instanceof Error) {
-    return error;
-  }
-  return new Error(String(error));
-};
+  }).pipe(Effect.mapError(normalizeLookupError));
