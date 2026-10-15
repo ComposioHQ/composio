@@ -24,18 +24,18 @@ List the toolkits the agent can use in `toolkits.enable`:
 toolkits={"enable": ["gmail", "github"]}
 ```
 
-### 2. Choose what each kind of action does
+### 2. Choose what each tag does
 
-Every tool is tagged with the kind of action it takes:
+Every tool has a [tag](/docs/configuring-sessions#filtering-tools-by-tags) for the type of action it takes:
 
-| Kind | Tag |
+| Tag | Action |
 |---|---|
-| Read | `readOnlyHint` |
-| Create | `createHint` |
-| Update | `updateHint` |
-| Destructive | `destructiveHint` |
+| `readOnlyHint` | Read |
+| `createHint` | Create |
+| `updateHint` | Update |
+| `destructiveHint` | Destructive |
 
-For each kind, choose one of:
+For each tag, choose one of:
 
 - **Allow:** leave the tag out.
 - **Ask first:** add the tag to `tags.require_approval`.
@@ -52,9 +52,9 @@ tags={
 
 ### 3. Override toolkits
 
-You can override step 2 for a toolkit, either by kind or by tool.
+You can override step 2 for a toolkit, either by tag or by tool.
 
-**By kind.** Set `tools.<toolkit>.tags`, the same way as step 2. This replaces the session-wide `tags` for that toolkit rather than adding to them, so list every kind you want it to ask about or block. For example, this lets GitHub's destructive actions run after the user approves them, rather than blocking them:
+**By tag.** Set `tools.<toolkit>.tags`, the same way as step 2. This replaces the session-wide `tags` for that toolkit rather than adding to them, so list every tag you want it to ask about or block. For example, this lets GitHub's destructive actions run after the user approves them, rather than blocking them:
 
 ```python
 tools={
