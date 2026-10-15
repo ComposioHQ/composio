@@ -159,10 +159,10 @@ const session = await composio.create('user_123', {
 
 Every tool has a tag for the type of action it takes:
 
-- `readOnlyHint` - reads, searches, lists or computes something, and changes nothing
+- `readOnlyHint` - reads data and changes nothing
 - `createHint` - adds something new
 - `updateHint` - changes something that already exists
-- `destructiveHint` - can make something stop existing
+- `destructiveHint` - deletes something
 
 See [Tool tags](https://docs.composio.dev/docs/tool-tags) for how tools get their tags.
 

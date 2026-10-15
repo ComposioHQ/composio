@@ -14,7 +14,7 @@ Approval mode is experimental, and its SDK options may change. Answering questio
 
 ## Requiring approval
 
-You choose which tools ask first when you create or update a session.
+You choose which tools need approval when you create or update a session.
 
 ### By type of tool
 
@@ -27,7 +27,7 @@ Every tool has a [tag](/docs/tool-tags) for the type of action it takes:
 | `updateHint` | Update |
 | `destructiveHint` | Destructive |
 
-To make every tool of a type ask first, add its tag to `tags.require_approval`. Tools whose tags you leave out run without asking, and tools whose tags are in `tags.disable` are [blocked](/docs/configuring-sessions#filtering-tools-by-tags). For example, to ask before tools that create or update, and block tools that delete:
+To require approval for every tool of a type, add its tag to `tags.require_approval`. Tools whose tags you leave out run without approval, and tools whose tags are in `tags.disable` are [blocked](/docs/configuring-sessions#filtering-tools-by-tags). For example, to require approval for tools that create or update, and block tools that delete:
 
 ```python
 tags={
@@ -40,7 +40,7 @@ tags={
 
 The session-wide `tags` apply to the tools of every toolkit. To handle a toolkit's tools differently, override them under `tools.<toolkit>`. The override replaces the session-wide `tags` for that toolkit, so it has to cover all of its tools. You can override by type or tool by tool.
 
-**By type.** Set `tools.<toolkit>.tags` the same way as the session-wide `tags`, and repeat anything from them you still want for the toolkit. For example, this override makes GitHub's tools that delete ask first instead of being blocked. Tools that create or update are listed again so they still ask first:
+**By type.** Set `tools.<toolkit>.tags` the same way as the session-wide `tags`, and repeat anything from them you still want for the toolkit. For example, this override makes GitHub's tools that delete need approval instead of being blocked. Tools that create or update are listed again so they still need approval:
 
 ```python
 tools={
@@ -50,7 +50,7 @@ tools={
 }
 ```
 
-**Tool by tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that ask first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and asks before sending:
+**Tool by tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that need approval in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and requires approval to send:
 
 ```python
 tools={
@@ -61,7 +61,7 @@ tools={
 }
 ```
 
-Always set `require_approval` in a tool-by-tool override, even to `[]`. Without it, the tools you list still ask first if the session-wide `tags` say so.
+Always set `require_approval` in a tool-by-tool override, even to `[]`. Without it, the session-wide `tags.require_approval` still applies to the tools you list.
 
 Use one or the other for a toolkit, not both.
 
@@ -117,11 +117,11 @@ const session = await composio.create('user_123', {
 
 With this session:
 
-- **GitHub** is overridden by type. Tools that read run freely, and tools that create, update or delete ask first.
-- **Gmail** is overridden tool by tool. Fetching emails runs freely, sending asks first, and no other Gmail tools are available.
-- **Any other toolkit** isn't enabled. If you enabled one without an override, the session-wide `tags` would apply to its tools: tools that read run freely, tools that create or update ask first, and tools that delete are blocked.
+- **GitHub** is overridden by type. Tools that read run without approval, and tools that create, update or delete need approval.
+- **Gmail** is overridden tool by tool. Fetching emails runs without approval, sending needs approval, and no other Gmail tools are available.
+- **Any other toolkit** isn't enabled. If you enabled one without an override, the session-wide `tags` would apply to its tools: tools that read run without approval, tools that create or update need approval, and tools that delete are blocked.
 
-Asking first doesn't hide a tool from the agent. It can still find and call it, and the call waits for the user's approval. This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
+Tools that need approval stay visible to the agent. It can find and call them, and each call waits for the user's approval. This includes calls the agent makes through `COMPOSIO_MULTI_EXECUTE_TOOL`: a batch with two calls that need approval returns two questions.
 
 ## Asking the user
 
@@ -164,7 +164,7 @@ try {
 </Tab>
 </Tabs>
 
-`input_requests` (`inputRequests` in TypeScript) holds the questions for the user, keyed by an ID you'll answer them under:
+`input_requests` (`inputRequests` in TypeScript) holds the questions for the user, keyed by question ID:
 
 ```json
 {
@@ -191,9 +191,9 @@ try {
 }
 ```
 
-Each question is an [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). Your app can show the `message` to the user, along with a form built from `requested_schema` (`requestedSchema` in TypeScript). This is a JSON Schema for the answer. As in MCP form mode, it's a flat object whose fields are strings, numbers, booleans, or single- or multi-select enums. Build the form from the schema rather than hard-coding the choices, because different questions offer different ones.
+Each question is an [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). Show the user its `message` and a form built from `requested_schema` (`requestedSchema` in TypeScript), which is a JSON Schema for the answer. Build the form from the schema rather than hard-coding the choices, because questions can offer different ones.
 
-`request_state` (`requestState` in TypeScript) is state you send back with the answer. The SDK keeps it out of the error's message, logs and serialized output, so read it from the attribute.
+You send `request_state` (`requestState` in TypeScript) back with the answer. It's left out of the error's message and logs, so read it from the attribute.
 
 ## Sending the answer
 
@@ -237,7 +237,7 @@ const result = await session.execute('GMAIL_SEND_EMAIL', args, {
 </Tab>
 </Tabs>
 
-Send the same tool and arguments. The question's ID comes from the call, so a call with different arguments is a new question.
+Use the same tool and arguments as the original call. A call with different arguments needs its own approval.
 
 If the user approves, the tool runs and `result_type` is `completed`. If they deny it, or the answer's `action` is `decline` or `cancel`, the tool doesn't run and `result_type` is `failed`, with an error you can pass back to the agent.
 
@@ -428,7 +428,7 @@ terminal.close();
 </Tab>
 </Tabs>
 
-Running it, the agent searches for the Gmail tool, then asks to send the email through `COMPOSIO_MULTI_EXECUTE_TOOL`. Before anything is sent, you see:
+When you run it, the agent asks to send the email, and you see:
 
 ```txt
 Your agent wants to run the following tool:
@@ -448,7 +448,7 @@ In a web app, the user answers in your UI, perhaps minutes later, so you can't w
 
 Then send the questions to your frontend and end the request. When the user answers, call `session.execute()` again with the saved tool name and arguments, their answers in `input_responses`, and the saved `request_state`. Add the result to the conversation as that tool call's result, and continue the agent loop.
 
-Keep `request_state` on your server. It's only meaningful to Composio, so don't send it to the browser.
+Keep `request_state` on your server, not in the browser.
 
 ## Using MCP
 
@@ -494,7 +494,7 @@ While approval mode is experimental, only `session.execute()` and `session.execu
 
 - **Providers.** `handle_tool_calls` (`handleToolCalls` in TypeScript) and the tools that framework providers wrap don't ask the user. Depending on the provider, a call that needs approval either raises the error or returns it to the agent as a tool error. Run tool calls with `session.execute()`, as in the example above.
 - **Custom tools.** If a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) runs a tool that needs approval through `ctx.execute()`, it raises the error, and there's no way to pass the answer back through the custom tool yet.
-- **Proxy execute.** A proxy request can't be matched to a tool, so it can't be approved. `session.proxy_execute()` (`proxyExecute()` in TypeScript) is disabled for any toolkit where approval could apply to one of its tools.
+- **Proxy execute.** `session.proxy_execute()` (`proxyExecute()` in TypeScript) is disabled for a toolkit when any of its tools can need approval.
 
 ## Next
 

@@ -1,57 +1,43 @@
 ---
 title: Tool tags
-description: How Composio tags each tool by the type of action it takes, and how sessions use the tags
+description: How Composio tags each tool by the action it takes, and how sessions use the tags
 keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, governance, permissions]
 ---
 
-Every Composio tool has a tag for the type of action it takes: it reads, creates, updates or deletes. Sessions use these tags so you can decide what your agent may do by type of action, without listing every tool. For example, you can let the agent read anything, ask the user before it creates or updates something, and block deletes.
+Every tool has a **tag** that describes the action it takes: reading, creating, updating or deleting. Sessions use tags to allow, block or require approval for tools by type, instead of listing tools one by one.
 
-## The four tags
+## Tags
 
-| Tag | Type of action | For example |
-|---|---|---|
-| `readOnlyHint` | Reads, searches, lists or computes something. Changes nothing | Fetch emails, list issues, export a report |
-| `createHint` | Adds something new | Send an email, open an issue, create a calendar event |
-| `updateHint` | Changes something that already exists | Edit an issue, rename a file, change a channel's topic |
-| `destructiveHint` | Can make something stop existing | Delete a file, remove a repository |
+| Tag | The tool | For example |
+| --- | --- | --- |
+| `readOnlyHint` | Reads data and changes nothing | Fetch emails, list pull requests, export a report |
+| `createHint` | Adds something new | Send an email, create an issue |
+| `updateHint` | Changes something that already exists | Edit an issue, rename a file |
+| `destructiveHint` | Deletes something | Delete a file, delete a repository |
 
-## How a tool's tag is chosen
+## How tools are tagged
 
-A tool gets one tag. To choose it, ask these questions in order and stop at the first yes, so the most severe tag wins:
+Composio tags each tool with the most severe action it can take. A tool that can delete something is tagged `destructiveHint`, even if it also updates. A tool that changes something that already exists is tagged `updateHint`. A tool that only adds something new is tagged `createHint`. Every other tool is tagged `readOnlyHint`.
 
-```txt
-Can any call make something stop existing?         → destructiveHint
-Can it change something that already exists?       → updateHint
-Can it add something new?                          → createHint
-Otherwise                                          → readOnlyHint
-```
+A tool's tag reflects what changes for the user, not the HTTP method of the API behind it:
 
-The tag describes what the user sees happen, not how the provider's API works:
+- A tool that sends a search query with `POST` and returns results is `readOnlyHint`.
+- A tool that cancels or resets something with `GET` is `updateHint` or `destructiveHint`.
+- A tool that computes, converts, summarizes or exports data without changing anything is `readOnlyHint`.
+- A tool that adds an item to a list or folder is `createHint`.
 
-- A `POST` isn't always a create. An endpoint that takes a query and returns data is `readOnlyHint`.
-- A `GET` isn't always a read. Endpoints that cancel, reset or resend something change state.
-- Returning output isn't a change. Tools that compute, parse, convert, summarize or export data without changing anything are `readOnlyHint`.
-- Adding an item to a list or folder is `createHint`, even though the list now looks different.
+In MCP toolkits, such as `granola_mcp` and [custom MCP toolkits](/docs/extending-sessions/custom-mcp), `readOnlyHint` comes from the MCP server's tool annotations, and Composio tags the server's other tools when the toolkit syncs.
 
-Some older tools still carry two tags, such as an upsert tagged `createHint` and `updateHint`. They're being moved to a single tag.
+## Viewing a tool's tags
 
-## Where tags come from
-
-**Composio toolkits.** Each tool declares its tag in its definition, and CI reviews the tag against the tool's code with an automated check.
-
-**MCP toolkits.** Managed MCP toolkits, such as `granola_mcp`, and [custom MCP toolkits](/docs/extending-sessions/custom-mcp) take `readOnlyHint` from the MCP server's tool annotations. Every other tool is classified into `createHint`, `updateHint` or `destructiveHint` when the toolkit syncs. A toolkit that hasn't synced since classification was added may carry only the server's annotations. Tag rules don't reach a tool without a matching tag, and an `enable` filter hides it.
-
-To see a tool's tags, read its `tags` field with [Get a tool](/reference/api-reference/tools/getToolsByToolSlug). Sessions use the latest version of each tool, but the v3 tools endpoints default to the pinned version `00000000_00`, so pass `version=latest` (or use v3.1) to see the tags a session uses.
+[Get a tool](/reference/api-reference/tools/getToolsByToolSlug) returns its tags in the `tags` field. Pass `version=latest` to see the tags a session uses.
 
 ## Using tags in a session
 
-A session uses the tags to decide what happens to each type of tool:
+A session can allow, block or require approval for tools by their tag, and override this for specific toolkits:
 
-- **Allow:** the tools run without asking. This is the default.
-- **Block:** the agent can't see or call the tools. See [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
-- **Ask first:** the tools wait for the user's approval. See [Approval mode](/docs/approval-mode).
-
-You set this for the whole session, then override it for specific toolkits.
+- To block tools, see [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
+- To require approval, see [Approval mode](/docs/approval-mode).
 
 ## Next
 
@@ -59,5 +45,5 @@ You set this for the whole session, then override it for specific toolkits.
   icon={<Wrench />}
   title="Approval mode"
   href="/docs/approval-mode"
-  description="Allow, ask first or block each tag, and override them per toolkit."
+  description="Require the user's approval before tools run."
 />

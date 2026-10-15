@@ -407,7 +407,7 @@ Every tool has a [tag](/docs/tool-tags) for the type of action it takes: `readOn
 
 - **Allow:** leave the tag out. This is the default.
 - **Block:** add the tag to `tags.disable`. The agent can't see or call these tools.
-- **Ask first:** add the tag to `tags.require_approval`. The agent can call these tools, but the session asks the user before they run. See [Approval mode](/docs/approval-mode).
+- **Require approval:** add the tag to `tags.require_approval`. These tools wait for the user's approval before they run. See [Approval mode](/docs/approval-mode).
 
 For example, to block every tool that can delete something:
 
