@@ -15,7 +15,7 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
-import { CommandSurface, rejectsSharedFlags } from './surface';
+import { CommandSurface, rejectSharedFlags, rejectsSharedFlags } from './surface';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
@@ -142,8 +142,17 @@ const promptForDeveloperMode = () =>
     yield* applyDeveloperModeChange(next === 'on');
   });
 
-export const buildDevCommand = (visibility: CommandVisibility) => {
-  const cmd = Command.make('dev', { devMode }).pipe(
+const developerModeHandler = ({ devMode }: { readonly devMode: Option.Option<'on' | 'off'> }) =>
+  Option.match(devMode, {
+    onNone: () => promptForDeveloperMode(),
+    onSome: value => applyDeveloperModeChange(value === 'on'),
+  });
+
+const makeDevCommand = <E, R>(
+  visibility: CommandVisibility,
+  handler: (input: { readonly devMode: Option.Option<'on' | 'off'> }) => Effect.Effect<void, E, R>
+) =>
+  Command.make('dev', { devMode }).pipe(
     Command.withDescription(
       visibility.isDevModeEnabled
         ? 'Developer workflows: init, playground execution, logs, projects, toolkits, accounts, and triggers.'
@@ -153,19 +162,25 @@ export const buildDevCommand = (visibility: CommandVisibility) => {
       { command: 'composio dev --mode on' },
       { command: 'composio dev --mode off' },
     ]),
-    Command.withHandler(({ devMode }) =>
-      Option.match(devMode, {
-        onNone: () => promptForDeveloperMode(),
-        onSome: value => applyDeveloperModeChange(value === 'on'),
-      })
-    )
+    Command.withHandler(handler)
   );
 
-  return visibility.isDevModeEnabled
-    ? cmd.pipe(
+// The developer-mode toggle changes a global setting, for no user and no project.
+const toggleRejections = {
+  '--project-name':
+    '`composio dev --mode` changes a global setting and does not take --project-name.',
+  '--user-id': '`composio dev --mode` changes a global setting and does not take --user-id.',
+};
+
+export const buildDevCommand = (visibility: CommandVisibility) =>
+  visibility.isDevModeEnabled
+    ? makeDevCommand(visibility, input =>
+        rejectSharedFlags('dev', undefined, toggleRejections).pipe(
+          Effect.andThen(developerModeHandler(input))
+        )
+      ).pipe(
         Command.withSubcommands([...devSubcommands]),
         Command.withSharedFlags({ userId, projectName }),
         Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
       )
-    : cmd;
-};
+    : makeDevCommand(visibility, developerModeHandler);

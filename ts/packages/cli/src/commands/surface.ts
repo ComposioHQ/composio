@@ -74,26 +74,34 @@ const unsupportedSharedFlag = (command: string): Record<SharedFlag, string> => (
 });
 
 /**
- * Makes a `dev` command, or a group entry and every subcommand under it, fail with a
- * `CommandInputError` when it is given one of the `dev` group's shared flags it cannot honor.
- * Without it the flag would be accepted and ignored. `flags` defaults to both.
+ * Fails with a `CommandInputError` when the surface carries one of `flags`, for a `dev` command
+ * that cannot honor it. Without it the flag would be accepted and ignored. `messages` defaults
+ * to the wording for a command that runs against the directory's project.
+ */
+export const rejectSharedFlags = (
+  command: string,
+  flags: ReadonlyArray<SharedFlag> = ['--project-name', '--user-id'],
+  messages: Record<SharedFlag, string> = unsupportedSharedFlag(command)
+) =>
+  Effect.gen(function* () {
+    const surface = yield* CommandSurface;
+    const values: Record<SharedFlag, Option.Option<string>> = {
+      '--project-name': surface.projectName,
+      '--user-id': surface.userId,
+    };
+    const given = flags.find(flag => Option.isSome(values[flag]));
+    if (given !== undefined) {
+      return yield* commandInputError(command)(messages[given], given);
+    }
+  });
+
+/**
+ * Applies `rejectSharedFlags` to a `dev` command, or to a group entry and every subcommand
+ * under it. `flags` defaults to both.
  */
 export const rejectsSharedFlags =
-  (command: string, flags: ReadonlyArray<SharedFlag> = ['--project-name', '--user-id']) =>
+  (command: string, flags?: ReadonlyArray<SharedFlag>) =>
   <const Name extends string, Input, ContextInput, E, R>(
     self: Command.Command<Name, Input, ContextInput, E, R>
   ) =>
-    Command.provideEffectDiscard(
-      self,
-      Effect.gen(function* () {
-        const surface = yield* CommandSurface;
-        const values: Record<SharedFlag, Option.Option<string>> = {
-          '--project-name': surface.projectName,
-          '--user-id': surface.userId,
-        };
-        const given = flags.find(flag => Option.isSome(values[flag]));
-        if (given !== undefined) {
-          return yield* commandInputError(command)(unsupportedSharedFlag(command)[given], given);
-        }
-      })
-    );
+    Command.provideEffectDiscard(self, rejectSharedFlags(command, flags));

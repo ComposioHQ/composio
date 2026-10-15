@@ -2,6 +2,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { buildRootCommand } from 'src/commands';
 import { CommandInputError } from 'src/commands/errors';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ProjectResolutionError } from 'src/services/command-project';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -333,4 +334,27 @@ describe('CommandSurface: dev commands that cannot honor a shared flag reject it
       })
     );
   });
+});
+
+describe('CommandSurface: the developer-mode toggle rejects the shared flags', () => {
+  // A fresh layer per case: a toggle that went through would turn developer mode off, and the
+  // next case would then parse without the shared flags.
+  it.effect.each([
+    { args: ['dev', '--mode', 'off', '--project-name', 'other'], flag: '--project-name' },
+    { args: ['dev', '--user-id', 'alice', '--mode', 'off'], flag: '--user-id' },
+  ])('rejects `$args` and keeps developer mode on', ({ args, flag }) =>
+    Effect.gen(function* () {
+      const error = yield* Effect.flip(cli(args));
+      expect(error).toBeInstanceOf(CommandInputError);
+      expect(error).toMatchObject({ command: 'dev', option: flag });
+      expect((yield* ComposioCliUserConfig).isDevModeEnabled()).toBe(true);
+    }).pipe(Effect.provide(TestLive()), Effect.scoped)
+  );
+
+  it.effect('still toggles without them', () =>
+    Effect.gen(function* () {
+      yield* cli(['dev', '--mode', 'off']);
+      expect((yield* ComposioCliUserConfig).isDevModeEnabled()).toBe(false);
+    }).pipe(Effect.provide(TestLive()), Effect.scoped)
+  );
 });
