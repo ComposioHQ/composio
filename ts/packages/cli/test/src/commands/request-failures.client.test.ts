@@ -1,10 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit, Fiber } from 'effect';
+import { ConfigProvider, Effect, Fiber } from 'effect';
 import { TestClock } from 'effect/testing';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import {
+  routeRequests,
   stubClientResources,
   type StubRequest,
 } from 'test/__utils__/services/stub-composio-client';
@@ -38,8 +39,7 @@ const failureOf = (
 ) =>
   Effect.gen(function* () {
     const stub = stubClientResources(resources, respond);
-    const exit = yield* cli(args).pipe(Effect.provide(stub.layer), Effect.exit);
-    return Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+    return yield* cli(args).pipe(Effect.provide(stub.layer), Effect.flip);
   });
 
 const rejectedRequests: ReadonlyArray<{
@@ -101,32 +101,45 @@ const rejectedRequests: ReadonlyArray<{
 ];
 
 describe('CLI: a request the API rejects', () => {
-  for (const { command, args, resources, tag, message } of rejectedRequests) {
-    layer(testLayer())(`[Given] composio ${command}`, it => {
-      it.effect('[Then] the command fails with its own message and the response as the cause', () =>
-        Effect.gen(function* () {
-          const failure = yield* failureOf(args, resources);
+  describe.each(rejectedRequests)(
+    '[Given] composio $command',
+    ({ args, resources, tag, message }) => {
+      layer(testLayer())(it => {
+        it.effect(
+          '[Then] the command fails with its own message and the response as the cause',
+          () =>
+            Effect.gen(function* () {
+              const failure = yield* failureOf(args, resources);
 
-          expect(failure).toMatchObject({ _tag: tag, message });
-          expect(extractErrorDetails(failure).message).toBe(
-            `${message}\nCaused by: ${FORBIDDEN_DETAIL}`
-          );
-        })
-      );
-    });
-  }
+              expect(failure).toMatchObject({ _tag: tag, message });
+              expect(extractErrorDetails(failure).message).toBe(
+                `${message}\nCaused by: ${FORBIDDEN_DETAIL}`
+              );
+            })
+        );
+      });
+    }
+  );
 
   layer(testLayer())('[Given] composio link while the new account cannot be fetched', it => {
     it.effect('[Then] the wait fails with the fetch message once its retries run out', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['connectedAccounts'], request =>
-          request.method === 'GET' && request.path.includes('/connected_accounts/con_test_link')
-            ? forbidden()
-            : Response.json({ items: [], total_pages: 1, current_page: 1, total_items: 0 })
+        const stub = stubClientResources(
+          ['connectedAccounts'],
+          routeRequests(
+            [
+              {
+                method: 'GET',
+                path: '/api/v3.1/connected_accounts/con_test_link',
+                respond: forbidden,
+              },
+            ],
+            () => Response.json({ items: [], total_pages: 1, current_page: 1, total_items: 0 })
+          )
         );
         const fiber = yield* cli(['link', 'gmail', '--no-browser']).pipe(
           Effect.provide(stub.layer),
-          Effect.exit,
+          Effect.flip,
           Effect.forkChild
         );
         // Each retry waits on the test clock and then on the stub transport's promise.
@@ -134,8 +147,7 @@ describe('CLI: a request the API rejects', () => {
           Effect.andThen(TestClock.withLive(Effect.sleep('5 millis'))),
           Effect.repeat({ times: 40 })
         );
-        const exit = yield* Fiber.join(fiber);
-        const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+        const failure = yield* Fiber.join(fiber);
 
         expect(failure).toMatchObject({ _tag: 'commands/ConnectedAccountsRequestError' });
         expect(extractErrorDetails(failure).message).toBe(
@@ -150,8 +162,9 @@ describe('CLI: a rejected request the command recovers from', () => {
   const SESSION_TOOLKITS = '/api/v3.1/tool_router/session/trs_stub_session/toolkits?toolkits=gmail';
   const toolkitsInfo = (toolkits: () => Response) =>
     Effect.gen(function* () {
-      const stub = stubClientResources(['toolRouter'], request =>
-        request.path === SESSION_TOOLKITS ? toolkits() : session()
+      const stub = stubClientResources(
+        ['toolRouter'],
+        routeRequests([{ method: 'GET', path: SESSION_TOOLKITS, respond: toolkits }], session)
       );
       yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.provide(stub.layer));
       const lines = yield* MockConsole.getLines({ stripAnsi: true });
