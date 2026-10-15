@@ -78,6 +78,7 @@ import {
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { notFoundError } from '../layers/not-found';
+import { DEFAULT_PAGE_LIMIT } from '../layers/page';
 import {
   resolveToolkitsTestData,
   toolkitCatalogMethods,
@@ -352,7 +353,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             results = results.filter(item => item.disabled_at === null);
           }
 
-          const limit = params.limit ?? 30;
+          const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
           const items = results.slice(0, limit);
           return Effect.succeed({
             items,

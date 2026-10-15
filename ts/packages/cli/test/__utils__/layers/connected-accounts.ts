@@ -12,6 +12,7 @@ import {
 } from 'src/services/composio-clients';
 import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
 import { notFoundError } from './not-found';
+import { DEFAULT_PAGE_LIMIT } from './page';
 
 /**
  * The auth configs a test repository serves, and what creating one answers.
@@ -103,7 +104,7 @@ export const connectedAccountRepositoryMethods = (
       );
     }
 
-    const limit = params.limit ?? 30;
+    const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
     const items = results.slice(0, limit);
     return Effect.succeed({
       items,
@@ -191,7 +192,7 @@ export const mockConnectedAccountResources = (
         results = results.filter(item => statuses.has(item.status));
       }
 
-      const limit = params?.limit ?? 30;
+      const limit = params?.limit ?? DEFAULT_PAGE_LIMIT;
       return {
         items: results.slice(0, limit),
         total_items: results.length,

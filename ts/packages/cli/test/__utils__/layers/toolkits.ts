@@ -20,6 +20,7 @@ import {
 import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
 import type { ConnectedAccountRepositoryMethod } from './connected-accounts';
 import { notFoundError } from './not-found';
+import { DEFAULT_PAGE_LIMIT } from './page';
 
 /**
  * The toolkit, tool, and trigger-type catalogs a test repository serves.
@@ -260,7 +261,7 @@ export const toolkitCatalogMethods = (
       );
     }
 
-    const limit = params.limit ?? 30;
+    const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
     const items = results.slice(0, limit);
     return Effect.succeed({
       items,
@@ -300,7 +301,7 @@ export const toolkitCatalogMethods = (
       );
     }
 
-    const limit = params.limit ?? 30;
+    const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
     const items = results.slice(0, limit).map(toClientTool);
     return Effect.succeed({
       items,
