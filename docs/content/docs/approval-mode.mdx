@@ -190,8 +190,6 @@ const result = await session.execute('GMAIL_SEND_EMAIL', args, {
 
 Use the same tool and arguments as the original call. A call with different arguments needs its own approval.
 
-If the user approves, the tool runs and `result_type` is `completed`. If they deny it, or the answer's `action` is `decline` or `cancel`, the tool doesn't run and `result_type` is `failed`, with an error you can pass back to the agent.
-
 If the user picks **Always approve**, the tool runs, and later calls to the same tool on the same connected account run without asking for the rest of the session.
 
 ## End-to-end example
