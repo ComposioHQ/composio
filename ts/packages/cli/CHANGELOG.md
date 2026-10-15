@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Patch Changes
+
+- The CLI now uses `@composio/client@2.0.0-rc.16` (up from `2.0.0-rc.14`). No
+  command changes.
+
 ## 0.4.4
 
 ### Patch Changes
