@@ -1,6 +1,7 @@
 import { parseSchema } from './parse-schema';
+import { applyPropertyPresence } from './property-presence';
 import type { ParseContext } from '../context';
-import type { JsonSchemaObject, JsonSchema } from '../types';
+import type { JsonSchemaObject } from '../types';
 import {
   createWholeSchemaGuard,
   guardSchemaAt,
@@ -51,53 +52,7 @@ export function parseObjectShape<S>(
       ? objectSchema.required.includes(key)
       : false;
 
-    // Handle default values for optional properties
-    if (
-      !required &&
-      propJsonSchema &&
-      typeof propJsonSchema === 'object' &&
-      'default' in propJsonSchema
-    ) {
-      // If default is null, make the field nullable with the null default
-      // But don't make it nullable if it's already an anyOf/oneOf that includes null
-      if (propJsonSchema.default === null) {
-        const hasAnyOfWithNull =
-          propJsonSchema.anyOf &&
-          Array.isArray(propJsonSchema.anyOf) &&
-          propJsonSchema.anyOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const hasOneOfWithNull =
-          propJsonSchema.oneOf &&
-          Array.isArray(propJsonSchema.oneOf) &&
-          propJsonSchema.oneOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const isNullable =
-          'nullable' in propJsonSchema &&
-          (propJsonSchema as JsonSchemaObject & { nullable?: boolean }).nullable === true;
-
-        if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
-          // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = backend.withDefault(backend.optional(propZodSchema), null);
-        } else {
-          // Make the field nullable with the null default
-          properties[key] = backend.withDefault(
-            backend.optional(backend.nullable(propZodSchema)),
-            null
-          );
-        }
-      } else {
-        properties[key] = backend.withDefault(
-          backend.optional(propZodSchema),
-          propJsonSchema.default
-        );
-      }
-    } else {
-      properties[key] = required ? propZodSchema : backend.optional(propZodSchema);
-    }
+    properties[key] = applyPropertyPresence(backend, propJsonSchema, propZodSchema, required);
   }
 
   return properties;
