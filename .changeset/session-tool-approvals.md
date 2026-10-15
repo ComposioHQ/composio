@@ -16,13 +16,15 @@ try {
   await session.execute('GMAIL_SEND_EMAIL', args);
 } catch (error) {
   if (!(error instanceof ComposioToolInputRequiredError)) throw error;
-  const [id] = Object.keys(error.inputRequests);
+  const inputResponses = await promptUser(error.inputRequests);
   await session.execute('GMAIL_SEND_EMAIL', args, {
-    inputResponses: { [id]: { action: 'accept', content: { decision: 'approve' } } },
+    inputResponses,
     requestState: error.requestState,
   });
 }
 ```
+
+`promptUser` is a placeholder for your application's consent UI. Display each request, wait for the user's response, and return the answers keyed by request ID. Forward `decline` and `cancel` responses unchanged.
 
 `experimental.noElicitationSupportFallback` (`'deny'` or `'allow'`) sets what happens to such a call when the session's MCP client can't ask the user.
 
