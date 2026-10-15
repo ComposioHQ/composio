@@ -74,7 +74,7 @@ Tools that need approval stay visible to the agent. In `COMPOSIO_MULTI_EXECUTE_T
 
 ## Asking the user
 
-When a tool needs approval, `session.execute()` raises `ToolInputRequiredError` (`ComposioToolInputRequiredError` in TypeScript):
+When a tool needs approval, `session.execute()` raises an error:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -144,7 +144,7 @@ Show the user the `message` and a form built from `requested_schema`. Build the 
 
 ## Sending the answer
 
-Call `session.execute()` again with the same tool and arguments, the answers in `input_responses`, and `request_state`:
+Send the same call again with the user's answers:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
