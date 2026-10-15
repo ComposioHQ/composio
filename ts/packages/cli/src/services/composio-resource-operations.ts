@@ -219,6 +219,10 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
   /**
    * Searches tools with optional filters. Returns a single page of results.
    * @param params - Search/filter parameters
+   *
+   * Not client-decoded: `tools list` prints the slug, name, and description of
+   * each item and `tools info` suggests slugs from them, so drift in any other
+   * field of a tool must not fail the listing.
    */
   searchTools: (params: {
     search?: string;
@@ -228,14 +232,17 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
     cursor?: string;
   }) =>
     Effect.flatMap(client, c =>
-      c.tools.list({
-        search: params.search,
-        toolkit_slug: params.toolkit_slug,
-        tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
-        limit: params.limit,
-        cursor: params.cursor,
-        toolkit_versions: 'latest',
-      })
+      c.tools.list(
+        {
+          search: params.search,
+          toolkit_slug: params.toolkit_slug,
+          tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
+          limit: params.limit,
+          cursor: params.cursor,
+          toolkit_versions: 'latest',
+        },
+        undecoded
+      )
     ),
   /**
    * Retrieves detailed info about a single tool by slug.

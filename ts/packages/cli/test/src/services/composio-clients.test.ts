@@ -219,6 +219,21 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withSingleton))
     );
 
+    it.effect(
+      'listOrgProjects returns a project whose webhook version the client does not know',
+      () =>
+        Effect.gen(function* () {
+          const project = { ...makeOrgProject({ id: 'p1', name: 'One' }), webhook_version: 'V9' };
+          vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            jsonResponse({ data: [project], total_pages: 1, current_page: 1, total_items: 1 })
+          );
+
+          const result = yield* listOrgProjects({ apiKey: 'uak_test', orgId: 'org_1' });
+
+          expect(result.data).toEqual([project]);
+        }).pipe(Effect.provide(withSingleton))
+    );
+
     it.effect('findDeveloperProjectByName rejects a case-insensitive name collision', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -449,23 +464,21 @@ describe('composio-clients', () => {
       }).pipe(Effect.provide(withRepository))
     );
 
-    it.effect('searchTools fails with DecodeError when the page breaks the API contract', () =>
+    it.effect('searchTools returns a page the API contract does not allow as it arrived', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-          // No `total_items`, which the API's response schema requires.
-          jsonResponse({ items: [], next_cursor: null, total_pages: 1, current_page: 1 }, 200, {
-            'x-request-id': 'req_tools',
-          })
-        );
+        // No `total_items`, and an item with only the fields the listing prints.
+        const page = {
+          items: [{ slug: 'GMAIL_SEND_EMAIL', name: 'Send Email', description: 'Send an email' }],
+          next_cursor: null,
+          total_pages: 1,
+          current_page: 1,
+        };
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(page));
         const repository = yield* ComposioToolkitsRepository;
 
-        const error = yield* repository.searchTools({ search: 'send' }).pipe(Effect.flip);
+        const result = yield* repository.searchTools({ search: 'send' });
 
-        expect(error).toMatchObject({
-          _tag: '@composio/client/DecodeError',
-          operation: 'tools.list',
-          requestId: 'req_tools',
-        });
+        expect(result).toEqual(page);
       }).pipe(Effect.provide(withRepository))
     );
 

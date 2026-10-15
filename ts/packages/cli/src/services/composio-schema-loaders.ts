@@ -19,8 +19,4 @@ export const composioSchemaLoaders = {
       .ConsumerListConnectedToolkitsResponse,
   'org.list': async () =>
     (await import('@composio/client/effect/schemas/org/list')).OrgListResponse,
-  'org.project.list': async () =>
-    (await import('@composio/client/effect/schemas/org/project/list')).ProjectListResponse,
-  'tools.list': async () =>
-    (await import('@composio/client/effect/schemas/tools/list')).ToolListResponse,
 } satisfies SchemaLoaders;

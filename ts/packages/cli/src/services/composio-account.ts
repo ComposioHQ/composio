@@ -126,6 +126,10 @@ export const listOrganizations = (params: {
 
 /**
  * Lists projects for a specific organization.
+ *
+ * Project lists are not client-decoded: the CLI reads a project's ids, name,
+ * and email, while the client schema also fixes `webhook_version` to the
+ * versions it knew at generation time.
  */
 export const listOrganizationProjects = (params: {
   apiKey: string;
@@ -137,7 +141,7 @@ export const listOrganizationProjects = (params: {
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     const response = yield* client.org.project.list(
       { limit: params.limit ?? 50 },
-      orgScopedOptions(params.orgId)
+      { ...undecoded, ...orgScopedOptions(params.orgId) }
     );
     const projects = response.data.map(
       (project: OrgProject) =>
@@ -167,7 +171,7 @@ export const listOrgProjects = (params: {
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.project.list(
       { list_all_org_projects: true, limit: params.limit ?? 50 },
-      orgScopedOptions(params.orgId)
+      { ...undecoded, ...orgScopedOptions(params.orgId) }
     );
   });
 
