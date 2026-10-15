@@ -59,6 +59,12 @@ export const stubComposioClient = (
  * resources of every client it hands out for those of a client built by
  * {@link stubComposioClient}. Calls to those resources go through the real
  * client to `respond`; every other resource keeps the test layer's answers.
+ *
+ * The test layer's answers do not model request options (`signal`,
+ * `maxRetries`, or any header beyond `decode`) and `connectedAccounts.list`
+ * never returns a `next_cursor`, so pagination, retries, and abort are
+ * exercised through {@link stubComposioClient}, the real `make` over a
+ * recording transport.
  */
 export const stubClientResources = (
   resources: ReadonlyArray<keyof ComposioClientShape>,

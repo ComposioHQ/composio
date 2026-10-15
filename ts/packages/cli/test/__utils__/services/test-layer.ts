@@ -1336,7 +1336,11 @@ export const TestLayer = (input?: TestLiveInput) =>
       operation.replace(/Stream$/, '') in composioSchemaLoaders;
 
     // Each shadow answers with an Effect or a promise; a rejection becomes
-    // the call's failure as it is.
+    // the call's failure as it is. A shadow ignores the request options
+    // (`signal`, `maxRetries`, headers beyond `decode`), and the
+    // `connectedAccounts.list` shadow never pages (`next_cursor` is null):
+    // pagination, retries, and abort are covered by `stubComposioClient`,
+    // the real `make` over a recording transport.
     const withShadows = <Resources extends object>(
       base: Resources,
       shadows: object,
