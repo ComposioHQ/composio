@@ -27,14 +27,6 @@ export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
   { command: 'debug.cmd.ts', reason: 'no test yet' },
   {
-    command: 'generate/generate.py.cmd.ts',
-    reason: 'thin wrapper over py.generate; covered by py/py.generate.cmd.test.ts',
-  },
-  {
-    command: 'generate/generate.ts.cmd.ts',
-    reason: 'thin wrapper over ts.generate; covered by ts/ts.generate.cmd.test.ts',
-  },
-  {
     command: 'logs/commands/logs.triggers.cmd.ts',
     reason: 'covered by logs.triggers.client.cmd.test.ts; split pending',
   },
