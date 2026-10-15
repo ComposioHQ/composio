@@ -164,26 +164,23 @@ const assertTriggerTypeExists = (params: {
   slug: string;
   toolkitSlug?: string;
 }) =>
-  Effect.gen(function* () {
-    const lookup = yield* params.client.triggersTypes
-      .retrieve(params.slug, undefined, { decode: false })
-      .pipe(Effect.result);
-
-    if (
-      Result.isFailure(lookup) &&
-      Predicate.isTagged(lookup.failure, '@composio/client/NotFoundError')
-    ) {
-      return yield* new ListenCommandError({
-        reason: 'unknown_trigger',
-        message: `Unknown trigger slug "${params.slug}". List available slugs with \`composio triggers list <toolkit>\`.`,
-        slug: params.slug,
-        toolkitSlug: params.toolkitSlug,
-        cause: lookup.failure,
-      });
-    }
-    // A found trigger type, or any failure other than 404, is inconclusive here: fall through to
-    // the caller's own error.
-  });
+  params.client.triggersTypes.retrieve(params.slug, undefined, { decode: false }).pipe(
+    Effect.catchTag(
+      '@composio/client/NotFoundError',
+      cause =>
+        new ListenCommandError({
+          reason: 'unknown_trigger',
+          message: `Unknown trigger slug "${params.slug}". List available slugs with \`composio triggers list <toolkit>\`.`,
+          slug: params.slug,
+          toolkitSlug: params.toolkitSlug,
+          cause,
+        }),
+      // A found trigger type, or any failure other than 404, is inconclusive here: fall through to
+      // the caller's own error.
+      () => Effect.void
+    ),
+    Effect.asVoid
+  );
 
 const resolveConnectedAccountIdForTrigger = (params: {
   client: ComposioClientShape;
