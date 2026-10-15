@@ -1,5 +1,6 @@
 import { APIConnectionError, type RequestOptions } from '@composio/client/effect';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
+import { Effect, Option } from 'effect';
 import type { OrganizationSummary, OrgProject } from 'src/services/composio-account';
 import { TIMESTAMP } from '../models/account';
 
@@ -41,6 +42,7 @@ export interface MockAccountRequest {
  * answers, echoing the requested org.
  */
 export interface AccountTestData {
+  /** A function answers per scope; whatever it throws becomes the call's failure. */
   sessionInfo?:
     SessionRetrieveInfoResponse | ((scope: MockRequestScope) => SessionRetrieveInfoResponse);
   organizations?: ReadonlyArray<OrganizationSummary>;
@@ -59,6 +61,15 @@ const noTestData = (operation: MockAccountRequest['operation']) =>
     reason: 'TransportError',
     description: `No test data for ${operation}`,
   });
+
+/**
+ * `value`, or the connection error an endpoint without test data rejects with.
+ */
+const withTestData = <A>(value: A | undefined, operation: MockAccountRequest['operation']) =>
+  Effect.fromOption(Option.fromUndefinedOr(value), () => noTestData(operation));
+
+const LATEST_TOOL_VERSION_PATH = /^\/api\/v3\/tools\/[^/]+\/get_latest_version$/;
+const CREATE_PROJECT_API_KEY_PATH = /^\/api\/v3\/org\/project\/[^/]+\/api_keys\/create$/;
 
 const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
   // The CLI only ever passes plain header records.
@@ -96,43 +107,45 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
 
   return {
     org: {
-      list: async (query?: { limit?: number } | null, options?: RequestOptions) => {
+      list: (query?: { limit?: number } | null, options?: RequestOptions) => {
         record('org.list', options, query);
-        if (!accountData.organizations) throw noTestData('org.list');
-        const organizations = accountData.organizations.map(org => ({ ...org, ...timestamps }));
-        return {
-          organizations,
-          next_cursor: null,
-          total_pages: 1,
-          current_page: 1,
-          total_items: organizations.length,
-        };
+        return withTestData(accountData.organizations, 'org.list').pipe(
+          Effect.map(organizations => organizations.map(org => ({ ...org, ...timestamps }))),
+          Effect.map(organizations => ({
+            organizations,
+            next_cursor: null,
+            total_pages: 1,
+            current_page: 1,
+            total_items: organizations.length,
+          }))
+        );
       },
       project: {
-        list: async (
+        list: (
           query?: { limit?: number; list_all_org_projects?: boolean | null } | null,
           options?: RequestOptions
         ) => {
           record('org.project.list', options, query);
-          if (!accountData.projects) throw noTestData('org.project.list');
-          return {
-            data: [...accountData.projects],
-            next_cursor: null,
-            total_pages: 1,
-            current_page: 1,
-            total_items: accountData.projects.length,
-          };
+          return withTestData(accountData.projects, 'org.project.list').pipe(
+            Effect.map(projects => ({
+              data: [...projects],
+              next_cursor: null,
+              total_pages: 1,
+              current_page: 1,
+              total_items: projects.length,
+            }))
+          );
         },
       },
       consumer: {
         project: {
-          resolve: async (
+          resolve: (
             params: { 'x-user-api-key': string; 'x-org-id': string },
             options?: RequestOptions
           ) => {
             record('org.consumer.project.resolve', options, params);
             const orgId = params['x-org-id'];
-            return {
+            return Effect.succeed({
               project_id: 'consumer_project_id_test',
               project_nano_id: 'consumer_project_test',
               project_name: 'Consumer Project',
@@ -140,46 +153,53 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
               project_type: 'CONSUMER' as const,
               config: { consumer_experience_enabled: true, enhanced_controls: false },
               consumer_user_id: `consumer-user-${orgId}`,
-            };
+            });
           },
         },
-        listConnectedToolkits: async (
+        listConnectedToolkits: (
           params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
           options?: RequestOptions
         ) => {
           record('org.consumer.listConnectedToolkits', options, params);
-          if (!accountData.connectedToolkits) {
-            throw noTestData('org.consumer.listConnectedToolkits');
-          }
-          return { toolkits: [...accountData.connectedToolkits] };
+          return withTestData(
+            accountData.connectedToolkits,
+            'org.consumer.listConnectedToolkits'
+          ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
         },
       },
     },
     auth: {
       session: {
-        retrieveInfo: async (options?: RequestOptions) => {
+        retrieveInfo: (options?: RequestOptions) => {
           const scope = record('auth.session.retrieveInfo', options);
-          const sessionInfo = accountData.sessionInfo;
-          if (sessionInfo === undefined) throw noTestData('auth.session.retrieveInfo');
-          return typeof sessionInfo === 'function' ? sessionInfo(scope) : sessionInfo;
+          return withTestData(accountData.sessionInfo, 'auth.session.retrieveInfo').pipe(
+            // A test fails the call by throwing from its callback.
+            Effect.flatMap(sessionInfo =>
+              Effect.try({
+                try: () => (typeof sessionInfo === 'function' ? sessionInfo(scope) : sessionInfo),
+                catch: cause => cause,
+              })
+            )
+          );
         },
       },
     },
-    get: async (path: string, options?: RequestOptions) => {
-      if (/^\/api\/v3\/tools\/[^/]+\/get_latest_version$/.test(path)) {
-        record('tools.getLatestVersion', options, { path });
-        if (!accountData.latestToolVersion) throw noTestData('tools.getLatestVersion');
-        return accountData.latestToolVersion;
+    get: (path: string, options?: RequestOptions) => {
+      if (!LATEST_TOOL_VERSION_PATH.test(path)) {
+        return Effect.fail(new Error(`Unhandled GET path "${path}"`));
       }
-      throw new Error(`Unhandled GET path "${path}"`);
+      record('tools.getLatestVersion', options, { path });
+      return withTestData(accountData.latestToolVersion, 'tools.getLatestVersion');
     },
-    post: async (path: string, options?: RequestOptions & { body?: unknown }) => {
-      if (/^\/api\/v3\/org\/project\/[^/]+\/api_keys\/create$/.test(path)) {
-        record('org.project.createApiKey', options, { path, body: options?.body });
-        if (!accountData.projectApiKey) throw noTestData('org.project.createApiKey');
-        return { api_key: accountData.projectApiKey };
+    post: (path: string, options?: RequestOptions & { body?: unknown }) => {
+      if (!CREATE_PROJECT_API_KEY_PATH.test(path)) {
+        return Effect.fail(new Error(`Unhandled POST path "${path}"`));
       }
-      throw new Error(`Unhandled POST path "${path}"`);
+      record('org.project.createApiKey', options, { path, body: options?.body });
+      // An empty key counts as missing, as it always has.
+      return withTestData(accountData.projectApiKey || undefined, 'org.project.createApiKey').pipe(
+        Effect.map(apiKey => ({ api_key: apiKey }))
+      );
     },
   };
 };

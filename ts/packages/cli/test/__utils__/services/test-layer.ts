@@ -481,118 +481,124 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const toolRouterOverrides = input?.toolRouter;
 
-    const defaultToolkitsHandler = async (
+    const defaultToolkitsHandler = (
       _sessionId: string,
       params?: SessionToolkitsParams | null
-    ): Promise<SessionToolkitsResponse> => {
-      let results: SessionToolkitsResponse['items'] = toolkitsData.toolkits.map(t => ({
-        slug: t.slug,
-        name: t.name,
-        meta: { description: t.meta.description, logo: '' },
-        is_no_auth: t.no_auth ?? false,
-        enabled: true,
-        connected_account: null,
-        composio_managed_auth_schemes: [...(t.composio_managed_auth_schemes ?? [])],
-      }));
+    ): Effect.Effect<SessionToolkitsResponse> =>
+      Effect.sync(() => {
+        let results: SessionToolkitsResponse['items'] = toolkitsData.toolkits.map(t => ({
+          slug: t.slug,
+          name: t.name,
+          meta: { description: t.meta.description, logo: '' },
+          is_no_auth: t.no_auth ?? false,
+          enabled: true,
+          connected_account: null,
+          composio_managed_auth_schemes: [...(t.composio_managed_auth_schemes ?? [])],
+        }));
 
-      if (params?.search) {
-        const q = params.search.toLowerCase();
-        results = results.filter(
-          t =>
-            t.name.toLowerCase().includes(q) ||
-            t.slug.toLowerCase().includes(q) ||
-            t.meta.description.toLowerCase().includes(q)
-        );
-      }
+        if (params?.search) {
+          const q = params.search.toLowerCase();
+          results = results.filter(
+            t =>
+              t.name.toLowerCase().includes(q) ||
+              t.slug.toLowerCase().includes(q) ||
+              t.meta.description.toLowerCase().includes(q)
+          );
+        }
 
-      if (params?.toolkits) {
-        const slugSet = new Set(params.toolkits.map(s => s.toLowerCase()));
-        results = results.filter(t => slugSet.has(t.slug.toLowerCase()));
-      }
+        if (params?.toolkits) {
+          const slugSet = new Set(params.toolkits.map(s => s.toLowerCase()));
+          results = results.filter(t => slugSet.has(t.slug.toLowerCase()));
+        }
 
-      const limit = params?.limit ?? 1000;
-      const items = results.slice(0, limit);
-      return {
-        items,
-        current_page: 1,
-        total_items: results.length,
-        total_pages: Math.ceil(results.length / limit),
-        next_cursor: null,
-      };
-    };
-
-    const defaultSearchHandler = async (
-      _sessionId: string,
-      params: SessionSearchParams
-    ): Promise<SessionSearchResponse> => {
-      const results = params.queries.map((query, index) => {
-        const queryUseCase = query.use_case ?? '';
-        const normalizedQuery = queryUseCase.toLowerCase();
-        const matchedTools = toolkitsData.tools.filter(
-          tool =>
-            tool.name.toLowerCase().includes(normalizedQuery) ||
-            tool.slug.toLowerCase().includes(normalizedQuery) ||
-            tool.description.toLowerCase().includes(normalizedQuery)
-        );
-
+        const limit = params?.limit ?? 1000;
+        const items = results.slice(0, limit);
         return {
-          index: index + 1,
-          use_case: queryUseCase,
-          primary_tool_slugs: matchedTools.map(tool => tool.slug),
-          related_tool_slugs: [],
-          toolkits: Array.from(
-            new Set(
-              matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
-            )
-          ),
-          matchedTools,
+          items,
+          current_page: 1,
+          total_items: results.length,
+          total_pages: Math.ceil(results.length / limit),
+          next_cursor: null,
         };
       });
 
-      const allMatchedTools = results.flatMap(result => result.matchedTools);
-      const toolSchemas = Object.fromEntries(
-        allMatchedTools.map(tool => [
-          tool.slug,
-          {
-            tool_slug: tool.slug,
-            toolkit: tool.slug.split('_')[0]?.toLowerCase() ?? '',
-            description: tool.description,
-            hasFullSchema: true,
-            input_schema: tool.input_parameters,
-            output_schema: tool.output_parameters,
-          },
-        ])
-      );
-      const toolkitConnectionStatuses = Array.from(
-        new Set(
-          allMatchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
-        )
-      ).map(toolkitSlug => ({
-        toolkit: toolkitSlug,
-        description: `${toolkitSlug} toolkit`,
-        has_active_connection: false,
-        status_message: 'No active connection',
-      }));
+    const defaultSearchHandler = (
+      _sessionId: string,
+      params: SessionSearchParams
+    ): Effect.Effect<SessionSearchResponse> =>
+      Effect.sync(() => {
+        const results = params.queries.map((query, index) => {
+          const queryUseCase = query.use_case ?? '';
+          const normalizedQuery = queryUseCase.toLowerCase();
+          const matchedTools = toolkitsData.tools.filter(
+            tool =>
+              tool.name.toLowerCase().includes(normalizedQuery) ||
+              tool.slug.toLowerCase().includes(normalizedQuery) ||
+              tool.description.toLowerCase().includes(normalizedQuery)
+          );
 
-      return {
-        success: true,
-        error: null,
-        results: results.map(({ matchedTools: _matchedTools, ...result }) => result),
-        tool_schemas: toolSchemas,
-        toolkit_connection_statuses: toolkitConnectionStatuses,
-        next_steps_guidance: [],
-        session: {
-          id: 'trs_test_session',
-          generate_id: false,
-          instructions: 'Reuse this session id for follow-up calls.',
-        },
-        time_info: {
-          current_time_utc: TIMESTAMP,
-          current_time_utc_epoch_seconds: 1767225600,
-          message: 'UTC time',
-        },
-      };
-    };
+          return {
+            index: index + 1,
+            use_case: queryUseCase,
+            primary_tool_slugs: matchedTools.map(tool => tool.slug),
+            related_tool_slugs: [],
+            toolkits: Array.from(
+              new Set(
+                matchedTools
+                  .map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '')
+                  .filter(Boolean)
+              )
+            ),
+            matchedTools,
+          };
+        });
+
+        const allMatchedTools = results.flatMap(result => result.matchedTools);
+        const toolSchemas = Object.fromEntries(
+          allMatchedTools.map(tool => [
+            tool.slug,
+            {
+              tool_slug: tool.slug,
+              toolkit: tool.slug.split('_')[0]?.toLowerCase() ?? '',
+              description: tool.description,
+              hasFullSchema: true,
+              input_schema: tool.input_parameters,
+              output_schema: tool.output_parameters,
+            },
+          ])
+        );
+        const toolkitConnectionStatuses = Array.from(
+          new Set(
+            allMatchedTools
+              .map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '')
+              .filter(Boolean)
+          )
+        ).map(toolkitSlug => ({
+          toolkit: toolkitSlug,
+          description: `${toolkitSlug} toolkit`,
+          has_active_connection: false,
+          status_message: 'No active connection',
+        }));
+
+        return {
+          success: true,
+          error: null,
+          results: results.map(({ matchedTools: _matchedTools, ...result }) => result),
+          tool_schemas: toolSchemas,
+          toolkit_connection_statuses: toolkitConnectionStatuses,
+          next_steps_guidance: [],
+          session: {
+            id: 'trs_test_session',
+            generate_id: false,
+            instructions: 'Reuse this session id for follow-up calls.',
+          },
+          time_info: {
+            current_time_utc: TIMESTAMP,
+            current_time_utc_epoch_seconds: 1767225600,
+            message: 'UTC time',
+          },
+        };
+      });
 
     // What the mock client answers with instead of calling the network.
     const resourceShadows = {
@@ -628,10 +634,11 @@ export const TestLayer = (input?: TestLiveInput) =>
           });
         },
         manage: {
-          update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
-            trigger_id: triggerId,
-            status: params.status,
-          }),
+          update: (triggerId: string, params: { status: 'enable' | 'disable' }) =>
+            Effect.succeed({
+              trigger_id: triggerId,
+              status: params.status,
+            }),
         },
       },
       toolkits: {
@@ -667,64 +674,70 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       },
       files: {
-        createPresignedURL: async (params: {
+        createPresignedURL: (params: {
           filename: string;
           mimetype: string;
           md5: string;
           tool_slug: string;
           toolkit_slug: string;
-        }) => ({
-          key: `uploads/${params.filename}`,
-          new_presigned_url: 'https://s3.test.composio.dev/upload',
-        }),
+        }) =>
+          Effect.succeed({
+            key: `uploads/${params.filename}`,
+            new_presigned_url: 'https://s3.test.composio.dev/upload',
+          }),
       },
       toolRouter: {
         session: {
           create:
             toolRouterOverrides?.create ??
-            (async (params: SessionCreateParams) => ({
-              session_id: 'trs_test_session',
-              config: { user_id: params.user_id },
-              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-            })),
+            ((params: SessionCreateParams) =>
+              Effect.succeed({
+                session_id: 'trs_test_session',
+                config: { user_id: params.user_id },
+                mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+              })),
           execute:
             toolRouterOverrides?.execute ??
-            (async (_sessionId: string, params: SessionExecuteParams) => ({
-              result_type: 'completed' as const,
-              data: { tool_slug: params.tool_slug, arguments: params.arguments },
-              error: null,
-              log_id: 'log_test',
-            })),
+            ((_sessionId: string, params: SessionExecuteParams) =>
+              Effect.succeed({
+                result_type: 'completed' as const,
+                data: { tool_slug: params.tool_slug, arguments: params.arguments },
+                error: null,
+                log_id: 'log_test',
+              })),
           executeMeta:
             toolRouterOverrides?.executeMeta ??
-            (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
-              result_type: 'completed' as const,
-              data: { slug: params.slug, arguments: params.arguments },
-              error: null,
-              log_id: 'log_test',
-            })),
+            ((_sessionId: string, params: SessionExecuteMetaParams) =>
+              Effect.succeed({
+                result_type: 'completed' as const,
+                data: { slug: params.slug, arguments: params.arguments },
+                error: null,
+                log_id: 'log_test',
+              })),
           link:
             toolRouterOverrides?.link ??
-            (async () => ({
-              connected_account_id: 'con_test_link',
-              link_token: 'lt_test_token',
-              redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
-              account_type: 'PRIVATE' as const,
-            })),
+            (() =>
+              Effect.succeed({
+                connected_account_id: 'con_test_link',
+                link_token: 'lt_test_token',
+                redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+                account_type: 'PRIVATE' as const,
+              })),
           proxyExecute:
             toolRouterOverrides?.proxyExecute ??
-            (async (_sessionId: string, params: SessionProxyExecuteParams) => ({
-              status: 200,
-              data: {
-                toolkit_slug: params.toolkit_slug,
-                endpoint: params.endpoint,
-                method: params.method,
-                body: params.body ?? null,
-                parameters: params.parameters ?? [],
-              },
-              headers: {},
-            })),
+            ((_sessionId: string, params: SessionProxyExecuteParams) =>
+              Effect.succeed({
+                status: 200,
+                data: {
+                  toolkit_slug: params.toolkit_slug,
+                  endpoint: params.endpoint,
+                  method: params.method,
+                  body: params.body ?? null,
+                  parameters: params.parameters ?? [],
+                },
+                headers: {},
+              })),
           search: toolRouterOverrides?.search ?? defaultSearchHandler,
           toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
         },
@@ -737,8 +750,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
-    // Each shadow answers with an Effect or a promise; a rejection becomes
-    // the call's failure as it is. A shadow ignores the request options
+    // Each shadow answers with an Effect, built when the call runs. A shadow
+    // ignores the request options
     // (`signal`, `maxRetries`, headers beyond `decode`), and the
     // `connectedAccounts.list` shadow never pages (`next_cursor` is null):
     // pagination, retries, and abort are covered by `stubComposioClient`,
@@ -749,15 +762,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         shadowed[key] =
           typeof shadow === 'function'
             ? (...args: ReadonlyArray<unknown>) =>
-                Effect.suspend(() => {
-                  const answer: unknown = shadow(...args);
-                  return Effect.isEffect(answer)
-                    ? answer
-                    : Effect.tryPromise({
-                        try: () => answer as Promise<unknown>,
-                        catch: cause => cause,
-                      });
-                })
+                Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
             : withShadows((shadowed[key] ?? {}) as object, shadow as object);
       }
       return shadowed as Resources;
