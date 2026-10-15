@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
@@ -131,19 +132,8 @@ const resolveInput = (input: Option.Option<string>) =>
     missingValue: '{}',
   });
 
-/**
- * Business-error type for the hand-rolled `--parallel` mini-parser
- * (`parseParallelExecuteArgs` below), not a `Command`-level parse failure —
- * v4's `CliError.InvalidValue` requires structured `option`/`kind` fields
- * that don't fit this free-text validation.
- */
-export class ParallelExecuteArgumentError extends Data.TaggedError(
-  'commands/ParallelExecuteArgumentError'
-)<{
-  readonly message: string;
-}> {}
-
-const invalidArguments = (message: string) => new ParallelExecuteArgumentError({ message });
+// Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` below).
+const invalidArguments = commandInputError('execute');
 
 type ToolExecutionErrorFields = {
   readonly reason:

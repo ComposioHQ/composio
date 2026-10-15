@@ -11,7 +11,7 @@ import {
   assertTypeScriptIsValid,
 } from 'test/__utils__/typescript-compiler';
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
-import { TypeScriptGenerationInputError } from 'src/commands/ts/commands/ts.generate.cmd';
+import { CommandInputError } from 'src/commands/errors';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
@@ -998,7 +998,8 @@ describe('CLI: composio generate ts', () => {
             const args = ['generate', 'ts', '--toolkits', 'nonexistent', '--output-dir', outputDir];
             const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
 
-            assert.ok(result instanceof TypeScriptGenerationInputError);
+            assert.ok(result instanceof CommandInputError);
+            expect(result.option).toBe('--toolkits');
             expect(result.message).toContain('Invalid toolkit(s): nonexistent');
           })
         );

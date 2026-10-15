@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -118,22 +119,7 @@ class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganiz
   readonly requestedOrg: string;
 }> {}
 
-class LoginOptionError extends Data.TaggedError('commands/LoginOptionError')<{
-  readonly message: string;
-}> {}
-
-/**
- * v4 migration note: v3's `ValidationError.invalidValue(HelpDoc.p(message))` produced a value
- * that `@effect/cli`'s `Command.run` printed to stderr and mapped to exit code 1 itself.
- * `effect/cli`'s `CliError.InvalidValue` is now a fixed flag/argument-name-and-value
- * struct (see `CliError.ts`) built by the parser, not a freeform validation message constructor,
- * and `Command.runWith` only renders errors it produces during parsing — it does not intercept or
- * render failures raised from inside a command handler. A plain typed domain error (matching the
- * `LoginSessionError`/`PendingLoginError` pattern already used in this file) instead flows through
- * the CLI's normal `effect-errors` renderer at the top level (see `cli-main.ts`), so this must not
- * print the message itself — that would double-print alongside that renderer.
- */
-const invalidOptionValue = (message: string) => new LoginOptionError({ message });
+const invalidOptionValue = commandInputError('login');
 
 const pendingLoginPath = Effect.gen(function* () {
   const path = yield* Path.Path;
@@ -907,23 +893,26 @@ export const loginCmd = Command.make(
         (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
       ) {
         return yield* invalidOptionValue(
-          '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
+          '`--poll` cannot be combined with browser, session, direct-login, or agent flags.',
+          '--poll'
         );
       }
 
       if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
         return yield* invalidOptionValue(
-          '`--agent` cannot be combined with browser, session, or direct-login flags.'
+          '`--agent` cannot be combined with browser, session, or direct-login flags.',
+          '--agent'
         );
       }
 
       if (Option.isSome(org) && Option.isNone(userApiKey)) {
-        return yield* invalidOptionValue('`--org` requires `--user-api-key`.');
+        return yield* invalidOptionValue('`--org` requires `--user-api-key`.', '--org');
       }
 
       if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
         return yield* invalidOptionValue(
-          '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
+          '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.',
+          '--user-api-key'
         );
       }
 

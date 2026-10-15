@@ -368,8 +368,8 @@ describe('CLI: composio generate py', () => {
           const args = ['generate', 'py', '--toolkits', 'nonexistent', '--output-dir', outputDir];
           const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
 
-          assert.ok(Predicate.isTagged(result, 'commands/GenerateInputError'));
-          if (Predicate.isTagged(result, 'commands/GenerateInputError')) {
+          assert.ok(Predicate.isTagged(result, 'commands/CommandInputError'));
+          if (Predicate.isTagged(result, 'commands/CommandInputError')) {
             expect((result as unknown as { message: string }).message).toContain(
               'Invalid toolkit(s): nonexistent'
             );

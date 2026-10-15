@@ -1,5 +1,6 @@
 import { Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { CommandInputError } from './errors';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 import { logsCmd } from './logs/logs.cmd';
@@ -31,10 +32,6 @@ export const devSubcommands = [
   projectsCmd,
 ] as const;
 
-export class DeveloperModeError extends Data.TaggedError('commands/DeveloperModeError')<{
-  readonly message: string;
-}> {}
-
 const describeCurrentMode = (enabled: boolean) =>
   enabled
     ? 'Developer mode is on. Developer subcommands are available.'
@@ -54,7 +51,9 @@ const applyDeveloperModeChange = (enabled: boolean) =>
     if (enabled) {
       if (!stdin.isTTY()) {
         const configPath = yield* resolveCliConfigPath;
-        return yield* new DeveloperModeError({
+        return yield* new CommandInputError({
+          command: 'dev',
+          option: '--mode',
           message: `Enabling developer mode requires an interactive terminal. Set "developer.enabled": true in ${configPath} to enable it outside an interactive session.`,
         });
       }

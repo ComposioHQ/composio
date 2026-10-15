@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option, Schedule } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
@@ -57,23 +58,7 @@ class BrowserOpenError extends Data.TaggedError('commands/BrowserOpenError')<{
   readonly cause: unknown;
 }> {}
 
-/**
- * Business-level validation failure for `link` inputs that are only
- * knowable after parsing (e.g. an `--alias` that is empty after trimming,
- * or an option combination that's invalid for this command variant).
- *
- * v3 raised these via `ValidationError.invalidValue`, which piggybacked on
- * `@effect/cli`'s parse-error rendering. v4's `CliError.InvalidValue` always
- * renders a fixed, option-specific template (see `CliError.ts`) that can't
- * carry a free-form message, so these are modeled as an ordinary typed
- * domain error instead and rendered through the same `effect-errors` path
- * as this file's other business errors (`ConnectionPollingError`, etc.).
- */
-class LinkInputError extends Data.TaggedError('commands/LinkInputError')<{
-  readonly message: string;
-}> {}
-
-const invalidOptionValue = (message: string) => new LinkInputError({ message });
+const invalidOptionValue = commandInputError('link');
 
 const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -319,7 +304,7 @@ const resolveNormalizedAliasOption = (alias: Option.Option<string>) =>
 
     const normalizedAlias = normalizeAlias(alias.value);
     if (normalizedAlias.length === 0) {
-      return yield* Effect.fail(invalidOptionValue('`--alias` cannot be empty.'));
+      return yield* Effect.fail(invalidOptionValue('`--alias` cannot be empty.', '--alias'));
     }
 
     return Option.some(normalizedAlias);
@@ -806,7 +791,8 @@ const runConnectedAccountsLink = (params: {
       if (Option.isSome(params.authConfig)) {
         return yield* Effect.fail(
           invalidOptionValue(
-            'Top-level `composio link` is consumer-only and does not accept `--auth-config`. Use `composio dev connected-accounts link --auth-config ...` for developer-scoped usage.'
+            'Top-level `composio link` is consumer-only and does not accept `--auth-config`. Use `composio dev connected-accounts link --auth-config ...` for developer-scoped usage.',
+            '--auth-config'
           )
         );
       }

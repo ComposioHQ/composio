@@ -116,9 +116,8 @@ describe('CLI: composio login', () => {
     });
   });
 
-  // v4 migration note: this business-level validation (only knowable after parsing) is a
-  // plain typed domain error (`LoginOptionError`), not a `CliError.InvalidValue` — see the
-  // migration note in `login.cmd.ts` above `invalidOptionValue`.
+  // Business-level validation (only knowable after parsing) raises `CommandInputError`,
+  // not a `CliError.InvalidValue`; see `src/commands/errors.ts`.
   layer(TestLive())(it => {
     it.effect('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
       Effect.gen(function* () {

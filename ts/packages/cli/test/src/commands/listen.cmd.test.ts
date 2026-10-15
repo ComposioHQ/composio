@@ -182,10 +182,8 @@ describe('CLI: composio listen', () => {
       },
     })
   )('listen validation and domain failures', it => {
-    // v4 migration note: `CliError.InvalidValue` is a fixed flag/argument-name-and-value
-    // struct produced only by the parser. These are business-level validations (only
-    // knowable after parsing), so `listen.cmd.ts` models them as a plain typed domain error
-    // (`ListenOptionError`) instead — see the migration note above `invalidOptionValue`.
+    // Business-level validation (only knowable after parsing) raises `CommandInputError`;
+    // see `src/commands/errors.ts`.
     it.effect('reports malformed trigger params as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
@@ -196,7 +194,7 @@ describe('CLI: composio listen', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
+          expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
         }
       })
     );
@@ -211,7 +209,7 @@ describe('CLI: composio listen', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
+          expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
         }
       })
     );

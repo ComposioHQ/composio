@@ -1,5 +1,6 @@
+import { commandInputError } from 'src/commands/errors';
 import { Command } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -9,9 +10,7 @@ import {
   resolveCommandProject,
 } from 'src/services/command-project';
 
-class DebugCommandError extends Data.TaggedError('commands/DebugCommandError')<{
-  readonly message: string;
-}> {}
+const debugError = commandInputError('debug');
 
 const printCommandHintGraph = Effect.suspend(() =>
   Effect.flatMap(TerminalUI, ui =>
@@ -26,14 +25,12 @@ const printDebugApiInfo = Effect.gen(function* () {
     { defaultValue: false }
   );
   if (!confirmed) {
-    return yield* new DebugCommandError({ message: 'Aborted printing API credentials.' });
+    return yield* debugError('Aborted printing API credentials.');
   }
   const ctx = yield* ComposioUserContext;
   const apiKey = Option.getOrUndefined(ctx.data.apiKey);
   if (!apiKey) {
-    return yield* new DebugCommandError({
-      message: 'No user API key found in the current CLI session.',
-    });
+    return yield* debugError('No user API key found in the current CLI session.');
   }
   const orgId = Option.getOrUndefined(ctx.data.orgId);
   const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(

@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Command, Flag } from 'effect/cli';
 import { Array, Data, Effect, Option, pipe, String } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
@@ -23,18 +24,7 @@ export class PythonGenerationWriteError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-/**
- * Business-level validation failure for `generate py` inputs (output
- * directory location, toolkit filter values) that are only knowable after
- * parsing. See the analogous comment on `LinkInputError` in
- * `connected-accounts.link.cmd.ts` for why this is a plain typed domain
- * error rather than a `CliError.InvalidValue` in v4.
- */
-class GenerateInputError extends Data.TaggedError('commands/GenerateInputError')<{
-  readonly message: string;
-}> {}
-
-const invalidGenerateValue = (message: string) => new GenerateInputError({ message });
+const invalidGenerateValue = commandInputError('generate py');
 
 export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
@@ -85,7 +75,8 @@ export function generatePythonTypeStubs({
           if (normalizedPath.includes('node_modules')) {
             return Effect.fail(
               invalidGenerateValue(
-                'Output directory cannot be inside node_modules. Please specify a different directory.'
+                'Output directory cannot be inside node_modules. Please specify a different directory.',
+                '--output-dir'
               )
             );
           }
@@ -123,7 +114,8 @@ export function generatePythonTypeStubs({
                   Effect.fail(
                     invalidGenerateValue(
                       `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
-                        `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
+                        `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`,
+                      '--toolkits'
                     )
                   )
                 )
