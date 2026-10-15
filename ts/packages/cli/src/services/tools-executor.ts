@@ -1,7 +1,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Context, Effect, Layer } from 'effect';
-import type { ComposioClientShape } from '@composio/client/effect';
+import { isComposioError, type ComposioClientShape } from '@composio/client/effect';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
@@ -203,26 +203,28 @@ export const ToolsExecutorLive = Layer.effect(
                     return Effect.succeed(params.arguments);
                   }
 
-                  return Effect.tryPromise({
-                    try: () =>
-                      uploadToolInputFiles({
-                        fs,
-                        path,
-                        toolSlug: slug,
-                        toolkitSlug,
-                        arguments_: params.arguments,
-                        inputSchema: definition.schema,
-                        client: resolvedClient,
-                      }),
-                    catch: cause =>
-                      cause instanceof ToolFileUploadError
-                        ? cause
-                        : new ToolFileUploadError({
-                            cause,
-                            message: cause instanceof Error ? cause.message : String(cause),
-                            reason: 'source-read',
-                          }),
-                  });
+                  // A presigned-URL request the API refused is reported as
+                  // an upload failure of the source, with the client's error
+                  // as its cause.
+                  return uploadToolInputFiles({
+                    fs,
+                    path,
+                    toolSlug: slug,
+                    toolkitSlug,
+                    arguments_: params.arguments,
+                    inputSchema: definition.schema,
+                    client: resolvedClient,
+                  }).pipe(
+                    Effect.catchIf(
+                      isComposioError,
+                      cause =>
+                        new ToolFileUploadError({
+                          cause,
+                          message: cause.message,
+                          reason: 'source-read',
+                        })
+                    )
+                  );
                 })
               );
 

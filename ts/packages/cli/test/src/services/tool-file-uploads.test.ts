@@ -6,14 +6,20 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, Layer } from 'effect';
-import { BadRequestError } from '@composio/client/effect';
+import { Effect, Fiber, Layer } from 'effect';
+import { HttpClient } from 'effect/http';
+import { BadRequestError, make } from '@composio/client/effect';
 import {
   ComposioBlockedInternalUrlError,
   ComposioSensitiveFilePathBlockedError,
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
-import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
+import {
+  schemaHasFileUploadable,
+  ToolFileUploadError,
+  uploadToolInputFiles,
+} from 'src/services/tool-file-uploads';
 import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
@@ -55,19 +61,20 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       const pathApi = yield* Path.Path;
       const { client, requests } = makeClient();
 
-      yield* Effect.promise(() =>
-        expect(
-          uploadToolInputFiles({
-            fs: fsApi,
-            path: pathApi,
-            toolSlug: 'GMAIL_SEND_EMAIL',
-            arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-            inputSchema,
-            client,
-          })
-        ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
+      const failure = yield* Effect.flip(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+          inputSchema,
+          client,
+        })
       );
 
+      expect(failure).toBeInstanceOf(ToolFileUploadError);
+      expect(failure).toMatchObject({ reason: 'source-read' });
+      expect(failure.cause).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
       // The guard must fire BEFORE any network round-trip: no presigned URL, no upload.
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
@@ -83,31 +90,19 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
 
         // The CLI has no `sensitiveFileUploadProtection` opt-out (by design), so the
         // error must not point users at that non-existent knob (issue #3763 review #2/#3).
-        yield* Effect.promise(() =>
-          expect(
-            uploadToolInputFiles({
-              fs: fsApi,
-              path: pathApi,
-              toolSlug: 'GMAIL_SEND_EMAIL',
-              arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-              inputSchema,
-              client,
-            })
-          ).rejects.toThrowError(/has no opt-out/i)
+        const failure = yield* Effect.flip(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+            inputSchema,
+            client,
+          })
         );
 
-        yield* Effect.promise(() =>
-          expect(
-            uploadToolInputFiles({
-              fs: fsApi,
-              path: pathApi,
-              toolSlug: 'GMAIL_SEND_EMAIL',
-              arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-              inputSchema,
-              client,
-            })
-          ).rejects.not.toThrowError(/sensitiveFileUploadProtection/)
-        );
+        expect(failure.message).toMatch(/has no opt-out/i);
+        expect(failure.message).not.toMatch(/sensitiveFileUploadProtection/);
       }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
@@ -117,18 +112,18 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       const pathApi = yield* Path.Path;
       const { client, requests } = makeClient();
 
-      yield* Effect.promise(() =>
-        expect(
-          uploadToolInputFiles({
-            fs: fsApi,
-            path: pathApi,
-            toolSlug: 'GMAIL_SEND_EMAIL',
-            arguments_: { attachment: path.join(os.tmpdir(), '.env') },
-            inputSchema,
-            client,
-          })
-        ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
+      const failure = yield* Effect.flip(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: path.join(os.tmpdir(), '.env') },
+          inputSchema,
+          client,
+        })
       );
+
+      expect(failure.cause).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
@@ -145,16 +140,14 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     return Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
-      const result = yield* Effect.promise(() =>
-        uploadToolInputFiles({
-          fs: fsApi,
-          path: pathApi,
-          toolSlug: 'GMAIL_SEND_EMAIL',
-          arguments_: { attachment: file },
-          inputSchema,
-          client,
-        })
-      );
+      const result = yield* uploadToolInputFiles({
+        fs: fsApi,
+        path: pathApi,
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        arguments_: { attachment: file },
+        inputSchema,
+        client,
+      });
 
       expect(requests).toEqual([
         {
@@ -188,7 +181,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
     vi.restoreAllMocks();
   });
 
-  it.effect('rejects with the API failure, worded as before, when the request is refused', () => {
+  it.effect('fails with the API failure, worded as before, when the request is refused', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
     const file = path.join(root, 'document.pdf');
     writeFileSync(file, 'hello');
@@ -202,7 +195,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
 
-      const failure = yield* Effect.promise(() =>
+      const failure = yield* Effect.flip(
         uploadToolInputFiles({
           fs: fsApi,
           path: pathApi,
@@ -210,10 +203,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
           arguments_: { attachment: file },
           inputSchema,
           client,
-        }).then(
-          () => undefined,
-          (cause: unknown) => cause
-        )
+        })
       );
 
       expect(failure).toBeInstanceOf(BadRequestError);
@@ -224,6 +214,60 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
       });
       expect(requests).toHaveLength(1);
       expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+
+  it.effect('interrupting the caller interrupts the request', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'document.pdf');
+    writeFileSync(file, 'hello');
+    // A transport that never answers, reporting when the request reaches it
+    // and when it is interrupted.
+    const reached = Promise.withResolvers<void>();
+    let interrupted = false;
+    const client = make(
+      {
+        apiKey: 'test',
+        userApiKey: null,
+        orgApiKey: null,
+        baseURL: 'https://stub.invalid',
+        deprecationNotices: 'off',
+        decode: true,
+        schemas: composioSchemaLoaders,
+      },
+      HttpClient.make(() =>
+        Effect.sync(() => reached.resolve()).pipe(
+          Effect.andThen(Effect.never),
+          Effect.onInterrupt(() =>
+            Effect.sync(() => {
+              interrupted = true;
+            })
+          )
+        )
+      )
+    );
+
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+
+      const fiber = yield* Effect.forkChild(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: file },
+          inputSchema,
+          client,
+        })
+      );
+      yield* Effect.promise(() => reached.promise);
+      yield* Fiber.interrupt(fiber);
+
+      expect(interrupted).toBe(true);
     }).pipe(
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
@@ -244,19 +288,18 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
       const { client, requests } = makeClient();
       const sourceUrl = 'http://169.254.169.254/latest/meta-data/credentials';
 
-      yield* Effect.promise(() =>
-        expect(
-          uploadToolInputFiles({
-            fs: fsApi,
-            path: pathApi,
-            toolSlug: 'GMAIL_SEND_EMAIL',
-            arguments_: { attachment: sourceUrl },
-            inputSchema,
-            client,
-          })
-        ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
+      const failure = yield* Effect.flip(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: sourceUrl },
+          inputSchema,
+          client,
+        })
       );
 
+      expect(failure.cause).toBeInstanceOf(ComposioBlockedInternalUrlError);
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
@@ -275,19 +318,18 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
 
-      yield* Effect.promise(() =>
-        expect(
-          uploadToolInputFiles({
-            fs: fsApi,
-            path: pathApi,
-            toolSlug: 'GMAIL_SEND_EMAIL',
-            arguments_: { attachment: file },
-            inputSchema,
-            client,
-          })
-        ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
+      const failure = yield* Effect.flip(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: file },
+          inputSchema,
+          client,
+        })
       );
 
+      expect(failure.cause).toBeInstanceOf(ComposioBlockedInternalUrlError);
       expect(requests).toHaveLength(1);
       expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(
@@ -321,19 +363,18 @@ describe('uploadToolInputFiles — URL download size cap', () => {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
 
-      yield* Effect.promise(() =>
-        expect(
-          uploadToolInputFiles({
-            fs: fsApi,
-            path: pathApi,
-            toolSlug: 'GMAIL_SEND_EMAIL',
-            arguments_: { attachment: 'https://1.1.1.1/large.bin' },
-            inputSchema,
-            client,
-          })
-        ).rejects.toThrow(/exceeds maximum allowed size/)
+      const failure = yield* Effect.flip(
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: 'https://1.1.1.1/large.bin' },
+          inputSchema,
+          client,
+        })
       );
 
+      expect(failure.message).toMatch(/exceeds maximum allowed size/);
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
