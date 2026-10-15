@@ -75,6 +75,35 @@ describe('CLI: composio dev logs tools over the API client', () => {
     );
   });
 
+  layer(testLayer)('[Given] a comma-separated --user-id filter', it => {
+    it.effect.each([
+      {
+        name: 'after the subcommand',
+        args: ['dev', 'logs', 'tools', '--user-id', 'user_1,user_2'],
+      },
+      {
+        name: 'before the subcommand',
+        args: ['dev', '--user-id', 'user_1,user_2', 'logs', 'tools'],
+      },
+    ])('[Then] each user id is sent as a search param when passed $name', ({ args }) =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        yield* cli(args).pipe(Effect.provide(stub.layer));
+
+        expect(stub.requests).toMatchObject([
+          {
+            body: {
+              search_params: [
+                { field: 'user_id', operation: '==', value: 'user_1' },
+                { field: 'user_id', operation: '==', value: 'user_2' },
+              ],
+            },
+          },
+        ]);
+      })
+    );
+  });
+
   layer(testLayer)('[Given] the API rejects the request', it => {
     it.effect('[Then] the command fails with the status and response body as the cause', () =>
       Effect.gen(function* () {
