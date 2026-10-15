@@ -157,14 +157,14 @@ const session = await composio.create('user_123', {
 });
 ```
 
-Available tags (every tool carries at least one of the first four):
+Every tool has a tag for the type of action it takes:
 
-- `readOnlyHint` - Tools that only read data
-- `createHint` - Tools that create a new resource
-- `updateHint` - Tools that modify an existing resource in place
-- `destructiveHint` - Tools that irreversibly remove, cancel or revoke data
-- `idempotentHint` - Tools that can be safely retried (MCP hint, partial coverage)
-- `openWorldHint` - Tools that operate in an open world context (MCP hint, partial coverage)
+- `readOnlyHint` - reads, searches, lists or computes something, and changes nothing
+- `createHint` - adds something new
+- `updateHint` - changes something that already exists
+- `destructiveHint` - can make something stop existing
+
+See [Tool tags](https://docs.composio.dev/docs/tool-tags) for how tools get their tags.
 
 ### `authConfigs`
 
@@ -934,9 +934,9 @@ interface ToolRouterCreateSessionConfig {
     | string[]
     | { enable: string[] }
     | { disable: string[] }
-    | { tags: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint' | 'idempotentHint' | 'openWorldHint')[] }
+    | { tags: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint')[] }
   >;
-  tags?: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint' | 'idempotentHint' | 'openWorldHint')[];
+  tags?: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint')[];
   authConfigs?: Record<string, string>;
   connectedAccounts?: Record<string, string>;
   manageConnections?:
