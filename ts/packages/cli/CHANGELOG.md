@@ -9,6 +9,29 @@
 - API requests now carry the CLI's product, version and runtime headers through
   the API client's `identity` option instead of default headers. The headers
   sent are unchanged.
+- `--user-id` and `--project-name` are now flags of the `composio dev` group,
+  accepted before or after the subcommand name (`composio dev --user-id alice
+toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
+  both work) and documented once, with one description each, on every `dev`
+  page. `dev playground-execute` (including `--parallel`),
+  `dev connected-accounts link`, `dev connected-accounts list`,
+  `dev toolkits info`, `dev toolkits list`, `dev listen` and
+  `dev triggers listen` read them from the group instead of declaring their
+  own; `dev logs tools` and `dev logs triggers` read the group's `--user-id` as
+  their comma-separated filter. The other `dev` commands still fail with exit 1
+  on a flag they cannot honor, now with a usage error naming it instead of an
+  unrecognized-flag error: `--project-name` on all of them, `--user-id` on all
+  but `dev logs`. `composio dev --mode` rejects both.
+  Without `--user-id`, a `dev` command given `--project-name` for another
+  project falls back to the global test user instead of the directory's
+  `test_user_id`, which belongs to the directory's project:
+  `dev playground-execute`, `dev connected-accounts link`,
+  `dev toolkits info` and `dev toolkits list`. With neither test user set,
+  the missing-user error now points at `--user-id` or `composio login`.
+- `composio link --help` now lists `--auth-config`. The root command still
+  rejects it, now with the message ``Top-level `composio link` is
+consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
+  check, where it used to fail as an unrecognized flag.
 
 ## 0.4.4
 

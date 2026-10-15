@@ -1,4 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
+import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
@@ -90,16 +91,6 @@ const accountOption = Flag.String('account').pipe(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
   Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer-project user ID override')
-);
-
-const projectName = Flag.String('project-name').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer project name override for this command')
 );
 
 const getSchema = Flag.Boolean('get-schema').pipe(
@@ -852,10 +843,11 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
+    // The root tree has no --project-name.
+    const projectName = Option.filter(params.projectName, () => params.surface !== 'root');
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
-      projectName:
-        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+      projectName: Option.getOrUndefined(projectName),
     });
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
@@ -864,7 +856,10 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catch(() => Effect.succeed(Option.none()))
     );
-    const localTestUserId = Option.flatMap(localProjectContext, keys => keys.testUserId);
+    const localTestUserId = directoryTestUserId(
+      localProjectContext,
+      Option.as(projectName, resolvedProject.projectId)
+    );
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
         ? Option.fromNullishOr(resolvedProject.consumerUserId)
@@ -877,10 +872,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       return yield* new ToolExecutionError({
         reason: 'missing_user_id',
         toolSlug: params.slug,
-        message:
+        message: missingUserIdMessage(
+          projectName,
           params.projectMode === 'developer'
             ? 'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
+        ),
       });
     }
 
@@ -1873,6 +1870,21 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
   });
 
+// Flags that can precede the command name and take the next token as their value
+// (`$default.cmd.ts`, `dev.cmd.ts`), so a value equal to the command name is not the command.
+const VALUE_FLAGS_BEFORE_COMMAND = new Set([
+  '--log-level',
+  '--mode',
+  '--user-id',
+  '--project-name',
+]);
+
+/** The index of the command name in argv, skipping a flag value that spells the same word. */
+const commandNameIndex = (argv: ReadonlyArray<string>, name: string) =>
+  argv.findIndex(
+    (token, index) => token === name && !VALUE_FLAGS_BEFORE_COMMAND.has(argv[index - 1] ?? '')
+  );
+
 const runParallelFromCommand = (config: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
@@ -1885,13 +1897,21 @@ const runParallelFromCommand = (config: {
   Effect.gen(function* () {
     const argv = yield* ExecuteInvocationArgs;
     const name = config.surface === 'root' ? 'execute' : 'playground-execute';
-    const tail = argv.slice(argv.indexOf(name) + 1);
+    const tail = argv.slice(commandNameIndex(argv, name) + 1);
     const parsed = yield* parseParallelExecuteArgs(tail, {
       ...config,
       allowUserId: config.surface === 'dev',
       allowProjectName: config.surface === 'dev',
     });
-    return yield* runParallelToolsExecuteFromParsed({ ...parsed, ...config });
+    // The tail starts after the command name, so the `dev` group's shared flags given before
+    // it reach the command only through the surface.
+    const surface = yield* CommandSurface;
+    return yield* runParallelToolsExecuteFromParsed({
+      ...parsed,
+      ...config,
+      userId: Option.orElse(parsed.userId, () => surface.userId),
+      projectName: Option.orElse(parsed.projectName, () => surface.projectName),
+    });
   });
 
 const executeExamples = [
@@ -2004,8 +2024,6 @@ export const devToolsCmd$Execute = Command.make(
     data,
     file,
     account: accountOption,
-    userId,
-    projectName,
     getSchema,
     dryRun,
     skipConnectionCheck,
@@ -2019,8 +2037,6 @@ export const devToolsCmd$Execute = Command.make(
     data,
     file,
     account,
-    userId,
-    projectName,
     getSchema,
     dryRun,
     skipConnectionCheck,
@@ -2028,6 +2044,7 @@ export const devToolsCmd$Execute = Command.make(
     skipChecks,
   }) =>
     Effect.gen(function* () {
+      const { userId, projectName } = yield* CommandSurface;
       if (parallel) {
         return yield* runParallelFromCommand({
           surface: 'dev',

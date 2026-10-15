@@ -1,12 +1,16 @@
-import { requireLogin } from 'src/effects/require-auth';
-import { commandInputError } from 'src/commands/errors';
-import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Option, Schedule } from 'effect';
+import { Effect, Option, Schedule } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
+import { commandInputError } from 'src/commands/errors';
+import {
+  CommandSurface,
+  directoryTestUserId,
+  missingUserIdMessage,
+  type CommandTree,
+} from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { failedWith, requestError } from 'src/effects/request-error';
+import { failedWith } from 'src/effects/request-error';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
@@ -26,79 +30,24 @@ import {
 } from 'src/services/connected-account-selection';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import { idempotent } from 'src/services/composio-request';
+import {
+  BrowserOpenError,
+  ConnectedAccountsDecodeError,
+  ConnectedAccountsRequestError,
+  ConnectionPollingError,
+  MissingLinkUserIdError,
+} from './connected-accounts.link.errors';
 
-class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
-  readonly message: string;
-  readonly connectedAccountId: string;
-  readonly status: string;
-}> {}
-
-class MissingLinkUserIdError extends Data.TaggedError('commands/MissingLinkUserIdError')<{
-  readonly message: string;
-  readonly flow: 'list' | 'legacy' | 'tool-router';
-}> {}
-
-class ConnectedAccountsDecodeError extends Data.TaggedError(
-  'commands/ConnectedAccountsDecodeError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
-
-class ConnectedAccountsRequestError extends requestError(
-  'commands/ConnectedAccountsRequestError'
-) {}
-
-class BrowserOpenError extends Data.TaggedError('commands/BrowserOpenError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export type ConnectedAccountsLinkParams = {
+  readonly toolkit: Option.Option<string>;
+  readonly authConfig: Option.Option<string>;
+  readonly noWait: boolean;
+  readonly noBrowser: boolean;
+  readonly alias: Option.Option<string>;
+  readonly list: boolean;
+};
 
 const invalidOptionValue = commandInputError('link');
-
-const toolkit = Argument.String('toolkit').pipe(
-  Argument.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
-  Argument.optional
-);
-
-const authConfig = Flag.String('auth-config').pipe(
-  Flag.withDescription('Auth config ID (e.g. "ac_..."). Uses legacy flow (no Tool Router).'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Developer-project user ID override'),
-  Flag.optional
-);
-
-const projectName = Flag.String('project-name').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer project name override for this command')
-);
-
-const noWait = Flag.Boolean('no-wait').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Do not wait for authorization; only print link info')
-);
-
-const noBrowser = Flag.Boolean('no-browser').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Do not open the browser automatically; print the URL to open manually')
-);
-
-const alias = Flag.String('alias').pipe(
-  Flag.withDescription(
-    'Alias to assign to the connected account. Required when creating an additional account for the same toolkit/auth config.'
-  ),
-  Flag.optional
-);
-
-const list = Flag.Boolean('list').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription(
-    'List existing connected accounts for the toolkit instead of creating a new link'
-  )
-);
 
 const showRedirectUrl = (
   ui: TerminalUI,
@@ -420,9 +369,11 @@ const resolveLinkUserId = (params: {
     readonly consumerUserId?: string;
   };
   readonly requestedUserId: Option.Option<string>;
+  /** The project `--project-name` resolved to, or none without the flag. */
+  readonly namedProjectId: Option.Option<string>;
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -437,7 +388,7 @@ const resolveLinkUserId = (params: {
       Effect.option,
       Effect.map(Option.flatten)
     );
-    const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+    const localTestUserId = directoryTestUserId(resolvedProjectContext, params.namedProjectId);
 
     const resolvedUserId =
       params.resolvedProject.projectType === 'CONSUMER'
@@ -457,7 +408,7 @@ const resolveLinkUserId = (params: {
 const handleListConnectedAccounts = (params: {
   readonly toolkit: Option.Option<string>;
   readonly authConfig: Option.Option<string>;
-  readonly rootOnly: boolean;
+  readonly tree: CommandTree;
   readonly projectName: Option.Option<string>;
   readonly userId: Option.Option<string>;
   readonly ui: TerminalUI;
@@ -469,7 +420,7 @@ const handleListConnectedAccounts = (params: {
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -494,7 +445,7 @@ const handleListConnectedAccounts = (params: {
     const toolkitSlug = params.toolkit.value;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
-      projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
+      projectName: Option.getOrUndefined(params.projectName),
     });
     const client = yield* params.clientSingleton.getFor({
       orgId: resolvedProject.orgId,
@@ -503,13 +454,17 @@ const handleListConnectedAccounts = (params: {
     const { resolvedUserId } = yield* resolveLinkUserId({
       resolvedProject,
       requestedUserId: params.userId,
+      namedProjectId: Option.as(params.projectName, resolvedProject.projectId),
       projectContext: params.projectContext,
       userContext: params.userContext,
     });
 
     if (Option.isNone(resolvedUserId)) {
       return yield* new MissingLinkUserIdError({
-        message: 'Missing user id. Provide --user-id or run composio dev init/login first.',
+        message: missingUserIdMessage(
+          params.projectName,
+          'Missing user id. Provide --user-id or run composio dev init/login first.'
+        ),
         flow: 'list',
       });
     }
@@ -598,7 +553,7 @@ const handleLegacyAuthConfigLink = (params: {
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
-      Option.Option<{ readonly testUserId: Option.Option<string> }>,
+      Option.Option<{ readonly projectId: string; readonly testUserId: Option.Option<string> }>,
       unknown
     >;
   };
@@ -613,7 +568,16 @@ const handleLegacyAuthConfigLink = (params: {
       Effect.option,
       Effect.map(Option.flatten)
     );
-    const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+    // A named project is looked up first: its id decides whether the directory's test user applies.
+    const namedResolvedProject = yield* Effect.transposeOption(
+      Option.map(params.projectName, projectName =>
+        resolveCommandProject({ mode: 'developer', projectName })
+      )
+    );
+    const localTestUserId = directoryTestUserId(
+      resolvedProjectContext,
+      Option.map(namedResolvedProject, project => project.projectId)
+    );
     const globalTestUserId = params.userContext.data.testUserId;
     const resolvedUserId = Option.match(params.requestedUserId, {
       onSome: value => Option.some(value),
@@ -622,7 +586,10 @@ const handleLegacyAuthConfigLink = (params: {
 
     if (Option.isNone(resolvedUserId)) {
       return yield* new MissingLinkUserIdError({
-        message: 'Missing user id. Provide --user-id or run composio dev init to set test_user_id.',
+        message: missingUserIdMessage(
+          params.projectName,
+          'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
+        ),
         flow: 'legacy',
       });
     }
@@ -638,9 +605,9 @@ const handleLegacyAuthConfigLink = (params: {
       yield* params.ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
     }
 
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'developer',
-      projectName: Option.getOrUndefined(params.projectName),
+    const resolvedProject = yield* Option.match(namedResolvedProject, {
+      onSome: Effect.succeed,
+      onNone: () => resolveCommandProject({ mode: 'developer' }),
     });
     const client = yield* params.clientSingleton.getFor({
       orgId: resolvedProject.orgId,
@@ -733,17 +700,7 @@ const handleLegacyAuthConfigLink = (params: {
     );
   });
 
-const runConnectedAccountsLink = (params: {
-  toolkit: Option.Option<string>;
-  authConfig: Option.Option<string>;
-  userId: Option.Option<string>;
-  projectName: Option.Option<string>;
-  noWait: boolean;
-  noBrowser: boolean;
-  alias: Option.Option<string>;
-  list: boolean;
-  rootOnly: boolean;
-}) =>
+export const runConnectedAccountsLink = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const normalizedAliasOption = yield* resolveNormalizedAliasOption(params.alias);
 
@@ -751,8 +708,9 @@ const runConnectedAccountsLink = (params: {
     const clientSingleton = yield* ComposioClientSingleton;
     const projectContext = yield* ProjectContext;
     const userContext = yield* ComposioUserContext;
+    const { tree, userId, projectName } = yield* CommandSurface;
 
-    if (params.rootOnly) {
+    if (tree === 'root') {
       if (Option.isSome(params.authConfig)) {
         return yield* Effect.fail(
           invalidOptionValue(
@@ -774,7 +732,7 @@ const runConnectedAccountsLink = (params: {
 
     if (Option.isNone(params.toolkit) && Option.isNone(params.authConfig)) {
       yield* ui.log.error(
-        params.rootOnly
+        tree === 'root'
           ? 'Missing argument. Provide a toolkit slug:\n  composio link github'
           : 'Missing argument. Provide a toolkit slug or --auth-config:\n' +
               '  composio dev connected-accounts link github\n' +
@@ -787,9 +745,9 @@ const runConnectedAccountsLink = (params: {
       yield* handleListConnectedAccounts({
         toolkit: params.toolkit,
         authConfig: params.authConfig,
-        rootOnly: params.rootOnly,
-        projectName: params.projectName,
-        userId: params.userId,
+        tree,
+        projectName: projectName,
+        userId: userId,
         ui,
         clientSingleton,
         projectContext,
@@ -801,8 +759,8 @@ const runConnectedAccountsLink = (params: {
     if (Option.isSome(params.authConfig)) {
       yield* handleLegacyAuthConfigLink({
         authConfigId: params.authConfig.value,
-        requestedUserId: params.userId,
-        projectName: params.projectName,
+        requestedUserId: userId,
+        projectName: projectName,
         noWait: params.noWait,
         noBrowser: params.noBrowser,
         alias: params.alias,
@@ -818,12 +776,12 @@ const runConnectedAccountsLink = (params: {
     const toolkitSlug = params.toolkit.value;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
-      projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
+      projectName: Option.getOrUndefined(projectName),
     });
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
         ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.match(params.userId, {
+        : Option.match(userId, {
             onSome: value => Option.some(value),
             onNone: () => userContext.data.testUserId,
           });
@@ -967,72 +925,3 @@ const runConnectedAccountsLink = (params: {
       }).pipe(Effect.ignore);
     }
   });
-
-const linkExamples = [
-  {
-    command: 'composio link github',
-  },
-  {
-    command: 'composio link gmail --alias work',
-  },
-  {
-    command: 'composio link github --list',
-  },
-];
-
-export const connectedAccountsCmd$Link = Command.make(
-  'link',
-  { toolkit, authConfig, userId, projectName, noWait, noBrowser, alias, list },
-  ({ toolkit, authConfig, userId, projectName, noWait, noBrowser, alias, list }) =>
-    runConnectedAccountsLink({
-      toolkit,
-      authConfig,
-      userId,
-      projectName,
-      noWait,
-      noBrowser,
-      alias,
-      list,
-      rootOnly: false,
-    })
-).pipe(
-  Command.withDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
-  ),
-  Command.withShortDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
-  ),
-  Command.withExamples(
-    linkExamples.map(example => ({
-      ...example,
-      command: example.command.replace('composio link', 'composio dev connected-accounts link'),
-    }))
-  ),
-  requireLogin
-);
-
-export const rootConnectedAccountsCmd$Link = Command.make(
-  'link',
-  { toolkit, noWait, noBrowser, alias, list },
-  ({ toolkit, noWait, noBrowser, alias, list }) =>
-    runConnectedAccountsLink({
-      toolkit,
-      authConfig: Option.none(),
-      userId: Option.none(),
-      projectName: Option.none(),
-      noWait,
-      noBrowser,
-      alias,
-      list,
-      rootOnly: true,
-    })
-).pipe(
-  Command.withDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
-  ),
-  Command.withShortDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
-  ),
-  Command.withExamples(linkExamples),
-  requireLogin
-);

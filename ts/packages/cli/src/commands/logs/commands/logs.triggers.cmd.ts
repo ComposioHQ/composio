@@ -2,6 +2,7 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { CommandSurface } from 'src/commands/surface';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
@@ -19,6 +20,9 @@ const cursor = Flag.String('cursor').pipe(
   Flag.optional
 );
 
+// Declared for its help row, which documents the comma-separated filter in place of the `dev`
+// group's shared row. The parser hands every `--user-id` under `dev` to the shared flag, so
+// the value is read from `CommandSurface`.
 const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user id'),
   Flag.optional
@@ -124,6 +128,7 @@ export const logsCmd$Triggers = Command.make(
     includePayload,
   }) =>
     Effect.gen(function* () {
+      const userIdFilter = Option.orElse((yield* CommandSurface).userId, () => userId);
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
@@ -135,8 +140,8 @@ export const logsCmd$Triggers = Command.make(
         ...(Option.isSome(triggerId)
           ? parseCsv(triggerId.value).map(value => toSearchParam('trigger_id', value))
           : []),
-        ...(Option.isSome(userId)
-          ? parseCsv(userId.value).map(value => toSearchParam('user_id', value))
+        ...(Option.isSome(userIdFilter)
+          ? parseCsv(userIdFilter.value).map(value => toSearchParam('user_id', value))
           : []),
         ...(Option.isSome(connectedAccountId)
           ? parseCsv(connectedAccountId.value).map(value =>

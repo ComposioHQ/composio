@@ -18,7 +18,9 @@ import {
   type InvalidVersionDetail,
 } from 'src/services/toolkit-version-validation';
 import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
+import type { ConnectedAccountRepositoryMethod } from './connected-accounts';
 import { notFoundError } from './not-found';
+import { DEFAULT_PAGE_LIMIT } from './page';
 
 /**
  * The toolkit, tool, and trigger-type catalogs a test repository serves.
@@ -68,14 +70,11 @@ export const resolveToolkitsTestData = (data?: ToolkitsTestData) => {
 export type ResolvedToolkitsTestData = ReturnType<typeof resolveToolkitsTestData>;
 
 /**
- * The repository methods other families serve: auth configs, connected accounts, and trigger
- * instances.
+ * The repository methods other families serve: auth configs and connected accounts
+ * (`connected-accounts.ts`), and trigger instances.
  */
 type NonCatalogMethod =
-  | 'listAuthConfigs'
-  | 'getAuthConfig'
-  | 'createAuthConfig'
-  | 'getConnectedAccount'
+  | ConnectedAccountRepositoryMethod
   | 'listActiveTriggers'
   | 'createTrigger'
   | 'enableTrigger'
@@ -262,7 +261,7 @@ export const toolkitCatalogMethods = (
       );
     }
 
-    const limit = params.limit ?? 30;
+    const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
     const items = results.slice(0, limit);
     return Effect.succeed({
       items,
@@ -302,7 +301,7 @@ export const toolkitCatalogMethods = (
       );
     }
 
-    const limit = params.limit ?? 30;
+    const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
     const items = results.slice(0, limit).map(toClientTool);
     return Effect.succeed({
       items,
