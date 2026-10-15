@@ -1,5 +1,16 @@
 # langchain-example
 
+## 0.1.18
+
+### Patch Changes
+
+- Updated dependencies [79c2d1d]
+- Updated dependencies [f9a972b]
+- Updated dependencies [40546c3]
+- Updated dependencies [04cd5c4]
+  - @composio/core@0.25.0
+  - @composio/langchain@0.11.2
+
 ## 0.1.17
 
 ### Patch Changes
