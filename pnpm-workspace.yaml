@@ -32,7 +32,7 @@ catalog:
   '@clack/core': '^1.5.1'
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261009.1
+  '@cloudflare/workers-types': ^5.20261012.1
   '@composio/client': 2.0.0-rc.14
   '@effect/language-service': ^0.87.4
   '@effect/platform-bun': 4.0.3
@@ -43,18 +43,18 @@ catalog:
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.32.1
-  '@types/bun': ^1.4.2
+  '@types/bun': ^1.4.3
   ai: ^7.0.137
   dotenv: ^18.0.6
   effect: 4.0.3
   hono: ^4.13.13
-  openai: ^7.31.0
+  openai: ^7.32.0
   picocolors: ^1.1.1
   publint: ^0.3.25
-  tsdown: ^0.23.0
+  tsdown: ^0.23.1
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.3
+  '@vitest/ui': ^5.0.4
   vitest: ^5.0.3
   wrangler: ^4.149.0
   zod: ^4.5.4
