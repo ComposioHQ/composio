@@ -1831,17 +1831,19 @@ describe('CLI: composio execute', () => {
   )('[Given] a parallel multi-execute batch fails with a charge [Then] the charge is kept', it => {
     it.effect('reports instantCharge on the failed parallel result', () =>
       Effect.gen(function* () {
-        yield* cli([
+        const error = yield* cli([
           'execute',
           '--parallel',
           '--skip-checks',
           'COMPOSIO_MULTI_EXECUTE_TOOL',
           '-d',
           '{"tools":[]}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
+        expect(Predicate.isTagged(error, 'ReportedToolExecutionError')).toBe(true);
+        expect(error).toMatchObject({ reason: 'parallel_failed' });
         const results =
           Predicate.hasProperty(output, 'results') && Array.isArray(output.results)
             ? output.results
