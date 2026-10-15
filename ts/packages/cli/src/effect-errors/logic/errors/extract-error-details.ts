@@ -1,6 +1,6 @@
 import { hasProperty, isFunction } from 'effect/Predicate';
 import {
-  extractMessage,
+  describeDecodeError,
   isClientApiError,
   isClientConnectionError,
   isClientDecodeError,
@@ -14,13 +14,18 @@ interface ErrorDetails {
 }
 
 // A client error has no cause chain: its own message is the status line and
-// response body. A connection error (the transport's text) and a response that
-// failed decoding (operation, request id, remedy) read as `extractMessage`
-// reports them.
-const clientApiErrorDetail = (error: ClientApiError): string =>
-  isClientDecodeError(error) || isClientConnectionError(error)
-    ? (extractMessage(error) ?? error.message)
-    : error.message;
+// response body, and a connection error's description is the transport's text.
+// A response that failed decoding is reported by operation and request id.
+const clientApiErrorDetail = (error: ClientApiError): string => {
+  if (isClientDecodeError(error)) {
+    const { message, hint } = describeDecodeError(error);
+    return `${message}\n${hint}`;
+  }
+  if (isClientConnectionError(error)) {
+    return error.description ?? error.message;
+  }
+  return error.message;
+};
 
 // Wrappers like UpgradeBinaryError carry the actionable specifics (a
 // ParseError path, an HTTP body) in `cause`; surface the deepest message so
