@@ -5,6 +5,7 @@ import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
+import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -83,10 +84,7 @@ export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandEr
   readonly endpoint?: string;
 }> {}
 
-class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();

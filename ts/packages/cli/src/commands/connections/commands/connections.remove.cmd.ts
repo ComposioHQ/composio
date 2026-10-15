@@ -1,6 +1,7 @@
 import { Data, Effect } from 'effect';
 import { Argument, Command } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -14,12 +15,9 @@ class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-class ConnectionsRemovalRequestError extends Data.TaggedError(
+class ConnectionsRemovalRequestError extends requestError(
   'commands/ConnectionsRemovalRequestError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+) {}
 
 const account = Argument.String('account').pipe(
   Argument.withDescription(
@@ -113,15 +111,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
       'Fetching connections...',
       client.connectedAccounts
         .list({ user_ids: [consumerUserId], limit: 1000 }, { decode: false })
-        .pipe(
-          Effect.mapError(
-            cause =>
-              new ConnectionsRemovalRequestError({
-                message: 'Failed to list connections.',
-                cause,
-              })
-          )
-        )
+        .pipe(failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.'))
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const resolved = resolveAccount({ accounts: result.items, selector: account });
@@ -146,15 +136,14 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     yield* ui.withSpinner(
       `Removing ${resolved.toolkit.slug} connection...`,
-      client.connectedAccounts.delete(resolved.id, undefined, { decode: false }).pipe(
-        Effect.mapError(
-          cause =>
-            new ConnectionsRemovalRequestError({
-              message: `Failed to remove connected account "${resolved.id}".`,
-              cause,
-            })
-        )
-      ),
+      client.connectedAccounts
+        .delete(resolved.id, undefined, { decode: false })
+        .pipe(
+          failedWith(
+            ConnectionsRemovalRequestError,
+            `Failed to remove connected account "${resolved.id}".`
+          )
+        ),
       {
         successMessage: `Removed ${resolved.toolkit.slug} connection.`,
         errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,

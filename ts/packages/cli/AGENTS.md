@@ -128,7 +128,7 @@ Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for
 
 ### Models — `src/models/`
 
-Effect Schema definitions with `fromJSON` / `toJSON` helpers via `JSONTransformSchema()`: `Toolkit`, `Tool`, `TriggerType`, `UserData`, `Session`.
+Effect Schema definitions with `fromJSON` / `toJSON` helpers via `JSONTransformSchema()`: `Toolkit`, `Tool`, `TriggerType`, `UserData`. `Session` is a schema only, decoded from the API.
 
 ### Code Generation — `src/generation/`
 

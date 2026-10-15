@@ -587,62 +587,16 @@ describe('composio-clients', () => {
         };
         vi.spyOn(globalThis, 'fetch')
           .mockResolvedValueOnce(jsonResponse(authConfig))
-          .mockResolvedValueOnce(
-            jsonResponse({
-              items: [connectedAccount],
-              total_items: 1,
-              total_pages: 1,
-              current_page: 1,
-              next_cursor: null,
-            })
-          );
+          .mockResolvedValueOnce(jsonResponse(connectedAccount));
         const repository = yield* ComposioToolkitsRepository;
 
         const decodedAuthConfig = yield* repository.getAuthConfig('ac_1');
-        const accounts = yield* repository.listConnectedAccounts({});
+        const account = yield* repository.getConnectedAccount('con_1');
 
         expect(JSON.stringify(decodedAuthConfig)).not.toContain('secret');
-        expect(JSON.stringify(accounts)).not.toContain('secret');
-        expect(accounts.items.map(item => item.id)).toEqual(['con_1']);
+        expect(JSON.stringify(account)).not.toContain('secret');
+        expect(account.id).toBe('con_1');
       }).pipe(Effect.provide(withRepository))
-    );
-
-    it.effect(
-      'listConnectedAccounts returns an account whose status this build does not know',
-      () =>
-        Effect.gen(function* () {
-          vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-            jsonResponse({
-              items: [
-                {
-                  id: 'con_1',
-                  status: 'QUARANTINED',
-                  status_reason: null,
-                  is_disabled: false,
-                  user_id: 'default',
-                  toolkit: { slug: 'gmail' },
-                  auth_config: {
-                    id: 'ac_1',
-                    auth_scheme: 'OAUTH2',
-                    is_composio_managed: true,
-                    is_disabled: false,
-                  },
-                  created_at: '2026-01-01T00:00:00Z',
-                  updated_at: '2026-01-01T00:00:00Z',
-                },
-              ],
-              total_items: 1,
-              total_pages: 1,
-              current_page: 1,
-              next_cursor: null,
-            })
-          );
-          const repository = yield* ComposioToolkitsRepository;
-
-          const accounts = yield* repository.listConnectedAccounts({});
-
-          expect(accounts.items.map(item => item.status)).toEqual(['QUARANTINED']);
-        }).pipe(Effect.provide(withRepository))
     );
 
     it.effect('listActiveTriggers defaults the page counts a response leaves out', () =>

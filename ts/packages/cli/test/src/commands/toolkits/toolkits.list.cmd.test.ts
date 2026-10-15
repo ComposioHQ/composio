@@ -3,6 +3,7 @@ import { ConfigProvider, DateTime, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testToolkits: Toolkits = [
   {
@@ -157,6 +158,63 @@ describe('CLI: composio dev toolkits list', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] the API rejects the session toolkits', it => {
+    it.effect('[Then] the catalog is listed without connection status and without an error', () =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(
+          ['toolRouter'],
+          routeRequests(
+            [
+              {
+                method: 'GET',
+                path: '/api/v3.1/tool_router/session/trs_stub_session/toolkits',
+                respond: () =>
+                  Response.json(
+                    {
+                      error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 },
+                    },
+                    { status: 403 }
+                  ),
+              },
+            ],
+            () =>
+              Response.json({
+                session_id: 'trs_stub_session',
+                config: { user_id: 'global-default' },
+                mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
+                tool_router_tools: [],
+              })
+          )
+        );
+        yield* cli(['dev', 'toolkits', 'list']).pipe(Effect.provide(stub.layer));
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(lines.slice(0, 3)).toEqual([
+          'Using global test user id "global-default"',
+          'To show status for a specific user, use `--user-id`.',
+          'Fetching toolkits...',
+        ]);
+        expect(lines[3]).toContain('Listing 3 of 3 toolkits');
+        expect(lines).toHaveLength(6);
+        expect(JSON.parse(String(lines.at(-1)))).toEqual([
+          expect.objectContaining({ slug: 'gmail', latest_version: '20250909', connected: null }),
+          expect.objectContaining({ slug: 'slack', latest_version: null, connected: null }),
+          expect.objectContaining({ slug: 'github', latest_version: '20260101', connected: null }),
+        ]);
+        expect(stub.requests.map(request => request.path)).toEqual([
+          '/api/v3.1/tool_router/session',
+          '/api/v3.1/tool_router/session/trs_stub_session/toolkits?limit=30',
+        ]);
+      })
+    );
+  });
 
   layer(TestLive())('[Given] no API key', it => {
     it.effect('warns user to login', () =>

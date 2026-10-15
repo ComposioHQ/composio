@@ -21,7 +21,10 @@ const clientApiErrorDetail = (error: ClientApiError): string => {
     const { message, hint } = describeDecodeError(error);
     return `${message}\n${hint}`;
   }
-  return isClientConnectionError(error) ? (error.description ?? error.message) : error.message;
+  if (isClientConnectionError(error)) {
+    return error.description ?? error.message;
+  }
+  return error.message;
 };
 
 // Wrappers like UpgradeBinaryError carry the actionable specifics (a

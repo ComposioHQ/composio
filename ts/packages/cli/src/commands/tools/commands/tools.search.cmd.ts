@@ -2,8 +2,9 @@ import { requireLogin } from 'src/effects/require-auth';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -73,10 +74,7 @@ type SearchResponseRecord = Pick<
 
 const invalidSearchInput = commandInputError('search');
 
-class ToolsSearchRequestError extends Data.TaggedError('commands/ToolsSearchRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ToolsSearchRequestError extends requestError('commands/ToolsSearchRequestError') {}
 
 const stripSearchResultMetadata = <
   T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
@@ -368,15 +366,7 @@ const runToolsSearch = (params: {
       // among them, may change without this version of the CLI noticing.
       const searchResponse = yield* client.toolRouter.session
         .search(sessionId, searchPayload, undecoded)
-        .pipe(
-          Effect.mapError(
-            cause =>
-              new ToolsSearchRequestError({
-                message: 'Failed to search tools.',
-                cause,
-              })
-          )
-        );
+        .pipe(failedWith(ToolsSearchRequestError, 'Failed to search tools.'));
       const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
         .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
         .map(([slug]) => slug);

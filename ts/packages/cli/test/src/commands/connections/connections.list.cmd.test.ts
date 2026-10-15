@@ -1,9 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
+import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
 const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
@@ -266,6 +268,48 @@ describe('CLI: composio connections remove', () => {
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         expect(lines.join('\n')).toContain('Removed gmail connection.');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      terminalUI: terminalUIWithConfirm(true),
+    })
+  )(it => {
+    it.effect('[Given] the API rejects the removal [Then] fails naming the connected account', () =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(
+          ['connectedAccounts'],
+          routeRequests(
+            [
+              {
+                method: 'DELETE',
+                path: '/api/v3.1/connected_accounts/',
+                respond: () =>
+                  Response.json(
+                    {
+                      error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 },
+                    },
+                    { status: 403 }
+                  ),
+              },
+            ],
+            () => Response.json({ items: testConnections, next_cursor: null })
+          )
+        );
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const failure = yield* cli(['connections', 'remove', 'gmail']).pipe(
+          Effect.provide(stub.layer),
+          Effect.flip
+        );
+
+        expect(failure).toMatchObject({ _tag: 'commands/ConnectionsRemovalRequestError' });
+        expect(extractErrorDetails(failure).message).toBe(
+          'Failed to remove connected account "con_gmail_active".\nCaused by: 403 {"error":{"message":"Not allowed","code":1403,"slug":"Forbidden","status":403}}'
+        );
       })
     );
   });
