@@ -6,8 +6,7 @@ import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-conne
 import { failedWith, requestError } from 'src/effects/request-error';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
-import { resolveCommandProject } from 'src/services/command-project';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
 import { idempotent } from 'src/services/composio-request';
 
@@ -57,9 +56,7 @@ export const connectedAccountsCmd$List = Command.make(
       const toolkitSlugs = Option.isSome(toolkits)
         ? toolkits.value.split(',').map(s => s.trim())
         : undefined;
-      const resolvedProject = yield* resolveCommandProject({
-        mode: 'developer',
-      });
+      const resolvedProject = yield* resolveSurfaceProject('developer');
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,

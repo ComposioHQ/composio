@@ -1,5 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
+import { rejectsProjectName } from 'src/commands/surface';
 import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './commands/connected-accounts.whoami.cmd';
@@ -18,8 +19,8 @@ export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
   Command.withSubcommands([
     connectedAccountsCmd$Link,
     connectedAccountsCmd$List,
-    connectedAccountsCmd$Info,
-    connectedAccountsCmd$Whoami,
+    connectedAccountsCmd$Info.pipe(rejectsProjectName('dev connected-accounts info')),
+    connectedAccountsCmd$Whoami.pipe(rejectsProjectName('dev connected-accounts whoami')),
   ]),
   requireLogin
 );

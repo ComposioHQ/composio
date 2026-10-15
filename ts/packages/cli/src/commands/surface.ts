@@ -1,5 +1,8 @@
 import { Context, Effect, Layer, Option } from 'effect';
+import { Command } from 'effect/cli';
+import { commandInputError } from 'src/commands/errors';
 import { resolveCommandProject, type ProjectMode } from 'src/services/command-project';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 
 /** The command tree a command was invoked from. */
 export type CommandTree = 'root' | 'dev';
@@ -45,3 +48,42 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
       projectName: Option.getOrUndefined(surface.projectName),
     });
   });
+
+/**
+ * The client for the developer project the `dev` group's `--project-name` names, or none when
+ * the flag is absent and the command keeps its default client.
+ */
+export const namedProjectClient = Effect.gen(function* () {
+  const surface = yield* CommandSurface;
+  if (Option.isNone(surface.projectName)) {
+    return Option.none();
+  }
+  const project = yield* resolveSurfaceProject('developer');
+  const clientSingleton = yield* ComposioClientSingleton;
+  return Option.some(
+    yield* clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
+  );
+});
+
+/**
+ * Makes a `dev` command, or a group entry and every subcommand under it, fail with a
+ * `CommandInputError` when the `dev` group's `--project-name` is given, for commands that
+ * cannot target another project yet. Without it the flag would be accepted and ignored.
+ */
+export const rejectsProjectName =
+  (command: string) =>
+  <const Name extends string, Input, ContextInput, E, R>(
+    self: Command.Command<Name, Input, ContextInput, E, R>
+  ) =>
+    Command.provideEffectDiscard(
+      self,
+      Effect.gen(function* () {
+        const surface = yield* CommandSurface;
+        if (Option.isSome(surface.projectName)) {
+          return yield* commandInputError(command)(
+            `\`composio ${command}\` does not support --project-name yet; run it from a directory configured for that project.`,
+            '--project-name'
+          );
+        }
+      })
+    );

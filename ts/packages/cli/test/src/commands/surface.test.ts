@@ -1,6 +1,7 @@
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { buildRootCommand } from 'src/commands';
+import { CommandInputError } from 'src/commands/errors';
 import { ProjectResolutionError } from 'src/services/command-project';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -141,16 +142,26 @@ describe('CommandSurface: --project-name reaches the project resolver', () => {
       accountData: { projects: [] },
     })
   )(it => {
-    it.effect.each([
-      {
-        name: 'after the subcommand',
-        args: ['dev', 'connected-accounts', 'link', 'gmail', '--list', '--project-name', 'nope'],
-      },
-      {
-        name: 'before the subcommand',
-        args: ['dev', '--project-name', 'nope', 'connected-accounts', 'link', 'gmail', '--list'],
-      },
-    ])('looks the named project up when passed $name', ({ args }) =>
+    it.effect.each(
+      [
+        {
+          name: 'after the subcommand',
+          args: ['dev', 'connected-accounts', 'link', 'gmail', '--list', '--project-name', 'nope'],
+        },
+        {
+          name: 'before the subcommand',
+          args: ['dev', '--project-name', 'nope', 'connected-accounts', 'link', 'gmail', '--list'],
+        },
+        { name: 'to connected-accounts list', args: ['dev', 'connected-accounts', 'list'] },
+        { name: 'to toolkits info', args: ['dev', 'toolkits', 'info', 'gmail'] },
+        { name: 'to triggers listen', args: ['dev', 'triggers', 'listen'] },
+        { name: 'to listen', args: ['dev', 'listen'] },
+      ].map(({ name, args }) =>
+        args.includes('--project-name')
+          ? { name, args }
+          : { name, args: [...args, '--project-name', 'nope'] }
+      )
+    )('looks the named project up when passed $name', ({ args }) =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -159,6 +170,30 @@ describe('CommandSurface: --project-name reaches the project resolver', () => {
         expect((error as ProjectResolutionError).message).toContain(
           'Developer project "nope" was not found in org "org_test"'
         );
+      })
+    );
+  });
+});
+
+describe('CommandSurface: toolkits list reports the named project it cannot find', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+      }),
+      accountData: { projects: [] },
+    })
+  )(it => {
+    // `toolkits list` reports every failure on stderr and exits 1 rather than failing.
+    it.effect('looks the named project up', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['dev', 'toolkits', 'list', '--project-name', 'nope']);
+        const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join(
+          '\n'
+        );
+        expect(stderr).toContain('Developer project "nope" was not found in org "org_test"');
       })
     );
   });
@@ -251,6 +286,44 @@ describe('CommandSurface: playground-execute --parallel keeps the shared flags',
         ]);
         expect(sessionUserIds.length).toBeGreaterThan(0);
         expect(new Set(sessionUserIds)).toEqual(new Set(['alice']));
+      })
+    );
+  });
+});
+
+describe('CommandSurface: dev commands that cannot target another project reject --project-name', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+      }),
+    })
+  )(it => {
+    it.effect.each(
+      [
+        ['init'],
+        ['logs', 'tools'],
+        ['logs', 'triggers'],
+        ['auth-configs', 'list'],
+        ['projects', 'list'],
+        ['toolkits', 'search', 'email'],
+        ['toolkits', 'version', 'gmail'],
+        ['connected-accounts', 'info', 'ca_1'],
+        ['connected-accounts', 'whoami', 'ca_1'],
+        ['triggers', 'list', 'gmail'],
+        ['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE'],
+        ['triggers', 'status'],
+        ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
+        ['triggers', 'enable', 'ti_1'],
+        ['triggers', 'disable', 'ti_1'],
+      ].map(path => ({ path, name: `dev ${path.join(' ')}` }))
+    )('rejects it on `$name`', ({ path }) =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const error = yield* Effect.flip(cli(['dev', '--project-name', 'other', ...path]));
+        expect(error).toBeInstanceOf(CommandInputError);
+        expect(error).toMatchObject({ option: '--project-name' });
       })
     );
   });

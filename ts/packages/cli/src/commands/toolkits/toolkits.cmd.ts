@@ -1,5 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
+import { rejectsProjectName } from 'src/commands/surface';
 import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
 import { toolkitsCmd$Info } from './info/toolkits.info.cmd';
 import { toolkitsCmd$Search } from './commands/toolkits.search.cmd';
@@ -18,8 +19,8 @@ export const toolkitsCmd = Command.make('toolkits').pipe(
   Command.withSubcommands([
     toolkitsCmd$List,
     toolkitsCmd$Info,
-    toolkitsCmd$Search,
-    toolkitsCmd$Version,
+    toolkitsCmd$Search.pipe(rejectsProjectName('dev toolkits search')),
+    toolkitsCmd$Version.pipe(rejectsProjectName('dev toolkits version')),
   ]),
   requireLogin
 );
