@@ -161,18 +161,18 @@ export const mockConnectedAccountResources = (
   connectedAccountsData: ResolvedConnectedAccountsTestData
 ) => ({
   link: {
-    create: async (params: { auth_config_id: string; user_id: string }) => {
-      const response = connectedAccountsData.linkResponse ?? {
-        connected_account_id: 'con_test_link',
-        expires_at: '2026-12-31T23:59:59Z',
-        link_token: 'lt_test_token',
-        redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-      };
-      return response;
-    },
+    create: (_params: { auth_config_id: string; user_id: string }) =>
+      Effect.succeed(
+        connectedAccountsData.linkResponse ?? {
+          connected_account_id: 'con_test_link',
+          expires_at: '2026-12-31T23:59:59Z',
+          link_token: 'lt_test_token',
+          redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+        }
+      ),
   },
   connectedAccounts: {
-    list: async (params?: {
+    list: (params?: {
       toolkit_slugs?: string[];
       user_ids?: string[];
       statuses?: string[];
@@ -196,13 +196,13 @@ export const mockConnectedAccountResources = (
       }
 
       const limit = params?.limit ?? DEFAULT_PAGE_LIMIT;
-      return {
+      return Effect.succeed({
         items: results.slice(0, limit),
         total_items: results.length,
         total_pages: Math.ceil(results.length / limit),
         current_page: 1,
         next_cursor: null,
-      };
+      });
     },
     retrieve: (nanoid: string) =>
       findById(connectedAccountsData.items, nanoid, () =>
