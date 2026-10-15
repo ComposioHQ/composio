@@ -56,6 +56,51 @@ Text has to stay legible against its background. The editor shows the contrast r
 
 Prefer to work in code? Flip the **JSON** toggle to edit the theme as a single object you can paste, review, or generate. Your logo and app title stay in the **Branding** tab, since the logo has no JSON representation.
 
+### Language
+
+The Connect Link shows English by default. To show it in your user's language, add a `locale` parameter to the Connect Link URL before you send it to the user. The Connect Link supports these languages:
+
+| Language | `locale` value |
+|----------|----------------|
+| English | `en` (default) |
+| Spanish | `es` |
+| Simplified Chinese | `zh-CN` |
+
+Regional tags such as `es-MX` or `zh-Hans` use the closest supported language. Any other value, including Traditional Chinese, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from urllib.parse import urlencode
+
+connection_request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_abc",
+)
+
+# Show the Connect Link in Spanish
+connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'ac_abc');
+
+if (connectionRequest.redirectUrl) {
+  // Show the Connect Link in Spanish
+  const connectUrl = new URL(connectionRequest.redirectUrl);
+  connectUrl.searchParams.set("locale", "es");
+  console.log(connectUrl.toString());
+}
+```
+</Tab>
+</Tabs>
+
+The `locale` parameter changes only the Connect Link's own text. Field names and help text on API key forms, error details from the provider, and the provider's own sign-in and consent screens keep their original language. If you pass `long_redirect_url`, users go straight to the OAuth provider and never see the Connect Link, so `locale` has no effect.
+
 <Callout type="warn" title="Troubleshooting">
 - **"Secured by Composio" badge won't go away:** this badge is removed when you use your own OAuth app. See [Using your own OAuth apps](#using-your-own-oauth-apps).
 - **Logo doesn't appear after uploading:** clear your browser cache or try incognito.
