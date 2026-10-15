@@ -493,17 +493,7 @@ export const listenCmd = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(
-          cause =>
-            new ListenCommandError({
-              reason: 'project_context',
-              message: cause.message,
-              slug,
-              cause,
-            })
-        )
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
