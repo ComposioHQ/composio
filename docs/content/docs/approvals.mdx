@@ -122,7 +122,7 @@ try {
 </Tab>
 </Tabs>
 
-`input_requests` holds the [MCP elicitations](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation) for the user, keyed by ID. One tool execution can return several of them, for example when the agent runs several tools at once with `COMPOSIO_MULTI_EXECUTE_TOOL`. Answer all of them when you send the call again:
+The error's `input_requests` holds the questions to ask the user, keyed by ID. Each question has a `message` describing the tool call, and a `requested_schema` describing the answer the user can give:
 
 ```json
 {
@@ -150,6 +150,10 @@ try {
 ```
 
 Show the user the `message` and a form built from `requested_schema`. Build the form from the schema, since the choices vary between questions.
+
+One tool execution can return several questions, for example when the agent runs several tools at once with `COMPOSIO_MULTI_EXECUTE_TOOL`. Answer all of them when you send the call again.
+
+The questions follow the format of [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation) requests, so you can reuse an existing elicitation UI.
 
 ## Sending the answer
 
