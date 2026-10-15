@@ -1,7 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
 import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
-import { toolkitsCmd$Info } from './commands/toolkits.info.cmd';
+import { toolkitsCmd$Info } from './info/toolkits.info.cmd';
 import { toolkitsCmd$Search } from './commands/toolkits.search.cmd';
 import { toolkitsCmd$Version } from './commands/toolkits.version.cmd';
 

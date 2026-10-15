@@ -1,7 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
-import { triggersCmd$Info } from './commands/triggers.info.cmd';
-import { triggersCmd$List } from './commands/triggers.list.cmd';
+import { triggersCmd$Info } from './info/triggers.info.cmd';
+import { triggersCmd$List } from './list/triggers.list.cmd';
 import { triggersCmd$Status } from './commands/triggers.status.cmd';
 import { triggersCmd$Create } from './commands/triggers.create.cmd';
 import { triggersCmd$Enable } from './commands/triggers.enable.cmd';

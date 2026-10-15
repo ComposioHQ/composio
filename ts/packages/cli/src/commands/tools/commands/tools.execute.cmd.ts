@@ -1,4 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
+import { CommandSurface } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
@@ -90,16 +91,6 @@ const accountOption = Flag.String('account').pipe(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
   Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer-project user ID override')
-);
-
-const projectName = Flag.String('project-name').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer project name override for this command')
 );
 
 const getSchema = Flag.Boolean('get-schema').pipe(
@@ -2004,8 +1995,6 @@ export const devToolsCmd$Execute = Command.make(
     data,
     file,
     account: accountOption,
-    userId,
-    projectName,
     getSchema,
     dryRun,
     skipConnectionCheck,
@@ -2019,8 +2008,6 @@ export const devToolsCmd$Execute = Command.make(
     data,
     file,
     account,
-    userId,
-    projectName,
     getSchema,
     dryRun,
     skipConnectionCheck,
@@ -2028,6 +2015,7 @@ export const devToolsCmd$Execute = Command.make(
     skipChecks,
   }) =>
     Effect.gen(function* () {
+      const { userId, projectName } = yield* CommandSurface;
       if (parallel) {
         return yield* runParallelFromCommand({
           surface: 'dev',

@@ -1,0 +1,165 @@
+import { describe, expect, it, layer } from '@effect/vitest';
+import { ConfigProvider, Effect } from 'effect';
+import { buildRootCommand } from 'src/commands';
+import { ProjectResolutionError } from 'src/services/command-project';
+import { ComposioUserContext } from 'src/services/user-context';
+import { cli, MockConsole, TestLive } from 'test/__utils__';
+
+const SHARED_PROJECT_DESCRIPTION =
+  'Developer project to use instead of the one configured in this directory';
+const SHARED_USER_DESCRIPTION =
+  'User id within the developer project; defaults to the project test user id, then the global one';
+// `dev logs tools|triggers` declare a comma-separated `--user-id` filter of their own, which
+// `withSharedFlags` accepts below a group entry and the help page shows in place of the shared row.
+const OWN_USER_ID_PAGES = ['dev logs tools', 'dev logs triggers'];
+
+// A fresh layer per page: the mock console keeps every line written under one layer.
+const helpPage = (path: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    yield* Effect.exit(cli([...path, '--help']));
+    return (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' })).join('\n');
+  }).pipe(Effect.provide(TestLive()));
+
+const subcommandPaths = (
+  command: import('effect/cli').Command.Command.Any,
+  prefix: ReadonlyArray<string>
+): ReadonlyArray<ReadonlyArray<string>> =>
+  command.subcommands
+    .flatMap(group => group.commands)
+    .filter(child => child.name !== 'help' && !child.unlisted)
+    .flatMap(child => {
+      const path = [...prefix, child.name];
+      return [path, ...subcommandPaths(child, path)];
+    });
+
+const root = buildRootCommand({ isDevModeEnabled: true, isExperimentalFeatureEnabled: () => true });
+const devCommand = root.subcommands.flatMap(group => group.commands).find(c => c.name === 'dev')!;
+const devPages = subcommandPaths(devCommand, ['dev']).map(path => ({ path, name: path.join(' ') }));
+const rootPages = subcommandPaths(root, [])
+  .filter(path => path[0] !== 'dev' && path[0] !== 'listen')
+  .map(path => ({ path, name: path.join(' ') }));
+
+describe('CommandSurface: the dev group shares --user-id and --project-name', () => {
+  it.effect.each(devPages)('documents both shared flags once on `$name`', ({ path, name }) =>
+    Effect.gen(function* () {
+      const page = yield* helpPage(path);
+      const rows = page.split('\n').filter(line => line.trimStart().startsWith('--'));
+      expect(
+        rows.filter(row => row.includes('--project-name string')),
+        name
+      ).toHaveLength(1);
+      expect(
+        rows.filter(row => row.includes('--user-id string')),
+        name
+      ).toHaveLength(1);
+      expect(page, name).toContain(SHARED_PROJECT_DESCRIPTION);
+      if (!OWN_USER_ID_PAGES.includes(name)) {
+        expect(page, name).toContain(SHARED_USER_DESCRIPTION);
+      }
+    })
+  );
+
+  it.effect.each(rootPages)('keeps the shared flags off the root page `$name`', ({ path }) =>
+    Effect.gen(function* () {
+      const page = yield* helpPage(path);
+      expect(page).not.toContain('--user-id');
+      expect(page).not.toContain('--project-name');
+    })
+  );
+
+  layer(TestLive())(it => {
+    it.effect('rejects --user-id on a root command, which has no such flag', () =>
+      Effect.gen(function* () {
+        const result = yield* Effect.result(cli(['search', 'send an email', '--user-id', 'alice']));
+        expect(result._tag).toBe('Failure');
+        const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join(
+          '\n'
+        );
+        expect(stderr).toContain('--user-id');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: {
+          COMPOSIO_USER_API_KEY: 'test_api_key',
+          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_PROJECT_ID: 'dev_project_test',
+        },
+      }),
+      connectedAccountsData: {
+        items: ['alice', 'bob'].map(userId => ({
+          id: `con_${userId}`,
+          status: 'ACTIVE',
+          status_reason: null,
+          is_disabled: false,
+          user_id: userId,
+          toolkit: { slug: 'gmail' },
+          auth_config: {
+            id: 'ac_gmail',
+            auth_scheme: 'OAUTH2',
+            is_composio_managed: true,
+            is_disabled: false,
+          },
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          test_request_endpoint: 'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+        })),
+      },
+    })
+  )(it => {
+    it.effect.each([
+      {
+        name: 'after the subcommand',
+        args: ['dev', 'connected-accounts', 'list', '--user-id', 'alice'],
+      },
+      {
+        name: 'before the subcommand',
+        args: ['dev', '--user-id', 'alice', 'connected-accounts', 'list'],
+      },
+    ])('reaches the handler when passed $name', ({ args }) =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(args);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('con_alice');
+        expect(output).not.toContain('con_bob');
+      })
+    );
+  });
+});
+
+describe('CommandSurface: --project-name reaches the project resolver', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+      }),
+      accountData: { projects: [] },
+    })
+  )(it => {
+    it.effect.each([
+      {
+        name: 'after the subcommand',
+        args: ['dev', 'connected-accounts', 'link', 'gmail', '--list', '--project-name', 'nope'],
+      },
+      {
+        name: 'before the subcommand',
+        args: ['dev', '--project-name', 'nope', 'connected-accounts', 'link', 'gmail', '--list'],
+      },
+    ])('looks the named project up when passed $name', ({ args }) =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const error = yield* Effect.flip(cli(args));
+        expect(error).toBeInstanceOf(ProjectResolutionError);
+        expect((error as ProjectResolutionError).message).toContain(
+          'Developer project "nope" was not found in org "org_test"'
+        );
+      })
+    );
+  });
+});

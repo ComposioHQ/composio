@@ -7,6 +7,7 @@ import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/service
 import { idempotent } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
+import { CommandSurface } from 'src/commands/surface';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
@@ -26,11 +27,6 @@ const connected = Flag.Boolean('connected').pipe(
   Flag.optional
 );
 
-const userId = Flag.String('user-id').pipe(
-  Flag.optional,
-  Flag.withDescription('User ID for connection status (falls back to project/global test_user_id)')
-);
-
 /**
  * List available toolkits with connection status.
  *
@@ -48,9 +44,10 @@ const userId = Flag.String('user-id').pipe(
  */
 export const toolkitsCmd$List = Command.make(
   'list',
-  { query, limit, connected, userId },
-  ({ query, limit, connected, userId }) =>
+  { query, limit, connected },
+  ({ query, limit, connected }) =>
     Effect.gen(function* () {
+      const { userId } = yield* CommandSurface;
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const clientSingleton = yield* ComposioClientSingleton;

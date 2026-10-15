@@ -15,10 +15,28 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
+import { CommandSurface } from './surface';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
   Flag.optional
+);
+
+/**
+ * Flags every `dev` subcommand accepts, before or after the subcommand name.
+ * A handler reads them through `CommandSurface`; a subcommand must not declare
+ * a flag of the same name, `withSharedFlags` rejects the duplicate.
+ */
+const userId = Flag.String('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription(
+    'User id within the developer project; defaults to the project test user id, then the global one'
+  )
+);
+
+const projectName = Flag.String('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project to use instead of the one configured in this directory')
 );
 
 export const devSubcommands = [
@@ -143,5 +161,11 @@ export const buildDevCommand = (visibility: CommandVisibility) => {
     )
   );
 
-  return visibility.isDevModeEnabled ? cmd.pipe(Command.withSubcommands([...devSubcommands])) : cmd;
+  return visibility.isDevModeEnabled
+    ? cmd.pipe(
+        Command.withSubcommands([...devSubcommands]),
+        Command.withSharedFlags({ userId, projectName }),
+        Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
+      )
+    : cmd;
 };

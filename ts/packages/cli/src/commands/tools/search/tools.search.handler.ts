@@ -1,21 +1,16 @@
-import { requireLogin } from 'src/effects/require-auth';
-import { commandInputError } from 'src/commands/errors';
-import { Argument, Command, Flag } from 'effect/cli';
-import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
+import { CommandSurface } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { failedWith, requestError } from 'src/effects/request-error';
+import { failedWith } from 'src/effects/request-error';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
-import { formatToolsTable } from '../format';
-import type { Tool } from 'src/models/tools';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { resolveCommandProject } from 'src/services/command-project';
-import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import {
@@ -27,145 +22,27 @@ import {
   cacheToolInputDefinition,
   getOrFetchToolInputDefinition,
 } from 'src/services/tool-input-validation';
+import { ToolsSearchRequestError } from './tools.search.errors';
+import {
+  buildSearchNextSteps,
+  collectToolsForResult,
+  emitHumanSearchOutput,
+  stripSearchResultMetadata,
+  toHomeRelativePath,
+  TOOL_SCHEMA_PATH_FORMAT,
+  type SearchResponseRecord,
+  type SearchToolSchema,
+} from './tools.search.format';
 
-const query = Argument.String('query').pipe(
-  Argument.variadic(),
-  Argument.withDescription(
-    'One or more semantic use-case queries (e.g. "onboard a new GitHub repo", "notify Slack").'
-  )
-);
-
-const toolkits = Flag.String('toolkits').pipe(
-  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer-project user ID override')
-);
-
-const projectName = Flag.String('project-name').pipe(
-  Flag.optional,
-  Flag.withDescription('Developer project name override for this command')
-);
-
-const limit = Flag.Int('limit').pipe(
-  Flag.withDefault(10),
-  Flag.withDescription('Number of results per page (1-1000)')
-);
-
-const json = Flag.Boolean('json').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Print the full search response as JSON (default behavior)')
-);
-
-const human = Flag.Boolean('human').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Show formatted human-readable search output')
-);
-
-type SearchToolSchema = SessionSearchResponse.ToolSchemas;
-type SearchResultRecord = SessionSearchResponse.Result;
-type SearchResponseRecord = Pick<
-  SessionSearchResponse,
-  'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'
->;
+export type ToolsSearchParams = {
+  readonly query: ReadonlyArray<string>;
+  readonly toolkits: Option.Option<string>;
+  readonly limit: number;
+  readonly json: boolean;
+  readonly human: boolean;
+};
 
 const invalidSearchInput = commandInputError('search');
-
-class ToolsSearchRequestError extends requestError('commands/ToolsSearchRequestError') {}
-
-const stripSearchResultMetadata = <
-  T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
->(
-  result: T
-) => {
-  const {
-    reference_workbench_snippets: _referenceWorkbenchSnippets,
-    plan_id: _planId,
-    ...rest
-  } = result;
-  return rest;
-};
-
-const TOOL_SCHEMA_PATH_FORMAT = '~/.composio/tool_definitions/<TOOL_SLUG>.json';
-
-const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
-  absolutePath.startsWith(cacheDir) ? absolutePath.replace(cacheDir, '~/.composio') : absolutePath;
-
-const collectToolsForResult = (params: {
-  result: {
-    primary_tool_slugs: string[];
-    related_tool_slugs: string[];
-  };
-  toolSchemas: Record<string, SearchToolSchema>;
-  toolkitSet?: Set<string>;
-  limit: number;
-}): Tool[] => {
-  const mergedSlugs: string[] = [];
-  const seen = new Set<string>();
-  for (const slug of [...params.result.primary_tool_slugs, ...params.result.related_tool_slugs]) {
-    if (!seen.has(slug)) {
-      seen.add(slug);
-      mergedSlugs.push(slug);
-    }
-  }
-
-  const toolsList: Tool[] = [];
-  for (const slug of mergedSlugs) {
-    const schema = params.toolSchemas[slug];
-    if (!schema) continue;
-    if (params.toolkitSet && !params.toolkitSet.has(schema.toolkit.toLowerCase())) continue;
-
-    toolsList.push({
-      slug: schema.tool_slug,
-      name: schema.tool_slug,
-      description: schema.description ?? '',
-      tags: [],
-      available_versions: [],
-      input_parameters: schema.input_schema ?? {},
-      output_parameters: schema.output_schema ?? {},
-    });
-
-    if (toolsList.length >= params.limit) break;
-  }
-
-  return toolsList;
-};
-
-const buildSearchNextSteps = (params: {
-  firstSlug?: string;
-  firstToolkit?: string;
-  firstDataArg: string;
-  rootOnly: boolean;
-}) => {
-  const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit) {
-    steps.push({
-      action: 'Link a user account',
-      command: params.rootOnly
-        ? commandHintExample('root.link', { toolkit: String(params.firstToolkit).toLowerCase() })
-        : commandHintExample('dev.connectedAccounts.link', {
-            toolkit: String(params.firstToolkit).toLowerCase(),
-            userId: '<user-id>',
-          }),
-    });
-  }
-  if (params.firstSlug) {
-    steps.push({
-      action: 'Execute a tool',
-      command: params.rootOnly
-        ? commandHintExample('root.execute', { slug: params.firstSlug, data: params.firstDataArg })
-        : commandHintExample('dev.playgroundExecute', {
-            slug: params.firstSlug,
-            userId: '<user-id>',
-            data: params.firstDataArg,
-          }),
-    });
-  }
-  return steps;
-};
 
 const buildSearchJsonPayload = (params: {
   searchResponse: SearchResponseRecord;
@@ -228,79 +105,10 @@ const buildSearchJsonPayload = (params: {
     };
   });
 
-const emitHumanSearchOutput = (params: {
-  ui: TerminalUI;
-  queries: ReadonlyArray<string>;
-  resultsWithTools: Array<{ result: SearchResultRecord; tools: Tool[] }>;
-  nextStepsGuidance: ReadonlyArray<string>;
-  firstSlug?: string;
-  firstDataArg: string;
-  rootOnly: boolean;
-  error: string | null;
-}) =>
-  Effect.gen(function* () {
-    for (const { result, tools } of params.resultsWithTools) {
-      if (params.queries.length > 1) {
-        yield* params.ui.log.info(`Results for "${result.use_case}"`);
-      }
-
-      if (tools.length === 0) {
-        yield* params.ui.log.warn(`No tools found for "${result.use_case}".`);
-        continue;
-      }
-
-      yield* params.ui.log.info(`Found ${tools.length} tools\n\n${formatToolsTable(tools)}`);
-
-      const planSteps = Array.from(new Set(result.recommended_plan_steps ?? []));
-      if (planSteps.length > 0) {
-        yield* params.ui.log.info(
-          `Plan:\n${planSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}`
-        );
-      } else if (params.queries.length === 1 && params.nextStepsGuidance.length > 0) {
-        yield* params.ui.log.info(
-          `Plan:\n${params.nextStepsGuidance.map((step, i) => `${i + 1}. ${step}`).join('\n')}`
-        );
-      }
-    }
-
-    if (params.firstSlug) {
-      const linkHint = params.rootOnly
-        ? commandHintStep('Link an account', 'root.link', { toolkit: '<toolkit>' })
-        : commandHintStep('Link an account', 'dev.connectedAccounts.link', {
-            toolkit: '<toolkit>',
-            userId: '<user-id>',
-          });
-      const executeHint = params.rootOnly
-        ? commandHintStep('Execute a tool', 'root.execute', {
-            slug: params.firstSlug,
-            data: params.firstDataArg,
-          })
-        : commandHintStep('Test a tool against a playground user', 'dev.playgroundExecute', {
-            slug: params.firstSlug,
-            userId: '<user-id>',
-            data: params.firstDataArg,
-          });
-      const steps = params.firstSlug.startsWith('LOCAL_') ? [executeHint] : [linkHint, executeHint];
-      yield* params.ui.log.step(steps.join('\n'));
-    }
-
-    if (params.error) {
-      yield* params.ui.log.warn(params.error);
-    }
-  });
-
-const runToolsSearch = (params: {
-  query: ReadonlyArray<string>;
-  toolkits: Option.Option<string>;
-  userId: Option.Option<string>;
-  projectName: Option.Option<string>;
-  limit: number;
-  json: boolean;
-  human: boolean;
-  rootOnly: boolean;
-}) =>
+export const runToolsSearch = (params: ToolsSearchParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const { tree, userId, projectName } = yield* CommandSurface;
     const userContext = yield* ComposioUserContext;
 
     const clampedLimit = clampLimit(params.limit);
@@ -322,12 +130,12 @@ const runToolsSearch = (params: {
     const runSearchRequest = Effect.gen(function* () {
       const resolvedProject = yield* resolveCommandProject({
         mode: 'consumer',
-        projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
+        projectName: Option.getOrUndefined(projectName),
       });
       const resolvedUserId =
         resolvedProject.projectType === 'CONSUMER'
           ? Option.fromNullishOr(resolvedProject.consumerUserId)
-          : Option.match(params.userId, {
+          : Option.match(userId, {
               onSome: value => Option.some(value),
               onNone: () => userContext.data.testUserId,
             });
@@ -480,7 +288,7 @@ const runToolsSearch = (params: {
       firstSlug,
       firstToolkit,
       firstDataArg,
-      rootOnly: params.rootOnly,
+      tree,
     });
 
     const outputForJq = yield* buildSearchJsonPayload({
@@ -516,7 +324,7 @@ const runToolsSearch = (params: {
         nextStepsGuidance: searchResponse.next_steps_guidance,
         firstSlug,
         firstDataArg,
-        rootOnly: params.rootOnly,
+        tree,
         error: searchResponse.error,
       });
     } else if (emitJson) {
@@ -525,82 +333,3 @@ const runToolsSearch = (params: {
       yield* ui.output(outputJson);
     }
   });
-
-export const toolsCmd$Search = Command.make(
-  'search',
-  { query, toolkits, userId, projectName, limit, json, human },
-  ({ query, toolkits, userId, projectName, limit, json, human }) =>
-    runToolsSearch({ query, toolkits, userId, projectName, limit, json, human, rootOnly: false })
-).pipe(
-  Command.withDescription(
-    [
-      'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.',
-      '',
-      'Examples:',
-      '  composio search "send an email"',
-      '  composio search "send an email" "create a github issue"',
-      '  composio search "create issue" --toolkits github',
-      '  composio search "send an email" --human',
-      '  composio search "list calendar events" --limit 5',
-      '',
-      'Next steps:',
-      '  composio link <toolkit>                  Connect an account before executing tools',
-      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
-      "  composio tools info <slug>               Inspect a tool's schema before executing",
-    ].join('\n')
-  ),
-  requireLogin
-);
-
-export const rootToolsCmd$Search = Command.make(
-  'search',
-  { query, toolkits, limit, json, human },
-  ({ query, toolkits, limit, json, human }) =>
-    runToolsSearch({
-      query,
-      toolkits,
-      userId: Option.none(),
-      projectName: Option.none(),
-      limit,
-      json,
-      human,
-      rootOnly: true,
-    })
-).pipe(
-  Command.withDescription(
-    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
-  ),
-  Command.withShortDescription(
-    'Find tools by use case. Defaults to full JSON output; use `--human` for formatted output.'
-  ),
-  Command.withExamples([
-    {
-      command: 'composio search "send an email"',
-      description: 'Find tools for a use case',
-    },
-    {
-      command: 'composio search "send an email" "create github issue"',
-    },
-    {
-      command: 'composio search "my emails" "my github issues" --toolkits gmail,github',
-    },
-    {
-      command: 'composio search "create issue" --toolkits github',
-    },
-    {
-      command: 'composio search "send an email" --human',
-    },
-    {
-      command: 'composio search "post a message to a slack channel"',
-      description: 'Cross-app workflow discovery',
-    },
-    {
-      command: 'composio search "add a row to google sheet"',
-    },
-    {
-      command: 'composio search "list calendar events" --toolkits google_calendar --limit 5',
-      description: 'Narrow results to a specific toolkit',
-    },
-  ]),
-  requireLogin
-);

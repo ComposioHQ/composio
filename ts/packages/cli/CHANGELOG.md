@@ -9,6 +9,16 @@
 - API requests now carry the CLI's product, version and runtime headers through
   the API client's `identity` option instead of default headers. The headers
   sent are unchanged.
+- `--user-id` and `--project-name` are now flags of the `composio dev` group,
+  accepted before or after the subcommand name (`composio dev --user-id alice
+toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
+  both work) and documented once, with one description each, on every `dev`
+  page. `dev search`, `dev playground-execute`, `dev connected-accounts link`,
+  `dev connected-accounts list`, `dev toolkits info`, `dev toolkits list` and
+  `dev triggers listen` read them from the group instead of declaring their
+  own; `dev logs tools` and `dev logs triggers` keep their comma-separated
+  `--user-id` filter. `composio link --help` now lists `--auth-config`, which
+  the root command still rejects with the same message as before.
 
 ## 0.4.4
 

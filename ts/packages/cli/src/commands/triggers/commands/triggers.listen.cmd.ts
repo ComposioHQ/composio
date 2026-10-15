@@ -4,6 +4,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Deferred, Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
+import { CommandSurface } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
@@ -34,11 +35,6 @@ const connectedAccountId = Flag.String('connected-account-id').pipe(
 
 const triggerSlug = Flag.String('trigger-slug').pipe(
   Flag.withDescription('Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Filter by user id'),
   Flag.optional
 );
 
@@ -147,7 +143,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -159,7 +154,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -167,6 +161,7 @@ export const triggersCmd$Listen = Command.make(
     out,
   }) =>
     Effect.gen(function* () {
+      const { userId } = yield* CommandSurface;
       const ui = yield* TerminalUI;
       yield* resolveCommandProject({ mode: 'developer' });
       const fs = yield* FileSystem.FileSystem;
