@@ -18,7 +18,10 @@ if (!meetsZodV4Floor(version)) {
 
 export type ParserSelector = (schema: JsonSchemaObject, refs: Refs) => ZodType;
 export type ParserOverride = ParserOverrideOf<ZodType>;
-export type JsonSchemaToZodOptions = OptionsOf<ZodType>;
+export type JsonSchemaToZodOptions = OptionsOf<ZodType> & {
+  /** Leave out the forwarded `format`, `contentEncoding`, `contentMediaType`, and integer annotations. */
+  withoutAnnotations?: boolean;
+};
 export type Refs = RefsOf<ZodType>;
 
 /** A raw shape over zod v4 schemas, for APIs that take a shape rather than an object schema. */

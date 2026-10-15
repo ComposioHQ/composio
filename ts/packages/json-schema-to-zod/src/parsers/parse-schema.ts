@@ -18,7 +18,7 @@ import {
   hasTypelessScalarConstraints,
   parseTypelessConstraints,
 } from './parse-typeless-constraints';
-import { describeText } from '../annotations';
+import { collectAnnotations, describeText } from '../annotations';
 import type { ParseContext } from '../context';
 import type { JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
@@ -28,14 +28,15 @@ import {
   requiresPermissiveMaterialization,
 } from '../whole-schema-validation';
 
-const addDescribes = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
-  const description = describeText(jsonSchema);
+const addDecorations = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
+  const description = ctx.withoutDescribes ? undefined : describeText(jsonSchema);
+  const annotations = ctx.withoutAnnotations ? undefined : collectAnnotations(jsonSchema);
 
-  if (description !== undefined) {
-    return ctx.backend.decorate(zodSchema, { description });
+  if (description === undefined && annotations === undefined) {
+    return zodSchema;
   }
 
-  return zodSchema;
+  return ctx.backend.decorate(zodSchema, { description, annotations });
 };
 
 const addDefaults = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
@@ -153,9 +154,7 @@ export const parseSchema = <S>(
 
   let parsedZodSchema = selectParser(jsonSchema, ctx);
   if (!blockMeta) {
-    if (!ctx.withoutDescribes) {
-      parsedZodSchema = addDescribes(jsonSchema, parsedZodSchema, ctx);
-    }
+    parsedZodSchema = addDecorations(jsonSchema, parsedZodSchema, ctx);
 
     if (!ctx.withoutDefaults) {
       parsedZodSchema = addDefaults(jsonSchema, parsedZodSchema, ctx);

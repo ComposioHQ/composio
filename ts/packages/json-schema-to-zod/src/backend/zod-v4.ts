@@ -135,6 +135,53 @@ const carryDescription = (inner: S, wrapper: S): S => {
   return wrapper;
 };
 
+type Wrapper = 'optional' | 'nullable' | 'readonly' | 'prefault';
+
+const rewrap: Record<Wrapper, (inner: S, def: SchemaDef) => S> = {
+  optional: inner => z.optional(inner),
+  nullable: inner => z.nullable(inner),
+  readonly: inner => z.readonly(inner),
+  prefault: (inner, def) => z.prefault(inner, def.defaultValue),
+};
+
+const isWrapper = (type: unknown): type is Wrapper =>
+  typeof type === 'string' && Object.hasOwn(rewrap, type);
+
+/**
+ * Registers `annotations` on the innermost non-wrapper node, rebuilding the
+ * wrappers above it since `.meta()` clones. Validation-shaped keys such as
+ * `type: "integer"` must not sit on a wrapper: a nullable renders as
+ * `anyOf: [inner, null]`, and a `type` beside that `anyOf` would reject null.
+ */
+const annotateInnermost = (schema: S, annotations: Decorations['annotations'] & object): S => {
+  const def = internals(schema).def;
+  if (!isWrapper(def.type)) {
+    return schema.meta(annotations);
+  }
+  const inner = annotateInnermost(def.innerType as S, annotations);
+  const wrapper = rewrap[def.type](inner, def);
+  const ownMeta = z.globalRegistry.get(schema);
+  if (ownMeta) {
+    z.globalRegistry.add(wrapper, ownMeta);
+  }
+  return wrapper;
+};
+
+const decorate = (schema: S, decorations: Decorations): S => {
+  const { description, annotations } = decorations;
+  if (annotations === undefined) {
+    return description === undefined ? schema : schema.describe(description);
+  }
+  if (!isWrapper(internals(schema).def.type)) {
+    return schema.meta(description === undefined ? annotations : { description, ...annotations });
+  }
+  const annotated = annotateInnermost(schema, annotations);
+  if (description !== undefined) {
+    z.globalRegistry.add(annotated, { ...z.globalRegistry.get(annotated), description });
+  }
+  return annotated;
+};
+
 const withPath = (path: ReadonlyArray<string | number> | undefined) =>
   path === undefined ? {} : { path: [...path] };
 
@@ -276,8 +323,7 @@ export const zodV4Backend: ZodBackend<S> = {
   // `.default()` short-circuits past the inner schema; `.prefault()` parses the default through it, as v3 does.
   withDefault: (schema, value) => carryDescription(schema, schema.prefault(value)),
   readonly: schema => carryDescription(schema, schema.readonly()),
-  decorate: (schema, decorations: Decorations) =>
-    decorations.description === undefined ? schema : schema.describe(decorations.description),
+  decorate,
 
   refine: <T>(schema: S, test: (value: T) => boolean, message?: string) =>
     schema.refine(value => test(value as T), message),

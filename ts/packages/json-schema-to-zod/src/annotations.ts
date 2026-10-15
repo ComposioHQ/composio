@@ -1,5 +1,6 @@
 import type { StringFormat } from './backend/types';
-import type { JsonSchemaObject } from './types';
+import type { JsonSchemaObject, Serializable } from './types';
+import { its } from './utils/its';
 
 export const ASSERTED_STRING_FORMATS: ReadonlySet<StringFormat> = new Set<StringFormat>([
   'email',
@@ -46,4 +47,38 @@ export const describeText = (jsonSchema: JsonSchemaObject): string | undefined =
   }
 
   return description || undefined;
+};
+
+/** Whether the number parser applies its integer check to this node. */
+const isIntegerNumber = (jsonSchema: JsonSchemaObject): boolean =>
+  its.a.primitive(jsonSchema, 'integer') ||
+  (its.a.primitive(jsonSchema, 'number') &&
+    (jsonSchema.format === 'int64' || jsonSchema.multipleOf === 1));
+
+/**
+ * The JSON Schema annotations a node carries beyond what its checks imply:
+ * `format`, `contentEncoding`, and `contentMediaType` verbatim, and
+ * `type: "integer"` wherever the integer check applies, since that check is
+ * a refinement a serializer cannot see. Everything else the serializer
+ * derives from the checks themselves, or is deliberately left out.
+ */
+export const collectAnnotations = (
+  jsonSchema: JsonSchemaObject
+): Readonly<Record<string, Serializable>> | undefined => {
+  const annotations: Record<string, Serializable> = {};
+
+  if (typeof jsonSchema.format === 'string') {
+    annotations.format = jsonSchema.format;
+  }
+  if (typeof jsonSchema.contentEncoding === 'string') {
+    annotations.contentEncoding = jsonSchema.contentEncoding;
+  }
+  if (typeof jsonSchema.contentMediaType === 'string') {
+    annotations.contentMediaType = jsonSchema.contentMediaType;
+  }
+  if (isIntegerNumber(jsonSchema)) {
+    annotations.type = 'integer';
+  }
+
+  return Object.keys(annotations).length > 0 ? annotations : undefined;
 };

@@ -1456,6 +1456,9 @@ importers:
         specifier: ^2.8.6
         version: 2.8.6
     devDependencies:
+      '@ai-sdk/provider-utils':
+        specifier: ^5.0.58
+        version: 5.0.58(zod@4.5.4)
       '@langchain/core':
         specifier: ^1.2.17
         version: 1.2.17(@opentelemetry/api@1.9.1)(openai@7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4))(ws@8.22.0)
@@ -7018,7 +7021,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 7.29.1
+      undici: 7.30.0
       zod: 3.25.76
 
   '@ai-sdk/provider-utils@5.0.47(zod@4.5.4)':
@@ -7027,7 +7030,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 7.29.1
+      undici: 7.30.0
       zod: 4.5.4
 
   '@ai-sdk/provider-utils@5.0.58(zod@4.5.4)':
@@ -7036,7 +7039,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 7.29.1
+      undici: 7.30.0
       zod: 4.5.4
 
   '@ai-sdk/provider@1.1.3':
