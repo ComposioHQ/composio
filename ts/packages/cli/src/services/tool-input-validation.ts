@@ -358,7 +358,10 @@ export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSche
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
   const objectSchema = decodeObjectSchemaWithProperties(schema);
-  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
+  return Option.match(objectSchema, {
+    onNone: () => [],
+    onSome: ({ properties }) => Object.keys(properties),
+  });
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');

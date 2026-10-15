@@ -71,12 +71,14 @@ export const authConfigsCmd$Create = Command.make(
       }
 
       // Parse scopes into array
-      const scopesList = Option.isSome(scopes)
-        ? scopes.value
+      const scopesList = Option.getOrUndefined(
+        Option.map(scopes, value =>
+          value
             .split(',')
             .map(s => s.trim())
             .filter(Boolean)
-        : undefined;
+        )
+      );
 
       // Build create params based on whether auth scheme is provided
       const nameValue = Option.getOrUndefined(name);

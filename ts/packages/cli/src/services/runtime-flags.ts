@@ -115,7 +115,8 @@ export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.gen(functi
   const parsed = Option.flatten(yield* Effect.serviceOption(debugSettings['telemetry-debug']));
   if (Option.isSome(parsed)) return parsed.value;
   const bootstrap = yield* Effect.serviceOption(TelemetryDebugMode);
-  return Option.isSome(bootstrap)
-    ? bootstrap.value
-    : yield* Effect.orDie(DEBUG_CONFIG.TELEMETRY_DEBUG);
+  return yield* Option.match(bootstrap, {
+    onSome: Effect.succeed,
+    onNone: () => Effect.orDie(DEBUG_CONFIG.TELEMETRY_DEBUG),
+  });
 });
