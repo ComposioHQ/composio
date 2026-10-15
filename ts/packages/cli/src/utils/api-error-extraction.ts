@@ -14,21 +14,22 @@ import {
   isAPIError,
   isComposioError,
   type APIConnectionError,
-  type APIConnectionTimeoutError,
   type APIStatusError,
+  type ConfigurationError,
   type DecodeError,
 } from '@composio/client/effect';
 import { Predicate } from 'effect';
+import { CLIENT_API_ERROR_TAGS, type ClientApiError } from 'src/services/composio-errors';
 
-/**
- * A failure of a request made through the Effect client: a non-success status,
- * a transport failure, a timeout, or a response body that failed decoding.
- */
-export type ClientApiError =
-  APIStatusError | APIConnectionError | APIConnectionTimeoutError | DecodeError;
+export type { ClientApiError };
+
+const clientApiErrorTags: ReadonlySet<string> = new Set(CLIENT_API_ERROR_TAGS);
 
 export const isClientApiError = (value: unknown): value is ClientApiError =>
-  isComposioError(value) && !Predicate.isTagged(value, '@composio/client/ConfigurationError');
+  isComposioError(value) && clientApiErrorTags.has(value._tag);
+
+export const isClientConfigurationError = (value: unknown): value is ConfigurationError =>
+  isComposioError(value) && Predicate.isTagged(value, '@composio/client/ConfigurationError');
 
 export const isClientConnectionError = (value: unknown): value is APIConnectionError =>
   isComposioError(value) && Predicate.isTagged(value, '@composio/client/APIConnectionError');

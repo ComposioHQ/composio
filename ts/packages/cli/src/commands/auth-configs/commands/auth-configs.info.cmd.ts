@@ -3,7 +3,8 @@ import { Argument, Command } from 'effect/cli';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { formatAuthConfigInfo } from '../format';
 
 const id = Argument.String('id').pipe(
@@ -42,11 +43,14 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
       .withSpinner(`Fetching auth config "${idValue}"...`, repo.getAuthConfig(idValue))
       .pipe(
         Effect.asSome,
-        catchClientApiError(ui, {
-          fallbackMessage: `Failed to fetch auth config "${idValue}".`,
-          hint: 'Browse available auth configs:\n> composio dev auth-configs list',
-          fallbackValue: Option.none(),
-        })
+        Effect.catchTag(
+          CLIENT_API_ERROR_TAGS,
+          handleClientApiError(ui, {
+            fallbackMessage: `Failed to fetch auth config "${idValue}".`,
+            hint: 'Browse available auth configs:\n> composio dev auth-configs list',
+            fallbackValue: Option.none(),
+          })
+        )
       );
 
     if (Option.isNone(itemOpt)) {

@@ -20,9 +20,9 @@ import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import {
   describeDecodeError,
-  isClientApiError,
   isClientConnectionError,
   isClientDecodeError,
   type ClientApiError,
@@ -293,7 +293,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       apiKey: globalApiKey,
       orgId: orgIdValue,
     }).pipe(
-      Effect.catchIf(isClientApiError, e =>
+      Effect.catchTag(CLIENT_API_ERROR_TAGS, e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to list org projects:', e);
           yield* ui.log.warn('Could not fetch projects from the server.');
@@ -356,7 +356,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     // 4. Write project config
     yield* writeProjectConfig(composioDir, selected);
     yield* ensureProjectApiKeyInEnv({ cwd: proc.cwd, selected }).pipe(
-      Effect.catchIf(isClientApiError, e =>
+      Effect.catchTag(CLIENT_API_ERROR_TAGS, e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to resolve project API key from session/info:', e);
           yield* logEnvCreationHttpError(ui)(e);

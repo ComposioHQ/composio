@@ -2,7 +2,8 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option, Result } from 'effect';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 
@@ -71,11 +72,14 @@ export const triggersCmd$Create = Command.make(
         )
         .pipe(
           Effect.asSome,
-          catchClientApiError(ui, {
-            fallbackMessage: `Failed to create trigger "${triggerName.value}".`,
-            hint: 'List available trigger types with:\n> composio dev triggers list',
-            fallbackValue: Option.none(),
-          })
+          Effect.catchTag(
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
+              fallbackMessage: `Failed to create trigger "${triggerName.value}".`,
+              hint: 'List available trigger types with:\n> composio dev triggers list',
+              fallbackValue: Option.none(),
+            })
+          )
         );
 
       if (Option.isNone(createdOpt)) {

@@ -1,7 +1,8 @@
 import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
-import { catchClientApiError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { formatTriggerTypeInfo } from '../format';
@@ -51,11 +52,14 @@ const makeTriggersInfoCommand = ({
         .withSpinner('Fetching trigger type details...', repo.getTriggerTypeDetailed(slugValue))
         .pipe(
           Effect.asSome,
-          catchClientApiError(ui, {
-            fallbackMessage: `Trigger "${slugValue}" not found.`,
-            hint: `Browse available trigger types:\n> ${listCommandPlaceholder}`,
-            fallbackValue: Option.none(),
-          })
+          Effect.catchTag(
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
+              fallbackMessage: `Trigger "${slugValue}" not found.`,
+              hint: `Browse available trigger types:\n> ${listCommandPlaceholder}`,
+              fallbackValue: Option.none(),
+            })
+          )
         );
 
       if (Option.isNone(triggerTypeOpt)) return;

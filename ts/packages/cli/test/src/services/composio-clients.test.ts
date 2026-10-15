@@ -22,6 +22,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -521,16 +522,16 @@ describe('composio-clients', () => {
             step: message => Effect.sync(() => void steps.push(message)),
           },
         });
-        const previousExitCode = process.exitCode;
+        const proc = recordingNodeProcess();
         yield* handleClientApiError(ui, {
           fallbackMessage: 'fallback',
           hint: 'hint',
           fallbackValue: undefined,
-        })(error);
-        process.exitCode = previousExitCode;
+        })(error).pipe(Effect.provide(proc.layer));
 
         expect(errors).toEqual(['Bad input']);
         expect(steps).toEqual(['hint']);
+        expect(proc.exitCode()).toBe(1);
       }).pipe(Effect.provide(withRepository))
     );
 

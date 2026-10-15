@@ -1,6 +1,6 @@
 import { Data } from 'effect';
 import type { Cause } from 'effect';
-import type { ComposioError } from '@composio/client/effect';
+import type { ComposioError, ConfigurationError } from '@composio/client/effect';
 
 type NoSuchElementError = Cause.NoSuchElementError;
 
@@ -22,6 +22,33 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 }> {}
 
 export type HttpError = ComposioError | HttpDecodingError;
+
+/**
+ * A failure of a request made through the Effect client: a non-success status,
+ * a transport failure, a timeout, or a response body that failed decoding.
+ * `ConfigurationError` is the one client error that is not a request failure.
+ */
+export type ClientApiError = Exclude<ComposioError, ConfigurationError>;
+
+/**
+ * The tags of {@link ClientApiError}, for `Effect.catchTag`.
+ */
+export const CLIENT_API_ERROR_TAGS = [
+  '@composio/client/BadRequestError',
+  '@composio/client/AuthenticationError',
+  '@composio/client/PermissionDeniedError',
+  '@composio/client/NotFoundError',
+  '@composio/client/ConflictError',
+  '@composio/client/UnprocessableEntityError',
+  '@composio/client/RateLimitError',
+  '@composio/client/InternalServerError',
+  '@composio/client/APIError',
+  '@composio/client/APIConnectionError',
+  '@composio/client/APIConnectionTimeoutError',
+  '@composio/client/DecodeError',
+] as const satisfies ReadonlyArray<ClientApiError['_tag']>;
+
+export type ClientApiErrorTag = (typeof CLIENT_API_ERROR_TAGS)[number];
 
 /**
  * Every failure a client call can produce: the request itself, as the client's
