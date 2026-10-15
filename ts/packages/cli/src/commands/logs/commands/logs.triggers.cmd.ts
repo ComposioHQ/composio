@@ -4,7 +4,7 @@ import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
-import { optionalParams } from 'src/utils/optional-params';
+import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { decodeTriggerLogRecord } from '../trigger-log-record';
@@ -176,7 +176,7 @@ export const logsCmd$Triggers = Command.make(
               ...optionalParams({ cursor, from, to, time, search }),
               limit: clampedLimit,
               include_payload: includePayload,
-              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+              search_params: nonEmptyOrUndefined(shorthandSearchParams),
             },
             idempotent
           )

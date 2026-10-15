@@ -1,4 +1,4 @@
-import { Option, Record as EffectRecord } from 'effect';
+import { Array as Arr, Option, Record as EffectRecord } from 'effect';
 
 /**
  * The request parameters a record of optional flags turns into: each present
@@ -19,3 +19,12 @@ export type OptionalParams<R extends Readonly<Record<string, Option.Option<unkno
 export const optionalParams = <const R extends Readonly<Record<string, Option.Option<unknown>>>>(
   flags: R
 ): OptionalParams<R> => EffectRecord.map(flags, Option.getOrUndefined) as OptionalParams<R>;
+
+/**
+ * The request parameter a list of filters turns into: the list when it has
+ * elements and `undefined` when it is empty, so an unused filter is left out of
+ * the request instead of being sent as `[]`.
+ */
+export const nonEmptyOrUndefined = <const T extends ReadonlyArray<unknown>>(
+  values: T
+): T | undefined => (Arr.isReadonlyArrayNonEmpty(values) ? values : undefined);

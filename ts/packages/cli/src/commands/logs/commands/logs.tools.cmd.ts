@@ -5,7 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
-import { optionalParams } from 'src/utils/optional-params';
+import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
@@ -208,7 +208,7 @@ export const logsCmd$Tools = Command.make(
               cursor: Option.getOrUndefined(cursor) ?? null,
               limit: clampedLimit,
               case_sensitive: caseSensitive,
-              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+              search_params: nonEmptyOrUndefined(shorthandSearchParams),
             },
             idempotent
           )
