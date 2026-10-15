@@ -105,6 +105,12 @@ The session-wide `tags.require_approval` list applies to every toolkit that does
 
 Here, Gmail only asks before `GMAIL_SEND_EMAIL`, and its destructive tools run without asking. Every other toolkit asks before its destructive tools. To keep asking before Gmail's destructive tools too, add `"tags": { "require_approval": ["destructiveHint"] }` to the `gmail` entry.
 
+A few more things follow from this:
+
+- A toolkit in `toolkits.require_approval` always asks, whatever else is set.
+- To exempt a toolkit from the session-wide tag list, give it an empty list of its own, such as `"tools": { "github": { "require_approval": [] } }`.
+- Setting `tools.<toolkit>.tags`, even just for `require_approval`, also replaces the session-wide tag `enable` and `disable` filter for that toolkit. To change a toolkit's approvals without touching its filter, use `tools.<toolkit>.require_approval`.
+
 `require_approval` doesn't hide any tools from the agent. It can still find and call them, and the call waits for the user's approval.
 
 This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
