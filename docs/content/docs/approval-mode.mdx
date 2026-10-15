@@ -4,12 +4,10 @@ description: Ask the user before your agent runs tools that send, post or delete
 keywords: [approval, human in the loop, elicitation, require_approval, input_required, confirmation]
 ---
 
-By default, your agent can run any tool in a session as soon as it decides to. For tools that send, post or delete things on your users' behalf, you can configure the session to require the user's approval first.
-
-When your agent calls a tool that requires approval, Composio doesn't run it right away. It returns an elicitation that asks the user to approve the call, and runs the tool once it receives their answer.
+Approval mode lets a session ask the user before certain tools run. When the agent calls one, Composio returns an elicitation for the user instead of running the tool, and runs it once it receives their answer.
 
 <Callout type="warn" title="Experimental">
-Approval mode is experimental, and its SDK options may change. Answering questions needs `composio` newer than 0.27.0 (Python) or `@composio/core` newer than 0.24.0 (TypeScript).
+Approval mode is experimental. It needs `composio` newer than 0.27.0 or `@composio/core` newer than 0.24.0.
 </Callout>
 
 ## Requiring approval
@@ -72,11 +70,11 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-Tools that need approval stay visible to the agent. It can find and call them, and each call waits for the user's approval. This includes calls the agent makes through `COMPOSIO_MULTI_EXECUTE_TOOL`: a batch with two calls that need approval returns two questions.
+Tools that need approval stay visible to the agent. In `COMPOSIO_MULTI_EXECUTE_TOOL`, each call that needs approval gets its own question.
 
 ## Asking the user
 
-Say the agent in the Gmail session above asks to call `GMAIL_SEND_EMAIL`. Because it needs approval, the email isn't sent. Instead, `session.execute()` raises `ToolInputRequiredError` in Python and `ComposioToolInputRequiredError` in TypeScript:
+When a tool needs approval, `session.execute()` raises `ToolInputRequiredError` (`ComposioToolInputRequiredError` in TypeScript):
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -115,7 +113,7 @@ try {
 </Tab>
 </Tabs>
 
-`input_requests` (`inputRequests` in TypeScript) holds the questions for the user, keyed by question ID:
+`input_requests` holds the questions, keyed by ID. Each one is an [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation):
 
 ```json
 {
@@ -142,13 +140,11 @@ try {
 }
 ```
 
-Each question is an [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). Show the user its `message` and a form built from `requested_schema` (`requestedSchema` in TypeScript), which is a JSON Schema for the answer. Build the form from the schema rather than hard-coding the choices, because questions can offer different ones.
-
-You send `request_state` (`requestState` in TypeScript) back with the answer. It's left out of the error's message and logs, so read it from the attribute.
+Show the user the `message` and a form built from `requested_schema`. Build the form from the schema, since the choices vary between questions.
 
 ## Sending the answer
 
-Once the user answers, send the same call again, with the answer in `input_responses` under the question's ID, and `request_state`:
+Call `session.execute()` again with the same tool and arguments, the answers in `input_responses`, and `request_state`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -188,9 +184,7 @@ const result = await session.execute('GMAIL_SEND_EMAIL', args, {
 </Tab>
 </Tabs>
 
-Use the same tool and arguments as the original call. A call with different arguments needs its own approval.
-
-If the user picks **Always approve**, the tool runs, and later calls to the same tool on the same connected account run without asking for the rest of the session.
+When the user picks **Always approve**, their approval lasts for the rest of the session. Later calls to that tool on the same connected account run without asking again.
 
 ## End-to-end example
 
@@ -379,7 +373,7 @@ terminal.close();
 
 ## Using MCP
 
-If your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. Clients that don't support it can't ask, so calls that need approval are denied by default. You can set `no_elicitation_support_fallback` to `"allow"` to run them without asking instead:
+[Over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. With clients that don't, calls that need approval are denied. To run them without approval instead, set `no_elicitation_support_fallback` to `"allow"`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -417,11 +411,9 @@ const session = await composio.create('user_123', {
 
 ## Limitations
 
-While approval mode is experimental, only `session.execute()` and `session.execute_meta()` (`executeMeta()` in TypeScript) accept answers.
-
-- **Providers.** `handle_tool_calls` (`handleToolCalls` in TypeScript) and the tools that framework providers wrap don't ask the user. Depending on the provider, a call that needs approval either raises the error or returns it to the agent as a tool error. Run tool calls with `session.execute()`, as in the example above.
-- **Custom tools.** If a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) runs a tool that needs approval through `ctx.execute()`, it raises the error, and there's no way to pass the answer back through the custom tool yet.
-- **Proxy execute.** `session.proxy_execute()` (`proxyExecute()` in TypeScript) is disabled for a toolkit when any of its tools can need approval.
+- **Providers.** `handle_tool_calls` and framework providers don't support approval yet. Run tool calls with `session.execute()`, as in the example above.
+- **Custom tools.** A [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) can't pass an answer through `ctx.execute()`.
+- **Proxy execute.** `session.proxy_execute()` is disabled for a toolkit when any of its tools can need approval.
 
 ## Next
 
