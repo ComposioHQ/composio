@@ -7,7 +7,8 @@ import {
 } from '@composio/json-schema-to-effect-schema';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { getLatestToolVersion } from 'src/services/composio-account';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';

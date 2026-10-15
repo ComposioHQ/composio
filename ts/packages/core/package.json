@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.22.3"
   },
-  "version": "0.22.0",
+  "version": "0.24.0",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -120,9 +120,11 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@hono/node-server": "^2.1.1",
+    "@hono/node-server": "^2.1.4",
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.8.0",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.10.2",
     "hono": "catalog:",
     "tsdown": "catalog:",
     "tsx": "catalog:",
@@ -143,7 +145,7 @@
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
-    "undici": "^7.29.1",
+    "undici": "^7.30.0",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

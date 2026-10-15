@@ -1,8 +1,9 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { undecoded } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
@@ -190,14 +191,15 @@ export const logsCmd$Tools = Command.make(
       if (toolLogId) {
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
-          Effect.tryPromise({
-            try: () => client.logs.tools.retrieve(toolLogId),
-            catch: cause =>
-              new ToolLogsRequestError({
-                message: `Failed to fetch tool log "${toolLogId}".`,
-                cause,
-              }),
-          })
+          client.logs.tools.retrieve(toolLogId, undecoded).pipe(
+            Effect.mapError(
+              cause =>
+                new ToolLogsRequestError({
+                  message: `Failed to fetch tool log "${toolLogId}".`,
+                  cause,
+                })
+            )
+          )
         );
 
         yield* ui.log.info(
@@ -209,22 +211,27 @@ export const logsCmd$Tools = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching tool logs...',
-        Effect.tryPromise({
-          try: () =>
-            client.logs.tools.list({
+        client.logs.tools
+          .list(
+            {
               cursor: Option.getOrUndefined(cursor) ?? null,
               from: Option.getOrUndefined(from),
               to: Option.getOrUndefined(to),
               limit: clampedLimit,
               case_sensitive: caseSensitive,
               search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-            }),
-          catch: cause =>
-            new ToolLogsRequestError({
-              message: 'Failed to fetch tool logs.',
-              cause,
-            }),
-        })
+            },
+            undecoded
+          )
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new ToolLogsRequestError({
+                  message: 'Failed to fetch tool logs.',
+                  cause,
+                })
+            )
+          )
       );
 
       const logs = response.data ?? [];

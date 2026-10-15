@@ -18,6 +18,7 @@ import {
   ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
   ToolRouterInstant,
+  ToolRouterProxyExecute,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -203,6 +204,12 @@ export type SessionPatchBody = Omit<
   expected_config_version?: number;
 };
 
+/** `proxy_execute` as sent on create and update: a boolean becomes `{ enable }`. */
+export const transformToolRouterProxyExecuteParams = (
+  config: ToolRouterProxyExecute
+): NonNullable<SessionCreateParams['proxy_execute']> =>
+  typeof config === 'boolean' ? { enable: config } : config;
+
 export const transformToolRouterInstantParams = (
   config: ToolRouterInstant
 ): NonNullable<SessionCreateParams['instant']> => {
@@ -212,6 +219,9 @@ export const transformToolRouterInstantParams = (
     ...(config.tools !== undefined && { tools: config.tools }),
     ...(config.returnInstantCharge !== undefined && {
       return_instant_charge: config.returnInstantCharge,
+    }),
+    ...(config.returnPricesInSearch !== undefined && {
+      return_prices_in_search: config.returnPricesInSearch,
     }),
   };
 };
@@ -390,6 +400,12 @@ export const transformToolRouterUpdateParams = (
         ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
       params.multi_account = ma;
     }
+  }
+  if (config.proxyExecute !== undefined) {
+    params.proxy_execute =
+      config.proxyExecute === null
+        ? null
+        : transformToolRouterProxyExecuteParams(config.proxyExecute);
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;

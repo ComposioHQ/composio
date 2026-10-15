@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -52,7 +51,7 @@ const toolkitsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 describe('CLI: composio dev triggers info', () => {
   afterEach(() => {
@@ -125,6 +124,13 @@ describe('CLI: composio dev triggers info', () => {
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
+          // Once plainly for a captured stderr, once through the decorated log.
+          expect(lines).toEqual([
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+          ]);
           expect(process.exitCode).toBe(1);
         })
       );

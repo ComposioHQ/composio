@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import {
   AGENT_CONFIG_FILE_NAME,

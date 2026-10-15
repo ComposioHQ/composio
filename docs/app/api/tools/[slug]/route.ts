@@ -1,4 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { instantSchema } from '@/lib/instant';
+
+const toolDetailsSchema = z.object({
+  input_parameters: z.unknown().optional(),
+  parameters: z.unknown().optional(),
+  output_parameters: z.unknown().optional(),
+  response: z.unknown().optional(),
+  instant: instantSchema,
+});
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -20,7 +30,7 @@ export async function GET(
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools/${slug.toUpperCase()}?version=${encodeURIComponent(version)}`,
+      `${API_BASE}/tools/${slug.toUpperCase()}?version=${encodeURIComponent(version)}${version === 'latest' ? '&include_pricing=true' : ''}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -34,15 +44,15 @@ export async function GET(
       return NextResponse.json({ error: 'Tool not found' }, { status: response.status });
     }
 
-    const tool = await response.json();
+    const tool = toolDetailsSchema.parse(await response.json());
 
-    // Return just the schemas
     const inputSchema = tool.input_parameters || tool.parameters;
     const outputSchema = tool.output_parameters || tool.response;
 
     return NextResponse.json({
       input_parameters: inputSchema || null,
       output_parameters: outputSchema || null,
+      ...(version === 'latest' && tool.instant ? { instant: tool.instant } : {}),
     });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch tool' }, { status: 500 });

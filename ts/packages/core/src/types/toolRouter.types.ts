@@ -8,6 +8,7 @@ import { ConnectedAccountExperimentalSchema } from './connectedAccounts.types';
 import type {
   SessionConfigHistoryResponse,
   SessionCreateResponse,
+  SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import type {
   CustomTool,
@@ -131,6 +132,12 @@ export const ToolRouterInstantSchema = z.union([
        * usage on a Session set to `false`.
        */
       returnInstantCharge: z.boolean().optional(),
+      /**
+       * Experimental. Show each Instant tool's price in Session search
+       * results, under `toolkitConnectionStatuses[].instantAccount.prices`.
+       * Controls visibility only.
+       */
+      returnPricesInSearch: z.boolean().optional(),
     })
     .strict(),
 ]);
@@ -149,7 +156,16 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 
 // Tags
 export const ToolRouterTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
+  .array(
+    z.enum([
+      'readOnlyHint',
+      'createHint',
+      'updateHint',
+      'destructiveHint',
+      'idempotentHint',
+      'openWorldHint',
+    ])
+  )
   .describe('The tags to filter the tools by');
 export const ToolRouterTagsEnableDisableSchema = z
   .object({
@@ -232,6 +248,33 @@ export const ToolRouterConfigToolsSchema = z
     }
   });
 export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
+
+/**
+ * Proxy execute settings for a session. `enable: true` exposes the
+ * `COMPOSIO_PROXY_EXECUTE` meta tool and `enable: false` also turns off the
+ * sandbox `proxy_execute()` helper. Leaving the block out keeps the meta tool
+ * off while `sandbox.enableProxyExecution` controls the helper.
+ */
+export const ToolRouterProxyExecuteConfigSchema = z
+  .object({
+    enable: z
+      .boolean()
+      .describe(
+        'true exposes the COMPOSIO_PROXY_EXECUTE meta tool. false also turns off the sandbox proxy_execute() helper.'
+      ),
+  })
+  .strict();
+export type ToolRouterProxyExecuteConfig = z.infer<typeof ToolRouterProxyExecuteConfigSchema>;
+
+/**
+ * `proxyExecute` as accepted by `sessions.create()` and `session.update()`:
+ * a boolean is shorthand for `{ enable: boolean }`.
+ */
+export const ToolRouterProxyExecuteSchema = z.union([
+  z.boolean(),
+  ToolRouterProxyExecuteConfigSchema,
+]);
+export type ToolRouterProxyExecute = z.infer<typeof ToolRouterProxyExecuteSchema>;
 
 const ToolRouterCreateSessionConfigBaseSchema = z
   .object({
@@ -318,6 +361,10 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       })
       .optional()
       .describe('Multi-account configuration for this session'),
+
+    proxyExecute: ToolRouterProxyExecuteSchema.optional().describe(
+      'Proxy execute configuration for this session; a boolean is shorthand for `{ enable }`. Rejected by the API when enable is false and sandbox.enableProxyExecution is true.'
+    ),
 
     preload: z
       .object({
@@ -440,6 +487,8 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [multiAccount.enable] - When true, enables multi-account mode. Falls back to org/project-level config when not set.
  * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
+ * @param {boolean | object} [proxyExecute] - Proxy execute configuration for this session. A boolean is shorthand for `{ enable }`.
+ * @param {boolean} proxyExecute.enable - `true` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool. `false` also turns off the sandbox `proxy_execute()` helper.
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
@@ -609,7 +658,24 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
   /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
-  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
+  instantAccount: z
+    .object({
+      allowedToolSlugs: z.array(z.string()),
+      /**
+       * Price of each tool, keyed by tool slug. Present only when the Session
+       * sets `instant.returnPricesInSearch`.
+       */
+      prices: z
+        .record(
+          z.string(),
+          z.object({
+            description: z.string().optional(),
+            discount: z.string().nullable().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -633,10 +699,9 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   /**
    * Whether the tool ran and succeeded (`completed`) or ran and failed
    * (`failed`). A failed execution can carry a `null` or empty `error`, so
-   * read this rather than `error` to tell the two apart. Absent when the API
-   * sent no `result_type`.
+   * read this rather than `error` to tell the two apart.
    */
-  resultType: z.enum(['completed', 'failed']).optional(),
+  resultType: z.enum(['completed', 'failed']),
   /** Actual Instant usage charge when the Session opts into returning it. */
   instantCharge: z.unknown().optional(),
 });
@@ -710,24 +775,23 @@ export interface ToolRouterSessionExecuteOptions {
   account?: string;
 }
 
+/**
+ * Slug of a Composio meta tool (`COMPOSIO_*`) that `session.executeMeta()` can
+ * run, for example `COMPOSIO_SEARCH_TOOLS`.
+ */
+export type ToolRouterSessionMetaToolSlug = SessionExecuteMetaParams['slug'];
+
+export type ToolRouterSessionExecuteMetaFn = (
+  slug: ToolRouterSessionMetaToolSlug,
+  arguments_?: Record<string, unknown>,
+  requestOptions?: ComposioRequestOptions
+) => Promise<ToolRouterSessionExecuteResponse>;
+
 export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
 
 export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
 
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
-
-const ToolRouterInstantResponseFilterSchema = z.union([
-  z.object({ enabled: z.array(z.string()) }),
-  z.object({ disabled: z.array(z.string()) }),
-]);
-
-/** Instant policy in the server's Session config (wire field casing). */
-export const ToolRouterInstantResponseSchema = z.object({
-  toolkits: ToolRouterInstantResponseFilterSchema.optional(),
-  tools: z.record(z.string(), ToolRouterInstantResponseFilterSchema).optional(),
-  return_instant_charge: z.boolean(),
-});
-export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;
 
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
@@ -941,6 +1005,11 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .nullable()
       .optional()
       .describe('`null` removes the session override; the mode then resolves to disabled'),
+    proxyExecute: ToolRouterProxyExecuteSchema.nullable()
+      .optional()
+      .describe(
+        'Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it'
+      ),
     preload: z
       .object({
         tools: z.union([z.array(z.string()), z.literal('all')]).optional(),
@@ -1151,6 +1220,8 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
+  /** Execute a Composio meta tool (`COMPOSIO_*`) within the session */
+  executeMeta: ToolRouterSessionExecuteMetaFn;
   /** Update the session configuration. Mutates this session in-place and resolves to the updated `config`. */
   update: ToolRouterSessionUpdateFn;
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */

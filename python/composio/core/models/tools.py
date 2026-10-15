@@ -7,8 +7,13 @@ from pathlib import Path
 
 import typing_extensions as te
 from composio_client import APIStatusError, omit
+from composio_client.types.tool_router.session_execute_meta_response import (
+    SessionExecuteMetaInputRequiredResponse,
+    SessionExecuteMetaResponse,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteInputRequiredResponse,
+    SessionExecuteResponse,
 )
 from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteInputRequiredResponse,
@@ -39,6 +44,7 @@ from composio.exceptions import (
     ToolInputRequiredError,
     ToolNotFoundError,
     ToolVersionRequiredError,
+    ValidationError,
 )
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
@@ -128,6 +134,7 @@ def require_executed(
     response: t.Union[
         _ExecutedT,
         SessionExecuteInputRequiredResponse,
+        SessionExecuteMetaInputRequiredResponse,
         SessionProxyExecuteInputRequiredResponse,
     ],
     subject: str,
@@ -140,7 +147,11 @@ def require_executed(
     """
     if not isinstance(
         response,
-        (SessionExecuteInputRequiredResponse, SessionProxyExecuteInputRequiredResponse),
+        (
+            SessionExecuteInputRequiredResponse,
+            SessionExecuteMetaInputRequiredResponse,
+            SessionProxyExecuteInputRequiredResponse,
+        ),
     ):
         return response
     raise ToolInputRequiredError(
@@ -158,22 +169,63 @@ def require_executed(
     )
 
 
-def is_execution_successful(
-    result_type: t.Optional[str], error: t.Optional[str]
-) -> bool:
+def require_execute_result(
+    response: t.Union[SessionExecuteResponse, SessionExecuteInputRequiredResponse],
+    slug: str,
+) -> SessionExecuteResponse:
+    """Narrow a session execute response to a tool that ran.
+
+    Every session execute response carries a ``result_type``. One without it,
+    or with a value this SDK does not know, is neither a success nor a failure,
+    so it is raised instead of being read as one. The TypeScript SDK applies
+    the same rule.
+
+    :raises ToolInputRequiredError: If the tool asked for user input instead of
+        running.
+    :raises ValidationError: If ``result_type`` is missing or unknown.
+    """
+    executed = require_executed(response, f"Tool {slug}")
+    if getattr(executed, "result_type", None) not in ("completed", "failed"):
+        raise ValidationError(
+            f"Tool {slug} returned an execute response without a known result_type"
+        )
+    return executed
+
+
+def require_execute_meta_result(
+    response: t.Union[
+        SessionExecuteMetaResponse, SessionExecuteMetaInputRequiredResponse
+    ],
+    slug: str,
+) -> SessionExecuteResponse:
+    """Narrow a session execute_meta response to a meta tool that ran.
+
+    The meta endpoint answers in the same shape as session execute, so the
+    result is returned as the session execute response and follows the rules of
+    :func:`require_execute_result`.
+
+    :raises ToolInputRequiredError: If the tool asked for user input instead of
+        running.
+    :raises ValidationError: If ``result_type`` is missing or unknown.
+    """
+    executed = require_executed(response, f"Tool {slug}")
+    # Carry the fields over as the client parsed them instead of validating
+    # them a second time.
+    return require_execute_result(
+        SessionExecuteResponse.model_construct(
+            _fields_set=executed.model_fields_set, **dict(executed)
+        ),
+        slug,
+    )
+
+
+def is_execution_successful(result_type: t.Optional[str]) -> bool:
     """Whether a session tool execution succeeded.
 
-    ``result_type`` decides when the API sent one: a ``failed`` execution is
-    not successful even when its ``error`` is ``None`` or empty. Without a
-    known ``result_type``, for example from a server that predates it, an
-    execution is successful when it carries no error text. The TypeScript SDK
-    applies the same rule.
+    ``result_type`` decides: a ``failed`` execution is not successful even when
+    its ``error`` is ``None`` or empty. The TypeScript SDK applies the same rule.
     """
-    if result_type == "completed":
-        return True
-    if result_type == "failed":
-        return False
-    return not error
+    return result_type == "completed"
 
 
 class InstantCharge(te.TypedDict):
@@ -629,7 +681,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
             # Disable retries: a session execution is a non-idempotent write, and a
             # silent retry after a read timeout can duplicate the side effect.
-            response = require_executed(
+            response = require_execute_result(
                 self._client.without_retries.tool_router.session.execute(
                     session_id=session_id,
                     tool_slug=slug,
@@ -641,17 +693,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                         inline_custom_tools_payload
                     ),
                 ),
-                f"Tool {slug}",
+                slug,
             )
 
             # Convert response to standard format
-            error = response.error if hasattr(response, "error") else None
             result: ToolExecutionResponse = {
                 "data": response.data if hasattr(response, "data") else {},
-                "error": error,
-                "successful": is_execution_successful(
-                    getattr(response, "result_type", None), error
-                ),
+                "error": response.error if hasattr(response, "error") else None,
+                "successful": is_execution_successful(response.result_type),
             }
             instant_charge = getattr(response, "instant_charge", None)
             if isinstance(instant_charge, PydanticBaseModel):
@@ -869,8 +918,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         custom_connection_data: t.Optional[
             tool_proxy_params.CustomConnectionData
         ] = None,
+        user_id: t.Optional[str] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
-        """Proxy a tool call to the Composio API"""
+        """Proxy a tool call to the Composio API.
+
+        ``user_id`` is the user the connected account belongs to. Projects with
+        2FA enabled check it against the connected account and may require it.
+        """
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.
         return self._client.without_retries.tools.proxy(
@@ -884,6 +938,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
+            user_id=user_id if user_id is not None else omit,
         )
 
 

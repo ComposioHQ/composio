@@ -124,7 +124,12 @@ describe('execute', () => {
 
   it('executes through a session, which takes no modifiers', async () => {
     const session = {
-      execute: vi.fn().mockResolvedValue({ data: { ok: true }, error: null, logId: 'log_1' }),
+      execute: vi.fn().mockResolvedValue({
+        data: { ok: true },
+        error: null,
+        logId: 'log_1',
+        resultType: 'completed',
+      }),
     };
     const result = await provider.execute(session as ToolCallSession, partial, {
       arguments: { body: 'text' },

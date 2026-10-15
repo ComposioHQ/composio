@@ -8,15 +8,20 @@ import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-const companionRelativePaths = [
-  // RUN_COMPANION_MODULE_FILENAMES
-  'run-helpers-runtime.mjs',
+// The "downloaded" bundle is laid out like a release archive: the live companions
+// with their real contents, plus the legacy paths as empty placeholders.
+
+// RUN_COMPANION_MODULE_FILENAMES
+const liveCompanionFileNames = ['run-helpers-runtime.mjs', 'generation-runtime.mjs'] as const;
+
+const runOutputMarker = 'composio-upgrade-run-companions-loaded';
+
+// RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS
+const legacyPlaceholderRelativePaths = [
   'run-subagent-shared.mjs',
   'run-subagent-acp.mjs',
   'run-subagent-legacy.mjs',
   'run-subagent-output-mcp.mjs',
-  'generation-runtime.mjs',
-  // RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS
   'acp-adapters/claude-code-acp.mjs',
   'acp-adapters/cli.js',
   'acp-adapters/codex/darwin-arm64/codex-acp',
@@ -25,12 +30,17 @@ const companionRelativePaths = [
   'acp-adapters/codex/linux-x64/codex-acp',
 ] as const;
 
-const sourceBundleSetup = companionRelativePaths
-  .map(
+const sourceBundleSetup = [
+  'mkdir -p "$source_dir/services"',
+  ...liveCompanionFileNames.flatMap(fileName => [
+    `cp "/usr/local/bin/${fileName}" "$source_dir/${fileName}"`,
+    `cp "/usr/local/bin/services/${fileName}" "$source_dir/services/${fileName}"`,
+  ]),
+  ...legacyPlaceholderRelativePaths.map(
     relativePath =>
       `mkdir -p "$(dirname "$source_dir/${relativePath}")"\n: > "$source_dir/${relativePath}"`
-  )
-  .join('\n');
+  ),
+].join('\n');
 
 const upgradeCommand = ({
   executablePath,
@@ -60,12 +70,16 @@ fi
 
 version_output=$("$executable_path" version)
 version_status=$?
-printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\n' \
-  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output"
+run_output=$("$executable_path" run 'console.log(z.string().parse("${runOutputMarker}"))')
+run_status=$?
+printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\nrun_status=%s\nrun_output=%s\n' \
+  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output" "$run_status" "$run_output"
 
 if [ "$upgrade_status" -eq 0 ] &&
   [ "$executable_status" -eq 0 ] &&
   [ "$version_status" -eq 0 ] &&
+  [ "$run_status" -eq 0 ] &&
+  [ "$run_output" = "${runOutputMarker}" ] &&
   [ -n "$before_inode" ] &&
   [ -n "$after_inode" ] &&
   [ "$before_inode" != "$after_inode" ]; then
@@ -87,6 +101,8 @@ const expectAtomicUpgrade = (result: E2ETestResult) => {
   expect(outputField(result, 'executable_status')).toBe('0');
   expect(outputField(result, 'version_status')).toBe('0');
   expect(outputField(result, 'version')).toMatch(/\d+\.\d+\.\d+/);
+  expect(outputField(result, 'run_status')).toBe('0');
+  expect(outputField(result, 'run_output')).toBe(runOutputMarker);
   expect(outputField(result, 'after_inode')).not.toBe(outputField(result, 'before_inode'));
 };
 

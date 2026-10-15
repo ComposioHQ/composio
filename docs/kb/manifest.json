@@ -5231,7 +5231,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/serpapi/public.md",
-          "sourceHeading": "Disable SerpAPI by listing premium toolkit slugs in session config"
+          "sourceHeading": "Control SerpAPI availability in a Session"
         },
         {
           "sourcePath": "toolkits/serpapi/public.md",
@@ -5382,7 +5382,7 @@
       ],
       "relatedGuides": [],
       "externalResources": [],
-      "updatedAt": "2026-07-16",
+      "updatedAt": "2026-10-13",
       "lastVerifiedAt": "2026-08-12",
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",

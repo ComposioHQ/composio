@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import { Argument, Command } from 'effect/unstable/cli';
+import { Argument, Command } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -117,18 +117,17 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     });
     const rawResult = yield* ui.withSpinner(
       'Fetching connections...',
-      Effect.tryPromise({
-        try: () =>
-          client.connectedAccounts.list({
-            user_ids: [consumerUserId],
-            limit: 1000,
-          }),
-        catch: cause =>
-          new ConnectionsRemovalRequestError({
-            message: 'Failed to list connections.',
-            cause,
-          }),
-      })
+      client.connectedAccounts
+        .list({ user_ids: [consumerUserId], limit: 1000 }, { decode: false })
+        .pipe(
+          Effect.mapError(
+            cause =>
+              new ConnectionsRemovalRequestError({
+                message: 'Failed to list connections.',
+                cause,
+              })
+          )
+        )
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const resolved = resolveAccount({ accounts: result.items, selector: account });
@@ -153,14 +152,15 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     yield* ui.withSpinner(
       `Removing ${resolved.toolkit.slug} connection...`,
-      Effect.tryPromise({
-        try: () => client.connectedAccounts.delete(resolved.id),
-        catch: cause =>
-          new ConnectionsRemovalRequestError({
-            message: `Failed to remove connected account "${resolved.id}".`,
-            cause,
-          }),
-      }),
+      client.connectedAccounts.delete(resolved.id, undefined, { decode: false }).pipe(
+        Effect.mapError(
+          cause =>
+            new ConnectionsRemovalRequestError({
+              message: `Failed to remove connected account "${resolved.id}".`,
+              cause,
+            })
+        )
+      ),
       {
         successMessage: `Removed ${resolved.toolkit.slug} connection.`,
         errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,

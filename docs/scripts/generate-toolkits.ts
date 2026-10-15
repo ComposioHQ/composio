@@ -15,12 +15,14 @@ import { requireProductionApiV3Url, stripStagingHosts } from './production-api.m
 import { applyToolkitVersions, fetchProductionToolkitVersions } from './toolkit-versions';
 import { isPublicToolkitSlug } from '../lib/public-toolkit-policy';
 import { z } from 'zod';
+import { instantSchema, type Instant } from '../lib/instant';
 
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
 interface Tool {
+  instant?: Instant;
   slug: string;
   name: string;
   description: string;
@@ -57,6 +59,7 @@ interface AuthConfigDetail {
 }
 
 interface Toolkit {
+  instant?: Instant;
   slug: string;
   name: string;
   logo: string | null;
@@ -90,6 +93,7 @@ const optionalStringArraySchema = z
   );
 
 const rawToolkitSchema = z.object({
+  instant: instantSchema,
   slug: z.string().catch(''),
   name: z.string().optional().catch(undefined),
   logo: z.string().optional().catch(undefined),
@@ -129,6 +133,7 @@ const slugItemSchema = z.object({ slug: z.string() });
 
 // Tools/triggers list entries share the slug/name/description shape.
 const rawNamedItemSchema = z.object({
+  instant: instantSchema,
   slug: z.string().catch(''),
   name: z.string().optional().catch(undefined),
   display_name: z.string().optional().catch(undefined),
@@ -145,8 +150,8 @@ const namedItemListSchema = z
     items.flatMap(item => {
       const parsed = rawNamedItemSchema.safeParse(item);
       if (!parsed.success) return [];
-      const { slug, name, display_name, description } = parsed.data;
-      return [{ slug, name: name || display_name || slug, description }];
+      const { slug, name, display_name, description, instant } = parsed.data;
+      return [{ slug, name: name || display_name || slug, description, ...(instant ? { instant } : {}) }];
     })
   );
 
@@ -253,7 +258,7 @@ async function fetchToolkits(): Promise<unknown[]> {
 
 async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
   const response = await fetchWithRetry(
-    `${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&limit=1000`,
+    `${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&include_pricing=true&limit=1000`,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -360,6 +365,7 @@ export function transformToolkit(raw: unknown): Toolkit {
   return {
     slug,
     name: toolkit.name || toolkit.slug,
+    ...(toolkit.instant ? { instant: toolkit.instant } : {}),
     logo: toolkit.meta.logo || toolkit.logo || null,
     description: toolkit.meta.description || toolkit.description,
     category: category || null,
@@ -440,13 +446,14 @@ async function main() {
 
   // Write light file (for landing page - imported in client component)
   // Excludes tools and triggers arrays to keep bundle size small
-  const toolkitsLight = toolkits.map(({ slug, name, logo, category, toolCount, triggerCount }) => ({
+  const toolkitsLight = toolkits.map(({ slug, name, logo, category, toolCount, triggerCount, instant }) => ({
     slug,
     name,
     logo,
     category,
     toolCount,
     triggerCount,
+    ...(instant ? { instant } : {}),
   }));
   await writeFile(join(OUTPUT_DIR, 'toolkits-list.json'), JSON.stringify(toolkitsLight, null, 2));
 

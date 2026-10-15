@@ -50,6 +50,7 @@ from composio.core.models.tool_router_constants import (
 )
 from composio.core.models.tool_router_session import (
     ToolRouterInstantConfig,
+    ToolRouterProxyExecuteConfig,
     ToolRouterSession,
     ToolRouterSessionConfig,
     ToolRouterSessionPreloadConfig,
@@ -115,7 +116,12 @@ def _origin(url: str, role: str) -> str:
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "createHint",
+    "updateHint",
+    "destructiveHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -334,6 +340,15 @@ def _preloads_all_custom_tools(
     else:
         tools = preload.tools
     return tools == PRELOAD_TOOLS_ALL
+
+
+def _proxy_execute_payload(
+    proxy_execute: t.Union[bool, ToolRouterProxyExecuteConfig],
+) -> ToolRouterProxyExecuteConfig:
+    """Expand the ``proxy_execute`` bool shorthand to the API block."""
+    if isinstance(proxy_execute, bool):
+        return {"enable": proxy_execute}
+    return proxy_execute
 
 
 def _apply_session_preset_defaults(
@@ -725,6 +740,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -754,6 +770,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -782,6 +799,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -823,8 +841,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                       Example: ['readOnlyHint', 'idempotentHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
-                    Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    Available tag values: 'readOnlyHint', 'createHint',
+                    'updateHint', 'destructiveHint', 'idempotentHint',
+                    'openWorldHint'.
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -893,9 +912,19 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param proxy_execute: Optional proxy execute configuration: a bool or
+                        ``ToolRouterProxyExecuteConfig``; ``True`` is shorthand for
+                        ``{"enable": True}``. ``True`` exposes the
+                        ``COMPOSIO_PROXY_EXECUTE`` meta tool. ``False`` also turns off
+                        the sandbox ``proxy_execute()`` helper, and the API rejects it
+                        together with ``sandbox={"enable_proxy_execution": True}``.
+                        Leaving it out keeps the meta tool off.
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
+                        ``return_instant_charge`` returns the charge with each
+                        call, and ``return_prices_in_search`` shows each Instant
+                        tool's price in ``session.search()`` results.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint
@@ -1091,6 +1120,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         }
         if instant is not None:
             create_params["instant"] = instant
+        if proxy_execute is not None:
+            create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {

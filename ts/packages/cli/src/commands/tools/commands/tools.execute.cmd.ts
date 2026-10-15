@@ -1,4 +1,4 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
@@ -16,7 +16,11 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
-import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
+import type {
+  InstantCharge,
+  ToolExecuteParams,
+  ToolExecuteResponse,
+} from 'src/services/tools-executor';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
@@ -52,7 +56,7 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
 
 export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(
@@ -342,6 +346,7 @@ type StoredExecuteOutputSummary = {
   readonly successful: true;
   readonly error: null;
   readonly logId: string;
+  readonly instantCharge?: InstantCharge;
   readonly storedInFile: true;
   readonly tokenCount: number;
   readonly sizeBytes: number;
@@ -370,12 +375,19 @@ const permissionApprovalLabel = (approval?: string): string | undefined => {
   }
 };
 
+const instantChargeLabel = (charge?: InstantCharge): string | undefined => {
+  if (!charge) return undefined;
+  return `instant charge: ${charge.amount} ${charge.currency}`;
+};
+
 const executionSuccessSuffix = (result: {
   readonly logId?: string;
   readonly permissionApproval?: string;
+  readonly instantCharge?: InstantCharge;
 }) => {
   const metadata = [
     permissionApprovalLabel(result.permissionApproval),
+    instantChargeLabel(result.instantCharge),
     result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
   ].filter((value): value is string => Boolean(value));
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
@@ -433,6 +445,7 @@ const prepareExecuteOutput = (
       summary: {
         ...(yield* persistLargeExecuteOutput(toolSlug, json, sizeBytes, sharedDirectory)),
         logId: result.logId,
+        ...(result.instantCharge ? { instantCharge: result.instantCharge } : {}),
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
   });
@@ -1788,12 +1801,14 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
           const result = yield* context.executor.execute(toolSlug, context.executeParams);
           if (!result.successful) {
-            return {
+            const failed = {
               slug: toolSlug,
-              successful: false,
+              successful: false as const,
               error: result.error ?? 'Execution failed.',
               logId: result.logId,
             };
+            if (!result.instantCharge) return failed;
+            return { ...failed, instantCharge: result.instantCharge };
           }
 
           const output = yield* prepareExecuteOutput(toolSlug, result, context.executeOutputDir);

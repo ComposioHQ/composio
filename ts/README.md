@@ -40,7 +40,7 @@ Internal (unpublished) packages: `cli-keyring` supports the CLI; `ts-builders` g
 ts/
   packages/        Published and internal packages (see above)
   examples/        Runnable examples per feature and framework
-  e2e-tests/       Runtime E2E tests (Node, Deno, Cloudflare Workers, CLI)
+  e2e-tests/       Runtime E2E tests (Node, Cloudflare Workers, CLI)
   docs/            Workspace SDK docs: API notes and internal guides
   scripts/         Build, validation, and scaffolding scripts
   vendor/          Read-only reference submodules; do not edit
@@ -68,7 +68,6 @@ Runtime E2E suites (require credentials):
 
 ```bash
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```

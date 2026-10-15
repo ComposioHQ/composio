@@ -789,7 +789,7 @@ class TestSessionContextImpl:
         m = build_custom_tools_map([grep_tool])
         mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
@@ -805,7 +805,7 @@ class TestSessionContextImpl:
     def test_remote_fallback_passes_inline_custom_tools(self):
         mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         inline_payload = {
             "custom_tools": [
@@ -989,7 +989,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_execute_remote(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -1015,6 +1015,7 @@ class TestToolRouterSessionCustomTools:
         ].tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"sent": True},
                     "error": None,
                     "log_id": "log_123",
@@ -1037,7 +1038,7 @@ class TestToolRouterSessionCustomTools:
         mock_session_deps[
             "client"
         ].tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         s = _session(mock_session_deps)
 
@@ -1047,7 +1048,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"

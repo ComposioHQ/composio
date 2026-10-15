@@ -1,17 +1,17 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
+import { ComposioSessionRepository } from 'src/services/composio-clients';
 import {
-  ComposioSessionRepository,
   getSessionInfo,
   getSessionInfoByUserApiKey,
   listOrganizations,
   sessionUserIdOf,
   type OrganizationSummary,
   type SessionInfoResponse,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
@@ -125,7 +125,7 @@ class LoginOptionError extends Data.TaggedError('commands/LoginOptionError')<{
 /**
  * v4 migration note: v3's `ValidationError.invalidValue(HelpDoc.p(message))` produced a value
  * that `@effect/cli`'s `Command.run` printed to stderr and mapped to exit code 1 itself.
- * `effect/unstable/cli`'s `CliError.InvalidValue` is now a fixed flag/argument-name-and-value
+ * `effect/cli`'s `CliError.InvalidValue` is now a fixed flag/argument-name-and-value
  * struct (see `CliError.ts`) built by the parser, not a freeform validation message constructor,
  * and `Command.runWith` only renders errors it produces during parsing — it does not intercept or
  * render failures raised from inside a command handler. A plain typed domain error (matching the

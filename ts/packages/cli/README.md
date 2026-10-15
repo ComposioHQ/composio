@@ -74,6 +74,7 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 | COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE | -                                   | Disables the connected-account cache                                                                   | true                                                                     |
 | COMPOSIO_PERF_DEBUG                      | -                                   | Set to `1` to write performance diagnostics                                                            | 0                                                                        |
 | COMPOSIO_TOOL_DEBUG                      | -                                   | Set to `1` to write tool diagnostics                                                                   | 0                                                                        |
+| COMPOSIO_CLI_TELEMETRY_DISABLED          | -                                   | Set to `1` to disable CLI telemetry (`COMPOSIO_DISABLE_TELEMETRY` and `TELEMETRY_DISABLED` also work)  | 0                                                                        |
 | DEBUG_OVERRIDE_VERSION                   | -                                   | The version to use when upgrading the Composio CLI (for debugging)                                     | None                                                                     |
 | FORCE_USE_CACHE                          | -                                   | Whether to force the use of previously cached HTTP responses                                           | None                                                                     |
 | NO_COLOR                                 | -                                   | If set, disables color output in the CLI (https://no-color.org/)                                       | None                                                                     |
@@ -84,7 +85,6 @@ The CLI and its installer use these variables to coordinate nested commands. The
 | ------------------------------ | -------------------------------------------------------------------------- | ------- |
 | COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it | cli     |
 | COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                      | None    |
-| COMPOSIO_RUN_ACP_ONLY          | Set to `1` to disable the legacy sub-agent fallback                        | 0       |
 | COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands        | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
@@ -96,6 +96,8 @@ Additionally, `composio upgrade` supports the following environment variables:
 | COMPOSIO_GITHUB_REPO         | The repository name for the Composio CLI                                                               | composio               |
 | COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
 | COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
+
+Every variable above is declared in `src/config/`, one catalog per purpose; that directory is the place to look up or add a setting.
 
 ### Choosing the PATH entry with `COMPOSIO_BIN_DIR`
 

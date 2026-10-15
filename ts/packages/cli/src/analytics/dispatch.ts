@@ -1,24 +1,12 @@
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
 import type { PlatformError } from 'effect/PlatformError';
-import {
-  Cause,
-  Clock,
-  Config,
-  ConfigProvider,
-  DateTime,
-  Effect,
-  Encoding,
-  FileSystem,
-  Option,
-  Path,
-  Predicate,
-} from 'effect';
-import { HttpClient, HttpClientRequest } from 'effect/unstable/http';
+import { Cause, Clock, DateTime, Effect, FileSystem, Option, Path, Predicate } from 'effect';
+import { Base64Url } from 'effect/encoding';
+import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
-import { extendConfigProvider } from 'src/services/config';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
@@ -26,7 +14,7 @@ import { NodeOs } from 'src/services/node-os';
 import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
-import { CliRunId } from 'src/services/runtime-cli-context';
+import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -75,59 +63,13 @@ type ConsumerShortTermCacheState = Record<
   }
 >;
 
-// Workers start before the CLI's prefixed ConfigProvider is assembled, so this
-// module names and reads the actual environment variables from a raw provider.
-// `ConfigProvider.fromEnv()` snapshots `process.env` at construction time
-// (see the vendored `effect` source), so the provider must be rebuilt on every
-// read rather than memoized at module scope -- otherwise env changes made
-// after import (including `vi.stubEnv` in tests) are never observed.
-const getEnvironmentProvider = (): ConfigProvider.ConfigProvider => ConfigProvider.fromEnv();
-const optionalString = (name: string) => Config.option(Config.String(name));
-const booleanWithDefault = (name: string) => Config.Boolean(name).pipe(Config.withDefault(false));
-const configuredString = (value: Option.Option<string>): string | undefined =>
-  value.pipe(
-    Option.map(value => value.trim()),
-    Option.filter(value => value.length > 0),
-    Option.getOrUndefined
-  );
+const analyticsDisabled = Effect.orDie(TELEMETRY_CONFIG.DISABLED);
 
-const analyticsDisabled = Effect.suspend(() =>
-  Config.all({
-    cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
-    telemetryDisabled: booleanWithDefault('TELEMETRY_DISABLED'),
-    composioTelemetryDisabled: booleanWithDefault('COMPOSIO_DISABLE_TELEMETRY'),
-    nodeEnvironment: Config.String('NODE_ENV').pipe(Config.withDefault('')),
-    ci: booleanWithDefault('CI'),
+const getPostHogConfig = Effect.orDie(
+  Effect.all({
+    ingestUrl: TELEMETRY_CONFIG.POSTHOG_INGEST_URL,
+    projectKey: TELEMETRY_CONFIG.POSTHOG_PROJECT_API_KEY,
   })
-    .pipe(
-      Config.map(
-        ({
-          cliTelemetryDisabled,
-          telemetryDisabled,
-          composioTelemetryDisabled,
-          nodeEnvironment,
-          ci,
-        }) =>
-          cliTelemetryDisabled ||
-          telemetryDisabled ||
-          composioTelemetryDisabled ||
-          nodeEnvironment === 'test' ||
-          ci
-      )
-    )
-    .parse(getEnvironmentProvider())
-);
-
-const getPostHogConfig = Effect.suspend(() =>
-  Config.all({
-    ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
-    projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
-  }).parse(getEnvironmentProvider())
-).pipe(
-  Effect.map(({ ingestUrl, projectKey }) => ({
-    ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
-    projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
-  }))
 );
 
 const postHogEnabled = Effect.gen(function* () {
@@ -171,14 +113,9 @@ const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, stri
 const getAnalyticsPaths = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
-  const cacheDirectories = yield* Config.all({
-    composio: optionalString('COMPOSIO_CACHE_DIR'),
-    legacy: optionalString('CACHE_DIR'),
-  }).parse(getEnvironmentProvider());
   const analyticsDir = path.join(os.homedir, COMPOSIO_DIR);
   const cacheDir =
-    configuredString(cacheDirectories.composio) ??
-    configuredString(cacheDirectories.legacy) ??
+    (yield* Effect.orDie(APP_CONFIG.CACHE_DIR)) ??
     path.join(os.homedir, constants.USER_COMPOSIO_DIR);
 
   return {
@@ -361,9 +298,7 @@ const getOrgId = Effect.map(readUserConfig, config =>
 );
 
 const getUserApiKey = Effect.gen(function* () {
-  const envApiKey = configuredString(
-    yield* optionalString('COMPOSIO_USER_API_KEY').parse(getEnvironmentProvider())
-  );
+  const envApiKey = yield* Effect.orDie(APP_CONFIG.USER_API_KEY);
   if (envApiKey) {
     return envApiKey;
   }
@@ -506,22 +441,15 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
   },
 });
 
-export const readApiBaseUrl = Effect.gen(function* () {
-  const envBaseUrl = configuredString(
-    yield* optionalString('COMPOSIO_BASE_URL').parse(getEnvironmentProvider())
-  );
-  if (envBaseUrl) {
-    return envBaseUrl.replace(/\/+$/u, '');
-  }
+// The same URL the CLI itself talks to: `COMPOSIO_BASE_URL`, else the `COMPOSIO_ENVIRONMENT`
+// default. The persisted login URL is not consulted, matching `ComposioUserContext`.
+export const readApiBaseUrl = Effect.orDie(APP_CONFIG.BASE_URL).pipe(
+  Effect.map(url => url.replace(/\/+$/u, ''))
+);
 
-  const userConfig = yield* readUserConfig;
-  return typeof userConfig?.base_url === 'string' && userConfig.base_url.trim().length > 0
-    ? userConfig.base_url.trim().replace(/\/+$/u, '')
-    : null;
-}).pipe(Effect.catchCause(() => Effect.succeed(null)));
-
-const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
-  baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
+const getCliCodactFailuresEndpoint = Effect.map(
+  readApiBaseUrl,
+  baseUrl => `${baseUrl}${CLI_CODACT_FAILURES_PATH}`
 );
 
 // Effect's Command processes are scoped and die with their scope; telemetry
@@ -603,15 +531,12 @@ type CliInvocationContext = {
 // The COMPOSIO_CLI_PARENT_RUN_ID handshake only exists in processes `composio run` spawned. The
 // root run process holds its freshly minted id in the CliRunId service instead, so failures it
 // reports carry the same run id its children stamp from the environment.
-const getCliInvocationContext = Effect.gen(function* () {
-  const environment = yield* Config.all({
-    origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
-    parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
-  }).parse(extendConfigProvider(getEnvironmentProvider()));
+const getCliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.gen(function* () {
+  const { invocationOrigin, parentRunId } = yield* cliInvocationContext;
   const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
   return {
-    origin: environment.origin,
-    parentRunId: environment.parentRunId ?? Option.getOrUndefined(mintedRunId),
+    origin: invocationOrigin,
+    parentRunId: parentRunId ?? Option.getOrUndefined(mintedRunId),
   };
 });
 
@@ -638,9 +563,9 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const disabled = yield* analyticsDisabled;
-    if (!endpoint || disabled) {
+    if (disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
-        reason: disabled ? 'disabled' : 'missing_endpoint',
+        reason: 'disabled',
         endpoint,
         failureType: failure.failureType,
       });
@@ -693,7 +618,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
 
     yield* telemetryDebugLog('enqueue', { envelope });
     const serializedEnvelope = yield* encodeJson(envelope);
-    const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);
+    const encodedPayload = Base64Url.encode(serializedEnvelope);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
@@ -882,9 +807,9 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
     const disabled = yield* analyticsDisabled;
-    if (disabled || !endpoint || !userApiKey) {
+    if (disabled || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
-        reason: disabled ? 'disabled' : !endpoint ? 'missing_endpoint' : 'missing_user_api_key',
+        reason: disabled ? 'disabled' : 'missing_user_api_key',
         failureType: failure.failureType,
         endpoint,
       });
@@ -894,7 +819,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const cliSessionId = yield* getCurrentCwdSessionId();
     const invocation = yield* getCliInvocationContext;
     const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
-    const encodedPayload = Encoding.encodeBase64Url(body);
+    const encodedPayload = Base64Url.encode(body);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
       encodedPayload
@@ -911,7 +836,7 @@ export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boole
 
 const decodeWorkerPayload = <A>(encodedPayload: string) =>
   Effect.gen(function* () {
-    const serialized = yield* Effect.fromResult(Encoding.decodeBase64UrlString(encodedPayload));
+    const serialized = yield* Effect.fromResult(Base64Url.decodeString(encodedPayload));
     return (yield* decodeJson(serialized)) as A;
   });
 

@@ -6,7 +6,10 @@ import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
-import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
+import {
+  ComposioSessionConfigConflictError,
+  ComposioToolInputRequiredError,
+} from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -18,6 +21,7 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionMetaToolSlug,
   ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
@@ -68,6 +72,7 @@ import type {
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
+  SessionExecuteMetaParams,
   SessionExecuteParams,
   SessionLinkParams,
   SessionPatchParams,
@@ -740,6 +745,55 @@ export class ToolRouterSession<
   }
 
   /**
+   * Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+   *
+   * `session.execute()` also runs meta tools. This method only accepts meta
+   * tool slugs, so a typo is a type error instead of a failed request. The call
+   * is sent to the Composio backend as is: custom tools named in a
+   * `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+   *
+   * @param slug - The meta tool slug to execute
+   * @param arguments_ - Optional meta tool arguments
+   * @returns The tool execution result, in the same shape as `session.execute()`
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
+   *
+   * @example
+   * ```typescript
+   * const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+   *   queries: [{ use_case: 'send an email' }],
+   * });
+   * ```
+   */
+  async executeMeta(
+    slug: ToolRouterSessionMetaToolSlug,
+    arguments_?: Record<string, unknown>,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionExecuteResponse> {
+    const executeMetaParams: SessionExecuteMetaParams = {
+      slug,
+      arguments: arguments_ ?? {},
+    };
+    const experimental = inlineCustomToolsExperimental<SessionExecuteMetaParams.Experimental>(
+      this.inlineCustomToolsPayload
+    );
+    if (experimental) {
+      executeMetaParams.experimental = experimental;
+    }
+
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.executeMeta(
+          this.sessionId,
+          executeMetaParams,
+          withoutRetries(requestOptions)
+        ),
+      requestOptions?.signal
+    );
+    const transformed = transformExecuteResponse(response, slug);
+    return ToolRouterSessionExecuteResponseSchema.parse(transformed);
+  }
+
+  /**
    * Proxy an API call through Composio's auth layer using the session's connected account.
    * The backend resolves the connected account from the toolkit within the session.
    *
@@ -1055,6 +1109,12 @@ export class ToolRouterSession<
 
     const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
     const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    // An input request is not a per-tool failure: rethrow it so the caller gets
+    // `inputRequests` and `requestState`.
+    // Accepted: local tools in this batch already ran and their results are discarded.
+    if (remoteTransportError instanceof ComposioToolInputRequiredError) {
+      throw remoteTransportError;
+    }
     const remoteErrorMessage = remoteTransportFailed
       ? (remoteTransportError instanceof Error
           ? remoteTransportError.message

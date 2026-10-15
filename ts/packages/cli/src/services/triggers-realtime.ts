@@ -296,15 +296,13 @@ const makeTriggersRealtime = Effect.gen(function* () {
 
       return yield* listenWith({
         getRealtimeCredentials: () =>
-          Effect.tryPromise({
-            try: () => client.cli.realtime.credentials(),
-            catch: subscriptionError('Failed to fetch realtime credentials'),
-          }),
+          client.cli.realtime
+            .credentials()
+            .pipe(Effect.mapError(subscriptionError('Failed to fetch realtime credentials'))),
         authRealtimeChannel: params =>
-          Effect.tryPromise({
-            try: () => client.cli.realtime.auth(params),
-            catch: subscriptionError('Failed to authorize the realtime channel'),
-          }),
+          client.cli.realtime
+            .auth(params, { decode: false })
+            .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
         onEvent,
       });
     });

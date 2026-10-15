@@ -1,5 +1,5 @@
 import { Console, Context, Effect } from 'effect';
-import { CliConfig, CliOutput, Command, GlobalFlag } from 'effect/unstable/cli';
+import { CliConfig, CliOutput, Command, GlobalFlag } from 'effect/cli';
 
 export const RootHelpMarker = Context.Reference<boolean>('commands/RootHelpMarker', {
   defaultValue: () => false,

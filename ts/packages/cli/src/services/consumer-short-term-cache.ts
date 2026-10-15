@@ -1,16 +1,15 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
+import { ComposioToolkitsRepository, ComposioClientSingleton } from 'src/services/composio-clients';
 import {
-  ComposioToolkitsRepository,
-  ComposioClientSingleton,
   getConsumerConnectedToolkits,
   resolveConsumerProject,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { resolveCommandProject } from 'src/services/command-project';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import { djb2Hash } from 'src/utils/djb2';

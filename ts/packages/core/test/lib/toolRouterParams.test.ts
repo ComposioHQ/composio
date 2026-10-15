@@ -186,11 +186,39 @@ describe('transformToolRouterUpdateParams', () => {
   it('maps the experimental Instant usage policy without changing other session settings', () => {
     expect(
       transformToolRouterUpdateParams({
-        instant: { toolkits: { disable: ['exa'] }, returnInstantCharge: true },
+        instant: {
+          toolkits: { disable: ['exa'] },
+          returnInstantCharge: true,
+          returnPricesInSearch: true,
+        },
       })
-    ).toEqual({ instant: { toolkits: { disable: ['exa'] }, return_instant_charge: true } });
+    ).toEqual({
+      instant: {
+        toolkits: { disable: ['exa'] },
+        return_instant_charge: true,
+        return_prices_in_search: true,
+      },
+    });
     expect(transformToolRouterUpdateParams({ instant: false })).toEqual({
       instant: false,
+    });
+  });
+
+  it('maps proxyExecute as given, expands a boolean, and null clears it', () => {
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: true } })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: false } })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: true })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: false })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: null })).toEqual({
+      proxy_execute: null,
     });
   });
 

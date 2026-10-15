@@ -1,7 +1,7 @@
 {
   "name": "typesafe-example",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Example project for TypeSafe (Jev)",
   "main": "src/index.ts",
   "scripts": {

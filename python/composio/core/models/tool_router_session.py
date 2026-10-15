@@ -59,6 +59,7 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
+    inline_custom_tools_execute_meta_experimental,
     inline_custom_tools_search_experimental,
 )
 from composio.core.models.session_context import (
@@ -72,7 +73,8 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
-    require_executed,
+    require_execute_meta_result,
+    require_execute_result,
 )
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -154,6 +156,21 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
     tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
     return_instant_charge: bool
+    return_prices_in_search: bool
+    """Experimental. Show each Instant tool's price in Session search results,
+    under ``instant_account.prices``. Controls visibility only."""
+
+
+class ToolRouterProxyExecuteConfig(te.TypedDict):
+    """Proxy execute settings for a Session.
+
+    ``enable=True`` exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool and
+    ``enable=False`` also turns off the sandbox ``proxy_execute()`` helper.
+    Leaving the block out keeps the meta tool off while
+    ``sandbox.enable_proxy_execution`` controls the helper.
+    """
+
+    enable: bool
 
 
 ToolRouterSessionExecuteResponse = SessionExecuteResponse
@@ -161,10 +178,25 @@ ToolRouterSessionExecuteResponse = SessionExecuteResponse
 only when the Session sets ``instant.return_instant_charge`` and a charge is
 available."""
 
+ToolRouterSessionMetaToolSlug = t.Literal[
+    "COMPOSIO_SEARCH_TOOLS",
+    "COMPOSIO_MULTI_EXECUTE_TOOL",
+    "COMPOSIO_MANAGE_CONNECTIONS",
+    "COMPOSIO_WAIT_FOR_CONNECTIONS",
+    "COMPOSIO_REMOTE_WORKBENCH",
+    "COMPOSIO_REMOTE_BASH_TOOL",
+    "COMPOSIO_GET_TOOL_SCHEMAS",
+    "COMPOSIO_SUBMIT_FEEDBACK",
+    "COMPOSIO_PROXY_EXECUTE",
+]
+"""Slug of a Composio meta tool (``COMPOSIO_*``) that
+:meth:`ToolRouterSession.execute_meta` can run."""
+
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
 lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
-connection status."""
+connection status, and their prices at ``instant_account.prices`` when the
+Session sets ``instant.return_prices_in_search``."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -643,6 +675,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_future:
                 try:
                     remote_result = remote_future.result()
+                except exceptions.ToolInputRequiredError:
+                    # An input request is not a per-tool failure: re-raise it so
+                    # the caller gets `input_requests` and `request_state`.
+                    # Accepted: local tools in this batch already ran and their results are discarded.
+                    raise
                 except Exception as error:
                     remote_error_message = str(error) or "Remote tool execution failed"
 
@@ -914,11 +951,12 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``error``, ``log_id``, ``result_type``, and ``instant_charge``
         attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
         execution can carry a ``None`` or empty ``error``, so read
-        ``result_type`` to tell the two apart. It is ``None`` when the API sent
-        none.
+        ``result_type`` to tell the two apart.
 
         :raises ToolInputRequiredError: If the tool needs input from the user
             (for example an approval) before it can run. Nothing was executed.
+        :raises ValidationError: If the API response carries no ``result_type``,
+            or one this SDK does not know.
         """
         # Check if this is a local tool (by original or final slug)
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
@@ -935,7 +973,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return require_executed(
+        return require_execute_result(
             self._client.without_retries.tool_router.session.execute(
                 session_id=self.session_id,
                 tool_slug=tool_slug,
@@ -945,7 +983,51 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     self._inline_custom_tools_payload
                 ),
             ),
-            f"Tool {tool_slug}",
+            tool_slug,
+        )
+
+    def execute_meta(
+        self,
+        slug: ToolRouterSessionMetaToolSlug,
+        *,
+        arguments: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> ToolRouterSessionExecuteResponse:
+        """
+        Execute a Composio meta tool (``COMPOSIO_*``) within the session.
+
+        :meth:`execute` also runs meta tools. This method only accepts meta
+        tool slugs, so a typo is a type error instead of a failed request. The
+        call is sent to the Composio backend as is: custom tools named in a
+        ``COMPOSIO_MULTI_EXECUTE_TOOL`` call are not run in-process here.
+
+        :param slug: The meta tool slug to execute.
+        :param arguments: Optional meta tool arguments.
+        :returns: The tool execution result, in the same shape as
+            :meth:`execute`.
+        :raises ToolInputRequiredError: If the tool needs input from the user
+            (for example an approval) before it can run. Nothing was executed.
+        :raises ValidationError: If the API response carries no ``result_type``,
+            or one this SDK does not know.
+
+        Example:
+            result = session.execute_meta(
+                "COMPOSIO_SEARCH_TOOLS",
+                arguments={"queries": [{"use_case": "send an email"}]},
+            )
+            print(result.result_type, result.data)
+        """
+        # Disable retries: a session execution is a non-idempotent write, and a
+        # silent retry after a read timeout can duplicate the side effect.
+        return require_execute_meta_result(
+            self._client.without_retries.tool_router.session.execute_meta(
+                session_id=self.session_id,
+                slug=slug,
+                arguments=arguments if arguments is not None else omit,
+                experimental=inline_custom_tools_execute_meta_experimental(
+                    self._inline_custom_tools_payload
+                ),
+            ),
+            slug,
         )
 
     def custom_tools(
@@ -1080,6 +1162,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             t.Optional[ToolRouterUpdateMultiAccountConfig],
             "Omit",
         ] = omit,
+        proxy_execute: t.Union[
+            t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]], "Omit"
+        ] = omit,
         preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
         search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
         execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
@@ -1101,8 +1186,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``callback_url=None`` removes only the stored callback URL.
         Experimental ``instant`` accepts ``False`` to disable billed
         access or an object to set its filters; it does not accept ``None``.
-        Any object, even one that only sets ``return_instant_charge``,
-        re-enables Instant usage on a Session set to ``False``.
+        Any object, even one that only sets ``return_instant_charge`` or
+        ``return_prices_in_search``, re-enables Instant usage on a Session
+        set to ``False``.
+        ``proxy_execute`` takes a bool or ``{"enable": bool}``; ``True``
+        exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``False`` also turns
+        off the sandbox ``proxy_execute()`` helper, and ``None`` removes the
+        stored block.
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1193,6 +1283,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 multi_account=t.cast(
                     t.Union[t.Optional[session_patch_params.MultiAccount], "Omit"],
                     multi_account,
+                ),
+                proxy_execute=(
+                    {"enable": proxy_execute}
+                    if isinstance(proxy_execute, bool)
+                    else proxy_execute
                 ),
                 preload=t.cast(t.Union[session_patch_params.Preload, "Omit"], preload),
                 search=t.cast(t.Union[session_patch_params.Search, "Omit"], search),

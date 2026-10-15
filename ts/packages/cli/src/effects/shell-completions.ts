@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { Command, Completions } from 'effect/unstable/cli';
+import { Command, Completions } from 'effect/cli';
 
 type Shell = 'bash' | 'zsh' | 'fish';
 
@@ -23,14 +23,14 @@ const sanitizeFishCompletionLines = (lines: Array<string>): Array<string> =>
 
 /**
  * Converts a public `Command.Command` tree into the `Completions.CommandDescriptor`
- * shape consumed by `effect/unstable/cli`'s completion-script generator.
+ * shape consumed by `effect/cli`'s completion-script generator.
  *
  * v4 has no like-for-like replacement for v3's rich `CommandDescriptor` walk:
  * `Command.Command` only exposes `name` / `description` / `subcommands`
- * publicly (see `effect/unstable/cli/Command`), not per-flag or per-argument
+ * publicly (see `effect/cli/Command`), not per-flag or per-argument
  * metadata. Completions are therefore generated at the subcommand-name level
  * only; flag/argument value completion is intentionally omitted until
- * `effect/unstable/cli` exposes that metadata through a public API.
+ * `effect/cli` exposes that metadata through a public API.
  */
 const toCompletionDescriptor = (command: Command.Command.Any): Completions.CommandDescriptor => ({
   name: command.name,

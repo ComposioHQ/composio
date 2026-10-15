@@ -1,5 +1,5 @@
 import { Data, Effect, Option } from 'effect';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -83,19 +83,24 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const rawResult = yield* Effect.tryPromise({
-      try: () =>
-        client.connectedAccounts.list({
+    const rawResult = yield* client.connectedAccounts
+      .list(
+        {
           toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
           user_ids: [consumerUserId],
           limit: 1000,
-        }),
-      catch: cause =>
-        new ConnectionsListRequestError({
-          message: 'Failed to list connections.',
-          cause,
-        }),
-    });
+        },
+        { decode: false }
+      )
+      .pipe(
+        Effect.mapError(
+          cause =>
+            new ConnectionsListRequestError({
+              message: 'Failed to list connections.',
+              cause,
+            })
+        )
+      );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,

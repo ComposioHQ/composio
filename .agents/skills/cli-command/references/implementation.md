@@ -8,12 +8,12 @@
 
 ## Effect Patterns
 
-The CLI is on `effect@4.0.0-rc.117` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/unstable/*` submodules.
+The CLI is on `effect@4.0.3` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
 
 Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.ts`:
 
 ```typescript
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 
 const toolkit = Argument.String('toolkit').pipe(
@@ -40,7 +40,7 @@ export const myCmd = Command.make(
 ).pipe(Command.withDescription('...'));
 ```
 
-`Args`/`Options` (v3 `@effect/cli`) are gone — use `Argument` for positionals and `Flag` for named options, both from `effect/unstable/cli`. Constructors are capitalized (`Argument.String`, `Flag.String`/`.Boolean`/`.Int`/`.Literals`); `Argument.variadic()` remains lowercase and must be called rather than piped as a bare reference. Combinators remain lowercase (`.withDefault`/`.withDescription`/`.withAlias`/`.optional`). Optional flags read via `Option.getOrUndefined(...)`/`Option.isSome(...)`, matching the `query`/`tags` pattern above.
+`Args`/`Options` (v3 `@effect/cli`) are gone — use `Argument` for positionals and `Flag` for named options, both from `effect/cli`. Constructors are capitalized (`Argument.String`, `Flag.String`/`.Boolean`/`.Int`/`.Literals`); `Argument.variadic()` remains lowercase and must be called rather than piped as a bare reference. Combinators remain lowercase (`.withDefault`/`.withDescription`/`.withAlias`/`.optional`). Optional flags read via `Option.getOrUndefined(...)`/`Option.isSome(...)`, matching the `query`/`tags` pattern above.
 
 Follow existing local patterns before introducing new service abstractions.
 
@@ -50,7 +50,7 @@ Follow existing local patterns before introducing new service abstractions.
 
 - Path arithmetic → `Path` service from `effect/Path` (`const path = yield* Path.Path`).
 - Filesystem I/O → `FileSystem` service from `effect/FileSystem` (`const fs = yield* FileSystem.FileSystem`).
-- homedir/tmpdir/platform/arch → the `NodeOs` service (`src/services/node-os.ts`, a `Context.Service` with a `static readonly Default` layer); subprocesses → `ChildProcess`/`ChildProcessSpawner` from `effect/unstable/process`, or `services/detached-process.ts` for children that outlive the CLI.
+- homedir/tmpdir/platform/arch → the `NodeOs` service (`src/services/node-os.ts`, a `Context.Service` with a `static readonly Default` layer); subprocesses → `ChildProcess`/`ChildProcessSpawner` from `effect/process`, or `services/detached-process.ts` for children that outlive the CLI.
 - Environment reads → `effect/Config`; sync fallible ops (`JSON.parse`, `new URL`) → `Result.try` with a `Data.TaggedError` (JSON records via `parseJsonRecord` in `src/utils/parse-json.ts`, which returns `Result.Result<Record<string, unknown>, JsonParsingError>`; a `Result` is not yieldable in v4 even though it typechecks, so lift it with `yield* Effect.fromResult(parseJsonRecord(raw))`).
 - Helpers that cannot become Effects (sync callbacks, promise pipelines) take the resolved service instance as a plain parameter instead of importing Node builtins.
 

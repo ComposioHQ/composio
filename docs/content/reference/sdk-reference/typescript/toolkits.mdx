@@ -50,7 +50,7 @@ Retrieves the version changelog of every toolkit (the last 10 versions
 per toolkit).
 
 ```typescript
-async changelog(requestOptions?: ComposioRequestOptions): Promise<{ items: { displayName: string; name: string; slug: string; versions: { changelog: ...; version: ... }[] }[] }>
+async changelog(requestOptions?: ComposioRequestOptions): Promise<ToolkitChangelogResponse>
 ```
 
 **Parameters**
@@ -61,7 +61,7 @@ async changelog(requestOptions?: ComposioRequestOptions): Promise<{ items: { dis
 
 **Returns**
 
-`Promise<\{ items: \{ displayName: string; name: string; slug: string; versions: \{ changelog: ...; version: ... \}[] \}[] \}>` — Toolkits with their recent version changelogs
+`Promise<ToolkitChangelogResponse>` — Toolkits with their recent version changelogs
 
 **Example**
 
@@ -80,7 +80,7 @@ Retrieves a specific toolkit by its slug identifier.
 **Overload 1**
 
 ```typescript
-async get(slug: string, requestOptions?: ComposioRequestOptions): Promise<{ authConfigDetails?: { authHintUrl?: string | null; fields: { authConfigCreation: { optional: ...; required: ... }; connectedAccountInitiation: { optional: ...; required: ... } }; mode: string; name: string; proxy?: { baseUrl?: string }; requiredScopes?: string[] }[]; baseUrl?: string; composioManagedAuthSchemes?: string[]; getCurrentUserEndpoint?: string; getCurrentUserEndpointMethod?: string; isLocalToolkit: boolean; meta: { appUrl?: string; availableVersions?: string[]; categories?: { name: string; slug: string }[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string }; name: string; slug: string }>
+async get(slug: string, requestOptions?: ComposioRequestOptions): Promise<ToolkitRetrieveResponse>
 ```
 
 **Parameters**
@@ -92,24 +92,24 @@ async get(slug: string, requestOptions?: ComposioRequestOptions): Promise<{ auth
 
 **Returns**
 
-`Promise<\{ authConfigDetails?: \{ authHintUrl?: string \| null; fields: \{ authConfigCreation: \{ optional: ...; required: ... \}; connectedAccountInitiation: \{ optional: ...; required: ... \} \}; mode: string; name: string; proxy?: \{ baseUrl?: string \}; requiredScopes?: string[] \}[]; baseUrl?: string; composioManagedAuthSchemes?: string[]; getCurrentUserEndpoint?: string; getCurrentUserEndpointMethod?: string; isLocalToolkit: boolean; meta: \{ appUrl?: string; availableVersions?: string[]; categories?: \{ name: string; slug: string \}[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string \}; name: string; slug: string \}>` — The toolkit object with detailed information
+`Promise<ToolkitRetrieveResponse>` — The toolkit object with detailed information
 
 **Overload 2**
 
 ```typescript
-async get(query?: { category?: string; cursor?: string; limit?: number; managedBy?: 'all' | 'composio' | 'project'; sortBy?: 'usage' | 'alphabetically' }, requestOptions?: ComposioRequestOptions): Promise<{ authSchemes?: string[]; composioManagedAuthSchemes?: string[]; isLocalToolkit: boolean; meta: { appUrl?: string; availableVersions?: string[]; categories?: { name: ...; slug: ... }[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string }; name: string; noAuth?: boolean; slug: string }[]>
+async get(query?: ToolkitListParams, requestOptions?: ComposioRequestOptions): Promise<ToolKitListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `\{ category?: string; cursor?: string; limit?: number; managedBy?: 'all' \| 'composio' \| 'project'; sortBy?: 'usage' \| 'alphabetically' \}` | The query parameters to filter toolkits |
+| `query?` | `ToolkitListParams` | The query parameters to filter toolkits |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ authSchemes?: string[]; composioManagedAuthSchemes?: string[]; isLocalToolkit: boolean; meta: \{ appUrl?: string; availableVersions?: string[]; categories?: \{ name: ...; slug: ... \}[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string \}; name: string; noAuth?: boolean; slug: string \}[]>` — A paginated list of toolkits matching the query criteria
+`Promise<ToolKitListResponse>` — A paginated list of toolkits matching the query criteria
 
 **Example**
 
@@ -127,7 +127,7 @@ console.log(githubToolkit.authConfigDetails); // Authentication configuration de
 Retrieves the fields required for creating an auth config for a toolkit.
 
 ```typescript
-async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<...>
+async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -140,7 +140,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 
 **Returns**
 
-`Promise<...>` — The fields required for creating an auth config
+`Promise<ToolkitAuthFieldsResponse>` — The fields required for creating an auth config
 
 ---
 
@@ -149,7 +149,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 Retrieves the fields required for initiating a connected account for a toolkit.
 
 ```typescript
-async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<...>
+async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -162,7 +162,7 @@ async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthS
 
 **Returns**
 
-`Promise<...>` — The fields required for initiating a connected account
+`Promise<ToolkitAuthFieldsResponse>` — The fields required for initiating a connected account
 
 ---
 
@@ -174,7 +174,7 @@ Returns the same transformed shape as `composio.toolkits.get({ ... })`.
 Unknown slugs are simply absent from the result.
 
 ```typescript
-async getMany(slugs: string[], params?: { category?: string; cursor?: string; limit?: number; managedBy?: 'all' | 'composio' | 'project'; sortBy?: 'usage' | 'alphabetically' }, requestOptions?: ComposioRequestOptions): Promise<{ authSchemes?: string[]; composioManagedAuthSchemes?: string[]; isLocalToolkit: boolean; meta: { appUrl?: string; availableVersions?: string[]; categories?: { name: ...; slug: ... }[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string }; name: string; noAuth?: boolean; slug: string }[]>
+async getMany(slugs: string[], params?: ToolkitGetManyParams, requestOptions?: ComposioRequestOptions): Promise<ToolKitListResponse>
 ```
 
 **Parameters**
@@ -182,12 +182,12 @@ async getMany(slugs: string[], params?: { category?: string; cursor?: string; li
 | Name | Type | Description |
 |------|------|-------------|
 | `slugs` | `string[]` | The toolkit slugs to retrieve (at least one) |
-| `params?` | `\{ category?: string; cursor?: string; limit?: number; managedBy?: 'all' \| 'composio' \| 'project'; sortBy?: 'usage' \| 'alphabetically' \}` | Optional filters and pagination, as for `list` |
+| `params?` | `ToolkitGetManyParams` | Optional filters and pagination, as for `list` |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ authSchemes?: string[]; composioManagedAuthSchemes?: string[]; isLocalToolkit: boolean; meta: \{ appUrl?: string; availableVersions?: string[]; categories?: \{ name: ...; slug: ... \}[]; createdAt?: string; description?: string; logo?: string; toolsCount?: number; triggersCount?: number; updatedAt?: string \}; name: string; noAuth?: boolean; slug: string \}[]>` — The matching toolkits
+`Promise<ToolKitListResponse>` — The matching toolkits
 
 **Example**
 
@@ -206,7 +206,7 @@ This method fetches the complete list of categories from the Composio API
 and transforms the response to use camelCase property naming.
 
 ```typescript
-async listCategories(requestOptions?: ComposioRequestOptions): Promise<{ items: { id: string; name: string }[]; nextCursor: string | null; totalPages: number }>
+async listCategories(requestOptions?: ComposioRequestOptions): Promise<ToolkitRetrieveCategoriesResponse>
 ```
 
 **Parameters**
@@ -217,7 +217,7 @@ async listCategories(requestOptions?: ComposioRequestOptions): Promise<{ items: 
 
 **Returns**
 
-`Promise<\{ items: \{ id: string; name: string \}[]; nextCursor: string \| null; totalPages: number \}>` — The list of toolkit categories
+`Promise<ToolkitRetrieveCategoriesResponse>` — The list of toolkit categories
 
 **Example**
 
@@ -240,7 +240,7 @@ Pass a dimension and a value as `grantContext` to
 `composio.toolkits.recommendScopes()` to tailor the recommendation.
 
 ```typescript
-async listGrantContexts(toolkitSlug: string, params?: { authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; toolkitVersion?: string }, requestOptions?: ComposioRequestOptions): Promise<{ authScheme: string; defaultGrantContext: Record<string, string>; grantContextDimensions: { description: string; dimension: string; values: string[] }[]; toolkitVersion: string }>
+async listGrantContexts(toolkitSlug: string, params?: ToolkitListGrantContextsParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitListGrantContextsResponse>
 ```
 
 **Parameters**
@@ -248,12 +248,12 @@ async listGrantContexts(toolkitSlug: string, params?: { authScheme?: 'OAUTH2' | 
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkitSlug` | `string` | The toolkit to list grant contexts for |
-| `params?` | `\{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; toolkitVersion?: string \}` | Optional auth scheme and toolkit version |
+| `params?` | `ToolkitListGrantContextsParams` | Optional auth scheme and toolkit version |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ authScheme: string; defaultGrantContext: Record<string, string>; grantContextDimensions: \{ description: string; dimension: string; values: string[] \}[]; toolkitVersion: string \}>` — The dimensions and the default grant context
+`Promise<ToolkitListGrantContextsResponse>` — The dimensions and the default grant context
 
 **Example**
 
@@ -279,7 +279,7 @@ scope per requirement) and `fewest` (smallest set covering everything).
 Pass `toolkitVersion` from a previous answer to pin the computation.
 
 ```typescript
-async recommendScopes(toolkitSlug: string, params: { authScheme?: 'OAUTH2' | 'OAUTH1' | 'API_KEY' | 'BASIC' | 'BILLCOM_AUTH' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'CALCOM_AUTH' | 'SERVICE_ACCOUNT' | 'SAML' | 'DCR_OAUTH' | 'CIMD_OAUTH' | 'S2S_OAUTH2'; availableScopes?: string[]; exclude?: string[]; grantContext?: Record<string, string>; include?: string[]; toolkitVersion?: string; tools: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ authScheme: string; grantContext: Record<string, string>; scopes: { conditional: { for: ...[]; scope: string; when: Record<..., ...> }[]; fewest: string[]; leastPrivilege: string[] }; toolkitVersion: string }>
+async recommendScopes(toolkitSlug: string, params: ToolkitRecommendScopesParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitRecommendScopesResponse>
 ```
 
 **Parameters**
@@ -287,12 +287,12 @@ async recommendScopes(toolkitSlug: string, params: { authScheme?: 'OAUTH2' | 'OA
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkitSlug` | `string` | The toolkit to recommend scopes for |
-| `params` | `\{ authScheme?: 'OAUTH2' \| 'OAUTH1' \| 'API_KEY' \| 'BASIC' \| 'BILLCOM_AUTH' \| 'BEARER_TOKEN' \| 'GOOGLE_SERVICE_ACCOUNT' \| 'NO_AUTH' \| 'BASIC_WITH_JWT' \| 'CALCOM_AUTH' \| 'SERVICE_ACCOUNT' \| 'SAML' \| 'DCR_OAUTH' \| 'CIMD_OAUTH' \| 'S2S_OAUTH2'; availableScopes?: string[]; exclude?: string[]; grantContext?: Record<string, string>; include?: string[]; toolkitVersion?: string; tools: string[] \}` | Tools to cover (`[]` for the whole toolkit), auth scheme, grant context and scope constraints |
+| `params` | `ToolkitRecommendScopesParams` | Tools to cover (`[]` for the whole toolkit), auth scheme, grant context and scope constraints |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ authScheme: string; grantContext: Record<string, string>; scopes: \{ conditional: \{ for: ...[]; scope: string; when: Record<..., ...> \}[]; fewest: string[]; leastPrivilege: string[] \}; toolkitVersion: string \}>` — The recommended scope sets
+`Promise<ToolkitRecommendScopesResponse>` — The recommended scope sets
 
 **Example**
 

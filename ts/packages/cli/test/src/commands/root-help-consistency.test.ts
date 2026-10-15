@@ -18,7 +18,7 @@ const capture = (args: ReadonlyArray<string>) =>
   }).pipe(Effect.provide(TestLive()));
 
 const commandPaths = (
-  command: ReturnType<typeof buildRootCommand> | import('effect/unstable/cli').Command.Command.Any,
+  command: ReturnType<typeof buildRootCommand> | import('effect/cli').Command.Command.Any,
   prefix: ReadonlyArray<string> = []
 ): ReadonlyArray<ReadonlyArray<string>> =>
   command.subcommands
@@ -61,7 +61,7 @@ describe('framework command help', () => {
         expect((yield* capture(['version', '--help'])).stdout).toContain('--check');
         const run = yield* capture(['run', '--help']);
         expect(run.stdout).toContain('--skip-checks');
-        expect(run.stdout).toContain('--logs-off');
+        expect(run.stdout).not.toContain('--logs-off');
         expect(run.stdout).not.toContain('--perf-debug');
       })
     );

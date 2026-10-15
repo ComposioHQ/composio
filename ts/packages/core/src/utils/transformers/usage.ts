@@ -4,7 +4,6 @@ import type {
   UsageRetrieveSummaryParams as RawUsageSummaryParams,
   UsageRetrieveSummaryResponse as RawUsageSummaryResponse,
 } from '@composio/client/resources/project/usage';
-import { z } from 'zod/v3';
 import {
   UsageBreakdownParams,
   UsageBreakdownResponse,
@@ -43,8 +42,6 @@ export const transformUsageBreakdownParams = (
 export const transformUsageSummaryResponse = (
   response: RawUsageSummaryResponse
 ): UsageSummaryResponse => {
-  // The pinned generated client predates this response field but preserves the raw JSON.
-  const { instant_charge } = z.object({ instant_charge: z.string() }).parse(response);
   return transform(response)
     .with(UsageSummaryResponseSchema)
     .using(response => ({
@@ -58,7 +55,7 @@ export const transformUsageSummaryResponse = (
           },
         ])
       ),
-      instantCharge: instant_charge,
+      instantCharge: response.instant_charge,
     }));
 };
 

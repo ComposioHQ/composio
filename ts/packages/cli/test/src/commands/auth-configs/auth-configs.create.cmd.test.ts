@@ -1,13 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const dangerousDevConfig = {
   cliUserConfig: {

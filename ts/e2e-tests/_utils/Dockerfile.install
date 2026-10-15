@@ -1,4 +1,8 @@
-FROM debian:bookworm-slim
+# Base images come from the ECR Public mirror of the Docker Official Images, so
+# builds do not depend on Docker Hub's availability or anonymous pull limits.
+ARG BASE_REGISTRY=public.ecr.aws/docker/library
+
+FROM ${BASE_REGISTRY}/debian:bookworm-slim
 
 ARG INSTALL_SHELL=bash
 

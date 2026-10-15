@@ -1,7 +1,8 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -60,8 +61,8 @@ export const triggersCmd$Disable = Command.make(
         .pipe(
           Effect.as(true),
           Effect.catchTag(
-            'services/HttpServerError',
-            handleHttpServerError(ui, {
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
               fallbackMessage: `Failed to disable trigger "${idValue}".`,
               hint: 'Browse available triggers:\n> composio dev triggers status',
               fallbackValue: false,

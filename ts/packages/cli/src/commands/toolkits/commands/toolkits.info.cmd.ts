@@ -1,7 +1,8 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { undecoded } from 'src/services/composio-request';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -93,14 +94,18 @@ export const toolkitsCmd$Info = Command.make(
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
               const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
-              const sessionToolkits = yield* Effect.tryPromise({
-                try: () => client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] }),
-                catch: cause =>
-                  new ToolkitsInfoRequestError({
-                    message: `Failed to fetch toolkit "${slugValue}".`,
-                    cause,
-                  }),
-              });
+              const sessionToolkits = yield* client.toolRouter.session
+                // Only the first item is read, and only a few of its fields.
+                .toolkits(sessionId, { toolkits: [slugValue] }, undecoded)
+                .pipe(
+                  Effect.mapError(
+                    cause =>
+                      new ToolkitsInfoRequestError({
+                        message: `Failed to fetch toolkit "${slugValue}".`,
+                        cause,
+                      })
+                  )
+                );
               return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
             }
 

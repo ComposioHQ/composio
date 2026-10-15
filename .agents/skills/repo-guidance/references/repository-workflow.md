@@ -17,7 +17,7 @@
 
 ## Tooling
 
-Use `mise install` for Node, Bun, Deno, pnpm, Python, and uv. pnpm is managed through mise.
+Use `mise install` for Node, Bun, pnpm, Python, and uv. pnpm is managed through mise.
 
 Common root commands:
 

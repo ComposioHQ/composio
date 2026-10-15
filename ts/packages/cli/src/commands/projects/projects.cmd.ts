@@ -1,4 +1,4 @@
-import { Command } from 'effect/unstable/cli';
+import { Command } from 'effect/cli';
 import { projectsCmd$List } from './commands/projects.list.cmd';
 import { projectsCmd$Switch } from './commands/projects.switch.cmd';
 

@@ -61,12 +61,12 @@ declare class ComposioToolkitsRepository extends Context.Service<
 declare class NodeOs extends Context.Service<NodeOs, object>()('y') {
   static readonly Default: Layer.Layer<NodeOs>;
 }
-declare const ConfigLive: Layer.Layer<never>;
+declare const LogLevelFromConfigLive: Layer.Layer<never>;
 type RequiredLayer = Layer.Layer<ComposioToolkitsRepository>;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 ```
 
@@ -82,11 +82,11 @@ file), not the bare class name.
 ## Errors: `Data.TaggedError` (default) and `Schema.TaggedError` (schema-backed)
 
 The established convention in this repo — stated in `ts/packages/cli/AGENTS.md`'s
-"Effect safety and migration seams" section — is: never wrap a plain `Error` in
+"Effect safety and migration boundaries" section — is: never wrap a plain `Error` in
 `Effect.fail` for an expected failure; give it a `Data.TaggedError` with structured
 fields and a preserved cause, then recover with `catchTag`/`catchTags`. This is
 unchanged from v3 and is what nearly every error in `src/services/*.ts` uses, e.g.
-`ts/packages/cli/src/services/composio-clients.ts`:
+`ts/packages/cli/src/services/toolkit-version-validation.ts`:
 
 ```ts
 import { Data } from 'effect';
@@ -200,7 +200,7 @@ needs translation.
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `Context.Tag`, `Context.GenericTag`, `Effect.Service`                | `Context.Service`                                                                                  |
 | generated `.Default` layer                                           | explicit static `Default`/`layer` you define with `Layer.succeed`/`Layer.effect`/`Layer.provide`   |
-| `@effect/cli`, `@effect/platform`                                    | `effect/unstable/cli`, `effect` core / `effect/unstable/*`                                         |
+| `@effect/cli`, `@effect/platform`                                    | `effect/cli`, `effect` core / `effect/*`                                                           |
 | `Effect.catchAll` / `catchAllCause` / `catchAllDefect` / `catchSome` | `Effect.catch` / `catchCause` / `catchDefect` / `catchFilter`                                      |
 | `Either`                                                             | `Result` (not Effect-yieldable directly — wrap with `Effect.fromResult(...)` inside `Effect.gen`)  |
 | `ParseResult.ParseError`, `ParseResult.*`                            | `Schema.SchemaError`, `SchemaIssue.*`                                                              |
@@ -222,6 +222,6 @@ needs translation.
 | `it.scoped` (`@effect/vitest`)                                       | removed — `it.effect` already runs `Effect.scoped`                                                 |
 | `ValidationError`, `HelpDoc`, `CommandDescriptor` (`@effect/cli`)    | `CliError`, plain `HelpDoc` data shape, public `Command` fields only — no descriptor introspection |
 
-For anything not in this table, or any prerelease-to-prerelease drift, verify against
+For anything not in this table, or any release-to-release drift, verify against
 `ts/vendor/effect/migration/*.md` and the actual `ts/vendor/effect/packages/effect/src`
 source before writing code — do not extrapolate from this table alone.

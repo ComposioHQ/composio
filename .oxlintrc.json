@@ -23,7 +23,6 @@
     "ts/packages/core/pack/generated/**",
     "ts/packages/slim/generated/**",
     "ts/packages/**/.generated/**",
-    "ts/packages/**/acp-adapters/**",
     "node_modules/**",
     "ts/examples/**/dist-worker/**",
     "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",
@@ -130,11 +129,11 @@
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
               {
                 "name": "child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "node:child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "fs",
@@ -157,6 +156,16 @@
               {
                 "name": "@effect/platform-bun",
                 "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@composio/client",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
               }
             ],
             "patterns": [
@@ -246,11 +255,11 @@
               { "name": "node:buffer", "message": "Use Uint8Array instead." },
               {
                 "name": "child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "node:child_process",
-                "message": "Use ChildProcess from effect/unstable/process instead."
+                "message": "Use ChildProcess from effect/process instead."
               },
               {
                 "name": "fs",
@@ -273,6 +282,16 @@
               {
                 "name": "@effect/platform-bun",
                 "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@composio/client",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
               },
               { "name": "zod", "message": "Use Schema from effect for tool input validation." }
             ],
