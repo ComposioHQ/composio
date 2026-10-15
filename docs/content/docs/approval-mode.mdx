@@ -9,12 +9,12 @@ By default, your agent can run any tool in a session as soon as it decides to. F
 When your agent calls a tool that requires approval, Composio doesn't run it. It returns a question for the user instead, and runs the tool once your app sends back their approval.
 
 <Callout type="warn" title="Experimental">
-Approval mode is experimental, and its SDK options may change. Answering questions needs `composio` newer than 0.26.0 (Python) or `@composio/core` newer than 0.23.0 (TypeScript).
+Approval mode is experimental, and its SDK options may change. Answering questions needs `composio` newer than 0.27.0 (Python) or `@composio/core` newer than 0.24.0 (TypeScript).
 </Callout>
 
-## Configuring approvals
+## Configuring the session
 
-You set approvals when you create or update a session, in three steps. They're the same steps as building a [Session config](/docs/configuring-sessions#using-a-saved-session-config) in the Composio Dashboard, and produce the same configuration. The snippets in each step are Python. In TypeScript, `require_approval` is `requireApproval`.
+You choose which tools the agent can use, and which ones ask first, when you create or update a session. It takes three steps. They're the same steps as building a [Session config](/docs/configuring-sessions#using-a-saved-session-config) in the Composio Dashboard, and produce the same configuration. The snippets in each step are Python. In TypeScript, `require_approval` is `requireApproval`.
 
 ### 1. Enable toolkits
 
@@ -24,7 +24,7 @@ List the toolkits the agent can use in `toolkits.enable`:
 toolkits={"enable": ["gmail", "github"]}
 ```
 
-### 2. Choose what each tag does
+### 2. Allow, ask first or block tools by type
 
 Every tool has a [tag](/docs/tool-tags) for the type of action it takes:
 
@@ -35,13 +35,13 @@ Every tool has a [tag](/docs/tool-tags) for the type of action it takes:
 | `updateHint` | Update |
 | `destructiveHint` | Destructive |
 
-For each tag, choose one of:
+Use the tags to set what happens to each type of tool:
 
-- **Allow:** leave the tag out.
-- **Ask first:** add the tag to `tags.require_approval`.
+- **Allow:** leave the tag out. These tools run without asking.
+- **Ask first:** add the tag to `tags.require_approval`. These tools wait for the user's approval.
 - **Block:** add the tag to `tags.disable`. The agent can't see or call these tools.
 
-For example, to allow reads, ask before creates and updates, and block destructive actions:
+For example, to allow tools that read, ask before tools that create or update, and block tools that delete:
 
 ```python
 tags={
@@ -50,13 +50,13 @@ tags={
 }
 ```
 
-### 3. Override the tags for a toolkit
+### 3. Override for specific toolkits
 
-The global `tags` from step 2 apply to every toolkit. To treat a toolkit differently, add an override for it under `tools.<toolkit>`.
+Step 2 applies to the tools of every toolkit. To handle a toolkit's tools differently, add an override for it under `tools.<toolkit>`.
 
-An override replaces the global `tags` for that toolkit. The global `tags` no longer apply to it at all, so the override has to say everything about the toolkit. An override is either by tag or by tool.
+The override replaces step 2 for that toolkit. Step 2 no longer applies to its tools at all, so the override has to cover all of them. You can override by type or tool by tool.
 
-**By tag.** Set `tools.<toolkit>.tags` the same way as step 2. Repeat any global settings you still want for the toolkit. For example, this override makes GitHub's destructive actions ask first instead of being blocked. Creates and updates are listed again so they still ask first:
+**By type.** Set `tools.<toolkit>.tags` the same way as step 2. Repeat anything from step 2 you still want for the toolkit. For example, this override makes GitHub's tools that delete ask first instead of being blocked. Tools that create or update are listed again so they still ask first:
 
 ```python
 tools={
@@ -66,7 +66,7 @@ tools={
 }
 ```
 
-**By tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that ask first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and asks before sending:
+**Tool by tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that ask first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and asks before sending:
 
 ```python
 tools={
@@ -77,7 +77,7 @@ tools={
 }
 ```
 
-Always set `require_approval` in a by-tool override, even to `[]`. Without it, the global `tags.require_approval` isn't overridden and still applies to the listed tools.
+Always set `require_approval` in a tool-by-tool override, even to `[]`. Without it, the tools you list still ask first if step 2 says so.
 
 Use one or the other for a toolkit, not both.
 
@@ -133,9 +133,9 @@ const session = await composio.create('user_123', {
 
 With this session:
 
-- **GitHub** has a by-tag override. Reads run freely, and creates, updates and deletes ask first.
-- **Gmail** has a by-tool override. Fetching emails runs freely, sending asks first, and no other Gmail tools are available.
-- **Any other toolkit** isn't enabled. If you enabled one without an override, the global `tags` would apply to it: reads run freely, creates and updates ask first, and destructive actions are blocked.
+- **GitHub** is overridden by type. Tools that read run freely, and tools that create, update or delete ask first.
+- **Gmail** is overridden tool by tool. Fetching emails runs freely, sending asks first, and no other Gmail tools are available.
+- **Any other toolkit** isn't enabled. If you enabled one without an override, step 2 would apply to its tools: tools that read run freely, tools that create or update ask first, and tools that delete are blocked.
 
 Asking first doesn't hide a tool from the agent. It can still find and call it, and the call waits for the user's approval. This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
 

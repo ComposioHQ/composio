@@ -403,26 +403,20 @@ const session = await composio.create("user_123", {
 
 ## Filtering tools by tags
 
-Every tool has a tag for the type of action it takes: `readOnlyHint`, `createHint`, `updateHint` or `destructiveHint`. See [Tool tags](/docs/tool-tags) for what each one means and how tools get them.
+Every tool has a [tag](/docs/tool-tags) for the type of action it takes: `readOnlyHint`, `createHint`, `updateHint` or `destructiveHint`. Use the tags to set what happens to each type of tool:
 
-To apply tag filters across all toolkits, pass `tags` at the session level:
+- **Allow:** leave the tag out. This is the default.
+- **Block:** add the tag to `tags.disable`. The agent can't see or call these tools.
+- **Ask first:** add the tag to `tags.require_approval`. The agent can call these tools, but the session asks the user before they run. See [Approval mode](/docs/approval-mode).
+
+For example, to block every tool that can delete something:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-# Only include tools that read or create; no updates or deletes
 session = composio.sessions.create(
     user_id="user_123",
-    tags=["readOnlyHint", "createHint"]
-)
-
-# Enable some tags, disable others
-session = composio.sessions.create(
-    user_id="user_123",
-    tags={
-        "enable": ["readOnlyHint"],
-        "disable": ["destructiveHint"]
-    }
+    tags={"disable": ["destructiveHint"]}
 )
 ```
 </Tab>
@@ -431,36 +425,29 @@ session = composio.sessions.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-// Only include read-only tools
 const session = await composio.create("user_123", {
-  tags: ["readOnlyHint"]
-});
-
-// Enable some tags, disable others
-const sessionWithTagConfig = await composio.create("user_123", {
-  tags: {
-    enable: ["readOnlyHint"],
-    disable: ["destructiveHint"]
-  }
+  tags: { disable: ["destructiveHint"] }
 });
 ```
 </Tab>
 </Tabs>
 
-To override the global tags for a specific toolkit, set `tags` inside that toolkit's `tools` config:
+### Overriding for a toolkit
+
+The session-wide `tags` apply to the tools of every toolkit. To handle a toolkit's tools differently, override them in `tools.<toolkit>.tags`. The override replaces the session-wide `tags` for that toolkit, so list everything you still want to block for it.
+
+For example, this session blocks tools that update or delete everywhere, but overrides GitHub so only its tools that delete are blocked:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
-    # Global: only read-only tools
-    tags=["readOnlyHint"],
+    # Everywhere: block tools that update or delete
+    tags={"disable": ["updateHint", "destructiveHint"]},
     tools={
-        # Override for GitHub: allow all tools except destructive
-        "github": {"tags": {"disable": ["destructiveHint"]}},
-        # Override for Gmail: only read-only tools (explicit)
-        "gmail": {"tags": ["readOnlyHint"]}
+        # GitHub: block only tools that delete
+        "github": {"tags": {"disable": ["destructiveHint"]}}
     }
 )
 ```
@@ -471,20 +458,18 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
-  // Global: only read-only tools
-  tags: ["readOnlyHint"],
+  // Everywhere: block tools that update or delete
+  tags: { disable: ["updateHint", "destructiveHint"] },
   tools: {
-    // Override for GitHub: allow all tools except destructive
-    github: { tags: { disable: ["destructiveHint"] } },
-    // Override for Gmail: only read-only tools (explicit)
-    gmail: { tags: ["readOnlyHint"] }
+    // GitHub: block only tools that delete
+    github: { tags: { disable: ["destructiveHint"] } }
   }
 });
 ```
 </Tab>
 </Tabs>
 
-To keep a tool available but have the session ask the user before it runs, see [Approval mode](/docs/approval-mode).
+Listing a toolkit's tools with `enable` or `disable`, as in [Enabling or disabling specific tools](#enabling-or-disabling-specific-tools), also overrides the session-wide `tags` for that toolkit.
 
 ## Preloading tools
 

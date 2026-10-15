@@ -45,12 +45,13 @@ To see a tool's tags, read its `tags` field with [Get a tool](/reference/api-ref
 
 ## Using tags in a session
 
-Use the four tags to:
+A session uses the tags to decide what happens to each type of tool:
 
-- **Filter tools.** Hide tools by tag across the session or per toolkit. See [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
-- **Ask first.** Have the session ask the user before tools with a tag run. See [Approval mode](/docs/approval-mode).
+- **Allow:** the tools run without asking. This is the default.
+- **Block:** the agent can't see or call the tools. See [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
+- **Ask first:** the tools wait for the user's approval. See [Approval mode](/docs/approval-mode).
 
-Sessions also accept the MCP hints `idempotentHint` and `openWorldHint`, but only some tools set them, so don't use them for access control. Session configs in the Composio Dashboard only accept the four tags above.
+You set this for the whole session, then override it for specific toolkits.
 
 ## Next
 
