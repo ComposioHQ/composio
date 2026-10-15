@@ -14,7 +14,12 @@ Approval mode is experimental. It needs `composio` newer than 0.27.0 or `@compos
 
 ## Requiring approval
 
-Require approval for every tool with a [tag](/docs/tool-tags):
+You configure which tools require approval when you create or update a session. There are two ways to choose them:
+
+- **By tag.** Every tool has a [tag](/docs/tool-tags) for the type of action it takes, such as `createHint` for tools that create something or `destructiveHint` for tools that delete something. Add tags to `tags.require_approval` to require approval for every tool with those tags, in every toolkit.
+- **Per toolkit.** Set approval for one toolkit's tools under `tools.<toolkit>`. This overrides the session-wide `tags` for that toolkit, so you can treat it differently from the rest of the session.
+
+This session requires approval for every tool that creates, updates or deletes something:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -38,7 +43,7 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-Or set it per toolkit, which overrides `tags` for that toolkit:
+This session limits Gmail to two tools, and requires approval before sending an email. List the tools the agent can use in `enable` and the ones that need approval in `require_approval`. Always set `require_approval` when you list tools, even to `[]`. Otherwise the session-wide `tags.require_approval` still applies to them:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -48,7 +53,7 @@ session = composio.create(
     tools={
         "gmail": {
             "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
-            "require_approval": ["GMAIL_SEND_EMAIL"],  # set even if empty
+            "require_approval": ["GMAIL_SEND_EMAIL"],
         },
     },
 )
@@ -64,7 +69,7 @@ const session = await composio.create('user_123', {
   tools: {
     gmail: {
       enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
-      requireApproval: ['GMAIL_SEND_EMAIL'], // set even if empty
+      requireApproval: ['GMAIL_SEND_EMAIL'],
     },
   },
 });
