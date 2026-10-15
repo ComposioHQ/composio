@@ -1449,6 +1449,8 @@ class TestToolRouter:
             tool_slug="GMAIL_FETCH_EMAILS",
             arguments={"max_results": 1},
             account="work",
+            input_responses=omit,
+            request_state=omit,
             experimental=omit,
         )
 
@@ -2516,6 +2518,128 @@ def _answering_client(
 
 def _created_session(client: HttpClient) -> ToolRouterSession:
     return ToolRouter(client=client, provider=MagicMock()).create(user_id="user_123")
+
+
+_APPROVAL_ANSWERS: t.Dict[str, t.Any] = {
+    "approval_1": {"action": "accept", "content": {"decision": "approve"}},
+}
+
+_COMPLETED_JSON: t.Dict[str, t.Any] = {
+    "result_type": "completed",
+    "data": {"id": "msg_1"},
+    "error": None,
+    "log_id": "log_1",
+}
+
+
+class TestAnsweringInputRequired:
+    """The answers to an ``input_required`` call travel on the repeated call
+    as ``input_responses``, with the ``request_state`` it returned."""
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda session: session.execute(
+                    "GMAIL_SEND_EMAIL",
+                    arguments={"to": "test@test.com"},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda session: session.execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": []},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute_meta",
+            ),
+        ],
+    )
+    def test_sends_the_answers_and_the_request_state(self, run):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        run(_created_session(client))
+
+        body = json.loads(requests[0].content)
+        assert body["input_responses"] == _APPROVAL_ANSWERS
+        assert body["request_state"] == "opaque-state-token"
+
+    def test_sends_neither_field_without_answers(self):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        body = json.loads(requests[0].content)
+        assert "input_responses" not in body
+        assert "request_state" not in body
+
+
+class TestApprovalRules:
+    """``require_approval`` lists and the no-elicitation fallback reach the
+    API next to the filters they belong to."""
+
+    def test_create_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+
+        ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123",
+            toolkits={"enable": ["gmail", "github"], "require_approval": ["github"]},
+            tools={
+                "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+                "notion": {
+                    "enable": ["NOTION_CREATE_PAGE"],
+                    "require_approval": ["NOTION_CREATE_PAGE"],
+                },
+                "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+            },
+            tags={
+                "disable": ["openWorldHint"],
+                "require_approval": ["destructiveHint"],
+            },
+            experimental={"no_elicitation_support_fallback": "allow"},
+        )
+
+        body = json.loads(requests[0].content)
+        assert body["toolkits"] == {
+            "enable": ["gmail", "github"],
+            "require_approval": ["github"],
+        }
+        assert body["tools"] == {
+            "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+            "notion": {
+                "enable": ["NOTION_CREATE_PAGE"],
+                "require_approval": ["NOTION_CREATE_PAGE"],
+            },
+            "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+        }
+        assert body["tags"] == {
+            "disable": ["openWorldHint"],
+            "require_approval": ["destructiveHint"],
+        }
+        assert body["experimental"] == {"no_elicitation_support_fallback": "allow"}
+
+    def test_update_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+
+        session.update(
+            toolkits={"require_approval": ["gmail"]},
+            experimental={"no_elicitation_support_fallback": "deny"},
+        )
+
+        body = json.loads(requests[-1].content)
+        assert body["toolkits"] == {"require_approval": ["gmail"]}
+        assert body["experimental"] == {"no_elicitation_support_fallback": "deny"}
 
 
 class TestExecutionRequiresUserInput:

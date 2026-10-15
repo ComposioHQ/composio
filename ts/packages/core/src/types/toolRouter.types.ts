@@ -9,6 +9,7 @@ import type {
   SessionConfigHistoryResponse,
   SessionCreateResponse,
   SessionExecuteMetaParams,
+  SessionExecuteParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import type {
   CustomTool,
@@ -109,6 +110,39 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
+/**
+ * Toolkits whose tools need the user's approval before they run. A call that
+ * needs approval doesn't run: `session.execute()` throws
+ * `ComposioToolInputRequiredError` with the question to show the user.
+ * @experimental
+ */
+const ToolRouterToolkitsRequireApprovalSchema = ToolRouterToolkitsParamSchema.describe(
+  'Experimental. Toolkits whose tools need the user approval before they run'
+);
+
+/** Session toolkit policy: a list to enable, an enable/disable object, or only an approval list. */
+const ToolRouterSessionToolkitsSchema = z.union([
+  ToolRouterToolkitsParamSchema,
+  ToolRouterToolkitsDisabledConfigSchema.extend({
+    requireApproval: ToolRouterToolkitsRequireApprovalSchema.optional(),
+  }).strict(),
+  ToolRouterToolkitsEnabledConfigSchema.extend({
+    requireApproval: ToolRouterToolkitsRequireApprovalSchema.optional(),
+  }).strict(),
+  z.object({ requireApproval: ToolRouterToolkitsRequireApprovalSchema }).strict(),
+]);
+
+/**
+ * What happens to a call that needs the user's approval when the session's MCP
+ * client can't ask the user.
+ * @experimental
+ */
+const ToolRouterNoElicitationSupportFallbackSchema = z
+  .enum(['deny', 'allow'])
+  .describe(
+    'Experimental. What happens to a call that needs approval when the MCP client cannot ask the user'
+  );
+
 /** Experimental Instant usage policy for a Session. */
 export const ToolRouterInstantSchema = z.union([
   z.literal(false),
@@ -175,6 +209,13 @@ export const ToolRouterTagsEnableDisableSchema = z
     disable: ToolRouterTagsParamSchema.optional().describe(
       'The tags to disable in the tool router session'
     ),
+    /**
+     * Tools with any of these tags need the user's approval before they run.
+     * @experimental
+     */
+    requireApproval: ToolRouterTagsParamSchema.optional().describe(
+      'Experimental. Tools with any of these tags need the user approval before they run'
+    ),
   })
   .strict();
 export const ToolRouterConfigTagsSchema = z
@@ -209,6 +250,14 @@ export const ToolRouterToolsParamSchema = z
   .describe('The tools to use in the tool router session');
 export type ToolRouterToolsParam = z.infer<typeof ToolRouterToolsParamSchema>;
 
+/**
+ * Tools of the toolkit that need the user's approval before they run.
+ * @experimental
+ */
+const ToolRouterToolsRequireApprovalSchema = ToolRouterToolsParamSchema.describe(
+  'Experimental. Tools of this toolkit that need the user approval before they run'
+);
+
 export const ToolRouterConfigToolsSchema = z
   .union([
     ToolRouterToolsParamSchema,
@@ -217,6 +266,7 @@ export const ToolRouterConfigToolsSchema = z
         enable: ToolRouterToolsParamSchema.describe(
           'The tools to enable in the tool router session'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
     z
@@ -224,6 +274,7 @@ export const ToolRouterConfigToolsSchema = z
         disable: ToolRouterToolsParamSchema.describe(
           'The tools to disable in the tool router session'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
     z
@@ -231,13 +282,15 @@ export const ToolRouterConfigToolsSchema = z
         tags: ToolRouterConfigTagsSchema.describe(
           'The tags to filter the tools by, this will override the global tags'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
+    z.object({ requireApproval: ToolRouterToolsRequireApprovalSchema }).strict(),
   ])
   .superRefine((val, ctx) => {
-    // If it's an object (not an array), ensure only one property is present
+    // If it's an object (not an array), allow at most one of enable, disable and tags
     if (typeof val === 'object' && !Array.isArray(val)) {
-      const keys = Object.keys(val);
+      const keys = Object.keys(val).filter(key => key !== 'requireApproval');
       if (keys.length > 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -299,14 +352,9 @@ const ToolRouterCreateSessionConfigBaseSchema = z
 
     tags: ToolRouterConfigTagsSchema.optional().describe('Global tags to filter the tools by'),
 
-    toolkits: z
-      .union([
-        ToolRouterToolkitsParamSchema,
-        ToolRouterToolkitsDisabledConfigSchema,
-        ToolRouterToolkitsEnabledConfigSchema,
-      ])
-      .optional()
-      .describe('The toolkits to use in the tool router session'),
+    toolkits: ToolRouterSessionToolkitsSchema.optional().describe(
+      'The toolkits to use in the tool router session'
+    ),
 
     instant: ToolRouterInstantSchema.optional().describe(
       'Experimental Instant usage policy. Omission permits eligible tools when the project allows Instant usage; false disables it for this Session.'
@@ -411,6 +459,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           .describe(
             'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
           ),
+        /**
+         * What happens to a call that needs the user's approval when the
+         * session's MCP client can't ask the user: `deny` (the default) or
+         * `allow`.
+         * @experimental
+         */
+        noElicitationSupportFallback: ToolRouterNoElicitationSupportFallbackSchema.optional(),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
@@ -773,7 +828,31 @@ export interface ToolRouterSessionExecuteOptions {
    * COMPOSIO_MULTI_EXECUTE_TOOL.tools[].account.
    */
   account?: string;
+  /**
+   * The user's answers to the questions of a `ComposioToolInputRequiredError`,
+   * keyed by the IDs in its `inputRequests`. Send them by repeating the same
+   * call (same tool and arguments). An approved call runs; a denied or
+   * declined one returns `resultType: 'failed'`.
+   * @experimental
+   */
+  inputResponses?: Record<string, ToolRouterInputResponse>;
+  /**
+   * The `requestState` of the `ComposioToolInputRequiredError`, sent back
+   * unchanged with `inputResponses`.
+   * @experimental
+   */
+  requestState?: string;
 }
+
+/**
+ * The user's answer to one question, in the shape of an MCP elicitation
+ * result: `accept` with the form's fields in `content`, `decline` when they
+ * said no, or `cancel` when they dismissed it. For an approval, `content` is
+ * `{ decision: 'approve' }`, `{ decision: 'always_approve' }` or
+ * `{ decision: 'deny' }`.
+ * @experimental
+ */
+export type ToolRouterInputResponse = NonNullable<SessionExecuteParams['input_responses']>[string];
 
 /**
  * Slug of a Composio meta tool (`COMPOSIO_*`) that `session.executeMeta()` can
@@ -781,9 +860,16 @@ export interface ToolRouterSessionExecuteOptions {
  */
 export type ToolRouterSessionMetaToolSlug = SessionExecuteMetaParams['slug'];
 
+/** Options for `session.executeMeta()`: the user's answers to an earlier `input_required` call. */
+export type ToolRouterSessionExecuteMetaOptions = Pick<
+  ToolRouterSessionExecuteOptions,
+  'inputResponses' | 'requestState'
+>;
+
 export type ToolRouterSessionExecuteMetaFn = (
   slug: ToolRouterSessionMetaToolSlug,
   arguments_?: Record<string, unknown>,
+  options?: ToolRouterSessionExecuteMetaOptions,
   requestOptions?: ComposioRequestOptions
 ) => Promise<ToolRouterSessionExecuteResponse>;
 
@@ -925,6 +1011,12 @@ export const ToolRouterUpdateExperimentalSchema = z
       .describe(
         'Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block'
       ),
+    /**
+     * What happens to a call that needs the user's approval when the session's
+     * MCP client can't ask the user: `deny` or `allow`.
+     * @experimental
+     */
+    noElicitationSupportFallback: ToolRouterNoElicitationSupportFallbackSchema.optional(),
     sessionConfigId: z
       .string()
       .min(1)
@@ -947,13 +1039,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     instant: ToolRouterInstantSchema.optional().describe(
       'Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values.'
     ),
-    toolkits: z
-      .union([
-        ToolRouterToolkitsParamSchema,
-        ToolRouterToolkitsDisabledConfigSchema,
-        ToolRouterToolkitsEnabledConfigSchema,
-      ])
-      .nullable()
+    toolkits: ToolRouterSessionToolkitsSchema.nullable()
       .optional()
       .describe(
         'Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default'

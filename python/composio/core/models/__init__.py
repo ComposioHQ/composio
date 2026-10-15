@@ -23,6 +23,7 @@ from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionExecuteResponse,
+    ToolRouterInputResponse,
     ToolRouterSessionMetaToolSlug,
 )
 from .tool_router_session_delete import ToolRouterSessionDeleteResponse
@@ -74,6 +75,7 @@ __all__ = [
     "ToolRouterSession",
     "ToolRouterSessionDeleteResponse",
     "ToolRouterSessionExecuteResponse",
+    "ToolRouterInputResponse",
     "ToolRouterSessionMetaToolSlug",
     "ToolRouterSessionFilesMount",
     "ToolRouterSessionProxyExecuteResponse",

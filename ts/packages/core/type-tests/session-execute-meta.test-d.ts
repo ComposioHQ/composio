@@ -12,7 +12,20 @@ async function sessionExecuteMeta(): Promise<void> {
   );
   void result;
   await session.executeMeta('COMPOSIO_MANAGE_CONNECTIONS');
-  await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {}, { signal: new AbortController().signal });
+  await session.executeMeta(
+    'COMPOSIO_SEARCH_TOOLS',
+    {},
+    {},
+    { signal: new AbortController().signal }
+  );
+  await session.executeMeta(
+    'COMPOSIO_MULTI_EXECUTE_TOOL',
+    { tools: [] },
+    {
+      inputResponses: { elicit_1: { action: 'accept', content: { decision: 'approve' } } },
+      requestState: 'state',
+    }
+  );
 
   // @ts-expect-error only meta tool slugs are accepted
   await session.executeMeta('GMAIL_SEND_EMAIL');

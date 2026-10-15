@@ -146,6 +146,10 @@ class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
     """
 
     enable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
 
 
 class ToolRouterToolkitsDisableConfig(te.TypedDict, total=False):
@@ -156,6 +160,19 @@ class ToolRouterToolkitsDisableConfig(te.TypedDict, total=False):
     """
 
     disable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
+
+
+class ToolRouterToolkitsRequireApprovalConfig(te.TypedDict):
+    """Toolkit policy that only sets which toolkits need the user's approval."""
+
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
 
 
 class ToolRouterToolsEnableConfig(te.TypedDict, total=False):
@@ -166,6 +183,9 @@ class ToolRouterToolsEnableConfig(te.TypedDict, total=False):
     """
 
     enable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 class ToolRouterToolsDisableConfig(te.TypedDict, total=False):
@@ -176,6 +196,9 @@ class ToolRouterToolsDisableConfig(te.TypedDict, total=False):
     """
 
     disable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
@@ -188,6 +211,17 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
     """
 
     tags: ToolRouterConfigTags
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
+
+
+class ToolRouterToolsRequireApprovalConfig(te.TypedDict):
+    """Per-toolkit tool policy that only sets which tools need the user's approval."""
+
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 # Type alias for per-toolkit tool configuration
@@ -196,11 +230,14 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
 # - ToolRouterToolsEnableConfig: Dict with 'enable' key (whitelist)
 # - ToolRouterToolsDisableConfig: Dict with 'disable' key (blacklist)
 # - ToolRouterToolsTagsConfig: Dict with 'tags' key (filter by MCP tags)
+# - ToolRouterToolsRequireApprovalConfig: Dict with only 'require_approval'
+# Each dict can also carry an experimental 'require_approval' list.
 ToolRouterToolsConfig = t.Union[
     t.List[str],
     ToolRouterToolsEnableConfig,
     ToolRouterToolsDisableConfig,
     ToolRouterToolsTagsConfig,
+    ToolRouterToolsRequireApprovalConfig,
 ]
 
 
@@ -214,6 +251,9 @@ class ToolRouterTagsEnableDisableConfig(te.TypedDict, total=False):
 
     enable: t.Optional[t.List[ToolRouterTag]]
     disable: t.Optional[t.List[ToolRouterTag]]
+    require_approval: t.Optional[t.List[ToolRouterTag]]
+    """Experimental. Tools with any of these tags need the user's approval
+    before they run."""
 
 
 # Type alias for tags configuration
@@ -432,6 +472,10 @@ class ToolRouterExperimentalConfig(te.TypedDict, total=False):
     assistive_prompt: ToolRouterAssistivePromptConfig
     custom_tools: t.List[CustomTool]
     custom_toolkits: t.List[ExperimentalToolkit]
+    no_elicitation_support_fallback: t.Literal["deny", "allow"]
+    """What happens to a call that needs the user's approval when the
+    session's MCP client can't ask the user: ``"deny"`` (the default) or
+    ``"allow"``."""
 
 
 @dataclass
@@ -696,24 +740,20 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Return value structure matches TagsUnionMember1: {"enable": [...]}
             return {"enable": tags}
         elif isinstance(tags, dict):
-            # Object format with enable/disable
+            # Object format with enable/disable and an approval list
             # Only include keys that are present and not None
             # Return value structure matches TagsUnionMember1
+            result: session_create_params.TagsUnionMember1 = {}
             enable_value = tags.get("enable")
+            if enable_value is not None:
+                result["enable"] = enable_value
             disable_value = tags.get("disable")
-
-            # Build result dict only with non-None values
-            if enable_value is not None and disable_value is not None:
-                return {
-                    "enable": enable_value,
-                    "disable": disable_value,
-                }
-            elif enable_value is not None:
-                return {"enable": enable_value}
-            elif disable_value is not None:
-                return {"disable": disable_value}
-            else:
-                return None
+            if disable_value is not None:
+                result["disable"] = disable_value
+            require_approval_value = tags.get("require_approval")
+            if require_approval_value is not None:
+                result["require_approval"] = require_approval_value
+            return result or None
 
     # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
     # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
@@ -728,6 +768,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -758,6 +799,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -787,6 +829,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -817,6 +860,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                           Example: {'enable': ['github', 'slack']}
                         - ToolRouterToolkitsDisableConfig: Dict with 'disable' key.
                           Example: {'disable': ['linear']}
+                        Experimental: any dict can carry 'require_approval', the
+                        toolkits whose tools need the user's approval, or have
+                        only that key. Example: {'require_approval': ['gmail']}
         :param tools: Optional per-toolkit tool configuration. Key is toolkit slug,
                      value is ToolRouterToolsConfig which can be:
                      - List[str]: List of tool slugs (shorthand for enable).
@@ -835,6 +881,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                          'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
                          'linear': {'tags': ['readOnlyHint']}
                      }
+                     Experimental: any dict can carry 'require_approval', the
+                     tools that need the user's approval, or have only that key.
+                     Example: {'gmail': {'require_approval': ['GMAIL_SEND_EMAIL']}}
         :param tags: Optional global MCP tags to filter tools by.
                     Can be:
                     - List[str]: List of tag literals (shorthand for enable).
@@ -844,6 +893,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     Available tag values: 'readOnlyHint', 'createHint',
                     'updateHint', 'destructiveHint', 'idempotentHint',
                     'openWorldHint'.
+                    Experimental: the dict can also carry 'require_approval',
+                    tags whose tools need the user's approval.
+                    Example: {'require_approval': ['destructiveHint']}
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -908,6 +960,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               - 'user_timezone' (str): IANA timezone identifier
                                 (e.g., "America/New_York", "Europe/London").
                             - 'custom_tools' / 'custom_toolkits': SDK custom tools.
+                            - 'no_elicitation_support_fallback' ('deny' or 'allow'):
+                              what happens to a call that needs approval when the
+                              session's MCP client can't ask the user.
                               Set preload=True on a custom tool or toolkit to expose
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
@@ -1093,6 +1148,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                         # config is ToolRouterToolsDisableConfig when "disable" is present
                         disable_config = t.cast(ToolRouterToolsDisableConfig, config)
                         transformed_config["disable"] = disable_config["disable"]
+                    if "require_approval" in config:
+                        approval_config = t.cast(
+                            ToolRouterToolsRequireApprovalConfig, config
+                        )
+                        transformed_config["require_approval"] = approval_config[
+                            "require_approval"
+                        ]
                     # Use type guard to narrow the type when "tags" is present
                     if _is_tools_tags_config(config):
                         # Type narrowed: config is now ToolRouterToolsTagsConfig
@@ -1202,6 +1264,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     experimental_payload["assistive_prompt_config"] = {
                         "user_timezone": user_timezone,
                     }
+
+            fallback = experimental.get("no_elicitation_support_fallback")
+            if fallback is not None:
+                experimental_payload["no_elicitation_support_fallback"] = fallback
 
             # Serialize custom tools and toolkits for the backend
             custom_tools = experimental.get("custom_tools")

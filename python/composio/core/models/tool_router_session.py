@@ -22,6 +22,7 @@ from composio_client.types.tool_list_response import (
 )
 from composio_client.types.tool_router import (
     session_create_response,
+    session_execute_params,
     session_link_params,
     session_patch_params,
     session_search_response,
@@ -178,6 +179,14 @@ ToolRouterSessionExecuteResponse = SessionExecuteResponse
 only when the Session sets ``instant.return_instant_charge`` and a charge is
 available."""
 
+ToolRouterInputResponse = session_execute_params.CurrentInputResponsesValue
+"""Experimental. The user's answer to one question of a
+``ToolInputRequiredError``, in the shape of an MCP elicitation result:
+``action`` is ``"accept"`` with the form's fields in ``content``, ``"decline"``
+when they said no, or ``"cancel"`` when they dismissed it. For an approval,
+``content`` is ``{"decision": "approve"}``, ``{"decision": "always_approve"}``
+or ``{"decision": "deny"}``."""
+
 ToolRouterSessionMetaToolSlug = t.Literal[
     "COMPOSIO_SEARCH_TOOLS",
     "COMPOSIO_MULTI_EXECUTE_TOOL",
@@ -237,6 +246,9 @@ class ToolRouterUpdateExperimentalConfig(te.TypedDict, total=False):
     fast_mode: t.Optional[bool]
     submit_feedback: t.Optional[t.Dict[str, bool]]
     session_config_id: str
+    no_elicitation_support_fallback: t.Literal["deny", "allow"]
+    """What happens to a call that needs the user's approval when the
+    session's MCP client can't ask the user: ``"deny"`` or ``"allow"``."""
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
@@ -934,6 +946,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
         account: t.Optional[str] = None,
+        input_responses: t.Optional[t.Dict[str, ToolRouterInputResponse]] = None,
+        request_state: t.Optional[str] = None,
     ) -> ToolRouterSessionExecuteResponse:
         """
         Execute a tool within the session.
@@ -946,6 +960,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param account: Account ID or alias for direct app tool execution in
             multi-account sessions. Helper/meta tools either ignore this
             top-level field or define their own account-selection fields.
+        :param input_responses: Experimental. The user's answers to an earlier
+            ``ToolInputRequiredError``, keyed by the IDs in its
+            ``input_requests``. Repeat the same call (same tool and arguments)
+            with them. An approved call runs; a denied or declined one returns
+            ``result_type="failed"``.
+        :param request_state: Experimental. The ``request_state`` of that
+            error, sent back unchanged.
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
         ``error``, ``log_id``, ``result_type``, and ``instant_charge``
@@ -979,6 +1000,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 tool_slug=tool_slug,
                 arguments=arguments if arguments is not None else omit,
                 account=account if account is not None else omit,
+                input_responses=(
+                    input_responses if input_responses is not None else omit
+                ),
+                request_state=request_state if request_state is not None else omit,
                 experimental=inline_custom_tools_execute_experimental(
                     self._inline_custom_tools_payload
                 ),
@@ -991,6 +1016,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         slug: ToolRouterSessionMetaToolSlug,
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
+        input_responses: t.Optional[t.Dict[str, ToolRouterInputResponse]] = None,
+        request_state: t.Optional[str] = None,
     ) -> ToolRouterSessionExecuteResponse:
         """
         Execute a Composio meta tool (``COMPOSIO_*``) within the session.
@@ -1002,6 +1029,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         :param slug: The meta tool slug to execute.
         :param arguments: Optional meta tool arguments.
+        :param input_responses: Experimental. The user's answers to an earlier
+            ``ToolInputRequiredError``, keyed by the IDs in its
+            ``input_requests``. Repeat the same call with them, as in :meth:`execute`.
+        :param request_state: Experimental. The ``request_state`` of that
+            error, sent back unchanged.
         :returns: The tool execution result, in the same shape as
             :meth:`execute`.
         :raises ToolInputRequiredError: If the tool needs input from the user
@@ -1023,6 +1055,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 session_id=self.session_id,
                 slug=slug,
                 arguments=arguments if arguments is not None else omit,
+                input_responses=(
+                    input_responses if input_responses is not None else omit
+                ),
+                request_state=request_state if request_state is not None else omit,
                 experimental=inline_custom_tools_execute_meta_experimental(
                     self._inline_custom_tools_payload
                 ),
