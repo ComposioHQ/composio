@@ -1512,6 +1512,71 @@ describe('jsonSchemaToZod', () => {
   });
 });
 
+describe('issue paths', () => {
+  const issuePaths = (schema: JsonSchema, value: unknown) => {
+    const result = jsonSchemaToZod(schema).safeParse(value);
+    expect(result.success).toBe(false);
+    return result.error!.issues.map(issue => [issue.code, issue.path]);
+  };
+
+  it('reports a nested patternProperties violation under its property once', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        x: { type: 'object', patternProperties: { '^p_': { type: 'number' } } },
+      },
+    };
+    expect(issuePaths(schema, { x: { p_a: 'no' } })).toEqual([['custom', ['x', 'p_a']]]);
+  });
+
+  it('reports a nested additionalProperties violation under its property once', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'object',
+          patternProperties: { '^p_': { type: 'number' } },
+          additionalProperties: { type: 'string' },
+        },
+      },
+    };
+    expect(issuePaths(schema, { x: { other: 1 } })).toEqual([['custom', ['x', 'other']]]);
+  });
+
+  it('reports nested unrecognized keys at the property that rejects them', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'object',
+          properties: { a: { type: 'string' } },
+          patternProperties: { '^p_': { type: 'number' } },
+          additionalProperties: false,
+        },
+      },
+    };
+    expect(issuePaths(schema, { x: { zzz: 1 } })).toEqual([['unrecognized_keys', ['x']]]);
+  });
+
+  it('reports a nested oneOf failure at the property once', () => {
+    // `contentEncoding` is an annotation to the Draft 7 guard but a check to
+    // the native string parser, so the guard accepts exactly one branch while
+    // the parser rejects both and the oneOf refinement itself reports.
+    const schema: JsonSchema = {
+      type: 'object',
+      properties: {
+        x: {
+          oneOf: [
+            { type: 'string', contentEncoding: 'base64' },
+            { type: 'string', maxLength: 1 },
+          ],
+        },
+      },
+    };
+    expect(issuePaths(schema, { x: '!!!' })).toEqual([['invalid_union', ['x']]]);
+  });
+});
+
 describe('shared cross-SDK object corpus', () => {
   for (const testCase of loadObjectCases()) {
     describe(testCase.id, () => {

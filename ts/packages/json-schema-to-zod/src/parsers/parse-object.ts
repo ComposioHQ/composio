@@ -135,7 +135,7 @@ function parseDynamicKeyObject(
         const parsed = parser.safeParse(value[key]);
         if (!parsed.success) {
           ctx.addIssue({
-            path: [...ctx.path, key],
+            path: [key],
             code: 'custom',
             message: `Invalid input: key "${key}" must match its patternProperties schema`,
             params: { issues: parsed.error.issues },
@@ -155,7 +155,7 @@ function parseDynamicKeyObject(
         const parsed = additionalProperties!.safeParse(value[key]);
         if (!parsed.success) {
           ctx.addIssue({
-            path: [...ctx.path, key],
+            path: [key],
             code: 'custom',
             message: `Invalid input: key "${key}" must match the additionalProperties schema`,
             params: { issues: parsed.error.issues },
@@ -168,7 +168,6 @@ function parseDynamicKeyObject(
 
     if (unrecognizedKeys.length > 0) {
       ctx.addIssue({
-        path: [...ctx.path],
         code: 'unrecognized_keys',
         keys: unrecognizedKeys,
         message: `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`,
