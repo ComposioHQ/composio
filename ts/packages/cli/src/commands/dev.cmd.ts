@@ -30,7 +30,7 @@ const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
 const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription(
-    'User id to act as or filter by; commands that act as a user default to the project test user id, then the global one'
+    'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.'
   )
 );
 
@@ -168,8 +168,9 @@ const makeDevCommand = <E, R>(
 // The developer-mode toggle changes a global setting, for no user and no project.
 const toggleRejections = {
   '--project-name':
-    '`composio dev --mode` changes a global setting and does not take --project-name.',
-  '--user-id': '`composio dev --mode` changes a global setting and does not take --user-id.',
+    '`composio dev --mode` changes a global setting, so --project-name does not apply. Remove it.',
+  '--user-id':
+    '`composio dev --mode` changes a global setting, so --user-id does not apply. Remove it.',
 };
 
 export const buildDevCommand = (visibility: CommandVisibility) =>

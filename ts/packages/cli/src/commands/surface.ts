@@ -90,22 +90,22 @@ export const directoryTestUserId = (
 
 /**
  * The missing-user message for a command, given its `--project-name`. With the flag the
- * directory's test user does not carry over, so `composio dev init` would not help: the user
- * passes `--user-id` or logs in again to store the global test user.
+ * directory's test user does not carry over to another project, so the message points at
+ * `--user-id` and `composio login` instead of `composio dev init`.
  */
 export const missingUserIdMessage = (projectName: Option.Option<string>, otherwise: string) =>
   Option.match(projectName, {
     onNone: () => otherwise,
     onSome: () =>
-      'Missing user id. Provide --user-id, or run `composio login` to store the global test user id that --project-name falls back to.',
+      'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
   });
 
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';
 
 const unsupportedSharedFlag = (command: string): Record<SharedFlag, string> => ({
-  '--project-name': `\`composio ${command}\` does not support --project-name yet; run it from a directory configured for that project.`,
-  '--user-id': `\`composio ${command}\` does not act for a user and does not take --user-id.`,
+  '--project-name': `\`composio ${command}\` cannot target another project yet. Remove --project-name, or run it from that project's directory.`,
+  '--user-id': `\`composio ${command}\` does not act as a user. Remove --user-id.`,
 });
 
 /**
