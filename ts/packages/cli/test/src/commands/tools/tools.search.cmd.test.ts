@@ -7,7 +7,7 @@ import type {
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
-import { ToolsSearchInputError } from 'src/commands/tools/commands/tools.search.cmd';
+import { CommandInputError } from 'src/commands/errors';
 
 const testTools: Tools = [
   {
@@ -101,9 +101,9 @@ describe('CLI: composio search', () => {
     it.effect('returns the structured missing-query error', () =>
       Effect.gen(function* () {
         const failure = yield* cli(['search', '   ']).pipe(Effect.flip);
-        expect(failure).toBeInstanceOf(ToolsSearchInputError);
-        if (failure instanceof ToolsSearchInputError) {
-          expect(failure.reason).toBe('missing_query');
+        expect(failure).toBeInstanceOf(CommandInputError);
+        if (failure instanceof CommandInputError) {
+          expect(failure.option).toBe('<query>');
           expect(failure.message).toBe('At least one query is required.');
         }
       })

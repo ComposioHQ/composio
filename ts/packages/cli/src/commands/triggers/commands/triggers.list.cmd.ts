@@ -1,5 +1,6 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect } from 'effect';
+import { Effect } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -11,9 +12,7 @@ type TriggersListCommandConfig = {
   readonly infoCommand: string;
 };
 
-class TriggersListOptionError extends Data.TaggedError('commands/TriggersListOptionError')<{
-  readonly message: string;
-}> {}
+const invalidToolkit = commandInputError('triggers list');
 
 const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list trigger types for (e.g. "gmail")')
@@ -48,9 +47,10 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
             const availableExample = error.availableToolkits.slice(0, 8).join(', ');
             yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
             return yield* Effect.fail(
-              new TriggersListOptionError({
-                message: `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`,
-              })
+              invalidToolkit(
+                `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`,
+                '<toolkit>'
+              )
             );
           })
         )

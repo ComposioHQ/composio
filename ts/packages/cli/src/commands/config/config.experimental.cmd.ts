@@ -1,4 +1,5 @@
-import { Data, Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
+import { Effect, Option } from 'effect';
 import { Argument, Command } from 'effect/cli';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -10,9 +11,7 @@ import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/referenc
 
 const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
 
-class ConfigOptionError extends Data.TaggedError('commands/ConfigOptionError')<{
-  readonly message: string;
-}> {}
+const invalidState = commandInputError('config experimental');
 
 const featureArg = Argument.String('feature').pipe(
   Argument.withDescription(
@@ -104,9 +103,7 @@ export const configExperimentalCmd = Command.make(
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
         return yield* Effect.fail(
-          new ConfigOptionError({
-            message: `Invalid state "${state.value}". Use "on" or "off".`,
-          })
+          invalidState(`Invalid state "${state.value}". Use "on" or "off".`, '<state>')
         );
       }
 

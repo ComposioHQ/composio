@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
@@ -73,10 +74,7 @@ type SearchResponseRecord = Pick<
   'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'
 >;
 
-export class ToolsSearchInputError extends Data.TaggedError('commands/ToolsSearchInputError')<{
-  readonly reason: 'missing_query' | 'missing_user_id';
-  readonly message: string;
-}> {}
+const invalidSearchInput = commandInputError('search');
 
 class ToolsSearchRequestError extends Data.TaggedError('commands/ToolsSearchRequestError')<{
   readonly message: string;
@@ -317,10 +315,7 @@ const runToolsSearch = (params: {
     const emitJson = params.json || !emitHuman;
     const queries = params.query.map(q => q.trim()).filter(Boolean);
     if (queries.length === 0) {
-      return yield* new ToolsSearchInputError({
-        reason: 'missing_query',
-        message: 'At least one query is required.',
-      });
+      return yield* invalidSearchInput('At least one query is required.', '<query>');
     }
     const toolkitFilter = Option.getOrUndefined(params.toolkits);
     const toolkitList =
@@ -344,11 +339,10 @@ const runToolsSearch = (params: {
               onNone: () => userContext.data.testUserId,
             });
       if (Option.isNone(resolvedUserId)) {
-        return yield* new ToolsSearchInputError({
-          reason: 'missing_user_id',
-          message:
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-        });
+        return yield* invalidSearchInput(
+          'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+          '--user-id'
+        );
       }
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({

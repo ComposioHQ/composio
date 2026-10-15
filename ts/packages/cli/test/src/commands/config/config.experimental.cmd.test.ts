@@ -122,7 +122,8 @@ layer(TestLive())('config experimental state validation', it => {
       if (Exit.isFailure(exit)) {
         const failure = Cause.squash(exit.cause);
         expect(failure).toMatchObject({
-          _tag: 'commands/ConfigOptionError',
+          _tag: 'commands/CommandInputError',
+          option: '<state>',
           message: 'Invalid state "sometimes". Use "on" or "off".',
         });
       }

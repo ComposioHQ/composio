@@ -80,7 +80,8 @@ describe('CLI: composio dev triggers list', () => {
           if (Exit.isFailure(exit)) {
             const failure = Cause.squash(exit.cause);
             expect(failure).toMatchObject({
-              _tag: 'commands/TriggersListOptionError',
+              _tag: 'commands/CommandInputError',
+              option: '<toolkit>',
               message: expect.stringContaining('not available'),
             });
           }
@@ -211,7 +212,8 @@ describe('CLI: composio dev triggers list', () => {
           if (Exit.isFailure(exit)) {
             const failure = Cause.squash(exit.cause);
             expect(failure).toMatchObject({
-              _tag: 'commands/TriggersListOptionError',
+              _tag: 'commands/CommandInputError',
+              option: '<toolkit>',
               message: expect.stringContaining('not available'),
             });
           }

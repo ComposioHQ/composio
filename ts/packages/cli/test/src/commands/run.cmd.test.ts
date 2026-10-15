@@ -1,3 +1,4 @@
+import { CommandInputError } from 'src/commands/errors';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -9,11 +10,7 @@ import { Cause, ConfigProvider, Effect, Exit, Layer, Option, Sink, Stream } from
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
-import {
-  buildRunHelpersSource,
-  inferCliInvocationPrefix,
-  MissingRunSourceError,
-} from 'src/commands/run.cmd';
+import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run.cmd';
 import {
   extractInlineExecuteToolSlugs,
   wrapInlineCodeForRun,
@@ -425,10 +422,10 @@ describe('CLI: composio run', () => {
 
           const failure = Cause.findErrorOption(exit.cause);
           expect(Option.isSome(failure)).toBe(true);
-          expect(failure.pipe(Option.getOrThrow)).toBeInstanceOf(MissingRunSourceError);
-          expect(
-            String((failure.pipe(Option.getOrThrow) as MissingRunSourceError).message)
-          ).toContain('Provide inline code or use --file to run a script file.');
+          expect(failure.pipe(Option.getOrThrow)).toBeInstanceOf(CommandInputError);
+          expect(String((failure.pipe(Option.getOrThrow) as CommandInputError).message)).toContain(
+            'Provide inline code or use --file to run a script file.'
+          );
           // Nothing was set up before the check, so no child process was started.
           expect(commandRuns).not.toHaveBeenCalled();
         })

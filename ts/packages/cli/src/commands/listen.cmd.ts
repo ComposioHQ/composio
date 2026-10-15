@@ -1,3 +1,4 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -44,11 +45,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
   readonly cause?: unknown;
 }> {}
 
-class ListenOptionError extends Data.TaggedError('commands/ListenOptionError')<{
-  readonly message: string;
-}> {}
-
-const invalidOptionValue = (message: string) => new ListenOptionError({ message });
+const invalidOptionValue = commandInputError('listen');
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
@@ -134,7 +131,8 @@ const parseCreateParams = (raw: string) =>
       invalidOptionValue(
         error.reason === 'not-a-record'
           ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
-          : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
+          : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'.",
+        '--params'
       )
     )
   );
@@ -147,7 +145,8 @@ const assertSupportedListenParams = (params: {
   params.listeningToProjectEvent && Object.keys(params.createParamsInput).length > 0
     ? Effect.fail(
         invalidOptionValue(
-          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`
+          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`,
+          '--params'
         )
       )
     : Effect.void;
@@ -194,7 +193,8 @@ const resolveConnectedAccountIdForTrigger = (params: {
     if (!toolkitSlug) {
       return yield* Effect.fail(
         invalidOptionValue(
-          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
+          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`,
+          '<slug>'
         )
       );
     }
@@ -284,7 +284,10 @@ const parseStreamPath = (expression: string) =>
     const trimmed = expression.trim();
     if (!trimmed.startsWith('.')) {
       return yield* Effect.fail(
-        invalidOptionValue('Expected --stream to contain a jq-like path starting with "."')
+        invalidOptionValue(
+          'Expected --stream to contain a jq-like path starting with "."',
+          '--stream'
+        )
       );
     }
 
@@ -296,7 +299,8 @@ const parseStreamPath = (expression: string) =>
       if ((match.index ?? -1) !== lastIndex) {
         return yield* Effect.fail(
           invalidOptionValue(
-            'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+            'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".',
+            '--stream'
           )
         );
       }
@@ -309,7 +313,8 @@ const parseStreamPath = (expression: string) =>
     if (lastIndex !== trimmed.length) {
       return yield* Effect.fail(
         invalidOptionValue(
-          'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+          'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".',
+          '--stream'
         )
       );
     }
@@ -395,7 +400,8 @@ const parseTimeoutMs = (value: string) =>
     if (!match || !Number.isFinite(amount) || amount <= 0 || unitMs === undefined) {
       return yield* Effect.fail(
         invalidOptionValue(
-          'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
+          'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".',
+          '--timeout'
         )
       );
     }

@@ -16,10 +16,8 @@ import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import {
-  parseParallelExecuteArgs,
-  type ParallelExecuteArgumentError,
-} from 'src/commands/tools/commands/tools.execute.cmd';
+import { parseParallelExecuteArgs } from 'src/commands/tools/commands/tools.execute.cmd';
+import type { CommandInputError } from 'src/commands/errors';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -107,10 +105,10 @@ const largeOutputConfigProvider = ConfigProvider.fromEnvRecord({
 }).pipe(ConfigProvider.orElse(testArtifactConfigProvider));
 
 const expectInvalidValueMessage = (failure: unknown, message: string) => {
-  expect(Predicate.isTagged(failure, 'commands/ParallelExecuteArgumentError')).toBe(true);
-  if (!Predicate.isTagged(failure, 'commands/ParallelExecuteArgumentError')) return;
+  expect(Predicate.isTagged(failure, 'commands/CommandInputError')).toBe(true);
+  if (!Predicate.isTagged(failure, 'commands/CommandInputError')) return;
 
-  expect((failure as ParallelExecuteArgumentError).message).toContain(message);
+  expect((failure as CommandInputError).message).toContain(message);
 };
 
 const parseLastJson = (lines: ReadonlyArray<string>) => {

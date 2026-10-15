@@ -40,6 +40,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
+import { CommandInputError, commandInputError } from 'src/commands/errors';
 
 export class TypeScriptGenerationWriteError extends Data.TaggedError(
   'commands/TypeScriptGenerationWriteError'
@@ -49,13 +50,7 @@ export class TypeScriptGenerationWriteError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-export class TypeScriptGenerationInputError extends Data.TaggedError(
-  'commands/TypeScriptGenerationInputError'
-)<{
-  readonly message: string;
-}> {}
-
-const invalidGenerateValue = (message: string) => new TypeScriptGenerationInputError({ message });
+const invalidGenerateValue = commandInputError('generate ts');
 
 export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
@@ -123,7 +118,7 @@ function fetchFilteredData(
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
-): Effect.Effect<FetchResult, Error | TypeScriptGenerationInputError, never> {
+): Effect.Effect<FetchResult, Error | CommandInputError, never> {
   return Effect.gen(function* () {
     yield* spinner.message(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
 
@@ -144,7 +139,8 @@ function fetchFilteredData(
                 Effect.catchTag('services/InvalidToolkitsError', error =>
                   Effect.fail(
                     invalidGenerateValue(
-                      `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. Toolkit not found.`
+                      `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. Toolkit not found.`,
+                      '--toolkits'
                     )
                   )
                 )
@@ -327,9 +323,7 @@ function fetchAllData(
 /**
  * Validates that the output directory is not inside node_modules
  */
-function validateOutputDir(
-  outputDir: string
-): Effect.Effect<string, TypeScriptGenerationInputError, Path.Path> {
+function validateOutputDir(outputDir: string): Effect.Effect<string, CommandInputError, Path.Path> {
   return Effect.gen(function* () {
     const path = yield* Path.Path;
     const normalizedPath = path.normalize(outputDir);
@@ -337,7 +331,8 @@ function validateOutputDir(
     if (normalizedPath.includes('node_modules')) {
       return yield* Effect.fail(
         invalidGenerateValue(
-          'Output directory cannot be inside node_modules. Please specify a different directory.'
+          'Output directory cannot be inside node_modules. Please specify a different directory.',
+          '--output-dir'
         )
       );
     }
