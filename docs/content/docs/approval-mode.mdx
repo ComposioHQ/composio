@@ -6,7 +6,7 @@ keywords: [approval, human in the loop, elicitation, require_approval, input_req
 
 By default, your agent can run any tool in a session as soon as it decides to. For tools that send, post or delete things on your users' behalf, you can configure the session to require the user's approval first.
 
-When your agent calls a tool that requires approval, Composio doesn't run it. It returns a question for the user instead, and runs the tool once your app sends back their approval.
+When your agent calls a tool that requires approval, Composio doesn't run it right away. It returns an elicitation that asks the user to approve the call, and runs the tool once it receives their answer.
 
 <Callout type="warn" title="Experimental">
 Approval mode is experimental, and its SDK options may change. Answering questions needs `composio` newer than 0.27.0 (Python) or `@composio/core` newer than 0.24.0 (TypeScript).
