@@ -14,23 +14,9 @@ export const composioSchemaLoaders = {
   'cli.realtime.credentials': async () =>
     (await import('@composio/client/effect/schemas/cli/realtime/credentials'))
       .RealtimeCredentialsResponse,
-  'logs.tools.list': async () =>
-    (await import('@composio/client/effect/schemas/logs/tools/list')).ToolListResponse,
-  'logs.tools.retrieve': async () =>
-    (await import('@composio/client/effect/schemas/logs/tools/retrieve')).ToolRetrieveResponse,
   'org.consumer.listConnectedToolkits': async () =>
     (await import('@composio/client/effect/schemas/org/consumer/list-connected-toolkits'))
       .ConsumerListConnectedToolkitsResponse,
   'org.list': async () =>
     (await import('@composio/client/effect/schemas/org/list')).OrgListResponse,
-  'org.project.list': async () =>
-    (await import('@composio/client/effect/schemas/org/project/list')).ProjectListResponse,
-  'toolRouter.session.search': async () =>
-    (await import('@composio/client/effect/schemas/tool-router/session/search'))
-      .SessionSearchResponse,
-  'toolRouter.session.toolkits': async () =>
-    (await import('@composio/client/effect/schemas/tool-router/session/toolkits'))
-      .SessionToolkitsResponse,
-  'tools.list': async () =>
-    (await import('@composio/client/effect/schemas/tools/list')).ToolListResponse,
 } satisfies SchemaLoaders;

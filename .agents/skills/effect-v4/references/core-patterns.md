@@ -82,7 +82,7 @@ file), not the bare class name.
 ## Errors: `Data.TaggedError` (default) and `Schema.TaggedError` (schema-backed)
 
 The established convention in this repo — stated in `ts/packages/cli/AGENTS.md`'s
-"Effect safety and migration seams" section — is: never wrap a plain `Error` in
+"Effect safety and migration boundaries" section — is: never wrap a plain `Error` in
 `Effect.fail` for an expected failure; give it a `Data.TaggedError` with structured
 fields and a preserved cause, then recover with `catchTag`/`catchTags`. This is
 unchanged from v3 and is what nearly every error in `src/services/*.ts` uses, e.g.
