@@ -262,7 +262,9 @@ session = composio.create(
     toolkits={"enable": ["gmail"]},
     tools={
         "gmail": {
+            # The agent can fetch and send emails
             "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            # but needs the user's approval to send one
             "require_approval": ["GMAIL_SEND_EMAIL"],
         }
     },
@@ -272,7 +274,9 @@ tools = session.tools()
 
 def ask_user(question):
     """Show one question in the terminal and return the user's answer."""
+    # Describes the tool call, like which email the agent wants to send
     print(question["message"])
+    # Ask for each field in requested_schema, like the decision to approve or deny
     content = {}
     for name, field in question["requested_schema"]["properties"].items():
         choices = [choice["const"] for choice in field.get("oneOf", [])]
@@ -282,6 +286,7 @@ def ask_user(question):
 
 def run_tool(block):
     """Run one tool call, asking the user whenever Composio needs their input."""
+    # No answers yet on the first try
     input_responses, request_state = None, None
     while True:
         try:
@@ -293,12 +298,15 @@ def run_tool(block):
             )
             break
         except ToolInputRequiredError as error:
+            # The tool needs approval: ask the user every question, keyed by its ID
             input_responses = {
                 question_id: ask_user(question)
                 for question_id, question in error.input_requests.items()
             }
+            # Send this back with the answers when you retry the call
             request_state = error.request_state
 
+    # Return the result to Claude
     return {
         "type": "tool_result",
         "tool_use_id": block.id,
@@ -313,6 +321,7 @@ response = client.messages.create(
     model="claude-opus-4-6", max_tokens=4096, tools=tools, messages=messages
 )
 
+# Run the tools Claude calls until it has a final answer
 while response.stop_reason == "tool_use":
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
@@ -349,7 +358,9 @@ const session = await composio.create('user_123', {
   toolkits: { enable: ['gmail'] },
   tools: {
     gmail: {
+      // The agent can fetch and send emails
       enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      // but needs the user's approval to send one
       requireApproval: ['GMAIL_SEND_EMAIL'],
     },
   },
@@ -358,7 +369,9 @@ const tools = await session.tools();
 
 // Show one question in the terminal and return the user's answer
 async function askUser(question: ToolRouterInputRequest) {
+  // Describes the tool call, like which email the agent wants to send
   console.log(question.message);
+  // Ask for each field in requestedSchema, like the decision to approve or deny
   const { properties } = question.requestedSchema as {
     properties: Record<string, { title?: string; oneOf?: { const: string }[] }>;
   };
@@ -372,10 +385,12 @@ async function askUser(question: ToolRouterInputRequest) {
 
 // Run one tool call, asking the user whenever Composio needs their input
 async function runTool(block: Anthropic.ToolUseBlock): Promise<Anthropic.ToolResultBlockParam> {
+  // No answers yet on the first try
   let answers: ToolRouterSessionExecuteOptions = {};
   while (true) {
     try {
       const result = await session.execute(block.name, block.input as Record<string, unknown>, answers);
+      // Return the result to Claude
       return {
         type: 'tool_result',
         tool_use_id: block.id,
@@ -383,10 +398,12 @@ async function runTool(block: Anthropic.ToolUseBlock): Promise<Anthropic.ToolRes
       };
     } catch (error) {
       if (!(error instanceof ComposioToolInputRequiredError)) throw error;
+      // The tool needs approval: ask the user every question, keyed by its ID
       const inputResponses: NonNullable<ToolRouterSessionExecuteOptions['inputResponses']> = {};
       for (const [questionId, question] of Object.entries(error.inputRequests)) {
         inputResponses[questionId] = await askUser(question);
       }
+      // Retry the call with the answers, and the request state if there is one
       answers = { inputResponses, requestState: error.requestState };
     }
   }
@@ -402,6 +419,7 @@ let response = await client.messages.create({
   messages,
 });
 
+// Run the tools Claude calls until it has a final answer
 while (response.stop_reason === 'tool_use') {
   messages.push({ role: 'assistant', content: response.content });
   const results: Anthropic.ToolResultBlockParam[] = [];
