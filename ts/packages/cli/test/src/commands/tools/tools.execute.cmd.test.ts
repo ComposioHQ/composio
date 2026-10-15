@@ -219,6 +219,46 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug },
+            error: null,
+            log_id: 'log_instant_charge',
+            instant_charge: {
+              amount: '0.005',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
+      },
+    })
+  )('[Given] an instant charge [Then] execute reports it in the success line and output', it => {
+    it.effect('prints the charge before the log id', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'EXA_SEARCH', '--skip-connection-check', '-d', '{"query":"a"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const text = lines.join('\n');
+        const output = parseLastJson(lines);
+
+        expect(text).toContain(
+          'Execution successful (instant charge: 0.005 USD, logId: log_instant_charge)'
+        );
+        expect(output).toHaveProperty('instantCharge', {
+          amount: '0.005',
+          currency: 'USD',
+          chargedBy: 'composio',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
     })
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.effect('executes via Tool Router with defaults', () =>
@@ -240,6 +280,7 @@ describe('CLI: composio execute', () => {
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
         expect(output.logId).toBe('log_test');
+        expect(output).not.toHaveProperty('instantCharge');
       })
     );
   });
@@ -950,6 +991,9 @@ describe('CLI: composio execute', () => {
           });
           expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
             posthog: 'con_posthog_active',
+          });
+          expect(recordedSessionCreateParams[0]?.instant).toEqual({
+            return_instant_charge: true,
           });
         })
       );
@@ -1760,6 +1804,58 @@ describe('CLI: composio execute', () => {
             expect.objectContaining({ slug: 'GITHUB_CREATE_ISSUE', successful: true }),
           ])
         );
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        executeMeta: () =>
+          Effect.succeed({
+            result_type: 'failed' as const,
+            data: { results: [], total_count: 2, success_count: 1, error_count: 1 },
+            error: '1 out of 2 tools failed',
+            log_id: 'log_parallel_batch',
+            instant_charge: {
+              amount: '0.025000',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
+      },
+    })
+  )('[Given] a parallel multi-execute batch fails with a charge [Then] the charge is kept', it => {
+    it.effect('reports instantCharge on the failed parallel result', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'COMPOSIO_MULTI_EXECUTE_TOOL',
+          '-d',
+          '{"tools":[]}',
+        ]).pipe(Effect.flip);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+        expect(Predicate.isTagged(error, 'ReportedToolExecutionError')).toBe(true);
+        expect(error).toMatchObject({ reason: 'parallel_failed' });
+        expect(output).toMatchObject({
+          successful: false,
+          results: [
+            {
+              slug: 'COMPOSIO_MULTI_EXECUTE_TOOL',
+              successful: false,
+              error: '1 out of 2 tools failed',
+              logId: 'log_parallel_batch',
+              instantCharge: { amount: '0.025000', currency: 'USD', chargedBy: 'composio' },
+            },
+          ],
+        });
       })
     );
   });

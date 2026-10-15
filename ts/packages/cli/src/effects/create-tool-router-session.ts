@@ -181,6 +181,7 @@ export const createToolRouterSessionContext = (
               }
             : undefined,
           toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+          instant: { return_instant_charge: true },
           experimental: permissionSnapshot?.enhancedControlsEnabled
             ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
             : undefined,
