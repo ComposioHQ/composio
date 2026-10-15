@@ -163,3 +163,95 @@ describe('CommandSurface: --project-name reaches the project resolver', () => {
     );
   });
 });
+
+describe('CommandSurface: playground-execute --parallel keeps the shared flags', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+      }),
+      accountData: { projects: [] },
+    })
+  )(it => {
+    it.effect.each([
+      {
+        name: 'after the subcommand',
+        args: ['dev', 'playground-execute', '--parallel', 'GMAIL_SEND_EMAIL', '-d', '{}'],
+        shared: ['--project-name', 'nope'],
+      },
+      {
+        name: 'before the subcommand',
+        args: ['dev', '--project-name', 'nope', 'playground-execute', '--parallel'],
+        shared: ['GMAIL_SEND_EMAIL', '-d', '{}'],
+      },
+    ])('looks the named project up when --project-name is passed $name', ({ args, shared }) =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const error = yield* Effect.flip(cli([...args, ...shared, '--skip-checks']));
+        expect(error).toBeInstanceOf(ProjectResolutionError);
+        expect((error as ProjectResolutionError).message).toContain(
+          'Developer project "nope" was not found in org "org_test"'
+        );
+      })
+    );
+  });
+
+  const sessionUserIds: Array<string> = [];
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: {
+          COMPOSIO_USER_API_KEY: 'test_api_key',
+          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_PROJECT_ID: 'dev_project_test',
+        },
+      }),
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        create: params =>
+          Effect.sync(() => {
+            sessionUserIds.push(params.user_id);
+            return {
+              session_id: 'trs_test_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: [],
+            };
+          }),
+      },
+    })
+  )(it => {
+    it.effect('runs as the --user-id passed before the subcommand', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        sessionUserIds.length = 0;
+        yield* cli([
+          'dev',
+          '--user-id',
+          'alice',
+          'playground-execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{}',
+          'GITHUB_CREATE_ISSUE',
+          '-d',
+          '{}',
+        ]);
+        expect(sessionUserIds.length).toBeGreaterThan(0);
+        expect(new Set(sessionUserIds)).toEqual(new Set(['alice']));
+      })
+    );
+  });
+});

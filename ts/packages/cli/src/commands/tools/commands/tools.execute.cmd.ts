@@ -1882,7 +1882,15 @@ const runParallelFromCommand = (config: {
       allowUserId: config.surface === 'dev',
       allowProjectName: config.surface === 'dev',
     });
-    return yield* runParallelToolsExecuteFromParsed({ ...parsed, ...config });
+    // The tail starts after the command name, so the `dev` group's shared flags given before
+    // it reach the command only through the surface.
+    const surface = yield* CommandSurface;
+    return yield* runParallelToolsExecuteFromParsed({
+      ...parsed,
+      ...config,
+      userId: Option.orElse(parsed.userId, () => surface.userId),
+      projectName: Option.orElse(parsed.projectName, () => surface.projectName),
+    });
   });
 
 const executeExamples = [
