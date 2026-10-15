@@ -2,7 +2,7 @@ import { Command, Flag } from 'effect/cli';
 import { Data, Effect, Option } from 'effect';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
-import { logsCmd } from './logs-cmd/logs.cmd';
+import { logsCmd } from './logs/logs.cmd';
 import { devToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { toolkitsCmd } from './toolkits/toolkits.cmd';
 import { authConfigsCmd } from './auth-configs/auth-configs.cmd';

@@ -5,11 +5,11 @@ import {
   formatToolLogInfo,
   formatToolLogsTable,
   formatTriggerLogsTable,
-} from 'src/commands/logs-cmd/format';
+} from 'src/commands/logs/format';
 import {
   decodeTriggerLogRecord,
   type TriggerLogRecord,
-} from 'src/commands/logs-cmd/trigger-log-record';
+} from 'src/commands/logs/trigger-log-record';
 import { green, red } from 'src/ui/colors';
 
 type ToolLog = Logs.ToolListResponse.Data;

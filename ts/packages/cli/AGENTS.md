@@ -29,7 +29,7 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 ### Commands — `src/commands/`
 
-Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
+Each command uses `effect/cli`'s `Command.make()` pattern. Current top-level commands:
 
 | Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -51,7 +51,7 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command fil
 | `connections` | Alias / helper for connected-account flows |
 | `orgs` | Manage organizations |
 | `projects` | Manage projects |
-| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `logs` | View tool-execution logs |
 | `config` | Read/write CLI config |
 | `listen` | Listen for events |
 | `proxy` | Proxy authenticated API requests |
@@ -60,6 +60,46 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command fil
 | `artifacts` | Manage generated artifacts |
 
 Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
+
+#### Command module layout
+
+Every command is a directory named after the command, holding files that share the command's dotted basename. A group is a directory named after the group, whose entry file `<group>.cmd.ts` only lists subcommands.
+
+```
+src/commands/
+  index.ts                              root command tree, argv contract with cli-main.ts
+  $default.cmd.ts                       root command: shared flags and description
+  <group>/<group>.cmd.ts                group entry: Command.make(name) + withSubcommands, nothing else
+  <group>/<name>/<group>.<name>.cmd.ts  flags, arguments, description, examples, Command.make
+  <group>/<name>/<group>.<name>.handler.ts   (params) => Effect; imports nothing from effect/cli
+  <group>/<name>/<group>.<name>.format.ts    human renderer (stderr) and machine renderer (stdout)
+  <group>/<name>/<group>.<name>.errors.ts    command-owned Data.TaggedError classes, when any
+  <group>/<shared-module>.ts            helpers used by several commands of the group (triggers/parse.ts)
+  <name>/<name>.cmd.ts                  a top-level command follows the same shape without a group
+```
+
+Rules:
+
+- `<group>.<name>.cmd.ts` declares the surface and nothing else: flag and argument constants, `Command.withDescription`, `Command.withExamples`, and the three-argument `Command.make(name, flags, handler)` with the handler imported from the sibling `.handler.ts`. It yields no service and contains no branching. `Command.withHandler` is reserved for `src/commands/index.ts`, where the root handler is attached at assembly time.
+- `<group>.<name>.handler.ts` exports the handler as a function of a plain params type it declares itself; the command proves it provides those params when it passes the handler to `Command.make`. Do not derive the params type from the `Command` value (no phantom commands, no `GetCmdParams`).
+- A command that exists in both the root tree and the `dev` tree is defined once. The group supplies what differs between the two surfaces through `Command.withSharedFlags` and `Command.provide`, not through a second `Command.make` with a copied description.
+- Logic shared across groups belongs in `src/effects/` or `src/services/`, never in another command's directory.
+- A group entry is recognised by its place in the tree: `<dir>/<dir>.cmd.ts` or `<dir>/root-<dir>.cmd.ts` with other `.cmd.ts` files below `<dir>/`. The same name with nothing below it (`logout/logout.cmd.ts`) is a top-level command. Every command needs a test; a group entry does not, though one with a default action (`generate`) still gets one.
+
+Legacy shape still present while commands migrate: `<group>/commands/<group>.<name>.cmd.ts` holding flags, handler, helpers, and errors in one file, and top-level `<name>.cmd.ts` doing the same. Migrate a command to the directory shape when you touch it for more than a one-line fix, one command per PR.
+
+#### Test layout
+
+Tests mirror `src/commands/` under `test/src/commands/`, with the legacy `commands/` path segment removed:
+
+```
+test/src/commands/<group>/<name>/<group>.<name>.cmd.test.ts        argv-level: cli([...]) over TestLive
+test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level: Service.of doubles, no argv
+test/src/commands/<group>/<name>/<group>.<name>.<aspect>.cmd.test.ts   extra suite for one aspect (.client. for API-shape coverage)
+test/src/commands/<group>/<shared-module>.test.ts                  group helper tests (triggers/format.test.ts)
+```
+
+`pnpm run validate:command-tests` (part of `pnpm test`, CI-blocking, `scripts/validate-command-tests.ts`) fails when a command has no `.cmd.test.ts` at its mirrored path, when a `.cmd.test.ts` does not resolve to a command by its longest dotted basename prefix, or when a listed exemption has gained its test. Commands without a test today are listed in the script with a reason; the list only shrinks. Write the missing test in the PR that migrates the command.
 
 ### Services — `src/services/`
 
