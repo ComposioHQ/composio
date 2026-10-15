@@ -30,8 +30,6 @@ export const parseString = (
         return zs.time(errorMsg);
       case 'date':
         return zs.date(errorMsg);
-      case 'binary':
-        return zs.base64(errorMsg);
       case 'duration':
         return zs.duration(errorMsg);
       default:
@@ -39,8 +37,15 @@ export const parseString = (
     }
   });
 
-  zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'contentEncoding', (zs, _, errorMsg) =>
-    zs.base64(errorMsg)
+  // `contentEncoding` names how the string encodes its bytes; only base64 is
+  // checked. Other encodings (base16, base32, quoted-printable, ...) are left
+  // unvalidated, and `format: "binary"` (OpenAPI: any sequence of octets) is
+  // not an encoding at all. Encoding names are case-insensitive (RFC 2045).
+  zodSchema = extendSchemaWithMessage(
+    zodSchema,
+    jsonSchema,
+    'contentEncoding',
+    (zs, encoding, errorMsg) => (isBase64Encoding(encoding) ? zs.base64(errorMsg) : zs)
   );
   zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'pattern', (zs, pattern, errorMsg) =>
     zs.regex(compilePattern('pattern', pattern, refs), errorMsg)
@@ -79,3 +84,6 @@ export const parseString = (
 };
 
 const codePointLength = (value: string): number => [...value].length;
+
+const isBase64Encoding = (encoding: unknown): boolean =>
+  typeof encoding === 'string' && encoding.toLowerCase() === 'base64';

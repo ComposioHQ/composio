@@ -7,6 +7,11 @@
 - The CLI now uses `@composio/client@2.0.0-rc.16` (up from `2.0.0-rc.14`). No
   command changes.
 
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as plain text in a
+  binary field or hex in a `base16` field. Only `contentEncoding: "base64"` is
+  checked as base64.
+
 ## 0.4.4
 
 ### Patch Changes
