@@ -196,13 +196,13 @@ export function ToolkitsLanding() {
       </div>
 
       {/* Cards */}
-      <Cards>
+      <Cards className="auto-rows-fr">
         <Card icon={<ShieldCheck />} title="Managed OAuth apps" href="/toolkits/managed-auth" description="Check which toolkits have managed OAuth" />
         <button
           type="button"
           aria-pressed={instantOnly}
           onClick={() => setInstantOnly(value => !value)}
-          className={`not-prose rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${instantOnly ? 'border-blue-500 bg-blue-500/10' : 'border-fd-border bg-fd-card hover:bg-fd-accent'}`}
+          className={`not-prose rounded-xl border p-4 text-left transition-colors @max-lg:col-span-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${instantOnly ? 'border-blue-500 bg-blue-500/10' : 'border-fd-border bg-fd-card hover:bg-fd-accent'}`}
         >
           <InstantBolt filled={instantOnly} className={`mb-2 size-5 ${instantOnly ? 'text-blue-500' : 'text-fd-muted-foreground'}`} />
           <span className="block font-medium text-fd-card-foreground">Instant Tools</span>
