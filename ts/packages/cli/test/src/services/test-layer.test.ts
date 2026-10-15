@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Effect, Exit } from 'effect';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import {
   getSessionInfoByUserApiKey,
   listOrganizations,
   resolveConsumerProject,
 } from 'src/services/composio-account';
-import { TestLive } from 'test/__utils__';
+import { TestLive, ToolkitsTest } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
+import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
 describe('TestLayer', () => {
   it.effect('leaves globalThis.fetch untouched', () =>
@@ -54,5 +56,34 @@ describe('TestLayer', () => {
 
       expect(error).toMatchObject({ _tag: '@composio/client/APIConnectionError' });
     })
+  );
+});
+
+describe('ToolkitsTest', () => {
+  const toolkitsData = {
+    toolkits: [makeToolkitFixture('gmail', 'Gmail'), makeToolkitFixture('slack', 'Slack')],
+  };
+
+  it.effect.each([
+    { name: 'ToolkitsTest', layer: ToolkitsTest(toolkitsData) },
+    { name: 'TestLive', layer: TestLive({ toolkitsData }) },
+  ])('serves the same catalog answers through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const repo = yield* ComposioToolkitsRepository;
+      const search = yield* repo.searchToolkits({ search: 'gma' });
+      const missing = yield* repo.getToolkitDetailed('nope').pipe(Effect.flip);
+
+      expect(search.items.map(toolkit => toolkit.slug)).toEqual(['gmail']);
+      expect(missing).toMatchObject({ _tag: '@composio/client/NotFoundError', status: 404 });
+    }).pipe(Effect.provide(layer), Effect.scoped)
+  );
+
+  it.effect('dies on a repository method another family serves', () =>
+    Effect.gen(function* () {
+      const repo = yield* ComposioToolkitsRepository;
+      const exit = yield* repo.listAuthConfigs({}).pipe(Effect.exit);
+
+      expect(Exit.hasDies(exit)).toBe(true);
+    }).pipe(Effect.provide(ToolkitsTest()))
   );
 });
