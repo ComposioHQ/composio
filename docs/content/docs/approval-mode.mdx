@@ -12,112 +12,132 @@ When your agent calls a tool that requires approval, Composio doesn't run it. It
 Approval mode is experimental, and its SDK options may change. Answering questions needs `composio` newer than 0.26.0 (Python) or `@composio/core` newer than 0.23.0 (TypeScript).
 </Callout>
 
-## Requiring approval
+## Configuring approvals
 
-You can configure a session to require the user's approval for certain tools when you create or update it. Add a `require_approval` list to `toolkits`, `tools.<toolkit>` or `tags` (`requireApproval` in TypeScript). For example, this session lets the agent read Gmail freely, but needs approval before it sends anything:
+You set approvals when you create or update a session, in three steps. They're the same steps as building a [Session config](/docs/configuring-sessions#using-a-saved-session-config) in the Composio Dashboard, and produce the same configuration. The snippets in each step are Python. In TypeScript, `require_approval` is `requireApproval`.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
+### 1. Enable toolkits
+
+List the toolkits the agent can use in `toolkits.enable`:
+
 ```python
-session = composio.create(
-    user_id="user_123",
-    toolkits=["gmail"],
-    tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}},
-)
+toolkits={"enable": ["gmail", "github"]}
 ```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create('user_123', {
-  toolkits: ['gmail'],
-  tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
-});
-```
-</Tab>
-</Tabs>
 
-This one needs approval for every Slack tool:
+### 2. Choose what each kind of action does
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
+Every tool is tagged with the kind of action it takes:
+
+| Kind | Tag |
+|---|---|
+| Read | `readOnlyHint` |
+| Create | `createHint` |
+| Update | `updateHint` |
+| Destructive | `destructiveHint` |
+
+For each kind, choose one of:
+
+- **Allow:** leave the tag out.
+- **Ask first:** add the tag to `tags.require_approval`.
+- **Block:** add the tag to `tags.disable`. The agent can't see or call these tools.
+
+For example, to allow reads, ask before creates and updates, and block destructive actions:
+
 ```python
-session = composio.create(
-    user_id="user_123",
-    toolkits={"enable": ["slack"], "require_approval": ["slack"]},
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create('user_123', {
-  toolkits: { enable: ['slack'], requireApproval: ['slack'] },
-});
-```
-</Tab>
-</Tabs>
-
-And this one needs approval for any tool that can delete data, in any toolkit:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.create(
-    user_id="user_123",
-    tags={"require_approval": ["destructiveHint"]},
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create('user_123', {
-  tags: { requireApproval: ['destructiveHint'] },
-});
-```
-</Tab>
-</Tabs>
-
-A tool needs approval if:
-
-- its toolkit is in `toolkits.require_approval`,
-- its slug is in `tools.<toolkit>.require_approval`, or
-- one of its [tags](/docs/configuring-sessions#filtering-tools-by-tags) is in the tag list that applies to its toolkit.
-
-The session-wide `tags.require_approval` list applies to every toolkit that doesn't set approval rules of its own. Once a toolkit has its own `require_approval` under `tools.<toolkit>`, its own tag list (`tools.<toolkit>.tags.require_approval`) replaces the session-wide one, the same way its tag filter replaces the session-wide filter. If it has no tag list of its own, no tags apply to it. For example:
-
-```json
-{
-  "tags": { "require_approval": ["destructiveHint"] },
-  "tools": { "gmail": { "require_approval": ["GMAIL_SEND_EMAIL"] } }
+tags={
+    "require_approval": ["createHint", "updateHint"],
+    "disable": ["destructiveHint"],
 }
 ```
 
-Here, Gmail only asks before `GMAIL_SEND_EMAIL`, and its destructive tools run without asking. Every other toolkit asks before its destructive tools. To keep asking before Gmail's destructive tools too, add `"tags": { "require_approval": ["destructiveHint"] }` to the `gmail` entry.
+### 3. Override toolkits
 
-A few more things follow from this:
+You can override step 2 for a toolkit, either by kind or by tool.
 
-- A toolkit in `toolkits.require_approval` always asks, whatever else is set.
-- To exempt a toolkit from the session-wide tag list, give it an empty list of its own, such as `"tools": { "github": { "require_approval": [] } }`.
-- Setting `tools.<toolkit>.tags`, even just for `require_approval`, also replaces the session-wide tag `enable` and `disable` filter for that toolkit. To change a toolkit's approvals without touching its filter, use `tools.<toolkit>.require_approval`.
+**By kind.** Set `tools.<toolkit>.tags`, the same way as step 2. This replaces the session-wide `tags` for that toolkit rather than adding to them, so list every kind you want it to ask about or block. For example, this lets GitHub's destructive actions run after the user approves them, rather than blocking them:
 
-`require_approval` doesn't hide any tools from the agent. It can still find and call them, and the call waits for the user's approval.
+```python
+tools={
+    "github": {
+        "tags": {"require_approval": ["createHint", "updateHint", "destructiveHint"]}
+    }
+}
+```
 
-This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
+**By tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones to ask about first in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. Always set `require_approval`, even to `[]`. Otherwise the session-wide `tags.require_approval` still applies to the listed tools. For example, this lets the agent read and send Gmail, and asks before sending:
+
+```python
+tools={
+    "gmail": {
+        "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+        "require_approval": ["GMAIL_SEND_EMAIL"],
+    }
+}
+```
+
+Use one or the other for a toolkit, not both.
+
+### Putting it together
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["gmail", "github"]},
+    tags={
+        "require_approval": ["createHint", "updateHint"],
+        "disable": ["destructiveHint"],
+    },
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        },
+        "github": {
+            "tags": {"require_approval": ["createHint", "updateHint", "destructiveHint"]}
+        },
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  toolkits: { enable: ['gmail', 'github'] },
+  tags: {
+    requireApproval: ['createHint', 'updateHint'],
+    disable: ['destructiveHint'],
+  },
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      requireApproval: ['GMAIL_SEND_EMAIL'],
+    },
+    github: {
+      tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+With this session, the agent can:
+
+- read GitHub freely, and create, update or delete things in GitHub after the user approves
+- fetch Gmail emails freely, and send emails after the user approves
+- use no other Gmail tools, and no other toolkits
+
+Asking first doesn't hide a tool from the agent. It can still find and call it, and the call waits for the user's approval. This also applies to each tool call inside `COMPOSIO_MULTI_EXECUTE_TOOL`, the meta tool agents use to run app tools. A batch with two calls that need approval comes back with two questions.
 
 ## Asking the user
 
-Say the agent in the first session above asks to call `GMAIL_SEND_EMAIL`. Because it needs approval, the email isn't sent. Instead, `session.execute()` raises `ToolInputRequiredError` in Python and `ComposioToolInputRequiredError` in TypeScript:
+Say the agent in the session above asks to call `GMAIL_SEND_EMAIL`. Because it needs approval, the email isn't sent. Instead, `session.execute()` raises `ToolInputRequiredError` in Python and `ComposioToolInputRequiredError` in TypeScript:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -254,8 +274,13 @@ client = anthropic.Anthropic()
 
 session = composio.create(
     user_id="user_123",
-    toolkits=["gmail"],
-    tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}},
+    toolkits={"enable": ["gmail"]},
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
 )
 tools = session.tools()
 
@@ -336,8 +361,13 @@ const client = new Anthropic();
 const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
 
 const session = await composio.create('user_123', {
-  toolkits: ['gmail'],
-  tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
+  toolkits: { enable: ['gmail'] },
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      requireApproval: ['GMAIL_SEND_EMAIL'],
+    },
+  },
 });
 const tools = await session.tools();
 
@@ -441,7 +471,12 @@ If your agent connects to the session [over MCP](/docs/sessions-via-mcp), client
 ```python
 session = composio.create(
     user_id="user_123",
-    tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}},
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
     experimental={"no_elicitation_support_fallback": "allow"},
 )
 ```
@@ -453,7 +488,12 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
-  tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      requireApproval: ['GMAIL_SEND_EMAIL'],
+    },
+  },
   experimental: { noElicitationSupportFallback: 'allow' },
 });
 ```
