@@ -220,17 +220,18 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug },
-          error: null,
-          log_id: 'log_instant_charge',
-          instant_charge: {
-            amount: '0.005',
-            currency: 'USD' as const,
-            charged_by: 'composio' as const,
-          },
-        }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug },
+            error: null,
+            log_id: 'log_instant_charge',
+            instant_charge: {
+              amount: '0.005',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
       },
     })
   )('[Given] an instant charge [Then] execute reports it in the success line and output', it => {
@@ -1813,17 +1814,18 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        executeMeta: async () => ({
-          result_type: 'failed' as const,
-          data: { results: [], total_count: 2, success_count: 1, error_count: 1 },
-          error: '1 out of 2 tools failed',
-          log_id: 'log_parallel_batch',
-          instant_charge: {
-            amount: '0.025000',
-            currency: 'USD' as const,
-            charged_by: 'composio' as const,
-          },
-        }),
+        executeMeta: () =>
+          Effect.succeed({
+            result_type: 'failed' as const,
+            data: { results: [], total_count: 2, success_count: 1, error_count: 1 },
+            error: '1 out of 2 tools failed',
+            log_id: 'log_parallel_batch',
+            instant_charge: {
+              amount: '0.025000',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
       },
     })
   )('[Given] a parallel multi-execute batch fails with a charge [Then] the charge is kept', it => {
