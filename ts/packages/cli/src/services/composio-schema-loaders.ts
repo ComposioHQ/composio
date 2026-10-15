@@ -14,10 +14,6 @@ export const composioSchemaLoaders = {
   'cli.realtime.credentials': async () =>
     (await import('@composio/client/effect/schemas/cli/realtime/credentials'))
       .RealtimeCredentialsResponse,
-  'logs.tools.list': async () =>
-    (await import('@composio/client/effect/schemas/logs/tools/list')).ToolListResponse,
-  'logs.tools.retrieve': async () =>
-    (await import('@composio/client/effect/schemas/logs/tools/retrieve')).ToolRetrieveResponse,
   'org.consumer.listConnectedToolkits': async () =>
     (await import('@composio/client/effect/schemas/org/consumer/list-connected-toolkits'))
       .ConsumerListConnectedToolkitsResponse,

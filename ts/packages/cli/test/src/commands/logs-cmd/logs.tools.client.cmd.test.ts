@@ -98,22 +98,67 @@ describe('CLI: composio dev logs tools over the API client', () => {
     );
   });
 
-  layer(testLayer)('[Given] a page in a shape the API contract does not allow', it => {
-    it.effect('[Then] the command fails naming the operation and suggests an upgrade', () =>
+  layer(testLayer)('[Given] a page with a log in a shape the API contract does not allow', it => {
+    it.effect('[Then] the log is listed with dashes for what it lacks', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () =>
-          // No `nextCursor`, which the API's response schema requires.
-          Response.json({ data: [] }, { headers: { 'x-request-id': 'req_logs' } })
-        );
-        const exit = yield* cli(['dev', 'logs', 'tools']).pipe(
-          Effect.provide(stub.layer),
-          Effect.exit
-        );
-        const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+        // A null status, a missing connected account, a missing execution
+        // time, and no `nextCursor`: the response schema the client ships
+        // allows none of that, while the table renders each as a dash.
+        const driftedPage = {
+          data: [
+            {
+              id: 'log_drift_1',
+              actionKey: 'GMAIL_SEND_EMAIL',
+              appKey: 'gmail',
+              app: { icon: null, name: 'Gmail' },
+              connectedAccountId: null,
+              entityId: 'user_1',
+              status: null,
+              createdAt: 1767225600000,
+            },
+          ],
+        };
+        const stub = stubClientResources(['logs'], () => Response.json(driftedPage));
+        yield* cli(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
-        expect(extractErrorDetails(failure).message).toBe(
-          "Failed to fetch tool logs.\nCaused by: The API response for 'logs.tools.list' is not in the shape this version of the CLI expects (request id: req_logs).\nUpgrade the CLI, then retry:\n> composio upgrade"
+        expect(lines[1]).toBe(
+          [
+            'Listing 1 tool log',
+            '',
+            'Created At               Log Id             Status   Toolkit      Tool                         Exec Time    Connected Account',
+            '2026-01-01T00:00:00.000Z log_drift_1        -        Gmail        GMAIL_SEND_EMAIL             0ms          -',
+          ].join('\n')
         );
+        expect(lines.at(-1)).toBe(JSON.stringify(driftedPage, null, 2));
+      })
+    );
+  });
+
+  layer(testLayer)('[Given] one tool log in a shape the API contract does not allow', it => {
+    it.effect('[Then] its details are shown and it is printed as the API returned it', () =>
+      Effect.gen(function* () {
+        const driftedLog = {
+          id: 'log_drift_1',
+          actionKey: 'GMAIL_SEND_EMAIL',
+          appKey: 'gmail',
+          app: { icon: null, name: 'Gmail' },
+          connectedAccountId: null,
+          entityId: 'user_1',
+          status: null,
+          createdAt: 1767225600000,
+          payloadReceived: { recipient_email: 'a@b.c' },
+          response: { id: 'msg_1' },
+        };
+        const stub = stubClientResources(['logs'], () => Response.json(driftedLog));
+        yield* cli(['dev', 'logs', 'tools', 'log_drift_1']).pipe(Effect.provide(stub.layer));
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(lines.join('\n')).toContain('GMAIL_SEND_EMAIL');
+        expect(lines.at(-1)).toBe(JSON.stringify(driftedLog, null, 2));
+        expect(stub.requests).toEqual([
+          { method: 'GET', path: '/api/v3.1/internal/action_execution/log/log_drift_1' },
+        ]);
       })
     );
   });

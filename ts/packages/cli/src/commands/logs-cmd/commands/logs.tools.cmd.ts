@@ -3,6 +3,7 @@ import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { undecoded } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
@@ -190,7 +191,7 @@ export const logsCmd$Tools = Command.make(
       if (toolLogId) {
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
-          client.logs.tools.retrieve(toolLogId).pipe(
+          client.logs.tools.retrieve(toolLogId, undecoded).pipe(
             Effect.mapError(
               cause =>
                 new ToolLogsRequestError({
@@ -211,14 +212,17 @@ export const logsCmd$Tools = Command.make(
       const response = yield* ui.withSpinner(
         'Fetching tool logs...',
         client.logs.tools
-          .list({
-            cursor: Option.getOrUndefined(cursor) ?? null,
-            from: Option.getOrUndefined(from),
-            to: Option.getOrUndefined(to),
-            limit: clampedLimit,
-            case_sensitive: caseSensitive,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
+          .list(
+            {
+              cursor: Option.getOrUndefined(cursor) ?? null,
+              from: Option.getOrUndefined(from),
+              to: Option.getOrUndefined(to),
+              limit: clampedLimit,
+              case_sensitive: caseSensitive,
+              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+            },
+            undecoded
+          )
           .pipe(
             Effect.mapError(
               cause =>
