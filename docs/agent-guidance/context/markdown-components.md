@@ -21,4 +21,4 @@ Audit for DEVREL-35, 2026-09-10. Scope: components registered in `mdx-components
 
 ## Remaining checks
 
-DEVREL-32 should exercise actual HTTP page output, the full corpus, search ingestion, and external retrieval against the same expected facts. Static converter tests cannot prove an external index refreshed. DEVREL-38 can use the remaining visual and catalog gaps to prioritize task-complete pages. Do not treat this audit as evidence of benchmark improvement.
+The [semantic parity suite](./semantic-parity.md) for DEVREL-32 checks actual HTTP page output, the full corpus, and search ingestion against the same expected facts. Its export checker applies those expectations to external retrieval captures. Static tests cannot prove an external index refreshed. DEVREL-38 can use the remaining visual and catalog gaps to prioritize task-complete pages. Do not treat this audit as evidence of benchmark improvement.

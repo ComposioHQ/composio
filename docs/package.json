@@ -32,6 +32,7 @@
     "generate:toolkit-versions": "bun scripts/refresh-toolkit-versions.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
+    "check:docs-parity": "bun scripts/check-docs-parity.ts",
     "pretest": "bun run generate:kb",
     "test": "bun test tests/static/",
     "test:integration": "bun test tests/integration/ --timeout 30000"
