@@ -37,6 +37,7 @@ import { ToolRouter } from './models/ToolRouter';
 import { Sessions } from './models/Sessions';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
+import { createToolkitDeprecationFetch } from './utils/toolkitDeprecation';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -531,6 +532,10 @@ export class Composio<
       defaultHeaders: defaultHeaders,
       logger: clientLoggerAdapter,
       logLevel: toClientLogLevel(logger.getLevel()),
+      // Warns once per deprecated toolkit version reported through the
+      // `Composio-Deprecated-Toolkits` response header. `createSession()`
+      // clones go through this same constructor and inherit it.
+      fetch: createToolkitDeprecationFetch(),
     });
 
     // Store the resolved values, as with `apiKey`, so `getConfig()` and the
