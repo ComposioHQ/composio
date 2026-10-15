@@ -4,6 +4,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Deferred, Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
+import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
@@ -15,7 +16,6 @@ import {
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
 import type { TriggerListenFilters } from '../types';
-import { resolveCommandProject } from 'src/services/command-project';
 
 const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
@@ -34,11 +34,6 @@ const connectedAccountId = Flag.String('connected-account-id').pipe(
 
 const triggerSlug = Flag.String('trigger-slug').pipe(
   Flag.withDescription('Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Filter by user id'),
   Flag.optional
 );
 
@@ -147,7 +142,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -159,7 +153,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -167,8 +160,10 @@ export const triggersCmd$Listen = Command.make(
     out,
   }) =>
     Effect.gen(function* () {
+      const surface = yield* CommandSurface;
+      const { userId } = surface;
       const ui = yield* TerminalUI;
-      yield* resolveCommandProject({ mode: 'developer' });
+      const project = yield* resolveSurfaceProject('developer');
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
@@ -318,11 +313,17 @@ export const triggersCmd$Listen = Command.make(
         );
       };
 
-      const listenEffect = realtime
-        .listen(onEvent)
-        .pipe(
-          Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
-        );
+      // The default credentials serve the configured project; a named one needs its own.
+      const listenEffect = (
+        Option.isSome(surface.projectName)
+          ? realtime.listenInProject(
+              { orgId: project.orgId, projectId: project.projectId },
+              onEvent
+            )
+          : realtime.listen(onEvent)
+      ).pipe(
+        Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
+      );
 
       yield* Effect.gen(function* () {
         if (maxEventsLimit === undefined) {

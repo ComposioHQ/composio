@@ -38,6 +38,31 @@ describe('CLI: composio dev logs triggers over the API client', () => {
     );
   });
 
+  layer(testLayer)('[Given] a comma-separated --user-id filter', it => {
+    it.effect.each([
+      {
+        name: 'after the subcommand',
+        args: ['dev', 'logs', 'triggers', '--user-id', 'user_1,user_2'],
+      },
+      {
+        name: 'before the subcommand',
+        args: ['dev', '--user-id', 'user_1,user_2', 'logs', 'triggers'],
+      },
+    ])('[Then] each user id is sent as a search param when passed $name', ({ args }) =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        yield* cli(args).pipe(Effect.provide(stub.layer));
+
+        expect(JSON.stringify(stub.requests)).toContain(
+          JSON.stringify({ field: 'user_id', operation: '==', value: 'user_1' })
+        );
+        expect(JSON.stringify(stub.requests)).toContain(
+          JSON.stringify({ field: 'user_id', operation: '==', value: 'user_2' })
+        );
+      })
+    );
+  });
+
   layer(testLayer)('[Given] one trigger log in an older response shape', it => {
     it.effect('[Then] its details are shown and it is printed as the API returned it', () =>
       Effect.gen(function* () {
