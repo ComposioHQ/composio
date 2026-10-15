@@ -29,6 +29,9 @@ from composio.core.models.tool_router_constants import (
 )
 from composio.exceptions import ComposioError, InvalidParams
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
+from composio.utils.toolkit_deprecation import (
+    install_hook as _install_toolkit_deprecation_hook,
+)
 
 
 def _distribution_version(name: str) -> str:
@@ -427,6 +430,12 @@ class HttpClient(BaseComposio, WithLogger):
             _environment_variables=_environment_variables,
         )
         _install_client_log_forwarder(self._logger)
+        # Warns once per deprecated toolkit version reported through the
+        # `Composio-Deprecated-Toolkits` response header. The hook lives on the
+        # underlying httpx client, which `copy()` / `with_options()` (and so
+        # `without_retries`) reuse, so clones share it. Idempotent, and a
+        # user-supplied client keeps its own hooks.
+        _install_toolkit_deprecation_hook(self._client)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",
