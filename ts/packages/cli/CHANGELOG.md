@@ -43,6 +43,11 @@ consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
 
 ### Patch Changes
 
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as hex in a
+  `base16` field. OpenAPI `binary` is raw bytes, not base64; only
+  `contentEncoding: "base64"` is still checked as base64.
+
 - `composio execute` and the `execute()` helper in `composio run` scripts now
   report the Instant charge when a call ran on a Composio instant account
   instead of a linked connection: the result carries an `instantCharge` object

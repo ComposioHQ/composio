@@ -51,7 +51,10 @@ describe('jsonSchemaToEffectSchema', () => {
     expectParity({ type: 'number', format: 'int64' }, 42, true);
     expectParity({ type: 'number', format: 'int64' }, 4.2, false);
     expectParity({ type: 'string', format: 'binary' }, 'aGVsbG8=', true);
-    expectParity({ type: 'string', format: 'binary' }, 'not base64', false);
+    expectParity({ type: 'string', format: 'binary' }, 'not base64', true);
+    expectParity({ type: 'string', contentEncoding: 'base64' }, 'not base64', false);
+    expectParity({ type: 'string', contentEncoding: 'BASE64' }, 'not base64', false);
+    expectParity({ type: 'string', contentEncoding: 'base16' }, '0f', true);
     expectParity({ type: 'string', format: 'ip' }, '127.0.0.1', true);
     expectParity({ type: 'string', format: 'ip' }, 'not-an-ip', false);
   });
