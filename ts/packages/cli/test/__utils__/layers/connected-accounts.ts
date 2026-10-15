@@ -3,10 +3,14 @@ import type {
   AuthConfigCreateResponse,
 } from '@composio/client/resources/auth-configs';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
-import { Effect } from 'effect';
+import { Effect, Layer } from 'effect';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import type { ComposioToolkitsRepositoryShape } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+} from 'src/services/composio-clients';
+import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
 import { notFoundError } from './not-found';
 
 /**
@@ -212,3 +216,22 @@ export const mockConnectedAccountResources = (
     },
   },
 });
+
+/**
+ * A `ComposioToolkitsRepository` that serves only auth configs and connected
+ * accounts, for a test that needs nothing else from the full `TestLive` layer.
+ * Any other repository method dies.
+ */
+export const ConnectedAccountsTest = (data?: {
+  readonly authConfigsData?: AuthConfigsTestData;
+  readonly connectedAccountsData?: ConnectedAccountsTestData;
+}) =>
+  Layer.succeed(
+    ComposioToolkitsRepository,
+    makeToolkitsRepositoryStub(
+      connectedAccountRepositoryMethods(
+        resolveAuthConfigsTestData(data?.authConfigsData),
+        resolveConnectedAccountsTestData(data?.connectedAccountsData)
+      )
+    )
+  );

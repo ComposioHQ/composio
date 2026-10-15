@@ -6,7 +6,9 @@ import {
   listOrganizations,
   resolveConsumerProject,
 } from 'src/services/composio-account';
-import { TestLive, ToolkitsTest } from 'test/__utils__';
+import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { ConnectedAccountsTest, TestLive, ToolkitsTest } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 
@@ -85,5 +87,67 @@ describe('ToolkitsTest', () => {
 
       expect(Exit.hasDies(exit)).toBe(true);
     }).pipe(Effect.provide(ToolkitsTest()))
+  );
+});
+
+describe('ConnectedAccountsTest', () => {
+  const authConfig = (id: string, toolkitSlug: string): AuthConfigItem => ({
+    id,
+    name: id,
+    no_of_connections: 0,
+    status: 'ENABLED',
+    type: 'default',
+    uuid: `uuid-${id}`,
+    toolkit: { logo: '', slug: toolkitSlug },
+    auth_scheme: 'OAUTH2',
+    is_composio_managed: true,
+    is_enabled_for_tool_router: true,
+    created_at: '2026-01-01T00:00:00Z',
+  });
+  const connectedAccount: ConnectedAccountItem = {
+    id: 'con_gmail',
+    status: 'ACTIVE',
+    status_reason: null,
+    is_disabled: false,
+    user_id: 'default',
+    toolkit: { slug: 'gmail' },
+    auth_config: {
+      id: 'ac_gmail',
+      auth_scheme: 'OAUTH2',
+      is_composio_managed: true,
+      is_disabled: false,
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    test_request_endpoint: '',
+  };
+  const input = {
+    authConfigsData: { items: [authConfig('ac_gmail', 'gmail'), authConfig('ac_slack', 'slack')] },
+    connectedAccountsData: { items: [connectedAccount] },
+  };
+
+  it.effect.each([
+    { name: 'ConnectedAccountsTest', layer: ConnectedAccountsTest(input) },
+    { name: 'TestLive', layer: TestLive(input) },
+  ])('serves the same auth-config and connected-account answers through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const repo = yield* ComposioToolkitsRepository;
+      const authConfigs = yield* repo.listAuthConfigs({ toolkit_slug: 'slack' });
+      const found = yield* repo.getConnectedAccount('con_gmail');
+      const missing = yield* repo.getAuthConfig('ac_nope').pipe(Effect.flip);
+
+      expect(authConfigs.items.map(item => item.id)).toEqual(['ac_slack']);
+      expect(found.toolkit.slug).toBe('gmail');
+      expect(missing).toMatchObject({ _tag: '@composio/client/NotFoundError', status: 404 });
+    }).pipe(Effect.provide(layer), Effect.scoped)
+  );
+
+  it.effect('dies on a repository method another family serves', () =>
+    Effect.gen(function* () {
+      const repo = yield* ComposioToolkitsRepository;
+      const exit = yield* repo.getToolkits().pipe(Effect.exit);
+
+      expect(Exit.hasDies(exit)).toBe(true);
+    }).pipe(Effect.provide(ConnectedAccountsTest()))
   );
 });
