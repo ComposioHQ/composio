@@ -10,27 +10,18 @@ Every tool has a **tag** that describes the action it takes: reading, creating, 
 
 | Tag | The tool | For example |
 | --- | --- | --- |
-| `readOnlyHint` | Reads data and changes nothing | Fetch emails, list pull requests, export a report |
-| `createHint` | Adds something new | Send an email, create an issue |
-| `updateHint` | Changes something that already exists | Edit an issue, rename a file |
-| `destructiveHint` | Deletes something | Delete a file, delete a repository |
+| `readOnlyHint` | Reads data without changing anything. This includes tools that search, list, compute or export data. | Fetch emails, list pull requests, export a report |
+| `createHint` | Adds something new, such as a message, record or file. It doesn't change anything that already exists. | Send an email, create an issue |
+| `updateHint` | Changes something that already exists, such as its content or settings. It doesn't delete anything. | Edit an issue, rename a file |
+| `destructiveHint` | Deletes something, such as a file, record or repository. A tool that can delete something has this tag, even if it also creates or updates. | Delete a file, delete a repository |
 
 ## How tools are tagged
 
-Composio tags each tool with the most severe action it can take. A tool that can delete something is tagged `destructiveHint`, even if it also updates. A tool that changes something that already exists is tagged `updateHint`. A tool that only adds something new is tagged `createHint`. Every other tool is tagged `readOnlyHint`.
-
-A tool's tag reflects what changes for the user, not the HTTP method of the API behind it:
-
-- A tool that sends a search query with `POST` and returns results is `readOnlyHint`.
-- A tool that cancels or resets something with `GET` is `updateHint` or `destructiveHint`.
-- A tool that computes, converts, summarizes or exports data without changing anything is `readOnlyHint`.
-- A tool that adds an item to a list or folder is `createHint`.
-
-In MCP toolkits, such as `granola_mcp` and [custom MCP toolkits](/docs/extending-sessions/custom-mcp), `readOnlyHint` comes from the MCP server's tool annotations, and Composio tags the server's other tools when the toolkit syncs.
+Composio tags tools on a best-effort basis, based on each tool's description and behavior. For MCP tools, Composio infers the tag from the tool's description and the hints the MCP server provides.
 
 ## Viewing a tool's tags
 
-[Get a tool](/reference/api-reference/tools/getToolsByToolSlug) returns its tags in the `tags` field. Pass `version=latest` to see the tags a session uses.
+[Get a tool](/reference/api-reference/tools/getToolsByToolSlug) returns a tool's tags in the `tags` field.
 
 ## Using tags in a session
 
