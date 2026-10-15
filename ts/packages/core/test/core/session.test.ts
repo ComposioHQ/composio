@@ -188,7 +188,7 @@ describe('getClientIdentity', () => {
   });
 
   it('reports an unknown framework for a provider name the client cannot send', () => {
-    for (const name of ['café', ' padded ', '']) {
+    for (const name of ['café', ' padded ', '', 'openai\n', 'openai\r\n']) {
       expect(getClientIdentity({ name } as unknown as MockProvider)).toEqual(
         sdkIdentity('unknown')
       );

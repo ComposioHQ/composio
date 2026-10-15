@@ -74,7 +74,7 @@ def test_identity_headers_are_refused_in_default_headers(header):
         )
 
 
-@pytest.mark.parametrize("provider", ["café", " padded ", ""])
+@pytest.mark.parametrize("provider", ["café", " padded ", "", "openai\n", "openai\r\n"])
 def test_unsendable_provider_name_is_reported_as_unknown(provider):
     requests = []
 
