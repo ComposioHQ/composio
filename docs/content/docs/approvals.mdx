@@ -15,14 +15,14 @@ Approvals are experimental. They need `composio` newer than 0.27.0 or `@composio
 
 ## Choosing which tools need approval
 
-You choose which tools require approval when you create or update a session. To require approval for every tool with a [tag](/docs/tool-tags), in every toolkit:
+You choose which tools need approval with their [tags](/docs/tool-tags) when you create a session. For example, this session asks the user before any tool that creates, updates or deletes something:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
-    # Every tool that creates, updates or deletes something
+    # Everywhere: ask before tools that create, update or delete
     tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
 )
 ```
@@ -34,27 +34,25 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
-  // Every tool that creates, updates or deletes something
+  // Everywhere: ask before tools that create, update or delete
   tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
 });
 ```
 </Tab>
 </Tabs>
 
-To handle one toolkit differently, override `tags` for it under `tools.<toolkit>`:
+To handle a toolkit differently, override the session-wide `tags` in `tools.<toolkit>.tags`. This session asks before the same tools everywhere, except GitHub, where it only asks before tools that delete:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
+    # Everywhere: ask before tools that create, update or delete
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
     tools={
-        "gmail": {
-            # The Gmail tools the agent can use
-            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
-            # The ones that need approval. Set this even if it's empty.
-            "require_approval": ["GMAIL_SEND_EMAIL"],
-        },
+        # GitHub: ask only before tools that delete
+        "github": {"tags": {"require_approval": ["destructiveHint"]}},
     },
 )
 ```
@@ -66,20 +64,18 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
+  // Everywhere: ask before tools that create, update or delete
+  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
   tools: {
-    gmail: {
-      // The Gmail tools the agent can use
-      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
-      // The ones that need approval. Set this even if it's empty.
-      requireApproval: ['GMAIL_SEND_EMAIL'],
-    },
+    // GitHub: ask only before tools that delete
+    github: { tags: { requireApproval: ['destructiveHint'] } },
   },
 });
 ```
 </Tab>
 </Tabs>
 
-Tools that need approval stay visible to the agent, which can find and call them as usual.
+The override replaces the session-wide `tags` for that toolkit, including any tags you block, so list everything you still want for it.
 
 ## Asking the user
 
