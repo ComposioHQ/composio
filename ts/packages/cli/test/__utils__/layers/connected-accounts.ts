@@ -3,7 +3,7 @@ import type {
   AuthConfigCreateResponse,
 } from '@composio/client/resources/auth-configs';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
-import { Effect, Layer } from 'effect';
+import { Array as Arr, Effect, Layer } from 'effect';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import {
@@ -66,6 +66,19 @@ export type ResolvedAuthConfigsTestData = ReturnType<typeof resolveAuthConfigsTe
 export type ResolvedConnectedAccountsTestData = ReturnType<typeof resolveConnectedAccountsTestData>;
 
 /**
+ * The item with `id`, or the 404 `notFound` describes.
+ */
+const findById = <A extends { readonly id: string }>(
+  items: ReadonlyArray<A>,
+  id: string,
+  notFound: () => ReturnType<typeof notFoundError>
+) =>
+  Effect.fromOption(
+    Arr.findFirst(items, item => item.id === id),
+    notFound
+  );
+
+/**
  * The repository methods this family serves.
  */
 export type ConnectedAccountRepositoryMethod =
@@ -114,18 +127,13 @@ export const connectedAccountRepositoryMethods = (
       next_cursor: null,
     });
   },
-  getAuthConfig: (nanoid: string) => {
-    const found = authConfigsData.items.find(item => item.id === nanoid);
-    if (!found) {
-      return Effect.fail(
-        notFoundError(`Auth config "${nanoid}" not found`, {
-          message: `Auth config "${nanoid}" not found.`,
-          suggested_fix: 'Check the auth config ID and try again.',
-        })
-      );
-    }
-    return Effect.succeed(found);
-  },
+  getAuthConfig: (nanoid: string) =>
+    findById(authConfigsData.items, nanoid, () =>
+      notFoundError(`Auth config "${nanoid}" not found`, {
+        message: `Auth config "${nanoid}" not found.`,
+        suggested_fix: 'Check the auth config ID and try again.',
+      })
+    ),
   createAuthConfig: (params: AuthConfigCreateParams) => {
     authConfigsData.onCreate?.(params);
     return Effect.succeed(
@@ -135,18 +143,13 @@ export const connectedAccountRepositoryMethods = (
       }
     );
   },
-  getConnectedAccount: (nanoid: string) => {
-    const found = connectedAccountsData.items.find(item => item.id === nanoid);
-    if (!found) {
-      return Effect.fail(
-        notFoundError(`Connected account "${nanoid}" not found`, {
-          message: `Connected account "${nanoid}" not found.`,
-          suggested_fix: 'Check the connected account ID and try again.',
-        })
-      );
-    }
-    return Effect.succeed(found);
-  },
+  getConnectedAccount: (nanoid: string) =>
+    findById(connectedAccountsData.items, nanoid, () =>
+      notFoundError(`Connected account "${nanoid}" not found`, {
+        message: `Connected account "${nanoid}" not found.`,
+        suggested_fix: 'Check the connected account ID and try again.',
+      })
+    ),
 });
 
 /**
@@ -201,20 +204,17 @@ export const mockConnectedAccountResources = (
         next_cursor: null,
       };
     },
-    retrieve: (nanoid: string) => {
-      const found = connectedAccountsData.items.find(item => item.id === nanoid);
-      return found
-        ? Effect.succeed(found)
-        : Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
-    },
-    delete: (nanoid: string) => {
-      const found = connectedAccountsData.items.find(item => item.id === nanoid);
-      if (!found) {
-        return Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
-      }
-      connectedAccountsData.onDelete?.(nanoid);
-      return Effect.succeed({});
-    },
+    retrieve: (nanoid: string) =>
+      findById(connectedAccountsData.items, nanoid, () =>
+        notFoundError(`Connected account "${nanoid}" not found`)
+      ),
+    delete: (nanoid: string) =>
+      findById(connectedAccountsData.items, nanoid, () =>
+        notFoundError(`Connected account "${nanoid}" not found`)
+      ).pipe(
+        Effect.tap(() => Effect.sync(() => connectedAccountsData.onDelete?.(nanoid))),
+        Effect.as({})
+      ),
   },
 });
 
