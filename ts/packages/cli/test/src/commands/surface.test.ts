@@ -13,7 +13,7 @@ import { makeOrgProject } from 'test/__utils__/models/account';
 const SHARED_PROJECT_DESCRIPTION =
   'Developer project to use instead of the one configured in this directory';
 const SHARED_USER_DESCRIPTION =
-  'User id within the developer project; defaults to the project test user id, then the global one';
+  'User id to act as or filter by; commands that act as a user default to the project test user id, then the global one';
 // `dev logs tools|triggers` declare a comma-separated `--user-id` filter of their own, which
 // `withSharedFlags` accepts below a group entry and the help page shows in place of the shared row.
 const OWN_USER_ID_PAGES = ['dev logs tools', 'dev logs triggers'];
@@ -591,5 +591,41 @@ describe('CommandSurface: a named project does not borrow the directory test use
         ),
         Effect.scoped
       )
+  );
+  // A login without session info stores no global test user; the directory's does not carry over.
+  it.effect.each([
+    {
+      command: 'playground-execute',
+      args: ['dev', 'playground-execute', 'GMAIL_SEND_EMAIL', '-d', '{}', '--skip-checks'],
+    },
+    {
+      command: 'connected-accounts link --list',
+      args: ['dev', 'connected-accounts', 'link', 'gmail', '--list'],
+    },
+    {
+      command: 'connected-accounts link --auth-config',
+      args: ['dev', 'connected-accounts', 'link', '--auth-config', 'ac_gmail_oauth', '--no-wait'],
+    },
+  ])('`$command --project-name` without any test user points at --user-id and login', ({ args }) =>
+    Effect.gen(function* () {
+      yield* writeDirectoryProject;
+      yield* (yield* ComposioUserContext).login('test_api_key', 'org_test');
+      const error = yield* Effect.flip(cli([...args, '--project-name', 'other-project']));
+      expect(error).toMatchObject({
+        message:
+          'Missing user id. Provide --user-id, or run `composio login` to store the global test user id that --project-name falls back to.',
+      });
+    }).pipe(
+      Effect.provide(
+        TestLive({
+          baseConfigProvider: ConfigProvider.fromEnv({
+            env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+          }),
+          accountData: { projects },
+          stdin: { isTTY: true, data: '' },
+        })
+      ),
+      Effect.scoped
+    )
   );
 });

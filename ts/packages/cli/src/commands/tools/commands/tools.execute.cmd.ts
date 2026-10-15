@@ -1,5 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
-import { CommandSurface, directoryTestUserId } from 'src/commands/surface';
+import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
@@ -872,10 +872,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       return yield* new ToolExecutionError({
         reason: 'missing_user_id',
         toolSlug: params.slug,
-        message:
+        message: missingUserIdMessage(
+          projectName,
           params.projectMode === 'developer'
             ? 'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
+        ),
       });
     }
 

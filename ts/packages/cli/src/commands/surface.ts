@@ -88,6 +88,18 @@ export const directoryTestUserId = (
     Option.flatMap(keys => keys.testUserId)
   );
 
+/**
+ * The missing-user message for a command, given its `--project-name`. With the flag the
+ * directory's test user does not carry over, so `composio dev init` would not help: the user
+ * passes `--user-id` or logs in again to store the global test user.
+ */
+export const missingUserIdMessage = (projectName: Option.Option<string>, otherwise: string) =>
+  Option.match(projectName, {
+    onNone: () => otherwise,
+    onSome: () =>
+      'Missing user id. Provide --user-id, or run `composio login` to store the global test user id that --project-name falls back to.',
+  });
+
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';
 

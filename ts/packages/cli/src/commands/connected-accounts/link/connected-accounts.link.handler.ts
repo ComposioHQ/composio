@@ -2,7 +2,12 @@ import { Effect, Option, Schedule } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { commandInputError } from 'src/commands/errors';
-import { CommandSurface, directoryTestUserId, type CommandTree } from 'src/commands/surface';
+import {
+  CommandSurface,
+  directoryTestUserId,
+  missingUserIdMessage,
+  type CommandTree,
+} from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
@@ -456,7 +461,10 @@ const handleListConnectedAccounts = (params: {
 
     if (Option.isNone(resolvedUserId)) {
       return yield* new MissingLinkUserIdError({
-        message: 'Missing user id. Provide --user-id or run composio dev init/login first.',
+        message: missingUserIdMessage(
+          params.projectName,
+          'Missing user id. Provide --user-id or run composio dev init/login first.'
+        ),
         flow: 'list',
       });
     }
@@ -578,7 +586,10 @@ const handleLegacyAuthConfigLink = (params: {
 
     if (Option.isNone(resolvedUserId)) {
       return yield* new MissingLinkUserIdError({
-        message: 'Missing user id. Provide --user-id or run composio dev init to set test_user_id.',
+        message: missingUserIdMessage(
+          params.projectName,
+          'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
+        ),
         flow: 'legacy',
       });
     }

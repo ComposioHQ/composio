@@ -26,7 +26,8 @@ toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
   project falls back to the global test user instead of the directory's
   `test_user_id`, which belongs to the directory's project:
   `dev playground-execute`, `dev connected-accounts link`,
-  `dev toolkits info` and `dev toolkits list`.
+  `dev toolkits info` and `dev toolkits list`. With neither test user set,
+  the missing-user error now points at `--user-id` or `composio login`.
 - `composio link --help` now lists `--auth-config`. The root command still
   rejects it, now with the message ``Top-level `composio link` is
 consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
