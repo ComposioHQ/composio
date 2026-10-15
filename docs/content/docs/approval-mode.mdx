@@ -373,7 +373,7 @@ terminal.close();
 
 ## Approvals in MCP clients
 
-Approvals use the [MCP elicitation API](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). When your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. With clients that don't, calls that need approval are denied. To run them without approval instead, set `no_elicitation_support_fallback` to `"allow"`:
+Approvals use MCP [elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation), which lets a server ask the user for input through the client. When your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. With clients that don't, calls that need approval are denied. To run them without approval instead, set `no_elicitation_support_fallback` to `"allow"`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
