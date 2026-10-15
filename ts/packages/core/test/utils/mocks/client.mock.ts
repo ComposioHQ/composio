@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { Auth } from '@composio/client';
 
-const client = new ComposioClient({ apiKey: 'test-api-key' });
+const client = new ComposioClient({ auth: Auth.project('test-api-key') });
 
 const tools = Object.assign(client.tools, {
   list: vi.fn<typeof client.tools.list>(),

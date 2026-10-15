@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import ComposioClient, { createFetchTransport } from '@composio/client';
+import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { MCP } from '../../src/models/MCP';
 import logger from '../../src/utils/logger';
 
@@ -14,7 +14,7 @@ describe('MCP.generate managed auth deprecation', () => {
   it('replaces the API client notice with one SDK notice per process', async () => {
     const clientLogger = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
     const client = new ComposioClient({
-      apiKey: 'test-api-key',
+      auth: Auth.project('test-api-key'),
       baseURL: 'https://backend.composio.test',
       logger: clientLogger,
       logLevel: 'warn',

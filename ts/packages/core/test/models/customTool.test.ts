@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { Auth } from '@composio/client';
 import { z as z4 } from 'zod';
 import { z } from 'zod/v3';
 import {
@@ -779,7 +779,7 @@ describe('serializeCustomToolkits', () => {
 // ────────────────────────────────────────────────────────────────
 
 describe('SessionContextImpl', () => {
-  const client = new ComposioClient({ apiKey: 'test-api-key' });
+  const client = new ComposioClient({ auth: Auth.project('test-api-key') });
   const session = Object.assign(client.toolRouter.session, {
     execute: vi.fn<typeof client.toolRouter.session.execute>(),
     proxyExecute: vi.fn<typeof client.toolRouter.session.proxyExecute>(),

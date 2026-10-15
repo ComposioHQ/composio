@@ -83,7 +83,7 @@ vi.mock('../../src/utils/logger', () => ({
 const credentials = { projectId: 'project-id', pusherKey: 'pusher-key', pusherCluster: 'mt1' };
 
 const createService = () =>
-  new PusherService({ baseURL: 'https://backend.composio.dev', apiKey: 'api-key' } as never);
+  new PusherService({ baseURL: 'https://backend.composio.dev' } as never, { apiKey: 'api-key' });
 
 const flushMacrotask = () =>
   new Promise<void>(resolve => {
@@ -442,16 +442,16 @@ describe('PusherService channel authorization credentials', () => {
     vi.unstubAllEnvs();
   });
 
-  it('sends the project key of the client as x-api-key', async () => {
-    const service = new PusherService({ baseURL, apiKey: 'ak_projectKey' } as never);
+  it('sends the project key the SDK resolved as x-api-key', async () => {
+    const service = new PusherService({ baseURL } as never, { apiKey: 'ak_projectKey' });
 
     await service.subscribe(vi.fn());
 
     expect(channelAuthHeaders()).toEqual({ 'x-api-key': 'ak_projectKey' });
   });
 
-  it('sends no project key and never reads COMPOSIO_API_KEY when the client key is null', async () => {
-    const service = new PusherService({ baseURL, apiKey: null, userApiKey: null } as never);
+  it('sends no project key and never reads COMPOSIO_API_KEY when the SDK key is null', async () => {
+    const service = new PusherService({ baseURL } as never, { apiKey: null, userApiKey: null });
 
     await service.subscribe(vi.fn());
 
@@ -459,20 +459,38 @@ describe('PusherService channel authorization credentials', () => {
     expect(JSON.stringify(pusherConstructorOptions)).not.toContain('ak_foreignAmbientKey');
   });
 
-  it('sends the resolved user API key of the client when the project key is null', async () => {
-    const service = new PusherService({
-      baseURL,
+  it('sends the user API key the SDK resolved when the project key is null', async () => {
+    const service = new PusherService({ baseURL } as never, {
       apiKey: null,
       userApiKey: 'uak_userKey',
-    } as never);
+    });
 
     await service.subscribe(vi.fn());
 
     expect(channelAuthHeaders()).toEqual({ 'x-user-api-key': 'uak_userKey' });
   });
 
-  it('falls back to the x-user-api-key default header when the client holds no key', async () => {
-    const service = new PusherService({ baseURL, apiKey: null, userApiKey: null } as never, {
+  it('never reads a key back from the API client', async () => {
+    const client = {
+      baseURL,
+      get apiKey(): string {
+        throw new Error('client.apiKey must not be read');
+      },
+      get userApiKey(): string {
+        throw new Error('client.userApiKey must not be read');
+      },
+    };
+    const service = new PusherService(client as never, { apiKey: 'ak_sdkKey' });
+
+    await service.subscribe(vi.fn());
+
+    expect(channelAuthHeaders()).toEqual({ 'x-api-key': 'ak_sdkKey' });
+  });
+
+  it('falls back to the x-user-api-key default header when the SDK holds no key', async () => {
+    const service = new PusherService({ baseURL } as never, {
+      apiKey: null,
+      userApiKey: null,
       defaultHeaders: { 'X-User-Api-Key': 'uak_headerKey', 'x-request-id': 'req-1' },
     });
 

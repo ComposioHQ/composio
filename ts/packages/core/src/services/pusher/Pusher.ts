@@ -14,6 +14,10 @@ import { resolveCredentialHeaders } from '../../utils/sdk';
 import type { ComposioRequestHeaders } from '../../types/composio.types';
 
 export type PusherServiceOptions = {
+  /** The project API key the owning SDK instance resolved, or `null` when disabled. */
+  apiKey?: string | null;
+  /** The user API key the owning SDK instance resolved, or `null`. */
+  userApiKey?: string | null;
   /** Default headers of the owning SDK instance; only `x-user-api-key` is consulted. */
   defaultHeaders?: ComposioRequestHeaders;
 };
@@ -57,11 +61,11 @@ export class PusherService {
   constructor(client: ComposioClient, options: PusherServiceOptions = {}) {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
-    // Channel authorization mirrors the client's effective auth; the
-    // environment is never consulted here.
+    // Channel authorization mirrors the SDK instance's effective auth, from the
+    // keys the SDK resolved; the environment is never consulted here.
     this.authHeaders = resolveCredentialHeaders({
-      apiKey: client.apiKey,
-      userApiKey: client.userApiKey,
+      apiKey: options.apiKey,
+      userApiKey: options.userApiKey,
       defaultHeaders: options.defaultHeaders,
     });
     telemetry.instrument(this, 'PusherService');

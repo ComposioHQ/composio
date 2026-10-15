@@ -1,4 +1,6 @@
 import { z } from 'zod/v3';
+import { Auth } from '@composio/client';
+import type { Scope } from '@composio/client';
 import {
   ComposioAPIKeyKindError,
   ComposioNoAPIKeyError,
@@ -29,11 +31,28 @@ const USER_API_KEY_PREFIX = 'uak_';
  */
 export const PROJECT_API_KEY_HEADER = 'x-api-key';
 
+/** Header that carries the organization API key (`oak_...`). */
+export const ORG_API_KEY_HEADER = 'x-org-api-key';
+
 /** Header carrying the organization nano ID that scopes user-key requests. */
 export const ORG_ID_HEADER = 'x-org-id';
 
 /** Header carrying the project nano ID that scopes user-key requests. */
 export const PROJECT_ID_HEADER = 'x-project-id';
+
+/**
+ * Header names the SDK owns: the API client sends a credential from its
+ * `auth` and the scope from its `scope`, and refuses these names in its
+ * `defaultHeaders`. The SDK folds caller-supplied entries into its own
+ * credential and scope options instead of forwarding them.
+ */
+const SDK_OWNED_HEADERS = [
+  PROJECT_API_KEY_HEADER,
+  USER_API_KEY_HEADER,
+  ORG_API_KEY_HEADER,
+  ORG_ID_HEADER,
+  PROJECT_ID_HEADER,
+];
 
 // File path helpers
 export const userDataPath = () => {
@@ -242,11 +261,29 @@ export function resolveSDKScope(options: SDKScopeOptions): SDKScope {
   return orgId === undefined || projectId === undefined ? {} : { orgId, projectId };
 }
 
-/** The `x-org-id` / `x-project-id` headers for a resolved scope. */
-export const getScopeHeaders = (scope: SDKScope): ComposioRequestHeaders =>
+/**
+ * The API client `scope` for a resolved SDK scope: the organization and
+ * project nano IDs the client sends as `x-org-id` / `x-project-id`, or
+ * `undefined` when the instance is unscoped.
+ */
+export const toClientScope = (scope: SDKScope): Scope | undefined =>
   scope.orgId && scope.projectId
-    ? { [ORG_ID_HEADER]: scope.orgId, [PROJECT_ID_HEADER]: scope.projectId }
-    : {};
+    ? { organizationId: scope.orgId, projectId: scope.projectId }
+    : undefined;
+
+/**
+ * `headers` without the credential and scope entries the SDK owns (matched
+ * case-insensitively). Those travel through the API client's `auth` and
+ * `scope`, which refuse the same names in `defaultHeaders`.
+ */
+export const withoutSDKOwnedHeaders = (
+  headers: ComposioRequestHeaders | undefined
+): ComposioRequestHeaders | undefined =>
+  headers === undefined
+    ? undefined
+    : Object.fromEntries(
+        Object.entries(headers).filter(([name]) => !SDK_OWNED_HEADERS.includes(name.toLowerCase()))
+      );
 
 export type SDKConfigOptions = {
   /** Default headers the SDK will attach to every request. */
@@ -298,14 +335,124 @@ export const resolveUserApiKey = (userApiKey: string | null | undefined): string
   resolveAlternateCredential(userApiKey, 'COMPOSIO_USER_API_KEY');
 
 /**
+ * The organization API key the instance holds: the `orgApiKey` option when it
+ * was passed (including `null`, which disables the fallback), otherwise
+ * `COMPOSIO_ORG_API_KEY`.
+ */
+export const resolveOrgApiKey = (orgApiKey: string | null | undefined): string | undefined =>
+  resolveAlternateCredential(orgApiKey, 'COMPOSIO_ORG_API_KEY');
+
+/**
  * Whether the instance holds a credential other than the project key: a user
  * or organization API key (explicit or environment-resolved, as the API client
  * will see it), or a user API key placed in the default headers.
  */
 const hasAlternateCredential = (options: SDKConfigOptions): boolean =>
   resolveUserApiKey(options.userApiKey) !== undefined ||
-  resolveAlternateCredential(options.orgApiKey, 'COMPOSIO_ORG_API_KEY') !== undefined ||
+  resolveOrgApiKey(options.orgApiKey) !== undefined ||
   getUserApiKeyHeader(options.defaultHeaders) !== undefined;
+
+/**
+ * The credentials an SDK instance authenticates with, after the environment
+ * fallbacks and the credential default headers are applied. `null` is a
+ * credential the instance does not hold.
+ */
+export type SDKCredentials = {
+  /** The project API key, or `null` when project-key auth is disabled. */
+  apiKey: string | null;
+  /** The user API key (`uak_...`), or `null`. */
+  userApiKey: string | null;
+  /** The organization API key (`oak_...`), or `null`. */
+  orgApiKey: string | null;
+};
+
+export type SDKCredentialsInput = {
+  /** The project API key {@link getSDKConfig} resolved. */
+  apiKey: string | null;
+  /** The `userApiKey` option as passed: `undefined` falls back to `COMPOSIO_USER_API_KEY`. */
+  userApiKey?: string | null;
+  /** The `orgApiKey` option as passed: `undefined` falls back to `COMPOSIO_ORG_API_KEY`. */
+  orgApiKey?: string | null;
+  /** Default headers the caller configured; only the credential headers are read. */
+  defaultHeaders?: ComposioRequestHeaders;
+};
+
+const CREDENTIAL_HEADERS = [PROJECT_API_KEY_HEADER, USER_API_KEY_HEADER, ORG_API_KEY_HEADER];
+
+/**
+ * Resolves the credentials of an SDK instance.
+ *
+ * The user and organization keys fall back to `COMPOSIO_USER_API_KEY` and
+ * `COMPOSIO_ORG_API_KEY` when their option is omitted. A non-empty credential
+ * header in `defaultHeaders` (any letter case) is folded in as the credential
+ * it names, and it is the credential the instance sends, as it was when the
+ * header itself went on the wire: an `x-user-api-key` or `x-org-api-key` entry
+ * disables the project key and takes the place of the configured user or
+ * organization key, and an `x-api-key` entry takes the place of the project
+ * key. At most one credential header may be set: the API rejects a request
+ * that carries two.
+ */
+export function resolveSDKCredentials(input: SDKCredentialsInput): SDKCredentials {
+  const headers = CREDENTIAL_HEADERS.flatMap(name => {
+    const header = findHeader(input.defaultHeaders, name);
+    return header && hasValue(header.value) ? [{ ...header, canonical: name }] : [];
+  });
+  if (headers.length > 1) {
+    throw new ComposioError('`defaultHeaders` carries more than one credential header', {
+      cause: `The API accepts exactly one credential per request, and \`defaultHeaders\` sets ${headers
+        .map(header => `\`${header.name}\``)
+        .join(' and ')}`,
+      possibleFixes: [
+        'Pass credentials through `apiKey`, `userApiKey` and `orgApiKey` instead of default headers',
+        'Keep at most one of `x-api-key`, `x-user-api-key` and `x-org-api-key` in `defaultHeaders`',
+      ],
+    });
+  }
+  const userApiKey = resolveUserApiKey(input.userApiKey) ?? null;
+  const orgApiKey = resolveOrgApiKey(input.orgApiKey) ?? null;
+  const [header] = headers;
+  switch (header?.canonical) {
+    case USER_API_KEY_HEADER:
+      return { apiKey: null, userApiKey: header.value, orgApiKey };
+    case ORG_API_KEY_HEADER:
+      return { apiKey: null, userApiKey: null, orgApiKey: header.value };
+    case PROJECT_API_KEY_HEADER:
+      return { apiKey: header.value, userApiKey, orgApiKey };
+    default:
+      return { apiKey: input.apiKey, userApiKey, orgApiKey };
+  }
+}
+
+/**
+ * The API client `auth` for the credentials of an SDK instance.
+ *
+ * - A project key alone authenticates every request with it.
+ * - A project key with a user and/or organization key selects one per
+ *   operation: the project key wherever the operation accepts it, otherwise
+ *   the first declared scheme a key is held for.
+ * - Without a project key, the user key authenticates every request (sessions
+ *   included, whose operations declare no scheme), and the organization key
+ *   does when it is the only one held.
+ */
+export const toClientAuth = (credentials: SDKCredentials): Auth => {
+  const { apiKey, userApiKey, orgApiKey } = credentials;
+  if (apiKey !== null) {
+    return userApiKey === null && orgApiKey === null
+      ? Auth.project(apiKey)
+      : Auth.auto({
+          project: apiKey,
+          user: userApiKey ?? undefined,
+          organization: orgApiKey ?? undefined,
+        });
+  }
+  if (userApiKey !== null) {
+    return Auth.user(userApiKey);
+  }
+  if (orgApiKey !== null) {
+    return Auth.organization(orgApiKey);
+  }
+  throw new ComposioNoAPIKeyError();
+};
 
 /**
  * Resolves the base URL and project API key the SDK will use.
