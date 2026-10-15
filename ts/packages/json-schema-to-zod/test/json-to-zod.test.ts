@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { JsonSchema } from '../src/types';
 import { acceptedFor, loadObjectCases } from './fixtures/corpus';
 import { builders } from './support/builders';
+import { testFor } from './support/divergences';
 
 describe.each(builders)('jsonSchemaToZod ($name)', builder => {
   describe('Basic Types', () => {
@@ -1586,7 +1587,9 @@ describe.each(builders)('shared cross-SDK object corpus ($name)', builder => {
       for (const [index, instance] of testCase.instances.entries()) {
         const expected = acceptedFor(instance, 'zod');
 
-        it(`instance ${index} is ${expected ? 'accepted' : 'rejected'}`, () => {
+        const name = `instance ${index} is ${expected ? 'accepted' : 'rejected'}`;
+
+        testFor(builder, `${testCase.id} > ${name}`)(name, () => {
           const zodSchema = builder.convert(testCase.schema as JsonSchema);
           const result = zodSchema.safeParse(instance.input);
 

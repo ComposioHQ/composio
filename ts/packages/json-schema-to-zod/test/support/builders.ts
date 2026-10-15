@@ -4,7 +4,10 @@
  * expectations once and every builder is held to them.
  */
 import type { ZodTypeAny } from 'zod/v3';
+import { version } from 'zod/v4/core';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+
+import { meetsZodV4Floor } from '../../src/backend/zod-v4-floor';
 
 import {
   jsonSchemaToZod as v3Convert,
@@ -73,4 +76,7 @@ export const v3: Builder = {
     zodToJsonSchema(asV3(schema), { target: 'jsonSchema7' }) as Record<string, unknown>,
 };
 
-export const builders: ReadonlyArray<Builder> = [v3];
+/** The v4 builder joins only where the installed zod copy meets the `/v4` floor. */
+export const builders: ReadonlyArray<Builder> = meetsZodV4Floor(version)
+  ? [v3, (await import('./builder-v4')).v4]
+  : [v3];

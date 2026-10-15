@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { JsonSchema } from '../src/types';
 import { builders } from './support/builders';
+import { testFor } from './support/divergences';
 
 type RejectionCase = {
   readonly name: string;
@@ -193,15 +194,19 @@ const acceptanceCases: ReadonlyArray<AcceptanceCase> = [
 ];
 
 describe.each(builders)('whole-schema semantic regressions ($name)', builder => {
-  it.each(rejectionCases)('$name', ({ schema, value }) => {
-    expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
-    expect(builder.convert(schema).safeParse(value).success).toBe(false);
-  });
+  for (const { name, schema, value } of rejectionCases) {
+    testFor(builder, name)(name, () => {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
+      expect(builder.convert(schema).safeParse(value).success).toBe(false);
+    });
+  }
 
-  it.each(acceptanceCases)('$name', ({ schema, value }) => {
-    expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
-    expect(builder.convert(schema).safeParse(value).success).toBe(true);
-  });
+  for (const { name, schema, value } of acceptanceCases) {
+    testFor(builder, name)(name, () => {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
+      expect(builder.convert(schema).safeParse(value).success).toBe(true);
+    });
+  }
 
   it('resolves local references from a raw shape against the enclosing document', () => {
     const schema: JsonSchema = {

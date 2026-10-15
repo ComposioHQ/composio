@@ -1456,6 +1456,9 @@ importers:
         specifier: ^2.8.6
         version: 2.8.6
     devDependencies:
+      '@langchain/core':
+        specifier: ^1.2.17
+        version: 1.2.17(@opentelemetry/api@1.9.1)(openai@7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4))(ws@8.22.0)
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1480,6 +1483,12 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.5.4
+      zod-3-25:
+        specifier: npm:zod@3.25.76
+        version: zod@3.25.76
+      zod-floor:
+        specifier: npm:zod@4.1.13
+        version: zod@4.1.13
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@4.5.4)
@@ -6858,6 +6867,9 @@ packages:
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
+  zod@4.1.13:
+    resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
@@ -12301,6 +12313,8 @@ snapshots:
       zod: 4.6.6
 
   zod@3.25.76: {}
+
+  zod@4.1.13: {}
 
   zod@4.4.3: {}
 
