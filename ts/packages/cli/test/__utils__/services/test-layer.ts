@@ -6,6 +6,7 @@ import type {
 } from '@composio/client/resources/auth-configs';
 import {
   APIConnectionError,
+  Auth,
   make as makeComposioClient,
   type ComposioError,
   type RequestOptions,
@@ -45,6 +46,7 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type ClientScope,
 } from 'src/services/composio-clients';
 import { type OrganizationSummary, type OrgProject } from 'src/services/composio-account';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
@@ -96,10 +98,12 @@ import {
 
 /**
  * The credentials and scope one mock-client request carries: the parameters
- * the client was obtained with, overridden by per-request headers.
+ * the client was obtained with, and the org or project an unscoped client
+ * names on the request itself.
  */
 export interface MockRequestScope {
   readonly userApiKey?: string;
+  /** The project key the client authenticates with, in place of a user key. */
   readonly apiKey?: string;
   readonly orgId?: string;
   readonly projectId?: string;
@@ -944,9 +948,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const mockComposioClient = withShadows(
       makeComposioClient(
         {
-          apiKey: 'test',
-          userApiKey: null,
-          orgApiKey: null,
+          auth: Auth.project('test'),
           baseURL: 'https://mock.invalid',
           deprecationNotices: 'off',
         },
@@ -968,13 +970,14 @@ export const TestLayer = (input?: TestLiveInput) =>
         description: `No test data for ${operation}`,
       });
 
+    // The credential is the client's own; an unscoped client may still name
+    // the org or project on one request.
     const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
       // The CLI only ever passes plain header records.
       const headers = (options?.headers ?? {}) as Record<string, string | null | undefined>;
-      const userApiKey = headers['x-user-api-key'];
       return {
-        userApiKey: userApiKey === null ? undefined : (userApiKey ?? base.userApiKey),
-        apiKey: headers['x-api-key'] ?? undefined,
+        userApiKey: base.userApiKey,
+        apiKey: base.apiKey,
         orgId: headers['x-org-id'] ?? base.orgId,
         projectId: headers['x-project-id'] ?? base.projectId,
       };
@@ -1087,7 +1090,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const scopedClients = new Map<string, typeof mockComposioClient>();
     const mockClientFor = (scope: MockRequestScope) => {
-      const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
+      const key = JSON.stringify([scope.userApiKey, scope.apiKey, scope.orgId, scope.projectId]);
       const cached = scopedClients.get(key);
       if (cached) return cached;
       const scoped = withShadows(mockComposioClient, accountBranches(scope));
@@ -1101,8 +1104,13 @@ export const TestLayer = (input?: TestLiveInput) =>
         get: Effect.fn(function* () {
           return mockClientFor({});
         }),
-        getFor: Effect.fn(function* (params: MockRequestScope) {
-          return mockClientFor(params);
+        getFor: Effect.fn(function* (params: ClientScope) {
+          return mockClientFor({
+            userApiKey: params.userApiKey,
+            apiKey: params.projectApiKey,
+            orgId: params.orgId,
+            projectId: params.projectId,
+          });
         }),
         getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
       })

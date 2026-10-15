@@ -9,6 +9,13 @@
 - API requests now carry the CLI's product, version and runtime headers through
   the API client's `identity` option instead of default headers. The headers
   sent are unchanged.
+- API requests now authenticate through the API client's `auth` option (the
+  logged-in user's API key, or no credential before login) and name the org and
+  project through its `scope`, instead of the CLI placing `x-user-api-key`,
+  `x-org-id` and `x-project-id` in default headers. The headers sent are
+  unchanged. The CLI no longer keeps a client per API key and project for the
+  life of the process, so the user API key is held only by the client making
+  the request.
 - `--user-id` and `--project-name` are now flags of the `composio dev` group,
   accepted before or after the subcommand name (`composio dev --user-id alice
 toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
