@@ -80,6 +80,18 @@ describe('parseDeprecatedToolkitsHeader', () => {
     ).toEqual([{ slug: 'GMAIL', version: '20250114_00' }]);
   });
 
+  it('ignores a parameter named after an inherited object property', () => {
+    expect(parseDeprecatedToolkitsHeader('"GMAIL";version="1";constructor="x"')).toEqual([
+      { slug: 'GMAIL', version: '1' },
+    ]);
+  });
+
+  it('drops an empty item but keeps its siblings', () => {
+    expect(parseDeprecatedToolkitsHeader('"GMAIL";version="1", ;;')).toEqual([
+      { slug: 'GMAIL', version: '1' },
+    ]);
+  });
+
   it('drops an item without a version but keeps its siblings', () => {
     expect(parseDeprecatedToolkitsHeader(`"GMAIL";deprecated=@1779840000, ${BARE_ITEM}`)).toEqual([
       { slug: 'STRAVA', version: '20240902_00' },
@@ -272,6 +284,65 @@ describe('createToolkitDeprecationFetch', () => {
     });
     await expect(wrapped('https://backend.composio.test/a')).rejects.toBe(failure);
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('ignores a header longer than 2048 characters and still returns the body', async () => {
+    const oversized = `"GMAIL";version="1";reason="${'x'.repeat(2048)}"`;
+    const wrapped = createToolkitDeprecationFetch(async () =>
+      response({ [TOOLKIT_DEPRECATION_HEADER]: oversized })
+    );
+    const result = await wrapped('https://backend.composio.test/a');
+    expect(await result.json()).toEqual({ ok: true });
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('ignores a header carrying a control character and still returns the body', async () => {
+    const wrapped = createToolkitDeprecationFetch(async () =>
+      response({ [TOOLKIT_DEPRECATION_HEADER]: '"GMAIL";version="1";reason="\u001b[2J"' })
+    );
+    const result = await wrapped('https://backend.composio.test/a');
+    expect(await result.json()).toEqual({ ok: true });
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('stops recording new versions after 1024 keys without evicting the old ones', async () => {
+    let version = 0;
+    const wrapped = createToolkitDeprecationFetch(async () =>
+      response({ [TOOLKIT_DEPRECATION_HEADER]: `"GMAIL";version="${version}"` })
+    );
+    const send = async (next: number) => {
+      version = next;
+      await wrapped('https://backend.composio.test/a');
+    };
+
+    for (let next = 1; next <= 1024; next++) await send(next);
+    expect(logger.warn).toHaveBeenCalledTimes(1024);
+
+    await send(1025);
+    expect(logger.warn).toHaveBeenCalledTimes(1024);
+
+    for (let next = 1; next <= 1024; next++) await send(next);
+    expect(logger.warn).toHaveBeenCalledTimes(1024);
+  });
+
+  it('still resolves when the logger sink throws from both warn and debug', async () => {
+    vi.restoreAllMocks();
+    const throwing = () => {
+      throw new Error('sink is broken');
+    };
+    const sink = { error: vi.fn(), warn: vi.fn(throwing), info: vi.fn(), debug: vi.fn(throwing) };
+    logger.configure({ level: 'debug', sink });
+    const wrapped = createToolkitDeprecationFetch(async () =>
+      response({ [TOOLKIT_DEPRECATION_HEADER]: BARE_ITEM })
+    );
+    try {
+      const result = await wrapped('https://backend.composio.test/a');
+      expect(await result.json()).toEqual({ ok: true });
+      expect(sink.warn).toHaveBeenCalledTimes(1);
+      expect(sink.debug).toHaveBeenCalledTimes(1);
+    } finally {
+      logger.configure({ level: 'info', sink: console });
+    }
   });
 
   it('logs at debug and still returns the response when inspecting the header throws', async () => {

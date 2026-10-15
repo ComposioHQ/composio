@@ -25,6 +25,17 @@ export const TOOLKIT_DEPRECATION_DOCS_URL =
 /** Versions named per toolkit before the formatter collapses the rest into "and N more". */
 const MAX_VERSIONS_PER_LINE = 5;
 
+/**
+ * The three limits below mirror the `@composio/client` deprecation module,
+ * which reads the same kind of server-controlled header.
+ */
+/** A header longer than this is ignored whole rather than parsed. */
+const MAX_HEADER_LENGTH = 2048;
+/** A header holding any of these is ignored whole, so nothing partially cleaned reaches the log. */
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
+/** Keys the process will ever record; past this, new versions are neither recorded nor warned about. */
+const MAX_TRACKED_VERSIONS = 1024;
+
 export const DeprecatedToolkitEntrySchema = z.object({
   slug: z.string().min(1),
   version: z.string().min(1),
@@ -99,15 +110,15 @@ const decodeSfDate = (raw: string): Date | undefined => {
 };
 
 /** Header parameters the SDK understands, by wire name. */
-const KNOWN_PARAMETERS: Record<
+const KNOWN_PARAMETERS = new Map<
   string,
-  { name: keyof DeprecatedToolkitEntry; kind: 'string' | 'date' } | undefined
-> = {
-  version: { name: 'version', kind: 'string' },
-  reason: { name: 'reason', kind: 'string' },
-  deprecated: { name: 'deprecatedAt', kind: 'date' },
-  sunset: { name: 'sunsetAt', kind: 'date' },
-};
+  { name: keyof DeprecatedToolkitEntry; kind: 'string' | 'date' }
+>([
+  ['version', { name: 'version', kind: 'string' }],
+  ['reason', { name: 'reason', kind: 'string' }],
+  ['deprecated', { name: 'deprecatedAt', kind: 'date' }],
+  ['sunset', { name: 'sunsetAt', kind: 'date' }],
+]);
 
 /**
  * Parses one list item: an sf-string slug followed by `;key=value` parameters.
@@ -123,7 +134,7 @@ const parseItem = (item: string): DeprecatedToolkitEntry | undefined => {
     const key = (separator === -1 ? param : param.slice(0, separator)).trim();
     const rawValue = separator === -1 ? undefined : param.slice(separator + 1).trim();
     if (rawValue === undefined) continue;
-    const field = KNOWN_PARAMETERS[key];
+    const field = KNOWN_PARAMETERS.get(key);
     if (field === undefined) continue;
     const decoded = field.kind === 'string' ? decodeSfString(rawValue) : decodeSfDate(rawValue);
     // A known parameter with the wrong type invalidates the whole item.
@@ -212,10 +223,12 @@ export function formatToolkitDeprecationWarnings(
 const warnDeprecatedToolkits = (response: Response): void => {
   const value = response.headers.get(TOOLKIT_DEPRECATION_HEADER);
   if (value === null || value.length === 0) return;
+  if (value.length > MAX_HEADER_LENGTH || CONTROL_CHARACTERS.test(value)) return;
   const fresh: DeprecatedToolkitEntry[] = [];
   for (const entry of parseDeprecatedToolkitsHeader(value)) {
     const key = dedupeKey(entry);
-    if (warnedToolkitVersions.has(key)) continue;
+    if (warnedToolkitVersions.has(key) || warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS)
+      continue;
     warnedToolkitVersions.add(key);
     fresh.push(entry);
   }
@@ -242,7 +255,11 @@ export function createToolkitDeprecationFetch(
     try {
       warnDeprecatedToolkits(response);
     } catch (error) {
-      logger.debug('Failed to inspect the toolkit deprecation header', error);
+      try {
+        logger.debug('Failed to inspect the toolkit deprecation header', error);
+      } catch {
+        // The fallback is best-effort too: a sink that throws must not fail the call.
+      }
     }
     return response;
   };
