@@ -1,0 +1,63 @@
+---
+title: 'Session tool approvals, Python 3.15 support, and CLI request fixes'
+description: 'Require approval before session tools run, answer input requests in both SDKs, and avoid retrying CLI mutations.'
+date: '2026-10-16'
+---
+
+You can now require approval before selected session tools run and send the answers back through either SDK.
+
+### Release versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.28.0` |
+| TypeScript `@composio/core` | `0.25.0` |
+| TypeScript `@composio/slim` | `0.25.0` |
+| CLI `composio` | `0.4.5` |
+
+All 13 Python provider packages are released at `0.28.0`.
+
+### What's new
+
+- **Session tool approvals.** Set `requireApproval` (`require_approval` in Python) on session toolkit, tool, or tag filters. When a call needs input, catch `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python), display its `inputRequests` (`input_requests`), and wait for the person's answers. Repeat the call with `inputResponses` and `requestState` (`input_responses` and `request_state`). Forward decline and cancel answers unchanged. Both tool execution and meta-tool execution support this flow.
+- **MCP approval fallback.** Set `experimental.noElicitationSupportFallback` (`experimental.no_elicitation_support_fallback` in Python) to `deny` or `allow` to choose what happens when the MCP client cannot ask for approval.
+- **Python versions.** The Python SDK supports Python 3.11 through 3.15.
+
+### Migration notes
+
+<Callout type="warn">
+TypeScript `session.executeMeta()` now takes input-response options as its third argument. Move request options to the fourth argument.
+</Callout>
+
+Before:
+
+```ts
+import { Composio, type ToolRouterSessionMetaToolSlug } from '@composio/core';
+const session = await new Composio({ apiKey: 'your_api_key' }).create('user_123');
+declare const slug: ToolRouterSessionMetaToolSlug;
+declare const args: Record<string, unknown>;
+const requestOptions = { timeout: 30000 };
+// ---cut---
+// @errors: 2559
+await session.executeMeta(slug, args, requestOptions);
+```
+
+After:
+
+```ts
+import { Composio, type ToolRouterSessionMetaToolSlug } from '@composio/core';
+const session = await new Composio({ apiKey: 'your_api_key' }).create('user_123');
+declare const slug: ToolRouterSessionMetaToolSlug;
+declare const args: Record<string, unknown>;
+const requestOptions = { timeout: 30000 };
+// ---cut---
+await session.executeMeta(slug, args, undefined, requestOptions);
+```
+
+Both SDKs now pass product and runtime identity through the API client's `identity` option. Remove identity headers such as `x-source`, `x-framework`, `x-sdk-version`, and `x-client-*` from custom default or request headers: the client now rejects attempts to override its identity headers instead of silently replacing them. In TypeScript, Cloudflare Workers and Vercel Edge with Node.js compatibility enabled report their actual runtime, and custom provider names that cannot be sent as header values are reported as `unknown`.
+
+### Bug fixes
+
+- **TypeScript trigger subscriptions.** `triggers.unsubscribe()` closes the realtime connection, cancels an in-progress subscription, and does not create a connection when called before subscribing. Concurrent subscriptions share a connection. Rejected asynchronous trigger handlers are logged without becoming unhandled rejections.
+- **CLI request handling.** Only API reads that are safe to repeat are retried. Mutating calls are sent once, preventing a timeout from repeating a side effect. Commands validate the response fields they use while tolerating unrelated API changes.
+- **CLI command errors.** Commands that require login report a consistent usage error. Project-resolution failures retain their specific error type. The `dev` group's `--user-id` and `--project-name` flags work before or after the subcommand, and unsupported flags fail with a usage error.
