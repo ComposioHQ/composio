@@ -156,6 +156,9 @@ class ToolRouterInstantConfig(te.TypedDict, total=False):
     toolkits: t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]
     tools: t.Dict[str, t.Union[ToolRouterInstantEnable, ToolRouterInstantDisable]]
     return_instant_charge: bool
+    return_prices_in_search: bool
+    """Experimental. Show each Instant tool's price in Session search results,
+    under ``instant_account.prices``. Controls visibility only."""
 
 
 class ToolRouterProxyExecuteConfig(te.TypedDict):
@@ -192,7 +195,8 @@ ToolRouterSessionMetaToolSlug = t.Literal[
 ToolRouterSessionSearchResponse = session_search_response.SessionSearchResponse
 """Session search result. A toolkit served by a Composio Instant account
 lists the covered tools at ``instant_account.allowed_tool_slugs`` on its
-connection status."""
+connection status, and their prices at ``instant_account.prices`` when the
+Session sets ``instant.return_prices_in_search``."""
 
 
 class ToolRouterUpdateManageConnectionsConfig(te.TypedDict, total=False):
@@ -1182,8 +1186,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         ``callback_url=None`` removes only the stored callback URL.
         Experimental ``instant`` accepts ``False`` to disable billed
         access or an object to set its filters; it does not accept ``None``.
-        Any object, even one that only sets ``return_instant_charge``,
-        re-enables Instant usage on a Session set to ``False``.
+        Any object, even one that only sets ``return_instant_charge`` or
+        ``return_prices_in_search``, re-enables Instant usage on a Session
+        set to ``False``.
         ``proxy_execute`` takes a bool or ``{"enable": bool}``; ``True``
         exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``False`` also turns
         off the sandbox ``proxy_execute()`` helper, and ``None`` removes the

@@ -4,13 +4,14 @@ import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
-import { APIError } from '@composio/client';
+import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
-import * as composioClients from 'src/services/composio-clients';
+import * as composioAccount from 'src/services/composio-account';
+import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
@@ -38,6 +39,28 @@ vi.hoisted(() => {
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+type ApiErrorEnvelope = NonNullable<BadRequestError['details']>;
+
+// The client's error for a 400 answered with `envelope`.
+const clientBadRequest = (envelope: ApiErrorEnvelope) =>
+  new BadRequestError({
+    message: `400 ${JSON.stringify({ error: envelope })}`,
+    method: 'POST',
+    url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+    status: 400,
+    requestId: envelope.request_id,
+    details: envelope,
+    body: { error: envelope },
+  });
+
+const noActiveConnectionEnvelope: ApiErrorEnvelope = {
+  message: "No active connection found for toolkit(s) 'gmail' in this session",
+  code: 4302,
+  slug: 'ToolRouterV2_NoActiveConnection',
+  status: 400,
+  request_id: 'test-request-id',
+};
 
 // `testConfigProvider` pins its env, so it bypasses the per-test
 // `COMPOSIO_CACHE_DIR` stub, and the learned toolkit slugs resolve against the
@@ -123,8 +146,16 @@ describe('CLI: composio execute', () => {
   );
 
   beforeEach(() => {
-    vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
-      Effect.fail(new composioClients.HttpServerError({}))
+    vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(() =>
+      Effect.fail(
+        new APIConnectionError({
+          message: 'Connection error.',
+          method: 'GET',
+          url: 'https://backend.composio.dev/api/v3/tools/{tool_slug}/get_latest_version',
+          reason: 'TransportError',
+          description: undefined,
+        })
+      )
     );
     vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
       Effect.succeed(Option.some(['gmail', 'github']))
@@ -138,8 +169,8 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
-  let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
-  let recordedExecuteOptions: Array<{ maxRetries?: number } | undefined> = [];
+  let recordedProjectToolkitScopes: Array<ToolkitProjectScope | undefined> = [];
+  let recordedExecuteOptions: Array<{ maxRetries?: number; decode?: boolean } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
     recordedProjectToolkitScopes = [];
@@ -362,40 +393,43 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_gmail_default_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params, options) => {
-          recordedExecuteOptions.push(options);
-          return {
-            result_type: 'completed' as const,
-            data: { tool_slug: params.tool_slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_gmail_default',
-          };
-        },
-        executeMeta: async (_sessionId, params, options) => {
-          recordedExecuteOptions.push(options);
-          return {
-            result_type: 'completed' as const,
-            data: { slug: params.slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_meta_default',
-          };
-        },
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_gmail_default_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params, options) =>
+          Effect.sync(() => {
+            recordedExecuteOptions.push(options);
+            return {
+              result_type: 'completed' as const,
+              data: { tool_slug: params.tool_slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_gmail_default',
+            };
+          }),
+        executeMeta: (_sessionId, params, options) =>
+          Effect.sync(() => {
+            recordedExecuteOptions.push(options);
+            return {
+              result_type: 'completed' as const,
+              data: { slug: params.slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_meta_default',
+            };
+          }),
       },
     })
   )('[Given] default alias exists [Then] execute pins the default connected account', it => {
@@ -412,9 +446,9 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
           gmail: 'con_gmail_default',
         });
-        // An execution is never retried: a retry after the backend already
-        // acted would duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0 });
+        // An execution is never retried, and its response never validated: a
+        // retry after the backend already acted would duplicate the side effect.
+        expect(recordedExecuteOptions.at(-1)).toEqual({ maxRetries: 0, decode: false });
       })
     );
 
@@ -422,14 +456,14 @@ describe('CLI: composio execute', () => {
       Effect.gen(function* () {
         yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
 
-        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0 }]);
+        expect(recordedExecuteOptions).toEqual([{ maxRetries: 0, decode: false }]);
       })
     );
 
     it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
       Effect.gen(function* () {
         const latestVersion = vi
-          .spyOn(composioClients, 'getLatestToolVersion')
+          .spyOn(composioAccount, 'getLatestToolVersion')
           .mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
@@ -502,28 +536,30 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_gmail_explicit_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_gmail_explicit',
-        }),
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_gmail_explicit_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_explicit',
+          }),
       },
     })
   )('[Given] --account selector [Then] execute pins the matched connected account', it => {
@@ -665,28 +701,30 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_google_analytics_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_google_analytics',
-        }),
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_google_analytics_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_google_analytics',
+          }),
       },
     })
   )('[Given] a multi-word toolkit [Then] execute resolves it from the known toolkit list', it => {
@@ -766,28 +804,30 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_custom_grain_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_custom_grain',
-        }),
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_custom_grain_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_custom_grain',
+          }),
       },
     })
   )('[Given] a project custom toolkit [Then] execute resolves it from the project list', it => {
@@ -903,28 +943,30 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_posthog_test_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_posthog_test',
-        }),
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_posthog_test_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_posthog_test',
+          }),
       },
     })
   )(
@@ -965,28 +1007,30 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_posthog_cached_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, arguments: params.arguments },
-          error: null,
-          log_id: 'log_posthog_cached',
-        }),
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_posthog_cached_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_posthog_cached',
+          }),
       },
     })
   )('[Given] cached auth configs [Then] execute seeds the session from cache', it => {
@@ -1301,7 +1345,7 @@ describe('CLI: composio execute', () => {
             }),
             'utf8'
           );
-          vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
+          vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
 
@@ -1443,7 +1487,7 @@ describe('CLI: composio execute', () => {
     // so a tool call that does not wait for validation always gets through.
     const slowSchemaLookup = () =>
       vi
-        .spyOn(composioClients, 'getLatestToolVersion')
+        .spyOn(composioAccount, 'getLatestToolVersion')
         .mockImplementation(({ toolSlug }) =>
           Effect.promise(() => new Promise<void>(resolve => setTimeout(resolve, 25))).pipe(
             Effect.as({ tool_slug: toolSlug, version: '20260101_00' })
@@ -1713,17 +1757,22 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async (_sessionId, params) => {
-          if (params.tool_slug === 'GMAIL_SEND_EMAIL') {
-            throw new Error('gmail execution failed');
-          }
-          return {
-            result_type: 'completed' as const,
-            data: { tool_slug: params.tool_slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_parallel_success',
-          };
-        },
+        execute: (_sessionId, params) =>
+          params.tool_slug === 'GMAIL_SEND_EMAIL'
+            ? Effect.fail(
+                clientBadRequest({
+                  message: 'gmail execution failed',
+                  code: 4310,
+                  slug: 'ToolRouterV2_ExecutionFailed',
+                  status: 400,
+                })
+              )
+            : Effect.succeed({
+                result_type: 'completed' as const,
+                data: { tool_slug: params.tool_slug, arguments: params.arguments },
+                error: null,
+                log_id: 'log_parallel_success',
+              }),
       },
     })
   )('[Given] one parallel execution fails [Then] sibling results are retained', it => {
@@ -2676,22 +2725,7 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => {
-          throw APIError.generate(
-            400,
-            {
-              error: {
-                message: "No active connection found for toolkit(s) 'gmail' in this session",
-                code: 4302,
-                slug: 'ToolRouterV2_NoActiveConnection',
-                status: 400,
-                request_id: 'test-request-id',
-              },
-            },
-            undefined,
-            new Headers()
-          );
-        },
+        execute: () => Effect.fail(clientBadRequest(noActiveConnectionEnvelope)),
       },
     })
   )('[Given] Tool Router NoActiveConnection error [Then] prints connection tips', it => {
@@ -2720,12 +2754,13 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, custom: 'response' },
-          error: null,
-          log_id: 'log_custom',
-        }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, custom: 'response' },
+            error: null,
+            log_id: 'log_custom',
+          }),
       },
     })
   )('[Given] custom Tool Router execute mock [Then] returns custom response', it => {
@@ -2749,12 +2784,13 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => ({
-          result_type: 'failed' as const,
-          data: {},
-          error: null,
-          log_id: 'log_failed',
-        }),
+        execute: () =>
+          Effect.succeed({
+            result_type: 'failed' as const,
+            data: {},
+            error: null,
+            log_id: 'log_failed',
+          }),
       },
     })
   )('[Given] Tool Router reports a failed execution with no error text', it => {
@@ -2783,18 +2819,19 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => ({
-          result_type: 'input_required' as const,
-          input_requests: {
-            approval_1: {
-              type: 'elicitation' as const,
-              mode: 'form' as const,
-              message: 'Allow GITHUB_STAR_REPO to star this repository?',
-              requested_schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+        execute: () =>
+          Effect.succeed({
+            result_type: 'input_required' as const,
+            input_requests: {
+              approval_1: {
+                type: 'elicitation' as const,
+                mode: 'form' as const,
+                message: 'Allow GITHUB_STAR_REPO to star this repository?',
+                requested_schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+              },
             },
-          },
-          request_state: 'opaque-state-token',
-        }),
+            request_state: 'opaque-state-token',
+          }),
       },
     })
   )('[Given] Tool Router asks for user input [Then] execute fails without a result', it => {
@@ -2855,19 +2892,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: APIError.generate(
-          400,
-          {
-            error: {
-              message: 'API error: invalid input',
-              code: 1001,
-              slug: 'Validation_Failed',
-              status: 400,
-            },
-          },
-          undefined,
-          new Headers()
-        ),
+        failWith: clientBadRequest({
+          message: 'API error: invalid input',
+          code: 1001,
+          slug: 'Validation_Failed',
+          status: 400,
+        }),
       },
     })
   )('[Given] executor throws an API error [Then] prints message and details', it => {

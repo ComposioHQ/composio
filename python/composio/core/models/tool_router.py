@@ -116,7 +116,12 @@ def _origin(url: str, role: str) -> str:
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "createHint",
+    "updateHint",
+    "destructiveHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -836,8 +841,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                       Example: ['readOnlyHint', 'idempotentHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
-                    Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    Available tag values: 'readOnlyHint', 'createHint',
+                    'updateHint', 'destructiveHint', 'idempotentHint',
+                    'openWorldHint'.
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -916,6 +922,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
+                        ``return_instant_charge`` returns the charge with each
+                        call, and ``return_prices_in_search`` shows each Instant
+                        tool's price in ``session.search()`` results.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint

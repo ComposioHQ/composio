@@ -176,6 +176,44 @@ console.log(result.instantCharge);
 
 The charge includes `amount`, `currency`, and `charged_by`. The amount is an exact USD decimal string. TypeScript exposes `instantCharge` as `unknown`. Turning charge reporting off does not stop billing or remove charges from logs and usage records.
 
+### Show prices in search
+
+To see what an Instant tool costs before you call it, set `return_prices_in_search` in Python or `returnPricesInSearch` in TypeScript. This option is experimental and off by default. Search results then list each Instant tool's published price under the toolkit's Instant account, keyed by tool slug:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+    instant={"return_prices_in_search": True},
+)
+results = session.search(query="scrape a web page")
+for status in results.toolkit_connection_statuses:
+    if status.instant_account is not None:
+        print(status.toolkit, status.instant_account.prices)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
+const session = await composio.create("instant_demo", {
+  toolkits: ["firecrawl"],
+  instant: { returnPricesInSearch: true },
+});
+const results = await session.search({ query: "scrape a web page" });
+for (const status of results.toolkitConnectionStatuses) {
+  console.log(status.toolkit, status.instantAccount?.prices);
+}
+```
+</Tab>
+</Tabs>
+
+Each price has a `description` and, when one applies, a `discount`. Like charge reporting, this setting only controls what the response shows. It does not turn Instant usage on or off.
+
 ## Know which account runs the tool
 
 Composio uses your user's connection first, then an available shared connection, then an Instant account. Only calls through an Instant account incur an Instant charge. Your provider may separately bill calls made with your own account.

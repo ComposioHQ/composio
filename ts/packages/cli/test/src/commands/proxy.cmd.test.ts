@@ -1,4 +1,4 @@
-import { APIError } from '@composio/client';
+import { BadRequestError, type RequestOptions } from '@composio/client/effect';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
@@ -18,6 +18,13 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+const noActiveConnection = {
+  code: 4302,
+  slug: 'ToolRouterV2_NoActiveConnection',
+  message: 'No active connection',
+  status: 400,
+};
 
 describe('CLI: composio proxy', () => {
   afterEach(() => {
@@ -46,7 +53,7 @@ describe('CLI: composio proxy', () => {
       it.effect('forwards proxy execute params and prints the response', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
-          let proxyOptions: { maxRetries?: number } | undefined;
+          let proxyOptions: RequestOptions | undefined;
           let proxyParams:
             | {
                 sessionId: string;
@@ -101,40 +108,42 @@ describe('CLI: composio proxy', () => {
               ],
             },
             toolRouter: {
-              create: async (params: SessionCreateParams) => {
-                createParams = params;
-                return {
-                  session_id: 'trs_proxy_test',
-                  config: {
-                    user_id: params.user_id,
-                    execute: {},
-                    search: {},
-                    preload: { tools: [] },
-                    instant: false,
-                  },
-                  config_version: 1,
-                  mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-                  tool_router_tools: [],
-                };
-              },
-              proxyExecute: async (
+              create: (params: SessionCreateParams) =>
+                Effect.sync(() => {
+                  createParams = params;
+                  return {
+                    session_id: 'trs_proxy_test',
+                    config: {
+                      user_id: params.user_id,
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
+              proxyExecute: (
                 sessionId: string,
                 params: SessionProxyExecuteParams,
-                options?: { maxRetries?: number }
-              ) => {
-                proxyParams = { sessionId, params };
-                proxyOptions = options;
-                return {
-                  result_type: 'completed' as const,
-                  status: 200,
-                  data: {
-                    ok: true,
-                    endpoint: params.endpoint,
-                    method: params.method,
-                  },
-                  headers: { 'content-type': 'application/json' },
-                };
-              },
+                options?: RequestOptions
+              ) =>
+                Effect.sync(() => {
+                  proxyParams = { sessionId, params };
+                  proxyOptions = options;
+                  return {
+                    result_type: 'completed' as const,
+                    status: 200,
+                    data: {
+                      ok: true,
+                      endpoint: params.endpoint,
+                      method: params.method,
+                    },
+                    headers: { 'content-type': 'application/json' },
+                  };
+                }),
             },
           });
 
@@ -182,7 +191,7 @@ describe('CLI: composio proxy', () => {
           });
           // A proxied call is never retried: a retry after the upstream API
           // already acted would duplicate the side effect.
-          expect(proxyOptions).toEqual({ maxRetries: 0 });
+          expect(proxyOptions).toEqual({ maxRetries: 0, decode: false });
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');
@@ -208,22 +217,23 @@ describe('CLI: composio proxy', () => {
             baseConfigProvider: testConfigProvider,
             fixture: 'global-test-user-id',
             toolRouter: {
-              create: async (_params: SessionCreateParams) => {
-                createCalled = true;
-                return {
-                  session_id: 'trs_proxy_test',
-                  config: {
-                    user_id: 'global_test_user_id',
-                    execute: {},
-                    search: {},
-                    preload: { tools: [] },
-                    instant: false,
-                  },
-                  config_version: 1,
-                  mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-                  tool_router_tools: [],
-                };
-              },
+              create: (_params: SessionCreateParams) =>
+                Effect.sync(() => {
+                  createCalled = true;
+                  return {
+                    session_id: 'trs_proxy_test',
+                    config: {
+                      user_id: 'global_test_user_id',
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
             },
           });
 
@@ -263,21 +273,18 @@ describe('CLI: composio proxy', () => {
             baseConfigProvider: testConfigProvider,
             fixture: 'global-test-user-id',
             toolRouter: {
-              proxyExecute: async () => {
-                throw APIError.generate(
-                  400,
-                  {
-                    error: {
-                      code: 4302,
-                      slug: 'ToolRouterV2_NoActiveConnection',
-                      message: 'No active connection',
-                      status: 400,
-                    },
-                  },
-                  undefined,
-                  new Headers()
-                );
-              },
+              proxyExecute: () =>
+                Effect.fail(
+                  new BadRequestError({
+                    message: `400 ${JSON.stringify({ error: noActiveConnection })}`,
+                    method: 'POST',
+                    url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/proxy_execute',
+                    status: 400,
+                    requestId: undefined,
+                    details: noActiveConnection,
+                    body: { error: noActiveConnection },
+                  })
+                ),
             },
           });
 
@@ -311,18 +318,19 @@ describe('CLI: composio proxy', () => {
             baseConfigProvider: testConfigProvider,
             fixture: 'global-test-user-id',
             toolRouter: {
-              proxyExecute: async () => ({
-                result_type: 'input_required' as const,
-                input_requests: {
-                  approval_1: {
-                    type: 'elicitation' as const,
-                    mode: 'form' as const,
-                    message: 'Allow this request to Gmail?',
-                    requested_schema: { type: 'object' },
+              proxyExecute: () =>
+                Effect.succeed({
+                  result_type: 'input_required' as const,
+                  input_requests: {
+                    approval_1: {
+                      type: 'elicitation' as const,
+                      mode: 'form' as const,
+                      message: 'Allow this request to Gmail?',
+                      requested_schema: { type: 'object' },
+                    },
                   },
-                },
-                request_state: 'opaque-state-token',
-              }),
+                  request_state: 'opaque-state-token',
+                }),
             },
           });
 

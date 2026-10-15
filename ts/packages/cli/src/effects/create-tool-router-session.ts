@@ -1,5 +1,5 @@
 import { Data, Effect, Option } from 'effect';
-import type { Composio } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
   getFreshConsumerToolRouterConnectedAccountsFromCache,
@@ -61,7 +61,7 @@ export class ToolRouterSessionCreateError extends Data.TaggedError(
  * Used by `ToolsExecutorLive` which already holds the client reference.
  */
 export const createToolRouterSessionContext = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
@@ -166,9 +166,9 @@ export const createToolRouterSessionContext = (
           connectedAccountIds,
         })
       : undefined;
-    return yield* Effect.tryPromise({
-      try: () =>
-        client.toolRouter.session.create({
+    return yield* client.toolRouter.session
+      .create(
+        {
           user_id: userId,
           auth_configs: connectionContext.authConfigs,
           connected_accounts: connectionContext.connectedAccounts,
@@ -185,28 +185,32 @@ export const createToolRouterSessionContext = (
           experimental: permissionSnapshot?.enhancedControlsEnabled
             ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
             : undefined,
-        }),
-      catch: cause =>
-        new ToolRouterSessionCreateError({
-          message: 'Failed to create a Tool Router session.',
-          cause,
-        }),
-    }).pipe(
-      Effect.map((session): CreatedToolRouterSession => ({
-        sessionId: session.session_id,
-        permissionSnapshot,
-        connectedAccounts: connectionContext.connectedAccounts,
-        connectedAccountWordIds: resolveConnectedAccountWordIds(
-          connectionContext.connectedAccounts,
-          connectionContext.availableConnectedAccounts
+        },
+        { decode: false }
+      )
+      .pipe(
+        Effect.mapError(
+          cause =>
+            new ToolRouterSessionCreateError({
+              message: 'Failed to create a Tool Router session.',
+              cause,
+            })
         ),
-      }))
-    );
+        Effect.map((session): CreatedToolRouterSession => ({
+          sessionId: session.session_id,
+          permissionSnapshot,
+          connectedAccounts: connectionContext.connectedAccounts,
+          connectedAccountWordIds: resolveConnectedAccountWordIds(
+            connectionContext.connectedAccounts,
+            connectionContext.availableConnectedAccounts
+          ),
+        }))
+      );
   });
 
 /** Backward-compatible helper for callers that only need the session id. */
 export const createToolRouterSession = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
@@ -220,7 +224,7 @@ export const createToolRouterSession = (
  * (resolve singleton, get client, create session) repeated across commands.
  */
 export const resolveToolRouterSession = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>

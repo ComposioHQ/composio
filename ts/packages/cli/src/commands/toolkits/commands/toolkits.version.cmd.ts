@@ -25,10 +25,9 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
     const toolkitOpt = yield* ui
       .withSpinner(
         `Fetching versions for toolkit "${slug}"...`,
-        Effect.tryPromise({
-          try: () => client.toolkits.retrieve(slug),
-          catch: error => (error instanceof Error ? error : new Error(String(error))),
-        })
+        // Only the name, slug and version list are read, so a toolkit that
+        // lacks other catalog fields still prints its versions.
+        client.toolkits.retrieve(slug, undefined, { decode: false })
       )
       .pipe(
         Effect.asSome,

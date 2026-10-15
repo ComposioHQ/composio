@@ -37,16 +37,3 @@ export const toolInputRequiredError = (
     requestState: response.request_state,
   });
 };
-
-/**
- * Narrows an execute-family response to the variants that carry a result.
- *
- * @throws {ToolInputRequiredError} If the call asked for user input instead of running
- */
-export function assertNotInputRequired<Response extends ExecuteFamilyResponse>(
-  subject: string,
-  response: Response
-): asserts response is Exclude<Response, InputRequiredResponse> {
-  if (response.result_type !== 'input_required') return;
-  throw toolInputRequiredError(subject, response);
-}

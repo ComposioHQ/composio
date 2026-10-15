@@ -1,6 +1,6 @@
 import { Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';

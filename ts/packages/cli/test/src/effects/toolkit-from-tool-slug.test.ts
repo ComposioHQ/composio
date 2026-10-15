@@ -4,9 +4,9 @@ import { ConfigProvider, DateTime, Deferred, Effect, FileSystem, Layer, Schedule
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
+import { InternalServerError } from '@composio/client/effect';
 import {
   ComposioToolkitsRepository,
-  HttpServerError,
   type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import { KNOWN_TOOLKIT_SLUGS_FILE } from 'src/services/known-toolkit-slugs';
@@ -32,7 +32,17 @@ const UNRELEASED_TOOLKIT = 'acme_analytics';
 const CUSTOM_TOOLKIT = 'custom_grain';
 
 const failingFetch = () =>
-  Effect.fail(new HttpServerError({ cause: 'catalog unavailable', status: 503 }));
+  Effect.fail(
+    new InternalServerError({
+      message: 'catalog unavailable',
+      method: 'GET',
+      url: 'https://backend.composio.dev/api/v3.1/toolkits',
+      status: 503,
+      requestId: undefined,
+      details: undefined,
+      body: undefined,
+    })
+  );
 
 /**
  * A learned-slugs file recorded `daysAgo` days ago. Anything under a week old
