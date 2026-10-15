@@ -14,58 +14,12 @@ Approval mode is experimental, and its SDK options may change. Answering questio
 
 ## Requiring approval
 
-You choose which tools need approval when you create or update a session.
+Set approval rules when you create or update a session:
 
-### By type of tool
+- **`tags.require_approval`** requires approval for every tool with one of these [tags](/docs/tool-tags).
+- **`tools.<toolkit>`** overrides the session-wide `tags` for one toolkit. Set `tags.require_approval` inside it, or list the toolkit's tools in `enable` and the ones that need approval in `require_approval`. When you list tools, always set `require_approval`, even to `[]`.
 
-Every tool has a [tag](/docs/tool-tags) for the type of action it takes:
-
-| Tag | Action |
-|---|---|
-| `readOnlyHint` | Read |
-| `createHint` | Create |
-| `updateHint` | Update |
-| `destructiveHint` | Destructive |
-
-To require approval for every tool of a type, add its tag to `tags.require_approval`. Tools whose tags you leave out run without approval, and tools whose tags are in `tags.disable` are [blocked](/docs/configuring-sessions#filtering-tools-by-tags). For example, to require approval for tools that create or update, and block tools that delete:
-
-```python
-tags={
-    "require_approval": ["createHint", "updateHint"],
-    "disable": ["destructiveHint"],
-}
-```
-
-### Overriding for a toolkit
-
-The session-wide `tags` apply to the tools of every toolkit. To handle a toolkit's tools differently, override them under `tools.<toolkit>`. The override replaces the session-wide `tags` for that toolkit, so it has to cover all of its tools. You can override by type or tool by tool.
-
-**By type.** Set `tools.<toolkit>.tags` the same way as the session-wide `tags`, and repeat anything from them you still want for the toolkit. For example, this override makes GitHub's tools that delete need approval instead of being blocked. Tools that create or update are listed again so they still need approval:
-
-```python
-tools={
-    "github": {
-        "tags": {"require_approval": ["createHint", "updateHint", "destructiveHint"]}
-    }
-}
-```
-
-**Tool by tool.** List the tools the agent can use in `tools.<toolkit>.enable`, and the ones that need approval in `tools.<toolkit>.require_approval`. Tools you leave out are blocked, including tools added to the toolkit later. For example, this override lets the agent fetch and send Gmail, and requires approval to send:
-
-```python
-tools={
-    "gmail": {
-        "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
-        "require_approval": ["GMAIL_SEND_EMAIL"],
-    }
-}
-```
-
-Always set `require_approval` in a tool-by-tool override, even to `[]`. Without it, the session-wide `tags.require_approval` still applies to the tools you list.
-
-Use one or the other for a toolkit, not both.
-
-### Example
+For example:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -73,17 +27,11 @@ Use one or the other for a toolkit, not both.
 session = composio.create(
     user_id="user_123",
     toolkits={"enable": ["gmail", "github"]},
-    tags={
-        "require_approval": ["createHint", "updateHint"],
-        "disable": ["destructiveHint"],
-    },
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
     tools={
         "gmail": {
             "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
             "require_approval": ["GMAIL_SEND_EMAIL"],
-        },
-        "github": {
-            "tags": {"require_approval": ["createHint", "updateHint", "destructiveHint"]}
         },
     },
 )
@@ -97,17 +45,11 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create('user_123', {
   toolkits: { enable: ['gmail', 'github'] },
-  tags: {
-    requireApproval: ['createHint', 'updateHint'],
-    disable: ['destructiveHint'],
-  },
+  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
   tools: {
     gmail: {
       enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
       requireApproval: ['GMAIL_SEND_EMAIL'],
-    },
-    github: {
-      tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
     },
   },
 });
@@ -115,11 +57,7 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-With this session:
-
-- **GitHub** is overridden by type. Tools that read run without approval, and tools that create, update or delete need approval.
-- **Gmail** is overridden tool by tool. Fetching emails runs without approval, sending needs approval, and no other Gmail tools are available.
-- **Any other toolkit** isn't enabled. If you enabled one without an override, the session-wide `tags` would apply to its tools: tools that read run without approval, tools that create or update need approval, and tools that delete are blocked.
+In this session, GitHub tools that create, update or delete need approval. Gmail is limited to fetching and sending emails, and sending needs approval.
 
 Tools that need approval stay visible to the agent. It can find and call them, and each call waits for the user's approval. This includes calls the agent makes through `COMPOSIO_MULTI_EXECUTE_TOOL`: a batch with two calls that need approval returns two questions.
 
