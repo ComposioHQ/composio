@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     install_requires=[
         # ag2 1.x removed the top-level `autogen` namespace this provider imports.
         "ag2>=0.14,<1.0",

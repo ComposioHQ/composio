@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     install_requires=["llama-index>=0.14.23", "composio"],
     include_package_data=True,
 )
