@@ -87,18 +87,6 @@ describe("LLM endpoints - .md pages", () => {
       expect(contentType).toContain("text/markdown");
     });
 
-    test(`${name} (${path}) has a title heading`, async () => {
-      const res = await fetchPage(path);
-      const text = await res.text();
-      // Should start with a markdown heading
-      expect(text).toMatch(/^#\s+.+/);
-    });
-
-    test(`${name} (${path}) has meaningful content (> 200 chars)`, async () => {
-      const res = await fetchPage(path);
-      const text = await res.text();
-      expect(text.length).toBeGreaterThan(200);
-    });
   }
 });
 

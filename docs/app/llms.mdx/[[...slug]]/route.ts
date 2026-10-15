@@ -20,7 +20,8 @@ import {
   isToolVersionPath,
   toolVersionParameterDescription,
 } from '@/lib/api-version-guidance';
-import { notFound } from 'next/navigation';
+import { getPageLastUpdated } from '@/lib/content-freshness';
+import { missingMarkdownResponse, withMarkdownMetadata } from '@/lib/markdown-response';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
@@ -1207,7 +1208,23 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
   return lines.join('\n') + LLM_FOOTER;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
+export async function GET(req: Request, context: { params: Promise<{ slug?: string[] }> }) {
+  const { slug = [] } = await context.params;
+  const pathname = `/${slug.join('/')}`;
+  const response = await renderMarkdown(req, context);
+  if (!response.headers.get('Content-Type')?.startsWith('text/markdown')) {
+    response.headers.set('Vary', 'Accept');
+    return response;
+  }
+  return withMarkdownMetadata(
+    await response.text(),
+    pathname,
+    response.ok ? await getPageLastUpdated(pathname) : null,
+    { status: response.status, statusText: response.statusText, headers: response.headers },
+  );
+}
+
+async function renderMarkdown(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
@@ -1278,8 +1295,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
           });
         }
       }
-      // If no entries found, fall through to notFound
-      notFound();
+      return missingMarkdownResponse();
     }
 
     // Special handling for meta tools - /toolkits/meta-tools and /toolkits/meta-tools/{slug}.
@@ -1320,7 +1336,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     } else {
       const match = sources.find(s => s.prefix === prefix);
-      if (!match) notFound();
+      if (!match) return missingMarkdownResponse();
       pageSource = match.source;
     }
 
@@ -1414,12 +1430,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     }
 
-    notFound();
+    return missingMarkdownResponse();
   } catch (e) {
-    // Don't catch notFound - let it propagate
-    if (e && typeof e === 'object' && 'digest' in e) {
-      throw e;
-    }
     console.error('Unexpected error in llms.mdx route:', e);
     return new Response(`# Error\n\nAn error occurred while generating the markdown content.`, {
       status: 500,

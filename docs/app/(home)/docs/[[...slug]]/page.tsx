@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import { getOgImageUrl, source } from '@/lib/source';
 import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
@@ -76,7 +77,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
       ? { absolute: `${page.data.title} | Composio Documentation` }
       : page.data.title,
     description: page.data.description,
-    alternates: { canonical: page.url },
+    alternates: markdownAlternates(page.url),
     openGraph: {
       title: page.data.title,
       description: page.data.description,
