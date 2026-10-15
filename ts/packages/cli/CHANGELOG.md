@@ -1,9 +1,15 @@
 # @composio/cli
 
-## Unreleased
+## 0.4.5
 
 ### Patch Changes
 
+- Retry only API reads that are safe to repeat. Mutating calls are sent once,
+  including when a request times out after the server may have acted.
+- Commands that require login now fail consistently with a usage error.
+  Project-resolution failures retain their specific error type.
+- Tolerate API response fields the command does not consume while continuing
+  to validate fields used for output, credentials, and cached data.
 - The CLI now uses `@composio/client@2.0.0-rc.17` (up from `2.0.0-rc.14`). No
   command changes.
 - API requests now carry the CLI's product, version and runtime headers through
