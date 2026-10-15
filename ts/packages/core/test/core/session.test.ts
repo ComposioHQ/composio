@@ -1,4 +1,7 @@
-import { VERSION as clientLibraryVersion } from '@composio/client';
+import {
+  ComposioError as ClientComposioError,
+  VERSION as clientLibraryVersion,
+} from '@composio/client';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -7,7 +10,7 @@ import { Composio } from '../../src/composio';
 import { SessionConfigs } from '../../src/models/SessionConfigs';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { OpenAIProvider } from '../../src/provider/OpenAIProvider';
-import { getDefaultHeaders, getSessionHeaders } from '../../src/utils/session';
+import { getClientIdentity } from '../../src/utils/session';
 import { version } from '../../package.json';
 import {
   ComposioAPIKeyKindError,
@@ -17,14 +20,19 @@ import {
 import { ComposioMCPDestinationError } from '../../src/errors/ToolRouterErrors';
 import logger from '../../src/utils/logger';
 
-const provenanceHeaders = {
+const identityHeaders = (framework: string) => ({
   'x-client-provenance': '@composio/core',
   'x-client-version': version,
+  'x-sdk-version': version,
   'x-client-language': 'typescript',
   'x-client-library': '@composio/client',
   'x-client-library-version': clientLibraryVersion,
+  'x-client-runtime': 'nodejs',
   'x-runtime-version': process.versions.node,
-};
+  'x-runtime': 'NODEJS',
+  'x-source': 'TYPESCRIPT_SDK',
+  'x-framework': framework,
+});
 
 describe('Composio Session Management', () => {
   const baseConfig = {
@@ -53,12 +61,6 @@ describe('Composio Session Management', () => {
       'x-request-id': '1234567890',
       'x-correlation-id': 'session-abc-123',
       'x-custom-header': 'custom-value',
-      'x-framework': 'MockProvider', // from provider
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
     });
 
     // Should preserve other config
@@ -99,44 +101,25 @@ describe('Composio Session Management', () => {
     expect(headersA).toEqual({
       'x-user-id': 'user-a',
       'x-tenant-id': 'tenant-1',
-      'x-framework': 'MockProvider',
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
     });
 
     expect(headersB).toEqual({
       'x-user-id': 'user-b',
       'x-tenant-id': 'tenant-2',
-      'x-framework': 'MockProvider',
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
     });
 
     // Sessions should be isolated
     expect(sessionA).not.toBe(sessionB);
   });
 
-  it('should include session headers even when no custom headers are provided', () => {
+  it('should carry no default headers when no custom headers are provided', () => {
     const composio = new Composio(baseConfig);
     const session = composio.createSession();
 
-    // Should still have session headers from provider
+    // The identity headers come from the client's `identity`, not defaultHeaders
     // @ts-expect-error: access private config for test
     const defaultHeaders = session.config.defaultHeaders;
-    expect(defaultHeaders).toEqual({
-      'x-framework': 'MockProvider', // from provider
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
-    });
+    expect(defaultHeaders).toBeUndefined();
   });
 
   it('should expose sessions.create and keep composio.create as a bound alias', async () => {
@@ -180,176 +163,105 @@ describe('Composio Session Management', () => {
   });
 });
 
-describe('Session Headers Generation', () => {
-  describe('getSessionHeaders', () => {
-    it('should generate correct session headers for OpenAI provider', () => {
-      const openAIProvider = new OpenAIProvider();
-      const headers = getSessionHeaders(openAIProvider);
+describe('getClientIdentity', () => {
+  const sdkIdentity = (framework: string) => ({
+    product: '@composio/core',
+    version,
+    source: 'TYPESCRIPT_SDK',
+    framework,
+    runtime: 'NODEJS',
+  });
 
-      expect(headers).toEqual({
-        'x-framework': 'openai',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
+  it('reports the OpenAI provider as the framework', () => {
+    expect(getClientIdentity(new OpenAIProvider())).toEqual(sdkIdentity('openai'));
+  });
+
+  it('reports a custom provider by its name', () => {
+    expect(getClientIdentity(new MockProvider())).toEqual(sdkIdentity('MockProvider'));
+  });
+
+  it('reports an unknown framework without a provider or a provider name', () => {
+    expect(getClientIdentity(undefined)).toEqual(sdkIdentity('unknown'));
+    expect(getClientIdentity({ name: undefined } as unknown as MockProvider)).toEqual(
+      sdkIdentity('unknown')
+    );
+  });
+
+  it('reports an unknown framework for a provider name the client cannot send', () => {
+    for (const name of ['café', ' padded ', '']) {
+      expect(getClientIdentity({ name } as unknown as MockProvider)).toEqual(
+        sdkIdentity('unknown')
+      );
+    }
+  });
+});
+
+describe('Identity headers at the transport boundary', () => {
+  const captureFetch = () => {
+    const fetchMock = vi.fn(async () => Response.json({ items: [], next_cursor: null }));
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  const sentHeaders = (fetchMock: ReturnType<typeof captureFetch>) => {
+    const call = fetchMock.mock.calls[0] as unknown as [string, { headers: HeadersInit }];
+    return Object.fromEntries(new Headers(call[1].headers));
+  };
+
+  const build = (config: ConstructorParameters<typeof Composio>[0] = {}) =>
+    new Composio({
+      apiKey: 'test-api-key',
+      baseURL: 'https://api.test.com',
+      provider: new MockProvider(),
+      allowTracking: false,
+      disableVersionCheck: true,
+      ...config,
     });
 
-    it('should generate correct session headers for MockProvider', () => {
-      const mockProvider = new MockProvider();
-      const headers = getSessionHeaders(mockProvider);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-      expect(headers).toEqual({
-        'x-framework': 'MockProvider',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
+  it('sends the SDK identity, the provider as the framework, and the caller headers', async () => {
+    const fetchMock = captureFetch();
 
-    it('should use fallback source when provider is undefined', () => {
-      const headers = getSessionHeaders(undefined);
+    await build({ defaultHeaders: { 'x-request-id': 'req-1' } })
+      .getClient()
+      .toolkits.list({ limit: 1 });
 
-      expect(headers).toEqual({
-        'x-framework': 'unknown',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
-
-    it('should use fallback source when provider name is undefined', () => {
-      const mockProvider = {
-        name: undefined,
-      } as unknown;
-      const headers = getSessionHeaders(mockProvider);
-
-      expect(headers).toEqual({
-        'x-framework': 'unknown',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
+    expect(sentHeaders(fetchMock)).toMatchObject({
+      ...identityHeaders('MockProvider'),
+      'x-request-id': 'req-1',
     });
   });
 
-  describe('getDefaultHeaders', () => {
-    it('should merge custom headers with session headers for OpenAI provider', () => {
-      const openAIProvider = new OpenAIProvider();
-      const customHeaders = {
-        'x-request-id': '1234567890',
-        'x-custom-header': 'custom-value',
-      };
+  it('sends the same identity from a createSession clone', async () => {
+    const fetchMock = captureFetch();
 
-      const headers = getDefaultHeaders(customHeaders, openAIProvider);
+    await build({ provider: new OpenAIProvider() })
+      .createSession({ headers: { 'x-session': 's-1' } })
+      .getClient()
+      .toolkits.list({ limit: 1 });
 
-      expect(headers).toEqual({
-        'x-request-id': '1234567890',
-        'x-custom-header': 'custom-value',
-        'x-framework': 'openai',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
+    expect(sentHeaders(fetchMock)).toMatchObject({
+      ...identityHeaders('openai'),
+      'x-session': 's-1',
     });
+  });
 
-    it('should merge custom headers with session headers for MockProvider', () => {
-      const mockProvider = new MockProvider();
-      const customHeaders = {
-        'x-user-id': 'user-123',
-        'x-tenant-id': 'tenant-456',
-      };
+  it('rejects an identity header in defaultHeaders', () => {
+    expect(() => build({ defaultHeaders: { 'x-source': 'custom-source' } })).toThrow(
+      ClientComposioError
+    );
+    expect(() => build({ defaultHeaders: { 'X-Client-Library': 'other' } })).toThrow(
+      ClientComposioError
+    );
+  });
 
-      const headers = getDefaultHeaders(customHeaders, mockProvider);
-
-      expect(headers).toEqual({
-        'x-user-id': 'user-123',
-        'x-tenant-id': 'tenant-456',
-        'x-framework': 'MockProvider',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
-
-    it('should prioritize session headers over custom headers when keys conflict', () => {
-      const openAIProvider = new OpenAIProvider();
-      const customHeaders = {
-        'x-source': 'custom-source',
-        'x-runtime': 'custom-runtime',
-        'x-sdk-version': 'custom-version',
-        'x-custom-header': 'custom-value',
-      };
-
-      const headers = getDefaultHeaders(customHeaders, openAIProvider);
-
-      expect(headers).toEqual({
-        'x-framework': 'openai', // session header takes precedence
-        'x-source': 'TYPESCRIPT_SDK', // session header takes precedence
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs', // session header takes precedence
-        ...provenanceHeaders,
-        'x-sdk-version': version, // session header takes precedence
-        'x-custom-header': 'custom-value', // custom header preserved
-      });
-    });
-
-    it('should handle undefined custom headers', () => {
-      const openAIProvider = new OpenAIProvider();
-      const headers = getDefaultHeaders(undefined, openAIProvider);
-
-      expect(headers).toEqual({
-        'x-framework': 'openai',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
-
-    it('should handle empty custom headers object', () => {
-      const openAIProvider = new OpenAIProvider();
-      const headers = getDefaultHeaders({}, openAIProvider);
-
-      expect(headers).toEqual({
-        'x-framework': 'openai',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
-
-    it('should handle undefined provider', () => {
-      const customHeaders = {
-        'x-request-id': '1234567890',
-      };
-
-      const headers = getDefaultHeaders(customHeaders, undefined);
-
-      expect(headers).toEqual({
-        'x-request-id': '1234567890',
-        'x-framework': 'unknown',
-        'x-source': 'TYPESCRIPT_SDK',
-        'x-runtime': 'NODEJS',
-        'x-client-runtime': 'nodejs',
-        ...provenanceHeaders,
-        'x-sdk-version': version,
-      });
-    });
+  it('rejects an identity header passed to createSession', () => {
+    expect(() => build().createSession({ headers: { 'x-framework': 'other' } })).toThrow(
+      ClientComposioError
+    );
   });
 });
 
@@ -415,12 +327,6 @@ describe('Session Headers Configuration Integration', () => {
     expect(sessionDefaultHeaders).toEqual({
       'x-request-id': '1234567890',
       'x-user-context': 'user-session',
-      'x-framework': 'openai',
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
     });
   });
 
@@ -452,20 +358,14 @@ describe('Session Headers Configuration Integration', () => {
     expect(sessionOpenAI.provider).toBe(openAIProvider);
     expect(sessionMock.provider).toBe(mockProvider);
 
-    // Verify session configurations have provider-specific headers
+    // Each session carries its own headers; the provider reaches the wire through `identity`
     // @ts-expect-error: access private config for test
-    const openAIHeaders = sessionOpenAI.config.defaultHeaders!;
+    expect(sessionOpenAI.config.defaultHeaders).toEqual({ 'x-session': 'openai-session' });
     // @ts-expect-error: access private config for test
-    const mockHeaders = sessionMock.config.defaultHeaders!;
-
-    expect(openAIHeaders['x-framework']).toBe('openai');
-    expect(openAIHeaders['x-session']).toBe('openai-session');
-
-    expect(mockHeaders['x-framework']).toBe('MockProvider');
-    expect(mockHeaders['x-session']).toBe('mock-session');
+    expect(sessionMock.config.defaultHeaders).toEqual({ 'x-session': 'mock-session' });
   });
 
-  it('should create session with provider-specific headers even without custom headers', () => {
+  it('should create session with no default headers without custom headers', () => {
     const openAIProvider = new OpenAIProvider();
     const composio = new Composio({
       apiKey: 'test-api-key',
@@ -480,14 +380,7 @@ describe('Session Headers Configuration Integration', () => {
     // @ts-expect-error: access private config for test
     const sessionHeaders = session.config.defaultHeaders;
 
-    expect(sessionHeaders).toEqual({
-      'x-framework': 'openai',
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
-    });
+    expect(sessionHeaders).toBeUndefined();
   });
 
   it('should properly merge headers when both parent and session have custom headers', () => {
@@ -518,12 +411,6 @@ describe('Session Headers Configuration Integration', () => {
     expect(sessionHeaders).toEqual({
       'x-session-header': 'session-value',
       'x-shared-header': 'session-shared-value', // session value takes precedence
-      'x-framework': 'openai', // provider-specific header
-      'x-source': 'TYPESCRIPT_SDK',
-      'x-runtime': 'NODEJS',
-      'x-client-runtime': 'nodejs',
-      ...provenanceHeaders,
-      'x-sdk-version': version,
     });
   });
 });
