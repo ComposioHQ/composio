@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Layer, Array as Arr } from 'effect';
+import { Cache, Effect, Option, Schema, Layer, Array as Arr } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -195,22 +195,25 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
     // still reaches the API, and a failure only costs toolkit resolution its
     // fallback guess.
     //
-    // The list depends on the project it is asked for, so each scope gets its
-    // own memo (the unscoped call is one more key), with the same
-    // failure-is-final semantics as `cachedGetToolkits`. The memo is created
-    // synchronously so that concurrent first callers share it.
-    const projectToolkitsByScope = new Map<
-      string,
-      ReturnType<typeof underlyingRepository.getProjectToolkits>
-    >();
+    // The list depends on the project it is asked for, so each scope is one
+    // cache entry (the unscoped call is one more key), with the same
+    // failure-is-final semantics as `cachedGetToolkits`: an entry never
+    // expires, whichever way the fetch ended. Concurrent first callers of a
+    // scope share its in-flight fetch. The key is a plain record, which
+    // `Equal` and `Hash` compare structurally.
+    const projectToolkitsByScope = yield* Cache.make({
+      capacity: 64,
+      lookup: (scope: { readonly orgId?: string; readonly projectId?: string }) =>
+        underlyingRepository.getProjectToolkits(
+          scope.orgId !== undefined && scope.projectId !== undefined
+            ? { orgId: scope.orgId, projectId: scope.projectId }
+            : undefined
+        ),
+    });
     const cachedGetProjectToolkits = (scope?: ToolkitProjectScope) =>
-      Effect.suspend(() => {
-        const key = scope ? JSON.stringify([scope.orgId, scope.projectId]) : '';
-        const memo =
-          projectToolkitsByScope.get(key) ??
-          Effect.runSync(Effect.cached(underlyingRepository.getProjectToolkits(scope)));
-        projectToolkitsByScope.set(key, memo);
-        return memo;
+      Cache.get(projectToolkitsByScope, {
+        orgId: scope?.orgId,
+        projectId: scope?.projectId,
       });
 
     // Create the cached implementation that wraps the original implementation
