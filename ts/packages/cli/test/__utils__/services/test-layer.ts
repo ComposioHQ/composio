@@ -1,21 +1,14 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import type {
-  AuthConfigCreateParams,
-  AuthConfigCreateResponse,
-} from '@composio/client/resources/auth-configs';
 import {
-  APIConnectionError,
   make as makeComposioClient,
   type ComposioError,
   type RequestOptions,
 } from '@composio/client/effect';
-import type { LinkCreateResponse } from '@composio/client/resources/link';
 import type {
   TriggerInstanceListActiveParams,
   TriggerInstanceUpsertParams,
 } from '@composio/client/resources/trigger-instances';
-import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import { TIMESTAMP } from '../models/account';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -46,10 +39,7 @@ import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
-import { type OrganizationSummary, type OrgProject } from 'src/services/composio-account';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
-import type { AuthConfigItem } from 'src/models/auth-configs';
-import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -88,41 +78,27 @@ import {
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { notFoundError } from '../layers/not-found';
+import { DEFAULT_PAGE_LIMIT } from '../layers/page';
 import {
   resolveToolkitsTestData,
   toolkitCatalogMethods,
   type ToolkitsTestData,
 } from '../layers/toolkits';
+import {
+  mockAccountResources,
+  type AccountTestData,
+  type MockRequestScope,
+} from '../layers/accounts';
+import {
+  connectedAccountRepositoryMethods,
+  mockConnectedAccountResources,
+  resolveAuthConfigsTestData,
+  resolveConnectedAccountsTestData,
+  type AuthConfigsTestData,
+  type ConnectedAccountsTestData,
+} from '../layers/connected-accounts';
 
-/**
- * The credentials and scope one mock-client request carries: the parameters
- * the client was obtained with, overridden by per-request headers.
- */
-export interface MockRequestScope {
-  readonly userApiKey?: string;
-  readonly apiKey?: string;
-  readonly orgId?: string;
-  readonly projectId?: string;
-}
-
-/**
- * One call to an account, session-info, or consumer endpoint of the mock client.
- */
-export interface MockAccountRequest {
-  readonly operation:
-    | 'org.list'
-    | 'org.project.list'
-    | 'org.consumer.project.resolve'
-    | 'org.consumer.listConnectedToolkits'
-    | 'auth.session.retrieveInfo'
-    | 'tools.getLatestVersion'
-    | 'org.project.createApiKey'
-    | 'org.consumer.config'
-    | 'consumer.permissions.resolve';
-  readonly scope: MockRequestScope;
-  readonly params?: unknown;
-  readonly options?: RequestOptions;
-}
+export type { MockAccountRequest, MockRequestScope } from '../layers/accounts';
 
 export interface TestLiveInput {
   /**
@@ -158,38 +134,19 @@ export interface TestLiveInput {
   /**
    * Account, session-info, and consumer data served by the mock client's
    * `org.*` and `auth.session.retrieveInfo` resources and its `get`/`post`
-   * escape hatch. An endpoint without data rejects with a connection error,
-   * as an unreachable backend would; consumer project resolution always
-   * answers, echoing the requested org.
+   * escape hatch.
    */
-  accountData?: {
-    sessionInfo?:
-      SessionRetrieveInfoResponse | ((scope: MockRequestScope) => SessionRetrieveInfoResponse);
-    organizations?: ReadonlyArray<OrganizationSummary>;
-    projects?: ReadonlyArray<OrgProject>;
-    connectedToolkits?: ReadonlyArray<string>;
-    latestToolVersion?: { readonly tool_slug: string; readonly version: string };
-    projectApiKey?: string;
-    onRequest?: (request: MockAccountRequest) => void;
-  };
+  accountData?: AccountTestData;
 
   /**
    * Mock auth-config data to use in test.
    */
-  authConfigsData?: {
-    items?: AuthConfigItem[];
-    createResponse?: AuthConfigCreateResponse;
-    onCreate?: (params: AuthConfigCreateParams) => void;
-  };
+  authConfigsData?: AuthConfigsTestData;
 
   /**
    * Mock connected-account data to use in test.
    */
-  connectedAccountsData?: {
-    items?: ConnectedAccountItem[];
-    linkResponse?: LinkCreateResponse;
-    onDelete?: (nanoid: string) => void;
-  };
+  connectedAccountsData?: ConnectedAccountsTestData;
 
   /**
    * Mock trigger instance data to use in test.
@@ -331,23 +288,8 @@ export const TestLayer = (input?: TestLiveInput) =>
     const fixture = input?.fixture;
     const toolkitsData = resolveToolkitsTestData(input?.toolkitsData);
 
-    const defaultAuthConfigsData = {
-      items: [] as AuthConfigItem[],
-      createResponse: undefined as AuthConfigCreateResponse | undefined,
-    } satisfies TestLiveInput['authConfigsData'];
-    const authConfigsData = {
-      ...defaultAuthConfigsData,
-      ...(input?.authConfigsData ?? {}),
-    };
-
-    const defaultConnectedAccountsData = {
-      items: [] as ConnectedAccountItem[],
-      linkResponse: undefined as LinkCreateResponse | undefined,
-    } satisfies TestLiveInput['connectedAccountsData'];
-    const connectedAccountsData = {
-      ...defaultConnectedAccountsData,
-      ...(input?.connectedAccountsData ?? {}),
-    };
+    const authConfigsData = resolveAuthConfigsTestData(input?.authConfigsData);
+    const connectedAccountsData = resolveConnectedAccountsTestData(input?.connectedAccountsData);
 
     const defaultRealtimeData = {
       events: [] as ReadonlyArray<Record<string, unknown>>,
@@ -372,69 +314,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       ComposioToolkitsRepository.of({
         ...toolkitCatalogMethods(toolkitsData),
-        listAuthConfigs: (params: {
-          search?: string;
-          toolkit_slug?: string;
-          limit?: number;
-          show_disabled?: boolean;
-        }) => {
-          let results = [...authConfigsData.items];
-
-          if (params.toolkit_slug) {
-            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toLowerCase());
-            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
-          }
-
-          if (params.search) {
-            const q = params.search.toLowerCase();
-            results = results.filter(
-              item => item.name.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
-            );
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          });
-        },
-        getAuthConfig: (nanoid: string) => {
-          const found = authConfigsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              notFoundError(`Auth config "${nanoid}" not found`, {
-                message: `Auth config "${nanoid}" not found.`,
-                suggested_fix: 'Check the auth config ID and try again.',
-              })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        createAuthConfig: (params: AuthConfigCreateParams) => {
-          authConfigsData.onCreate?.(params);
-          return Effect.succeed(
-            authConfigsData.createResponse ?? {
-              auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
-              toolkit: { slug: 'test' },
-            }
-          );
-        },
-        getConnectedAccount: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              notFoundError(`Connected account "${nanoid}" not found`, {
-                message: `Connected account "${nanoid}" not found.`,
-                suggested_fix: 'Check the connected account ID and try again.',
-              })
-            );
-          }
-          return Effect.succeed(found);
-        },
+        ...connectedAccountRepositoryMethods(authConfigsData, connectedAccountsData),
         listActiveTriggers: (params: TriggerInstanceListActiveParams) => {
           let results = [...triggersData.items];
 
@@ -473,7 +353,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             results = results.filter(item => item.disabled_at === null);
           }
 
-          const limit = params.limit ?? 30;
+          const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
           const items = results.slice(0, limit);
           return Effect.succeed({
             items,
@@ -716,65 +596,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     // What the mock client answers with instead of calling the network.
     const resourceShadows = {
-      link: {
-        create: async (params: { auth_config_id: string; user_id: string }) => {
-          const response = connectedAccountsData.linkResponse ?? {
-            connected_account_id: 'con_test_link',
-            expires_at: '2026-12-31T23:59:59Z',
-            link_token: 'lt_test_token',
-            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-          };
-          return response;
-        },
-      },
-      connectedAccounts: {
-        list: async (params?: {
-          toolkit_slugs?: string[];
-          user_ids?: string[];
-          statuses?: string[];
-          limit?: number;
-        }) => {
-          let results = [...connectedAccountsData.items];
-
-          if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
-            const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
-            results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
-          }
-
-          if (params?.user_ids && params.user_ids.length > 0) {
-            const userIds = new Set(params.user_ids);
-            results = results.filter(item => userIds.has(item.user_id));
-          }
-
-          if (params?.statuses && params.statuses.length > 0) {
-            const statuses = new Set(params.statuses);
-            results = results.filter(item => statuses.has(item.status));
-          }
-
-          const limit = params?.limit ?? 30;
-          return {
-            items: results.slice(0, limit),
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          };
-        },
-        retrieve: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          return found
-            ? Effect.succeed(found)
-            : Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
-        },
-        delete: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
-          }
-          connectedAccountsData.onDelete?.(nanoid);
-          return Effect.succeed({});
-        },
-      },
+      ...mockConnectedAccountResources(connectedAccountsData),
       triggersTypes: {
         retrieve: (slug: string) => {
           const found = toolkitsData.triggerTypes.find(
@@ -956,141 +778,15 @@ export const TestLayer = (input?: TestLiveInput) =>
     );
 
     // --- Account, session-info, and consumer endpoints ---
-    // Served per client scope, so a handler sees the credentials and org or
-    // project the real client would have placed in its default headers.
+    // Served per client scope; see `mockAccountResources`.
     const accountData = input?.accountData ?? {};
-    const noTestData = (operation: MockAccountRequest['operation']) =>
-      new APIConnectionError({
-        message: `No test data for ${operation}`,
-        method: 'GET',
-        url: 'https://mock.invalid',
-        reason: 'TransportError',
-        description: `No test data for ${operation}`,
-      });
-
-    const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
-      // The CLI only ever passes plain header records.
-      const headers = (options?.headers ?? {}) as Record<string, string | null | undefined>;
-      const userApiKey = headers['x-user-api-key'];
-      return {
-        userApiKey: userApiKey === null ? undefined : (userApiKey ?? base.userApiKey),
-        apiKey: headers['x-api-key'] ?? undefined,
-        orgId: headers['x-org-id'] ?? base.orgId,
-        projectId: headers['x-project-id'] ?? base.projectId,
-      };
-    };
-
-    const accountBranches = (base: MockRequestScope) => {
-      const record = (
-        operation: MockAccountRequest['operation'],
-        options: RequestOptions | undefined,
-        params?: unknown
-      ): MockRequestScope => {
-        const scope = scopeOf(base, options);
-        accountData.onRequest?.({ operation, scope, params, options });
-        return scope;
-      };
-      const timestamps = {
-        created_at: TIMESTAMP,
-        updated_at: TIMESTAMP,
-      };
-
-      return {
-        org: {
-          list: async (query?: { limit?: number } | null, options?: RequestOptions) => {
-            record('org.list', options, query);
-            if (!accountData.organizations) throw noTestData('org.list');
-            const organizations = accountData.organizations.map(org => ({ ...org, ...timestamps }));
-            return {
-              organizations,
-              next_cursor: null,
-              total_pages: 1,
-              current_page: 1,
-              total_items: organizations.length,
-            };
-          },
-          project: {
-            list: async (
-              query?: { limit?: number; list_all_org_projects?: boolean | null } | null,
-              options?: RequestOptions
-            ) => {
-              record('org.project.list', options, query);
-              if (!accountData.projects) throw noTestData('org.project.list');
-              return {
-                data: [...accountData.projects],
-                next_cursor: null,
-                total_pages: 1,
-                current_page: 1,
-                total_items: accountData.projects.length,
-              };
-            },
-          },
-          consumer: {
-            project: {
-              resolve: async (
-                params: { 'x-user-api-key': string; 'x-org-id': string },
-                options?: RequestOptions
-              ) => {
-                record('org.consumer.project.resolve', options, params);
-                const orgId = params['x-org-id'];
-                return {
-                  project_id: 'consumer_project_id_test',
-                  project_nano_id: 'consumer_project_test',
-                  project_name: 'Consumer Project',
-                  org_id: orgId,
-                  project_type: 'CONSUMER' as const,
-                  config: { consumer_experience_enabled: true, enhanced_controls: false },
-                  consumer_user_id: `consumer-user-${orgId}`,
-                };
-              },
-            },
-            listConnectedToolkits: async (
-              params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
-              options?: RequestOptions
-            ) => {
-              record('org.consumer.listConnectedToolkits', options, params);
-              if (!accountData.connectedToolkits) {
-                throw noTestData('org.consumer.listConnectedToolkits');
-              }
-              return { toolkits: [...accountData.connectedToolkits] };
-            },
-          },
-        },
-        auth: {
-          session: {
-            retrieveInfo: async (options?: RequestOptions) => {
-              const scope = record('auth.session.retrieveInfo', options);
-              const sessionInfo = accountData.sessionInfo;
-              if (sessionInfo === undefined) throw noTestData('auth.session.retrieveInfo');
-              return typeof sessionInfo === 'function' ? sessionInfo(scope) : sessionInfo;
-            },
-          },
-        },
-        get: async (path: string, options?: RequestOptions) => {
-          if (/^\/api\/v3\/tools\/[^/]+\/get_latest_version$/.test(path)) {
-            record('tools.getLatestVersion', options, { path });
-            if (!accountData.latestToolVersion) throw noTestData('tools.getLatestVersion');
-            return accountData.latestToolVersion;
-          }
-          throw new Error(`Unhandled GET path "${path}"`);
-        },
-        post: async (path: string, options?: RequestOptions & { body?: unknown }) => {
-          if (/^\/api\/v3\/org\/project\/[^/]+\/api_keys\/create$/.test(path)) {
-            record('org.project.createApiKey', options, { path, body: options?.body });
-            if (!accountData.projectApiKey) throw noTestData('org.project.createApiKey');
-            return { api_key: accountData.projectApiKey };
-          }
-          throw new Error(`Unhandled POST path "${path}"`);
-        },
-      };
-    };
 
     const scopedClients = new Map<string, typeof mockComposioClient>();
     const mockClientFor = (scope: MockRequestScope) => {
       const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
       const cached = scopedClients.get(key);
       if (cached) return cached;
-      const scoped = withShadows(mockComposioClient, accountBranches(scope));
+      const scoped = withShadows(mockComposioClient, mockAccountResources(accountData, scope));
       scopedClients.set(key, scoped);
       return scoped;
     };
