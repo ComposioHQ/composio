@@ -25,6 +25,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./v4": {
+      "types": "./dist/v4.d.mts",
+      "default": "./dist/v4.mjs"
     }
   },
   "files": [

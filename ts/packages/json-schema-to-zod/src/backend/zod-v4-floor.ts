@@ -1,4 +1,4 @@
-export type ZodVersion = {
+type ZodVersion = {
   readonly major: number;
   readonly minor: number;
   readonly patch: number;

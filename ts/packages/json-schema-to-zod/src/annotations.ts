@@ -2,7 +2,7 @@ import type { StringFormat } from './backend/types';
 import type { JsonSchemaObject, Serializable } from './types';
 import { its } from './utils/its';
 
-export const ASSERTED_STRING_FORMATS: ReadonlySet<StringFormat> = new Set<StringFormat>([
+const ASSERTED_STRING_FORMATS: ReadonlySet<StringFormat> = new Set<StringFormat>([
   'email',
   'ip',
   'ipv4',

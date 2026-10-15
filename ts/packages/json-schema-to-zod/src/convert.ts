@@ -5,7 +5,7 @@ import { parseSchema } from './parsers/parse-schema';
 import type { JsonSchema, JsonSchemaObject } from './types';
 import { createWholeSchemaGuard, requiresWholeSchemaValidation } from './whole-schema-validation';
 
-export type ConverterOptions<S> = OptionsOf<S> & { withoutAnnotations?: boolean };
+type ConverterOptions<S> = OptionsOf<S> & { withoutAnnotations?: boolean };
 
 /** The two conversion entry points, bound to one backend. */
 export const createConverter = <S>(backend: ZodBackend<S>) => {
