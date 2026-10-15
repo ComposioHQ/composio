@@ -5,6 +5,10 @@
  * - `--output-dir`: Output directory for the generated TypeScript type stubs.
  * - `--toolkits`: Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)
  *
+ * Environment variables:
+ * - `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>`: Override a toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00).
+ *   Use "latest" or unset to use the latest version.
+ *
  * Invariants:
  * - The `--output-dir` cannot refer to a path inside `node_modules`
  * - If `--output-dir` is not specified, the command will use `findComposioCoreGeneratedPath` to locate the `@composio/core` package
@@ -15,18 +19,15 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
-import { Command, Flag } from 'effect/cli';
-import { Array, Data, Effect, Option, pipe } from 'effect';
+import { Array, Effect, Match, Option, pipe } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Match } from 'effect';
 import {
   ComposioToolkitsRepository,
   type ComposioToolkitsRepositoryShape,
 } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
-import type { GetCmdParams } from 'src/type-utils';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
 import type { Toolkit } from 'src/models/toolkits';
@@ -41,60 +42,17 @@ import {
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
 import { CommandInputError, commandInputError } from 'src/commands/errors';
+import { TypeScriptGenerationWriteError } from './generate.ts.errors';
 
-export class TypeScriptGenerationWriteError extends Data.TaggedError(
-  'commands/TypeScriptGenerationWriteError'
-)<{
-  readonly cause: unknown;
-  readonly filePath: string;
-  readonly message: string;
-}> {}
+export type GenerateTsParams = {
+  readonly outputDir: Option.Option<string>;
+  readonly compact: boolean;
+  readonly transpiled: boolean;
+  readonly typeTools: boolean;
+  readonly toolkits: ReadonlyArray<string>;
+};
 
 const invalidGenerateValue = commandInputError('generate ts');
-
-export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
-  Flag.withAlias('o'),
-  Flag.withDescription('Output directory for the generated TypeScript type stubs.')
-);
-
-export const compact = Flag.Boolean('compact').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Emit a single TypeScript file')
-);
-
-export const transpiled = Flag.Boolean('transpiled').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
-);
-
-export const typeTools = Flag.Boolean('type-tools').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription(
-    'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
-  )
-);
-
-export const toolkitsOpt = Flag.String('toolkits').pipe(
-  Flag.atLeast(0),
-  Flag.withDescription(
-    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
-  )
-);
-
-const _tsCmd$Generate = Command.make('generate', {
-  outputOpt,
-  compact,
-  transpiled: transpiled,
-  typeTools,
-  toolkitsOpt,
-}).pipe(
-  Command.withDescription(
-    'Generate TypeScript types for toolkits, tools, and triggers from the Composio API.\n\n' +
-      'Environment Variables:\n' +
-      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
-      '                                      Use "latest" or unset to use the latest version.'
-  )
-);
 
 /**
  * Result type for fetching toolkit data
@@ -342,39 +300,32 @@ function validateOutputDir(outputDir: string): Effect.Effect<string, CommandInpu
 }
 
 /**
- * Shared handler for TypeScript generation commands.
- * Resolves the `transpiled` default based on whether `--output-dir` was provided.
+ * `--transpiled` defaults to true only when `--output-dir` is absent: the stubs then land
+ * in `node_modules`, where JavaScript must exist alongside the TypeScript files. An explicit
+ * `--transpiled` always wins.
  */
-export const handleTsGenerate = (params: GetCmdParams<typeof _tsCmd$Generate>) => {
-  // Determine if we should compile based on the rules:
-  // - If --output-dir is specified, default transpiled to false unless overridden
-  // - If no --output-dir, default transpiled to true unless overridden
-  const shouldCompile = params.transpiled || !Option.isSome(params.outputOpt);
+export const resolveTranspiled = ({
+  transpiled,
+  outputDir,
+}: Pick<GenerateTsParams, 'transpiled' | 'outputDir'>): boolean =>
+  transpiled || Option.isNone(outputDir);
 
-  return generateTypescriptTypeStubs({
-    ...params,
-    transpiled: shouldCompile,
-  });
-};
+export const runGenerateTs = (params: GenerateTsParams) =>
+  generateTypescriptTypeStubs({ ...params, transpiled: resolveTranspiled(params) });
 
-export function generateTypescriptTypeStubs({
-  outputOpt,
-  compact,
-  typeTools,
-  transpiled = false,
-  toolkitsOpt,
-}: GetCmdParams<typeof _tsCmd$Generate> & { transpiled?: boolean }) {
+export function generateTypescriptTypeStubs(params: GenerateTsParams) {
   return Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const client = yield* ComposioToolkitsRepository;
+    const { compact, typeTools, transpiled } = params;
 
     yield* ui.intro('composio generate ts');
 
     // Determine the actual output directory
-    const outputDir = yield* outputOpt.pipe(
+    const outputDir = yield* params.outputDir.pipe(
       Option.match({
         // If no output directory is specified, use the default, and make sure it exists
         onNone: () => jsFindComposioCoreGenerated(cwd),
@@ -391,8 +342,8 @@ export function generateTypescriptTypeStubs({
     const versionOverrides = yield* getToolkitVersionOverrides;
 
     // Normalize toolkit slugs if specified (lowercase for API filtering)
-    const toolkitSlugsFilter = Array.isReadonlyArrayNonEmpty(toolkitsOpt)
-      ? toolkitsOpt.map(s => s.toLowerCase())
+    const toolkitSlugsFilter = Array.isReadonlyArrayNonEmpty(params.toolkits)
+      ? params.toolkits.map(s => s.toLowerCase())
       : null;
 
     // Validate toolkit version overrides before fetching data
@@ -474,7 +425,7 @@ export function generateTypescriptTypeStubs({
       })
     );
 
-    yield* Option.isNone(outputOpt)
+    yield* Option.isNone(params.outputDir)
       ? ui.note(
           'import { Toolkits } from "@composio/core/generated"',
           'Import your generated types'

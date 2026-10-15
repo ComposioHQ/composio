@@ -1,11 +1,19 @@
-import { commandInputError } from 'src/commands/errors';
-import { Command, Flag } from 'effect/cli';
-import { Array, Data, Effect, Option, pipe, String } from 'effect';
+/**
+ * The `composio generate py` command can be configured as follows:
+ * - `--output-dir`: Output directory for the generated Python type stubs.
+ * - `--toolkits`: Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)
+ *
+ * Environment variables:
+ * - `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>`: Override a toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00).
+ *   Use "latest" or unset to use the latest version.
+ */
+
+import { Array, Effect, Option, pipe, String } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
+import { commandInputError } from 'src/commands/errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
-import type { GetCmdParams } from 'src/type-utils';
 import { NodeProcess } from 'src/services/node-process';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
@@ -15,45 +23,17 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { PythonGenerationWriteError } from './generate.py.errors';
 
-export class PythonGenerationWriteError extends Data.TaggedError(
-  'commands/PythonGenerationWriteError'
-)<{
-  readonly cause: unknown;
-  readonly filePath: string;
-  readonly message: string;
-}> {}
+export type GeneratePyParams = {
+  readonly outputDir: Option.Option<string>;
+  readonly toolkits: ReadonlyArray<string>;
+};
 
 const invalidGenerateValue = commandInputError('generate py');
 
-export const outputOpt = Flag.optional(Flag.Directory('output-dir')).pipe(
-  Flag.withAlias('o'),
-  Flag.withDescription('Output directory for the generated Python type stubs')
-);
-
-export const toolkitsOpt = Flag.String('toolkits').pipe(
-  Flag.atLeast(0),
-  Flag.withDescription(
-    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
-  )
-);
-
-const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pipe(
-  Command.withDescription(
-    'Generate Python type stubs for toolkits, tools, and triggers from the Composio API.\n\n' +
-      'Environment Variables:\n' +
-      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
-      '                                      Use "latest" or unset to use the latest version.'
-  )
-);
-
-export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));
-
-export function generatePythonTypeStubs({
-  outputOpt,
-  toolkitsOpt,
-}: GetCmdParams<typeof _pyCmd$Generate>) {
-  return Effect.gen(function* () {
+export const runGeneratePy = (params: GeneratePyParams) =>
+  Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const process = yield* NodeProcess;
     const cwd = process.cwd;
@@ -64,7 +44,7 @@ export function generatePythonTypeStubs({
     yield* ui.intro('composio generate py');
 
     // Determine the actual output directory
-    const outputDir = yield* outputOpt.pipe(
+    const outputDir = yield* params.outputDir.pipe(
       Option.match({
         // If no output directory is specified, use the default
         onNone: () => pyFindComposioCoreGenerated(cwd),
@@ -92,8 +72,8 @@ export function generatePythonTypeStubs({
     const versionOverrides = yield* getToolkitVersionOverrides;
 
     // Validate toolkit slugs if specified
-    const hasToolkitsFilter = Array.isReadonlyArrayNonEmpty(toolkitsOpt);
-    const toolkitSlugsFilter = hasToolkitsFilter ? toolkitsOpt.map(s => s.toLowerCase()) : null;
+    const hasToolkitsFilter = Array.isReadonlyArrayNonEmpty(params.toolkits);
+    const toolkitSlugsFilter = hasToolkitsFilter ? params.toolkits.map(s => s.toLowerCase()) : null;
 
     // Validate toolkit version overrides before fetching data
     const { validatedOverrides } = yield* validateToolkitVersionOverrides({
@@ -108,7 +88,7 @@ export function generatePythonTypeStubs({
         // Validate toolkit slugs if specified (separate from version validation)
         const validatedToolkitSlugs = hasToolkitsFilter
           ? yield* client
-              .validateToolkits(toolkitsOpt)
+              .validateToolkits(params.toolkits)
               .pipe(
                 Effect.catchTag('services/InvalidToolkitsError', error =>
                   Effect.fail(
@@ -201,7 +181,7 @@ export function generatePythonTypeStubs({
       })
     );
 
-    yield* Option.isNone(outputOpt)
+    yield* Option.isNone(params.outputDir)
       ? ui.note(
           'from composio.generated.<toolkit_name> import <TOOLKIT_NAME>',
           'Import your generated types'
@@ -217,4 +197,3 @@ export function generatePythonTypeStubs({
 
     return outputDir;
   });
-}

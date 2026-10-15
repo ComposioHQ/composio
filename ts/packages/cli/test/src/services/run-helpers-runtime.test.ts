@@ -44,14 +44,14 @@ describe('parseJson', () => {
 describe('run-helpers-runtime', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    for (const name of installedGlobalNames) {
+    installedGlobalNames.forEach(name => {
       const descriptor = originalGlobalDescriptors.get(name);
       if (descriptor) {
         Object.defineProperty(globalThis, name, descriptor);
       } else {
         Reflect.deleteProperty(globalThis, name);
       }
-    }
+    });
   });
 
   it('[Given] installed helpers [Then] every documented global is defined', async () => {
