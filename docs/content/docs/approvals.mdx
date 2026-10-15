@@ -78,7 +78,7 @@ const session = await composio.create('user_123', {
 </Tab>
 </Tabs>
 
-Tools that need approval stay visible to the agent. In `COMPOSIO_MULTI_EXECUTE_TOOL`, each call that needs approval gets its own question.
+Tools that need approval stay visible to the agent, which can find and call them as usual.
 
 ## Asking the user
 
@@ -121,7 +121,7 @@ try {
 </Tab>
 </Tabs>
 
-`input_requests` holds the questions, keyed by ID. Each one is an [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation):
+`input_requests` holds the [MCP elicitations](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation) for the user, keyed by ID. One tool execution can return several of them, for example when the agent runs several tools at once with `COMPOSIO_MULTI_EXECUTE_TOOL`. Answer all of them when you send the call again:
 
 ```json
 {
