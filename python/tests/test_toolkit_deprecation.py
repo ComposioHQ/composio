@@ -124,6 +124,11 @@ class TestParse:
             '"GMAIL";version="20250114_00";severity=3;flag;note="x"'
         ) == [DeprecatedToolkit(slug="GMAIL", version="20250114_00")]
 
+    def test_empty_item_is_dropped_but_siblings_kept(self):
+        assert parse_deprecated_toolkits_header('"GMAIL";version="1", ;;') == [
+            DeprecatedToolkit(slug="GMAIL", version="1")
+        ]
+
     def test_item_without_version_is_dropped_but_siblings_kept(self):
         assert parse_deprecated_toolkits_header(
             f'"GMAIL";deprecated=@1779840000, {BARE_ITEM}'
@@ -255,6 +260,24 @@ class TestWarnOnce:
             warn_deprecated_toolkits(headers)
         assert len(_deprecations(caught)) == 2
 
+    def test_stops_recording_after_1024_keys_without_evicting(self):
+        def send(version: int) -> None:
+            warn_deprecated_toolkits(
+                httpx.Headers({HEADER: f'"GMAIL";version="{version}"'})
+            )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            for version in range(1, 1025):
+                send(version)
+            assert len(_deprecations(caught)) == 1024
+            send(1025)
+            assert len(_deprecations(caught)) == 1024
+            for version in range(1, 1025):
+                send(version)
+        assert len(_deprecations(caught)) == 1024
+        assert len(td._warned) == 1024
+
     def test_two_threads_one_warning(self):
         headers = httpx.Headers({HEADER: FULL_ITEM})
         barrier = threading.Barrier(2)
@@ -280,6 +303,25 @@ class TestResponseHook:
             warnings.simplefilter("always")
             response_hook(response)
         assert len(_deprecations(caught)) == 1
+
+    def test_oversized_header_is_ignored_and_body_kept(self):
+        oversized = '"GMAIL";version="1";reason="' + "x" * 2048 + '"'
+        response = httpx.Response(200, headers={HEADER: oversized}, json={})
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            response_hook(response)
+        assert response.json() == {}
+        assert _deprecations(caught) == []
+
+    def test_control_character_in_header_is_ignored_and_body_kept(self):
+        response = httpx.Response(
+            200, headers={HEADER: '"GMAIL";version="1";reason="\x1b[2J"'}, json={}
+        )
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            response_hook(response)
+        assert response.json() == {}
+        assert _deprecations(caught) == []
 
     def test_never_raises(self, caplog: pytest.LogCaptureFixture):
         class _Broken:

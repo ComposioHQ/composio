@@ -39,6 +39,15 @@ DOCS_URL = "https://docs.composio.dev/docs/tools-direct/toolkit-versioning#depre
 #: Versions named per toolkit before the formatter collapses the rest into "and N more".
 _MAX_VERSIONS_PER_LINE = 5
 
+#: The three limits below mirror the ``composio_client._deprecation`` module,
+#: which reads the same kind of server-controlled header.
+#: A header longer than this is ignored whole rather than parsed.
+_MAX_HEADER_LENGTH = 2048
+#: A header holding any of these is ignored whole, so nothing partially cleaned reaches the log.
+_CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+#: Keys the process will ever record; past this, new versions are neither recorded nor warned about.
+_MAX_TRACKED_VERSIONS = 1024
+
 _logger = logging.getLogger(__name__)
 
 _SF_STRING = re.compile(r'^"((?:[^"\\]|\\.)*)"$')
@@ -130,7 +139,10 @@ def _decode_sf_date(raw: str) -> t.Optional[datetime]:
 
 def _parse_item(item: str) -> t.Optional[DeprecatedToolkit]:
     """Parse one list item; ``None`` when the slug or a known parameter is invalid."""
-    head, *params = _split_outside_quotes(item, ";")
+    pieces = _split_outside_quotes(item, ";")
+    if not pieces:
+        return None
+    head, *params = pieces
     slug = _decode_sf_string(head)
     if not slug:
         return None
@@ -257,11 +269,13 @@ def warn_deprecated_toolkits(headers: httpx.Headers, docs_url: str = DOCS_URL) -
     value = headers.get(HEADER)
     if not value:
         return
+    if len(value) > _MAX_HEADER_LENGTH or _CONTROL_CHARACTERS.search(value):
+        return
     entries = parse_deprecated_toolkits_header(value)
     fresh: list[DeprecatedToolkit] = []
     with _lock:
         for entry in entries:
-            if entry.key in _warned:
+            if entry.key in _warned or len(_warned) >= _MAX_TRACKED_VERSIONS:
                 continue
             _warned.add(entry.key)
             fresh.append(entry)
