@@ -21,12 +21,6 @@ export const composioSchemaLoaders = {
     (await import('@composio/client/effect/schemas/org/list')).OrgListResponse,
   'org.project.list': async () =>
     (await import('@composio/client/effect/schemas/org/project/list')).ProjectListResponse,
-  'toolRouter.session.search': async () =>
-    (await import('@composio/client/effect/schemas/tool-router/session/search'))
-      .SessionSearchResponse,
-  'toolRouter.session.toolkits': async () =>
-    (await import('@composio/client/effect/schemas/tool-router/session/toolkits'))
-      .SessionToolkitsResponse,
   'tools.list': async () =>
     (await import('@composio/client/effect/schemas/tools/list')).ToolListResponse,
 } satisfies SchemaLoaders;

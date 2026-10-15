@@ -11,6 +11,7 @@ import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { undecoded } from 'src/services/composio-request';
 import {
   resolveCommandProject,
   formatResolveCommandProjectError,
@@ -374,15 +375,19 @@ const runToolsSearch = (params: {
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
       };
-      const searchResponse = yield* client.toolRouter.session.search(sessionId, searchPayload).pipe(
-        Effect.mapError(
-          cause =>
-            new ToolsSearchRequestError({
-              message: 'Failed to search tools.',
-              cause,
-            })
-        )
-      );
+      // The command reads a few of the search response's fields; the rest, enums
+      // among them, may change without this version of the CLI noticing.
+      const searchResponse = yield* client.toolRouter.session
+        .search(sessionId, searchPayload, undecoded)
+        .pipe(
+          Effect.mapError(
+            cause =>
+              new ToolsSearchRequestError({
+                message: 'Failed to search tools.',
+                cause,
+              })
+          )
+        );
       const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
         .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
         .map(([slug]) => slug);

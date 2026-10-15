@@ -150,6 +150,35 @@ describe('CLI: composio search over the API client', () => {
     );
   });
 
+  layer(testLayer)('[Given] a search response in a shape the API contract does not allow', it => {
+    it.effect('[Then] the tools and connected toolkits are still reported', () =>
+      Effect.gen(function* () {
+        // A sharing model the client does not know, no `status_message`, no
+        // `description`, no `time_info`, and no `session`.
+        const driftedResponse = {
+          success: true,
+          error: null,
+          results: searchResponse.results,
+          toolkit_connection_statuses: [
+            { toolkit: 'gmail', has_active_connection: true, account_type: 'ORG' },
+          ],
+          tool_schemas: searchResponse.tool_schemas,
+          next_steps_guidance: [],
+        };
+        const stub = searchingOver(() => Response.json(driftedResponse));
+        yield* cli(['search', 'send an email']).pipe(Effect.provide(stub.layer));
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const payload = JSON.parse(lines.at(-1) ?? '{}');
+
+        expect(payload.results).toEqual(searchResponse.results);
+        expect(payload.tool_schemas.primary).toEqual({
+          GMAIL_SEND_EMAIL: '~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json',
+        });
+        expect(payload.connected_toolkits).toEqual(['gmail']);
+      })
+    );
+  });
+
   layer(testLayer)('[Given] the API rejects the search', it => {
     it.effect('[Then] the command fails with the status and response body as the cause', () =>
       Effect.gen(function* () {
