@@ -21,7 +21,23 @@ Composio tags tools on a best-effort basis, based on each tool's description and
 
 ## Viewing a tool's tags
 
-[Get a tool](/reference/api-reference/tools/getToolsByToolSlug) returns a tool's tags in the `tags` field.
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+print(tool.tags)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
+console.log(tool.tags);
+```
+</Tab>
+</Tabs>
 
 ## Using tags in a session
 
