@@ -338,17 +338,19 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       testUserId: Option.none(),
     });
 
-    const selectedProject: OrgProject =
-      yes || orgProjects.data.length === 1
-        ? (selectDefaultProject({
-            projects: orgProjects.data,
-            defaultOrgId: orgIdValue,
-            defaultProjectId: projectIdValue,
-          }) ?? orgProjects.data[0])
-        : yield* ui.select<OrgProject>(
-            'Select a developer project:',
-            orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
-          );
+    const skipProjectPicker = yes || orgProjects.data.length === 1;
+    const defaultProject =
+      selectDefaultProject({
+        projects: orgProjects.data,
+        defaultOrgId: orgIdValue,
+        defaultProjectId: projectIdValue,
+      }) ?? orgProjects.data[0];
+    const selectedProject: OrgProject = skipProjectPicker
+      ? defaultProject
+      : yield* ui.select<OrgProject>(
+          'Select a developer project:',
+          orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
+        );
 
     const selected = orgProjectToKeys(selectedProject);
     yield* ui.log.step(`Using developer project "${selectedProject.name}"`);

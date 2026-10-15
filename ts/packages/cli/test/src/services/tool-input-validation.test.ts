@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { Array as Arr, ConfigProvider, Effect, Layer, Option } from 'effect';
 import * as tempy from 'tempy';
 import {
   getCachedToolInputDefinition,
@@ -151,7 +151,7 @@ describe('tool input validation', () => {
         definition
       ).pipe(flipValidationError);
 
-      expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
+      expect(error.issues).toContainEqual(expect.stringMatching(/^recipient_email:/));
     })
   );
 
@@ -163,8 +163,8 @@ describe('tool input validation', () => {
         definition
       ).pipe(flipValidationError);
 
-      expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
-      expect(error.issues.some(issue => issue.startsWith('subject:'))).toBe(true);
+      expect(error.issues).toContainEqual(expect.stringMatching(/^recipient_email:/));
+      expect(error.issues).toContainEqual(expect.stringMatching(/^subject:/));
       expect(error.issues).toContain(
         '<root>: Unknown key "recipent_email". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
       );
@@ -173,10 +173,12 @@ describe('tool input validation', () => {
 });
 
 describe('free-form object tool inputs', () => {
-  const freeFormCase = loadObjectCases().find(entry => entry.id === 'nested-free-form-object');
-  if (!freeFormCase) {
-    throw new Error('Corpus is missing the nested-free-form-object case');
-  }
+  const freeFormCase = Arr.findFirst(
+    loadObjectCases(),
+    entry => entry.id === 'nested-free-form-object'
+  ).pipe(
+    Option.getOrThrowWith(() => new Error('Corpus is missing the nested-free-form-object case'))
+  );
 
   const freeFormDefinition = {
     schemaPath: '/tmp/METABASE_POST_API_CARD.json',

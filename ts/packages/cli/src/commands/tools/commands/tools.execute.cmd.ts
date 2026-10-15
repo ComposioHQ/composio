@@ -509,12 +509,11 @@ const emitExecuteFailureTelemetry = (params: {
     const isNoConnectionError =
       normalized instanceof ComposioNoActiveConnectionError || Boolean(mapped.override);
 
-    const event = isMaybeToolValidationError({
-      message,
-      errorSlug,
-      apiCode,
-    })
-      ? getToolExecuteValidationFailedEvent({
+    const isValidationError = isMaybeToolValidationError({ message, errorSlug, apiCode });
+    const executionStage = params.stage === 'validation' ? 'execution' : params.stage;
+    const failureEvent = () => {
+      if (isValidationError) {
+        return getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
           toolkitSlug,
           args: params.args,
@@ -526,67 +525,54 @@ const emitExecuteFailureTelemetry = (params: {
           invocationOrigin,
           surface: params.surface,
           projectMode: params.projectMode,
-          stage:
-            params.stage === 'dry_run'
-              ? 'dry_run'
-              : params.stage === 'validation'
-                ? 'execution'
-                : 'execution',
+          stage: params.stage === 'dry_run' ? 'dry_run' : 'execution',
           failureOrigin,
           logId: params.logId,
-        })
-      : isMaybeToolNotFoundError({
-            message,
-            errorSlug,
-            status,
-            apiCode,
-          })
-        ? getToolExecuteToolNotFoundEvent({
-            toolSlug: params.toolSlug,
-            toolkitSlug,
-            args: params.args,
-            invocationOrigin,
-            surface: params.surface,
-            projectMode: params.projectMode,
-            stage: params.stage === 'validation' ? 'execution' : params.stage,
-            failureOrigin,
-            logId: params.logId,
-            errorSlug,
-            status,
-            apiCode,
-            message,
-          })
-        : getToolExecuteFailedEvent({
-            toolSlug: params.toolSlug,
-            toolkitSlug,
-            args: params.args,
-            invocationOrigin,
-            surface: params.surface,
-            projectMode: params.projectMode,
-            stage: params.stage === 'validation' ? 'execution' : params.stage,
-            failureOrigin,
-            logId: params.logId,
-            errorSlug,
-            status,
-            apiCode,
-            message,
-            errorName: normalized instanceof Error ? normalized.name : undefined,
-            isNoConnectionError,
-          });
+        });
+      }
+      if (isMaybeToolNotFoundError({ message, errorSlug, status, apiCode })) {
+        return getToolExecuteToolNotFoundEvent({
+          toolSlug: params.toolSlug,
+          toolkitSlug,
+          args: params.args,
+          invocationOrigin,
+          surface: params.surface,
+          projectMode: params.projectMode,
+          stage: executionStage,
+          failureOrigin,
+          logId: params.logId,
+          errorSlug,
+          status,
+          apiCode,
+          message,
+        });
+      }
+      return getToolExecuteFailedEvent({
+        toolSlug: params.toolSlug,
+        toolkitSlug,
+        args: params.args,
+        invocationOrigin,
+        surface: params.surface,
+        projectMode: params.projectMode,
+        stage: executionStage,
+        failureOrigin,
+        logId: params.logId,
+        errorSlug,
+        status,
+        apiCode,
+        message,
+        errorName: normalized instanceof Error ? normalized.name : undefined,
+        isNoConnectionError,
+      });
+    };
 
-    yield* trackCliEventEffect(event);
+    yield* trackCliEventEffect(failureEvent());
 
     if (isNoConnectionError) {
       return;
     }
 
-    if (
-      isMaybeToolValidationError({
-        message,
-        errorSlug,
-        apiCode,
-      })
-    ) {
+    if (isValidationError) {
       yield* trackCliCodactFailureEffect({
         failureType: 'wrong_tool_input_param',
         toolInfo: {
@@ -1967,8 +1953,9 @@ export const rootToolsCmd$Execute = Command.make(
     skipToolParamsCheck,
     skipChecks,
   }) =>
-    parallel
-      ? runParallelFromCommand({
+    Effect.gen(function* () {
+      if (parallel) {
+        return yield* runParallelFromCommand({
           surface: 'root',
           projectMode: 'consumer',
           getSchema,
@@ -1976,24 +1963,27 @@ export const rootToolsCmd$Execute = Command.make(
           skipConnectionCheck,
           skipToolParamsCheck,
           skipChecks,
-        })
-      : additionalSlugs.length > 0
-        ? Effect.fail(invalidArguments('Additional tool slugs require --parallel.'))
-        : runToolsExecute({
-            slug,
-            data,
-            file,
-            account,
-            userId: Option.none(),
-            projectName: Option.none(),
-            surface: 'root',
-            projectMode: 'consumer',
-            getSchema,
-            dryRun,
-            skipConnectionCheck,
-            skipToolParamsCheck,
-            skipChecks,
-          })
+        });
+      }
+      if (additionalSlugs.length > 0) {
+        return yield* invalidArguments('Additional tool slugs require --parallel.');
+      }
+      return yield* runToolsExecute({
+        slug,
+        data,
+        file,
+        account,
+        userId: Option.none(),
+        projectName: Option.none(),
+        surface: 'root',
+        projectMode: 'consumer',
+        getSchema,
+        dryRun,
+        skipConnectionCheck,
+        skipToolParamsCheck,
+        skipChecks,
+      });
+    })
 ).pipe(
   Command.withDescription(
     'Execute a tool by slug. Validates inputs against cached schemas and checks connections\nautomatically — just try it and it will tell you what to fix.'
@@ -2037,8 +2027,9 @@ export const devToolsCmd$Execute = Command.make(
     skipToolParamsCheck,
     skipChecks,
   }) =>
-    parallel
-      ? runParallelFromCommand({
+    Effect.gen(function* () {
+      if (parallel) {
+        return yield* runParallelFromCommand({
           surface: 'dev',
           projectMode: 'developer',
           getSchema,
@@ -2046,24 +2037,27 @@ export const devToolsCmd$Execute = Command.make(
           skipConnectionCheck,
           skipToolParamsCheck,
           skipChecks,
-        })
-      : additionalSlugs.length > 0
-        ? Effect.fail(invalidArguments('Additional tool slugs require --parallel.'))
-        : runToolsExecute({
-            slug,
-            data,
-            file,
-            account,
-            userId,
-            projectName,
-            surface: 'dev',
-            projectMode: 'developer',
-            getSchema,
-            dryRun,
-            skipConnectionCheck,
-            skipToolParamsCheck,
-            skipChecks,
-          })
+        });
+      }
+      if (additionalSlugs.length > 0) {
+        return yield* invalidArguments('Additional tool slugs require --parallel.');
+      }
+      return yield* runToolsExecute({
+        slug,
+        data,
+        file,
+        account,
+        userId,
+        projectName,
+        surface: 'dev',
+        projectMode: 'developer',
+        getSchema,
+        dryRun,
+        skipConnectionCheck,
+        skipToolParamsCheck,
+        skipChecks,
+      });
+    })
 ).pipe(
   Command.withDescription(
     'Test tool executions against playground users using your developer project auth configs.\nUses --user-id when provided, otherwise falls back to your local or global playground test user id.\nArguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.'

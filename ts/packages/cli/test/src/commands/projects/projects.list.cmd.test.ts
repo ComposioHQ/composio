@@ -32,10 +32,15 @@ describe('CLI: composio dev projects list', () => {
         ]);
         expect(requests[0]?.scope.projectId).toBeUndefined();
 
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
         expect(output).toContain('Loaded 2 projects');
-        expect(output).toContain('  Project One (project_1)');
-        expect(output).toContain('  Project Two (project_2)');
+        expect(output).toContain('Project One (project_1)');
+        expect(output).toContain('Project Two (project_2)');
+        expect(JSON.parse(String(lines.at(-1)))).toEqual([
+          { id: 'project_1', name: 'Project One', is_selected_global_project: false },
+          { id: 'project_2', name: 'Project Two', is_selected_global_project: false },
+        ]);
         expect(output).toContain(
           'Hint: run `composio dev init` in a directory to bind it to a developer project.'
         );

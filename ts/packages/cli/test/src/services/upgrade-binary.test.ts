@@ -168,6 +168,24 @@ const restoreStubsAndMocks = Effect.sync(() => {
   vi.restoreAllMocks();
 });
 
+/** Write each companion file of a binary package under `sourceDir` with `contents`. */
+const writeCompanionFiles = (
+  sourceDir: string,
+  relativePaths: ReadonlyArray<string>,
+  contents: string
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    yield* Effect.forEach(relativePaths, relativePath =>
+      Effect.gen(function* () {
+        const companionPath = path.join(sourceDir, relativePath);
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, contents);
+      })
+    );
+  });
+
 describe('UpgradeBinary', () => {
   it.effect('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
@@ -185,9 +203,6 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to fetch releases from GitHub');
       expect(String(error.cause)).toContain('HTTP 500');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
@@ -210,9 +225,6 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to parse GitHub release JSON response');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
@@ -234,20 +246,17 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to parse GitHub release JSON response');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
   it.effect('URL-encodes slash-containing tags in tagged release request path', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-    let receivedPath = '';
+    let receivedPath: string | undefined;
 
     return Effect.gen(function* () {
       const apiBaseUrl = yield* scopedHttpServer((req, res) => {
-        receivedPath = req.url ?? '';
+        receivedPath = req.url;
         res.writeHead(500, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ message: 'forced failure' }));
       });
@@ -261,9 +270,6 @@ describe('UpgradeBinary', () => {
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(receivedPath).toBe(
         `/repos/test-owner/test-repo/releases/tags/${encodeURIComponent(tag)}`
       );
@@ -443,9 +449,6 @@ describe('UpgradeBinary', () => {
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
@@ -477,11 +480,7 @@ describe('UpgradeBinary', () => {
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'support-file');
 
       const result = yield* runUpgradeSuccess([
         ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
@@ -522,11 +521,7 @@ describe('UpgradeBinary', () => {
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'new-support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'new-support-file');
       const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
       yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
       yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
@@ -539,9 +534,6 @@ describe('UpgradeBinary', () => {
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe(
         `Failed to replace binary: Failed to replace file at ${fakeExecPath}`
       );
@@ -581,12 +573,11 @@ describe('UpgradeBinary', () => {
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
       const missingRelativePath = companionRelativePaths.at(-1)!;
-      for (const relativePath of companionRelativePaths) {
-        if (relativePath === missingRelativePath) continue;
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'new-support-file');
-      }
+      yield* writeCompanionFiles(
+        sourceDir,
+        companionRelativePaths.slice(0, -1),
+        'new-support-file'
+      );
       const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
       yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
       yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
@@ -598,9 +589,6 @@ describe('UpgradeBinary', () => {
       });
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Downloaded binary package is incomplete');
       expect(String(error.cause)).toContain(missingRelativePath);
       expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
@@ -636,11 +624,7 @@ describe('UpgradeBinary', () => {
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'support-file');
 
       const result = yield* runUpgradeSuccess([
         ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
@@ -698,9 +682,6 @@ describe('UpgradeBinary', () => {
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));

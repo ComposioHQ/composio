@@ -61,7 +61,8 @@ const causeDetail = (cause: unknown): string | undefined => {
 
 const withCauseDetail = (message: string, cause: unknown): string => {
   const detail = causeDetail(cause);
-  return detail !== undefined && detail !== message ? `${message}\nCaused by: ${detail}` : message;
+  if (detail === undefined || detail === message) return message;
+  return `${message}\nCaused by: ${detail}`;
 };
 
 const clientApiErrorMessage = (error: ClientApiError): string =>

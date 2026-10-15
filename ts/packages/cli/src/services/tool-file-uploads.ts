@@ -55,6 +55,12 @@ const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObje
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
 
+// `items` is either one schema or a tuple of schemas; keep only the schema records.
+const getItemSchemas = (items: unknown): ReadonlyArray<JsonSchema> => {
+  if (Array.isArray(items)) return items.filter(isSchemaRecord);
+  return isSchemaRecord(items) ? [items] : [];
+};
+
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariant(schema?.anyOf),
   ...getSchemaVariant(schema?.oneOf),
@@ -154,13 +160,9 @@ export const findFileUploadablePaths = (
     findFileUploadablePaths(variant, basePath)
   );
 
-  const itemPaths = Array.isArray(schema.items)
-    ? schema.items.flatMap(item =>
-        isSchemaRecord(item) ? findFileUploadablePaths(item, basePath) : []
-      )
-    : isSchemaRecord(schema.items)
-      ? findFileUploadablePaths(schema.items, basePath)
-      : [];
+  const itemPaths = getItemSchemas(schema.items).flatMap(item =>
+    findFileUploadablePaths(item, basePath)
+  );
 
   const seen = new Set<string>();
   return [...directPropertyPaths, ...variantPaths, ...itemPaths].filter(pathParts => {
@@ -375,11 +377,7 @@ const hydrateFileUploads = (
     }
 
     if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
-      const itemSchema = Array.isArray(schema.items)
-        ? schema.items.find(isSchemaRecord)
-        : isSchemaRecord(schema.items)
-          ? schema.items
-          : undefined;
+      const itemSchema = getItemSchemas(schema.items).at(0);
 
       return yield* Effect.all(
         value.map(item => hydrateFileUploads(item, itemSchema, ctx)),

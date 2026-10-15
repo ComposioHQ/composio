@@ -5,7 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { ComposioUserContext } from 'src/services/user-context';
 import { detectMasterFromHost } from 'src/services/master-detector';
-import { resolveCommandProject } from 'src/services/command-project';
+import { resolveCommandProject, type ResolvedCommandProject } from 'src/services/command-project';
 
 const debugError = commandInputError('debug');
 
@@ -14,6 +14,12 @@ const printCommandHintGraph = Effect.suspend(() =>
     ui.output(JSON.stringify(renderCommandHintGraph(), null, 2), { force: true })
   )
 );
+
+// Only a consumer project carries the playground user the API key acts for.
+const consumerUserIdOf = (project: ResolvedCommandProject | undefined): string | null => {
+  if (project?.projectType !== 'CONSUMER') return null;
+  return project.consumerUserId ?? null;
+};
 
 const printDebugApiInfo = Effect.gen(function* () {
   const ui = yield* TerminalUI;
@@ -40,15 +46,13 @@ const printDebugApiInfo = Effect.gen(function* () {
         : Effect.fail(error)
     )
   );
+  const consumerUserId = consumerUserIdOf(Option.getOrUndefined(consumerProject));
   return yield* ui.output(
     JSON.stringify(
       {
         apiKey,
         orgId: orgId ?? null,
-        consumerUserId:
-          Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
-            ? (consumerProject.value.consumerUserId ?? null)
-            : null,
+        consumerUserId,
       },
       null,
       2

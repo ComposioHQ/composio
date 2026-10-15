@@ -171,10 +171,10 @@ describe('resolveCommandProject', () => {
         Effect.flip,
         Effect.forkChild
       );
-      for (let step = 0; step < 100 && fiber.pollUnsafe() === undefined; step++) {
-        yield* Effect.yieldNow;
-        yield* TestClock.adjust('1 minute');
-      }
+      yield* Effect.yieldNow.pipe(
+        Effect.andThen(TestClock.adjust('1 minute')),
+        Effect.repeat({ until: () => fiber.pollUnsafe() !== undefined, times: 100 })
+      );
       expect(fiber.pollUnsafe()).toBeDefined();
       const error = yield* Fiber.join(fiber);
 

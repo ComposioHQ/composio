@@ -53,59 +53,16 @@ const testLiveOptions = {
   fixture: 'global-test-user-id' as const,
 };
 
-const extractFirstJsonObject = (output: string): Record<string, unknown> | null => {
-  const start = output.indexOf('{');
-  if (start < 0) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let i = start; i < output.length; i += 1) {
-    const char = output[i];
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      inString = true;
-      continue;
-    }
-
-    if (char === '{') {
-      depth += 1;
-      continue;
-    }
-
-    if (char === '}') {
-      depth -= 1;
-      if (depth === 0) {
-        return JSON.parse(output.slice(start, i + 1)) as Record<string, unknown>;
-      }
-    }
-  }
-
-  return null;
-};
-
 describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))('[Given] a blank query [Then] typed validation fails', it => {
     it.effect('returns the structured missing-query error', () =>
       Effect.gen(function* () {
         const failure = yield* cli(['search', '   ']).pipe(Effect.flip);
         expect(failure).toBeInstanceOf(CommandInputError);
-        if (failure instanceof CommandInputError) {
-          expect(failure.option).toBe('<query>');
-          expect(failure.message).toBe('At least one query is required.');
-        }
+        expect(failure).toMatchObject({
+          option: '<query>',
+          message: 'At least one query is required.',
+        });
       })
     );
   });
@@ -116,9 +73,8 @@ describe('CLI: composio search', () => {
         yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        const parsed = extractFirstJsonObject(output);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
-        expect(parsed).not.toBeNull();
         expect(parsed).toHaveProperty('results');
         expect(parsed).toHaveProperty('tool_schemas');
         expect(parsed).toHaveProperty('connected_toolkits');
@@ -290,8 +246,9 @@ describe('CLI: composio search', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('"use_case": "send"');
-          expect(output).toContain('"use_case": "create issue"');
+          expect(JSON.parse(String(lines.at(-1)))).toMatchObject({
+            results: [{ use_case: 'send' }, { use_case: 'create issue' }],
+          });
           expect(output).toContain('GMAIL_SEND_EMAIL');
           expect(output).toContain('SLACK_SEND_MESSAGE');
           expect(output).toContain('GITHUB_CREATE_ISSUE');
@@ -323,11 +280,11 @@ describe('CLI: composio search', () => {
           yield* cli(['search', 'send', '--toolkits', 'gmail', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          const humanOutput = output.split('\n{')[0] ?? output;
 
-          expect(humanOutput).toContain('GMAIL_SEND_EMAIL');
-          expect(humanOutput).not.toContain('SLACK_SEND_MESSAGE');
-          expect(humanOutput).toContain('Found 1 tools');
+          expect(output).toContain('GMAIL_SEND_EMAIL');
+          expect(output).not.toContain('SLACK_SEND_MESSAGE');
+          expect(output).not.toContain('"results"');
+          expect(output).toContain('Found 1 tools');
         })
       );
     }
@@ -360,9 +317,8 @@ describe('CLI: composio search', () => {
           yield* cli(['search', 'send', '--json']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          const parsed = extractFirstJsonObject(output);
+          const parsed = JSON.parse(String(lines.at(-1)));
 
-          expect(parsed).not.toBeNull();
           expect(parsed).toHaveProperty('results');
           expect(parsed).toHaveProperty('tool_schemas');
           expect(parsed).toHaveProperty('connected_toolkits');
@@ -481,24 +437,19 @@ describe('CLI: composio search', () => {
         Effect.gen(function* () {
           yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          const parsed = extractFirstJsonObject(output);
-          const nextSteps = parsed?.next_steps as
-            | {
-                steps?: Array<{ action: string; command: string }>;
-              }
-            | undefined;
+          const parsed = JSON.parse(String(lines.at(-1)));
 
-          expect(nextSteps?.steps).toBeTruthy();
-
-          const executeStep = nextSteps?.steps?.find(step => step.action === 'Execute a tool');
-          expect(executeStep).toBeTruthy();
-          expect(executeStep!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
-          expect(executeStep!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
-
-          const linkStep = nextSteps?.steps?.find(step => step.action === 'Link a user account');
-          expect(linkStep).toBeTruthy();
-          expect(linkStep!.command).toBe('composio link gmail');
+          expect(parsed.next_steps.steps).toEqual(
+            expect.arrayContaining([
+              {
+                action: 'Execute a tool',
+                command: expect.stringMatching(
+                  /composio execute "GMAIL_SEND_EMAIL".*-d '\{"to":"","subject":"","body":""\}'/
+                ),
+              },
+              { action: 'Link a user account', command: 'composio link gmail' },
+            ])
+          );
         })
       );
     }
@@ -511,17 +462,13 @@ describe('CLI: composio search', () => {
         Effect.gen(function* () {
           yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          const parsed = extractFirstJsonObject(output);
-          const nextSteps = parsed?.next_steps as
-            | {
-                steps?: Array<{ action: string; command: string }>;
-              }
-            | undefined;
+          const parsed = JSON.parse(String(lines.at(-1)));
 
-          const executeStep = nextSteps?.steps?.find(step => step.action === 'Execute a tool');
-          expect(executeStep).toBeTruthy();
-          expect(executeStep!.command).toContain('-d "{}"');
+          expect(parsed.next_steps.steps).toEqual(
+            expect.arrayContaining([
+              { action: 'Execute a tool', command: expect.stringContaining('-d "{}"') },
+            ])
+          );
         })
       );
     }

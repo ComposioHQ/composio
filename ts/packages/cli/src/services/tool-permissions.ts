@@ -914,6 +914,12 @@ const COMPLETION_COPY: Readonly<
   },
 };
 
+const DECISION_BY_APPROVAL_PATH: ReadonlyMap<string, PermissionDecision> = new Map([
+  ['/allow-session', 'allow_session'],
+  ['/allow-once', 'allow_once'],
+  ['/deny', 'deny'],
+]);
+
 const completionHtml = (decision: PermissionDecision) => {
   const { title, body } = COMPLETION_COPY[decision];
   return `<!doctype html>
@@ -993,14 +999,7 @@ const requestPermissionInBrowser = (params: {
         return;
       }
 
-      const decision =
-        url.pathname === '/allow-session'
-          ? 'allow_session'
-          : url.pathname === '/allow-once'
-            ? 'allow_once'
-            : url.pathname === '/deny'
-              ? 'deny'
-              : undefined;
+      const decision = DECISION_BY_APPROVAL_PATH.get(url.pathname);
       if (!decision) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
         return;

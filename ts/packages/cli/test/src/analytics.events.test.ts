@@ -544,11 +544,12 @@ describe('CLI analytics journey taxonomy', () => {
     ).toBe(stage);
   });
 
-  it('maps every analytics event name to a declared journey stage', () => {
-    for (const name of Object.values(CLI_ANALYTICS_EVENTS)) {
+  it.each(Object.values(CLI_ANALYTICS_EVENTS))(
+    'maps analytics event %s to a declared journey stage',
+    name => {
       expect(CLI_JOURNEY_STAGES).toContain(CLI_EVENT_JOURNEY_STAGES[name]);
     }
-  });
+  );
 
   it('stamps standalone setup and tool-invocation events with their stages', () => {
     expect(
@@ -688,17 +689,21 @@ describe('CLI analytics journey taxonomy', () => {
     expect(shellDelegations).toHaveLength(1);
     expect(installInvocations).toHaveLength(2);
     expect(shellDelegations[0]).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+  });
 
-    for (const shell of ['zsh', 'bash', 'fish']) {
+  it.each(['zsh', 'bash', 'fish'])(
+    'keeps the %s installer variant from invoking the CLI itself',
+    shell => {
       const variantScript = readFileSync(
         new URL(`../../../../../install/${shell}.sh`, import.meta.url),
         'utf8'
       );
       // Variants never invoke the CLI themselves: they re-exec the base installer with the
-      // shell pinned, so the delegation asserted above stays the only CLI install call.
+      // shell pinned, so the base installer's shell-setup delegation stays the only CLI
+      // install call.
       expect(variantScript).not.toContain('"$exe"');
       expect(variantScript).not.toContain(' install --shell');
       expect(variantScript).toContain('COMPOSIO_INSTALL_SHELL="$variant_shell"');
     }
-  });
+  );
 });

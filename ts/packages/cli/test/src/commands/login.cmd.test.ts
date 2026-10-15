@@ -14,6 +14,7 @@ import { InternalServerError } from '@composio/client/effect';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockAccountRequest } from 'test/__utils__/services/test-layer';
+import { routeRequests, type StubRoute } from 'test/__utils__/services/stub-composio-client';
 
 vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
@@ -45,12 +46,21 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-const requestUrl = (requestInput: RequestInfo | URL): string =>
-  typeof requestInput === 'string'
-    ? requestInput
-    : requestInput instanceof URL
-      ? requestInput.toString()
-      : requestInput.url;
+const requestUrl = (requestInput: RequestInfo | URL): string => new Request(requestInput).url;
+
+const WHOAMI = '/api/whoami';
+
+/** Answers agents API requests through `routes`, and every other request with `{}`. */
+const stubFetch = (routes: ReadonlyArray<StubRoute>) =>
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
+    const request = new Request(requestInput, init);
+    const url = new URL(request.url);
+    return routeRequests(routes, () => mockFetchResponse({}))({
+      method: request.method,
+      path: `${url.pathname}${url.search}`,
+      body: undefined,
+    });
+  });
 
 const storedAgentIdentity = {
   status: 'READY',
@@ -183,11 +193,9 @@ describe('CLI: composio login', () => {
       () =>
         Effect.gen(function* () {
           yield* writeStoredAgentIdentity(storedAgentIdentity);
-          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
-            requestUrl(requestInput).includes('/api/whoami')
-              ? mockFetchResponse(storedAgentIdentity)
-              : mockFetchResponse({})
-          );
+          stubFetch([
+            { method: 'GET', path: WHOAMI, respond: () => mockFetchResponse(storedAgentIdentity) },
+          ]);
 
           yield* cli(['login']);
 
@@ -214,11 +222,13 @@ describe('CLI: composio login', () => {
       () =>
         Effect.gen(function* () {
           yield* writeStoredAgentIdentity(storedAgentIdentity);
-          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
-            requestUrl(requestInput).includes('/api/whoami')
-              ? mockFetchResponse({ message: 'Invalid agent key' }, 401)
-              : mockFetchResponse({})
-          );
+          stubFetch([
+            {
+              method: 'GET',
+              path: WHOAMI,
+              respond: () => mockFetchResponse({ message: 'Invalid agent key' }, 401),
+            },
+          ]);
 
           yield* cli(['login']);
 
@@ -238,12 +248,15 @@ describe('CLI: composio login', () => {
       () =>
         Effect.gen(function* () {
           yield* writeStoredAgentIdentity(storedAgentIdentity);
-          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
-            if (requestUrl(requestInput).includes('/api/whoami')) {
-              throw new Error('network unreachable');
-            }
-            return mockFetchResponse({});
-          });
+          stubFetch([
+            {
+              method: 'GET',
+              path: WHOAMI,
+              respond: () => {
+                throw new Error('network unreachable');
+              },
+            },
+          ]);
 
           yield* cli(['login']);
 
@@ -260,11 +273,13 @@ describe('CLI: composio login', () => {
       () =>
         Effect.gen(function* () {
           yield* writeStoredAgentIdentity({ ...storedAgentIdentity, status: 'PENDING' });
-          vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput =>
-            requestUrl(requestInput).includes('/api/whoami')
-              ? mockFetchResponse({ ...storedAgentIdentity, status: 'PENDING' })
-              : mockFetchResponse({})
-          );
+          stubFetch([
+            {
+              method: 'GET',
+              path: WHOAMI,
+              respond: () => mockFetchResponse({ ...storedAgentIdentity, status: 'PENDING' }),
+            },
+          ]);
 
           yield* cli(['login']);
 

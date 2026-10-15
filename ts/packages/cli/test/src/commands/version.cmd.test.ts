@@ -17,10 +17,7 @@ describe('CLI: composio', () => {
         // instead of the merged buffer, so decoration written elsewhere can
         // never leak into — or be mistaken for — this contract.
         const stdoutLines = yield* MockConsole.getLines({ stream: 'stdout' });
-        expect(stdoutLines.length).toBeGreaterThan(0);
-        for (const line of stdoutLines) {
-          expect(line).toBe(pkg.version);
-        }
+        expect(stdoutLines).toEqual([pkg.version]);
       })
     );
   });
@@ -32,10 +29,7 @@ describe('CLI: composio', () => {
         yield* cli(args);
 
         const stdoutLines = yield* MockConsole.getLines({ stream: 'stdout' });
-        expect(stdoutLines.length).toBeGreaterThan(0);
-        for (const line of stdoutLines) {
-          expect(line).toBe('1.2.3-test');
-        }
+        expect(stdoutLines).toEqual(['1.2.3-test']);
       })
     );
   });

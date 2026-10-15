@@ -8,19 +8,6 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
-const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as Record<string, Array<Record<string, unknown>>>;
-    } catch {
-      // continue
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
-
 const testConnections: ConnectedAccountItem[] = [
   {
     id: 'con_gmail_active',
@@ -140,7 +127,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -167,7 +154,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -188,7 +175,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           github: [
@@ -236,7 +223,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).not.toHaveProperty('slack');
       })

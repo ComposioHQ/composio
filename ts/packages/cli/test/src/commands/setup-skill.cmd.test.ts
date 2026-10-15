@@ -25,16 +25,25 @@ describe('composio setup skill', () => {
         expect(installSkill).toHaveBeenLastCalledWith({ target: 'openclaw', skillName: undefined });
       })
     );
-    it.effect('rejects invalid targets and missing names before installation', () =>
+    it.effect.each([
+      { args: ['setup', 'skill'], error: { _tag: 'MissingArgument', argument: 'target' } },
+      {
+        args: ['setup', 'skill', 'cursor'],
+        error: { _tag: 'InvalidValue', option: 'target', value: 'cursor' },
+      },
+      {
+        args: ['setup', 'skill', 'claude', '--name'],
+        error: { _tag: 'InvalidValue', option: 'name' },
+      },
+    ])('rejects invalid targets and missing names before installation: $args', ({ args, error }) =>
       Effect.gen(function* () {
-        for (const args of [
-          ['setup', 'skill'],
-          ['setup', 'skill', 'cursor'],
-          ['setup', 'skill', 'claude', '--name'],
-        ]) {
-          const exit = yield* Effect.result(cli(args));
-          expect(exit._tag).toBe('Failure');
-        }
+        const failure = yield* Effect.flip(cli(args));
+
+        expect(failure).toMatchObject({
+          _tag: 'ShowHelp',
+          commandPath: ['composio', 'setup', 'skill'],
+          errors: [error],
+        });
         expect(installSkill).not.toHaveBeenCalled();
       })
     );

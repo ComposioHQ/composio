@@ -2,10 +2,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
-import {
-  stubClientResources,
-  type StubRequest,
-} from 'test/__utils__/services/stub-composio-client';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const gmail: ToolkitDetailed = {
   name: 'Gmail',
@@ -31,19 +28,20 @@ const testLayer = TestLive({
   toolkitsData: { detailedToolkits: [gmail] },
 });
 
-const isToolkits = (request: StubRequest) => request.path.includes('/toolkits');
+const SESSION_TOOLKITS = '/api/v3.1/tool_router/session/trs_stub_session/toolkits';
 
 /** Session toolkit reads answered by `respond`; the session they run in is created normally. */
 const toolkitsOver = (respond: () => Response) =>
-  stubClientResources(['toolRouter'], request =>
-    isToolkits(request)
-      ? respond()
-      : Response.json({
-          session_id: 'trs_stub_session',
-          config: { user_id: 'global-default' },
-          mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
-          tool_router_tools: [],
-        })
+  stubClientResources(
+    ['toolRouter'],
+    routeRequests([{ method: 'GET', path: SESSION_TOOLKITS, respond }], () =>
+      Response.json({
+        session_id: 'trs_stub_session',
+        config: { user_id: 'global-default' },
+        mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
+        tool_router_tools: [],
+      })
+    )
   );
 
 describe('CLI: composio dev toolkits info over the API client', () => {
@@ -83,11 +81,8 @@ describe('CLI: composio dev toolkits info over the API client', () => {
             is_composio_managed: null,
           },
         });
-        expect(stub.requests.filter(isToolkits)).toEqual([
-          {
-            method: 'GET',
-            path: '/api/v3.1/tool_router/session/trs_stub_session/toolkits?toolkits=gmail',
-          },
+        expect(stub.requests.filter(request => request.path.startsWith(SESSION_TOOLKITS))).toEqual([
+          { method: 'GET', path: `${SESSION_TOOLKITS}?toolkits=gmail` },
         ]);
       })
     );

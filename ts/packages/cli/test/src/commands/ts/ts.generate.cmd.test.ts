@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
@@ -996,11 +995,13 @@ describe('CLI: composio generate ts', () => {
             const outputDir = path.join(cwd, 'generated-invalid');
 
             const args = ['generate', 'ts', '--toolkits', 'nonexistent', '--output-dir', outputDir];
-            const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
+            const failure = yield* cli(args).pipe(Effect.flip);
 
-            assert.ok(result instanceof CommandInputError);
-            expect(result.option).toBe('--toolkits');
-            expect(result.message).toContain('Invalid toolkit(s): nonexistent');
+            expect(failure).toBeInstanceOf(CommandInputError);
+            expect(failure).toMatchObject({
+              option: '--toolkits',
+              message: expect.stringContaining('Invalid toolkit(s): nonexistent'),
+            });
           })
         );
 
@@ -1227,9 +1228,9 @@ describe('CLI: composio generate ts', () => {
           Effect.gen(function* () {
             const args = ['generate', 'ts'];
 
-            const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
+            const failure = yield* cli(args).pipe(Effect.flip);
 
-            expect(result).toEqual(
+            expect(failure).toEqual(
               new ComposioCorePkgNotFound({
                 message: '@composio/core not found',
                 cause: '@composio/core not installed',
