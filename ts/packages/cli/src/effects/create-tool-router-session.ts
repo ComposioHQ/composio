@@ -14,6 +14,7 @@ import {
   getConsumerPermissionSnapshot,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { nonEmptyOrUndefined } from 'src/utils/optional-params';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -101,14 +102,14 @@ export const createToolRouterSessionContext = (
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
     const cachedConnectedAccounts = options?.cacheScope
       ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
 
@@ -129,7 +130,7 @@ export const createToolRouterSessionContext = (
             : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         }).pipe(
           Effect.map(connectionContext => ({
             ...connectionContext,

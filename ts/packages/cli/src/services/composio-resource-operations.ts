@@ -15,7 +15,7 @@ import { Toolkits, type ToolkitSearchResult } from 'src/models/toolkits';
 import { TriggerInstanceItems } from 'src/models/triggers';
 import { TriggerType } from 'src/models/trigger-types';
 import type { ClientError } from './composio-errors';
-import { decode } from './composio-request';
+import { decode, idempotent } from './composio-request';
 
 /**
  * Auth config, connected account, and trigger instance operations: single-page
@@ -34,12 +34,15 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
   }) =>
     client.pipe(
       Effect.flatMap(c =>
-        c.authConfigs.list({
-          search: params.search,
-          toolkit_slug: params.toolkit_slug,
-          limit: params.limit,
-          show_disabled: params.show_disabled ?? true,
-        })
+        c.authConfigs.list(
+          {
+            search: params.search,
+            toolkit_slug: params.toolkit_slug,
+            limit: params.limit,
+            show_disabled: params.show_disabled ?? true,
+          },
+          idempotent
+        )
       ),
       Effect.flatMap(decode(AuthConfigListResponse))
     ),
@@ -49,7 +52,7 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    */
   getAuthConfig: (nanoid: string) =>
     client.pipe(
-      Effect.flatMap(c => c.authConfigs.retrieve(nanoid)),
+      Effect.flatMap(c => c.authConfigs.retrieve(nanoid, idempotent)),
       Effect.flatMap(decode(AuthConfigItem))
     ),
   /**
@@ -67,7 +70,7 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    */
   getConnectedAccount: (nanoid: string) =>
     client.pipe(
-      Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid)),
+      Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid, idempotent)),
       Effect.flatMap(decode(ConnectedAccountItem))
     ),
   /**
@@ -77,15 +80,18 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
   listActiveTriggers: (params: TriggerInstanceListActiveParams) =>
     client.pipe(
       Effect.flatMap(c =>
-        c.triggerInstances.listActive({
-          user_ids: params.user_ids,
-          connected_account_ids: params.connected_account_ids,
-          auth_config_ids: params.auth_config_ids,
-          trigger_ids: params.trigger_ids,
-          trigger_names: params.trigger_names,
-          show_disabled: params.show_disabled,
-          limit: params.limit,
-        })
+        c.triggerInstances.listActive(
+          {
+            user_ids: params.user_ids,
+            connected_account_ids: params.connected_account_ids,
+            auth_config_ids: params.auth_config_ids,
+            trigger_ids: params.trigger_ids,
+            trigger_names: params.trigger_names,
+            show_disabled: params.show_disabled,
+            limit: params.limit,
+          },
+          idempotent
+        )
       ),
       Effect.flatMap(response =>
         decode(TriggerInstanceItems)(response.items).pipe(
@@ -126,12 +132,15 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
     cursor?: string;
   }): Effect.Effect<ToolkitSearchResult, ClientError> =>
     Effect.flatMap(client, c =>
-      c.toolkits.list({
-        search: params.search,
-        category: params.category,
-        limit: params.limit,
-        cursor: params.cursor,
-      })
+      c.toolkits.list(
+        {
+          search: params.search,
+          category: params.category,
+          limit: params.limit,
+          cursor: params.cursor,
+        },
+        idempotent
+      )
     ).pipe(
       Effect.flatMap(response =>
         decode(Toolkits)(response.items).pipe(
@@ -163,14 +172,17 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
     cursor?: string;
   }) =>
     Effect.flatMap(client, c =>
-      c.tools.list({
-        search: params.search,
-        toolkit_slug: params.toolkit_slug,
-        tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
-        limit: params.limit,
-        cursor: params.cursor,
-        toolkit_versions: 'latest',
-      })
+      c.tools.list(
+        {
+          search: params.search,
+          toolkit_slug: params.toolkit_slug,
+          tags: params.tags ? params.tags.split(',').map(t => t.trim()) : undefined,
+          limit: params.limit,
+          cursor: params.cursor,
+          toolkit_versions: 'latest',
+        },
+        idempotent
+      )
     ),
   /**
    * Retrieves detailed info about a single tool by slug.
@@ -181,14 +193,14 @@ export const lookupOperations = (client: Effect.Effect<ComposioClientShape, Clie
    * in a field it never reads.
    */
   getToolDetailed: (slug: string) =>
-    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' })),
+    Effect.flatMap(client, c => c.tools.retrieve(slug, { toolkit_versions: 'latest' }, idempotent)),
   /**
    * Retrieves detailed info about a single trigger type by slug.
    * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
    */
   getTriggerTypeDetailed: (slug: string) =>
     client.pipe(
-      Effect.flatMap(c => c.triggersTypes.retrieve(slug)),
+      Effect.flatMap(c => c.triggersTypes.retrieve(slug, undefined, idempotent)),
       Effect.flatMap(decode(TriggerType))
     ),
 });

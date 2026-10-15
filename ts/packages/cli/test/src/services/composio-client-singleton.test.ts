@@ -9,7 +9,7 @@ import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { validated } from 'src/services/composio-request';
+import { idempotent, validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 
@@ -525,9 +525,31 @@ describe('ComposioClientSingleton client', () => {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
 
-      expect(yield* client.tools.retrieveEnum()).toEqual(['GITHUB_CREATE_ISSUE']);
+      expect(yield* client.tools.retrieveEnum(idempotent)).toEqual(['GITHUB_CREATE_ISSUE']);
       expect((yield* clientSingleton.getMetrics()).requests).toBe(2);
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_retry']]))));
+  });
+
+  it.effect('sends a call that is not marked idempotent once', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response('{}', {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'retry-after-ms': '0' },
+        })
+      )
+    );
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
+      const error = yield* Effect.flip(
+        client.triggerInstances.manage.update('ti_1', { status: 'enable' })
+      );
+
+      expect(error._tag).toBe('@composio/client/InternalServerError');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_once']]))));
   });
 
   it.effect('counts requests when the application already provides a fetch transport', () => {

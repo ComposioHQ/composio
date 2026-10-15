@@ -36,7 +36,12 @@ import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
 import { isClientConfigurationError } from 'src/utils/api-error-extraction';
-import { MAX_CONCURRENT_REQUESTS_PER_ENDPOINT, decode, validated } from './composio-request';
+import {
+  MAX_CONCURRENT_REQUESTS_PER_ENDPOINT,
+  decode,
+  idempotent,
+  validated,
+} from './composio-request';
 import { lookupOperations, resourceOperations } from './composio-resource-operations';
 import { schemaLoaders } from '@composio/client/effect/schemas';
 import {
@@ -201,6 +206,8 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                   projectId: scope.projectId,
                   cliSessionId,
                 }),
+                // Only a call that passes `idempotent` is retried.
+                maxRetries: 0,
                 schemas: schemaLoaders,
               },
               httpClient
@@ -302,12 +309,12 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
     collectAll(scope ? clientSingleton.getFor(scope) : client, c =>
-      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy })
+      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, idempotent)
     ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
   const getToolkitDetailed = (slug: string) =>
     client.pipe(
-      Effect.flatMap(c => c.toolkits.retrieve(slug)),
+      Effect.flatMap(c => c.toolkits.retrieve(slug, undefined, idempotent)),
       Effect.flatMap(decode(ToolkitDetailed))
     );
 
@@ -344,9 +351,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ).pipe(Effect.map(sortBySlug));
 
   const listTools = (query: { toolkit_slug?: string; toolkit_versions: string }) =>
-    collectAll(client, c => c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE })).pipe(
-      Effect.flatMap(decode(Tools))
-    );
+    collectAll(client, c =>
+      c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE }, idempotent)
+    ).pipe(Effect.flatMap(decode(Tools)));
 
   return {
     getToolkits,
@@ -358,7 +365,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getToolsAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.tools.retrieveEnum()),
+        Effect.flatMap(c => c.tools.retrieveEnum(idempotent)),
         Effect.flatMap(decode(ToolsAsEnums))
       ),
     /**
@@ -388,7 +395,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getTriggerTypesAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.triggersTypes.retrieveEnum()),
+        Effect.flatMap(c => c.triggersTypes.retrieveEnum(idempotent)),
         Effect.flatMap(decode(TriggerTypesAsEnums))
       ),
     /**
@@ -398,10 +405,13 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
       collectAll(client, c =>
-        c.triggersTypes.listStream({
-          limit: MAX_PAGE_SIZE,
-          toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
-        })
+        c.triggersTypes.listStream(
+          {
+            limit: MAX_PAGE_SIZE,
+            toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+          },
+          idempotent
+        )
       ).pipe(Effect.flatMap(decode(TriggerTypes)), Effect.map(sortBySlug)),
     /**
      * Validates that the given toolkit slugs are valid by comparing them against the list
@@ -504,13 +514,13 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     getSession: (session: { id: string }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.getSession({ id: session.id })),
+        Effect.flatMap(c => c.cli.getSession({ id: session.id }, idempotent)),
         Effect.flatMap(decode(RetrievedSession))
       ),
     getRealtimeCredentials: () =>
-      Effect.flatMap(client, c => c.cli.realtime.credentials(validated)),
+      Effect.flatMap(client, c => c.cli.realtime.credentials({ ...idempotent, ...validated })),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-      Effect.flatMap(client, c => c.cli.realtime.auth(params)),
+      Effect.flatMap(client, c => c.cli.realtime.auth(params, idempotent)),
   };
 });
 

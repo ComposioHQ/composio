@@ -31,6 +31,7 @@
     "validate:skills": "tsx ./scripts/validate-skills.ts",
     "validate:boundaries": "tsx ./scripts/validate-lint-boundaries.ts",
     "validate:command-tests": "tsx ./scripts/validate-command-tests.ts",
+    "lint:effect": "tsx ./scripts/check-effect-diagnostics.ts",
     "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "generate:toolkit-slugs": "bun run ./scripts/generate-toolkit-slugs.ts",

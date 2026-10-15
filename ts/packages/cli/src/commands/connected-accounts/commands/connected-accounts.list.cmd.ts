@@ -8,6 +8,7 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { resolveCommandProject } from 'src/services/command-project';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
+import { idempotent } from 'src/services/composio-request';
 
 class ConnectedAccountsListRequestError extends requestError(
   'commands/ConnectedAccountsListRequestError'
@@ -70,12 +71,15 @@ export const connectedAccountsCmd$List = Command.make(
       const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
         client.connectedAccounts
-          .list({
-            toolkit_slugs: toolkitSlugs,
-            user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-            statuses: Option.isSome(status) ? [status.value] : undefined,
-            limit: clampLimit(limit),
-          })
+          .list(
+            {
+              toolkit_slugs: toolkitSlugs,
+              user_ids: Option.isSome(userId) ? [userId.value] : undefined,
+              statuses: Option.isSome(status) ? [status.value] : undefined,
+              limit: clampLimit(limit),
+            },
+            idempotent
+          )
           .pipe(failedWith(ConnectedAccountsListRequestError, 'Failed to list connected accounts.'))
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);

@@ -189,9 +189,10 @@ describe('CLI: composio proxy', () => {
               ],
             },
           });
-          // A proxied call is never retried: a retry after the upstream API
-          // already acted would duplicate the side effect.
-          expect(proxyOptions).toEqual({ maxRetries: 0 });
+          // A proxied call does not ask for retries, so the client sends it
+          // once: a retry after the upstream API already acted would duplicate
+          // the side effect.
+          expect(proxyOptions).toBeUndefined();
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');

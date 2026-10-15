@@ -13,6 +13,7 @@ import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { idempotent } from 'src/services/composio-request';
 import { resolveCommandProject } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
@@ -364,7 +365,7 @@ const runToolsSearch = (params: {
       // The command reads a few of the search response's fields; the rest, enums
       // among them, may change without this version of the CLI noticing.
       const searchResponse = yield* client.toolRouter.session
-        .search(sessionId, searchPayload)
+        .search(sessionId, searchPayload, idempotent)
         .pipe(failedWith(ToolsSearchRequestError, 'Failed to search tools.'));
       const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
         .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
@@ -378,11 +379,16 @@ const runToolsSearch = (params: {
                   message: 'Failed to fetch custom tool schemas.',
                   cause,
                 });
+              // Fetching tool schemas is a read, so it is retried like one.
               const schemaResponse = yield* client.toolRouter.session
-                .executeMeta(sessionId, {
-                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
-                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
-                })
+                .executeMeta(
+                  sessionId,
+                  {
+                    slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                    arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                  },
+                  idempotent
+                )
                 .pipe(Effect.mapError(schemasFailed));
               if (schemaResponse.result_type === 'input_required') {
                 return yield* schemasFailed(

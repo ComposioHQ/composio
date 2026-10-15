@@ -3,6 +3,7 @@ import { Effect, Option } from 'effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { idempotent } from 'src/services/composio-request';
 
 const slug = Argument.String('slug').pipe(Argument.withDescription('Toolkit slug (e.g. "gmail")'));
 
@@ -24,7 +25,7 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
         `Fetching versions for toolkit "${slug}"...`,
         // Only the name, slug and version list are read, so a toolkit that
         // lacks other catalog fields still prints its versions.
-        client.toolkits.retrieve(slug)
+        client.toolkits.retrieve(slug, undefined, idempotent)
       )
       .pipe(
         Effect.asSome,

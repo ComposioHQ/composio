@@ -4,12 +4,13 @@ import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
-import { optionalParams } from 'src/utils/optional-params';
+import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { decodeTriggerLogRecord } from '../trigger-log-record';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
+import { idempotent } from 'src/services/composio-request';
 
 class TriggerLogsRequestError extends requestError('commands/TriggerLogsRequestError') {}
 
@@ -152,7 +153,7 @@ export const logsCmd$Triggers = Command.make(
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
           client.logs.triggers
-            .retrieve(triggerLogId)
+            .retrieve(triggerLogId, idempotent)
             .pipe(
               failedWith(TriggerLogsRequestError, `Failed to fetch trigger log "${triggerLogId}".`)
             )
@@ -170,12 +171,15 @@ export const logsCmd$Triggers = Command.make(
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
         client.logs.triggers
-          .list({
-            ...optionalParams({ cursor, from, to, time, search }),
-            limit: clampedLimit,
-            include_payload: includePayload,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
+          .list(
+            {
+              ...optionalParams({ cursor, from, to, time, search }),
+              limit: clampedLimit,
+              include_payload: includePayload,
+              search_params: nonEmptyOrUndefined(shorthandSearchParams),
+            },
+            idempotent
+          )
           .pipe(failedWith(TriggerLogsRequestError, 'Failed to fetch trigger logs.'))
       );
 

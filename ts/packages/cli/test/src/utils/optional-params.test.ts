@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Option } from 'effect';
-import { optionalParams } from 'src/utils/optional-params';
+import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 
 describe('optionalParams', () => {
   it('keeps the value of a present flag and turns an absent one into undefined', () => {
@@ -16,5 +16,15 @@ describe('optionalParams', () => {
 
   it('returns an empty record for no flags', () => {
     expect(optionalParams({})).toEqual({});
+  });
+});
+
+describe('nonEmptyOrUndefined', () => {
+  it('keeps a list that has elements', () => {
+    expect(nonEmptyOrUndefined(['a', 'b'])).toEqual(['a', 'b']);
+  });
+
+  it('turns an empty list into undefined', () => {
+    expect(nonEmptyOrUndefined([])).toBeUndefined();
   });
 });

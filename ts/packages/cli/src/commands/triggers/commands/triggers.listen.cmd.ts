@@ -326,8 +326,7 @@ export const triggersCmd$Listen = Command.make(
 
       yield* Effect.gen(function* () {
         if (maxEventsLimit === undefined) {
-          yield* listenEffect;
-          return;
+          return yield* listenEffect;
         }
 
         yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));

@@ -3,8 +3,9 @@ import { Effect, Option } from 'effect';
 import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { idempotent } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
-import { optionalParams } from 'src/utils/optional-params';
+import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
@@ -187,7 +188,7 @@ export const logsCmd$Tools = Command.make(
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
           client.logs.tools
-            .retrieve(toolLogId)
+            .retrieve(toolLogId, idempotent)
             .pipe(failedWith(ToolLogsRequestError, `Failed to fetch tool log "${toolLogId}".`))
         );
 
@@ -201,13 +202,16 @@ export const logsCmd$Tools = Command.make(
       const response = yield* ui.withSpinner(
         'Fetching tool logs...',
         client.logs.tools
-          .list({
-            ...optionalParams({ from, to }),
-            cursor: Option.getOrUndefined(cursor) ?? null,
-            limit: clampedLimit,
-            case_sensitive: caseSensitive,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
+          .list(
+            {
+              ...optionalParams({ from, to }),
+              cursor: Option.getOrUndefined(cursor) ?? null,
+              limit: clampedLimit,
+              case_sensitive: caseSensitive,
+              search_params: nonEmptyOrUndefined(shorthandSearchParams),
+            },
+            idempotent
+          )
           .pipe(failedWith(ToolLogsRequestError, 'Failed to fetch tool logs.'))
       );
 
