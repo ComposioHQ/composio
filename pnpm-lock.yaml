@@ -1480,6 +1480,9 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.5.4
+      zod-to-json-schema:
+        specifier: 'catalog:'
+        version: 3.25.2(zod@4.5.4)
 
   ts/packages/providers/anthropic:
     devDependencies:

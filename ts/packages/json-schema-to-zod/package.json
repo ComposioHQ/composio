@@ -53,7 +53,8 @@
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "zod-to-json-schema": "catalog:"
   },
   "peerDependencies": {
     "zod": ">=3.25.76 <5"
