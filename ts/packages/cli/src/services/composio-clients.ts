@@ -16,7 +16,6 @@ import { FetchHttpClient, HttpClient } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
-  VERSION as clientLibraryVersion,
   type ComposioClientShape,
   type ConfigurationError,
 } from '@composio/client/effect';
@@ -29,7 +28,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
-import { cliRequestHeaders } from './client-provenance';
+import { cliClientIdentity } from './client-provenance';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
@@ -94,10 +93,8 @@ const buildDefaultHeaders = (params: {
   projectId?: string;
   cliSessionId?: string;
 }): Record<string, string> | undefined => {
+  // The identity headers come from the client's `identity`, which refuses them here.
   const defaultHeaders = {
-    ...cliRequestHeaders(),
-    'x-client-library': '@composio/client',
-    'x-client-library-version': clientLibraryVersion,
     ...(params.userApiKey
       ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
       : {}),
@@ -200,6 +197,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
                 deprecationNotices: 'off',
+                identity: cliClientIdentity(),
                 defaultHeaders: buildDefaultHeaders({
                   userApiKey: scope.userApiKey,
                   orgId: scope.orgId,

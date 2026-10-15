@@ -7,7 +7,7 @@ import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Exit, Layer, Logger } from 'effect';
 import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
-import type { ComposioClientShape } from '@composio/client/effect';
+import { VERSION as clientLibraryVersion, type ComposioClientShape } from '@composio/client/effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent, validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
@@ -392,6 +392,8 @@ describe('ComposioClientSingleton client', () => {
       expect(headers.get('x-client-provenance')).toBe('@composio/cli');
       expect(headers.get('x-client-version')).toBe(APP_VERSION);
       expect(headers.get('x-client-language')).toBe('typescript');
+      expect(headers.get('x-client-library')).toBe('@composio/client');
+      expect(headers.get('x-client-library-version')).toBe(clientLibraryVersion);
     }).pipe(Effect.provide(singletonLayer(baseConfig())));
   });
 

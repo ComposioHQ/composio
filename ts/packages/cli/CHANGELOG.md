@@ -4,8 +4,11 @@
 
 ### Patch Changes
 
-- The CLI now uses `@composio/client@2.0.0-rc.16` (up from `2.0.0-rc.14`). No
+- The CLI now uses `@composio/client@2.0.0-rc.17` (up from `2.0.0-rc.14`). No
   command changes.
+- API requests now carry the CLI's product, version and runtime headers through
+  the API client's `identity` option instead of default headers. The headers
+  sent are unchanged.
 
 ## 0.4.4
 
