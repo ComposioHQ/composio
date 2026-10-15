@@ -25,7 +25,7 @@ Composio tags tools on a best-effort basis, based on each tool's description and
 <Tab value="Python">
 ```python
 tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
-print(tool.tags)
+print(tool.tags)  # ['important', 'openWorldHint', 'createHint']
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -34,10 +34,12 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
-console.log(tool.tags);
+console.log(tool.tags); // ['important', 'openWorldHint', 'createHint']
 ```
 </Tab>
 </Tabs>
+
+`tags` also includes other labels. Sessions only use the four tags above, so `GMAIL_SEND_EMAIL` is a `createHint` tool.
 
 ## Using tags in a session
 
