@@ -4,6 +4,7 @@ import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
+import { optionalParams } from 'src/utils/optional-params';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
@@ -201,9 +202,8 @@ export const logsCmd$Tools = Command.make(
         'Fetching tool logs...',
         client.logs.tools
           .list({
+            ...optionalParams({ from, to }),
             cursor: Option.getOrUndefined(cursor) ?? null,
-            from: Option.getOrUndefined(from),
-            to: Option.getOrUndefined(to),
             limit: clampedLimit,
             case_sensitive: caseSensitive,
             search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
