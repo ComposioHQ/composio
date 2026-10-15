@@ -86,3 +86,23 @@ export const stubClientResources = (
   );
   return { requests: stub.requests, layer };
 };
+
+/** A request the stub answers specially: its method and a prefix of its path. */
+export interface StubRoute {
+  readonly method: string;
+  readonly path: string;
+  readonly respond: () => Response;
+}
+
+/**
+ * A `respond` that answers a request with the first route whose method and
+ * path prefix match it, and every other request with `otherwise`.
+ */
+export const routeRequests =
+  (routes: ReadonlyArray<StubRoute>, otherwise: () => Response) =>
+  (request: StubRequest): Response => {
+    const route = routes.find(
+      ({ method, path }) => request.method === method && request.path.startsWith(path)
+    );
+    return (route?.respond ?? otherwise)();
+  };

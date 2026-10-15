@@ -97,6 +97,15 @@ describe('TriggersRealtime.listenInProject', () => {
 
   it.live('authorizes the private channel when the realtime client asks for it', () => {
     const requests: Array<{ method: string; path: string; body: unknown }> = [];
+    const responses: Record<string, unknown> = {
+      '/api/v3.1/cli/realtime/credentials': {
+        pusher_key: 'pk_test',
+        pusher_cluster: 'mt1',
+        project_id: 'pr_nano',
+      },
+      // `channel_data` only belongs to presence channels.
+      '/api/v3.1/cli/realtime/auth': { auth: 'pk_test:signature', channel_data: '{"user_id":"1"}' },
+    };
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const request = new Request(input, init);
       const path = new URL(request.url).pathname;
@@ -106,10 +115,7 @@ describe('TriggersRealtime.listenInProject', () => {
         path,
         body: text === '' ? undefined : JSON.parse(text),
       });
-      return path.endsWith('/credentials')
-        ? Response.json({ pusher_key: 'pk_test', pusher_cluster: 'mt1', project_id: 'pr_nano' })
-        : // `channel_data` only belongs to presence channels.
-          Response.json({ auth: 'pk_test:signature', channel_data: '{"user_id":"1"}' });
+      return Response.json(responses[path]);
     });
 
     return Effect.gen(function* () {
@@ -119,16 +125,16 @@ describe('TriggersRealtime.listenInProject', () => {
       );
 
       const constructed = yield* Effect.promise(() => pusher.constructed);
-      const authorized = yield* Effect.callback<unknown, Error>(resume => {
+      const authorized = yield* Effect.callback<unknown>(resume => {
         constructed.authorize(
           { channelName: 'private-cli-pr_nano', socketId: '123.456' },
-          (error, data) => resume(error ? Effect.fail(error) : Effect.succeed(data))
+          (error, data) => resume(Effect.succeed({ error, data }))
         );
       });
       yield* Fiber.interrupt(listening);
 
       expect(constructed).toMatchObject({ key: 'pk_test', cluster: 'mt1' });
-      expect(authorized).toEqual({ auth: 'pk_test:signature' });
+      expect(authorized).toEqual({ error: null, data: { auth: 'pk_test:signature' } });
       expect(requests).toEqual([
         { method: 'GET', path: '/api/v3.1/cli/realtime/credentials', body: undefined },
         {

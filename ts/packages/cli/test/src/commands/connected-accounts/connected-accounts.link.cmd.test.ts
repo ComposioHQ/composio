@@ -15,10 +15,8 @@ vi.mock('open', () => ({
   default: vi.fn(async () => undefined),
 }));
 
-const extractJsonObject = (output: string): Record<string, unknown> | null => {
-  const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*\}/);
-  return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-};
+/** The command's JSON result: `ui.output` prints it as the last console line. */
+const parseLastLine = (lines: ReadonlyArray<string>): unknown => JSON.parse(String(lines.at(-1)));
 
 const makeConnectedAccount = (overrides?: Partial<ConnectedAccountItem>): ConnectedAccountItem => ({
   id: 'con_test_link',
@@ -144,12 +142,12 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(parsed).not.toBeNull();
-        expect(parsed?.status).toBe('success');
-        expect(parsed?.connected_account_id).toBe('con_test_link');
-        expect(parsed?.toolkit).toBe('gmail');
+        expect(parseLastLine(lines)).toMatchObject({
+          status: 'success',
+          connected_account_id: 'con_test_link',
+          toolkit: 'gmail',
+        });
         expect(vi.mocked(open)).toHaveBeenCalledOnce();
       })
     );
@@ -167,11 +165,11 @@ describe('CLI: composio dev connected-accounts link', () => {
         yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        const parsed = extractJsonObject(output);
 
-        expect(parsed).not.toBeNull();
-        expect(parsed?.status).toBe('success');
-        expect(parsed?.connected_account_id).toBe('con_test_link');
+        expect(parseLastLine(lines)).toMatchObject({
+          status: 'success',
+          connected_account_id: 'con_test_link',
+        });
         expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
         expect(output).toContain('Open this URL in your browser to authorize');
         expect(output).not.toContain('Redirecting you to the authorization page');
@@ -195,7 +193,7 @@ describe('CLI: composio dev connected-accounts link', () => {
 
         expect(output).toContain('default');
         expect(output).toContain('castle');
-        expect(output).toContain('"toolkit": "gmail"');
+        expect(parseLastLine(lines)).toMatchObject({ toolkit: 'gmail' });
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
@@ -236,18 +234,10 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const forcedLine = lines
-          .map(line => {
-            try {
-              return JSON.parse(line) as { channel?: string; data?: string };
-            } catch {
-              return null;
-            }
-          })
-          .find(line => line?.channel === 'FORCED');
+        const forcedLine = parseLastLine(lines) as { channel: string; data: string };
 
-        expect(forcedLine).toBeTruthy();
-        expect(forcedLine?.data).toContain('"status": "pending"');
+        expect(forcedLine.channel).toBe('FORCED');
+        expect(JSON.parse(forcedLine.data)).toMatchObject({ status: 'pending' });
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
@@ -265,19 +255,16 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const forcedLines = lines
-          .map(line => {
-            try {
-              return JSON.parse(line) as { channel?: string; data?: string };
-            } catch {
-              return null;
-            }
-          })
-          .filter(line => line?.channel === 'FORCED');
+        const forcedLine = parseLastLine(lines) as { channel: string; data: string };
 
-        expect(forcedLines).toHaveLength(1);
-        expect(forcedLines[0]?.data).toContain('"status": "pending"');
-        expect(forcedLines[0]?.data?.trim().startsWith('{')).toBe(true);
+        // Every line before the payload is a log or note, never a second output().
+        expect(lines.slice(0, -1)).toEqual([
+          'Open this URL in your browser to authorize',
+          '[Redirect URL] https://app.composio.dev/link?token=lt_test_token',
+        ]);
+        expect(forcedLine.channel).toBe('FORCED');
+        // The payload parses as JSON, so nothing (such as the raw URL) precedes it.
+        expect(JSON.parse(forcedLine.data)).toMatchObject({ status: 'pending' });
       })
     );
   });
@@ -328,11 +315,12 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--list']);
 
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
         expect(output).not.toContain('must-not-leak');
         expect(output).not.toContain('access_token');
         expect(output).not.toContain('refresh_token');
-        expect(extractJsonObject(output)).toStrictEqual({
+        expect(parseLastLine(lines)).toStrictEqual({
           toolkit: 'gmail',
           total: 1,
           items: [makeConnectedAccount()],
@@ -352,11 +340,11 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(parsed).not.toBeNull();
-        expect(parsed?.status).toBe('success');
-        expect(parsed?.connected_account_id).toBe('con_test_link');
+        expect(parseLastLine(lines)).toMatchObject({
+          status: 'success',
+          connected_account_id: 'con_test_link',
+        });
       })
     );
   });
@@ -421,12 +409,12 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(parsed).not.toBeNull();
-        expect(parsed?.status).toBe('pending');
-        expect(parsed?.connected_account_id).toBe('con_test_link');
-        expect(parsed?.toolkit).toBe('gmail');
+        expect(parseLastLine(lines)).toMatchObject({
+          status: 'pending',
+          connected_account_id: 'con_test_link',
+          toolkit: 'gmail',
+        });
       })
     );
   });
@@ -453,10 +441,11 @@ describe('CLI: composio dev connected-accounts link', () => {
         Effect.gen(function* () {
           yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const parsed = extractJsonObject(lines.join('\n'));
 
-          expect(lines.length).toBeGreaterThan(0);
-          expect(parsed).toBeNull();
+          expect(lines).toEqual([
+            'Linking gmail...',
+            'The API returned an incomplete link response (missing connected_account_id or redirect_url).',
+          ]);
         })
       );
     }
@@ -475,12 +464,12 @@ describe('CLI: composio dev connected-accounts link', () => {
         Effect.gen(function* () {
           yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const parsed = extractJsonObject(lines.join('\n'));
 
-          expect(parsed).not.toBeNull();
-          expect(parsed?.status).toBe('success');
-          expect(parsed?.connected_account_id).toBe('con_test_link');
-          expect(parsed?.toolkit).toBe('gmail');
+          expect(parseLastLine(lines)).toMatchObject({
+            status: 'success',
+            connected_account_id: 'con_test_link',
+            toolkit: 'gmail',
+          });
         })
     );
   });
@@ -549,7 +538,7 @@ describe('CLI: composio dev connected-accounts link', () => {
 
           expect(output).toContain('Pass --alias to create another one');
           expect(output).toContain('con_test_link');
-          expect(output).not.toContain('"status": "success"');
+          expect(output).not.toContain('"status"');
         })
       );
     }

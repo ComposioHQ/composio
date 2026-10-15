@@ -58,23 +58,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
 
-const parseLastJson = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as {
-        slug: string;
-        latest_version: string | null;
-        available_versions_last_20: string[];
-      };
-    } catch {
-      // keep searching for the last JSON line
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
-
 describe('CLI: composio dev toolkits version', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
@@ -84,16 +67,16 @@ describe('CLI: composio dev toolkits version', () => {
           yield* cli(['dev', 'toolkits', 'version', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          const json = parseLastJson(lines);
+          const json = JSON.parse(String(lines.at(-1)));
 
           expect(output).toContain('Toolkit: Gmail (gmail)');
           expect(output).toContain('Latest Version: 20260101_25');
           expect(output).toContain('Last 20 Available Versions:');
-          expect(json.slug).toBe('gmail');
-          expect(json.latest_version).toBe('20260101_25');
-          expect(json.available_versions_last_20).toHaveLength(20);
-          expect(json.available_versions_last_20[0]).toBe('20260101_06');
-          expect(json.available_versions_last_20[19]).toBe('20260101_25');
+          expect(json).toMatchObject({
+            slug: 'gmail',
+            latest_version: '20260101_25',
+            available_versions_last_20: versionHistory.slice(-20),
+          });
         })
       );
     }

@@ -55,6 +55,19 @@ const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
     refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.nowUnsafe(), { days: daysAgo })),
   });
 
+/**
+ * A project catalog that lists each named project's toolkits. Unscoped
+ * lookups, and projects it does not name, list nothing.
+ */
+const projectCatalog =
+  (toolkitsByProject: Readonly<Record<string, ReadonlyArray<string>>>) =>
+  (scope?: ToolkitProjectScope) =>
+    Effect.succeed(
+      Object.entries(toolkitsByProject)
+        .filter(([projectId]) => projectId === scope?.projectId)
+        .flatMap(([, slugs]) => slugs.map(slug => makeToolkitFixture(slug)))
+    );
+
 interface ResolverOptions {
   readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
   readonly getProjectToolkits?: (
@@ -360,15 +373,13 @@ describe('toolkitFromToolSlug', () => {
       )
     );
 
-    for (const learned of ['custom_grain', 'custom_grain_search_persons']) {
-      it.live(`uses the active project's prefix instead of learned ${learned}`, () =>
+    it.live.each(['custom_grain', 'custom_grain_search_persons'])(
+      "uses the active project's prefix instead of learned %s",
+      learned =>
         withResolver(
           {
             seedLearnedFile: learnedFileContent([learned]),
-            getProjectToolkits: scope =>
-              Effect.succeed(
-                scope?.projectId === 'proj_b' ? [makeToolkitFixture('custom_grain_search')] : []
-              ),
+            getProjectToolkits: projectCatalog({ proj_b: ['custom_grain_search'] }),
           },
           () =>
             Effect.gen(function* () {
@@ -386,8 +397,7 @@ describe('toolkitFromToolSlug', () => {
               ).toBe('custom');
             })
         )
-      );
-    }
+    );
 
     it.live('keeps a scoped discovery when an older background fetch completes later', () =>
       Effect.gen(function* () {
@@ -556,8 +566,7 @@ describe('toolkitFromToolSlug', () => {
     it.live('learns a custom toolkit found by a scoped lookup after an unscoped one', () =>
       withResolver(
         {
-          getProjectToolkits: scope =>
-            Effect.succeed(scope ? [makeToolkitFixture(CUSTOM_TOOLKIT)] : []),
+          getProjectToolkits: projectCatalog({ proj_1: [CUSTOM_TOOLKIT] }),
           seedLearnedFile: learnedFileContent([]),
         },
         ({ waitForLearnedFile }) =>

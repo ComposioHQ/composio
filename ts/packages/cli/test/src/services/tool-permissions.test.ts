@@ -162,15 +162,14 @@ describe('tool permissions', () => {
       },
     });
 
-    expect(Option.isSome(decoded)).toBe(true);
-    if (Option.isSome(decoded)) {
-      expect(decoded.value).toStrictEqual({
+    expect(decoded).toStrictEqual(
+      Option.some({
         default: 'ask_every_call',
         overrides: {
           'GMAIL_SEND_EMAIL:__none__': 'ask_always',
         },
-      });
-    }
+      })
+    );
   });
 
   it('drops only corrupt cache entries, keeping valid snapshots and allow decisions', () => {
@@ -188,8 +187,10 @@ describe('tool permissions', () => {
 
     const decoded = decodeCacheFileTolerant(raw);
 
-    expect(Object.keys(decoded.entries)).toStrictEqual(['good']);
-    expect(Object.keys(decoded.allowEntries ?? {})).toStrictEqual(['kept']);
+    expect(decoded).toStrictEqual({
+      entries: { good },
+      allowEntries: { kept: { expiresAt: PINNED_NOW + 60_000 } },
+    });
   });
 
   it('returns an empty cache for unparseable cache files', () => {
@@ -269,10 +270,7 @@ describe('tool permissions', () => {
       }).pipe(Effect.flip);
 
       expect(failure).toBeInstanceOf(ToolPermissionDeniedError);
-      if (failure instanceof ToolPermissionDeniedError) {
-        expect(failure.deniedBy).toBe('permissions');
-        expect(failure.toolSlug).toBe('GMAIL_SEND_EMAIL');
-      }
+      expect(failure).toMatchObject({ deniedBy: 'permissions', toolSlug: 'GMAIL_SEND_EMAIL' });
     }).pipe(Effect.provide(ToolPermissionsTest))
   );
 
@@ -286,10 +284,10 @@ describe('tool permissions', () => {
       }).pipe(Effect.flip);
 
       expect(failure).toBeInstanceOf(ToolPermissionDeniedError);
-      if (failure instanceof ToolPermissionDeniedError) {
-        expect(failure.deniedBy).toBe('permissions');
-        expect(failure.message).toContain('permission prompts are disabled');
-      }
+      expect(failure).toMatchObject({
+        deniedBy: 'permissions',
+        message: expect.stringContaining('permission prompts are disabled'),
+      });
     }).pipe(Effect.provide(ToolPermissionsTest))
   );
 
@@ -340,8 +338,8 @@ describe('tool permissions', () => {
           'GET /api/v3.1/org/consumer/config',
           'POST /api/v3.1/consumer/permissions/resolve',
         ]);
-        expect(snapshot?.enhancedControlsEnabled).toBe(true);
-        expect(snapshot?.permissions).toEqual({ default: 'allow_all', overrides: {} });
+        expect(snapshot).toHaveProperty('enhancedControlsEnabled', true);
+        expect(snapshot).toHaveProperty('permissions', { default: 'allow_all', overrides: {} });
       }).pipe(Effect.provide(ToolPermissionsTest))
     );
 
@@ -353,8 +351,8 @@ describe('tool permissions', () => {
           Effect.provide(stub.layer)
         );
 
-        expect(snapshot?.enhancedControlsEnabled).toBe(true);
-        expect(snapshot?.permissions).toEqual({ default: 'ask_every_call' });
+        expect(snapshot).toHaveProperty('enhancedControlsEnabled', true);
+        expect(snapshot).toHaveProperty('permissions', { default: 'ask_every_call' });
         expect(resolveGateState({ snapshot, toolSlug: 'GMAIL_SEND_EMAIL' })).toBe('ask_every_call');
         expect(stub.requestErrors()).toMatchObject([
           {
@@ -377,7 +375,7 @@ describe('tool permissions', () => {
           Effect.provide(stub.layer)
         );
 
-        expect(snapshot?.permissions).toEqual({ default: 'ask_every_call' });
+        expect(snapshot).toHaveProperty('permissions', { default: 'ask_every_call' });
         expect(stub.requestErrors()).toMatchObject([
           { path: '/api/v3.1/consumer/permissions/resolve', cause: { _tag: 'SchemaError' } },
         ]);

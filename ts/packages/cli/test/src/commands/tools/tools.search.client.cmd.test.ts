@@ -1,11 +1,8 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
-import {
-  stubClientResources,
-  type StubRequest,
-} from 'test/__utils__/services/stub-composio-client';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const sendEmailInput = {
   type: 'object',
@@ -86,19 +83,20 @@ const searchResponse = {
   next_steps_guidance: [],
 };
 
-const isSearch = (request: StubRequest) => request.path.endsWith('/search');
+const SEARCH_PATH = '/api/v3.1/tool_router/session/trs_stub_session/search';
 
 /** Searches answered by `respond`; the session they run in is created normally. */
 const searchingOver = (respond: () => Response) =>
-  stubClientResources(['toolRouter'], request =>
-    isSearch(request)
-      ? respond()
-      : Response.json({
-          session_id: 'trs_stub_session',
-          config: { user_id: 'consumer-user-org_test' },
-          mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
-          tool_router_tools: [],
-        })
+  stubClientResources(
+    ['toolRouter'],
+    routeRequests([{ method: 'POST', path: SEARCH_PATH, respond }], () =>
+      Response.json({
+        session_id: 'trs_stub_session',
+        config: { user_id: 'consumer-user-org_test' },
+        mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
+        tool_router_tools: [],
+      })
+    )
   );
 
 describe('CLI: composio search over the API client', () => {
@@ -139,10 +137,10 @@ describe('CLI: composio search over the API client', () => {
         };
         // Once as the log line and once as the piped output.
         expect(lines).toEqual([JSON.stringify(payload, null, 2), JSON.stringify(payload, null, 2)]);
-        expect(stub.requests.filter(isSearch)).toEqual([
+        expect(stub.requests.filter(request => request.path === SEARCH_PATH)).toEqual([
           {
             method: 'POST',
-            path: '/api/v3.1/tool_router/session/trs_stub_session/search',
+            path: SEARCH_PATH,
             body: { queries: [{ use_case: 'send an email' }] },
           },
         ]);
@@ -168,7 +166,7 @@ describe('CLI: composio search over the API client', () => {
         const stub = searchingOver(() => Response.json(driftedResponse));
         yield* cli(['search', 'send an email']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const payload = JSON.parse(lines.at(-1) ?? '{}');
+        const payload = JSON.parse(String(lines.at(-1)));
 
         expect(payload.results).toEqual(searchResponse.results);
         expect(payload.tool_schemas.primary).toEqual({
@@ -190,11 +188,10 @@ describe('CLI: composio search over the API client', () => {
             { status: 400 }
           )
         );
-        const exit = yield* cli(['search', 'send an email']).pipe(
+        const failure = yield* cli(['search', 'send an email']).pipe(
           Effect.provide(stub.layer),
-          Effect.exit
+          Effect.flip
         );
-        const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
 
         expect(failure).toMatchObject({ _tag: 'commands/ToolsSearchRequestError' });
         expect(extractErrorDetails(failure).message).toBe(

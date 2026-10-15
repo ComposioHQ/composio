@@ -18,18 +18,22 @@ describe('TELEMETRY_CONFIG', () => {
     })
   );
 
-  it.effect('[Given] any opt-out, CI, or a test run [Then] telemetry is disabled', () =>
+  it.effect.each([
+    { name: 'COMPOSIO_CLI_TELEMETRY_DISABLED', value: 'yes' },
+    { name: 'COMPOSIO_DISABLE_TELEMETRY', value: 'true' },
+    { name: 'TELEMETRY_DISABLED', value: '1' },
+    { name: 'CI', value: 'true' },
+    { name: 'NODE_ENV', value: 'test' },
+  ])(
+    '[Given] an opt-out, CI, or a test run ($name=$value) [Then] telemetry is disabled',
+    ({ name, value }) =>
+      Effect.gen(function* () {
+        deepStrictEqual((yield* read({ [name]: value })).DISABLED, true);
+      })
+  );
+
+  it.effect('[Given] CI off outside a test run [Then] telemetry stays on', () =>
     Effect.gen(function* () {
-      const optOuts: ReadonlyArray<Record<string, string>> = [
-        { COMPOSIO_CLI_TELEMETRY_DISABLED: 'yes' },
-        { COMPOSIO_DISABLE_TELEMETRY: 'true' },
-        { TELEMETRY_DISABLED: '1' },
-        { CI: 'true' },
-        { NODE_ENV: 'test' },
-      ];
-      for (const env of optOuts) {
-        deepStrictEqual((yield* read(env)).DISABLED, true, JSON.stringify(env));
-      }
       deepStrictEqual((yield* read({ CI: 'false', NODE_ENV: 'development' })).DISABLED, false);
     })
   );

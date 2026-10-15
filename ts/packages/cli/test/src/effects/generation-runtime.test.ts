@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Cause, Effect, Exit } from 'effect';
+import { Cause, Effect } from 'effect';
 import { generationOutcome } from 'src/effects/generation-runtime';
 import {
   GenerateTypeFromJsonSchemaError,
@@ -26,19 +26,20 @@ const foreign = <E extends Error & { readonly _tag: string }>(error: E): E => {
 
 describe('generation-runtime', () => {
   describe('rehydrateGenerationError', () => {
-    it('rebuilds each error as an instance of the CLI class, keeping fields and stack', () => {
-      const cases = [
-        new SafeOutputPathError({
-          filename: '../x.ts',
-          outputDir: '/out',
-          resolvedPath: '/x.ts',
-          message: 'escapes',
-        }),
-        new TypeScriptTranspileError({ message: 'compile failed', cause: 'TS1005' }),
-        new GenerateTypeFromJsonSchemaError({ message: 'bad schema', cause: new Error('inner') }),
-      ] as const;
+    const cases = [
+      new SafeOutputPathError({
+        filename: '../x.ts',
+        outputDir: '/out',
+        resolvedPath: '/x.ts',
+        message: 'escapes',
+      }),
+      new TypeScriptTranspileError({ message: 'compile failed', cause: 'TS1005' }),
+      new GenerateTypeFromJsonSchemaError({ message: 'bad schema', cause: new Error('inner') }),
+    ] as const;
 
-      for (const original of cases) {
+    it.each(cases)(
+      'rebuilds $_tag as an instance of the CLI class, keeping fields and stack',
+      original => {
         const crossed = foreign(original);
         expect(crossed).not.toBeInstanceOf(original.constructor);
 
@@ -48,7 +49,7 @@ describe('generation-runtime', () => {
         expect(rehydrated.message).toBe(original.message);
         expect(rehydrated.stack).toBe(original.stack);
       }
-    });
+    );
   });
 
   describe('generationOutcome', () => {
@@ -64,29 +65,25 @@ describe('generation-runtime', () => {
     it.effect('lifts a failure outcome to a typed failure of the CLI error class', () =>
       Effect.gen(function* () {
         const error = new TypeScriptTranspileError({ message: 'compile failed', cause: 'TS1005' });
-        const exit = yield* Effect.exit(
-          generationOutcome(() => Promise.resolve({ _tag: 'Failure' as const, error }))
-        );
+        const failure = yield* generationOutcome(() =>
+          Promise.resolve({ _tag: 'Failure' as const, error })
+        ).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(TypeScriptTranspileError);
-          expect((failure as TypeScriptTranspileError).cause).toBe('TS1005');
-        }
+        expect(failure).toBeInstanceOf(TypeScriptTranspileError);
+        expect(failure.cause).toBe('TS1005');
       })
     );
 
     it.effect('keeps a rejected promise (a defect in the pipeline) as a defect', () =>
       Effect.gen(function* () {
         const boom = new Error('boom');
-        const exit = yield* Effect.exit(generationOutcome<number>(() => Promise.reject(boom)));
+        const cause = yield* generationOutcome<number>(() => Promise.reject(boom)).pipe(
+          Effect.sandbox,
+          Effect.flip
+        );
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          expect(Cause.hasDies(exit.cause)).toBe(true);
-          expect(Cause.squash(exit.cause)).toBe(boom);
-        }
+        expect(Cause.hasDies(cause)).toBe(true);
+        expect(Cause.squash(cause)).toBe(boom);
       })
     );
   });

@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -75,16 +75,12 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.effect('uses root toolkit command in the no-results hint', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['triggers', 'list', 'nonexistent']));
-          expect(Exit.isFailure(exit)).toBe(true);
-          if (Exit.isFailure(exit)) {
-            const failure = Cause.squash(exit.cause);
-            expect(failure).toMatchObject({
-              _tag: 'commands/CommandInputError',
-              option: '<toolkit>',
-              message: expect.stringContaining('not available'),
-            });
-          }
+          const failure = yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<toolkit>',
+            message: expect.stringContaining('not available'),
+          });
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -204,16 +200,12 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.effect('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['dev', 'triggers', 'list', 'nonexistent']));
-          expect(Exit.isFailure(exit)).toBe(true);
-          if (Exit.isFailure(exit)) {
-            const failure = Cause.squash(exit.cause);
-            expect(failure).toMatchObject({
-              _tag: 'commands/CommandInputError',
-              option: '<toolkit>',
-              message: expect.stringContaining('not available'),
-            });
-          }
+          const failure = yield* cli(['dev', 'triggers', 'list', 'nonexistent']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<toolkit>',
+            message: expect.stringContaining('not available'),
+          });
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 

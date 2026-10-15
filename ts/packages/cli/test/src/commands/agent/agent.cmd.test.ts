@@ -22,6 +22,12 @@ const agentSignupResponse = {
   },
 };
 
+const jsonResponse = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
 describe('CLI: composio agent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -41,7 +47,7 @@ describe('CLI: composio agent', () => {
 
         const identity = yield* readStoredAgentIdentity;
 
-        expect(Option.getOrUndefined(identity)?.composio_agent_key).toBe('cak_test_agent');
+        expect(Option.getOrThrow(identity).composio_agent_key).toBe('cak_test_agent');
         expect(yield* fs.readFileString(agentConfigPath, 'utf8')).toBe(encodedIdentity);
         expect((yield* fs.stat(agentConfigPath)).mode & 0o777).toBe(0o600);
       })
@@ -63,29 +69,16 @@ describe('CLI: composio agent', () => {
   layer(TestLive())(it => {
     it.effect('agent signup works when the CLI is not signed in', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
-          const url =
-            typeof requestInput === 'string'
-              ? requestInput
-              : requestInput instanceof URL
-                ? requestInput.toString()
-                : requestInput.url;
-
-          if (url.includes('/api/signup')) {
-            return new Response(JSON.stringify(agentSignupResponse), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            });
-          }
-
-          return new Response(JSON.stringify({}), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        });
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockImplementation(async () => jsonResponse(agentSignupResponse));
 
         yield* cli(['agent', 'signup']);
 
+        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+          expect.stringContaining('/api/signup'),
+          expect.objectContaining({ method: 'POST' })
+        );
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('composio agent signup signs you up as a Composio agent');
         expect(output).toContain('fully non-interactive');
@@ -118,29 +111,17 @@ describe('CLI: composio agent', () => {
   layer(TestLive())(it => {
     it.effect('top-level signup makes clear it signs up an agent', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
-          const url =
-            typeof requestInput === 'string'
-              ? requestInput
-              : requestInput instanceof URL
-                ? requestInput.toString()
-                : requestInput.url;
-
-          if (url.includes('/api/signup')) {
-            return new Response(JSON.stringify(agentSignupResponse), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            });
-          }
-
-          return new Response(JSON.stringify({}), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        });
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockImplementation(async () => jsonResponse(agentSignupResponse));
 
         yield* cli(['signup']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+          expect.stringContaining('/api/signup'),
+          expect.objectContaining({ method: 'POST' })
+        );
 
         expect(output).toContain('composio signup signs you up as a Composio agent');
       })
@@ -154,57 +135,32 @@ describe('CLI: composio agent', () => {
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
         expect((yield* fs.stat(path.join(cacheDir, 'agent.json'))).mode & 0o777).toBe(0o600);
-        vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
-          const url =
-            typeof requestInput === 'string'
-              ? requestInput
-              : requestInput instanceof URL
-                ? requestInput.toString()
-                : requestInput.url;
-
-          if (url.includes('/api/mail')) {
-            expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cak_test_agent');
-            return new Response(
-              JSON.stringify({
-                count: 1,
-                messages: [
-                  {
-                    id: 'msg_123',
-                    from: 'person@example.com',
-                    subject: 'Hello',
-                    preview: 'Hi agent',
-                  },
-                ],
-              }),
-              {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-              }
-            );
-          }
-
-          return new Response(JSON.stringify({}), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        });
+        const inbox = {
+          count: 1,
+          messages: [
+            {
+              id: 'msg_123',
+              from: 'person@example.com',
+              subject: 'Hello',
+              preview: 'Hi agent',
+            },
+          ],
+        };
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockImplementation(async () => jsonResponse(inbox));
 
         yield* cli(['agent', 'inbox']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
-        expect(lines).toEqual([
-          JSON.stringify({
-            count: 1,
-            messages: [
-              {
-                id: 'msg_123',
-                from: 'person@example.com',
-                subject: 'Hello',
-                preview: 'Hi agent',
-              },
-            ],
-          }),
-        ]);
+        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+          expect.stringContaining('/api/mail'),
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({ Authorization: 'Bearer cak_test_agent' }),
+          })
+        );
+        expect(lines).toEqual([JSON.stringify(inbox)]);
       })
     );
   });
@@ -212,37 +168,23 @@ describe('CLI: composio agent', () => {
   layer(TestLive())(it => {
     it.effect('agent login restores an existing agent from composio_agent_key', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
-          const url =
-            typeof requestInput === 'string'
-              ? requestInput
-              : requestInput instanceof URL
-                ? requestInput.toString()
-                : requestInput.url;
-
-          if (url.includes('/api/whoami')) {
-            expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cak_existing');
-            return new Response(
-              JSON.stringify({
-                ...agentSignupResponse,
-                composio_agent_key: 'cak_existing',
-                agent_key: 'cak_existing',
-              }),
-              {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-              }
-            );
-          }
-
-          return new Response(JSON.stringify({}), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        });
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+          jsonResponse({
+            ...agentSignupResponse,
+            composio_agent_key: 'cak_existing',
+            agent_key: 'cak_existing',
+          })
+        );
 
         yield* cli(['agent', 'login', 'cak_existing']);
 
+        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+          expect.stringContaining('/api/whoami'),
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({ Authorization: 'Bearer cak_existing' }),
+          })
+        );
         const ctx = yield* ComposioUserContext;
         expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
         expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');

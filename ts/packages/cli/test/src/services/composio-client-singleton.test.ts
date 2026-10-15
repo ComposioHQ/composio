@@ -240,9 +240,7 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.has('x-extra')).toBe(false);
       expect(headers.has('x-user-api-key')).toBe(false);
       expect(headers.has('x-api-key')).toBe(false);
-      for (const spy of consoleSpies) {
-        expect(spy).not.toHaveBeenCalled();
-      }
+      expect(consoleSpies.flatMap(spy => spy.mock.calls)).toEqual([]);
     }).pipe(
       Effect.provide(
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))

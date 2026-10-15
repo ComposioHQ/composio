@@ -1,7 +1,6 @@
-import assert from 'node:assert';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Predicate } from 'effect';
+import { Effect } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import { cli, liveEnvConfigProvider, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
@@ -366,14 +365,12 @@ describe('CLI: composio generate py', () => {
           const outputDir = path.join(cwd, '.generated', 'composio-py-invalid');
 
           const args = ['generate', 'py', '--toolkits', 'nonexistent', '--output-dir', outputDir];
-          const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
+          const failure = yield* cli(args).pipe(Effect.flip);
 
-          assert.ok(Predicate.isTagged(result, 'commands/CommandInputError'));
-          if (Predicate.isTagged(result, 'commands/CommandInputError')) {
-            expect((result as unknown as { message: string }).message).toContain(
-              'Invalid toolkit(s): nonexistent'
-            );
-          }
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            message: expect.stringContaining('Invalid toolkit(s): nonexistent'),
+          });
         })
       );
 

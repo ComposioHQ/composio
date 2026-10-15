@@ -358,8 +358,9 @@ describe('composio-clients', () => {
   });
 
   describe('repository request core', () => {
-    for (const method of ['getToolkits', 'getTools', 'getTriggerTypes'] as const) {
-      it.effect(`${method} aborts an in-flight pagination request when interrupted`, () =>
+    it.effect.each(['getToolkits', 'getTools', 'getTriggerTypes'] as const)(
+      '%s aborts an in-flight pagination request when interrupted',
+      method =>
         Effect.gen(function* () {
           const started = Promise.withResolvers<AbortSignal>();
           const fetchSpy = vi
@@ -383,8 +384,7 @@ describe('composio-clients', () => {
           expect(requestSignal.aborted).toBe(true);
           expect(fetchSpy).toHaveBeenCalledTimes(2);
         }).pipe(Effect.provide(withRepository))
-      );
-    }
+    );
 
     it.effect('fetches every toolkit page, sorted by slug, and counts each request', () =>
       Effect.gen(function* () {
@@ -777,10 +777,7 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
 
   const requestOf = (fetchSpy: ReturnType<typeof spyOnToolkitsFetch>) => {
     const [input, init] = fetchSpy.mock.calls[0]!;
-    const url = new URL(input instanceof Request ? input.url : String(input));
-    const headers = new Headers(input instanceof Request ? input.headers : undefined);
-    new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
-    return { url, headers };
+    return { url: new URL(String(input)), headers: new Headers(init?.headers) };
   };
 
   it.effect(

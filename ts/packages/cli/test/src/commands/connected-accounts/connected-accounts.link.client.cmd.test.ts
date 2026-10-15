@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
-import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testLayer = TestLive({
   baseConfigProvider: ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key' } }),
@@ -15,19 +15,29 @@ describe('CLI: composio link over the API client', () => {
   layer(testLayer)('[Given] the API rejects the link for a toolkit', it => {
     it.effect('[Then] the API message and the browse hint are printed', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['toolRouter'], request =>
-          request.path.endsWith('/link')
-            ? rejection(
-                400,
-                'Toolkit gmail is disabled for this project',
-                'ToolRouterV2_ToolkitDisabled'
-              )
-            : Response.json({
+        const stub = stubClientResources(
+          ['toolRouter'],
+          routeRequests(
+            [
+              {
+                method: 'POST',
+                path: '/api/v3.1/tool_router/session/trs_stub_session/link',
+                respond: () =>
+                  rejection(
+                    400,
+                    'Toolkit gmail is disabled for this project',
+                    'ToolRouterV2_ToolkitDisabled'
+                  ),
+              },
+            ],
+            () =>
+              Response.json({
                 session_id: 'trs_stub_session',
                 config: { user_id: 'consumer-user-org_test' },
                 mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
                 tool_router_tools: [],
               })
+          )
         );
         yield* cli(['link', 'gmail', '--no-wait']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

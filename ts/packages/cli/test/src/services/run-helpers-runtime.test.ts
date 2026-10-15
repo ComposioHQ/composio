@@ -21,9 +21,7 @@ const originalGlobalDescriptors = new Map(
 
 const readInstalledFunction = (name: string): ((...args: ReadonlyArray<unknown>) => unknown) => {
   const value: unknown = Reflect.get(globalThis, name);
-  if (typeof value !== 'function') {
-    throw new Error(`installRunHelpers() did not install ${name}().`);
-  }
+  assert(typeof value === 'function', `installRunHelpers() did not install ${name}().`);
   return (...args) => Reflect.apply(value, undefined, [...args]);
 };
 
@@ -59,9 +57,10 @@ describe('run-helpers-runtime', () => {
   it('[Given] installed helpers [Then] every documented global is defined', async () => {
     await installRunHelpers({ cliPrefix: ['composio'] });
 
-    for (const name of ['execute', 'search', 'proxy', 'experimental_subAgent', 'invokeAgent']) {
-      expect(typeof Reflect.get(globalThis, name)).toBe('function');
-    }
+    const helperNames = ['execute', 'search', 'proxy', 'experimental_subAgent', 'invokeAgent'];
+    expect(helperNames.map(name => typeof Reflect.get(globalThis, name))).toEqual(
+      helperNames.map(() => 'function')
+    );
     expect(Reflect.get(globalThis, 'z')).toBeDefined();
     expect(Reflect.get(globalThis, 'zod')).toBe(Reflect.get(globalThis, 'z'));
   });
@@ -69,32 +68,32 @@ describe('run-helpers-runtime', () => {
   it('[Given] experimental_subAgent or invokeAgent [Then] both reject with the same removal message and alternative', async () => {
     await installRunHelpers({ cliPrefix: ['composio'] });
 
-    const outcomes = await Promise.allSettled([
+    const [subAgent, invokeAgent] = await Promise.allSettled([
       readInstalledFunction('experimental_subAgent')('p'),
       readInstalledFunction('invokeAgent')('p'),
     ]);
 
-    const messages = outcomes.map(outcome =>
-      outcome.status === 'rejected' && outcome.reason instanceof Error
-        ? outcome.reason.message
-        : undefined
-    );
-    expect(outcomes.map(outcome => outcome.status)).toEqual(['rejected', 'rejected']);
-    expect(messages[0]).toContain('removed');
-    expect(messages[0]).toContain('automatically approved permission requests');
-    expect(messages[0]).toContain('let the calling agent summarize');
-    expect(messages[1]).toBe(messages[0]);
+    assert(subAgent?.status === 'rejected' && subAgent.reason instanceof Error);
+    expect(subAgent.reason.message).toContain('removed');
+    expect(subAgent.reason.message).toContain('automatically approved permission requests');
+    expect(subAgent.reason.message).toContain('let the calling agent summarize');
+    expect(invokeAgent).toMatchObject({
+      status: 'rejected',
+      reason: { message: subAgent.reason.message },
+    });
   });
 
-  it('[Given] any arguments, including none [Then] experimental_subAgent rejects instead of throwing', async () => {
+  it.each([
+    { name: 'no arguments', args: [] },
+    { name: 'a prompt and options', args: ['p', { target: 'codex' }] },
+    { name: 'arbitrary extra arguments', args: [42, null, 'extra'] },
+  ])('[Given] $name [Then] experimental_subAgent rejects instead of throwing', async ({ args }) => {
     await installRunHelpers({ cliPrefix: ['composio'] });
-    const subAgent = readInstalledFunction('experimental_subAgent');
 
-    for (const args of [[], ['p', { target: 'codex' }], [42, null, 'extra']]) {
-      const returned = subAgent(...args);
-      expect(returned).toBeInstanceOf(Promise);
-      await expect(returned).rejects.toThrow(/removed/);
-    }
+    const returned = readInstalledFunction('experimental_subAgent')(...args);
+
+    expect(returned).toBeInstanceOf(Promise);
+    await expect(returned).rejects.toThrow(/removed/);
   });
 
   it('[Given] a malformed proxy session response [Then] it rejects the HTTP boundary payload', async () => {
@@ -117,13 +116,11 @@ describe('run-helpers-runtime', () => {
     });
 
     const installedGlobals: unknown = globalThis;
-    expect(Predicate.hasProperty(installedGlobals, 'proxy')).toBe(true);
-    if (
-      !Predicate.hasProperty(installedGlobals, 'proxy') ||
-      typeof installedGlobals.proxy !== 'function'
-    ) {
-      throw new Error('installRunHelpers() did not install proxy().');
-    }
+    assert(
+      Predicate.hasProperty(installedGlobals, 'proxy') &&
+        typeof installedGlobals.proxy === 'function',
+      'installRunHelpers() did not install proxy().'
+    );
 
     await expect(installedGlobals.proxy('github')).rejects.toThrow(/session_id/);
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -279,13 +276,11 @@ describe('run-helpers-runtime', () => {
     });
 
     const installedGlobals: unknown = globalThis;
-    expect(Predicate.hasProperty(installedGlobals, 'proxy')).toBe(true);
-    if (
-      !Predicate.hasProperty(installedGlobals, 'proxy') ||
-      typeof installedGlobals.proxy !== 'function'
-    ) {
-      throw new Error('installRunHelpers() did not install proxy().');
-    }
+    assert(
+      Predicate.hasProperty(installedGlobals, 'proxy') &&
+        typeof installedGlobals.proxy === 'function',
+      'installRunHelpers() did not install proxy().'
+    );
 
     const proxyFetch = await installedGlobals.proxy('github');
     await expect(proxyFetch('https://api.github.com/user')).rejects.toMatchObject({
@@ -333,13 +328,11 @@ describe('run-helpers-runtime', () => {
     });
 
     const installedGlobals: unknown = globalThis;
-    expect(Predicate.hasProperty(installedGlobals, 'proxy')).toBe(true);
-    if (
-      !Predicate.hasProperty(installedGlobals, 'proxy') ||
-      typeof installedGlobals.proxy !== 'function'
-    ) {
-      throw new Error('installRunHelpers() did not install proxy().');
-    }
+    assert(
+      Predicate.hasProperty(installedGlobals, 'proxy') &&
+        typeof installedGlobals.proxy === 'function',
+      'installRunHelpers() did not install proxy().'
+    );
 
     const proxyFetch = await installedGlobals.proxy('github');
     await expect(proxyFetch('https://api.github.com/user')).rejects.toMatchObject({
@@ -373,13 +366,11 @@ describe('run-helpers-runtime', () => {
     });
 
     const installedGlobals: unknown = globalThis;
-    expect(Predicate.hasProperty(installedGlobals, 'search')).toBe(true);
-    if (
-      !Predicate.hasProperty(installedGlobals, 'search') ||
-      typeof installedGlobals.search !== 'function'
-    ) {
-      throw new Error('installRunHelpers() did not install search().');
-    }
+    assert(
+      Predicate.hasProperty(installedGlobals, 'search') &&
+        typeof installedGlobals.search === 'function',
+      'installRunHelpers() did not install search().'
+    );
 
     await expect(installedGlobals.search('test')).resolves.toMatchObject({
       successful: true,

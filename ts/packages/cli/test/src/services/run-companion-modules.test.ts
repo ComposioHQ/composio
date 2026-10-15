@@ -43,6 +43,16 @@ const writeLiveCompanions = (installDirectory: string) => {
   }
 };
 
+// What an install upgraded from an older release still holds: every legacy
+// placeholder, empty.
+const writeLegacyPlaceholders = (installDirectory: string) => {
+  for (const relativePath of RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS) {
+    const filePath = path.join(installDirectory, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, '');
+  }
+};
+
 const stubRepairFetch = () => {
   const fetchMock = vi.fn((url: string) =>
     Promise.resolve(
@@ -149,11 +159,7 @@ describe('run-companion-modules', () => {
           const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-legacy-'));
           const execPath = path.join(installDirectory, 'composio');
           writeLiveCompanions(installDirectory);
-          for (const relativePath of RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS) {
-            const filePath = path.join(installDirectory, relativePath);
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
-            fs.writeFileSync(filePath, '');
-          }
+          writeLegacyPlaceholders(installDirectory);
           const fetchMock = stubRepairFetch();
 
           return yield* Effect.gen(function* () {
@@ -407,8 +413,8 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://github-proxy.test/repos/fork-owner/fork-repo/releases/tags/%40composio%2Fcli%409.9.9-test'
           );
         }).pipe(
@@ -450,8 +456,8 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(

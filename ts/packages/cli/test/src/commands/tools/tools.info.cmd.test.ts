@@ -4,19 +4,6 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
 
-const parseLastJson = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as Record<string, unknown>;
-    } catch {
-      // continue
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
-
 const testTools: Tools = [
   {
     name: 'Send Email',
@@ -122,7 +109,7 @@ describe('CLI: composio tools info', () => {
         Effect.gen(function* () {
           yield* cli(['tools', 'info', 'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as {
+          const output = JSON.parse(String(lines.at(-1))) as {
             inputSchema: Record<string, unknown>;
           };
 
