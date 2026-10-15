@@ -888,17 +888,17 @@ export const loginCmd = Command.make(
         return yield* invalidOptionValue('Use either `--key` or `--user-api-key`, not both.');
       }
 
-      if (
-        poll &&
-        (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
-      ) {
+      const hasBrowserOrSessionFlag = noBrowser || noWait;
+      const hasDirectLoginFlag = Option.isSome(key) || Option.isSome(userApiKey);
+
+      if (poll && (hasBrowserOrSessionFlag || hasDirectLoginFlag || agent)) {
         return yield* invalidOptionValue(
           '`--poll` cannot be combined with browser, session, direct-login, or agent flags.',
           '--poll'
         );
       }
 
-      if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
+      if (agent && (hasBrowserOrSessionFlag || hasDirectLoginFlag)) {
         return yield* invalidOptionValue(
           '`--agent` cannot be combined with browser, session, or direct-login flags.',
           '--agent'
@@ -909,7 +909,7 @@ export const loginCmd = Command.make(
         return yield* invalidOptionValue('`--org` requires `--user-api-key`.', '--org');
       }
 
-      if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
+      if (Option.isSome(userApiKey) && (hasBrowserOrSessionFlag || Option.isSome(key))) {
         return yield* invalidOptionValue(
           '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.',
           '--user-api-key'

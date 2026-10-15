@@ -49,6 +49,15 @@ export interface UpdateStatus {
   lastChecked: string | null;
 }
 
+const toCheckStatus = (params: {
+  readonly updateAvailable: boolean;
+  readonly versionsKnown: boolean;
+}): UpdateStatus['checkStatus'] => {
+  if (params.updateAvailable) return 'update-available';
+  if (!params.versionsKnown) return 'unknown';
+  return 'up-to-date';
+};
+
 const UpdateCheckStateSchema = Schema.fromJsonString(
   Schema.Struct({
     lastChecked: Schema.String,
@@ -295,11 +304,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
         validLatest && semver.prerelease(validLatest) === null ? validLatest : null;
       const updateAvailable =
         validCurrent !== null && latestStable !== null && semver.gt(latestStable, validCurrent);
-      const checkStatus = updateAvailable
-        ? 'update-available'
-        : refreshFailed || validCurrent === null || latestStable === null
-          ? 'unknown'
-          : 'up-to-date';
+      const versionsKnown = !refreshFailed && validCurrent !== null && latestStable !== null;
+      const checkStatus = toCheckStatus({ updateAvailable, versionsKnown });
 
       return {
         current: config.currentVersion,

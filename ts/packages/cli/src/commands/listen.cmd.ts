@@ -279,6 +279,9 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
 const parseStreamPath = (expression: string) =>
   Effect.gen(function* () {
     const trimmed = expression.trim();
+    const pathTokens: Array<string | number> = [];
+    // An empty --stream streams the whole event.
+    if (trimmed.length === 0) return pathTokens;
     if (!trimmed.startsWith('.')) {
       return yield* Effect.fail(
         invalidOptionValue(
@@ -288,7 +291,6 @@ const parseStreamPath = (expression: string) =>
       );
     }
 
-    const pathTokens: Array<string | number> = [];
     const tokenPattern = /(?:\.([A-Za-z0-9_-]+))|(?:\[(\d+)\])/g;
     let lastIndex = 0;
 
@@ -465,9 +467,7 @@ const resolveListenSetup = (params: {
       ? yield* parseTimeoutMs(params.timeout.value)
       : undefined;
     const streamPath = Option.isSome(params.stream)
-      ? params.stream.value.trim().length === 0
-        ? []
-        : yield* parseStreamPath(params.stream.value)
+      ? yield* parseStreamPath(params.stream.value)
       : undefined;
 
     return {
@@ -638,12 +638,7 @@ export const listenCmd = Command.make(
                   yield* emitStreamLine(`event: ${eventFilePath}`, ui);
 
                   if (shouldStream) {
-                    const streamValue =
-                      streamPath === undefined
-                        ? eventData
-                        : streamPath.length === 0
-                          ? eventData
-                          : applyStreamPath(eventData, streamPath);
+                    const streamValue = applyStreamPath(eventData, streamPath ?? []);
                     yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
                   }
 
