@@ -107,7 +107,7 @@ def _needs_serialization(obj: t.Any) -> bool:
 def _serialize_value(obj: t.Any) -> t.Any:
     """Recursively convert Pydantic models to JSON-safe primitives."""
     if isinstance(obj, PydanticBaseModel):
-        return obj.model_dump(mode="json")
+        return obj.model_dump(mode="json", by_alias=True)
     if isinstance(obj, dict):
         return {k: _serialize_value(v) for k, v in obj.items()}
     if isinstance(obj, list):
