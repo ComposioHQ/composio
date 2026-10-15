@@ -58,6 +58,15 @@ Resuming a stored session? Pass the same flag, `composio.use(sessionId, { mcp: t
 The MCP endpoint and `session.tools()` are backed by the same session. Toolkits, auth configs, and connected accounts you set when [configuring the session](/docs/configuring-sessions) apply to both.
 </Callout>
 
+## Approval without elicitation support
+
+You can [require approval for session tools](/docs/configuring-sessions#requiring-tool-approval). If your MCP client cannot ask for approval through elicitation, set `experimental.noElicitationSupportFallback` in TypeScript or `experimental.no_elicitation_support_fallback` in Python when creating the session:
+
+- `"deny"` blocks the call when the client cannot ask for approval.
+- `"allow"` lets the call run without asking for approval.
+
+For example, pass `experimental: { noElicitationSupportFallback: "deny" }` in TypeScript or `experimental={"no_elicitation_support_fallback": "deny"}` in Python alongside `mcp: true` or `mcp=True`.
+
 ## What the MCP headers carry
 
 `session.mcp.headers` holds the credential the SDK used to create or load the session, and nothing else. No other default header and no ambient `COMPOSIO_API_KEY` is copied in.
