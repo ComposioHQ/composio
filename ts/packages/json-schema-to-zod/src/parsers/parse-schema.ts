@@ -1,5 +1,3 @@
-import * as z from 'zod/v3';
-
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
 import { parseArray } from './parse-array';
@@ -20,55 +18,32 @@ import {
   hasTypelessScalarConstraints,
   parseTypelessConstraints,
 } from './parse-typeless-constraints';
-import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../types';
+import { describeText } from '../annotations';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
 import {
+  createWholeSchemaGuard,
   guardSchemaAt,
   requiresPermissiveMaterialization,
-  withWholeSchemaValidation,
 } from '../whole-schema-validation';
 
-const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
-  let description = '';
+const addDescribes = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
+  const description = describeText(jsonSchema);
 
-  if (jsonSchema.description) {
-    description = jsonSchema.description;
-  } else if (jsonSchema.title) {
-    description = jsonSchema.title;
-  }
-
-  // Append example(s) if they exist
-  if (jsonSchema.example !== undefined) {
-    const exampleText = `Example: ${JSON.stringify(jsonSchema.example)}`;
-    description = description ? `${description}\n${exampleText}` : exampleText;
-  } else if (jsonSchema.examples !== undefined && Array.isArray(jsonSchema.examples)) {
-    const examples = jsonSchema.examples;
-    if (examples.length > 0) {
-      const exampleText =
-        examples.length === 1
-          ? `Example: ${JSON.stringify(examples[0])}`
-          : `Examples:\n${examples.map((ex: unknown) => `  ${JSON.stringify(ex)}`).join('\n')}`;
-      description = description ? `${description}\n${exampleText}` : exampleText;
-    }
-  }
-
-  if (description) {
-    zodSchema = zodSchema.describe(description);
+  if (description !== undefined) {
+    return ctx.backend.decorate(zodSchema, { description });
   }
 
   return zodSchema;
 };
 
-const addDefaults = (
-  jsonSchema: JsonSchemaObject,
-  zodSchema: z.ZodTypeAny,
-  refs?: Refs
-): z.ZodTypeAny => {
+const addDefaults = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
   if (jsonSchema.default !== undefined) {
     // Don't apply null defaults to non-nullable types within anyOf/oneOf contexts
     if (jsonSchema.default === null) {
       // Check if we're in an anyOf/oneOf context by examining the path
-      const inAnyOfOrOneOf = refs?.path.some(segment => segment === 'anyOf' || segment === 'oneOf');
+      const inAnyOfOrOneOf = ctx.path.some(segment => segment === 'anyOf' || segment === 'oneOf');
 
       // If we're in anyOf/oneOf and this is a non-nullable type, skip the default
       if (
@@ -82,107 +57,111 @@ const addDefaults = (
       }
     }
 
-    zodSchema = zodSchema.default(jsonSchema.default);
+    return ctx.backend.withDefault(zodSchema, jsonSchema.default);
   }
 
   return zodSchema;
 };
 
-const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addAnnotations = <S>(jsonSchema: JsonSchemaObject, zodSchema: S, ctx: ParseContext<S>): S => {
   if (jsonSchema.readOnly) {
-    zodSchema = zodSchema.readonly();
+    return ctx.backend.readonly(zodSchema);
   }
 
   return zodSchema;
 };
 
-const selectParser: ParserSelector = (schema, refs) => {
+const selectParser = <S>(schema: JsonSchemaObject, ctx: ParseContext<S>): S => {
   if (requiresPermissiveMaterialization(schema)) {
     // Widen only this node, and let it guard itself so combinators such as
     // `oneOf` still discriminate between branches that were widened.
-    return withWholeSchemaValidation(guardSchemaAt(schema, refs), z.any());
+    return ctx.backend.attachGuard(
+      ctx.backend.any(),
+      createWholeSchemaGuard(guardSchemaAt(schema, ctx))
+    );
   } else if (its.a.nullable(schema)) {
-    return parseNullable(schema, refs);
+    return parseNullable(schema, ctx);
   } else if (its.an.enum(schema)) {
     // `enum`/`const` intersect the declared type, so they must win over the
     // object and array parsers or a literal object/array value is never checked.
-    return parseEnum(schema, refs);
+    return parseEnum(schema, ctx);
   } else if (its.a.const(schema)) {
-    return parseConst(schema, refs);
+    return parseConst(schema, ctx);
   } else if (its.an.object(schema)) {
-    return parseObject(schema, refs);
+    return parseObject(schema, ctx);
   } else if (its.an.array(schema)) {
-    return parseArray(schema, refs);
+    return parseArray(schema, ctx);
   } else if (its.an.anyOf(schema)) {
-    return parseAnyOf(schema, refs);
+    return parseAnyOf(schema, ctx);
   } else if (its.an.allOf(schema)) {
-    return parseAllOf(schema, refs);
+    return parseAllOf(schema, ctx);
   } else if (its.a.oneOf(schema)) {
-    return parseOneOf(schema, refs);
+    return parseOneOf(schema, ctx);
   } else if (its.a.not(schema)) {
-    return parseNot(schema, refs);
+    return parseNot(schema, ctx);
   } else if (hasTypelessScalarConstraints(schema)) {
-    return parseTypelessConstraints(schema, refs);
+    return parseTypelessConstraints(schema, ctx);
   } else if (its.a.multipleType(schema)) {
-    return parseMultipleType(schema, refs);
+    return parseMultipleType(schema, ctx);
   } else if (its.a.primitive(schema, 'string')) {
-    return parseString(schema, refs);
+    return parseString(schema, ctx);
   } else if (its.a.primitive(schema, 'number') || its.a.primitive(schema, 'integer')) {
-    return parseNumber(schema);
+    return parseNumber(schema, ctx.backend);
   } else if (its.a.primitive(schema, 'boolean')) {
-    return parseBoolean(schema);
+    return parseBoolean(schema, ctx);
   } else if (its.a.primitive(schema, 'null')) {
-    return parseNull(schema);
+    return parseNull(schema, ctx);
   } else if (its.a.conditional(schema)) {
-    return parseIfThenElse(schema, refs);
+    return parseIfThenElse(schema, ctx);
   } else {
-    return parseDefault(schema);
+    return parseDefault(schema, ctx);
   }
 };
 
-export const parseSchema = (
+export const parseSchema = <S>(
   jsonSchema: JsonSchema,
-  refs: Refs = { seen: new Map(), path: [] },
+  ctx: ParseContext<S>,
   blockMeta?: boolean
-): z.ZodType => {
-  if (typeof jsonSchema !== 'object') return jsonSchema ? z.any() : z.never();
+): S => {
+  const { backend } = ctx;
+  if (typeof jsonSchema !== 'object') return jsonSchema ? backend.any() : backend.never();
 
-  if (refs.parserOverride) {
-    const custom = refs.parserOverride(jsonSchema, refs);
+  if (ctx.parserOverride) {
+    const custom = ctx.parserOverride(jsonSchema, ctx);
 
-    if (custom instanceof z.ZodType) {
+    if (backend.isSchema(custom)) {
       return custom;
     }
   }
 
-  let seen = refs.seen.get(jsonSchema);
+  let seen = ctx.seen.get(jsonSchema);
 
   if (seen) {
     if (seen.r !== undefined) {
       return seen.r;
     }
 
-    if (refs.depth === undefined || seen.n >= refs.depth) {
-      return z.any();
+    if (ctx.depth === undefined || seen.n >= ctx.depth) {
+      return backend.any();
     }
 
     seen.n += 1;
   } else {
     seen = { r: undefined, n: 0 };
-    refs.seen.set(jsonSchema, seen);
+    ctx.seen.set(jsonSchema, seen);
   }
 
-  let parsedZodSchema = selectParser(jsonSchema, refs);
+  let parsedZodSchema = selectParser(jsonSchema, ctx);
   if (!blockMeta) {
-    if (!refs.withoutDescribes) {
-      parsedZodSchema = addDescribes(jsonSchema, parsedZodSchema);
+    if (!ctx.withoutDescribes) {
+      parsedZodSchema = addDescribes(jsonSchema, parsedZodSchema, ctx);
     }
 
-    if (!refs.withoutDefaults) {
-      parsedZodSchema = addDefaults(jsonSchema, parsedZodSchema, refs);
+    if (!ctx.withoutDefaults) {
+      parsedZodSchema = addDefaults(jsonSchema, parsedZodSchema, ctx);
     }
 
-    parsedZodSchema = addAnnotations(jsonSchema, parsedZodSchema);
+    parsedZodSchema = addAnnotations(jsonSchema, parsedZodSchema, ctx);
   }
 
   seen.r = parsedZodSchema;

@@ -1,11 +1,10 @@
-import * as z from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 import {
+  createWholeSchemaGuard,
   guardSchemaAt,
   requiresWholeSchemaValidation,
-  withWholeSchemaValidation,
 } from '../whole-schema-validation';
 
 /**
@@ -13,10 +12,13 @@ import {
  * This is useful when you need ZodRawShape instead of a complete ZodObject.
  *
  * @param objectSchema - The JSON Schema object to parse
- * @param refs - Parser references for handling nested schemas
+ * @param ctx - Parser context for handling nested schemas
  * @returns A Zod raw shape object
  */
-export function parseObjectShape(objectSchema: JsonSchemaObject, refs: Refs): z.ZodRawShape {
+export function parseObjectShape<S>(
+  objectSchema: JsonSchemaObject,
+  ctx: ParseContext<S>
+): Record<string, S> {
   if (!objectSchema.properties) {
     return {};
   }
@@ -26,19 +28,23 @@ export function parseObjectShape(objectSchema: JsonSchemaObject, refs: Refs): z.
     return {};
   }
 
-  const properties: z.ZodRawShape = {};
+  const { backend } = ctx;
+  const properties: Record<string, S> = {};
 
   for (const key of propertyKeys) {
     const propJsonSchema = objectSchema.properties[key];
-    const propRefs = {
-      ...refs,
-      root: refs.root ?? objectSchema,
-      path: [...refs.path, 'properties', key],
+    const propCtx = {
+      ...ctx,
+      root: ctx.root ?? objectSchema,
+      path: [...ctx.path, 'properties', key],
     };
 
-    const parsedProperty = parseSchema(propJsonSchema, propRefs);
+    const parsedProperty = parseSchema(propJsonSchema, propCtx);
     const propZodSchema = requiresWholeSchemaValidation(propJsonSchema)
-      ? withWholeSchemaValidation(guardSchemaAt(propJsonSchema, propRefs), parsedProperty)
+      ? backend.attachGuard(
+          parsedProperty,
+          createWholeSchemaGuard(guardSchemaAt(propJsonSchema, propCtx))
+        )
       : parsedProperty;
 
     const required = Array.isArray(objectSchema.required)
@@ -75,16 +81,22 @@ export function parseObjectShape(objectSchema: JsonSchemaObject, refs: Refs): z.
 
         if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
           // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = propZodSchema.optional().default(null);
+          properties[key] = backend.withDefault(backend.optional(propZodSchema), null);
         } else {
           // Make the field nullable with the null default
-          properties[key] = propZodSchema.nullable().optional().default(null);
+          properties[key] = backend.withDefault(
+            backend.optional(backend.nullable(propZodSchema)),
+            null
+          );
         }
       } else {
-        properties[key] = propZodSchema.optional().default(propJsonSchema.default);
+        properties[key] = backend.withDefault(
+          backend.optional(propZodSchema),
+          propJsonSchema.default
+        );
       }
     } else {
-      properties[key] = required ? propZodSchema : propZodSchema.optional();
+      properties[key] = required ? propZodSchema : backend.optional(propZodSchema);
     }
   }
 

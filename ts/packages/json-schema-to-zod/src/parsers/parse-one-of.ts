@@ -1,40 +1,39 @@
-import { z } from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
+import type { RunFailure } from '../backend/types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 
-export const parseOneOf = (jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] }, refs: Refs) => {
+export const parseOneOf = <S>(
+  jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] },
+  ctx: ParseContext<S>
+): S => {
+  const { backend } = ctx;
   if (!jsonSchema.oneOf.length) {
-    return z.any();
+    return backend.any();
   }
 
   if (jsonSchema.oneOf.length === 1) {
     return parseSchema(jsonSchema.oneOf[0], {
-      ...refs,
-      path: [...refs.path, 'oneOf', 0],
+      ...ctx,
+      path: [...ctx.path, 'oneOf', 0],
     });
   }
 
-  return z.any().superRefine((x, ctx) => {
+  return backend.superRefine<unknown>(backend.any(), (x, issues) => {
     const schemas = jsonSchema.oneOf.map((schema, i) =>
       parseSchema(schema, {
-        ...refs,
-        path: [...refs.path, 'oneOf', i],
+        ...ctx,
+        path: [...ctx.path, 'oneOf', i],
       })
     );
 
-    const unionErrors = schemas.reduce<z.ZodError[]>(
-      (errors, schema) =>
-        (result => (result.error ? [...errors, result.error] : errors))(schema.safeParse(x)),
-      []
-    );
+    const unionErrors = schemas.reduce<RunFailure[]>((errors, schema) => {
+      const result = backend.run(schema, x);
+      return result.success ? errors : [...errors, result.failure];
+    }, []);
 
     if (schemas.length - unionErrors.length !== 1) {
-      ctx.addIssue({
-        code: 'invalid_union',
-        unionErrors,
-        message: 'Invalid input: Should pass single schema',
-      });
+      issues.invalidUnion('Invalid input: Should pass single schema', unionErrors);
     }
   });
 };
