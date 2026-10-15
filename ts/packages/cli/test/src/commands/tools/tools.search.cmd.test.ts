@@ -7,7 +7,7 @@ import type {
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
-import { ToolsSearchInputError } from 'src/commands/tools/commands/tools.search.cmd';
+import { CommandInputError } from 'src/commands/errors';
 
 const testTools: Tools = [
   {
@@ -101,9 +101,9 @@ describe('CLI: composio search', () => {
     it.effect('returns the structured missing-query error', () =>
       Effect.gen(function* () {
         const failure = yield* cli(['search', '   ']).pipe(Effect.flip);
-        expect(failure).toBeInstanceOf(ToolsSearchInputError);
-        if (failure instanceof ToolsSearchInputError) {
-          expect(failure.reason).toBe('missing_query');
+        expect(failure).toBeInstanceOf(CommandInputError);
+        if (failure instanceof CommandInputError) {
+          expect(failure.option).toBe('<query>');
           expect(failure.message).toBe('At least one query is required.');
         }
       })
@@ -141,45 +141,46 @@ describe('CLI: composio search', () => {
     TestLive({
       ...testLiveOptions,
       toolRouter: {
-        search: async (_sessionId, params) => ({
-          success: true,
-          error: null,
-          results: [
-            {
-              index: 1,
-              use_case: params.queries[0]?.use_case ?? '',
-              primary_tool_slugs: [customSlug],
-              related_tool_slugs: [],
-              toolkits: ['CUSTOM_DEEPWIKI'],
-            },
-          ],
-          tool_schemas: {
-            [customSlug]: {
-              tool_slug: customSlug,
-              toolkit: 'CUSTOM_DEEPWIKI',
-              description: 'Read wiki contents',
-              hasFullSchema: true,
-              input_schema: {
-                type: 'object',
-                properties: { repo: { type: 'string' } },
-                required: ['repo'],
+        search: (_sessionId, params) =>
+          Effect.succeed({
+            success: true,
+            error: null,
+            results: [
+              {
+                index: 1,
+                use_case: params.queries[0]?.use_case ?? '',
+                primary_tool_slugs: [customSlug],
+                related_tool_slugs: [],
+                toolkits: ['CUSTOM_DEEPWIKI'],
               },
-              output_schema: { type: 'object', properties: {} },
+            ],
+            tool_schemas: {
+              [customSlug]: {
+                tool_slug: customSlug,
+                toolkit: 'CUSTOM_DEEPWIKI',
+                description: 'Read wiki contents',
+                hasFullSchema: true,
+                input_schema: {
+                  type: 'object',
+                  properties: { repo: { type: 'string' } },
+                  required: ['repo'],
+                },
+                output_schema: { type: 'object', properties: {} },
+              },
             },
-          },
-          toolkit_connection_statuses: [],
-          next_steps_guidance: [],
-          session: {
-            id: 'trs_test_session',
-            generate_id: false,
-            instructions: 'Reuse this session id for follow-up calls.',
-          },
-          time_info: {
-            current_time_utc: '2026-01-01T00:00:00.000Z',
-            current_time_utc_epoch_seconds: 1767225600,
-            message: 'UTC time',
-          },
-        }),
+            toolkit_connection_statuses: [],
+            next_steps_guidance: [],
+            session: {
+              id: 'trs_test_session',
+              generate_id: false,
+              instructions: 'Reuse this session id for follow-up calls.',
+            },
+            time_info: {
+              current_time_utc: '2026-01-01T00:00:00.000Z',
+              current_time_utc_epoch_seconds: 1767225600,
+              message: 'UTC time',
+            },
+          }),
       },
     })
   )('[Given] a remote custom tool schema [Then] search uses the Tool Router schema', it => {
@@ -200,66 +201,68 @@ describe('CLI: composio search', () => {
     TestLive({
       ...testLiveOptions,
       toolRouter: {
-        search: async (_sessionId, params) => ({
-          success: true,
-          error: null,
-          results: [
-            {
-              index: 1,
-              use_case: params.queries[0]?.use_case ?? '',
-              primary_tool_slugs: [customSlug],
-              related_tool_slugs: [],
-              toolkits: ['CUSTOM_DEEPWIKI'],
-            },
-          ],
-          tool_schemas: {
-            [customSlug]: {
-              tool_slug: customSlug,
-              toolkit: 'CUSTOM_DEEPWIKI',
-              description: 'Read wiki contents',
-              hasFullSchema: false,
-              schemaRef: {
-                tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
-                args: { tool_slugs: [customSlug] },
+        search: (_sessionId, params) =>
+          Effect.succeed({
+            success: true,
+            error: null,
+            results: [
+              {
+                index: 1,
+                use_case: params.queries[0]?.use_case ?? '',
+                primary_tool_slugs: [customSlug],
+                related_tool_slugs: [],
+                toolkits: ['CUSTOM_DEEPWIKI'],
               },
-            },
-          },
-          toolkit_connection_statuses: [],
-          next_steps_guidance: [],
-          session: {
-            id: 'trs_test_session',
-            generate_id: false,
-            instructions: 'Reuse this session id for follow-up calls.',
-          },
-          time_info: {
-            current_time_utc: '2026-01-01T00:00:00.000Z',
-            current_time_utc_epoch_seconds: 1767225600,
-            message: 'UTC time',
-          },
-        }),
-        executeMeta: async (_sessionId, params) => {
-          schemaRequestSlugs = params.arguments?.tool_slugs;
-          return {
-            result_type: 'completed' as const,
-            data: {
-              success: true,
-              tool_schemas: {
-                [customSlug]: {
-                  tool_slug: customSlug,
-                  toolkit: 'CUSTOM_DEEPWIKI',
-                  description: 'Read wiki contents',
-                  input_schema: {
-                    type: 'object',
-                    properties: { repo: { type: 'string' } },
-                    required: ['repo'],
-                  },
+            ],
+            tool_schemas: {
+              [customSlug]: {
+                tool_slug: customSlug,
+                toolkit: 'CUSTOM_DEEPWIKI',
+                description: 'Read wiki contents',
+                hasFullSchema: false,
+                schemaRef: {
+                  tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                  args: { tool_slugs: [customSlug] },
                 },
               },
             },
-            error: null,
-            log_id: 'log_test',
-          };
-        },
+            toolkit_connection_statuses: [],
+            next_steps_guidance: [],
+            session: {
+              id: 'trs_test_session',
+              generate_id: false,
+              instructions: 'Reuse this session id for follow-up calls.',
+            },
+            time_info: {
+              current_time_utc: '2026-01-01T00:00:00.000Z',
+              current_time_utc_epoch_seconds: 1767225600,
+              message: 'UTC time',
+            },
+          }),
+        executeMeta: (_sessionId, params) =>
+          Effect.sync(() => {
+            schemaRequestSlugs = params.arguments?.tool_slugs;
+            return {
+              result_type: 'completed' as const,
+              data: {
+                success: true,
+                tool_schemas: {
+                  [customSlug]: {
+                    tool_slug: customSlug,
+                    toolkit: 'CUSTOM_DEEPWIKI',
+                    description: 'Read wiki contents',
+                    input_schema: {
+                      type: 'object',
+                      properties: { repo: { type: 'string' } },
+                      required: ['repo'],
+                    },
+                  },
+                },
+              },
+              error: null,
+              log_id: 'log_test',
+            };
+          }),
       },
     })
   )(
@@ -382,49 +385,50 @@ describe('CLI: composio search', () => {
     TestLive({
       ...testLiveOptions,
       toolRouter: {
-        search: async (_sessionId, params) => ({
-          success: true,
-          error: null,
-          results: [
-            {
-              index: 1,
-              use_case: params.queries[0]?.use_case ?? '',
-              primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
-              related_tool_slugs: [],
-              toolkits: ['gmail'],
-              reference_workbench_snippets: [{ description: 'snippet', code: 'print("hi")' }],
+        search: (_sessionId, params) =>
+          Effect.succeed({
+            success: true,
+            error: null,
+            results: [
+              {
+                index: 1,
+                use_case: params.queries[0]?.use_case ?? '',
+                primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
+                related_tool_slugs: [],
+                toolkits: ['gmail'],
+                reference_workbench_snippets: [{ description: 'snippet', code: 'print("hi")' }],
+              },
+            ],
+            tool_schemas: {
+              GMAIL_SEND_EMAIL: {
+                tool_slug: 'GMAIL_SEND_EMAIL',
+                toolkit: 'gmail',
+                description: 'Sends an email',
+                hasFullSchema: true,
+                input_schema: { type: 'object', properties: {} },
+                output_schema: { type: 'object', properties: {} },
+              },
             },
-          ],
-          tool_schemas: {
-            GMAIL_SEND_EMAIL: {
-              tool_slug: 'GMAIL_SEND_EMAIL',
-              toolkit: 'gmail',
-              description: 'Sends an email',
-              hasFullSchema: true,
-              input_schema: { type: 'object', properties: {} },
-              output_schema: { type: 'object', properties: {} },
+            toolkit_connection_statuses: [
+              {
+                toolkit: 'gmail',
+                description: 'gmail toolkit',
+                has_active_connection: false,
+                status_message: 'No active connection',
+              },
+            ],
+            next_steps_guidance: [],
+            session: {
+              id: 'trs_test_session',
+              generate_id: false,
+              instructions: 'Reuse this session id for follow-up calls.',
             },
-          },
-          toolkit_connection_statuses: [
-            {
-              toolkit: 'gmail',
-              description: 'gmail toolkit',
-              has_active_connection: false,
-              status_message: 'No active connection',
+            time_info: {
+              current_time_utc: '2026-01-01T00:00:00.000Z',
+              current_time_utc_epoch_seconds: 1767225600,
+              message: 'UTC time',
             },
-          ],
-          next_steps_guidance: [],
-          session: {
-            id: 'trs_test_session',
-            generate_id: false,
-            instructions: 'Reuse this session id for follow-up calls.',
-          },
-          time_info: {
-            current_time_utc: '2026-01-01T00:00:00.000Z',
-            current_time_utc_epoch_seconds: 1767225600,
-            message: 'UTC time',
-          },
-        }),
+          }),
       },
     })
   )(
@@ -533,67 +537,69 @@ describe('CLI: composio search', () => {
         toolkitsData,
         fixture: 'global-test-user-id',
         toolRouter: {
-          create: async params => {
-            createParams = params;
-            return {
-              session_id: 'trs_test_session',
-              config: {
-                user_id: params.user_id,
-                execute: {},
-                search: {},
-                preload: { tools: [] },
-                instant: false,
-              },
-              config_version: 1,
-              mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
-              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
-            };
-          },
-          search: async (_sessionId, params) => {
-            searchParams = params;
-            return {
-              success: true,
-              error: null,
-              results: [
-                {
-                  index: 1,
-                  use_case: params.queries[0]?.use_case ?? '',
-                  primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
-                  related_tool_slugs: [],
-                  toolkits: ['gmail'],
+          create: params =>
+            Effect.sync(() => {
+              createParams = params;
+              return {
+                session_id: 'trs_test_session',
+                config: {
+                  user_id: params.user_id,
+                  execute: {},
+                  search: {},
+                  preload: { tools: [] },
+                  instant: false,
                 },
-              ],
-              tool_schemas: {
-                GMAIL_SEND_EMAIL: {
-                  tool_slug: 'GMAIL_SEND_EMAIL',
-                  toolkit: 'gmail',
-                  description: 'Sends an email',
-                  hasFullSchema: true,
-                  input_schema: { type: 'object', properties: {} },
-                  output_schema: { type: 'object', properties: {} },
+                config_version: 1,
+                mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
+                tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+              };
+            }),
+          search: (_sessionId, params) =>
+            Effect.sync(() => {
+              searchParams = params;
+              return {
+                success: true,
+                error: null,
+                results: [
+                  {
+                    index: 1,
+                    use_case: params.queries[0]?.use_case ?? '',
+                    primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
+                    related_tool_slugs: [],
+                    toolkits: ['gmail'],
+                  },
+                ],
+                tool_schemas: {
+                  GMAIL_SEND_EMAIL: {
+                    tool_slug: 'GMAIL_SEND_EMAIL',
+                    toolkit: 'gmail',
+                    description: 'Sends an email',
+                    hasFullSchema: true,
+                    input_schema: { type: 'object', properties: {} },
+                    output_schema: { type: 'object', properties: {} },
+                  },
                 },
-              },
-              toolkit_connection_statuses: [
-                {
-                  toolkit: 'gmail',
-                  description: 'gmail toolkit',
-                  has_active_connection: false,
-                  status_message: 'No active connection',
+                toolkit_connection_statuses: [
+                  {
+                    toolkit: 'gmail',
+                    description: 'gmail toolkit',
+                    has_active_connection: false,
+                    status_message: 'No active connection',
+                  },
+                ],
+                next_steps_guidance: [],
+                session: {
+                  id: 'trs_test_session',
+                  generate_id: false,
+                  instructions: 'Reuse this session id for follow-up calls.',
                 },
-              ],
-              next_steps_guidance: [],
-              session: {
-                id: 'trs_test_session',
-                generate_id: false,
-                instructions: 'Reuse this session id for follow-up calls.',
-              },
-              time_info: {
-                current_time_utc: '2026-01-01T00:00:00.000Z',
-                current_time_utc_epoch_seconds: 1767225600,
-                message: 'UTC time',
-              },
-            };
-          },
+                time_info: {
+                  current_time_utc: '2026-01-01T00:00:00.000Z',
+                  current_time_utc_epoch_seconds: 1767225600,
+                  message: 'UTC time',
+                },
+              };
+            }),
         },
       })
     )('[Given] --toolkits filter [Then] it is passed to session create as enabled toolkits', it => {
@@ -618,22 +624,23 @@ describe('CLI: composio search', () => {
         toolkitsData,
         fixture: 'global-test-user-id',
         toolRouter: {
-          create: async params => {
-            createParams = params;
-            return {
-              session_id: 'trs_test_session',
-              config: {
-                user_id: params.user_id,
-                execute: {},
-                search: {},
-                preload: { tools: [] },
-                instant: false,
-              },
-              config_version: 1,
-              mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
-              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
-            };
-          },
+          create: params =>
+            Effect.sync(() => {
+              createParams = params;
+              return {
+                session_id: 'trs_test_session',
+                config: {
+                  user_id: params.user_id,
+                  execute: {},
+                  search: {},
+                  preload: { tools: [] },
+                  instant: false,
+                },
+                config_version: 1,
+                mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
+                tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+              };
+            }),
         },
       })
     )(
@@ -662,53 +669,54 @@ describe('CLI: composio search', () => {
         toolkitsData,
         fixture: 'global-test-user-id',
         toolRouter: {
-          search: async (_sessionId, params) => {
-            searchParams = params;
-            return {
-              success: true,
-              error: null,
-              results: params.queries.map((query, index) => ({
-                index: index + 1,
-                use_case: query.use_case ?? '',
-                primary_tool_slugs:
-                  query.use_case === 'create issue'
-                    ? ['GITHUB_CREATE_ISSUE']
-                    : ['GMAIL_SEND_EMAIL'],
-                related_tool_slugs: [],
-                toolkits: query.use_case === 'create issue' ? ['github'] : ['gmail'],
-              })),
-              tool_schemas: {
-                GMAIL_SEND_EMAIL: {
-                  tool_slug: 'GMAIL_SEND_EMAIL',
-                  toolkit: 'gmail',
-                  description: 'Sends an email',
-                  hasFullSchema: true,
-                  input_schema: { type: 'object', properties: {} },
-                  output_schema: { type: 'object', properties: {} },
+          search: (_sessionId, params) =>
+            Effect.sync(() => {
+              searchParams = params;
+              return {
+                success: true,
+                error: null,
+                results: params.queries.map((query, index) => ({
+                  index: index + 1,
+                  use_case: query.use_case ?? '',
+                  primary_tool_slugs:
+                    query.use_case === 'create issue'
+                      ? ['GITHUB_CREATE_ISSUE']
+                      : ['GMAIL_SEND_EMAIL'],
+                  related_tool_slugs: [],
+                  toolkits: query.use_case === 'create issue' ? ['github'] : ['gmail'],
+                })),
+                tool_schemas: {
+                  GMAIL_SEND_EMAIL: {
+                    tool_slug: 'GMAIL_SEND_EMAIL',
+                    toolkit: 'gmail',
+                    description: 'Sends an email',
+                    hasFullSchema: true,
+                    input_schema: { type: 'object', properties: {} },
+                    output_schema: { type: 'object', properties: {} },
+                  },
+                  GITHUB_CREATE_ISSUE: {
+                    tool_slug: 'GITHUB_CREATE_ISSUE',
+                    toolkit: 'github',
+                    description: 'Creates a GitHub issue',
+                    hasFullSchema: true,
+                    input_schema: { type: 'object', properties: {} },
+                    output_schema: { type: 'object', properties: {} },
+                  },
                 },
-                GITHUB_CREATE_ISSUE: {
-                  tool_slug: 'GITHUB_CREATE_ISSUE',
-                  toolkit: 'github',
-                  description: 'Creates a GitHub issue',
-                  hasFullSchema: true,
-                  input_schema: { type: 'object', properties: {} },
-                  output_schema: { type: 'object', properties: {} },
+                toolkit_connection_statuses: [],
+                next_steps_guidance: [],
+                session: {
+                  id: 'trs_test_session',
+                  generate_id: false,
+                  instructions: 'Reuse this session id for follow-up calls.',
                 },
-              },
-              toolkit_connection_statuses: [],
-              next_steps_guidance: [],
-              session: {
-                id: 'trs_test_session',
-                generate_id: false,
-                instructions: 'Reuse this session id for follow-up calls.',
-              },
-              time_info: {
-                current_time_utc: '2026-01-01T00:00:00.000Z',
-                current_time_utc_epoch_seconds: 1767225600,
-                message: 'UTC time',
-              },
-            };
-          },
+                time_info: {
+                  current_time_utc: '2026-01-01T00:00:00.000Z',
+                  current_time_utc_epoch_seconds: 1767225600,
+                  message: 'UTC time',
+                },
+              };
+            }),
         },
       })
     )(
@@ -734,49 +742,50 @@ describe('CLI: composio search', () => {
       toolkitsData,
       fixture: 'global-test-user-id',
       toolRouter: {
-        search: async (_sessionId, params) => ({
-          success: true,
-          error: null,
-          results: [
-            {
-              index: 1,
-              use_case: params.queries[0]?.use_case ?? '',
-              primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
-              related_tool_slugs: [],
-              toolkits: ['gmail'],
-              recommended_plan_steps: ['Collect recipient details', 'Execute send action'],
+        search: (_sessionId, params) =>
+          Effect.succeed({
+            success: true,
+            error: null,
+            results: [
+              {
+                index: 1,
+                use_case: params.queries[0]?.use_case ?? '',
+                primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
+                related_tool_slugs: [],
+                toolkits: ['gmail'],
+                recommended_plan_steps: ['Collect recipient details', 'Execute send action'],
+              },
+            ],
+            tool_schemas: {
+              GMAIL_SEND_EMAIL: {
+                tool_slug: 'GMAIL_SEND_EMAIL',
+                toolkit: 'gmail',
+                description: 'Sends an email',
+                hasFullSchema: true,
+                input_schema: { type: 'object', properties: {} },
+                output_schema: { type: 'object', properties: {} },
+              },
             },
-          ],
-          tool_schemas: {
-            GMAIL_SEND_EMAIL: {
-              tool_slug: 'GMAIL_SEND_EMAIL',
-              toolkit: 'gmail',
-              description: 'Sends an email',
-              hasFullSchema: true,
-              input_schema: { type: 'object', properties: {} },
-              output_schema: { type: 'object', properties: {} },
+            toolkit_connection_statuses: [
+              {
+                toolkit: 'gmail',
+                description: 'gmail toolkit',
+                has_active_connection: false,
+                status_message: 'No active connection',
+              },
+            ],
+            next_steps_guidance: ['Fallback guidance'],
+            session: {
+              id: 'trs_test_session',
+              generate_id: false,
+              instructions: 'Reuse this session id for follow-up calls.',
             },
-          },
-          toolkit_connection_statuses: [
-            {
-              toolkit: 'gmail',
-              description: 'gmail toolkit',
-              has_active_connection: false,
-              status_message: 'No active connection',
+            time_info: {
+              current_time_utc: '2026-01-01T00:00:00.000Z',
+              current_time_utc_epoch_seconds: 1767225600,
+              message: 'UTC time',
             },
-          ],
-          next_steps_guidance: ['Fallback guidance'],
-          session: {
-            id: 'trs_test_session',
-            generate_id: false,
-            instructions: 'Reuse this session id for follow-up calls.',
-          },
-          time_info: {
-            current_time_utc: '2026-01-01T00:00:00.000Z',
-            current_time_utc_epoch_seconds: 1767225600,
-            message: 'UTC time',
-          },
-        }),
+          }),
       },
     })
   )('[Given] search response with recommended plan [Then] it prints plan and execute hint', it => {
@@ -798,11 +807,8 @@ describe('CLI: composio search', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.effect('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['search', 'send', '--human']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('not logged in');
+        const error = yield* cli(['search', 'send', '--human']).pipe(Effect.flip);
+        expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
       })
     );
   });
@@ -814,22 +820,23 @@ describe('CLI: composio search', () => {
       TestLive({
         ...testLiveOptions,
         toolRouter: {
-          create: async params => {
-            createParams = params;
-            return {
-              session_id: 'trs_test_session',
-              config: {
-                user_id: params.user_id,
-                execute: {},
-                search: {},
-                preload: { tools: [] },
-                instant: false,
-              },
-              config_version: 1,
-              mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
-              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
-            };
-          },
+          create: params =>
+            Effect.sync(() => {
+              createParams = params;
+              return {
+                session_id: 'trs_test_session',
+                config: {
+                  user_id: params.user_id,
+                  execute: {},
+                  search: {},
+                  preload: { tools: [] },
+                  instant: false,
+                },
+                config_version: 1,
+                mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
+                tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+              };
+            }),
         },
       })
     )('[Given] consumer search [Then] it uses the resolved consumer user id', it => {

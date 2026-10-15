@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import type { Composio } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { isKnownConnectedAccountStatus } from 'src/models/connected-accounts';
 import {
   compareNewestFirst,
@@ -60,27 +60,32 @@ const isNewerAccount = (candidate: RawConnectedAccount, current: RawConnectedAcc
   compareNewestFirst(candidate, current) < 0;
 
 const listConnectedAccountsForToolkits = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   toolkits: ReadonlyArray<string>
 ) =>
-  Effect.tryPromise({
-    try: () =>
-      client.connectedAccounts.list({
+  client.connectedAccounts
+    .list(
+      {
         user_ids: [userId],
         statuses: ['ACTIVE'],
         toolkit_slugs: [...toolkits],
         limit: 1000,
-      }),
-    catch: cause =>
-      new ToolRouterSessionConnectionsError({
-        message: `Failed to list connected accounts for user "${userId}".`,
-        cause,
-      }),
-  });
+      },
+      { decode: false }
+    )
+    .pipe(
+      Effect.mapError(
+        cause =>
+          new ToolRouterSessionConnectionsError({
+            message: `Failed to list connected accounts for user "${userId}".`,
+            cause,
+          })
+      )
+    );
 
 export const resolveToolRouterSessionConnections = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: {
     readonly toolkits?: ReadonlyArray<string>;

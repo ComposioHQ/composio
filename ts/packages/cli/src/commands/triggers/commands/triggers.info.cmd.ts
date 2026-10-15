@@ -1,7 +1,7 @@
 import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { formatTriggerTypeInfo } from '../format';
@@ -32,8 +32,6 @@ const makeTriggersInfoCommand = ({
 }: TriggersInfoCommandConfig) =>
   Command.make('info', { slug }, ({ slug }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 
@@ -52,8 +50,8 @@ const makeTriggersInfoCommand = ({
         .pipe(
           Effect.asSome,
           Effect.catchTag(
-            'services/HttpServerError',
-            handleHttpServerError(ui, {
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
               fallbackMessage: `Trigger "${slugValue}" not found.`,
               hint: `Browse available trigger types:\n> ${listCommandPlaceholder}`,
               fallbackValue: Option.none(),

@@ -1,6 +1,5 @@
 import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -16,8 +15,6 @@ const slug = Argument.String('slug').pipe(Argument.withDescription('Toolkit slug
  */
 export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.get();
@@ -25,10 +22,9 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
     const toolkitOpt = yield* ui
       .withSpinner(
         `Fetching versions for toolkit "${slug}"...`,
-        Effect.tryPromise({
-          try: () => client.toolkits.retrieve(slug),
-          catch: error => (error instanceof Error ? error : new Error(String(error))),
-        })
+        // Only the name, slug and version list are read, so a toolkit that
+        // lacks other catalog fields still prints its versions.
+        client.toolkits.retrieve(slug, undefined, { decode: false })
       )
       .pipe(
         Effect.asSome,

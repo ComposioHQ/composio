@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - 'ts/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/docs-check-links.yml'
       - 'mise.toml'

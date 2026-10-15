@@ -1,13 +1,13 @@
 [project]
 name = "composio"
-version = "0.26.0"
+version = "0.27.0"
 description = "SDK for integrating Composio with your applications."
 readme = "README.md"
 requires-python = ">=3.11,<3.16"
 dependencies = [
     "pysher>=1.0.8",
     "pydantic>=2.11.9",
-    "composio-client==2.0.0rc11",
+    "composio-client==2.0.0rc14",
     "typing-extensions>=4.16.0",
     "openai>=2.48.0",
     "json-schema-to-pydantic>=0.4.11",

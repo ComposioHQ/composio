@@ -10,10 +10,19 @@ Regression coverage for the hackathon Area 5 (MCP lifecycle) findings:
 - ``create`` uses the non-deprecated ``allowed_tools`` field.
 """
 
+import json
+import subprocess
+import sys
+import typing as t
+import warnings
 from unittest.mock import Mock
 
+import httpx
 import pytest
 
+from composio import ComposioDeprecationWarning
+from composio.client import HttpClient
+from composio.core.models import mcp as mcp_module
 from composio.core.models.mcp import MCP
 
 
@@ -111,3 +120,128 @@ def test_create_inverts_manually_manage_connections(mcp):
         mcp._client.mcp.custom.create.call_args.kwargs["managed_auth_via_composio"]
         is True
     )
+
+
+def _transport_mcp(requests: t.Optional[t.List[httpx.Request]] = None) -> MCP:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if requests is not None:
+            requests.append(request)
+        if request.url.path.endswith("/generate"):
+            return httpx.Response(
+                200,
+                json={
+                    "mcp_url": "https://mcp.test",
+                    "connected_account_urls": [],
+                    "user_ids_url": ["https://mcp.test/u"],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "id": "mcp_123",
+                "name": "server",
+                "allowed_tools": [],
+                "auth_config_ids": [],
+            },
+        )
+
+    client = HttpClient(
+        provider="test",
+        api_key="ak_test",
+        base_url="https://backend.composio.dev",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    return MCP(client)
+
+
+@pytest.fixture
+def fresh_managed_auth_notice(monkeypatch):
+    monkeypatch.setattr(mcp_module, "_managed_auth_deprecation_warned", False)
+
+
+def _sdk_notices(caught):
+    return [
+        w
+        for w in caught
+        if w.category is ComposioDeprecationWarning
+        and "include_composio_helper_actions" in str(w.message)
+    ]
+
+
+def test_generate_warns_once_per_process(fresh_managed_auth_notice):
+    """The SDK still sends `managed_auth_by_composio` (deprecated upstream) and
+    explains it once in SDK terms, even across call sites and instances."""
+    first, second = _transport_mcp(), _transport_mcp()
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        server = first.generate("user_123", "mcp_123")
+        first.generate("user_123", "mcp_123")
+        second.generate("user_123", "mcp_123")
+
+    assert server["url"] == "https://mcp.test/u"
+    notices = _sdk_notices(caught)
+    assert len(notices) == 1
+    assert notices[0].filename == __file__
+
+
+def test_generate_without_managed_auth_omits_field_and_does_not_warn(
+    fresh_managed_auth_notice,
+):
+    requests: t.List[httpx.Request] = []
+    mcp = _transport_mcp(requests)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        mcp.generate("user_123", "mcp_123", manually_manage_connections=True)
+
+    assert caught == []
+    body = json.loads(requests[-1].content)
+    assert "managed_auth_by_composio" not in body
+
+
+_DEFAULT_FILTERS_SCRIPT = """
+import warnings
+
+import httpx
+
+from composio.client import HttpClient
+from composio.core.models.mcp import MCP
+
+
+def handler(request):
+    if request.url.path.endswith("/generate"):
+        return httpx.Response(
+            200, json={"mcp_url": "u", "connected_account_urls": [], "user_ids_url": ["x"]}
+        )
+    return httpx.Response(
+        200, json={"id": "m", "name": "s", "allowed_tools": [], "auth_config_ids": []}
+    )
+
+
+mcp = MCP(
+    HttpClient(
+        provider="test",
+        api_key="ak_test",
+        base_url="https://backend.composio.dev",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+)
+for _ in range(3):
+    warnings.warn("unrelated notice", UserWarning)
+    mcp.generate("u", "m")
+"""
+
+
+def test_generate_keeps_default_warning_deduplication():
+    """Under Python's default filters, repeated calls neither repeat the SDK
+    notice nor make an unrelated once-per-line warning show again."""
+    result = subprocess.run(
+        [sys.executable, "-c", _DEFAULT_FILTERS_SCRIPT],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert result.stderr.count("include_composio_helper_actions") == 1
+    assert result.stderr.count("unrelated notice") == 1

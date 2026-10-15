@@ -3,6 +3,7 @@ from composio.core.models.connected_accounts import auth_scheme
 from composio.core.models.experimental import UsageSummaryResponse
 from composio.core.models.tool_router_session import (
     ToolRouterInstantConfig,
+    ToolRouterProxyExecuteConfig,
     ToolRouterSessionConfig,
     ToolRouterSessionSearchResponse,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "TToolCollection",
     "InstantCharge",
     "ToolRouterInstantConfig",
+    "ToolRouterProxyExecuteConfig",
     "ToolRouterSessionConfig",
     "ToolRouterSessionSearchResponse",
     "ToolExecuteParams",

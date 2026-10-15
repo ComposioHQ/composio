@@ -1,10 +1,11 @@
+import { requireLogin } from 'src/effects/require-auth';
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
   getOrFetchToolInputDefinition,
@@ -16,7 +17,11 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
-import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
+import type {
+  InstantCharge,
+  ToolExecuteParams,
+  ToolExecuteResponse,
+} from 'src/services/tools-executor';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
@@ -30,10 +35,7 @@ import {
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
@@ -127,19 +129,8 @@ const resolveInput = (input: Option.Option<string>) =>
     missingValue: '{}',
   });
 
-/**
- * Business-error type for the hand-rolled `--parallel` mini-parser
- * (`parseParallelExecuteArgs` below), not a `Command`-level parse failure —
- * v4's `CliError.InvalidValue` requires structured `option`/`kind` fields
- * that don't fit this free-text validation.
- */
-export class ParallelExecuteArgumentError extends Data.TaggedError(
-  'commands/ParallelExecuteArgumentError'
-)<{
-  readonly message: string;
-}> {}
-
-const invalidArguments = (message: string) => new ParallelExecuteArgumentError({ message });
+// Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` below).
+const invalidArguments = commandInputError('execute');
 
 type ToolExecutionErrorFields = {
   readonly reason:
@@ -342,6 +333,7 @@ type StoredExecuteOutputSummary = {
   readonly successful: true;
   readonly error: null;
   readonly logId: string;
+  readonly instantCharge?: InstantCharge;
   readonly storedInFile: true;
   readonly tokenCount: number;
   readonly sizeBytes: number;
@@ -370,12 +362,19 @@ const permissionApprovalLabel = (approval?: string): string | undefined => {
   }
 };
 
+const instantChargeLabel = (charge?: InstantCharge): string | undefined => {
+  if (!charge) return undefined;
+  return `instant charge: ${charge.amount} ${charge.currency}`;
+};
+
 const executionSuccessSuffix = (result: {
   readonly logId?: string;
   readonly permissionApproval?: string;
+  readonly instantCharge?: InstantCharge;
 }) => {
   const metadata = [
     permissionApprovalLabel(result.permissionApproval),
+    instantChargeLabel(result.instantCharge),
     result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
   ].filter((value): value is string => Boolean(value));
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
@@ -433,6 +432,7 @@ const prepareExecuteOutput = (
       summary: {
         ...(yield* persistLargeExecuteOutput(toolSlug, json, sizeBytes, sharedDirectory)),
         logId: result.logId,
+        ...(result.instantCharge ? { instantCharge: result.instantCharge } : {}),
       } satisfies StoredExecuteOutputSummary,
     } satisfies PreparedExecuteOutput;
   });
@@ -870,7 +870,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
@@ -977,7 +977,7 @@ const resolveSchemaContext = (params: SharedRunToolsExecuteParams) =>
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const ui = yield* TerminalUI;
 
     return {
@@ -1321,8 +1321,6 @@ const runExecuteWithSpinner = (params: {
 
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
@@ -1710,8 +1708,6 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
 
 const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     if (params.getSchema) {
       return yield* runParallelSchemaFetchFromParsed(params);
     }
@@ -1788,12 +1784,14 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
 
           const result = yield* context.executor.execute(toolSlug, context.executeParams);
           if (!result.successful) {
-            return {
+            const failed = {
               slug: toolSlug,
-              successful: false,
+              successful: false as const,
               error: result.error ?? 'Execution failed.',
               logId: result.logId,
             };
+            if (!result.instantCharge) return failed;
+            return { ...failed, instantCharge: result.instantCharge };
           }
 
           const output = yield* prepareExecuteOutput(toolSlug, result, context.executeOutputDir);
@@ -2003,7 +2001,8 @@ export const rootToolsCmd$Execute = Command.make(
   Command.withShortDescription(
     'Execute a tool by slug. Validates inputs against cached schemas and checks connections'
   ),
-  Command.withExamples(executeExamples)
+  Command.withExamples(executeExamples),
+  requireLogin
 );
 
 export const devToolsCmd$Execute = Command.make(
@@ -2077,5 +2076,6 @@ export const devToolsCmd$Execute = Command.make(
       ...example,
       command: example.command.replace('composio execute', 'composio dev playground-execute'),
     }))
-  )
+  ),
+  requireLogin
 );

@@ -1,6 +1,6 @@
 # Client Cache Sync
 
-`ts/packages/cli/src/services/composio-clients-cached.ts` spreads the underlying `ComposioToolkitsRepository` from `ts/packages/cli/src/services/composio-clients.ts` and overrides only the methods it caches: `getToolkits`, `getToolkitsBySlugs`, `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, and `getTools`.
+`ts/packages/cli/src/services/composio-clients-cached.ts` spreads the underlying `ComposioToolkitsRepository` from `ts/packages/cli/src/services/composio-clients.ts` and overrides only the methods it caches: `getToolkits`, `getProjectToolkits`, `getToolkitsBySlugs`, `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, and `getTools`.
 
 Checklist:
 

@@ -2,10 +2,9 @@ import { Data, Effect } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
 import { TerminalUI } from 'src/services/terminal-ui';
-import type {
-  ComposioToolkitsRepositoryShape,
-  InvalidVersionDetail,
-} from 'src/services/composio-clients';
+import type { ComposioToolkitsRepositoryShape } from 'src/services/composio-clients';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
+import type { InvalidVersionDetail } from 'src/services/toolkit-version-validation';
 import type { ToolkitVersionOverrides } from './toolkit-version-overrides';
 
 /**
@@ -189,7 +188,7 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('services/HttpServerError', error =>
+        Effect.catchTag(CLIENT_API_ERROR_TAGS, error =>
           Effect.fail(
             new ToolkitVersionValidationError({
               cause: error,
@@ -215,14 +214,16 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('services/ComposioClientConfigurationError', error =>
-          Effect.fail(
-            new ToolkitVersionValidationError({
-              cause: error,
-              message: error.message,
-              reason: 'client-unavailable',
-            })
-          )
+        Effect.catchTag(
+          ['services/ComposioClientConfigurationError', '@composio/client/ConfigurationError'],
+          error =>
+            Effect.fail(
+              new ToolkitVersionValidationError({
+                cause: error,
+                message: error.message,
+                reason: 'client-unavailable',
+              })
+            )
         )
       );
 

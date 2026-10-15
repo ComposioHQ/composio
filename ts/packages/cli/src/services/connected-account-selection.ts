@@ -1,4 +1,4 @@
-import type { Composio } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Effect, Option, Schema } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
@@ -138,12 +138,12 @@ export const formatConnectedAccountChoices = (
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
-// `Composio` clients come from `ComposioClientSingleton`, one instance per
+// Clients come from `ComposioClientSingleton`, one instance per
 // org/project, so identity is a sound cache key. Ids instead of the object
 // itself keep the memo key a string.
-const clientIds = new WeakMap<Composio, number>();
+const clientIds = new WeakMap<ComposioClientShape, number>();
 let nextClientId = 0;
-const clientId = (client: Composio): number => {
+const clientId = (client: ComposioClientShape): number => {
   let id = clientIds.get(client);
   if (id === undefined) {
     id = nextClientId++;
@@ -164,24 +164,23 @@ const clientId = (client: Composio): number => {
  * their own `GET /connected_accounts`.
  *
  * The page size is the session path's existing one; a user with more active
- * accounts than that was already truncated there. Fails with the raw
- * rejection; each caller wraps it in its own error.
+ * accounts than that was already truncated there. Fails with the client's
+ * error; each caller wraps it in its own error.
  */
 const ACTIVE_ACCOUNTS_PAGE_SIZE = 1000;
 
 export const listActiveConnectedAccounts = memoizeInProcess({
-  keyOf: (input: { readonly client: Composio; readonly userId: string }) =>
+  keyOf: (input: { readonly client: ComposioClientShape; readonly userId: string }) =>
     `${clientId(input.client)}\u0000${input.userId}`,
   make: ({ client, userId }) =>
-    Effect.tryPromise({
-      try: () =>
-        client.connectedAccounts.list({
-          user_ids: [userId],
-          statuses: ['ACTIVE'],
-          limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
-        }),
-      catch: cause => cause,
-    }),
+    client.connectedAccounts.list(
+      {
+        user_ids: [userId],
+        statuses: ['ACTIVE'],
+        limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
+      },
+      { decode: false }
+    ),
 });
 
 const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
@@ -190,21 +189,21 @@ const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
 // server order. Kept as the fallback so results stay identical when the
 // shared list cannot stand in for it.
 const fetchConnectedAccountsForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug: string;
 }) =>
-  Effect.tryPromise({
-    try: () =>
-      params.client.connectedAccounts.list({
+  params.client.connectedAccounts
+    .list(
+      {
         toolkit_slugs: [params.toolkitSlug],
         user_ids: [params.userId],
         statuses: ['ACTIVE'],
         limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
-      }),
-    // The raw rejection, so the caller's message reads as it always has.
-    catch: cause => cause,
-  }).pipe(Effect.map(response => response.items));
+      },
+      { decode: false }
+    )
+    .pipe(Effect.map(response => response.items));
 
 /**
  * The active accounts of one toolkit, derived from the shared per-user list
@@ -226,7 +225,7 @@ const fetchConnectedAccountsForToolkit = (params: {
  * so a padded `--toolkit` value resolves the same way on both paths.
  */
 export const listConnectedAccountsForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug: string;
 }) =>
@@ -257,7 +256,7 @@ export class ConnectedAccountResolutionError extends Data.TaggedError(
 }> {}
 
 export const resolveConnectedAccountForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly toolkitSlug?: string;
   readonly userId: string;
   readonly selector: Option.Option<string>;
@@ -274,7 +273,8 @@ export const resolveConnectedAccountForToolkit = (params: {
       Effect.mapError(
         cause =>
           new ConnectedAccountResolutionError({
-            message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
+            // "Error: " is how this message has always introduced the client's failure.
+            message: `Failed to load connected accounts for toolkit "${toolkitSlug}": Error: ${cause.message}`,
             toolkitSlug,
             cause,
           })

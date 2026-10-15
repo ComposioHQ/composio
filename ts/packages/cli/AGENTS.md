@@ -29,7 +29,7 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 ### Commands — `src/commands/`
 
-Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
+Each command uses `effect/cli`'s `Command.make()` pattern. Current top-level commands:
 
 | Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -51,7 +51,7 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command fil
 | `connections` | Alias / helper for connected-account flows |
 | `orgs` | Manage organizations |
 | `projects` | Manage projects |
-| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `logs` | View tool-execution logs |
 | `config` | Read/write CLI config |
 | `listen` | Listen for events |
 | `proxy` | Proxy authenticated API requests |
@@ -61,12 +61,54 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Top-level command fil
 
 Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
+#### Command module layout
+
+Every command is a directory named after the command, holding files that share the command's dotted basename. A group is a directory named after the group, whose entry file `<group>.cmd.ts` only lists subcommands.
+
+```
+src/commands/
+  index.ts                              root command tree, argv contract with cli-main.ts
+  $default.cmd.ts                       root command: shared flags and description
+  errors.ts                             CommandInputError, the one usage error every command raises
+  <group>/<group>.cmd.ts                group entry: Command.make(name) + withSubcommands, nothing else
+  <group>/<name>/<group>.<name>.cmd.ts  flags, arguments, description, examples, Command.make
+  <group>/<name>/<group>.<name>.handler.ts   (params) => Effect; imports nothing from effect/cli
+  <group>/<name>/<group>.<name>.format.ts    human renderer (stderr) and machine renderer (stdout)
+  <group>/<name>/<group>.<name>.errors.ts    command-owned Data.TaggedError classes with structured fields, when any; usage errors use errors.ts
+  <group>/<shared-module>.ts            helpers used by several commands of the group (triggers/parse.ts)
+  <name>/<name>.cmd.ts                  a top-level command follows the same shape without a group
+```
+
+Rules:
+
+- `<group>.<name>.cmd.ts` declares the surface and nothing else: flag and argument constants, `Command.withDescription`, `Command.withExamples`, and the three-argument `Command.make(name, flags, handler)` with the handler imported from the sibling `.handler.ts`. It yields no service and contains no branching. `Command.withHandler` is reserved for `src/commands/index.ts`, where the root handler is attached at assembly time.
+- `<group>.<name>.handler.ts` exports the handler as a function of a plain params type it declares itself; the command proves it provides those params when it passes the handler to `Command.make`. Do not derive the params type from the `Command` value (no phantom commands, no `GetCmdParams`).
+- A command that exists in both the root tree and the `dev` tree is defined once. The group supplies what differs between the two surfaces through `Command.withSharedFlags` and `Command.provide`, not through a second `Command.make` with a copied description.
+- Logic shared across groups belongs in `src/effects/` or `src/services/`, never in another command's directory.
+- A command that needs a logged-in user pipes `requireLogin` (`src/effects/require-auth.ts`) on itself or on its group entry, after `Command.withSubcommands`. Handlers never check `apiKey` or print a login hint; a missing login fails with `NotLoggedInError` and exits 1. Project context comes from `resolveCommandProject`, which fails with `ProjectResolutionError`; never flatten it into a plain `Error`.
+- A group entry is recognised by its place in the tree: `<dir>/<dir>.cmd.ts` or `<dir>/root-<dir>.cmd.ts` with other `.cmd.ts` files below `<dir>/`. The same name with nothing below it (`logout/logout.cmd.ts`) is a top-level command. Every command needs a test; a group entry does not, though one with a default action (`generate`) still gets one.
+
+Legacy shape still present while commands migrate: `<group>/commands/<group>.<name>.cmd.ts` holding flags, handler, helpers, and errors in one file, and top-level `<name>.cmd.ts` doing the same. Migrate a command to the directory shape when you touch it for more than a one-line fix, one command per PR.
+
+#### Test layout
+
+Tests mirror `src/commands/` under `test/src/commands/`, with the legacy `commands/` path segment removed:
+
+```
+test/src/commands/<group>/<name>/<group>.<name>.cmd.test.ts        argv-level: cli([...]) over TestLive
+test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level: Service.of doubles, no argv
+test/src/commands/<group>/<name>/<group>.<name>.<aspect>.cmd.test.ts   extra suite for one aspect (.client. for API-shape coverage)
+test/src/commands/<group>/<shared-module>.test.ts                  group helper tests (triggers/format.test.ts)
+```
+
+`pnpm run validate:command-tests` (part of `pnpm test`, CI-blocking, `scripts/validate-command-tests.ts`) fails when a command has no `.cmd.test.ts` at its mirrored path, when a `.cmd.test.ts` does not resolve to a command by its longest dotted basename prefix, or when a listed exemption has gained its test. Commands without a test today are listed in the script with a reason; the list only shrinks. Write the missing test in the PR that migrates the command.
+
 ### Services — `src/services/`
 
 | Service                            | Purpose                                                                                        |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `ComposioUserContext`              | Auth state — reads/writes `~/.composio/user-config.json`, merges env vars                      |
-| `ComposioClientSingleton`          | Builds and caches `@composio/client` instances per key, org, and project; owns request metrics |
+| `ComposioClientSingleton`          | Builds and caches `@composio/client/effect` clients per key, org, and project; counts requests |
 | `ComposioSessionRepository`        | Creates OAuth2 sessions, polls until `linked` state                                            |
 | `ComposioToolkitsRepository`       | API client — fetches toolkits, tools, trigger types; validates versions                        |
 | `ComposioToolkitsRepositoryCached` | Decorator over base repository with file-based caching and graceful fallback                   |
@@ -74,7 +116,7 @@ Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literal
 | `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for install instructions                                             |
 | `UpgradeBinary`                    | Fetches latest release from GitHub, downloads and replaces binary                              |
 
-Every Composio API request goes through a `@composio/client` instance from `ComposioClientSingleton` (`src/services/composio-clients.ts`). Clients are built with `Composio.fromEnv({}, …)` so the ambient environment is never read, with `logLevel: 'off'`, the CLI's own `defaultHeaders` (`x-user-api-key`, plus `x-org-id`/`x-project-id` when both are known), and a counting `fetch` (`composio-client-metrics.ts`). Explicitly configured HTTP base URLs remain supported without an additional environment flag. Repository methods and the account helpers (`listOrganizations`, `getSessionInfo*`, `resolveConsumerProject`, …) run client calls through one module-private `request` helper that maps `APIError` to `services/HttpServerError` with `status`, `details`, and `requestId`. Endpoints the client does not type yet use `client.get`/`client.post`; inside `composio-clients.ts` those go through the same `request` helper, while `src/services/tool-permissions.ts` reaches them through its own `requestJson`, which raises `services/ToolPermissionsRequestError` because its callers fail closed on that tag. Do not add a raw `fetch` to the Composio backend from `src/commands`, `src/effects`, or `src/services` — the one sanctioned exception is the bundled companion runtime (`run-helpers-runtime.ts`), which runs in the user's spawned process outside the Effect runtime. Tool-execution and proxy errors are classified from `APIError.details` by `src/utils/api-error-extraction.ts`.
+Every Composio API request goes through an Effect client from `@composio/client/effect`, obtained from `ComposioClientSingleton` (`src/services/composio-clients.ts`). Clients are built with `make`, which never reads the ambient environment: the user key and base URL come from the CLI's own configuration. Each client is built with `deprecationNotices: 'off'`, the CLI's own `defaultHeaders` (provenance headers, `x-user-api-key`, plus `x-org-id`/`x-project-id` when both are known), and a counting `fetch` (`composio-client-metrics.ts`) provided as the transport's `FetchHttpClient.Fetch`. Explicitly configured HTTP base URLs remain supported without an additional environment flag. `composio-clients.ts` holds client construction, the two repositories, and the `collectAll` and `sortBySlug` helpers the catalog fetches share. The repository's auth-config, connected-account, trigger-instance, search, and single-item methods live in `src/services/composio-resource-operations.ts`; the account helpers (`listOrganizations`, `getSessionInfo*`, `resolveConsumerProject`, `createProjectApiKey`, `getLatestToolVersion`, …) in `src/services/composio-account.ts`; toolkit version validation and its errors (`InvalidToolkitsError`, `InvalidToolkitVersionsError`) in `src/services/toolkit-version-validation.ts`; the shared error types (`ClientError`, `HttpDecodingError`, `ComposioClientConfigurationError`) in `src/services/composio-errors.ts`; and the shared `decode` helper and `undecoded` request option in `src/services/composio-request.ts`. There is no CLI error wrapper around a request: the client's tagged errors (`@composio/client/NotFoundError`, `APIConnectionError`, `DecodeError`, …) flow to callers, which recover with `Effect.catchTag` or the client's `isAPIError` guard. Commands that report an API failure and continue with a fallback share one handler, `handleClientApiError` (`src/effects/handle-http-error.ts`), applied with `Effect.catchTag(CLIENT_API_ERROR_TAGS, …)`; the tag list lives in `src/services/composio-errors.ts`. Endpoints the client does not type use the raw `client.get`/`client.post`; `src/services/tool-permissions.ts` reaches them through its own `requestJson`, which raises `services/ToolPermissionsRequestError` because its callers fail closed on that tag. Do not add a raw `fetch` to the Composio backend from `src/commands`, `src/effects`, or `src/services` — the one sanctioned exception is the bundled companion runtime (`run-helpers-runtime.ts`), which runs in the user's spawned process outside the Effect runtime. (`src/services/agents.ts` also calls `fetch`, against the agents service at agents.composio.dev rather than the Composio backend.) oxlint rejects value imports of the `@composio/client` root and `@composio/client/pagination` from CLI `src/`; type-only imports are allowed. Client errors are classified for display by `src/utils/api-error-extraction.ts`.
 
 Services are `Context.Service` classes that export a `<Name>Shape` type and an explicit `static readonly Default` layer (`Layer.effect` / `Layer.sync`, dependencies provided with `Layer.provide`). Build a test double with `Service.of({ ... })`; there are no generated accessors or constructors.
 
@@ -82,7 +124,7 @@ OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Ke
 
 ### Effects — `src/effects/`
 
-Reusable Effect computations: `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
+Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for commands and groups), `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
 
 ### Models — `src/models/`
 
@@ -110,7 +152,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Key Dependencies
 
-`effect` (pinned `4.0.3`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.11` via the workspace catalog), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned `4.0.3`; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.14` via the workspace catalog; the CLI calls it through the `@composio/client/effect` entry point and imports only types from the rest of the package), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 
@@ -165,12 +207,12 @@ const cases = pipe(
 
 Each `Arr.bind` adds one independent axis to the generated cases.
 
-### Effect safety and migration seams
+### Effect safety and migration boundaries
 
 - Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Result`, `Exit`, `Cause`, `CliError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
 - Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
-- Treat `unknown`, JSON, and persisted state as trust boundaries. Decode them with `effect/Schema` or narrow them with `Predicate`; an `as` assertion is not validation, and hand-rolled structural guards (`'x' in obj` / `typeof` chains) are not a substitute for a schema. A Composio API response that `@composio/client` types is already a contract the CLI owns end to end, so trust it the way `@composio/core` does rather than re-decoding it. Keep `effect/Schema` for the payloads the client does not type for you: the persisted catalog cache files (`src/models/toolkits.ts`, `tools.ts`, `trigger-types.ts`), anything printed to stdout that must exclude credential-bearing fields (the auth-config and connected-account allowlists, including the `auth-configs create` response), the `ToolkitSlug` path-safety check, the `Session` `DateTime` transform, `TriggerInstanceItems`, and every escape-hatch response fetched with `client.get`/`client.post` (`LatestToolVersionResponse`, and the consumer config and permission payloads in `tool-permissions.ts`). `effect/Schema` is the CLI's schema tool — do not introduce zod here (zod is the convention in the SDK packages and docs).
-- Do not inspect private `effect/cli` internals (parser state, `HelpDoc` string shapes, `CliError` suggestion machinery). `Command.runWith` renders help and parse/validation errors itself — see the entry-point section above — so command-tree introspection must stay on the public `Command.Any` surface (`name`, `alias`, `subcommands`). `CliError.InvalidValue` takes structured `{ option, value, expected, kind }` fields, not a free-form message — commands that need a custom validation message raise a local `Data.TaggedError` instead (see `src/commands/login.cmd.ts`'s `LoginOptionError`) and let it flow through the existing `effect-errors` pretty-printer, not a hand-built `CliError`.
+- Treat `unknown`, JSON, and persisted state as trust boundaries. Decode them with `effect/Schema` or narrow them with `Predicate`; an `as` assertion is not validation, and hand-rolled structural guards (`'x' in obj` / `typeof` chains) are not a substitute for a schema. Each typed API response is validated at most once. The CLI's own schema validates a response the CLI transforms, filters for stdout, or writes to a cache file: the catalog models (`src/models/toolkits.ts`, `tools.ts`, `trigger-types.ts`), the auth-config and connected-account allowlists that keep credential-bearing fields off stdout (including the list responses and the `auth-configs create` response in `src/models/auth-configs.ts` and `connected-accounts.ts`), the `ToolkitSlug` path-safety check, the `Session` `DateTime` transform, and `TriggerInstanceItems`. Those calls pass `decode: false` and decode with the CLI schema, failing with `services/HttpDecodingError`. The client's generated schema validates a read only where the CLI consumes the whole response through the client's types and no field of it may drift: `cli.realtime.credentials` (every field feeds the realtime connection), `org.list` (organization ids and names for login), and `org.consumer.listConnectedToolkits` (a list of slugs). Those three are the loader table in `src/services/composio-schema-loaders.ts`; a mismatch fails with the client's `DecodeError`. Every other typed call passes `undecoded` (`decode: false`): calls that are not reads, because failing after the server acted would invite a retry that repeats the side effect; reads the CLI validates with its own schema; and reads that must tolerate drift because the CLI consumes a few fields of a response whose client schema fixes enums or requires fields the CLI never reads (`logs.tools.*`, `logs.triggers.*`, `tools.list`, `tools.retrieve`, `org.project.list`, `toolRouter.session.search`, `toolRouter.session.toolkits`, `connectedAccounts.list`, which tolerates unknown statuses, and `triggerInstances.listActive`, whose page counts the CLI defaults). A typed call with no loader and no `decode: false` fails before it is sent, so adding a client-decoded read means adding its loader to the table and saying in its doc comment why the CLI cannot tolerate drift there. Responses fetched with the raw `client.get`/`client.post` are untyped and always need a CLI schema (`LatestToolVersionResponse` in `src/models/tools.ts`, and the consumer config and permission payloads in `tool-permissions.ts`). `effect/Schema` is the CLI's schema tool — do not introduce zod here (zod is the convention in the SDK packages and docs).
+- Do not inspect private `effect/cli` internals (parser state, `HelpDoc` string shapes, `CliError` suggestion machinery). `Command.runWith` renders help and parse/validation errors itself — see the entry-point section above — so command-tree introspection must stay on the public `Command.Any` surface (`name`, `alias`, `subcommands`). `CliError.InvalidValue` takes structured `{ option, value, expected, kind }` fields, not a free-form message — handler-level validation raises `CommandInputError` from `src/commands/errors.ts` (built with `commandInputError('<command>')`, carrying `command`, `message`, and the `option` at fault), not a hand-built `CliError`. It, `NotLoggedInError`, and `ProjectResolutionError` are the `UsageFailure` union (`isUsageFailure` in `errors.ts`): `cli-main.ts` prints the message as one line and exits 1, with no defect banner.
 - Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `Effect.catch` blocks (the v4 name for what was `Effect.catchAll`) that flatten distinct failures into one message-only error.
 
 ### Effect Boundary Policy
@@ -223,7 +265,7 @@ Use these when adding new commands or making UX decisions.
 
 ## Client Cache Sync
 
-`src/services/composio-clients-cached.ts` spreads the underlying `ComposioToolkitsRepository` and overrides only the methods it caches (`getToolkits`, `getToolkitsBySlugs`, `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, `getTools`). Adding a passthrough method to the repository needs no edit there. Edit the cached file in the same change only when a cached method's signature or result changes, or when a new full-catalog fetch should be cached. Validation, search, single-item, and CRUD methods stay passthrough.
+`src/services/composio-clients-cached.ts` spreads the underlying `ComposioToolkitsRepository` and overrides only the methods it caches (`getToolkits`, `getProjectToolkits`, `getToolkitsBySlugs`, `getToolsAsEnums`, `getTriggerTypesAsEnums`, `getTriggerTypes`, `getTools`). Adding a passthrough method to the repository needs no edit there. Edit the cached file in the same change only when a cached method's signature or result changes, or when a new full-catalog fetch should be cached. Validation, search, single-item, and CRUD methods stay passthrough.
 
 ## Recording CLI Demos
 
@@ -240,7 +282,7 @@ Use the repo-local `cli-release` skill before building or publishing first-party
 
 - A push to `next` touching CLI paths publishes a rolling beta automatically.
 - The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
-- `@composio/cli` is ignored by Changesets. Never add a changeset targeting it; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
+- `@composio/cli` is ignored by Changesets. Never add a changeset targeting it; it stalls the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
 - `package.json` uses a private development sentinel and is never a
   binary-release authority. For an intentional minor or major release,
   dispatch `build-beta` with its optional version input, verify that beta, then

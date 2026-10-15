@@ -1,7 +1,8 @@
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { Effect, Option } from 'effect';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -11,9 +12,7 @@ const id = Argument.String('id').pipe(
   Argument.optional
 );
 
-export class DangerousDeveloperCommandError extends Data.TaggedError(
-  'commands/DangerousDeveloperCommandError'
-)<{ readonly message: string }> {}
+const notAllowed = commandInputError('dev triggers disable');
 
 const dangerouslyAllow = Flag.Boolean('dangerously-allow').pipe(
   Flag.withDescription('Acknowledge disabling this trigger instance'),
@@ -30,19 +29,16 @@ export const triggersCmd$Disable = Command.make(
     Effect.gen(function* () {
       const config = yield* ComposioCliUserConfig;
       if (!config.areDeveloperDangerousCommandsEnabled()) {
-        return yield* new DangerousDeveloperCommandError({
-          message:
-            'This developer command is disabled by config. Set developer.destructive_actions to true in ~/.composio/config.json to allow it.',
-        });
+        return yield* notAllowed(
+          'This developer command is disabled by config. Set developer.destructive_actions to true in ~/.composio/config.json to allow it.'
+        );
       }
       if (!dangerouslyAllow) {
-        return yield* new DangerousDeveloperCommandError({
-          message:
-            'This developer command requires explicit acknowledgement. Re-run with --dangerously-allow.',
-        });
+        return yield* notAllowed(
+          'This developer command requires explicit acknowledgement. Re-run with --dangerously-allow.',
+          '--dangerously-allow'
+        );
       }
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 
@@ -60,8 +56,8 @@ export const triggersCmd$Disable = Command.make(
         .pipe(
           Effect.as(true),
           Effect.catchTag(
-            'services/HttpServerError',
-            handleHttpServerError(ui, {
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
               fallbackMessage: `Failed to disable trigger "${idValue}".`,
               hint: 'Browse available triggers:\n> composio dev triggers status',
               fallbackValue: false,

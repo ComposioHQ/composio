@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.4.4
+
+### Patch Changes
+
+- `composio execute` and the `execute()` helper in `composio run` scripts now
+  report the Instant charge when a call ran on a Composio instant account
+  instead of a linked connection: the result carries an `instantCharge` object
+  (`amount`, `currency`, `chargedBy`) and the success line shows
+  `instant charge: <amount> USD`. The CLI used to create Tool Router sessions
+  without asking for the charge and dropped it from the response, so a billed
+  call looked free.
+- The CLI now runs on the stable Effect 4 line (`effect@4.0.3`, up from
+  `4.0.0-rc.117`). No command changes on purpose. One parsing difference comes
+  with the framework: an argument that is a negative number, such as `-5`, is
+  now read as a value instead of as a flag.
+
+## 0.4.3
+
 ### Patch Changes
 
 - `composio execute` (including meta tools), `composio proxy`, the `proxy()`
@@ -10,19 +28,16 @@
   such as an approval, before it can run. The CLI cannot answer input requests
   yet, and it no longer treats such an answer as a result. The `proxy()` helper
   used to return an empty `200` response for a call that never ran.
-
 - `composio execute` now reads whether a tool succeeded from the `result_type`
   the API returns with every execution, so a tool that ran and failed is
   reported as failed even when the API returns no error text. It used to read a
   failed execution with a `null` error as successful.
-
 - `composio execute` now validates the arguments before it sends the tool
   call, so a call that fails local validation is never run. Validation used to
   race the request, and the tool could execute while the CLI reported a
   validation failure. The cached schema named in the validation error is now
   kept on disk instead of being deleted. A schema the CLI cannot compile no
   longer blocks the call; the server still validates it.
-
 - Generate help from the command definitions, including every supported flag and
   nested command. Remove help levels and the nonexistent `files` help topic.
   Install agent skills with `composio setup skill <claude|codex|openclaw>`
@@ -32,14 +47,11 @@
   Debug flags after the `run` script boundary now reach the script unchanged.
   `composio execute <slug> --help` now shows command options. Use
   `composio execute <slug> --get-schema` to print that tool's input schema as JSON.
-
 - `composio execute` (including meta tools) and `composio proxy` are never
   retried, so a request that timed out or failed after the backend already
   acted cannot repeat a side effect such as sending the same email twice.
-
 - API requests and command analytics now report CLI product/version, language,
   runtime/version, and the installed API client version separately.
-
 - Remove the experimental local-tools stack: the `local-tools` command group,
   the `local_tools` experimental flag, `LOCAL_*` tool execution, `dev native-ui`,
   and the bundled macOS sidecars (peekaboo, imessage-cli, composio-native-ui).
@@ -70,6 +82,11 @@
   `run-subagent-*.mjs` files and six `acp-adapters/*` paths) as intentionally
   empty placeholders so that a CLI installed before this change still passes
   its upgrade verification. No adapter binaries are downloaded or shipped.
+
+## 0.4.2
+
+### Patch Changes
+
 - Every Composio API call now goes through the `@composio/client` 2.0 runtime,
   the same client `@composio/core` uses. Org, project, session-info, and
   consumer lookups gain the client's retries and redirect handling, and API
@@ -98,10 +115,42 @@
 - `composio generate` now keeps tool and trigger metadata as inert data in
   generated Python and TypeScript sources. Crafted slugs and descriptions can
   no longer inject code into generated modules.
+- `composio orgs --help`, `composio signup --help`, the `agent` family pages (signup,
+  login, whoami, inbox, claim), and the group help pages for `connections`, `triggers`,
+  `artifacts`, and `install` now render the same curated, styled help page as every
+  other command family, instead of falling back to the framework's raw flag dump.
+  `composio help <command>` is now a supported spelling of command help (`composio help
+orgs` shows the same page as `composio orgs --help`, with the same longest-prefix
+  fallback for deeper paths); an unknown target fails through the framework parser like
+  any other unknown command. The `orgs` description in contextual error help now matches
+  the command's actual description.
+- `composio listen <slug> --stream` without a path is accepted again and streams
+  the whole event payload. It previously failed with
+  `Received unknown argument: '--stream='`.
+- `composio listen` reports an unknown trigger slug as such. A mistyped slug
+  used to fail with a missing-connection error for the toolkit inferred from its
+  prefix, or with a generic trigger-creation error when that toolkit already had
+  an active account.
+- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
+  and `status` commands that share its API error handling, now exit non-zero on
+  an API error and print the error when stderr is not a terminal. `composio tools
+info <unknown-slug>` used to print nothing and exit 0 when piped.
+- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
+  instead of a removed Slack tool slug and a trigger without configuration.
+
+## 0.4.1
+
+### Patch Changes
+
 - `composio upgrade` (and any other command with a long spinner message) no
   longer scrolls endlessly in terminals narrower than that message. The spinner
   printed its line hundreds of times instead of animating in place; live spinner
   text is now clamped to a single terminal row.
+
+## 0.4.0
+
+### Patch Changes
+
 - `composio upgrade` shows download progress. The archive is a few hundred
   megabytes, and the command previously printed `Downloading...` once and then
   said nothing for minutes, which was indistinguishable from a hang. It now
@@ -127,32 +176,6 @@
   `https://staging-dashboard.composio.dev/`.
 - `composio dev auth-configs create` now sends custom OAuth credentials and scopes
   in the API's expected shape instead of failing validation.
-- `composio orgs --help`, `composio signup --help`, the `agent` family pages (signup,
-  login, whoami, inbox, claim), and the group help pages for `connections`, `triggers`,
-  `artifacts`, and `install` now render the same curated, styled help page as every
-  other command family, instead of falling back to the framework's raw flag dump.
-  `composio help <command>` is now a supported spelling of command help (`composio help
-orgs` shows the same page as `composio orgs --help`, with the same longest-prefix
-  fallback for deeper paths); an unknown target fails through the framework parser like
-  any other unknown command. The `orgs` description in contextual error help now matches
-  the command's actual description.
-- `composio listen <slug> --stream` without a path is accepted again and streams
-  the whole event payload. It previously failed with
-  `Received unknown argument: '--stream='`.
-- `composio listen` reports an unknown trigger slug as such. A mistyped slug
-  used to fail with a missing-connection error for the toolkit inferred from its
-  prefix, or with a generic trigger-creation error when that toolkit already had
-  an active account.
-- `composio tools info`, and the other `info`, `create`, `enable`, `disable`,
-  and `status` commands that share its API error handling, now exit non-zero on
-  an API error and print the error when stderr is not a terminal. `composio tools
-info <unknown-slug>` used to print nothing and exit 0 when piped.
-- Help examples use `SLACK_SEND_MESSAGE` and `SLACK_CHANNEL_MESSAGE_RECEIVED`
-  instead of a removed Slack tool slug and a trigger without configuration.
-- The CLI now runs on the stable Effect 4 line (`effect@4.0.3`, up from
-  `4.0.0-rc.117`). No command changes on purpose. One parsing difference comes
-  with the framework: an argument that is a negative number, such as `-5`, is
-  now read as a value instead of as a flag.
 
 ## 0.3.3
 

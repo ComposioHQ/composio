@@ -21,6 +21,8 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionExecuteMetaOptions,
+  ToolRouterSessionMetaToolSlug,
   ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
@@ -71,6 +73,7 @@ import type {
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
+  SessionExecuteMetaParams,
   SessionExecuteParams,
   SessionLinkParams,
   SessionPatchParams,
@@ -96,6 +99,16 @@ import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
+
+/** The request fields that carry the user's answers to an earlier `input_required` call. */
+function inputResponseParams(
+  options: ToolRouterSessionExecuteMetaOptions | undefined
+): Pick<SessionExecuteParams, 'input_responses' | 'request_state'> {
+  return {
+    ...(options?.inputResponses !== undefined && { input_responses: options.inputResponses }),
+    ...(options?.requestState !== undefined && { request_state: options.requestState }),
+  };
+}
 export const DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX =
   '[Direct tool - call directly, no search needed beforehand.]';
 
@@ -682,6 +695,8 @@ export class ToolRouterSession<
    * @param arguments_ - Optional tool arguments
    * @param options - Optional execution options
    * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
+   * @param options.inputResponses - Experimental. The user's answers to an earlier `ComposioToolInputRequiredError`, keyed by the IDs in its `inputRequests`. Repeat the same call with them.
+   * @param options.requestState - Experimental. The `requestState` of that error, sent back unchanged.
    * @returns The tool execution result
    * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
@@ -718,6 +733,7 @@ export class ToolRouterSession<
     const executeParams: SessionExecuteParams = {
       tool_slug: toolSlug,
       arguments: arguments_ ?? {},
+      ...inputResponseParams(options),
     };
     if (options?.account) {
       executeParams.account = options.account;
@@ -739,6 +755,58 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
     const transformed = transformExecuteResponse(response, toolSlug);
+    return ToolRouterSessionExecuteResponseSchema.parse(transformed);
+  }
+
+  /**
+   * Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+   *
+   * `session.execute()` also runs meta tools. This method only accepts meta
+   * tool slugs, so a typo is a type error instead of a failed request. The call
+   * is sent to the Composio backend as is: custom tools named in a
+   * `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+   *
+   * @param slug - The meta tool slug to execute
+   * @param arguments_ - Optional meta tool arguments
+   * @param options - Experimental. The user's answers to an earlier `ComposioToolInputRequiredError` (`inputResponses`) and its `requestState`, as in `session.execute()`
+   * @returns The tool execution result, in the same shape as `session.execute()`
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
+   *
+   * @example
+   * ```typescript
+   * const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+   *   queries: [{ use_case: 'send an email' }],
+   * });
+   * ```
+   */
+  async executeMeta(
+    slug: ToolRouterSessionMetaToolSlug,
+    arguments_?: Record<string, unknown>,
+    options?: ToolRouterSessionExecuteMetaOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionExecuteResponse> {
+    const executeMetaParams: SessionExecuteMetaParams = {
+      slug,
+      arguments: arguments_ ?? {},
+      ...inputResponseParams(options),
+    };
+    const experimental = inlineCustomToolsExperimental<SessionExecuteMetaParams.Experimental>(
+      this.inlineCustomToolsPayload
+    );
+    if (experimental) {
+      executeMetaParams.experimental = experimental;
+    }
+
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.executeMeta(
+          this.sessionId,
+          executeMetaParams,
+          withoutRetries(requestOptions)
+        ),
+      requestOptions?.signal
+    );
+    const transformed = transformExecuteResponse(response, slug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 

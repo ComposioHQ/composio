@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
 import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
@@ -19,5 +20,6 @@ export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
     connectedAccountsCmd$List,
     connectedAccountsCmd$Info,
     connectedAccountsCmd$Whoami,
-  ])
+  ]),
+  requireLogin
 );

@@ -124,6 +124,13 @@ describe('CLI: composio dev triggers info', () => {
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
+          // Once plainly for a captured stderr, once through the decorated log.
+          expect(lines).toEqual([
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+            'Trigger "NONEXISTENT_TRIGGER" not found.',
+            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
+          ]);
           expect(process.exitCode).toBe(1);
         })
       );
@@ -133,11 +140,10 @@ describe('CLI: composio dev triggers info', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.effect('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('not logged in');
+        const error = yield* cli(['dev', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(
+          Effect.flip
+        );
+        expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
       })
     );
   });

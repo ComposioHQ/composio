@@ -3,13 +3,9 @@ import { Data, Effect, Option } from 'effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
 
 class ConnectedAccountsListRequestError extends Data.TaggedError(
@@ -59,8 +55,6 @@ export const connectedAccountsCmd$List = Command.make(
   { toolkits, userId, status, limit },
   ({ toolkits, userId, status, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
 
@@ -69,7 +63,7 @@ export const connectedAccountsCmd$List = Command.make(
         : undefined;
       const resolvedProject = yield* resolveCommandProject({
         mode: 'developer',
-      }).pipe(Effect.mapError(formatResolveCommandProjectError));
+      });
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,
@@ -77,20 +71,25 @@ export const connectedAccountsCmd$List = Command.make(
 
       const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
-        Effect.tryPromise({
-          try: () =>
-            client.connectedAccounts.list({
+        client.connectedAccounts
+          .list(
+            {
               toolkit_slugs: toolkitSlugs,
               user_ids: Option.isSome(userId) ? [userId.value] : undefined,
               statuses: Option.isSome(status) ? [status.value] : undefined,
               limit: clampLimit(limit),
-            }),
-          catch: cause =>
-            new ConnectedAccountsListRequestError({
-              message: 'Failed to list connected accounts.',
-              cause,
-            }),
-        })
+            },
+            { decode: false }
+          )
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new ConnectedAccountsListRequestError({
+                  message: 'Failed to list connected accounts.',
+                  cause,
+                })
+            )
+          )
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);
 

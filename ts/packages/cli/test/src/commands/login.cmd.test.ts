@@ -10,7 +10,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
-import { InternalServerError } from '@composio/client';
+import { InternalServerError } from '@composio/client/effect';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockAccountRequest } from 'test/__utils__/services/test-layer';
@@ -116,9 +116,8 @@ describe('CLI: composio login', () => {
     });
   });
 
-  // v4 migration note: this business-level validation (only knowable after parsing) is a
-  // plain typed domain error (`LoginOptionError`), not a `CliError.InvalidValue` — see the
-  // migration note in `login.cmd.ts` above `invalidOptionValue`.
+  // Business-level validation (only knowable after parsing) raises `CommandInputError`,
+  // not a `CliError.InvalidValue`; see `src/commands/errors.ts`.
   layer(TestLive())(it => {
     it.effect('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
       Effect.gen(function* () {
@@ -480,12 +479,15 @@ describe('CLI: composio login', () => {
         ],
         sessionInfo: scope => {
           if (scope.projectId !== undefined) {
-            throw new InternalServerError(
-              500,
-              { message: 'Selected-org enrichment failed' },
-              'Selected-org enrichment failed',
-              new Headers()
-            );
+            throw new InternalServerError({
+              message: 'Selected-org enrichment failed',
+              method: 'GET',
+              url: 'https://mock.invalid/api/v3.1/auth/session/info',
+              status: 500,
+              requestId: undefined,
+              details: undefined,
+              body: { message: 'Selected-org enrichment failed' },
+            });
           }
           return scope.orgId === undefined
             ? makeSessionInfo({

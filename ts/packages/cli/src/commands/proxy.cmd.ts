@@ -1,10 +1,10 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -13,16 +13,13 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { assertNotInputRequired } from 'src/utils/tool-input-required';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Argument.String('url').pipe(
@@ -288,13 +285,9 @@ export const proxyCmd = Command.make('proxy', {
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
         return yield* new ProxyCommandError({
@@ -355,44 +348,52 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          return yield* Effect.tryPromise({
-            try: async () => {
-              const response = await client.toolRouter.session.proxyExecute(
-                sessionId,
-                {
-                  toolkit_slug: normalizedToolkit,
-                  endpoint,
-                  method: normalizedMethod,
-                  ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-                  ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-                },
-                // Never retry a proxied call: a retry after the upstream API
-                // already acted duplicates the side effect.
-                { maxRetries: 0 }
-              );
-              assertNotInputRequired(
-                `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
-                response
-              );
-              return response;
-            },
-            catch: cause =>
-              new ProxyRequestError({
-                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
-                cause,
-              }),
-          }).pipe(
-            Effect.matchEffect({
-              onFailure: error =>
-                handleProxyExecutionError({
-                  ui,
-                  error,
-                  toolkit: normalizedToolkit,
-                  endpoint,
-                }),
-              onSuccess: Effect.succeed,
-            })
-          );
+          const failed = (cause: unknown) =>
+            new ProxyRequestError({
+              message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+              cause,
+            });
+
+          return yield* client.toolRouter.session
+            .proxyExecute(
+              sessionId,
+              {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              },
+              // Never retry a proxied call: a retry after the upstream API
+              // already acted duplicates the side effect. The response is not
+              // validated either, for the same reason.
+              { maxRetries: 0, decode: false }
+            )
+            .pipe(
+              Effect.mapError(failed),
+              Effect.flatMap(response =>
+                response.result_type === 'input_required'
+                  ? Effect.fail(
+                      failed(
+                        toolInputRequiredError(
+                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                          response
+                        )
+                      )
+                    )
+                  : Effect.succeed(response)
+              ),
+              Effect.matchEffect({
+                onFailure: error =>
+                  handleProxyExecutionError({
+                    ui,
+                    error,
+                    toolkit: normalizedToolkit,
+                    endpoint,
+                  }),
+                onSuccess: Effect.succeed,
+              })
+            );
         })
       );
 
@@ -403,5 +404,6 @@ export const proxyCmd = Command.make('proxy', {
         yield* ui.output(output);
       }
     })
-  )
+  ),
+  requireLogin
 );

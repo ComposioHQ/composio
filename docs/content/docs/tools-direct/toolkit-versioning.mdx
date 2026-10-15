@@ -207,6 +207,56 @@ console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
 
 Call `composio.toolkits.changelog()` in Python or `await composio.toolkits.changelog()` in TypeScript to retrieve the last 10 versions for each toolkit. The response's `items` contain each toolkit's slug and version entries, which you can review before changing a pinned version.
 
+## Deprecation and sunset
+
+Composio-managed toolkit versions are deprecated 12 months after they're published and retired 3 months after that. The newest version of a toolkit is never deprecated, so pinning a current version and upgrading on your own schedule keeps you clear of both dates.
+
+When a request resolves to a deprecated version, the API adds a `Composio-Deprecated-Toolkits` response header alongside the normal response:
+
+```http
+Composio-Deprecated-Toolkits: "GMAIL";version="20250114_00";deprecated=@1779840000;sunset=@1787788800;reason="lifecycle"
+```
+
+The header is an RFC 9651 structured-field list. Each item names the toolkit slug and the resolved `version`, plus optional `deprecated` and `sunset` dates (Unix seconds, prefixed with `@`) and a `reason`. Versions deprecated by hand carry only `version`.
+
+Single-toolkit routes carry the header: toolkit get, tool get, tool execute, text-to-request, trigger type get, trigger upsert and setup, and trigger authorization entities. Listing endpoints never do.
+
+### SDK warning
+
+Both SDKs read the header and warn once per process for each deprecated toolkit version. The call still succeeds.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```text
+[Deprecation] Toolkit GMAIL version 20250114_00 was deprecated on 2026-05-27 (lifecycle) and will stop working on 2026-08-27. Pin a newer version with toolkit_versions={"gmail": "<version>"} or COMPOSIO_TOOLKIT_VERSION_GMAIL. See https://docs.composio.dev/docs/tools-direct/toolkit-versioning#deprecation-and-sunset.
+```
+
+The warning is a `ComposioDeprecationWarning` (a `UserWarning` subclass), so standard warning filters apply:
+
+```python
+import warnings
+from composio import ComposioDeprecationWarning
+
+warnings.filterwarnings("ignore", category=ComposioDeprecationWarning)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```text
+[Deprecation] Toolkit GMAIL version 20250114_00 was deprecated on 2026-05-27 (lifecycle) and will stop working on 2026-08-27. Pin a newer version with toolkitVersions: { gmail: '<version>' } or COMPOSIO_TOOLKIT_VERSION_GMAIL. See https://docs.composio.dev/docs/tools-direct/toolkit-versioning#deprecation-and-sunset.
+```
+
+The warning goes through the SDK logger at the `warn` level. Silence it with `logLevel: 'error'` in the constructor or `COMPOSIO_LOG_LEVEL=error` in the environment.
+  </Tab>
+</Tabs>
+
+When the header omits `reason` or `sunset`, the warning omits those clauses too.
+
+### Moving off a deprecated version
+
+Pick a newer version from the [dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) or `toolkits.get()`, then pin it the same way you pin any version: at [SDK initialization](#sdk-initialization), through an [environment variable](#environment-variables), or [per execute call](#per-execution-override). The warning stops as soon as requests resolve to a version that isn't deprecated.
+
+After the sunset date, requests for the retired version fail with HTTP `410 Gone` until you pin a supported version.
+
 ## Next
 
 <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />

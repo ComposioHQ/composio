@@ -33,6 +33,8 @@ from composio.core.models.tool_router import (
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
     ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
 from composio.core.models.session_context import SessionContextImpl
@@ -182,6 +184,27 @@ class TestToolRouter:
 
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+        ],
+    )
+    def test_create_sends_proxy_execute_block(
+        self, tool_router, mock_client, proxy_execute, expected
+    ):
+        tool_router.create(user_id="user_123", proxy_execute=proxy_execute)
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["proxy_execute"] == expected
+
+    def test_create_omits_proxy_execute_by_default(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123")
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "proxy_execute" not in kwargs
 
     def test_create_with_instant_policy(self, tool_router, mock_client):
         policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
@@ -1426,6 +1449,8 @@ class TestToolRouter:
             tool_slug="GMAIL_FETCH_EMAILS",
             arguments={"max_results": 1},
             account="work",
+            input_responses=omit,
+            request_state=omit,
             experimental=omit,
         )
 
@@ -2285,7 +2310,10 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
-            "instant": {"return_instant_charge": True},
+            "instant": {
+                "return_instant_charge": True,
+                "return_prices_in_search": True,
+            },
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2307,7 +2335,10 @@ def _search_json() -> t.Dict[str, t.Any]:
                 "description": "Search",
                 "has_active_connection": True,
                 "status_message": "Instant account available",
-                "instant_account": {"allowed_tool_slugs": ["EXA_SEARCH"]},
+                "instant_account": {
+                    "allowed_tool_slugs": ["EXA_SEARCH"],
+                    "prices": {"EXA_SEARCH": {"description": "$0.01 per call"}},
+                },
             }
         ],
         "next_steps_guidance": [],
@@ -2324,7 +2355,14 @@ class TestInstantContractTransport:
     """Exercise new wire fields through the pinned generated client."""
 
     @pytest.mark.parametrize(
-        "policy", [False, {}, {"return_instant_charge": True}, None]
+        "policy",
+        [
+            False,
+            {},
+            {"return_instant_charge": True},
+            {"return_prices_in_search": True},
+            None,
+        ],
     )
     def test_create_and_patch_send_new_policy(self, policy):
         client, requests = _transport_client(
@@ -2339,6 +2377,7 @@ class TestInstantContractTransport:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
+        assert session.config.instant.return_prices_in_search is True
 
         if policy is None:
             session.update(expected_config_version=3)
@@ -2352,6 +2391,7 @@ class TestInstantContractTransport:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
+        assert session.config.instant.return_prices_in_search is True
 
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
@@ -2395,6 +2435,10 @@ class TestInstantContractTransport:
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert status.instant_account.prices is not None
+        assert status.instant_account.prices["EXA_SEARCH"].description == (
+            "$0.01 per call"
+        )
         assert "hosted_account" not in status.model_dump()
 
     def test_search_keeps_lenient_generated_response(self):
@@ -2458,7 +2502,7 @@ def _answering_client(
     requests: t.List[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith(("/execute", "/proxy_execute")):
+        if request.url.path.endswith(("/execute", "/execute_meta", "/proxy_execute")):
             requests.append(request)
             return httpx.Response(200, json=body)
         return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
@@ -2474,6 +2518,128 @@ def _answering_client(
 
 def _created_session(client: HttpClient) -> ToolRouterSession:
     return ToolRouter(client=client, provider=MagicMock()).create(user_id="user_123")
+
+
+_APPROVAL_ANSWERS: t.Dict[str, t.Any] = {
+    "approval_1": {"action": "accept", "content": {"decision": "approve"}},
+}
+
+_COMPLETED_JSON: t.Dict[str, t.Any] = {
+    "result_type": "completed",
+    "data": {"id": "msg_1"},
+    "error": None,
+    "log_id": "log_1",
+}
+
+
+class TestAnsweringInputRequired:
+    """The answers to an ``input_required`` call travel on the repeated call
+    as ``input_responses``, with the ``request_state`` it returned."""
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda session: session.execute(
+                    "GMAIL_SEND_EMAIL",
+                    arguments={"to": "test@test.com"},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda session: session.execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": []},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute_meta",
+            ),
+        ],
+    )
+    def test_sends_the_answers_and_the_request_state(self, run):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        run(_created_session(client))
+
+        body = json.loads(requests[0].content)
+        assert body["input_responses"] == _APPROVAL_ANSWERS
+        assert body["request_state"] == "opaque-state-token"
+
+    def test_sends_neither_field_without_answers(self):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        body = json.loads(requests[0].content)
+        assert "input_responses" not in body
+        assert "request_state" not in body
+
+
+class TestApprovalRules:
+    """``require_approval`` lists and the no-elicitation fallback reach the
+    API next to the filters they belong to."""
+
+    def test_create_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+
+        ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123",
+            toolkits={"enable": ["gmail", "github"], "require_approval": ["github"]},
+            tools={
+                "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+                "notion": {
+                    "enable": ["NOTION_CREATE_PAGE"],
+                    "require_approval": ["NOTION_CREATE_PAGE"],
+                },
+                "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+            },
+            tags={
+                "disable": ["openWorldHint"],
+                "require_approval": ["destructiveHint"],
+            },
+            experimental={"no_elicitation_support_fallback": "allow"},
+        )
+
+        body = json.loads(requests[0].content)
+        assert body["toolkits"] == {
+            "enable": ["gmail", "github"],
+            "require_approval": ["github"],
+        }
+        assert body["tools"] == {
+            "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+            "notion": {
+                "enable": ["NOTION_CREATE_PAGE"],
+                "require_approval": ["NOTION_CREATE_PAGE"],
+            },
+            "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+        }
+        assert body["tags"] == {
+            "disable": ["openWorldHint"],
+            "require_approval": ["destructiveHint"],
+        }
+        assert body["experimental"] == {"no_elicitation_support_fallback": "allow"}
+
+    def test_update_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            api_key="ak_test", base_url="https://backend.composio.dev"
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+
+        session.update(
+            toolkits={"require_approval": ["gmail"]},
+            experimental={"no_elicitation_support_fallback": "deny"},
+        )
+
+        body = json.loads(requests[-1].content)
+        assert body["toolkits"] == {"require_approval": ["gmail"]}
+        assert body["experimental"] == {"no_elicitation_support_fallback": "deny"}
 
 
 class TestExecutionRequiresUserInput:
@@ -2493,6 +2659,14 @@ class TestExecutionRequiresUserInput:
                 ),
                 "Tool GMAIL_SEND_EMAIL",
                 id="session.execute",
+            ),
+            pytest.param(
+                lambda client: _created_session(client).execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": [{"tool_slug": "GMAIL_SEND_EMAIL"}]},
+                ),
+                "Tool COMPOSIO_MULTI_EXECUTE_TOOL",
+                id="session.execute_meta",
             ),
             pytest.param(
                 lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
@@ -3185,6 +3359,28 @@ class TestSessionUpdateContract:
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
+    @pytest.mark.parametrize(
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+            (None, None),
+        ],
+    )
+    def test_proxy_execute_is_sent_as_block(
+        self, session, mock_client, proxy_execute, expected
+    ):
+        session.update(proxy_execute=proxy_execute)
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["proxy_execute"] == expected
+
+    def test_proxy_execute_is_omitted_by_default(self, session, mock_client):
+        session.update(toolkits={"enable": ["gmail"]})
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["proxy_execute"] is omit
+
     def test_instant_policy_is_sent(self, session, mock_client):
         session.update(
             instant={
@@ -3351,3 +3547,86 @@ class TestSessionUpdateContract:
             "expected_config_version": 8
         }
         assert reread.config_version == 9
+
+
+class TestSessionExecuteMeta:
+    """``session.execute_meta`` runs a Composio meta tool through the meta
+    endpoint and answers in the same shape as ``session.execute``.
+    """
+
+    def test_sends_the_slug_and_arguments_to_the_meta_endpoint(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta(
+            "COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send an email"}]},
+        )
+
+        assert len(requests) == 1
+        assert requests[0].url.path == (
+            "/api/v3.1/tool_router/session/session_123/execute_meta"
+        )
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_SEARCH_TOOLS",
+            "arguments": {"queries": [{"use_case": "send an email"}]},
+        }
+
+    def test_omits_arguments_when_not_passed(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta("COMPOSIO_MANAGE_CONNECTIONS")
+
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_MANAGE_CONNECTIONS"
+        }
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_returns_the_session_execute_response(self, result_type, error, successful):
+        client, _ = _answering_client(
+            {
+                **_executed_json(result_type, error),
+                "data": {"results": []},
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert result.result_type == result_type
+        assert result.error == error
+        assert result.data == {"results": []}
+        assert result.log_id == "log"
+        assert result.instant_charge is not None
+        assert result.instant_charge.amount == "0.01"
+
+    @pytest.mark.parametrize("body", _INVALID_ANSWERS)
+    def test_raises_without_a_known_result_type(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(
+            ValidationError,
+            match="Tool COMPOSIO_SEARCH_TOOLS returned an execute response "
+            "without a known result_type",
+        ):
+            _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert len(requests) == 1
+
+    def test_slugs_match_the_generated_client(self):
+        from composio_client.resources.tool_router.session import SessionResource
+
+        slug_hint = t.get_type_hints(SessionResource.execute_meta)["slug"]
+        client_slugs = {
+            slug
+            for member in t.get_args(slug_hint)
+            for slug in t.get_args(member)
+            if isinstance(slug, str)
+        }
+
+        assert client_slugs
+        assert set(t.get_args(ToolRouterSessionMetaToolSlug)) == client_slugs

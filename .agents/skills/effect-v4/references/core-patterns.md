@@ -82,11 +82,11 @@ file), not the bare class name.
 ## Errors: `Data.TaggedError` (default) and `Schema.TaggedError` (schema-backed)
 
 The established convention in this repo — stated in `ts/packages/cli/AGENTS.md`'s
-"Effect safety and migration seams" section — is: never wrap a plain `Error` in
+"Effect safety and migration boundaries" section — is: never wrap a plain `Error` in
 `Effect.fail` for an expected failure; give it a `Data.TaggedError` with structured
 fields and a preserved cause, then recover with `catchTag`/`catchTags`. This is
 unchanged from v3 and is what nearly every error in `src/services/*.ts` uses, e.g.
-`ts/packages/cli/src/services/composio-clients.ts`:
+`ts/packages/cli/src/services/toolkit-version-validation.ts`:
 
 ```ts
 import { Data } from 'effect';
@@ -189,6 +189,62 @@ the expression is** — an Effect value or a function — and **what the tracer 
 When in doubt: value → `Effect.gen`; function → a plain arrow returning `Effect.gen`,
 upgrading to `Effect.fn` when failure attribution in error reports is worth the annotation.
 Do not migrate one form to the other wholesale.
+
+## Time in tests: drive `TestClock`, never wait on a real clock
+
+`it.effect` from `@effect/vitest` runs the test on a `TestClock` parked at epoch. Any sleep
+on Effect's clock inside the code under test (`Effect.sleep`, `Effect.retry` with a
+`Schedule`, `Effect.timeout`, the API client's retry backoff) only completes when the test
+moves that clock. Awaiting such an effect on the test's own fiber hangs until the vitest
+timeout, because nothing is left to advance time. Do not fix that with `it.live`: a live
+clock makes CI wait out the real backoff.
+
+The pattern is fork, then yield and adjust until the fiber settles, then join:
+
+```ts
+import { it } from '@effect/vitest';
+import { Effect, Fiber, Schedule } from 'effect';
+import { TestClock } from 'effect/testing';
+
+class Unreachable extends Error {
+  readonly _tag = 'Unreachable';
+}
+
+// Stands in for a client call that retries with a backoff on Effect's clock:
+// `Schedule.max` stops when either schedule does, so two retries, half a second apart and doubling.
+const lookup: Effect.Effect<never, Unreachable> = Effect.fail(new Unreachable('fetch failed')).pipe(
+  Effect.retry(Schedule.max([Schedule.exponential('500 millis'), Schedule.recurs(2)]))
+);
+
+it.effect('passes the failure through once the retries are spent', () =>
+  Effect.gen(function* () {
+    // 1. Run the effect on its own fiber so the test fiber stays free to move the clock.
+    const fiber = yield* lookup.pipe(Effect.flip, Effect.forkChild);
+    // 2. Let the forked fiber run, then advance past every retry; `adjust` resumes each sleep
+    //    in order, and a sleep scheduled by a resumed fiber inside the window is resumed too.
+    //    Loop on the fiber's own state: when the code under test crosses a Promise boundary
+    //    (a rejected `fetch`) before its first sleep, one yield is not guaranteed to reach it.
+    for (let step = 0; step < 100 && fiber.pollUnsafe() === undefined; step++) {
+      yield* Effect.yieldNow;
+      yield* TestClock.adjust('1 minute');
+    }
+    // 3. Join: the fiber has settled, so this returns without waiting.
+    const error = yield* Fiber.join(fiber);
+    if (error._tag !== 'Unreachable') throw new Error('expected the failure to pass through');
+  })
+);
+```
+
+Pick an `adjust` window larger than the whole schedule, not equal to one step; one call is
+enough because the clock resumes sleeps iteratively up to the target time. Real uses:
+`ts/packages/cli/test/src/services/command-project.test.ts` (the client's connection-failure
+retry) and `ts/packages/cli/test/src/commands/setup.cmd.test.ts` (a two-minute command
+timeout).
+
+`it.live` is for code that sleeps outside Effect's clock, such as a spawned process or a
+`setTimeout` inside a non-Effect library, and even then the test should shorten the wait
+(the client retry tests pass a `retry-after-ms: 0` header). Nothing in the CLI suite waits on
+wall-clock time.
 
 ## v3 → v4 rename table (historical — recognize stale patterns, don't copy them)
 

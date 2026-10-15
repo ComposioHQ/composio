@@ -51,6 +51,7 @@ import {
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
   transformToolRouterInstantParams,
+  transformToolRouterProxyExecuteParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
@@ -239,6 +240,11 @@ export class ToolRouter<
       experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
     }
 
+    if (routerConfig.experimental?.noElicitationSupportFallback !== undefined) {
+      experimentalPayload.no_elicitation_support_fallback =
+        routerConfig.experimental.noElicitationSupportFallback;
+    }
+
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
         user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
@@ -282,6 +288,9 @@ export class ToolRouter<
       ),
       workbench: sandboxPayload,
       multi_account: multiAccountPayload,
+      ...(routerConfig.proxyExecute !== undefined && {
+        proxy_execute: transformToolRouterProxyExecuteParams(routerConfig.proxyExecute),
+      }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {
         search: { enable: false },

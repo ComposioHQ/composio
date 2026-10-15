@@ -1,7 +1,7 @@
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { requireAuth } from 'src/effects/require-auth';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -68,8 +68,6 @@ export const triggersCmd$Status = Command.make(
   },
   ({ userIds, connectedAccountIds, toolkits, triggerIds, triggerNames, showDisabled, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 
@@ -92,8 +90,8 @@ export const triggersCmd$Status = Command.make(
         .pipe(
           Effect.asSome,
           Effect.catchTag(
-            'services/HttpServerError',
-            handleHttpServerError(ui, {
+            CLIENT_API_ERROR_TAGS,
+            handleClientApiError(ui, {
               fallbackMessage: 'Failed to fetch trigger status.',
               hint: 'Retry with:\n> composio dev triggers status --show-disabled',
               fallbackValue: Option.none(),

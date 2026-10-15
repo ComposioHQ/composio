@@ -6,7 +6,11 @@ declare const composio: Composio;
 async function instantContract(): Promise<void> {
   const session = await composio.create('user_123', {
     toolkits: ['exa'],
-    instant: { toolkits: { enable: ['exa'] }, returnInstantCharge: true },
+    instant: {
+      toolkits: { enable: ['exa'] },
+      returnInstantCharge: true,
+      returnPricesInSearch: true,
+    },
   });
   await composio.sessions.create('user_123', {
     toolkits: ['exa', 'firecrawl'],
@@ -15,11 +19,17 @@ async function instantContract(): Promise<void> {
       tools: { exa: { enable: ['EXA_SEARCH'] } },
     },
   });
+  const { toolkitConnectionStatuses } = await session.search({ query: 'search the web' });
+  const price: string | undefined =
+    toolkitConnectionStatuses[0]?.instantAccount?.prices?.EXA_SEARCH?.description;
+  void price;
   await session.update({ instant: false });
   await session.execute('EXA_SEARCH', {}, { account: 'instant_account' });
   if (session.config.instant) {
     const returnsCharge: boolean = session.config.instant.return_instant_charge;
     void returnsCharge;
+    const returnsPrices: boolean = session.config.instant.return_prices_in_search;
+    void returnsPrices;
   }
 
   const { items } = await session.listConfigHistory();
@@ -27,6 +37,8 @@ async function instantContract(): Promise<void> {
   if (historical?.config.instant) {
     const returnedCharge: boolean = historical.config.instant.return_instant_charge;
     void returnedCharge;
+    const returnedPrices: boolean = historical.config.instant.return_prices_in_search;
+    void returnedPrices;
   }
 
   const summary = await composio.experimental.usage.summary();

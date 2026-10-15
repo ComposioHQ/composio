@@ -53,7 +53,7 @@ import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overri
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
-import { MissingRunSourceError } from 'src/commands/run.cmd';
+import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
@@ -263,10 +263,11 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
-    // exit non-zero instead of routing it through the defect reporter below.
+    // A usage mistake, a missing login, or an unresolved project is not a broken invariant:
+    // print the one-line fix and exit non-zero instead of routing it through the defect
+    // reporter below.
     Effect.catchIf(
-      (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
+      (error): error is UsageFailure => isUsageFailure(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;

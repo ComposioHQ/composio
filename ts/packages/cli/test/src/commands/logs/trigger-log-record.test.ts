@@ -3,7 +3,7 @@ import {
   decodeTriggerLogRecord,
   emptyTriggerLogRecord,
   parseMaybeJson,
-} from 'src/commands/logs-cmd/trigger-log-record';
+} from 'src/commands/logs/trigger-log-record';
 
 describe('decodeTriggerLogRecord', () => {
   it('[Given] camelCase-only payload [Then] resolves detail and table fields', () => {

@@ -63,3 +63,11 @@ export type Tools = Schema.Schema.Type<typeof Tools>;
 export const ToolsJSON = JSONTransformSchema(Tools);
 export const ToolsFromJSON = Schema.decodeEffect(ToolsJSON);
 export const ToolsToJSON = Schema.encodeEffect(ToolsJSON);
+
+// The client does not type the latest-version endpoint, so the CLI owns its
+// response contract.
+export const LatestToolVersionResponse = Schema.Struct({
+  tool_slug: Schema.String,
+  version: Schema.String,
+}).annotate({ identifier: 'LatestToolVersionResponse' });
+export type LatestToolVersionResponse = Schema.Schema.Type<typeof LatestToolVersionResponse>;

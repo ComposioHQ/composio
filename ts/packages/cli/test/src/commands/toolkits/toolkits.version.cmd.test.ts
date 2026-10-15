@@ -118,11 +118,8 @@ describe('CLI: composio dev toolkits version', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.effect('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'toolkits', 'version', 'gmail']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('not logged in');
+        const error = yield* cli(['dev', 'toolkits', 'version', 'gmail']).pipe(Effect.flip);
+        expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
       })
     );
   });

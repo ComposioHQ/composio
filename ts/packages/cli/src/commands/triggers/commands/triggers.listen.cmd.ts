@@ -1,9 +1,9 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Deferred, Effect, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
-import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
@@ -15,10 +15,7 @@ import {
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
 import type { TriggerListenFilters } from '../types';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 
 const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
@@ -170,12 +167,8 @@ export const triggersCmd$Listen = Command.make(
     out,
   }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
-      yield* resolveCommandProject({ mode: 'developer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      yield* resolveCommandProject({ mode: 'developer' });
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
@@ -353,5 +346,6 @@ export const triggersCmd$Listen = Command.make(
 ).pipe(
   Command.withDescription(
     'Listen to realtime trigger events for your developer project and optionally forward them into your local dev environment.'
-  )
+  ),
+  requireLogin
 );

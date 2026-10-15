@@ -61,6 +61,60 @@ describe('CLI process error handling', () => {
     );
   });
 
+  it('reports a missing login as one line and exits non-zero without a defect dump', () => {
+    const configDirectory = tempy.temporaryDirectory();
+
+    const result = spawnSync('bun', ['run', 'src/bin.ts', 'tools', 'list', 'gmail'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CI: '1',
+        NO_COLOR: '1',
+        COMPOSIO_CACHE_DIR: configDirectory,
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('You are not logged in yet. Please run `composio login`.');
+    expect(result.stderr).not.toContain('NotLoggedInError');
+    expect(result.stderr).not.toContain('Sources');
+  });
+
+  it('reports an unresolved project as one line and exits non-zero without a defect dump', () => {
+    const configDirectory = tempy.temporaryDirectory();
+    fs.writeFileSync(
+      path.join(configDirectory, 'user_data.json'),
+      JSON.stringify({
+        api_key: 'test-api-key',
+        base_url: 'https://backend.composio.dev',
+        web_url: 'https://platform.composio.dev',
+        org_id: null,
+        test_user_id: null,
+      })
+    );
+
+    const result = spawnSync('bun', ['run', 'src/bin.ts', 'connections', 'list'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CI: '1',
+        NO_COLOR: '1',
+        COMPOSIO_CACHE_DIR: configDirectory,
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain(
+      'No current org configured. Run `composio login` or `composio dev orgs switch`.'
+    );
+    expect(result.stderr).not.toContain('ProjectResolutionError');
+    expect(result.stderr).not.toContain('Sources');
+  });
+
   it('reports a bare `composio run` as a usage error without a defect dump', () => {
     const configDirectory = tempy.temporaryDirectory();
 
