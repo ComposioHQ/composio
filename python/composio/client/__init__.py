@@ -6,6 +6,7 @@ import contextvars
 import logging
 import os
 import platform
+import re
 import typing as t
 import weakref
 from importlib.metadata import PackageNotFoundError, version
@@ -17,6 +18,7 @@ from composio_client import (
     NOT_GIVEN,
     APIError,
     APIStatusError,
+    ClientIdentity,
     NotGiven,
 )
 from composio_client import Composio as BaseComposio
@@ -39,7 +41,28 @@ def _distribution_version(name: str) -> str:
 
 
 _SDK_VERSION = _distribution_version("composio")
-_CLIENT_LIBRARY_VERSION = _distribution_version("composio-client")
+
+#: What the client accepts as an identity value: printable ASCII with no
+#: leading or trailing whitespace.
+_HEADER_SAFE = re.compile(r"[\x21-\x7e](?:[\x20-\x7e]*[\x21-\x7e])?")
+
+
+def _client_identity(provider: str) -> ClientIdentity:
+    """
+    The SDK as the generated client reports it.
+
+    The client sends the product headers from it, adds its own library
+    headers, and reports the Python runtime and version itself. A provider
+    name that cannot be sent as a header value is reported as ``unknown``
+    rather than making the client fail to construct.
+    """
+    return ClientIdentity(
+        product="composio",
+        version=_SDK_VERSION,
+        source="PYTHON_SDK",
+        framework=provider if _HEADER_SAFE.fullmatch(provider) else "unknown",
+        runtime=HttpClient._runtime_env,
+    )
 
 
 ComposioAPIError = APIError
@@ -423,6 +446,7 @@ class HttpClient(BaseComposio, WithLogger):
             default_headers=default_headers,
             default_query=default_query,
             http_client=http_client,
+            identity=_client_identity(provider),
             _strict_response_validation=_strict_response_validation,
             _environment_variables=_environment_variables,
         )
@@ -550,7 +574,11 @@ class HttpClient(BaseComposio, WithLogger):
         withdrawn: bool,
         scheme: str,
     ) -> t.Dict[str, str]:
-        """Add SDK context at the active generated client's dispatch boundary."""
+        """
+        Add the request id at the active generated client's dispatch boundary.
+
+        The identity headers come from the client's ``identity``.
+        """
         headers = super()._headers_for(
             url,
             json_body=json_body,
@@ -570,15 +598,4 @@ class HttpClient(BaseComposio, WithLogger):
         headers["x-request-id"] = (
             ctx.get("id") or headers.get("x-request-id") or uuid4().hex
         )
-        headers["x-framework"] = ctx["provider"]
-        headers["x-source"] = "PYTHON_SDK"
-        headers["x-runtime"] = HttpClient._runtime_env
-        headers["x-runtime-version"] = platform.python_version()
-        headers["x-client-provenance"] = "composio"
-        headers["x-client-language"] = "python"
-        headers["x-client-runtime"] = "python"
-        headers["x-client-library"] = "composio-client"
-        headers["x-client-library-version"] = _CLIENT_LIBRARY_VERSION
-        headers["x-sdk-version"] = _SDK_VERSION
-        headers["x-client-version"] = _SDK_VERSION
         return headers
