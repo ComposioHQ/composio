@@ -1,7 +1,7 @@
 import { getEnvVariable } from './utils/env';
 import type { BaseComposioProvider } from './provider/BaseProvider';
 import ComposioClient from '@composio/client';
-import type { Logger as ClientLogger, LogLevel as ClientLogLevel } from '@composio/client';
+import type { LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
@@ -299,11 +299,11 @@ const toClientLogLevel = (level: LogLevel): ClientLogLevel => {
  * at call time so a later `logger.configure()` is honoured. The client's
  * `info` records (per-request lifecycle) are forwarded as SDK `debug`.
  */
-const clientLoggerAdapter: ClientLogger = {
-  error: (...args) => logger.error(...args),
-  warn: (...args) => logger.warn(...args),
-  info: (...args) => logger.debug(...args),
-  debug: (...args) => logger.debug(...args),
+const clientLogForwarder: Pick<Console, 'debug' | 'info' | 'warn' | 'error'> = {
+  error: (...args: unknown[]) => logger.error(...args),
+  warn: (...args: unknown[]) => logger.warn(...args),
+  info: (...args: unknown[]) => logger.debug(...args),
+  debug: (...args: unknown[]) => logger.debug(...args),
 };
 
 /**
@@ -552,7 +552,7 @@ export class Composio<
         : {}),
       defaultHeaders,
       identity: getClientIdentity(this.provider),
-      logger: clientLoggerAdapter,
+      logger: clientLogForwarder,
       logLevel: toClientLogLevel(logger.getLevel()),
     });
 

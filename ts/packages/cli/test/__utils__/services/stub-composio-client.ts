@@ -43,7 +43,6 @@ export const stubComposioClient = (
     {
       auth: Auth.project('test'),
       baseURL: 'https://stub.invalid',
-      deprecationNotices: 'off',
       maxRetries: 0,
       schemas: schemaLoaders,
     },

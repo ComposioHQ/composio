@@ -206,7 +206,6 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                 baseURL: ctx.data.baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
-                deprecationNotices: 'off',
                 // The identity headers come from here; the client refuses them
                 // in `defaultHeaders`.
                 identity: cliClientIdentity(),

@@ -20,6 +20,9 @@
   unchanged. The CLI no longer keeps a client per API key and project for the
   life of the process, so the user API key is held only by the client making
   the request.
+- The API client's deprecation notices are dropped by the CLI's logger instead
+  of being turned off in the client, ready for `@composio/client@2.0.0-rc.19`.
+  Nothing new is printed.
 
 ## 0.4.5
 

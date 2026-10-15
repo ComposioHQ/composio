@@ -14,6 +14,7 @@ import { stubComposioClient } from 'test/__utils__/services/stub-composio-client
 import { idempotent, validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -695,7 +696,7 @@ describe('ComposioClientSingleton client', () => {
     );
   });
 
-  it.effect('logs nothing for a response that announces a deprecation', () => {
+  it.effect('drops the deprecation notice the client logs at the CLI logger', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ data: [] }), {
         status: 200,
@@ -707,11 +708,15 @@ describe('ComposioClientSingleton client', () => {
         },
       })
     );
-    const records: Array<unknown> = [];
-    const capturingLogger = Logger.layer([
+    const logged: Array<unknown> = [];
+    const shown: Array<unknown> = [];
+    const recordInto = (records: Array<unknown>) =>
       Logger.make<unknown, void>(({ message }) => {
         records.push(message);
-      }),
+      });
+    const capturingLogger = Logger.layer([
+      recordInto(logged),
+      withoutClientNotices(recordInto(shown)),
     ]);
 
     return Effect.gen(function* () {
@@ -719,7 +724,8 @@ describe('ComposioClientSingleton client', () => {
       const client = yield* clientSingleton.get();
       yield* listTools(client);
 
-      expect(records).toEqual([]);
+      expect(logged).toHaveLength(1);
+      expect(shown).toEqual([]);
     }).pipe(
       Effect.provide(
         Layer.merge(
