@@ -5,7 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { ComposioUserContext } from 'src/services/user-context';
 import { detectMasterFromHost } from 'src/services/master-detector';
-import { ProjectResolutionError, resolveCommandProject } from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 
 const debugError = commandInputError('debug');
 
@@ -34,11 +34,10 @@ const printDebugApiInfo = Effect.gen(function* () {
   // and keeps its typed error so cli-main prints it and exits non-zero.
   const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
     Effect.map(Option.some),
-    Effect.catchIf(
-      (error): error is ProjectResolutionError =>
-        error instanceof ProjectResolutionError &&
-        (error.reason === 'missing_org' || error.reason === 'missing_developer_project'),
-      () => Effect.succeed(Option.none())
+    Effect.catchTag('services/ProjectResolutionError', error =>
+      error.reason === 'missing_org' || error.reason === 'missing_developer_project'
+        ? Effect.succeed(Option.none())
+        : Effect.fail(error)
     )
   );
   return yield* ui.output(

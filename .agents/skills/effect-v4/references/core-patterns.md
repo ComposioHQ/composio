@@ -199,7 +199,7 @@ moves that clock. Awaiting such an effect on the test's own fiber hangs until th
 timeout, because nothing is left to advance time. Do not fix that with `it.live`: a live
 clock makes CI wait out the real backoff.
 
-The pattern is fork, yield, adjust, join:
+The pattern is fork, then yield and adjust until the fiber settles, then join:
 
 ```ts
 import { it } from '@effect/vitest';
@@ -220,12 +220,15 @@ it.effect('passes the failure through once the retries are spent', () =>
   Effect.gen(function* () {
     // 1. Run the effect on its own fiber so the test fiber stays free to move the clock.
     const fiber = yield* lookup.pipe(Effect.flip, Effect.forkChild);
-    // 2. Let the forked fiber run until it parks on its first sleep.
-    yield* Effect.yieldNow;
-    // 3. Advance past every retry at once; `adjust` resumes each sleep in order, and a
-    //    sleep scheduled by a resumed fiber inside the window is resumed too.
-    yield* TestClock.adjust('1 minute');
-    // 4. Join: the fiber has finished, so this returns without waiting.
+    // 2. Let the forked fiber run, then advance past every retry; `adjust` resumes each sleep
+    //    in order, and a sleep scheduled by a resumed fiber inside the window is resumed too.
+    //    Loop on the fiber's own state: when the code under test crosses a Promise boundary
+    //    (a rejected `fetch`) before its first sleep, one yield is not guaranteed to reach it.
+    for (let step = 0; step < 100 && fiber.pollUnsafe() === undefined; step++) {
+      yield* Effect.yieldNow;
+      yield* TestClock.adjust('1 minute');
+    }
+    // 3. Join: the fiber has settled, so this returns without waiting.
     const error = yield* Fiber.join(fiber);
     if (error._tag !== 'Unreachable') throw new Error('expected the failure to pass through');
   })

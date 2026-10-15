@@ -15,8 +15,8 @@ repo-local `effect-v4` skill.
   `it.scoped` is unnecessary — v4's `@effect/vitest` no longer exports `it.scoped`.
 - `it.live` runs against the real (non-`TestClock`) environment. Reach for it only when the code
   under test sleeps outside Effect's clock; a retry, timeout, or `Effect.sleep` inside the code
-  under test is driven on `it.effect` by forking the effect, `Effect.yieldNow`, `TestClock.adjust`,
-  and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
+  under test is driven on `it.effect` by forking the effect, looping `Effect.yieldNow` and `TestClock.adjust`
+  until `fiber.pollUnsafe()` is set, and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
 ```ts no-check

@@ -163,13 +163,19 @@ describe('resolveCommandProject', () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
 
       // The client retries a connection failure with a backoff on Effect's clock, so run the
-      // lookup on its own fiber and move the test clock past every retry before joining.
+      // lookup on its own fiber and move the test clock past every retry before joining. The
+      // first backoff is armed only after client construction and a rejected fetch promise, so
+      // advance in bounded steps until the fiber has settled rather than assuming one yield
+      // reaches it.
       const fiber = yield* resolveCommandProject({ mode: 'developer', projectName: 'Any' }).pipe(
         Effect.flip,
         Effect.forkChild
       );
-      yield* Effect.yieldNow;
-      yield* TestClock.adjust('1 minute');
+      for (let step = 0; step < 100 && fiber.pollUnsafe() === undefined; step++) {
+        yield* Effect.yieldNow;
+        yield* TestClock.adjust('1 minute');
+      }
+      expect(fiber.pollUnsafe()).toBeDefined();
       const error = yield* Fiber.join(fiber);
 
       expect(error).not.toBeInstanceOf(ProjectResolutionError);
