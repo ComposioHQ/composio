@@ -168,8 +168,8 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/how-composio-works', label: 'What is a Session?' },
               { url: '/docs/configuring-sessions' },
               { url: '/docs/session-configs' },
-              { url: '/docs/approvals' },
               { url: '/docs/sessions-via-mcp' },
+              { url: '/docs/approvals' },
             ],
           },
           {
