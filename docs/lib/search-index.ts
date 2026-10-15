@@ -712,8 +712,8 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
   ].filter((page) =>
     !isExcludedFromSearch(page.url) && !isHiddenApiTagUrl(page.url)
   ).map(async (page) => {
-    // Structured MDX search data omits code and custom-component instructions.
-    // Preserve the same converted text used by the agent-readable page surface.
+    // Keep section-linked prose and add code and custom-component instructions
+    // omitted by structured MDX search data.
     const content = 'getText' in page.data
       ? mdxToCleanMarkdown(await page.data.getText('raw'), page.url)
       : undefined;
@@ -726,7 +726,10 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
         ? page.data.structuredData
         : {
           ...page.data.structuredData,
-          contents: [{ heading: undefined, content }],
+          contents: [
+            ...(page.data.structuredData?.contents ?? []),
+            { heading: undefined, content },
+          ],
         },
       keywords: 'keywords' in page.data ? (page.data.keywords as string[]) : undefined,
     } satisfies SearchIndex;

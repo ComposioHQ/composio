@@ -1,4 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
+import { z } from 'zod';
 import { fetchPage } from './helpers';
 import { assertPageFacts, corpusPages, parityPages } from '../fixtures/semantic-parity';
 
@@ -43,3 +44,17 @@ for (const page of parityPages) {
     }
   }
 }
+
+test('local HTTP search retains section links alongside the added command and code corpus', async () => {
+  const query = encodeURIComponent('session has access to every toolkit');
+  const response = await fetchPage(`/api/search?query=${query}`);
+  expect(response.status).toBe(200);
+  const results = z.array(z.object({
+    type: z.string(), url: z.string(), content: z.string(),
+  })).parse(await response.json());
+  const destinations = results
+    .filter(result => result.type === 'text'
+      && result.content.replace(/<\/?mark>/g, '').includes('every toolkit'))
+    .map(result => result.url);
+  expect(destinations).toContain('/docs/configuring-sessions#creating-a-session');
+});

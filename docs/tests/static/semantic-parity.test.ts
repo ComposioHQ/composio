@@ -88,8 +88,9 @@ test('external checker preserves ordered line chunks and names missing facts and
       content: page.content.replaceAll('composio login', ''),
     })) });
     expect(missingFact.exitCode).not.toBe(0);
-    expect(missingFact.stderr.toString()).toContain('test external export /docs/agent-plugins lost fact login-and-setup');
-    console.info(`Expected mutation failure from external checker:\n${missingFact.stderr.toString()}`);
+    const diagnostic = 'test external export /docs/agent-plugins lost fact login-and-setup';
+    expect(missingFact.stderr.toString()).toContain(diagnostic);
+    console.info(`Expected mutation caught (checker exit ${missingFact.exitCode}): ${diagnostic}`);
     const missingPage = run({ ...snapshot, pages: snapshot.pages.filter(page => !page.url.includes('/quickstart')) });
     expect(missingPage.exitCode).not.toBe(0);
     expect(missingPage.stderr.toString()).toContain('test external export /docs/quickstart lost fact typescript-install');
