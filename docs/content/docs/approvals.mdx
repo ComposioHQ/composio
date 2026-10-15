@@ -311,6 +311,7 @@ def run_tool(block):
         "type": "tool_result",
         "tool_use_id": block.id,
         "content": json.dumps({"data": result.data, "error": result.error}),
+        "is_error": result.result_type == "failed",
     }
 
 
@@ -395,6 +396,7 @@ async function runTool(block: Anthropic.ToolUseBlock): Promise<Anthropic.ToolRes
         type: 'tool_result',
         tool_use_id: block.id,
         content: JSON.stringify({ data: result.data, error: result.error }),
+        is_error: result.resultType === 'failed',
       };
     } catch (error) {
       if (!(error instanceof ComposioToolInputRequiredError)) throw error;
