@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
 import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
 import { toolkitsCmd$Info } from './commands/toolkits.info.cmd';
@@ -19,5 +20,6 @@ export const toolkitsCmd = Command.make('toolkits').pipe(
     toolkitsCmd$Info,
     toolkitsCmd$Search,
     toolkitsCmd$Version,
-  ])
+  ]),
+  requireLogin
 );

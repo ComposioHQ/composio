@@ -3,7 +3,6 @@ import { Data, Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { undecoded } from 'src/services/composio-request';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
@@ -47,8 +46,6 @@ export const toolkitsCmd$Info = Command.make(
   { slug, userId, allDetails },
   ({ slug, userId, allDetails }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;

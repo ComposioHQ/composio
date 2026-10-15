@@ -1,9 +1,9 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -13,10 +13,7 @@ import type { Tool } from 'src/models/tools';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { undecoded } from 'src/services/composio-request';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
@@ -305,8 +302,6 @@ const runToolsSearch = (params: {
   rootOnly: boolean;
 }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const userContext = yield* ComposioUserContext;
 
@@ -330,7 +325,7 @@ const runToolsSearch = (params: {
       const resolvedProject = yield* resolveCommandProject({
         mode: 'consumer',
         projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
-      }).pipe(Effect.mapError(formatResolveCommandProjectError));
+      });
       const resolvedUserId =
         resolvedProject.projectType === 'CONSUMER'
           ? Option.fromNullishOr(resolvedProject.consumerUserId)
@@ -562,7 +557,8 @@ export const toolsCmd$Search = Command.make(
       "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
       "  composio tools info <slug>               Inspect a tool's schema before executing",
     ].join('\n')
-  )
+  ),
+  requireLogin
 );
 
 export const rootToolsCmd$Search = Command.make(
@@ -614,5 +610,6 @@ export const rootToolsCmd$Search = Command.make(
       command: 'composio search "list calendar events" --toolkits google_calendar --limit 5',
       description: 'Narrow results to a specific toolkit',
     },
-  ])
+  ]),
+  requireLogin
 );

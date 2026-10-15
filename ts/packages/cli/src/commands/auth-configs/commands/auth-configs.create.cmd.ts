@@ -4,7 +4,6 @@ import type { AuthConfigCreateParams } from '@composio/client/resources/auth-con
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { redact } from 'src/ui/redact';
@@ -54,8 +53,6 @@ export const authConfigsCmd$Create = Command.make(
   { name, toolkit, authScheme, scopes, customCredentials },
   ({ name, toolkit, authScheme, scopes, customCredentials }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 

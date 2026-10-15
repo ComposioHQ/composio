@@ -2,7 +2,6 @@ import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { formatConnectedAccountWhoami } from '../format';
@@ -26,8 +25,6 @@ const id = Argument.String('id').pipe(
  */
 export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 

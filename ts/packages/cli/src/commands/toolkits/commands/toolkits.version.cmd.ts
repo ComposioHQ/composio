@@ -1,6 +1,5 @@
 import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -16,8 +15,6 @@ const slug = Argument.String('slug').pipe(Argument.withDescription('Toolkit slug
  */
 export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.get();

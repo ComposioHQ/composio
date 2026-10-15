@@ -1,3 +1,4 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option, Schedule } from 'effect';
@@ -5,17 +6,13 @@ import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   invalidateConsumerConnectedToolkitsCache,
   writeConsumerConnectedToolkitsCache,
@@ -512,7 +509,7 @@ const handleListConnectedAccounts = (params: {
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
       projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const client = yield* params.clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
@@ -661,7 +658,7 @@ const handleLegacyAuthConfigLink = (params: {
     const resolvedProject = yield* resolveCommandProject({
       mode: 'developer',
       projectName: Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const client = yield* params.clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
@@ -778,8 +775,6 @@ const runConnectedAccountsLink = (params: {
   rootOnly: boolean;
 }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const normalizedAliasOption = yield* resolveNormalizedAliasOption(params.alias);
 
     const ui = yield* TerminalUI;
@@ -854,7 +849,7 @@ const runConnectedAccountsLink = (params: {
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
       projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
         ? Option.fromNullishOr(resolvedProject.consumerUserId)
@@ -1049,7 +1044,8 @@ export const connectedAccountsCmd$Link = Command.make(
       ...example,
       command: example.command.replace('composio link', 'composio dev connected-accounts link'),
     }))
-  )
+  ),
+  requireLogin
 );
 
 export const rootConnectedAccountsCmd$Link = Command.make(
@@ -1074,5 +1070,6 @@ export const rootConnectedAccountsCmd$Link = Command.make(
   Command.withShortDescription(
     'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
   ),
-  Command.withExamples(linkExamples)
+  Command.withExamples(linkExamples),
+  requireLogin
 );

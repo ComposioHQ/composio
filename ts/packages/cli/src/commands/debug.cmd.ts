@@ -5,10 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { ComposioUserContext } from 'src/services/user-context';
 import { detectMasterFromHost } from 'src/services/master-detector';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 
 const debugError = commandInputError('debug');
 
@@ -33,10 +30,7 @@ const printDebugApiInfo = Effect.gen(function* () {
     return yield* debugError('No user API key found in the current CLI session.');
   }
   const orgId = Option.getOrUndefined(ctx.data.orgId);
-  const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-    Effect.mapError(formatResolveCommandProjectError),
-    Effect.option
-  );
+  const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(Effect.option);
   return yield* ui.output(
     JSON.stringify(
       {

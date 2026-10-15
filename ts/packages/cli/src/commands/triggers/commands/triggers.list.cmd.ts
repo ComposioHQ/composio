@@ -1,7 +1,6 @@
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Effect } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -35,8 +34,6 @@ const limit = Flag.Int('limit').pipe(
 const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersListCommandConfig) =>
   Command.make('list', { toolkit, limit }, ({ toolkit, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const clampedLimit = clampLimit(limit);
