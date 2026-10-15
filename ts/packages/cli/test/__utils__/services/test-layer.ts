@@ -1111,18 +1111,18 @@ export const TestLayer = (input?: TestLiveInput) =>
           return response;
         },
       },
-      patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
+      patch: (path: string, options?: { body?: Record<string, unknown> }) => {
         connectedAccountsData.onPatch?.({ path, body: options?.body });
 
         const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
         if (!match) {
-          throw new Error(`Unhandled PATCH path "${path}"`);
+          return Effect.die(new Error(`Unhandled PATCH path "${path}"`));
         }
 
         const connectedAccountId = match[1];
         const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
         if (!account) {
-          throw new Error(`Connected account "${connectedAccountId}" not found`);
+          return Effect.fail(notFoundError(`Connected account "${connectedAccountId}" not found`));
         }
 
         if (typeof options?.body?.alias === 'string') {
@@ -1131,7 +1131,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           });
         }
 
-        return account;
+        return Effect.succeed(account);
       },
       connectedAccounts: {
         list: async (params?: {
@@ -1166,20 +1166,19 @@ export const TestLayer = (input?: TestLiveInput) =>
             next_cursor: null,
           };
         },
-        retrieve: async (nanoid: string) => {
+        retrieve: (nanoid: string) => {
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            throw new Error(`Connected account "${nanoid}" not found`);
-          }
-          return found;
+          return found
+            ? Effect.succeed(found)
+            : Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
         },
-        delete: async (nanoid: string) => {
+        delete: (nanoid: string) => {
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
-            throw new Error(`Connected account "${nanoid}" not found`);
+            return Effect.fail(notFoundError(`Connected account "${nanoid}" not found`));
           }
           connectedAccountsData.onDelete?.(nanoid);
-          return {};
+          return Effect.succeed({});
         },
       },
       triggersTypes: {
@@ -1193,7 +1192,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       },
       triggerInstances: {
-        upsert: async (
+        upsert: (
           triggerSlug: string,
           params?: {
             connected_account_id?: string;
@@ -1206,11 +1205,11 @@ export const TestLayer = (input?: TestLiveInput) =>
               trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
             )
           ) {
-            throw new Error(`Trigger type "${triggerSlug}" not found`);
+            return Effect.fail(notFoundError(`Trigger type "${triggerSlug}" not found`));
           }
-          return {
+          return Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-          };
+          });
         },
         manage: {
           update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
@@ -1221,35 +1220,35 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       },
       toolkits: {
-        retrieve: async (slug: string) => {
+        retrieve: (slug: string) => {
           const detailed = toolkitsData.detailedToolkits.find(
             t => t.slug.toLowerCase() === slug.toLowerCase()
           );
           if (detailed) {
-            return {
+            return Effect.succeed({
               name: detailed.name,
               slug: detailed.slug,
               is_local_toolkit: detailed.is_local_toolkit,
               composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
               no_auth: detailed.no_auth,
               meta: detailed.meta,
-            };
+            });
           }
 
           const found = toolkitsData.toolkits.find(
             t => t.slug.toLowerCase() === slug.toLowerCase()
           );
           if (!found) {
-            throw new Error(`Toolkit "${slug}" not found`);
+            return Effect.fail(notFoundError(`Toolkit "${slug}" not found`));
           }
-          return {
+          return Effect.succeed({
             name: found.name,
             slug: found.slug,
             is_local_toolkit: found.is_local_toolkit,
             composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
             no_auth: found.no_auth,
             meta: found.meta,
-          };
+          });
         },
       },
       files: {
