@@ -60,6 +60,7 @@ import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { invokeUserCallback } from '../utils/userCallback';
 
 /**
  * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
@@ -525,7 +526,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   /**
    * Subscribe to all the triggers
    *
-   * @param fn - The function to call when a trigger is received
+   * @param fn - The function to call when a trigger is received. It may be `async`. Errors
+   * thrown from — or promises rejected by — the function are contained and logged.
    * @param filters - The filters to apply to the triggers
    * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
    * the underlying subscription fails (for example on auth or permission rejection). The
@@ -563,11 +565,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       const parsedData = this.parsePusherPayload(_data);
 
       if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
-        try {
-          fn(parsedData);
-        } catch (error) {
-          logger.error('❌ Error in trigger callback:', error);
-        }
+        invokeUserCallback('❌ Error in trigger callback:', () => fn(parsedData));
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
@@ -699,6 +697,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
   /**
    * Unsubscribe from all the triggers
+   *
+   * Ends every subscription made with {@link subscribe} on this instance, including one that is
+   * still connecting, and closes the realtime connection so that a script can exit. A later
+   * `subscribe()` opens a new connection.
    *
    * @returns {Promise<void>}
    *
