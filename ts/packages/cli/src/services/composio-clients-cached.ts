@@ -5,11 +5,8 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { DEBUG_CONFIG } from 'src/config';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
-import {
-  ComposioToolkitsRepository,
-  InvalidToolkitsError,
-  type ToolkitProjectScope,
-} from './composio-clients';
+import { ComposioToolkitsRepository, type ToolkitProjectScope } from './composio-clients';
+import { InvalidToolkitsError } from './toolkit-version-validation';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {

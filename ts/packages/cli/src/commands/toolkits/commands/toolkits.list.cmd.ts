@@ -101,7 +101,8 @@ export const toolkitsCmd$List = Command.make(
       const sessionContextEffect = Option.isSome(resolvedUserId)
         ? Effect.gen(function* () {
             const client = yield* clientSingleton.get();
-            return yield* resolveToolRouterSession(client, resolvedUserId.value);
+            const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
+            return { client, sessionId };
           }).pipe(
             Effect.catch(error =>
               Effect.logDebug('Failed to create session:', error).pipe(Effect.as(undefined))
@@ -129,30 +130,31 @@ export const toolkitsCmd$List = Command.make(
       let sessionFailed = false;
       if (sessionContext) {
         const { client, sessionId } = sessionContext;
-        sessionItems = yield* Effect.tryPromise({
-          try: () =>
-            client.toolRouter.session.toolkits(sessionId, {
-              search: Option.getOrUndefined(query),
-              limit: clampedLimit,
-              is_connected: Option.getOrUndefined(connected),
-            }),
-          catch: cause =>
-            new ToolkitsListRequestError({
-              message: 'Failed to fetch session toolkits.',
-              cause,
-            }),
-        }).pipe(
-          Effect.map(r => r.items),
-          Effect.catchTag('commands/ToolkitsListRequestError', error =>
-            Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
-              Effect.as(
-                [] as ReadonlyArray<
-                  import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
-                >
+        sessionItems = yield* client.toolRouter.session
+          .toolkits(sessionId, {
+            search: Option.getOrUndefined(query),
+            limit: clampedLimit,
+            is_connected: Option.getOrUndefined(connected),
+          })
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new ToolkitsListRequestError({
+                  message: 'Failed to fetch session toolkits.',
+                  cause,
+                })
+            ),
+            Effect.map(r => r.items),
+            Effect.catchTag('commands/ToolkitsListRequestError', error =>
+              Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
+                Effect.as(
+                  [] as ReadonlyArray<
+                    import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
+                  >
+                )
               )
             )
-          )
-        );
+          );
         if (sessionItems.length === 0) {
           sessionFailed = true;
           sessionItems = undefined;

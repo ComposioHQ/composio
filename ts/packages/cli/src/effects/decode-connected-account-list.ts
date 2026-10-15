@@ -6,7 +6,7 @@ import {
 import {
   ConnectedAccountListResponse,
   type ConnectedAccountListResponse as ConnectedAccountListResponseType,
-} from 'src/services/composio-clients';
+} from 'src/models/connected-accounts';
 import { TerminalUI } from 'src/services/terminal-ui';
 
 /**

@@ -1,15 +1,16 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import {
-  APIConnectionError,
-  Composio as RawComposioClient,
-  NotFoundError,
-  type RequestOptions,
-} from '@composio/client';
 import type {
   AuthConfigCreateParams,
   AuthConfigCreateResponse,
 } from '@composio/client/resources/auth-configs';
+import {
+  APIConnectionError,
+  NotFoundError,
+  make as makeComposioClient,
+  type ComposioError,
+  type RequestOptions,
+} from '@composio/client/effect';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
@@ -26,6 +27,7 @@ import {
   Layer,
   Option,
   Path,
+  Predicate,
   References,
   Schedule,
   String,
@@ -44,14 +46,15 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
-  HttpServerError,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
+import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
+import {
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
   type InvalidVersionDetail,
-  type OrganizationSummary,
-  type OrgProject,
-  type ToolkitProjectScope,
-} from 'src/services/composio-clients';
+} from 'src/services/toolkit-version-validation';
+import { type OrganizationSummary, type OrgProject } from 'src/services/composio-account';
 import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tool, Tools } from 'src/models/tools';
@@ -94,8 +97,26 @@ import {
   SetupSkillInstaller,
   type SetupSkillInstallerShape,
 } from 'src/services/setup-skill-installer';
-import { FetchHttpClient } from 'effect/http';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
+
+/**
+ * A 404 as the Effect client reports one, with the API error envelope when the
+ * scenario has one.
+ */
+const notFoundError = (
+  message: string,
+  envelope?: { readonly message: string; readonly suggested_fix: string }
+) =>
+  new NotFoundError({
+    message,
+    method: 'GET',
+    url: 'https://mock.invalid',
+    status: 404,
+    requestId: undefined,
+    details: envelope ? { ...envelope, code: 404, slug: 'Not_Found', status: 404 } : undefined,
+    body: envelope ? { error: envelope } : undefined,
+  });
 
 /**
  * The credentials and scope one mock-client request carries: the parameters
@@ -188,10 +209,7 @@ export interface TestLiveInput {
    */
   accountData?: {
     sessionInfo?:
-      | SessionRetrieveInfoResponse
-      | ((
-          scope: MockRequestScope
-        ) => SessionRetrieveInfoResponse | Promise<SessionRetrieveInfoResponse>);
+      SessionRetrieveInfoResponse | ((scope: MockRequestScope) => SessionRetrieveInfoResponse);
     organizations?: ReadonlyArray<OrganizationSummary>;
     projects?: ReadonlyArray<OrgProject>;
     connectedToolkits?: ReadonlyArray<string>;
@@ -276,39 +294,49 @@ export interface TestLiveInput {
    * Controls the mock `ComposioClientSingleton`'s `toolRouter.session.*` methods.
    * Each method can be overridden individually; defaults are provided for all.
    *
+   * Each override answers with an Effect, so a test can fail a call with one
+   * of the client's own errors or route it to a client over a stub transport.
+   *
    * When `toolsExecutor` is also set, its mock takes precedence for `tools execute`
    * (the Tool Router mock is still used by `toolkits list`, `toolkits info`, etc.).
    */
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
-    create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
+    create?: (params: SessionCreateParams) => Effect.Effect<SessionCreateResponse, ComposioError>;
     /** Override `session.execute`. Receives sessionId, params, and request options. */
     execute?: (
       sessionId: string,
       params: SessionExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteResponse, ComposioError>;
     /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
       params: SessionExecuteMetaParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteMetaResponse>;
-    /** Override `session.link`. Receives sessionId and params. */
-    link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteMetaResponse, ComposioError>;
+    /** Override `session.link`. Receives sessionId, params, and request options. */
+    link?: (
+      sessionId: string,
+      params: SessionLinkParams,
+      options?: RequestOptions
+    ) => Effect.Effect<SessionLinkResponse, ComposioError>;
     /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
     proxyExecute?: (
       sessionId: string,
       params: SessionProxyExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionProxyExecuteResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionProxyExecuteResponse, ComposioError>;
     /** Override `session.search`. Receives sessionId and params. */
-    search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
+    search?: (
+      sessionId: string,
+      params: SessionSearchParams
+    ) => Effect.Effect<SessionSearchResponse, ComposioError>;
     /** Override `session.toolkits`. Receives sessionId and optional params. */
     toolkits?: (
       sessionId: string,
       params?: SessionToolkitsParams | null
-    ) => Promise<SessionToolkitsResponse>;
+    ) => Effect.Effect<SessionToolkitsResponse, ComposioError>;
   };
 
   /**
@@ -469,9 +497,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
           );
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Trigger type "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Trigger type "${slug}" not found`));
           }
           return Effect.succeed(found);
         },
@@ -634,9 +660,7 @@ export const TestLayer = (input?: TestLiveInput) =>
         getToolDetailed: (slug: string) => {
           const found = toolkitsData.tools.find(t => t.slug.toUpperCase() === slug.toUpperCase());
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Tool "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Tool "${slug}" not found`));
           }
           return Effect.succeed(toClientTool(found));
         },
@@ -645,9 +669,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             t => t.slug.toLowerCase() === slug.toLowerCase()
           );
           if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Toolkit "${slug}" not found`, status: 404 })
-            );
+            return Effect.fail(notFoundError(`Toolkit "${slug}" not found`));
           }
           return Effect.succeed(found);
         },
@@ -685,14 +707,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Auth config "${nanoid}" not found`, {
+                message: `Auth config "${nanoid}" not found.`,
+                suggested_fix: 'Check the auth config ID and try again.',
               })
             );
           }
@@ -711,14 +728,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = authConfigsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Auth config "${nanoid}" not found`, {
+                message: `Auth config "${nanoid}" not found.`,
+                suggested_fix: 'Check the auth config ID and try again.',
               })
             );
           }
@@ -761,14 +773,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Connected account "${nanoid}" not found`, {
+                message: `Connected account "${nanoid}" not found.`,
+                suggested_fix: 'Check the connected account ID and try again.',
               })
             );
           }
@@ -778,14 +785,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {
             return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
+              notFoundError(`Connected account "${nanoid}" not found`, {
+                message: `Connected account "${nanoid}" not found.`,
+                suggested_fix: 'Check the connected account ID and try again.',
               })
             );
           }
@@ -1091,257 +1093,290 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
-    const failOnNetworkCall: typeof globalThis.fetch = Object.assign(
-      (input: RequestInfo | URL): Promise<Response> => {
-        const url =
-          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        throw new Error(`unexpected network call from the mock Composio client: ${url}`);
+    // What the mock client answers with instead of calling the network.
+    const resourceShadows = {
+      link: {
+        create: async (params: { auth_config_id: string; user_id: string }) => {
+          const response = connectedAccountsData.linkResponse ?? {
+            connected_account_id: 'con_test_link',
+            expires_at: '2026-12-31T23:59:59Z',
+            link_token: 'lt_test_token',
+            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+          };
+          return response;
+        },
       },
-      { preconnect: () => undefined }
+      patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
+        connectedAccountsData.onPatch?.({ path, body: options?.body });
+
+        const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
+        if (!match) {
+          throw new Error(`Unhandled PATCH path "${path}"`);
+        }
+
+        const connectedAccountId = match[1];
+        const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
+        if (!account) {
+          throw new Error(`Connected account "${connectedAccountId}" not found`);
+        }
+
+        if (typeof options?.body?.alias === 'string') {
+          Object.assign(account as { alias?: string | null }, {
+            alias: options.body.alias,
+          });
+        }
+
+        return account;
+      },
+      connectedAccounts: {
+        list: async (params?: {
+          toolkit_slugs?: string[];
+          user_ids?: string[];
+          statuses?: string[];
+          limit?: number;
+        }) => {
+          let results = [...connectedAccountsData.items];
+
+          if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
+            const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
+            results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params?.user_ids && params.user_ids.length > 0) {
+            const userIds = new Set(params.user_ids);
+            results = results.filter(item => userIds.has(item.user_id));
+          }
+
+          if (params?.statuses && params.statuses.length > 0) {
+            const statuses = new Set(params.statuses);
+            results = results.filter(item => statuses.has(item.status));
+          }
+
+          const limit = params?.limit ?? 30;
+          return {
+            items: results.slice(0, limit),
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            current_page: 1,
+            next_cursor: null,
+          };
+        },
+        retrieve: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          return found;
+        },
+        delete: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          connectedAccountsData.onDelete?.(nanoid);
+          return {};
+        },
+      },
+      triggersTypes: {
+        retrieve: (slug: string) => {
+          const found = toolkitsData.triggerTypes.find(
+            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
+          );
+          return found
+            ? Effect.succeed(found)
+            : Effect.fail(notFoundError(`Trigger type "${slug}" not found`));
+        },
+      },
+      triggerInstances: {
+        upsert: async (
+          triggerSlug: string,
+          params?: {
+            connected_account_id?: string;
+            trigger_config?: Record<string, unknown>;
+          }
+        ) => {
+          if (
+            input?.triggersData?.rejectUnknownTriggerSlugs &&
+            !toolkitsData.triggerTypes.some(
+              trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+            )
+          ) {
+            throw new Error(`Trigger type "${triggerSlug}" not found`);
+          }
+          return {
+            trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+          };
+        },
+        manage: {
+          update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
+            trigger_id: triggerId,
+            status: params.status,
+          }),
+          delete: async (triggerId: string) => ({ trigger_id: triggerId }),
+        },
+      },
+      toolkits: {
+        retrieve: async (slug: string) => {
+          const detailed = toolkitsData.detailedToolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (detailed) {
+            return {
+              name: detailed.name,
+              slug: detailed.slug,
+              is_local_toolkit: detailed.is_local_toolkit,
+              composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+              no_auth: detailed.no_auth,
+              meta: detailed.meta,
+            };
+          }
+
+          const found = toolkitsData.toolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (!found) {
+            throw new Error(`Toolkit "${slug}" not found`);
+          }
+          return {
+            name: found.name,
+            slug: found.slug,
+            is_local_toolkit: found.is_local_toolkit,
+            composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
+            no_auth: found.no_auth,
+            meta: found.meta,
+          };
+        },
+      },
+      files: {
+        createPresignedURL: async (params: {
+          filename: string;
+          mimetype: string;
+          md5: string;
+          tool_slug: string;
+          toolkit_slug: string;
+        }) => ({
+          key: `uploads/${params.filename}`,
+          new_presigned_url: 'https://s3.test.composio.dev/upload',
+        }),
+      },
+      toolRouter: {
+        session: {
+          create:
+            toolRouterOverrides?.create ??
+            (async (params: SessionCreateParams) => ({
+              session_id: 'trs_test_session',
+              config: { user_id: params.user_id },
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            })),
+          execute:
+            toolRouterOverrides?.execute ??
+            (async (_sessionId: string, params: SessionExecuteParams) => ({
+              result_type: 'completed' as const,
+              data: { tool_slug: params.tool_slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_test',
+            })),
+          executeMeta:
+            toolRouterOverrides?.executeMeta ??
+            (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+              result_type: 'completed' as const,
+              data: { slug: params.slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_test',
+            })),
+          link:
+            toolRouterOverrides?.link ??
+            (async () => ({
+              connected_account_id: 'con_test_link',
+              link_token: 'lt_test_token',
+              redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+              account_type: 'PRIVATE' as const,
+            })),
+          proxyExecute:
+            toolRouterOverrides?.proxyExecute ??
+            (async (_sessionId: string, params: SessionProxyExecuteParams) => ({
+              status: 200,
+              data: {
+                toolkit_slug: params.toolkit_slug,
+                endpoint: params.endpoint,
+                method: params.method,
+                body: params.body ?? null,
+                parameters: params.parameters ?? [],
+              },
+              headers: {},
+            })),
+          search: toolRouterOverrides?.search ?? defaultSearchHandler,
+          toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
+          tools: async () => ({
+            items: [],
+          }),
+        },
+      },
+    };
+
+    // A resource the shadows do not cover reaches the transport, which dies
+    // with the URL instead of sending a live request.
+    const dieOnNetworkCall = HttpClient.make(request =>
+      Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
-    // `fromEnv({}, ...)` is what production uses, so the mock cannot read the
-    // developer's COMPOSIO_* variables either. The throwing `fetch` turns a
-    // resource this mock forgot to shadow into a named test failure instead of
-    // a live request against the real backend.
-    const mockComposioClient = Object.assign(
-      RawComposioClient.fromEnv(
-        {},
+    // The real client refuses, before sending, a typed call that neither has a
+    // response schema loader nor passes `decode: false`. A shadow replaces the
+    // call, so it repeats that check; the raw `get`/`post` methods are exempt.
+    const isUndecodedCall = (args: ReadonlyArray<unknown>): boolean => {
+      const options = args.at(-1);
+      return Predicate.hasProperty(options, 'decode') && options.decode === false;
+    };
+    const hasSchemaLoader = (operation: string): boolean =>
+      operation.replace(/Stream$/, '') in composioSchemaLoaders;
+
+    // Each shadow answers with an Effect or a promise; a rejection becomes
+    // the call's failure as it is.
+    const withShadows = <Resources extends object>(
+      base: Resources,
+      shadows: object,
+      chain: ReadonlyArray<string> = []
+    ): Resources => {
+      const shadowed = { ...base } as Record<string, unknown>;
+      for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
+        const operation = [...chain, key].join('.');
+        shadowed[key] =
+          typeof shadow === 'function'
+            ? (...args: ReadonlyArray<unknown>) =>
+                Effect.suspend(() => {
+                  if (chain.length > 0 && !isUndecodedCall(args) && !hasSchemaLoader(operation)) {
+                    return Effect.die(
+                      new Error(
+                        `'${operation}' has no response schema loader and was called without decode: false`
+                      )
+                    );
+                  }
+                  const answer: unknown = shadow(...args);
+                  return Effect.isEffect(answer)
+                    ? answer
+                    : Effect.tryPromise({
+                        try: () => answer as Promise<unknown>,
+                        catch: cause => cause,
+                      });
+                })
+            : withShadows((shadowed[key] ?? {}) as object, shadow as object, [...chain, key]);
+      }
+      return shadowed as Resources;
+    };
+
+    const mockComposioClient = withShadows(
+      makeComposioClient(
         {
           apiKey: 'test',
           userApiKey: null,
           orgApiKey: null,
           baseURL: 'https://mock.invalid',
-          logLevel: 'off',
-          fetch: failOnNetworkCall,
-        }
+          deprecationNotices: 'off',
+        },
+        dieOnNetworkCall
       ),
-      {
-        link: {
-          create: async (params: { auth_config_id: string; user_id: string }) => {
-            const response = connectedAccountsData.linkResponse ?? {
-              connected_account_id: 'con_test_link',
-              expires_at: '2026-12-31T23:59:59Z',
-              link_token: 'lt_test_token',
-              redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-            };
-            return response;
-          },
-        },
-        patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
-          connectedAccountsData.onPatch?.({ path, body: options?.body });
-
-          const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
-          if (!match) {
-            throw new Error(`Unhandled PATCH path "${path}"`);
-          }
-
-          const connectedAccountId = match[1];
-          const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
-          if (!account) {
-            throw new Error(`Connected account "${connectedAccountId}" not found`);
-          }
-
-          if (typeof options?.body?.alias === 'string') {
-            Object.assign(account as { alias?: string | null }, {
-              alias: options.body.alias,
-            });
-          }
-
-          return account;
-        },
-        connectedAccounts: {
-          list: async (params?: {
-            toolkit_slugs?: string[];
-            user_ids?: string[];
-            statuses?: string[];
-            limit?: number;
-          }) => {
-            let results = [...connectedAccountsData.items];
-
-            if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
-              const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
-              results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
-            }
-
-            if (params?.user_ids && params.user_ids.length > 0) {
-              const userIds = new Set(params.user_ids);
-              results = results.filter(item => userIds.has(item.user_id));
-            }
-
-            if (params?.statuses && params.statuses.length > 0) {
-              const statuses = new Set(params.statuses);
-              results = results.filter(item => statuses.has(item.status));
-            }
-
-            const limit = params?.limit ?? 30;
-            return {
-              items: results.slice(0, limit),
-              total_items: results.length,
-              total_pages: Math.ceil(results.length / limit),
-              current_page: 1,
-              next_cursor: null,
-            };
-          },
-          retrieve: async (nanoid: string) => {
-            const found = connectedAccountsData.items.find(item => item.id === nanoid);
-            if (!found) {
-              throw new Error(`Connected account "${nanoid}" not found`);
-            }
-            return found;
-          },
-          delete: async (nanoid: string) => {
-            const found = connectedAccountsData.items.find(item => item.id === nanoid);
-            if (!found) {
-              throw new Error(`Connected account "${nanoid}" not found`);
-            }
-            connectedAccountsData.onDelete?.(nanoid);
-            return {};
-          },
-        },
-        triggersTypes: {
-          retrieve: async (slug: string) => {
-            const found = toolkitsData.triggerTypes.find(
-              trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
-            );
-            if (!found) {
-              throw new NotFoundError(
-                404,
-                { error: { message: `Trigger type "${slug}" not found` } },
-                `Trigger type "${slug}" not found`,
-                new Headers()
-              );
-            }
-            return found;
-          },
-        },
-        triggerInstances: {
-          upsert: async (
-            triggerSlug: string,
-            params?: {
-              connected_account_id?: string;
-              trigger_config?: Record<string, unknown>;
-            }
-          ) => {
-            if (
-              input?.triggersData?.rejectUnknownTriggerSlugs &&
-              !toolkitsData.triggerTypes.some(
-                trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
-              )
-            ) {
-              throw new Error(`Trigger type "${triggerSlug}" not found`);
-            }
-            return {
-              trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-            };
-          },
-          manage: {
-            update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
-              trigger_id: triggerId,
-              status: params.status,
-            }),
-            delete: async (triggerId: string) => ({ trigger_id: triggerId }),
-          },
-        },
-        toolkits: {
-          retrieve: async (slug: string) => {
-            const detailed = toolkitsData.detailedToolkits.find(
-              t => t.slug.toLowerCase() === slug.toLowerCase()
-            );
-            if (detailed) {
-              return {
-                name: detailed.name,
-                slug: detailed.slug,
-                is_local_toolkit: detailed.is_local_toolkit,
-                composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
-                no_auth: detailed.no_auth,
-                meta: detailed.meta,
-              };
-            }
-
-            const found = toolkitsData.toolkits.find(
-              t => t.slug.toLowerCase() === slug.toLowerCase()
-            );
-            if (!found) {
-              throw new Error(`Toolkit "${slug}" not found`);
-            }
-            return {
-              name: found.name,
-              slug: found.slug,
-              is_local_toolkit: found.is_local_toolkit,
-              composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
-              no_auth: found.no_auth,
-              meta: found.meta,
-            };
-          },
-        },
-        files: {
-          createPresignedURL: async (params: {
-            filename: string;
-            mimetype: string;
-            md5: string;
-            tool_slug: string;
-            toolkit_slug: string;
-          }) => ({
-            key: `uploads/${params.filename}`,
-            new_presigned_url: 'https://s3.test.composio.dev/upload',
-          }),
-        },
-        toolRouter: {
-          session: {
-            create:
-              toolRouterOverrides?.create ??
-              (async (params: SessionCreateParams) => ({
-                session_id: 'trs_test_session',
-                config: { user_id: params.user_id },
-                mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-                tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-              })),
-            execute:
-              toolRouterOverrides?.execute ??
-              (async (_sessionId: string, params: SessionExecuteParams) => ({
-                result_type: 'completed' as const,
-                data: { tool_slug: params.tool_slug, arguments: params.arguments },
-                error: null,
-                log_id: 'log_test',
-              })),
-            executeMeta:
-              toolRouterOverrides?.executeMeta ??
-              (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
-                result_type: 'completed' as const,
-                data: { slug: params.slug, arguments: params.arguments },
-                error: null,
-                log_id: 'log_test',
-              })),
-            link:
-              toolRouterOverrides?.link ??
-              (async () => ({
-                connected_account_id: 'con_test_link',
-                link_token: 'lt_test_token',
-                redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
-                account_type: 'PRIVATE' as const,
-              })),
-            proxyExecute:
-              toolRouterOverrides?.proxyExecute ??
-              (async (_sessionId: string, params: SessionProxyExecuteParams) => ({
-                status: 200,
-                data: {
-                  toolkit_slug: params.toolkit_slug,
-                  endpoint: params.endpoint,
-                  method: params.method,
-                  body: params.body ?? null,
-                  parameters: params.parameters ?? [],
-                },
-                headers: {},
-              })),
-            search: toolRouterOverrides?.search ?? defaultSearchHandler,
-            toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
-            tools: async () => ({
-              items: [],
-            }),
-          },
-        },
-      }
+      resourceShadows
     );
 
     // --- Account, session-info, and consumer endpoints ---
@@ -1349,7 +1384,13 @@ export const TestLayer = (input?: TestLiveInput) =>
     // project the real client would have placed in its default headers.
     const accountData = input?.accountData ?? {};
     const noTestData = (operation: MockAccountRequest['operation']) =>
-      new APIConnectionError({ message: `No test data for ${operation}` });
+      new APIConnectionError({
+        message: `No test data for ${operation}`,
+        method: 'GET',
+        url: 'https://mock.invalid',
+        reason: 'TransportError',
+        description: `No test data for ${operation}`,
+      });
 
     const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
       // The CLI only ever passes plain header records.
@@ -1379,7 +1420,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
 
       return {
-        org: Object.assign(Object.create(mockComposioClient.org) as typeof mockComposioClient.org, {
+        org: {
           list: async (query?: { limit?: number } | null, options?: RequestOptions) => {
             record('org.list', options, query);
             if (!accountData.organizations) throw noTestData('org.list');
@@ -1438,7 +1479,7 @@ export const TestLayer = (input?: TestLiveInput) =>
               return { toolkits: [...accountData.connectedToolkits] };
             },
           },
-        }),
+        },
         auth: {
           session: {
             retrieveInfo: async (options?: RequestOptions) => {
@@ -1473,10 +1514,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
       const cached = scopedClients.get(key);
       if (cached) return cached;
-      const scoped = Object.assign(
-        Object.create(mockComposioClient) as typeof mockComposioClient,
-        accountBranches(scope)
-      );
+      const scoped = withShadows(mockComposioClient, accountBranches(scope));
       scopedClients.set(key, scoped);
       return scoped;
     };

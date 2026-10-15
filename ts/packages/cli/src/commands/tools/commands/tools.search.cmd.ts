@@ -17,7 +17,7 @@ import {
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
-import { assertNotInputRequired } from 'src/utils/tool-input-required';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import {
   primeConsumerConnectedToolkitsCacheInBackground,
   writeConsumerConnectedToolkitsCache,
@@ -374,49 +374,58 @@ const runToolsSearch = (params: {
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
       };
-      const searchResponse = yield* Effect.tryPromise({
-        try: () => client.toolRouter.session.search(sessionId, searchPayload),
-        catch: cause =>
-          new ToolsSearchRequestError({
-            message: 'Failed to search tools.',
-            cause,
-          }),
-      });
+      const searchResponse = yield* client.toolRouter.session.search(sessionId, searchPayload).pipe(
+        Effect.mapError(
+          cause =>
+            new ToolsSearchRequestError({
+              message: 'Failed to search tools.',
+              cause,
+            })
+        )
+      );
       const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
         .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
         .map(([slug]) => slug);
       const hydratedSearchResponse =
         customToolSlugsMissingSchemas.length === 0
           ? searchResponse
-          : yield* Effect.tryPromise({
-              try: async () => {
-                const schemaResponse = await client.toolRouter.session.executeMeta(sessionId, {
-                  slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
-                  arguments: { tool_slugs: customToolSlugsMissingSchemas },
-                });
-                assertNotInputRequired('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse);
-                if (schemaResponse.error) {
-                  throw new Error(schemaResponse.error);
-                }
-
-                const resolvedSchemas = schemaResponse.data.tool_schemas;
-                if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
-                  throw new Error('Tool Router returned no tool schemas.');
-                }
-
-                return {
-                  ...searchResponse,
-                  tool_schemas: {
-                    ...searchResponse.tool_schemas,
-                    ...(resolvedSchemas as Record<string, SearchToolSchema>),
-                  },
-                };
-              },
-              catch: cause =>
+          : yield* Effect.gen(function* () {
+              const schemasFailed = (cause: unknown) =>
                 new ToolsSearchRequestError({
                   message: 'Failed to fetch custom tool schemas.',
                   cause,
-                }),
+                });
+              const schemaResponse = yield* client.toolRouter.session
+                .executeMeta(
+                  sessionId,
+                  {
+                    slug: 'COMPOSIO_GET_TOOL_SCHEMAS',
+                    arguments: { tool_slugs: customToolSlugsMissingSchemas },
+                  },
+                  { decode: false }
+                )
+                .pipe(Effect.mapError(schemasFailed));
+              if (schemaResponse.result_type === 'input_required') {
+                return yield* schemasFailed(
+                  toolInputRequiredError('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse)
+                );
+              }
+              if (schemaResponse.error) {
+                return yield* schemasFailed(new Error(schemaResponse.error));
+              }
+
+              const resolvedSchemas = schemaResponse.data.tool_schemas;
+              if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
+                return yield* schemasFailed(new Error('Tool Router returned no tool schemas.'));
+              }
+
+              return {
+                ...searchResponse,
+                tool_schemas: {
+                  ...searchResponse.tool_schemas,
+                  ...(resolvedSchemas as Record<string, SearchToolSchema>),
+                },
+              };
             });
       return {
         searchResponse: hydratedSearchResponse,

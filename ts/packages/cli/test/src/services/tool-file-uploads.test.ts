@@ -7,13 +7,14 @@ import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
-import { Composio as RawComposioClient } from '@composio/client';
+import { BadRequestError } from '@composio/client/effect';
 import {
   ComposioBlockedInternalUrlError,
   ComposioSensitiveFilePathBlockedError,
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
 // GMAIL_SEND_EMAIL whose attachment is uploaded from a local path.
@@ -24,10 +25,14 @@ const inputSchema = {
   },
 };
 
-const makeClient = (createPresignedURL = vi.fn()) =>
-  Object.assign(new RawComposioClient({ apiKey: 'test' }), {
-    files: { createPresignedURL },
-  });
+// The client over a transport that answers the presigned-URL request with
+// `presigned`, and records each request it receives.
+const makeClient = (
+  presigned: { readonly new_presigned_url: string; readonly key: string } = {
+    new_presigned_url: 'https://1.1.1.1/put',
+    key: 's3key-123',
+  }
+) => stubComposioClient(() => Response.json(presigned));
 
 describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {
@@ -48,8 +53,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
-      const createPresignedURL = vi.fn();
-      const client = makeClient(createPresignedURL);
+      const { client, requests } = makeClient();
 
       yield* Effect.promise(() =>
         expect(
@@ -65,7 +69,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       );
 
       // The guard must fire BEFORE any network round-trip: no presigned URL, no upload.
-      expect(createPresignedURL).not.toHaveBeenCalled();
+      expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
@@ -75,7 +79,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.gen(function* () {
         const fsApi = yield* FileSystem.FileSystem;
         const pathApi = yield* Path.Path;
-        const client = makeClient(vi.fn());
+        const { client } = makeClient();
 
         // The CLI has no `sensitiveFileUploadProtection` opt-out (by design), so the
         // error must not point users at that non-existent knob (issue #3763 review #2/#3).
@@ -111,8 +115,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
-      const createPresignedURL = vi.fn();
-      const client = makeClient(createPresignedURL);
+      const { client, requests } = makeClient();
 
       yield* Effect.promise(() =>
         expect(
@@ -126,24 +129,18 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           })
         ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
       );
-      expect(createPresignedURL).not.toHaveBeenCalled();
+      expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
-  it.effect('still uploads a normal (non-sensitive) local file', () => {
+  it.effect('requests one presigned URL for a normal local file and uploads to it', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
     const file = path.join(root, 'document.pdf');
     writeFileSync(file, 'hello');
 
-    const createPresignedURL = vi.fn(async () => ({
-      new_presigned_url: 'https://1.1.1.1/put',
-      key: 's3key-123',
-    }));
-    const client = makeClient(createPresignedURL);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ ok: true, statusText: 'OK' }))
-    );
+    const { client, requests } = makeClient();
+    const uploadFetch = vi.fn(async () => ({ ok: true, statusText: 'OK' }));
+    vi.stubGlobal('fetch', uploadFetch);
 
     return Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
@@ -159,11 +156,74 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
         })
       );
 
-      expect(createPresignedURL).toHaveBeenCalledTimes(1);
-      expect(createPresignedURL).toHaveBeenCalledWith(
-        expect.objectContaining({ md5: '5d41402abc4b2a76b9719d911017c592' })
+      expect(requests).toEqual([
+        {
+          method: 'POST',
+          path: '/api/v3.1/files/upload/request',
+          body: {
+            filename: 'document.pdf',
+            mimetype: 'application/octet-stream',
+            md5: '5d41402abc4b2a76b9719d911017c592',
+            tool_slug: 'GMAIL_SEND_EMAIL',
+            toolkit_slug: 'gmail',
+          },
+        },
+      ]);
+      expect(uploadFetch).toHaveBeenCalledTimes(1);
+      expect(uploadFetch).toHaveBeenCalledWith(
+        'https://1.1.1.1/put',
+        expect.objectContaining({ method: 'PUT' })
       );
       expect(result.attachment).toMatchObject({ s3key: 's3key-123', name: 'document.pdf' });
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+});
+
+describe('uploadToolInputFiles — presigned-URL request', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('rejects with the API failure, worded as before, when the request is refused', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'document.pdf');
+    writeFileSync(file, 'hello');
+    const body = {
+      error: { message: 'Unsupported mimetype', code: 1803, slug: 'File_Invalid', status: 400 },
+    };
+    const { client, requests } = stubComposioClient(() => Response.json(body, { status: 400 }));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+
+      const failure = yield* Effect.promise(() =>
+        uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: file },
+          inputSchema,
+          client,
+        }).then(
+          () => undefined,
+          (cause: unknown) => cause
+        )
+      );
+
+      expect(failure).toBeInstanceOf(BadRequestError);
+      expect(failure).toMatchObject({
+        message: `400 ${JSON.stringify(body)}`,
+        status: 400,
+        details: body.error,
+      });
+      expect(requests).toHaveLength(1);
+      expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
@@ -181,8 +241,7 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
     Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
-      const createPresignedURL = vi.fn();
-      const client = makeClient(createPresignedURL);
+      const { client, requests } = makeClient();
       const sourceUrl = 'http://169.254.169.254/latest/meta-data/credentials';
 
       yield* Effect.promise(() =>
@@ -198,7 +257,7 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
         ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
       );
 
-      expect(createPresignedURL).not.toHaveBeenCalled();
+      expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
@@ -207,10 +266,10 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
     const file = path.join(root, 'document.pdf');
     writeFileSync(file, 'hello');
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const createPresignedURL = vi.fn(async () => ({
+    const { client, requests } = makeClient({
       new_presigned_url: 'http://127.0.0.1:8080/upload',
       key: 's3key-123',
-    }));
+    });
 
     return Effect.gen(function* () {
       const fsApi = yield* FileSystem.FileSystem;
@@ -224,12 +283,12 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
             toolSlug: 'GMAIL_SEND_EMAIL',
             arguments_: { attachment: file },
             inputSchema,
-            client: makeClient(createPresignedURL),
+            client,
           })
         ).rejects.toBeInstanceOf(ComposioBlockedInternalUrlError)
       );
 
-      expect(createPresignedURL).toHaveBeenCalledOnce();
+      expect(requests).toHaveLength(1);
       expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(
       Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
@@ -245,8 +304,7 @@ describe('uploadToolInputFiles — URL download size cap', () => {
   });
 
   it.effect('rejects a remote file that declares a body above the cap before buffering it', () => {
-    const createPresignedURL = vi.fn();
-    const client = makeClient(createPresignedURL);
+    const { client, requests } = makeClient();
     const oversized = String(MAX_URL_UPLOAD_SIZE_BYTES + 1);
     vi.stubGlobal(
       'fetch',
@@ -276,7 +334,7 @@ describe('uploadToolInputFiles — URL download size cap', () => {
         ).rejects.toThrow(/exceeds maximum allowed size/)
       );
 
-      expect(createPresignedURL).not.toHaveBeenCalled();
+      expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
 });

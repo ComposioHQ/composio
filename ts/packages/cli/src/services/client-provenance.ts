@@ -1,4 +1,4 @@
-import { VERSION as clientLibraryVersion } from '@composio/client';
+import { VERSION as clientLibraryVersion } from '@composio/client/effect';
 import { APP_VERSION } from 'src/constants';
 
 const runtime = () =>

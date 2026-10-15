@@ -4,8 +4,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, beforeEach, describe, expect, it } from '@effect/vitest';
 import { vi } from 'vitest';
-import { Config, ConfigProvider, Effect, Layer, Option } from 'effect';
-import { Composio as RawComposioClient } from '@composio/client';
+import { Config, ConfigProvider, Effect, Layer, Logger, Option, References } from 'effect';
 
 // Enhanced controls are disabled on darwin-x64, so pin the platform: these
 // scenarios are about the transport, not about where the CLI runs.
@@ -20,14 +19,14 @@ import {
   refreshConsumerPermissionSnapshot,
   resolveGateState,
   ToolPermissionDeniedError,
+  ToolPermissionsRequestError,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 import { NodeOs } from 'src/services/node-os';
-import {
-  ComposioClientConfigurationError,
-  ComposioClientSingleton,
-} from 'src/services/composio-clients';
+import { ComposioClientConfigurationError } from 'src/services/composio-errors';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
+import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
 
 // Pinned wall clock for deterministic fixtures. The SUT reads the real
 // `Date.now()` (snapshot TTL, allow-decision expiry), so every timestamp
@@ -57,29 +56,31 @@ const snapshotFixture = (
   ...overrides,
 });
 
+// A retried request waits on the clock, so a failing answer asks for no wait.
+const serverError = () =>
+  Response.json(
+    { error: { message: 'Internal error', code: 500, slug: 'Internal', status: 500 } },
+    { status: 500, headers: { 'retry-after-ms': '0' } }
+  );
+
 /**
  * The consumer endpoints the permission snapshot reads. Both are absent from
  * the v3.1 spec, so production calls them through the client's generic
- * `get`/`post`; the double answers at that same boundary.
+ * `get`/`post`; the double answers below the client, at its transport. An
+ * endpoint with no answer responds 500.
  */
 const permissionsClientLayer = (responses: {
   readonly config?: unknown;
   readonly permissions?: unknown;
   readonly clientUnavailable?: boolean;
 }) => {
-  const paths: string[] = [];
-  const client = {
-    get: async (path: string) => {
-      paths.push(`GET ${path}`);
-      if (responses.config === undefined) throw new Error(`no stub for GET ${path}`);
-      return responses.config;
-    },
-    post: async (path: string) => {
-      paths.push(`POST ${path}`);
-      if (responses.permissions === undefined) throw new Error(`no stub for POST ${path}`);
-      return responses.permissions;
-    },
-  } as unknown as RawComposioClient;
+  const { client, requests } = stubComposioClient(request => {
+    const body = request.method === 'GET' ? responses.config : responses.permissions;
+    return body === undefined ? serverError() : Response.json(body);
+  });
+  // Every debug record the permission paths log, which is where they report a
+  // request failure they recovered from.
+  const logged: Array<unknown> = [];
 
   const layer = Layer.mergeAll(
     Layer.succeed(
@@ -114,10 +115,24 @@ const permissionsClientLayer = (responses: {
         login: () => Effect.void,
         update: () => Effect.void,
       })
-    )
+    ),
+    Logger.layer([
+      Logger.make<unknown, void>(({ message }) => {
+        logged.push(...(Array.isArray(message) ? message : [message]));
+      }),
+    ]),
+    Layer.succeed(References.MinimumLogLevel, 'Debug')
   );
 
-  return { layer, paths };
+  return {
+    layer,
+    paths: () => requests.map(request => `${request.method} ${request.path}`),
+    requestErrors: () =>
+      logged.filter(
+        (entry): entry is ToolPermissionsRequestError =>
+          entry instanceof ToolPermissionsRequestError
+      ),
+  };
 };
 
 const refreshParams = {
@@ -321,7 +336,7 @@ describe('tool permissions', () => {
           Effect.provide(stub.layer)
         );
 
-        expect(stub.paths).toEqual([
+        expect(stub.paths()).toEqual([
           'GET /api/v3.1/org/consumer/config',
           'POST /api/v3.1/consumer/permissions/resolve',
         ]);
@@ -330,7 +345,7 @@ describe('tool permissions', () => {
       }).pipe(Effect.provide(ToolPermissionsTest))
     );
 
-    it.effect('fails closed to ask_every_call when the policy call fails', () =>
+    it.live('fails closed to ask_every_call when the policy call fails', () =>
       Effect.gen(function* () {
         const stub = permissionsClientLayer({ config: { enhanced_controls: true } });
 
@@ -341,6 +356,67 @@ describe('tool permissions', () => {
         expect(snapshot?.enhancedControlsEnabled).toBe(true);
         expect(snapshot?.permissions).toEqual({ default: 'ask_every_call' });
         expect(resolveGateState({ snapshot, toolSlug: 'GMAIL_SEND_EMAIL' })).toBe('ask_every_call');
+        expect(stub.requestErrors()).toMatchObject([
+          {
+            path: '/api/v3.1/consumer/permissions/resolve',
+            message: 'Failed to resolve consumer permissions.',
+            cause: { _tag: '@composio/client/InternalServerError', status: 500 },
+          },
+        ]);
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+
+    it.effect('fails closed to ask_every_call when the policy does not match its schema', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({
+          config: { enhanced_controls: true },
+          permissions: { experimental: { permissions: { default: 42 } } },
+        });
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(snapshot?.permissions).toEqual({ default: 'ask_every_call' });
+        expect(stub.requestErrors()).toMatchObject([
+          { path: '/api/v3.1/consumer/permissions/resolve', cause: { _tag: 'SchemaError' } },
+        ]);
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+
+    it.live('returns no snapshot when the consumer config request fails', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({});
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(snapshot).toBeUndefined();
+        expect(stub.paths()).not.toContain('POST /api/v3.1/consumer/permissions/resolve');
+        expect(stub.requestErrors()).toMatchObject([
+          {
+            path: '/api/v3.1/org/consumer/config',
+            message: 'Failed to fetch the org consumer config.',
+            cause: { _tag: '@composio/client/InternalServerError', status: 500 },
+          },
+        ]);
+      }).pipe(Effect.provide(ToolPermissionsTest))
+    );
+
+    it.effect('returns no snapshot when the consumer config does not match its schema', () =>
+      Effect.gen(function* () {
+        const stub = permissionsClientLayer({ config: { enhanced_controls: 'yes' } });
+
+        const snapshot = yield* refreshConsumerPermissionSnapshot(refreshParams).pipe(
+          Effect.provide(stub.layer)
+        );
+
+        expect(snapshot).toBeUndefined();
+        expect(stub.paths()).toEqual(['GET /api/v3.1/org/consumer/config']);
+        expect(stub.requestErrors()).toMatchObject([
+          { path: '/api/v3.1/org/consumer/config', cause: { _tag: 'SchemaError' } },
+        ]);
       }).pipe(Effect.provide(ToolPermissionsTest))
     );
 
@@ -353,7 +429,7 @@ describe('tool permissions', () => {
         );
 
         expect(snapshot).toBeUndefined();
-        expect(stub.paths).toEqual([]);
+        expect(stub.paths()).toEqual([]);
       }).pipe(Effect.provide(ToolPermissionsTest))
     );
   });

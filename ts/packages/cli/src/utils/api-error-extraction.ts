@@ -1,17 +1,56 @@
 /**
  * Adapters from failures to the Composio API error envelope.
  *
- * `@composio/client` rejects with an `APIError` whose `details` is the parsed
- * `{ error: { message, code, slug, ... } }` envelope. Effect wrappers keep the
- * original rejection in `.cause`, so the adapter walks that chain to the first
- * `APIError`.
+ * `@composio/client/effect` fails a non-success response with a tagged status
+ * error whose `details` is the parsed `{ error: { message, code, slug, ... } }`
+ * envelope. The CLI's own errors keep that failure in `.cause`, so the adapter
+ * walks that chain to the first status error, recognized by its tag.
  *
  * Used by both the `ToolsExecutor` service (for error classification) and the
  * `tools execute` command (for error display).
  */
 
-import { APIError } from '@composio/client';
+import {
+  isAPIError,
+  isComposioError,
+  type APIConnectionError,
+  type APIConnectionTimeoutError,
+  type APIStatusError,
+  type DecodeError,
+} from '@composio/client/effect';
 import { Predicate } from 'effect';
+
+/**
+ * A failure of a request made through the Effect client: a non-success status,
+ * a transport failure, a timeout, or a response body that failed decoding.
+ */
+export type ClientApiError =
+  APIStatusError | APIConnectionError | APIConnectionTimeoutError | DecodeError;
+
+export const isClientApiError = (value: unknown): value is ClientApiError =>
+  isComposioError(value) && !Predicate.isTagged(value, '@composio/client/ConfigurationError');
+
+export const isClientConnectionError = (value: unknown): value is APIConnectionError =>
+  isComposioError(value) && Predicate.isTagged(value, '@composio/client/APIConnectionError');
+
+export const isClientDecodeError = (value: unknown): value is DecodeError =>
+  isComposioError(value) && Predicate.isTagged(value, '@composio/client/DecodeError');
+
+/**
+ * What the CLI prints when a response failed client decoding. It names the
+ * request and never quotes the response.
+ */
+export const describeDecodeError = (
+  error: DecodeError
+): { readonly message: string; readonly hint: string } => {
+  const subject =
+    error.operation !== undefined ? `'${error.operation}'` : `${error.method} ${error.url}`;
+  const requestId = error.requestId !== undefined ? ` (request id: ${error.requestId})` : '';
+  return {
+    message: `The API response for ${subject} is not in the shape this version of the CLI expects${requestId}.`,
+    hint: 'Upgrade the CLI, then retry:\n> composio upgrade',
+  };
+};
 
 export interface ApiErrorDetails {
   readonly message?: string;
@@ -23,14 +62,15 @@ export interface ApiErrorDetails {
 }
 
 /**
- * Returns the first `APIError` along the `.cause` chain, starting at `value`.
+ * Returns the first client status error along the `.cause` chain, starting at
+ * `value`.
  */
-export const findApiError = (value: unknown): APIError | undefined => {
+export const findApiError = (value: unknown): APIStatusError | undefined => {
   const seen = new Set<unknown>();
   let current: unknown = value;
 
   while (Predicate.isObject(current) && !seen.has(current)) {
-    if (current instanceof APIError) return current;
+    if (isAPIError(current)) return current;
     seen.add(current);
     current = Predicate.hasProperty(current, 'cause') ? current.cause : undefined;
   }
@@ -39,7 +79,7 @@ export const findApiError = (value: unknown): APIError | undefined => {
 };
 
 /**
- * The API error envelope carried by the first `APIError` in the cause chain,
+ * The API error envelope carried by the first status error in the cause chain,
  * with the HTTP status and request id. A body that is not the envelope keeps
  * the status and falls back to the error's own message.
  */
@@ -66,8 +106,8 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
   if (typeof value === 'string') return value;
 
   // Walk the .cause / .error chain to find the deepest meaningful message.
-  // Effect's UnknownException stores the real error in .cause; the Composio SDK
-  // stores the API response body in .error (which itself has .error.message).
+  // A wrapper stores the failure it wraps in .cause; an API response body
+  // stores its envelope in .error (which itself has .error.message).
   // We prefer the deepest message because outer wrappers often have generic
   // messages like "An unknown error occurred in Effect.tryPromise".
   if (Predicate.isObject(value)) {
@@ -75,13 +115,30 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
     if (visited.has(value)) return undefined;
     visited.add(value);
 
-    // Try .cause chain first (Effect's UnknownException → real SDK error)
+    // A client status error keeps the response body in .body.
+    if (isAPIError(value)) {
+      return value.details?.message ?? extractMessage(value.body, visited) ?? value.message;
+    }
+
+    // A response that failed client decoding is reported by operation and
+    // request id, with the remedy, never by the client's raw message.
+    if (isClientDecodeError(value)) {
+      const { message, hint } = describeDecodeError(value);
+      return `${message}\n${hint}`;
+    }
+
+    // A client connection error has no cause chain; the transport text is in .description.
+    if (isClientConnectionError(value)) {
+      return value.description ?? value.message;
+    }
+
+    // Try .cause chain first (wrapper → the failure it wraps)
     if (Predicate.hasProperty(value, 'cause')) {
       const causeMsg = extractMessage(value.cause, visited);
       if (causeMsg) return causeMsg;
     }
 
-    // Try .error chain (SDK error → API response body → nested .error.message)
+    // Try .error chain (API response body → nested .error.message)
     if (Predicate.hasProperty(value, 'error')) {
       const inner = value.error;
       const innerMsg = extractMessage(inner, visited);
