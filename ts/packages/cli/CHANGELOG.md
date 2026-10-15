@@ -13,12 +13,17 @@
   accepted before or after the subcommand name (`composio dev --user-id alice
 toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
   both work) and documented once, with one description each, on every `dev`
-  page. `dev search`, `dev playground-execute`, `dev connected-accounts link`,
-  `dev connected-accounts list`, `dev toolkits info`, `dev toolkits list` and
-  `dev triggers listen` read them from the group instead of declaring their
-  own; `dev logs tools` and `dev logs triggers` keep their comma-separated
-  `--user-id` filter. `composio link --help` now lists `--auth-config`, which
-  the root command still rejects with the same message as before.
+  page. `dev playground-execute` (including `--parallel`), `dev connected-accounts
+link`, `dev connected-accounts list`, `dev toolkits info`, `dev toolkits list`,
+  `dev listen` and `dev triggers listen` read them from the group instead of
+  declaring their own; `dev logs tools` and `dev logs triggers` read the
+  group's `--user-id` as their comma-separated filter. The other `dev` commands
+  cannot target another project yet and now reject `--project-name` with a
+  usage error (exit 1) instead of running against the directory's project.
+- `composio link --help` now lists `--auth-config`. The root command still
+  rejects it, now with the message ``Top-level `composio link` is
+consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
+  check, where it used to fail as an unrecognized flag.
 
 ## 0.4.4
 
