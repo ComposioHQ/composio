@@ -1,4 +1,4 @@
-import { VERSION as clientLibraryVersion } from '@composio/client';
+import { VERSION as clientLibraryVersion } from '@composio/client/effect';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import * as tempy from 'tempy';

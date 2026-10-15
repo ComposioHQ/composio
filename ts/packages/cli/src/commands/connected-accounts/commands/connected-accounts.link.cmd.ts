@@ -1,6 +1,6 @@
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Option, Schedule } from 'effect';
-import type { Composio as RawComposioClient } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -8,7 +8,8 @@ import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
-import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import {
   formatResolveCommandProjectError,
@@ -137,7 +138,7 @@ const showRedirectUrl = (
 
 const waitForActiveConnection = (
   ui: TerminalUI,
-  client: RawComposioClient,
+  client: ComposioClientShape,
   connectedAccountId: string,
   redirectUrl: string,
   noBrowser: boolean
@@ -172,14 +173,17 @@ const waitForActiveConnection = (
     yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
       Effect.retry(
         Effect.gen(function* () {
-          const account = yield* Effect.tryPromise({
-            try: () => client.connectedAccounts.retrieve(connectedAccountId),
-            catch: cause =>
-              new ConnectedAccountsRequestError({
-                message: `Failed to fetch connected account "${connectedAccountId}".`,
-                cause,
-              }),
-          });
+          const account = yield* client.connectedAccounts
+            .retrieve(connectedAccountId, { decode: false })
+            .pipe(
+              Effect.mapError(
+                cause =>
+                  new ConnectedAccountsRequestError({
+                    message: `Failed to fetch connected account "${connectedAccountId}".`,
+                    cause,
+                  })
+              )
+            );
           if (account.status === 'ACTIVE') {
             return account;
           }
@@ -322,26 +326,31 @@ const resolveNormalizedAliasOption = (alias: Option.Option<string>) =>
   });
 
 const listActiveConnectedAccounts = (params: {
-  readonly client: RawComposioClient;
+  readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug?: string;
   readonly authConfigId?: string;
 }) =>
-  Effect.tryPromise({
-    try: () =>
-      params.client.connectedAccounts.list({
+  params.client.connectedAccounts
+    .list(
+      {
         user_ids: [params.userId],
         toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
         auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
         statuses: ['ACTIVE'],
         limit: 100,
-      }),
-    catch: cause =>
-      new ConnectedAccountsRequestError({
-        message: `Failed to list connected accounts for user "${params.userId}".`,
-        cause,
-      }),
-  });
+      },
+      { decode: false }
+    )
+    .pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectedAccountsRequestError({
+            message: `Failed to list connected accounts for user "${params.userId}".`,
+            cause,
+          })
+      )
+    );
 
 const formatExistingAccountLabels = (
   items: ReadonlyArray<{
@@ -488,7 +497,7 @@ const handleListConnectedAccounts = (params: {
     readonly getFor: (params: {
       readonly orgId: string;
       readonly projectId: string;
-    }) => Effect.Effect<RawComposioClient, unknown>;
+    }) => Effect.Effect<ComposioClientShape, unknown>;
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
@@ -539,20 +548,25 @@ const handleListConnectedAccounts = (params: {
 
     const accounts = yield* params.ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
-      Effect.tryPromise({
-        try: () =>
-          client.connectedAccounts.list({
+      client.connectedAccounts
+        .list(
+          {
             toolkit_slugs: [toolkitSlug],
             user_ids: [resolvedUserId.value],
             statuses: ['ACTIVE'],
             limit: 100,
-          }),
-        catch: cause =>
-          new ConnectedAccountsRequestError({
-            message: `Failed to list connected accounts for "${toolkitSlug}".`,
-            cause,
-          }),
-      })
+          },
+          { decode: false }
+        )
+        .pipe(
+          Effect.mapError(
+            cause =>
+              new ConnectedAccountsRequestError({
+                message: `Failed to list connected accounts for "${toolkitSlug}".`,
+                cause,
+              })
+          )
+        )
     );
     const connectedAccounts = yield* decodeConnectedAccountItems(accounts.items).pipe(
       Effect.mapError(
@@ -615,7 +629,7 @@ const handleLegacyAuthConfigLink = (params: {
     readonly getFor: (params: {
       readonly orgId: string;
       readonly projectId: string;
-    }) => Effect.Effect<RawComposioClient, unknown>;
+    }) => Effect.Effect<ComposioClientShape, unknown>;
   };
   readonly projectContext: {
     readonly resolve: Effect.Effect<
@@ -689,19 +703,24 @@ const handleLegacyAuthConfigLink = (params: {
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
-        Effect.tryPromise({
-          try: () =>
-            client.link.create({
+        client.link
+          .create(
+            {
               auth_config_id: params.authConfigId,
               user_id: resolvedUserId.value,
               ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
-            }),
-          catch: cause =>
-            new ConnectedAccountsRequestError({
-              message: `Failed to create link for auth config "${params.authConfigId}".`,
-              cause,
-            }),
-        })
+            },
+            { decode: false }
+          )
+          .pipe(
+            Effect.mapError(
+              cause =>
+                new ConnectedAccountsRequestError({
+                  message: `Failed to create link for auth config "${params.authConfigId}".`,
+                  cause,
+                })
+            )
+          )
       )
       .pipe(
         Effect.asSome,
@@ -900,20 +919,26 @@ const runConnectedAccountsLink = (params: {
                 }
               : undefined,
           });
-          return yield* Effect.tryPromise({
-            try: () =>
-              client.toolRouter.session.link(sessionId, {
+          return yield* client.toolRouter.session
+            .link(
+              sessionId,
+              {
                 toolkit: toolkitSlug,
                 ...(Option.isSome(normalizedAliasOption) && {
                   alias: normalizedAliasOption.value,
                 }),
-              }),
-            catch: cause =>
-              new ConnectedAccountsRequestError({
-                message: `Failed to create link for toolkit "${toolkitSlug}".`,
-                cause,
-              }),
-          });
+              },
+              { decode: false }
+            )
+            .pipe(
+              Effect.mapError(
+                cause =>
+                  new ConnectedAccountsRequestError({
+                    message: `Failed to create link for toolkit "${toolkitSlug}".`,
+                    cause,
+                  })
+              )
+            );
         })
       )
       .pipe(

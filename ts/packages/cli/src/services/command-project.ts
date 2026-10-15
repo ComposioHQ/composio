@@ -6,7 +6,7 @@ import {
   findDeveloperProjectByName,
   DeveloperProjectNotFoundError,
   AmbiguousDeveloperProjectNameError,
-} from './composio-clients';
+} from './composio-account';
 
 export type ProjectMode = 'consumer' | 'developer';
 

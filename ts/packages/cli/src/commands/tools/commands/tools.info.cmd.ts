@@ -3,7 +3,8 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { bold } from 'src/ui/colors';
@@ -45,8 +46,8 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
       .pipe(
         Effect.asSome,
         Effect.catchTag(
-          'services/HttpServerError',
-          handleHttpServerError(ui, {
+          CLIENT_API_ERROR_TAGS,
+          handleClientApiError(ui, {
             fallbackMessage: `Tool "${slugValue}" not found.`,
             hint: [
               commandHintStep('Browse available toolkits', 'dev.toolkits.list'),

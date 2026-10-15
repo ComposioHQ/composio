@@ -3,15 +3,15 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
+import { ComposioSessionRepository } from 'src/services/composio-clients';
 import {
-  ComposioSessionRepository,
   getSessionInfo,
   getSessionInfoByUserApiKey,
   listOrganizations,
   sessionUserIdOf,
   type OrganizationSummary,
   type SessionInfoResponse,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';

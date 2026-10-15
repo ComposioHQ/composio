@@ -1,5 +1,19 @@
 # @composio/core
 
+## 0.24.0
+
+### Minor Changes
+
+- 59935c0: Add `session.executeMeta()` to run a Composio meta tool (`COMPOSIO_*`) within a session. It takes a meta tool slug and optional arguments, and returns the same result as `session.execute()`, including `resultType`. Like `session.execute()`, it throws `ComposioToolInputRequiredError` when the tool needs user input and is not retried. The new `ToolRouterSessionMetaToolSlug` type lists the accepted slugs.
+
+  The Python SDK gains the matching `session.execute_meta()` and `ToolRouterSessionMetaToolSlug`.
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+- 79b4912: Update the owned API client to `@composio/client@2.0.0-rc.14`. OAuth connection data types now accept a `null` `id_token`. Session tag filters accept the `createHint` and `updateHint` tags. The experimental `instant.returnPricesInSearch` Session option returns each Instant tool's price in Session search results, under `toolkitConnectionStatuses[].instantAccount.prices`. `composio.mcp.generate()` now warns once that its URLs rely on the deprecated `include_composio_helper_actions` query parameter; switch to a Session's MCP endpoint.
+- 58bcde8: Add a `proxyExecute` session option. `composio.sessions.create(userId, { proxyExecute: true })` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool, which lets the agent call a toolkit's API directly with the user's connected account. A boolean is shorthand for `{ enable: boolean }`. `session.update()` accepts the same option, and `null` removes the stored value. `proxyExecute: false` also turns off the sandbox `proxy_execute()` helper, and the API rejects it at creation together with `sandbox.enableProxyExecution: true`.
+
 ## 0.23.0
 
 ### Minor Changes

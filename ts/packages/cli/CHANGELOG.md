@@ -4,6 +4,14 @@
 
 ### Patch Changes
 
+- `composio execute` and the `execute()` helper in `composio run` scripts now
+  report the Instant charge when a call ran on a Composio instant account
+  instead of a linked connection: the result carries an `instantCharge` object
+  (`amount`, `currency`, `chargedBy`) and the success line shows
+  `instant charge: <amount> USD`. The CLI used to create Tool Router sessions
+  without asking for the charge and dropped it from the response, so a billed
+  call looked free.
+
 - `composio execute` (including meta tools), `composio proxy`, the `proxy()`
   helper in `composio run` scripts, and the custom tool schema lookup in
   `composio search` now fail with a clear error when the call needs user input,
