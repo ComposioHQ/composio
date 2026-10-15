@@ -638,8 +638,8 @@ export class Composio<
    *   instance directly with the headers you need: `new Composio({ ...existingConfig, defaultHeaders })`.
    *   For one-off overrides, pass per-call `requestOptions` where supported.
    *
-   * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
-   *                                          This follows the Fetch API RequestInit interface with additional options.
+   * @param {object} [options] - Options for the new instance.
+   * @param {ComposioRequestHeaders} [options.headers] - Headers sent with every API call the new instance makes.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
    *
    * @example

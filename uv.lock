@@ -757,7 +757,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = "==2.0.0rc14" },
+    { name = "composio-client", specifier = "==2.0.0rc16" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
     { name = "jsonschema", specifier = ">=4.23.0" },
     { name = "openai", specifier = ">=2.48.0" },
@@ -803,16 +803,16 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0rc14"
+version = "2.0.0rc16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/31/a3/a856ba17fa20d2a0ab1317d4dba99e875a5d27eb105125e12f259f1756ea/composio_client-2.0.0rc14.tar.gz", hash = "sha256:7eb1454107cff344870a9ff9c0ef0f41a45ff99050e1eb48394070cd6bce6bdc", size = 618158, upload-time = "2026-10-14T15:06:51.783Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/93/8bc5924aef6c42e4a6c410134c3e2cdfb15afe8517edd2c8125c17baf417/composio_client-2.0.0rc16.tar.gz", hash = "sha256:f4c6bd3414c54ff2942a42cd3692a8e6e3a84e5ab0b2daade7e7c52df02a3faa", size = 618227, upload-time = "2026-10-15T18:17:33.727Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/e9/f5f9c8f686ee16ba0e1bedb647e1f83fbc6ba2694e22cbcab52fe73f9f6f/composio_client-2.0.0rc14-py3-none-any.whl", hash = "sha256:90f84bd4e624c9cd403c1aa2b6bc52b8a0229ab860d45458ca661196cb8b1048", size = 445953, upload-time = "2026-10-14T15:06:49.914Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/eb/de39ebd072e7bf670b31ae6fc73834a00728b7a959558709a39ceee2cefb/composio_client-2.0.0rc16-py3-none-any.whl", hash = "sha256:9f82079f1d22f59d603471d5ce3aae6b617d2cfa2427e50ec844f8a099876c4c", size = 445953, upload-time = "2026-10-15T18:17:31.873Z" },
 ]
 
 [[package]]
