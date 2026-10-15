@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildToolLogShorthandSearchParams } from 'src/commands/logs-cmd/commands/logs.tools.cmd';
+import { buildToolLogShorthandSearchParams } from 'src/commands/logs/commands/logs.tools.cmd';
 
 describe('buildToolLogShorthandSearchParams', () => {
   it('[Given] no filters [Then] returns empty search params', () => {

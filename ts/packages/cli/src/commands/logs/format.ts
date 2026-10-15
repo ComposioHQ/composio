@@ -1,5 +1,5 @@
 import type { Logs } from '@composio/client/resources/logs/logs';
-import type { TriggerLogRecord } from 'src/commands/logs-cmd/trigger-log-record';
+import type { TriggerLogRecord } from 'src/commands/logs/trigger-log-record';
 import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
