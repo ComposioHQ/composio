@@ -85,8 +85,14 @@ describe("LLM endpoints - .md pages", () => {
 
       const contentType = res.headers.get("content-type") || "";
       expect(contentType).toContain("text/markdown");
-    });
 
+      // Metadata alone must not satisfy the documentation body checks.
+      const body = (await res.text())
+        .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "")
+        .trimStart();
+      expect(body).toMatch(/^#\s+.+/);
+      expect(body.length).toBeGreaterThan(200);
+    });
   }
 });
 
