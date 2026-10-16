@@ -1,4 +1,4 @@
-import { make, type ComposioClientShape } from '@composio/client/effect';
+import { Auth, make, type ComposioClientShape } from '@composio/client/effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
@@ -126,9 +126,7 @@ interface LinkRequest {
 // A resource neither layer below shadows reaches this transport and dies with its URL.
 const baseClient = make(
   {
-    apiKey: 'test',
-    userApiKey: null,
-    orgApiKey: null,
+    auth: Auth.project('test'),
     baseURL: 'https://mock.invalid',
     deprecationNotices: 'off',
   },

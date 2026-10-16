@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
-from composio_client import omit
+from composio_client import ProjectAuth, omit
 from pydantic import BaseModel, Field, RootModel
 
 from composio.client import HttpClient
@@ -1477,10 +1477,9 @@ class TestSerializeArguments:
         with httpx.Client(transport=httpx.MockTransport(respond)) as transport:
             client = HttpClient(
                 provider="openai",
-                api_key="test-key",
+                auth=ProjectAuth("test-key"),
                 base_url="https://composio.invalid",
                 http_client=transport,
-                _environment_variables={},
             )
             tools = Tools(client=client, provider=OpenAIProvider())
             result = tools.execute(
