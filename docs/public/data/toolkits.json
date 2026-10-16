@@ -130421,6 +130421,9 @@
   {
     "slug": "api_sports",
     "name": "API-Sports",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/api_sports",
     "description": "API-Sports provides comprehensive sports data APIs covering over 2,000 competitions with more than 15 years of historical data, offering real-time updates and easy integration for developers.",
     "category": "developer tools",
@@ -130434,57 +130437,134 @@
       {
         "slug": "API_SPORTS_GET_AFL_GAMES",
         "name": "Get AFL Games",
-        "description": "Tool to retrieve AFL games and matches. Use when filtering games by id, date, league, season, team, or timezone to get upcoming, past, or live matches."
+        "description": "Tool to retrieve AFL games and matches. Use when filtering games by id, date, league, season, team, or timezone to get upcoming, past, or live matches.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_AFL_GAMES_STATISTICS_PLAYERS",
         "name": "Get AFL Game Player Statistics",
-        "description": "Tool to retrieve player statistics from AFL (Australian Football League) game(s). Use when you need detailed player performance data for specific AFL games by game ID, a list of up to 10 game IDs, or date. Optionally choose a timezone."
+        "description": "Tool to retrieve player statistics from AFL (Australian Football League) game(s). Use when you need detailed player performance data for specific AFL games by game ID, a list of up to 10 game IDs, or date. Optionally choose a timezone.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_AFL_SEASONS",
         "name": "Get AFL Seasons",
-        "description": "Tool to get the list of available seasons for AFL. All seasons are 4-digit keys (e.g., 2018 for 2018-2019 season). Use when you need season filters for AFL endpoints."
+        "description": "Tool to get the list of available seasons for AFL. All seasons are 4-digit keys (e.g., 2018 for 2018-2019 season). Use when you need season filters for AFL endpoints.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_AFL_STANDINGS",
         "name": "Get AFL Standings",
-        "description": "Tool to retrieve AFL standings for a league. Use when needing current team rankings, points, and positions for a specific season."
+        "description": "Tool to retrieve AFL standings for a league. Use when needing current team rankings, points, and positions for a specific season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASEBALL_GAMES_H2H",
         "name": "Get Baseball Games Head-to-Head",
-        "description": "Tool to get head-to-head baseball games between two teams. Use when comparing the match history between two specific baseball teams."
+        "description": "Tool to get head-to-head baseball games between two teams. Use when comparing the match history between two specific baseball teams.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_BETS",
         "name": "Get Basketball Bets",
-        "description": "Tool to get all available basketball bet types. Use when you need to retrieve available betting options for basketball games."
+        "description": "Tool to get all available basketball bet types. Use when you need to retrieve available betting options for basketball games.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_BOOKMAKERS",
         "name": "Get Basketball Bookmakers",
-        "description": "Tool to get all available basketball bookmakers. Use when you need to retrieve available bookmakers for basketball odds and betting data."
+        "description": "Tool to get all available basketball bookmakers. Use when you need to retrieve available bookmakers for basketball odds and betting data.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_GAMES",
         "name": "Get Basketball Games",
-        "description": "Retrieve Basketball games for a league and season, optionally by team."
+        "description": "Retrieve Basketball games for a league and season, optionally by team.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_GAMES_STATISTICS_PLAYERS",
         "name": "Get Basketball Game Player Statistics",
-        "description": "Retrieve player-level performance statistics for a Basketball game."
+        "description": "Retrieve player-level performance statistics for a Basketball game.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_STANDINGS",
         "name": "Get Basketball Standings",
-        "description": "Retrieve ranked Basketball teams for a league season."
+        "description": "Retrieve ranked Basketball teams for a league season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_BASKETBALL_STATISTICS",
         "name": "Get basketball statistics",
-        "description": "Tool to get basketball statistics for a team in a given league and season. Use when you need detailed basketball team statistics including games played, wins, losses, points, and other performance metrics."
+        "description": "Tool to get basketball statistics for a team in a given league and season. Use when you need detailed basketball team statistics including games played, wins, losses, points, and other performance metrics.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_CIRCUITS",
@@ -130494,52 +130574,122 @@
       {
         "slug": "API_SPORTS_GET_COACHS",
         "name": "Get Coaches",
-        "description": "Tool to fetch coaches and their career history. Use when you need coach info by ID, team filter, or name search."
+        "description": "Tool to fetch coaches and their career history. Use when you need coach info by ID, team filter, or name search.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_COUNTRIES",
         "name": "Get Countries",
-        "description": "Tool to fetch available countries for league queries. Use when filtering by name, code, or search string before retrieving leagues."
+        "description": "Tool to fetch available countries for league queries. Use when filtering by name, code, or search string before retrieving leagues.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIGHTERS_RECORDS",
         "name": "Get Fighters Records",
-        "description": "Tool to get fighter career statistics. Use when you need a fighter's complete record including wins, losses, draws, knockouts, and submissions."
+        "description": "Tool to get fighter career statistics. Use when you need a fighter's complete record including wins, losses, draws, knockouts, and submissions.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES",
         "name": "Get Fixtures",
-        "description": "Tool to retrieve football fixtures/matches. Use when filtering fixtures by id, date, league, season, team, or date ranges to get upcoming or past matches. Always provide at least one of season, date, team, or league to avoid oversized payloads. Never guess IDs — obtain valid league, season, team, or fixture IDs before calling this tool."
+        "description": "Tool to retrieve football fixtures/matches. Use when filtering fixtures by id, date, league, season, team, or date ranges to get upcoming or past matches. Always provide at least one of season, date, team, or league to avoid oversized payloads. Never guess IDs — obtain valid league, season, team, or fixture IDs before calling this tool.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_EVENTS",
         "name": "Get fixtures events",
-        "description": "Tool to get events (goals, cards, substitutions, VAR, etc.) from a fixture. Use when you need detailed event data after confirming the fixture ID."
+        "description": "Tool to get events (goals, cards, substitutions, VAR, etc.) from a fixture. Use when you need detailed event data after confirming the fixture ID.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_HEADTOHEAD",
         "name": "Get Head-to-Head Fixtures",
-        "description": "Tool to get head-to-head fixtures between two teams. Use after determining team IDs to compare their direct match history."
+        "description": "Tool to get head-to-head fixtures between two teams. Use after determining team IDs to compare their direct match history.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_LINEUPS",
         "name": "Get Fixture Lineups",
-        "description": "Tool to retrieve starting XI and substitutes for a fixture. Use after confirming fixture ID; optionally filter by team, player, or section (startXI/substitutes). Lineups appear ~20-40 minutes before kickoff for supported competitions."
+        "description": "Tool to retrieve starting XI and substitutes for a fixture. Use after confirming fixture ID; optionally filter by team, player, or section (startXI/substitutes). Lineups appear ~20-40 minutes before kickoff for supported competitions.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_PLAYERS",
         "name": "Get fixtures players",
-        "description": "Tool to get player statistics from a fixture. Use when you need detailed per-player stats for a specific match. Optionally filter by team."
+        "description": "Tool to get player statistics from a fixture. Use when you need detailed per-player stats for a specific match. Optionally filter by team.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_ROUNDS",
         "name": "Get Fixtures Rounds",
-        "description": "Tool to get the rounds for a league or cup. Use after confirming league and season to retrieve available round identifiers (optionally with dates) for filtering fixtures."
+        "description": "Tool to get the rounds for a league or cup. Use after confirming league and season to retrieve available round identifiers (optionally with dates) for filtering fixtures.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FIXTURES_STATISTICS",
         "name": "Get fixture statistics",
-        "description": "Tool to get statistics for a fixture. Use when you need detailed match stats (shots, fouls, possession, cards, passes, etc.), optionally filtered by team, statistic type, or including halftime data."
+        "description": "Tool to get statistics for a fixture. Use when you need detailed match stats (shots, fouls, possession, cards, passes, etc.), optionally filtered by team, statistic type, or including halftime data.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_FORMULA1_COMPETITIONS",
@@ -130559,67 +130709,158 @@
       {
         "slug": "API_SPORTS_GET_GAMES_EVENTS",
         "name": "Get games events",
-        "description": "Tool to get events (goals, penalties, etc.) from a game. Use when you need detailed event data after confirming the game ID."
+        "description": "Tool to get events (goals, penalties, etc.) from a game. Use when you need detailed event data after confirming the game ID.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_GAMES_QUARTERS",
         "name": "Get AFL Games Quarters",
-        "description": "Tool to retrieve AFL game quarter scores. Use when you need detailed scoring breakdown by quarter for one or multiple AFL games."
+        "description": "Tool to retrieve AFL game quarter scores. Use when you need detailed scoring breakdown by quarter for one or multiple AFL games.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_GAMES_STATISTICS_TEAMS",
         "name": "Get game statistics by teams",
-        "description": "Tool to get team statistics from a game by ID. Use when you need detailed team stats (assists, blocks, field goals, rebounds, steals, turnovers, etc.) for a specific game or multiple games."
+        "description": "Tool to get team statistics from a game by ID. Use when you need detailed team stats (assists, blocks, field goals, rebounds, steals, turnovers, etc.) for a specific game or multiple games.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_INJURIES",
         "name": "Get Injuries",
-        "description": "Tool to get injured or suspended players. Use when you need a list of sidelined players filtered by league, season, fixture, team, player, date, ids, or timezone."
+        "description": "Tool to get injured or suspended players. Use when you need a list of sidelined players filtered by league, season, fixture, team, player, date, ids, or timezone.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_LEAGUES",
         "name": "Get Leagues",
-        "description": "Tool to retrieve leagues and cups. Use when filtering competitions by id, name, country, code, season, team, type, current, search, or last."
+        "description": "Tool to retrieve leagues and cups. Use when filtering competitions by id, name, country, code, season, team, type, current, search, or last.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_LEAGUES_SEASONS",
         "name": "Get League Seasons",
-        "description": "Tool to get the list of available seasons for all leagues. Use when you need season filters for other league endpoints."
+        "description": "Tool to get the list of available seasons for all leagues. Use when you need season filters for other league endpoints.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_MMA_CATEGORIES",
         "name": "Get MMA Categories",
-        "description": "Tool to fetch the list of all available MMA categories. Use when you need to get weight class categories (e.g., 'Flyweight', 'Lightweight', 'Heavyweight') for MMA fights."
+        "description": "Tool to fetch the list of all available MMA categories. Use when you need to get weight class categories (e.g., 'Flyweight', 'Lightweight', 'Heavyweight') for MMA fights.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_MMA_FIGHTERS",
         "name": "Get MMA Fighters",
-        "description": "Tool to fetch MMA fighters data. Use when you need to get fighter information by id, team, name, category, or search term."
+        "description": "Tool to fetch MMA fighters data. Use when you need to get fighter information by id, team, name, category, or search term.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_MMA_FIGHTS",
         "name": "Get MMA Fights",
-        "description": "Tool to retrieve the list of MMA fights according to given parameters. Use when filtering fights by id, date, season, fighter, or weight category to get upcoming or past MMA fight details."
+        "description": "Tool to retrieve the list of MMA fights according to given parameters. Use when filtering fights by id, date, season, fighter, or weight category to get upcoming or past MMA fight details.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_MMA_FIGHTS_RESULTS",
         "name": "Get MMA Fight Results",
-        "description": "Tool to retrieve results from one or several MMA fights. Use when you need outcome details like victory method, round, time, knockout type, or judge scores for specific fights by id(s) or date."
+        "description": "Tool to retrieve results from one or several MMA fights. Use when you need outcome details like victory method, round, time, knockout type, or judge scores for specific fights by id(s) or date.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_MMA_FIGHTS_STATISTICS_FIGHTERS",
         "name": "Get MMA Fighter Statistics",
-        "description": "Tool to get fighter statistics from MMA fights. Use when you need detailed strike, takedown, and grappling statistics for fighters in specific fights or on a specific date."
+        "description": "Tool to get fighter statistics from MMA fights. Use when you need detailed strike, takedown, and grappling statistics for fighters in specific fights or on a specific date.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.044 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_NBA_GAMES_STATISTICS",
         "name": "Get NBA game statistics",
-        "description": "Retrieve aggregate NBA statistics for each team that played a game. Use when you need detailed statistics for a specific NBA game such as points, rebounds, assists, field goals, free throws, and other performance metrics."
+        "description": "Retrieve aggregate NBA statistics for each team that played a game. Use when you need detailed statistics for a specific NBA game such as points, rebounds, assists, field goals, free throws, and other performance metrics.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_NBA_PLAYERS_STATISTICS",
         "name": "Get NBA Player Statistics",
-        "description": "Return NBA player box scores. Provide a player, game, or team filter; season cannot be used alone."
+        "description": "Return NBA player box scores. Provide a player, game, or team filter; season cannot be used alone.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_NFL_STANDINGS_CONFERENCES",
@@ -130629,87 +130870,206 @@
       {
         "slug": "API_SPORTS_GET_ODDS",
         "name": "Get Odds",
-        "description": "Tool to fetch pre-match odds. Use when you need odds filterable by fixture, league, season, date, timezone, bookmaker, bet, or to navigate pages."
+        "description": "Tool to fetch pre-match odds. Use when you need odds filterable by fixture, league, season, date, timezone, bookmaker, bet, or to navigate pages.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_ODDS_BETS",
         "name": "Get Odds Bets",
-        "description": "Tool to get all available pre-match bet types. Use when filtering by bet ID or searching bet names before fetching odds."
+        "description": "Tool to get all available pre-match bet types. Use when filtering by bet ID or searching bet names before fetching odds.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_ODDS_BOOKMAKERS",
         "name": "Get Odds Bookmakers",
-        "description": "Tool to list all available pre-match bookmakers. Use when you need to discover or filter bookmakers before fetching odds."
+        "description": "Tool to list all available pre-match bookmakers. Use when you need to discover or filter bookmakers before fetching odds.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_ODDS_LIVE",
         "name": "Get In-Play Odds",
-        "description": "Tool to fetch in-play odds for fixtures in progress. Use during live matches to get in-play odds."
+        "description": "Tool to fetch in-play odds for fixtures in progress. Use during live matches to get in-play odds.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_ODDS_LIVE_BETS",
         "name": "Get Live Odds Bets",
-        "description": "Tool to fetch all available bet types for in-play odds. Use when you need to retrieve bet IDs or names (optionally filtering by id or search) before fetching live odds."
+        "description": "Tool to fetch all available bet types for in-play odds. Use when you need to retrieve bet IDs or names (optionally filtering by id or search) before fetching live odds.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_ODDS_MAPPING",
         "name": "Get Odds Mapping",
-        "description": "Tool to get the list of available fixture IDs for the odds endpoint. Use when you need to discover which fixtures have odds data available."
+        "description": "Tool to get the list of available fixture IDs for the odds endpoint. Use when you need to discover which fixtures have odds data available.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS",
         "name": "Get Players",
-        "description": "Tool to get player statistics. Use when fetching players by id, team, league, season, search, or pagination. Returned player IDs are used as inputs to downstream tools such as fixtures statistics, predictions, and odds."
+        "description": "Tool to get player statistics. Use when fetching players by id, team, league, season, search, or pagination. Returned player IDs are used as inputs to downstream tools such as fixtures statistics, predictions, and odds.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_PROFILES",
         "name": "Get Players Profiles",
-        "description": "Tool to get the list of all available players. Use when you need player profiles optionally filtered by ID, name search, or page."
+        "description": "Tool to get the list of all available players. Use when you need player profiles optionally filtered by ID, name search, or page.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_SEASONS",
         "name": "Get Players Seasons",
-        "description": "Tool to list all available seasons for player statistics. Use when building a player statistics query, optionally filtering by a specific player id."
+        "description": "Tool to list all available seasons for player statistics. Use when building a player statistics query, optionally filtering by a specific player id.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_SQUADS",
         "name": "Get Players Squads",
-        "description": "Tool to get player squads. Use when fetching the current squad of a team (with team ID) or finding which teams a player belongs to (with player ID)."
+        "description": "Tool to get player squads. Use when fetching the current squad of a team (with team ID) or finding which teams a player belongs to (with player ID).",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_STATISTICS",
         "name": "Get player statistics",
-        "description": "Tool to get player statistics for a specific basketball game. Use when you need detailed performance stats like points, rebounds, assists, field goals, three pointers, free throws, etc. Requires at least a game ID to retrieve player statistics."
+        "description": "Tool to get player statistics for a specific basketball game. Use when you need detailed performance stats like points, rebounds, assists, field goals, three pointers, free throws, etc. Requires at least a game ID to retrieve player statistics.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_TEAMS",
         "name": "Get Players Teams",
-        "description": "Tool to get the list of teams and seasons in which a player played during his career. Use after confirming the player ID to retrieve club history."
+        "description": "Tool to get the list of teams and seasons in which a player played during his career. Use after confirming the player ID to retrieve club history.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_TOP_ASSISTS",
         "name": "Get Players Top Assists",
-        "description": "Tool to get the 20 best players (top assists) for a league or cup. Use after confirming league and season."
+        "description": "Tool to get the 20 best players (top assists) for a league or cup. Use after confirming league and season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_TOP_RED_CARDS",
         "name": "Get Players Top Red Cards",
-        "description": "Tool to get the 20 players with the most red cards for a league or cup. Use after confirming league and season."
+        "description": "Tool to get the 20 players with the most red cards for a league or cup. Use after confirming league and season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_TOP_SCORERS",
         "name": "Get Players Top Scorers",
-        "description": "Tool to get the 20 best players (top scorers) for a league or cup. Use after confirming league and season."
+        "description": "Tool to get the 20 best players (top scorers) for a league or cup. Use after confirming league and season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PLAYERS_TOP_YELLOW_CARDS",
         "name": "Get Players Top Yellow Cards",
-        "description": "Tool to get the 20 players with the most yellow cards for a league or cup. Use after confirming league and season."
+        "description": "Tool to get the 20 players with the most yellow cards for a league or cup. Use after confirming league and season.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_PREDICTIONS",
         "name": "Get Predictions",
-        "description": "Tool to get predictions about a fixture. Use when you need calculated predictions for a given fixture ID. Predictions may not be available for all fixtures; empty or null responses indicate no predictions exist, not an error."
+        "description": "Tool to get predictions about a fixture. Use when you need calculated predictions for a given fixture ID. Predictions may not be available for all fixtures; empty or null responses indicate no predictions exist, not an error.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_RANKINGS_DRIVERS",
@@ -130734,7 +131094,14 @@
       {
         "slug": "API_SPORTS_GET_SIDELINED",
         "name": "Get Sidelined",
-        "description": "Tool to get sidelined information (injuries, suspensions, etc.). Use when you need current sidelined records filtered by player or coach."
+        "description": "Tool to get sidelined information (injuries, suspensions, etc.). Use when you need current sidelined records filtered by player or coach.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_STANDINGS_DIVISIONS",
@@ -130749,7 +131116,14 @@
       {
         "slug": "API_SPORTS_GET_STANDINGS_STAGES",
         "name": "Get Standings Stages",
-        "description": "Tool to retrieve the list of available stages for a league to be used in the standings endpoint. Use when you need to know which stages or groups are available for a specific league and season before fetching standings data."
+        "description": "Tool to retrieve the list of available stages for a league to be used in the standings endpoint. Use when you need to know which stages or groups are available for a specific league and season before fetching standings data.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.067 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_STATUS",
@@ -130759,37 +131133,86 @@
       {
         "slug": "API_SPORTS_GET_TEAMS",
         "name": "Get Teams",
-        "description": "Tool to retrieve available teams. Use when filtering teams by id, name, league, season, country, code, venue, or search before fetching detailed team data. Team IDs are not inferrable from names; use `name` or `search` to look up and confirm the correct `id` before passing it to downstream requests."
+        "description": "Tool to retrieve available teams. Use when filtering teams by id, name, league, season, country, code, venue, or search before fetching detailed team data. Team IDs are not inferrable from names; use `name` or `search` to look up and confirm the correct `id` before passing it to downstream requests.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_TEAMS_SEASONS",
         "name": "Get Team Seasons",
-        "description": "Tool to get the list of seasons available for a team. Use when you need to know which seasons a specific team has data for."
+        "description": "Tool to get the list of seasons available for a team. Use when you need to know which seasons a specific team has data for.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_TEAMS_STATISTICS",
         "name": "Get team statistics",
-        "description": "Tool to get detailed statistics of a team for a given league and season. Use after confirming league, season, and team ID."
+        "description": "Tool to get detailed statistics of a team for a given league and season. Use after confirming league, season, and team ID.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_TIMEZONE",
         "name": "Get Timezone",
-        "description": "Tool to fetch the complete list of available timezones for fixture queries. Use when you need valid timezone identifiers (e.g., 'Europe/London') before calling fixtures endpoints."
+        "description": "Tool to fetch the complete list of available timezones for fixture queries. Use when you need valid timezone identifiers (e.g., 'Europe/London') before calling fixtures endpoints.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_TRANSFERS",
         "name": "Get Transfers",
-        "description": "Tool to get all available transfers for players and teams. Use when you need transfer history filtered by player or team."
+        "description": "Tool to get all available transfers for players and teams. Use when you need transfer history filtered by player or team.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_TROPHIES",
         "name": "Get Trophies",
-        "description": "Tool to get trophies for a player or coach. Use when you need to list honors filtered by player(s) or coach(es)."
+        "description": "Tool to get trophies for a player or coach. Use when you need to list honors filtered by player(s) or coach(es).",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "API_SPORTS_GET_VENUES",
         "name": "Get Venues",
-        "description": "Tool to retrieve available venues. Use when filtering venues by id, name, city, country, or search before fetching detailed venue data."
+        "description": "Tool to retrieve available venues. Use when filtering venues by id, name, city, country, or search before fetching detailed venue data.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.084 per 1,000 API requests (rounded).",
+            "discount": "0"
+          }
+        }
       }
     ],
     "triggers": [],
@@ -248877,6 +249300,9 @@
   {
     "slug": "ignav_flights",
     "name": "Ignav Flights",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/ignav_flights",
     "description": "Search airports and flight fares, compare one-way, round-trip, and flexible itineraries, and retrieve airline or travel-agency booking links with Ignav.",
     "category": "lifestyle & entertainment",
@@ -248890,27 +249316,62 @@
       {
         "slug": "IGNAV_FLIGHTS_GET_BOOKING_LINKS",
         "name": "Get Booking Links",
-        "description": "Get current direct airline or OTA booking links for a recent Ignav fare result or a manually specified one-way/round-trip flight. ID lookup uses your own connected account; managed calls support manual_one_way or manual_round_trip only. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance."
+        "description": "Get current direct airline or OTA booking links for a recent Ignav fare result or a manually specified one-way/round-trip flight. ID lookup uses your own connected account; managed calls support manual_one_way or manual_round_trip only. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.002 per successful request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "IGNAV_FLIGHTS_SEARCH_AIRPORTS",
         "name": "Search Airports",
-        "description": "Find supported airport-level IATA codes by code, airport name, city, country, or metro-style query. Use before fare search when an airport code is uncertain. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance."
+        "description": "Find supported airport-level IATA codes by code, airport name, city, country, or metro-style query. Use before fare search when an airport code is uncertain. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.002 per successful request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "IGNAV_FLIGHTS_SEARCH_FLEXIBLE_FARES",
         "name": "Search Flexible Fares",
-        "description": "Search one or two ordered flight legs for multi-city, open-jaw, or other flexible trips. Returns ranked complete journeys rather than every leg combination. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance."
+        "description": "Search one or two ordered flight legs for multi-city, open-jaw, or other flexible trips. Returns ranked complete journeys rather than every leg combination. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.002 per successful request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "IGNAV_FLIGHTS_SEARCH_ONE_WAY_FARES",
         "name": "Search One-Way Fares",
-        "description": "Search complete one-way flight itineraries between two airport or supported metro IATA codes on a future date. Returns ranked fares and ignav_id values for booking-link lookup. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance."
+        "description": "Search complete one-way flight itineraries between two airport or supported metro IATA codes on a future date. Returns ranked fares and ignav_id values for booking-link lookup. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.002 per successful request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "IGNAV_FLIGHTS_SEARCH_ROUND_TRIP_FARES",
         "name": "Search Round-Trip Fares",
-        "description": "Search complete round-trip itineraries between two airport or supported metro IATA codes with outbound and return dates. Returns ranked fares and ignav_id values for booking-link lookup. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance."
+        "description": "Search complete round-trip itineraries between two airport or supported metro IATA codes with outbound and return dates. Returns ranked fares and ignav_id values for booking-link lookup. Each successful call consumes one Ignav usage request and may be charged after the one-time free allowance.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.002 per successful request",
+            "discount": "0"
+          }
+        }
       }
     ],
     "triggers": [],
@@ -254906,7 +255367,14 @@
       {
         "slug": "JEV_LIST_MODELS",
         "name": "List Models",
-        "description": "List the Jev model names and aliases available to the connected account for use in evaluations."
+        "description": "List the Jev model names and aliases available to the connected account for use in evaluations.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "0",
+            "discount": "0"
+          }
+        }
       }
     ],
     "triggers": [],
@@ -272148,6 +272616,9 @@
   {
     "slug": "lusha",
     "name": "Lusha",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/lusha",
     "description": "B2B contact enrichment and prospecting platform providing verified email addresses, phone numbers, and company information",
     "category": "people & contact data",
@@ -272171,7 +272642,14 @@
       {
         "slug": "LUSHA_ENRICH_CONTACTS",
         "name": "Enrich Contacts",
-        "description": "Reveal Lusha-native contact data without table writes or third-party waterfalls."
+        "description": "Reveal Lusha-native contact data without table writes or third-party waterfalls.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "LUSHA_GET_ACCOUNT_USAGE",
@@ -272206,17 +272684,38 @@
       {
         "slug": "LUSHA_PROSPECT_CONTACTS",
         "name": "Prospect Contacts",
-        "description": "Search Lusha contacts by ICP filters and return one page of previews."
+        "description": "Search Lusha contacts by ICP filters and return one page of previews.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "LUSHA_SEARCH_AND_ENRICH_CONTACTS",
         "name": "Search and Enrich Contacts",
-        "description": "Find contacts from known identifiers and reveal their contact data."
+        "description": "Find contacts from known identifiers and reveal their contact data.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "LUSHA_SEARCH_CONTACTS",
         "name": "Search Contacts",
-        "description": "Find non-PII contact previews from known identifiers before enrichment."
+        "description": "Find non-PII contact previews from known identifiers before enrichment.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "LUSHA_UPDATE_SUBSCRIPTION",
@@ -281606,6 +282105,9 @@
   {
     "slug": "minimax",
     "name": "MiniMax",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/minimax",
     "description": "MiniMax provides multimodal AI APIs for text, video, speech, image, music, and file workflows.",
     "category": "artificial intelligence",
@@ -281694,7 +282196,14 @@
       {
         "slug": "MINIMAX_GENERATE_IMAGE",
         "name": "Generate Image",
-        "description": "Generate one or more images from a text prompt, optionally guided by a subject reference."
+        "description": "Generate one or more images from a text prompt, optionally guided by a subject reference.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.350 per 100 successfully generated image-01 images.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "MINIMAX_GENERATE_NATIVE_CHAT_COMPLETION",
@@ -281774,7 +282283,14 @@
       {
         "slug": "MINIMAX_SYNTHESIZE_SPEECH",
         "name": "Synthesize Speech",
-        "description": "Synchronously synthesize up to 9,999 characters of text and return the decoded audio as a downloadable file."
+        "description": "Synchronously synthesize up to 9,999 characters of text and return the decoded audio as a downloadable file.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.006 per 100 billable characters for speech-2.8-turbo; $0.010 per 100 billable characters for speech-2.8-hd.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "MINIMAX_TRANSCRIBE_AUDIO",
