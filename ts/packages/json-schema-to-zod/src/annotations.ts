@@ -56,6 +56,11 @@ const isIntegerNumber = (jsonSchema: JsonSchemaObject): boolean =>
 export const collectAnnotations = (
   jsonSchema: JsonSchemaObject
 ): Readonly<Record<string, Serializable>> | undefined => {
+  // Draft 7 ignores the keywords next to `$ref`, so none of them describe the value.
+  if ('$ref' in jsonSchema) {
+    return undefined;
+  }
+
   const annotations: Record<string, Serializable> = {};
 
   if (typeof jsonSchema.format === 'string') {

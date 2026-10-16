@@ -132,6 +132,19 @@ describe('v4 annotation forwarding', () => {
     expect(json.description).toBe('E');
   });
 
+  it('forwards nothing from the keywords next to a $ref', () => {
+    const schema: JsonSchema = {
+      type: 'object',
+      $defs: { text: { type: 'string' } },
+      properties: {
+        x: { $ref: '#/$defs/text', type: 'integer', format: 'int64', contentEncoding: 'base64' },
+      },
+      required: ['x'],
+    };
+    expect(jsonSchemaToZod(schema).safeParse({ x: 'hi' }).success).toBe(true);
+    expect(property(render(schema), 'x')).toEqual({});
+  });
+
   it('writes the description together with the annotations', () => {
     const converted = jsonSchemaToZod({ type: 'string', format: 'binary', description: 'Bytes' });
     expect(converted.description).toBe('Bytes');
