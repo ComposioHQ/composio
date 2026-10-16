@@ -300,6 +300,8 @@ Instant support is **per tool**. A toolkit supporting Instant does not mean ever
 
 Follow `next_cursor` when listing tools or toolkits, including pages with no Instant matches. Instant metadata is absent for older toolkit versions and ineligible tools. Neither `no_auth` nor `composio_managed_auth_schemes` indicates Instant support.
 
+You can also change price reporting on an existing Session with `session.update(instant={"return_prices_in_search": True})` in Python or `await session.update({ instant: { returnPricesInSearch: true } })` in TypeScript.
+
 ## Know which account runs the tool
 
 Composio uses your user's connection first, then an available shared connection, then an Instant account. Only calls through an Instant account incur an Instant charge. Your provider may separately bill calls made with your own account.

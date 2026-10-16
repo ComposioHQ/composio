@@ -3,7 +3,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
 import stringWidth from 'fast-string-width';
-import { Array as Arr, Data, Effect, pipe } from 'effect';
+import { Data, Effect } from 'effect';
 import {
   clampSpinnerMessage,
   getTerminalCapabilities,
@@ -23,11 +23,8 @@ class TestFailure extends Data.TaggedError('test/TestFailure')<{
 
 const booleanStates = [false, true] as const;
 
-const ttyCombinations = pipe(
-  Arr.Do,
-  Arr.bind('stdin', () => booleanStates),
-  Arr.bind('stdout', () => booleanStates),
-  Arr.bind('stderr', () => booleanStates)
+const ttyCombinations = booleanStates.flatMap(stdin =>
+  booleanStates.flatMap(stdout => booleanStates.map(stderr => ({ stdin, stdout, stderr })))
 );
 
 /** An intentional Node.js Writable test double matching Clack's output contract. */

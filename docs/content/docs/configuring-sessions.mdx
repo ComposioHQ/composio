@@ -119,6 +119,12 @@ The SDK never retries without the config or falls back to an unrestricted sessio
 
 In TypeScript, `session.config` exposes the configuration returned by the server. Call `session.update()` to change selected fields. It preserves omitted fields, updates `session.config` in place, and returns the updated configuration. See [Updating a session](/docs/how-composio-works#how-sessions-behave) for an example.
 
+`ToolRouterSessionConfig` and `ToolRouterSessionConfigHistoryConfig` use the API client's types. The SDK returns the config as sent by the API, without validating `instant` at runtime or removing `premium_usage`. `instant` is always present as `false` or a policy object. Use `ToolRouterSessionConfig['instant']` when you need its TypeScript type.
+
+When inspecting a returned config, handle `toolkits` and individual `tools` entries that contain only `require_approval`, without `enabled` or `disabled`. `tags` can also carry `require_approval`, and the config can include `proxy_execute`. These fields also appear in configurations returned by `session.listConfigHistory()`.
+
+In Python, `session.config.instant` is a model when it contains a policy. Read its fields with attribute access rather than dictionary indexing, just as you do for [Instant charges](/docs/instant-tools#return-the-charge-with-a-call).
+
 <Callout>
 If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
 </Callout>
@@ -948,7 +954,7 @@ await session.update({ manageConnections: { callbackUrl: null } });
 
 ### Clearing a block with null
 
-Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `multiAccount`, `search`, `execute`, and `experimental`.
+Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `proxyExecute`, `multiAccount`, `search`, `execute`, and `experimental`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -1119,6 +1125,42 @@ const tools = await session.tools();
 ```
 </Tab>
 </Tabs>
+
+### executeMeta() / execute_meta()
+
+Run a `COMPOSIO_*` [meta tool](/toolkits/meta-tools) directly from your session with a slug and optional arguments:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.create("user_123")
+result = session.execute_meta(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "send an email"}]},
+)
+print(result.data, result.result_type)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const result = await session.executeMeta("COMPOSIO_SEARCH_TOOLS", {
+  queries: [{ use_case: "send an email" }],
+});
+console.log(result.data, result.resultType);
+```
+</Tab>
+</Tabs>
+
+The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The response includes `resultType` (`result_type` in Python). If execution needs input, such as approval, the SDK raises `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python). Calls are sent once without retries, so retry only when the operation is safe to repeat.
+
+`COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Custom tools named in those calls are not executed in your process.
 
 ### authorize()
 

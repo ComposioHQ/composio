@@ -4,11 +4,15 @@
 
 ### Patch Changes
 
-- The CLI now uses `@composio/client@2.0.0-rc.18` (up from `2.0.0-rc.14`). No
+- `composio link` and `composio dev connected-accounts link` reword their usage
+  and status messages on stderr: the rejected `--auth-config` on the root
+  command, a toolkit passed together with `--auth-config`, a missing toolkit,
+  `--list` without a toolkit, a missing user id, `--auth-config` without a
+  developer project, an incomplete link response, a toolkit whose auth
+  Composio does not manage, and the waiting and timeout lines shown while a
+  link is pending. Exit codes and the JSON printed on stdout are unchanged.
+- The CLI now uses `@composio/client@2.0.0-rc.18` (up from `2.0.0-rc.17`). No
   command changes.
-- API requests now carry the CLI's product, version and runtime headers through
-  the API client's `identity` option instead of default headers. The headers
-  sent are unchanged.
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and
   project through its `scope`, instead of the CLI placing `x-user-api-key`,
@@ -16,6 +20,22 @@
   unchanged. The CLI no longer keeps a client per API key and project for the
   life of the process, so the user API key is held only by the client making
   the request.
+
+## 0.4.5
+
+### Patch Changes
+
+- Retry only API reads that are safe to repeat. Mutating calls are sent once,
+  including when a request times out after the server may have acted.
+- Commands that require login now fail consistently with a usage error.
+  Project-resolution failures retain their specific error type.
+- Tolerate API response fields the command does not consume while continuing
+  to validate fields used for output, credentials, and cached data.
+- The CLI now uses `@composio/client@2.0.0-rc.17` (up from `2.0.0-rc.14`). No
+  command changes.
+- API requests now carry the CLI's product, version and runtime headers through
+  the API client's `identity` option instead of default headers. The headers
+  sent are unchanged.
 - `--user-id` and `--project-name` are now flags of the `composio dev` group,
   accepted before or after the subcommand name (`composio dev --user-id alice
 toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
