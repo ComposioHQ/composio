@@ -46,8 +46,10 @@ const DEVELOPER_PROJECT = makeOrgProject({ id: 'proj_named', name: 'named', orgI
 
 const account = (overrides: Partial<ConnectedAccountItem> = {}): ConnectedAccountItem => ({
   id: 'con_existing',
-  alias: null,
+  // `word_id` precedes `alias` to match the model's field order, which is the order the
+  // decoded items carry into the `--list` payload asserted as a raw string below.
   word_id: 'castle',
+  alias: null,
   status: 'ACTIVE',
   status_reason: null,
   is_disabled: false,
@@ -240,6 +242,42 @@ const lines = MockConsole.getLines({ stripAnsi: true });
 /** The command's JSON result: `ui.output` prints it as the last console line. */
 const lastJson = lines.pipe(Effect.map(all => JSON.parse(String(all.at(-1))) as unknown));
 
+/** The payload as `link` prints it: a `toStdoutJson` string, key order included. */
+const toJson = (payload: object) => JSON.stringify(payload, null, 2);
+
+/** The `link.create` answer of the mock connected-account resources. */
+const LEGACY_LINK_TARGET = {
+  connected_account_id: 'con_test_link',
+  redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+} as const;
+
+/** The `toolRouter.session.link` answer of the handler test's client double. */
+const TOOL_ROUTER_LINK_TARGET = {
+  connected_account_id: 'con_new',
+  redirect_url: 'https://app.composio.dev/link?token=lt_test',
+} as const;
+
+/** The pending payload of a legacy link, byte for byte. */
+const legacyPendingJson = () =>
+  toJson({
+    status: 'pending',
+    message: 'Complete authorization by opening the URL',
+    connected_account_id: LEGACY_LINK_TARGET.connected_account_id,
+    redirect_url: LEGACY_LINK_TARGET.redirect_url,
+    project_type: 'DEVELOPER',
+  });
+
+/** The pending payload of a Tool Router link, byte for byte. */
+const toolRouterPendingJson = () =>
+  toJson({
+    status: 'pending',
+    message: 'Complete authorization by opening the URL',
+    connected_account_id: TOOL_ROUTER_LINK_TARGET.connected_account_id,
+    redirect_url: TOOL_ROUTER_LINK_TARGET.redirect_url,
+    toolkit: 'gmail',
+    project_type: 'CONSUMER',
+  });
+
 const devSurface = (flags: { userId?: string; projectName?: string } = {}) =>
   CommandSurface.dev({
     userId: Option.fromUndefinedOr(flags.userId),
@@ -313,33 +351,33 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
   );
 
   it.effect.each([
-    {
-      flow: 'list',
-      input: { toolkit: Option.some('gmail'), list: true },
-      expected: { toolkit: 'gmail', total: 1 },
-    },
-    {
-      flow: 'legacy',
-      input: { authConfig: Option.some('ac_gmail') },
-      expected: { status: 'pending', connected_account_id: 'con_test_link' },
-    },
-    {
-      flow: 'tool-router',
-      input: { toolkit: Option.some('gmail') },
-      expected: { status: 'pending', connected_account_id: 'con_new', toolkit: 'gmail' },
-    },
+    { flow: 'list', input: { toolkit: Option.some('gmail'), list: true } },
+    { flow: 'legacy', input: { authConfig: Option.some('ac_gmail') } },
+    { flow: 'tool-router', input: { toolkit: Option.some('gmail') } },
   ])('[Given] the flags select the $flow flow [Then] it runs that flow', c =>
     Effect.gen(function* () {
+      const fixtureAccount = account({ alias: 'work' });
       const { layer } = linkHandlerTest({
         surface: devSurface({ userId: 'user_1' }),
-        accounts: [account({ alias: 'work' })],
+        accounts: [fixtureAccount],
         directoryProject: directory(Option.none()),
       });
-      const result = yield* runConnectedAccountsLink(
+      const lastLine = yield* runConnectedAccountsLink(
         params({ ...c.input, alias: Option.some('second') })
-      ).pipe(Effect.andThen(lastJson), Effect.provide(layer));
+      ).pipe(
+        Effect.andThen(lines),
+        Effect.map(all => String(all.at(-1))),
+        Effect.provide(layer)
+      );
 
-      expect(result).toMatchObject(c.expected);
+      // The raw string, not JSON.parse, so a key reorder fails here.
+      expect(lastLine).toBe(
+        c.flow === 'list'
+          ? toJson({ toolkit: 'gmail', total: 1, items: [fixtureAccount] })
+          : c.flow === 'legacy'
+            ? legacyPendingJson()
+            : toolRouterPendingJson()
+      );
     })
   );
 });
@@ -395,11 +433,8 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
       ).pipe(Effect.andThen(lines), Effect.provide(layer));
 
       expect(output.at(-2)).toBe('No active connected accounts found for "gmail".');
-      expect(JSON.parse(String(output.at(-1)))).toStrictEqual({
-        toolkit: 'gmail',
-        items: [],
-        total: 0,
-      });
+      // The empty case lists `items` before `total`; this pins that order.
+      expect(String(output.at(-1))).toBe(toJson({ toolkit: 'gmail', items: [], total: 0 }));
     })
   );
 
@@ -482,13 +517,7 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
             params: { auth_config_id: 'ac_gmail', user_id: 'user_directory' },
           },
         ]);
-        expect(JSON.parse(String(output.at(-1)))).toStrictEqual({
-          status: 'pending',
-          message: 'Complete authorization by opening the URL',
-          connected_account_id: 'con_test_link',
-          redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
-          project_type: 'DEVELOPER',
-        });
+        expect(String(output.at(-1))).toBe(legacyPendingJson());
       })
   );
 
@@ -550,9 +579,9 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
     () =>
       Effect.gen(function* () {
         const { layer, requests } = linkHandlerTest({ accounts: [account()] });
-        const result = yield* handleToolRouterLink(
+        const output = yield* handleToolRouterLink(
           params({ toolkit: Option.some('gmail'), alias: Option.some(' work ') })
-        ).pipe(Effect.andThen(lastJson), Effect.provide(layer));
+        ).pipe(Effect.andThen(lines), Effect.provide(layer));
 
         expect(requests).toEqual([
           {
@@ -560,14 +589,34 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
             params: { sessionId: 'trs_handler_test', toolkit: 'gmail', alias: 'work' },
           },
         ]);
-        expect(result).toStrictEqual({
-          status: 'pending',
-          message: 'Complete authorization by opening the URL',
-          connected_account_id: 'con_new',
-          redirect_url: 'https://app.composio.dev/link?token=lt_test',
-          toolkit: 'gmail',
-          project_type: 'CONSUMER',
+        expect(String(output.at(-1))).toBe(toolRouterPendingJson());
+      })
+  );
+
+  it.effect(
+    '[Given] no --no-wait [Then] polls the account to ACTIVE and prints the active payload',
+    () =>
+      Effect.gen(function* () {
+        // `retrieve('con_new')` answers from the fixture, so polling succeeds on its first try.
+        const { layer } = linkHandlerTest({
+          accounts: [
+            account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null }),
+          ],
         });
+        const output = yield* handleToolRouterLink(
+          params({ toolkit: Option.some('gmail'), noWait: false })
+        ).pipe(Effect.andThen(lines), Effect.provide(layer));
+
+        expect(output).toContain('Connection successful');
+        expect(String(output.at(-1))).toBe(
+          toJson({
+            status: 'success',
+            message: 'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
+            connected_account_id: 'con_new',
+            toolkit: 'gmail',
+            redirect_url: 'https://app.composio.dev/link?token=lt_test',
+          })
+        );
       })
   );
 

@@ -6,10 +6,11 @@
 
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
-  command, a missing toolkit, `--list` without a toolkit, `--auth-config`
-  without a developer project, an incomplete link response, a toolkit whose
-  auth Composio does not manage, and the authorization timeout. Exit codes and
-  the JSON printed on stdout are unchanged.
+  command, a toolkit passed together with `--auth-config`, a missing toolkit,
+  `--list` without a toolkit, a missing user id, `--auth-config` without a
+  developer project, an incomplete link response, a toolkit whose auth
+  Composio does not manage, and the waiting and timeout lines shown while a
+  link is pending. Exit codes and the JSON printed on stdout are unchanged.
 
 ## 0.4.5
 
