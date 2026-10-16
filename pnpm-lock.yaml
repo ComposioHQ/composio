@@ -478,10 +478,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(supports-color@10.2.2)(zod@3.25.76)
+        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76)
       '@mastra/mcp':
         specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(supports-color@10.2.2)(zod@3.25.76))(express@5.3.0)(hono@4.13.13)(zod@3.25.76)
+        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76))(express@5.3.0)(hono@4.13.13)(zod@3.25.76)
       ai:
         specifier: ^6.0.302
         version: 6.0.303(zod@3.25.76)
@@ -632,6 +632,28 @@ importers:
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@4.5.4)
+    devDependencies:
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.4.3
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  ts/examples/approvals:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.32.1(@cfworker/json-schema@4.1.1)(zod@4.5.4)
+      dotenv:
+        specifier: 'catalog:'
+        version: 18.0.7
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -2716,12 +2738,6 @@ packages:
       '@modelcontextprotocol/sdk':
         optional: true
 
-  '@hono/node-server@2.1.1':
-    resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      hono: ^4
-
   '@hono/node-server@2.1.4':
     resolution: {integrity: sha512-2g1qeHl4BduwDn6L8nkAvDrPUWPMlkQ//a5NhP/zIyaXKMjZNRV+cG9Csu+BiJFf6+68pqzjf4Hi5sJGKHuS1g==}
     engines: {node: '>=20'}
@@ -4661,10 +4677,6 @@ packages:
     resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
     engines: {node: ^14.18.0 || >=16.10.0}
 
-  content-disposition@1.1.0:
-    resolution: {integrity: sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g==}
-    engines: {node: '>=18'}
-
   content-disposition@2.0.1:
     resolution: {integrity: sha512-e+H0ZXHSWYrENhQzw1LPuP4oF5MzVKmDU6d3hxlvaPEYLLg62MxtQNPRx4SYSuYJSBUgnQIG4HIN2tEtNv7Dog==}
     engines: {node: '>=18'}
@@ -4953,21 +4965,11 @@ packages:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@8.6.2:
-    resolution: {integrity: sha512-YH4ru+eOJxQABscKFfRCy9R7x9QFGdezclVMwwgFFndzS2Xnm0uo6B0ABZsLhcpeptGv2qvuJVWlQr9gQZoC3A==}
-    engines: {node: '>= 16'}
-    peerDependencies:
-      express: '>= 4.11'
-
   express-rate-limit@8.7.1:
     resolution: {integrity: sha512-2FXbqkygil3mZiXzEtM0IjE/UBmBNot0J1GEVrJT4JbrvwOSoEtqtO+wHbiMQELWe1eNvHoYRg2dkjOid+6JkA==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
-
-  express@5.2.1:
-    resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
-    engines: {node: '>= 18'}
 
   express@5.3.0:
     resolution: {integrity: sha512-qCqy1xSoaugxOD4IVHb1ZWdkvCF2W3aE2okKouWj8VwJ+ztskSiXoBnCSJqfKT+cVPJhuJqe9YLbY425+Zh00g==}
@@ -5154,10 +5156,6 @@ packages:
     resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
     engines: {node: '>=16.9.0'}
 
-  hono@4.13.9:
-    resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
-    engines: {node: '>=16.9.0'}
-
   hookable@6.1.1:
     resolution: {integrity: sha512-U9LYDy1CwhMCnprUfeAZWZGByVbhd54hwepegYTK7Pi5NvqEj63ifz5z+xukznehT7i6NIZRu89Ay1AZmRsLEQ==}
 
@@ -5236,10 +5234,6 @@ packages:
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
-
-  ip-address@10.7.3:
-    resolution: {integrity: sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==}
-    engines: {node: '>= 12'}
 
   ip-address@10.7.4:
     resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
@@ -5321,9 +5315,6 @@ packages:
 
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
-
-  jose@6.2.9:
-    resolution: {integrity: sha512-XrchZOFZUl/T3vTwRe8XK+cJrGtMF4th1ARnDfwbBXFKThGhlsxEE4Zu03AD/bjJSt/9jT/mxrOCkJWOg77aPA==}
 
   jpeg-js@0.4.4:
     resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
@@ -7934,10 +7925,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@hono/node-server@2.1.1(hono@4.13.9)':
-    dependencies:
-      hono: 4.13.9
-
   '@hono/node-server@2.1.4(hono@4.13.13)':
     dependencies:
       hono: 4.13.13
@@ -8368,7 +8355,7 @@ snapshots:
       tinyglobby: 0.2.17
       yaml: 2.9.0
 
-  '@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(supports-color@10.2.2)(zod@3.25.76)':
+  '@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76)':
     dependencies:
       '@a2a-js/sdk': 0.3.14(express@5.3.0)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)'
@@ -8381,7 +8368,7 @@ snapshots:
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@3.25.76)
-      '@modelcontextprotocol/sdk': 1.32.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.32.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
@@ -8460,9 +8447,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(supports-color@10.2.2)(zod@3.25.76))(express@5.3.0)(hono@4.13.13)(zod@3.25.76)':
+  '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76))(express@5.3.0)(hono@4.13.13)(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(supports-color@10.2.2)(zod@3.25.76)
+      '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76)
       '@modelcontextprotocol/client': 2.2.0
       '@modelcontextprotocol/core': 2.2.0
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(zod@3.25.76)
@@ -8557,9 +8544,9 @@ snapshots:
     optionalDependencies:
       hono: 4.13.13
 
-  '@modelcontextprotocol/sdk@1.32.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.32.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.9)
+      '@hono/node-server': 2.1.4(hono@4.13.13)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -8567,10 +8554,10 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      express: 5.2.1(supports-color@10.2.2)
-      express-rate-limit: 8.6.2(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
-      hono: 4.13.9
-      jose: 6.2.9
+      express: 5.3.0
+      express-rate-limit: 8.7.1(express@5.3.0)
+      hono: 4.13.13
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -8583,7 +8570,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.0(@cfworker/json-schema@4.1.1)(zod@4.5.4)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.9)
+      '@hono/node-server': 2.1.4(hono@4.13.13)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -8591,10 +8578,10 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      express: 5.2.1(supports-color@10.2.2)
-      express-rate-limit: 8.6.2(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
-      hono: 4.13.9
-      jose: 6.2.9
+      express: 5.3.0
+      express-rate-limit: 8.7.1(express@5.3.0)
+      hono: 4.13.13
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -9777,8 +9764,6 @@ snapshots:
 
   consola@3.4.2: {}
 
-  content-disposition@1.1.0: {}
-
   content-disposition@2.0.1: {}
 
   content-type@1.0.5: {}
@@ -10039,52 +10024,11 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.6.2(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2):
-    dependencies:
-      debug: 4.4.3(supports-color@10.2.2)
-      express: 5.2.1(supports-color@10.2.2)
-      ip-address: 10.7.3
-    transitivePeerDependencies:
-      - supports-color
-
   express-rate-limit@8.7.1(express@5.3.0):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       express: 5.3.0
       ip-address: 10.7.4
-    transitivePeerDependencies:
-      - supports-color
-
-  express@5.2.1(supports-color@10.2.2):
-    dependencies:
-      accepts: 2.0.0
-      body-parser: 2.3.0
-      content-disposition: 1.1.0
-      content-type: 1.0.5
-      cookie: 0.7.2
-      cookie-signature: 1.2.2
-      debug: 4.4.3(supports-color@10.2.2)
-      depd: 2.0.0
-      encodeurl: 2.0.0
-      escape-html: 1.0.3
-      etag: 1.8.1
-      finalhandler: 2.1.1
-      fresh: 2.0.0
-      http-errors: 2.0.1
-      merge-descriptors: 2.0.0
-      mime-types: 3.0.2
-      on-finished: 2.4.1
-      once: 1.4.0
-      parseurl: 1.3.3
-      proxy-addr: 2.0.8
-      qs: 6.16.0
-      range-parser: 1.3.0
-      router: 2.2.0
-      send: 1.2.1
-      serve-static: 2.2.1
-      statuses: 2.0.2
-      type-is: 2.1.0
-      vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
 
@@ -10305,8 +10249,6 @@ snapshots:
 
   hono@4.13.13: {}
 
-  hono@4.13.9: {}
-
   hookable@6.1.1: {}
 
   hookable@6.1.2: {}
@@ -10389,8 +10331,6 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  ip-address@10.7.3: {}
-
   ip-address@10.7.4: {}
 
   ipaddr.js@1.9.1: {}
@@ -10436,8 +10376,6 @@ snapshots:
   jju@1.4.0: {}
 
   jose@6.2.12: {}
-
-  jose@6.2.9: {}
 
   jpeg-js@0.4.4: {}
 

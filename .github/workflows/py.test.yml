@@ -242,12 +242,14 @@ jobs:
           cd python/
           source .venv/bin/activate
           ruff check --config config/ruff.toml composio/ tests/
+          ruff check --config config/ruff.toml examples/approvals.py examples/verify_approvals.py
 
       - name: Run Ruff Formatter Check
         run: |
           cd python/
           source .venv/bin/activate
           ruff format --check --config config/ruff.toml composio/ tests/
+          ruff format --check --config config/ruff.toml examples/approvals.py examples/verify_approvals.py
 
   integration-tests:
     name: Integration Tests
