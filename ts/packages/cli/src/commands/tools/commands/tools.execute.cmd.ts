@@ -921,11 +921,13 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       );
 
-    // The consumer surface executes through the Dashboard. `dev
-    // playground-execute` and developer projects stay on the backend.
+    // Root `execute` (the consumer surface, which is also what `composio run`
+    // spawns) goes through the Dashboard; `dev playground-execute` stays on the
+    // backend. The one exception is a backend URL overridden without a
+    // matching `COMPOSIO_WEB_URL`: the key is never sent to another
+    // deployment's Dashboard.
     const executesViaDashboard =
-      resolvedProject.projectType === 'CONSUMER' &&
-      (yield* resolveConsumerExecutionTransport) === 'dashboard';
+      params.surface === 'root' && (yield* resolveConsumerExecutionTransport) === 'dashboard';
 
     return {
       ui,
