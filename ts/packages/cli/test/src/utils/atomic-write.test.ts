@@ -151,9 +151,11 @@ describe('atomicWritePrivateFileString', () => {
         expect(collisionPaths).toHaveLength(5);
         expect(new Set(collisionPaths)).toHaveLength(5);
         expect(yield* fs.exists(target)).toBe(false);
-        for (const collisionPath of collisionPaths) {
-          expect(yield* fs.readFileString(collisionPath, 'utf8')).toBe('pre-existing contents');
-        }
+        expect(
+          yield* Effect.forEach(collisionPaths, collisionPath =>
+            fs.readFileString(collisionPath, 'utf8')
+          )
+        ).toEqual(Array.from({ length: 5 }, () => 'pre-existing contents'));
       })
     );
 

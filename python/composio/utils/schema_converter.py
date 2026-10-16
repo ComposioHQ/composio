@@ -36,6 +36,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
+    WithJsonSchema,
     model_validator,
 )
 from pydantic import (
@@ -2695,6 +2696,17 @@ def _convert_with_library(
     # references must fail closed instead of silently changing the field to str.
     if schema.get("type") == "object":
         document_root = root_schema if root_schema is not None else schema
+        if "const" in schema or "enum" in schema:
+            # Object literals must retain their exact value; model defaults
+            # would change it, and RootModel cannot use the extra-key mixin.
+            return _with_exact_validation_annotation(
+                t.Annotated[
+                    t.Dict[str, t.Any],
+                    WithJsonSchema(_schema_for_exact_validation(schema)),
+                ],
+                schema,
+                document_root,
+            )
         if _contains_unsatisfiable_schema(schema.get("properties", {})):
             try:
                 base_model = _convert_object_with_unsatisfiable_properties(

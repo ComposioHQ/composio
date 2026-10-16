@@ -1853,6 +1853,44 @@ describe('ToolRouter', () => {
       });
     });
 
+    describe('approval rules', () => {
+      const createPayload = () => mockClient.toolRouter.session.create.mock.calls[0][0];
+
+      it('sends requireApproval lists as require_approval', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: { enable: ['gmail', 'github'], requireApproval: ['github'] },
+          tools: {
+            gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] },
+            slack: { tags: { requireApproval: ['destructiveHint'] } },
+          },
+          tags: { requireApproval: ['destructiveHint'] },
+        });
+
+        expect(createPayload()).toMatchObject({
+          toolkits: { enable: ['gmail', 'github'], require_approval: ['github'] },
+          tools: {
+            gmail: { require_approval: ['GMAIL_SEND_EMAIL'] },
+            slack: { tags: { require_approval: ['destructiveHint'] } },
+          },
+          tags: { require_approval: ['destructiveHint'] },
+        });
+      });
+
+      it('sends noElicitationSupportFallback as experimental.no_elicitation_support_fallback', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: { requireApproval: ['gmail'] },
+          experimental: { noElicitationSupportFallback: 'allow' },
+        });
+
+        expect(createPayload().toolkits).toEqual({ require_approval: ['gmail'] });
+        expect(createPayload().experimental).toEqual({ no_elicitation_support_fallback: 'allow' });
+      });
+    });
+
     describe('session configs', () => {
       const createPayload = () => mockClient.toolRouter.session.create.mock.calls[0][0];
 

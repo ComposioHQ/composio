@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import * as FileSystem from 'effect/FileSystem';
-import { ConfigProvider, Console, Effect, Option } from 'effect';
+import { ConfigProvider, Effect, Option } from 'effect';
 import path from 'node:path';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -9,9 +9,12 @@ import { writeStoredAgentIdentity } from 'src/services/agents';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
+// The confirm prompt is only reached from an interactive terminal.
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
+    ...terminalUITestImpl,
     capabilities: Effect.succeed(
       getTerminalCapabilities({
         stdin: { isTTY: true },
@@ -19,37 +22,7 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
         stderr: { isTTY: true },
       })
     ),
-    output: data => Console.log(data),
-    error: data => Console.error(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
     confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: (_msg: string) => Effect.void,
-        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
-        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
-      }),
   });
 
 const setupLoggedInAgent = Effect.gen(function* () {

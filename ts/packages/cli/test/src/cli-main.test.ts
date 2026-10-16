@@ -5,9 +5,31 @@ import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
 
 describe('CLI process error handling', () => {
-  it('records help and version as successes and invalid help as a failure', () => {
-    const configDirectory = tempy.temporaryDirectory();
-    for (const args of [[], ['help'], ['--help'], ['--version'], ['help', 'orgz']]) {
+  it.each([
+    { args: [], status: 0, recorded: 'CLI_COMMAND_SUCCEEDED', absent: 'CLI_COMMAND_FAILED' },
+    { args: ['help'], status: 0, recorded: 'CLI_COMMAND_SUCCEEDED', absent: 'CLI_COMMAND_FAILED' },
+    {
+      args: ['--help'],
+      status: 0,
+      recorded: 'CLI_COMMAND_SUCCEEDED',
+      absent: 'CLI_COMMAND_FAILED',
+    },
+    {
+      args: ['--version'],
+      status: 0,
+      recorded: 'CLI_COMMAND_SUCCEEDED',
+      absent: 'CLI_COMMAND_FAILED',
+    },
+    {
+      args: ['help', 'orgz'],
+      status: 1,
+      recorded: 'CLI_COMMAND_FAILED',
+      absent: 'CLI_COMMAND_SUCCEEDED',
+    },
+  ])(
+    'records help and version as successes and invalid help as a failure: `composio $args` is $recorded',
+    ({ args, status, recorded, absent }) => {
+      const configDirectory = tempy.temporaryDirectory();
       const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
         cwd: process.cwd(),
         encoding: 'utf8',
@@ -20,12 +42,11 @@ describe('CLI process error handling', () => {
           COMPOSIO_CLI_TELEMETRY_DEBUG: '1',
         },
       });
-      const invalid = args.includes('orgz');
-      expect(result.status).toBe(invalid ? 1 : 0);
-      expect(result.stderr).toContain(invalid ? 'CLI_COMMAND_FAILED' : 'CLI_COMMAND_SUCCEEDED');
-      expect(result.stderr).not.toContain(invalid ? 'CLI_COMMAND_SUCCEEDED' : 'CLI_COMMAND_FAILED');
+      expect(result.status).toBe(status);
+      expect(result.stderr).toContain(recorded);
+      expect(result.stderr).not.toContain(absent);
     }
-  });
+  );
 
   it('prints unreported typed execute failures and exits non-zero', () => {
     const configDirectory = tempy.temporaryDirectory();
@@ -59,6 +80,60 @@ describe('CLI process error handling', () => {
     expect(`${result.stdout}\n${result.stderr}`).toContain(
       'Expected a JSON object for tool arguments'
     );
+  });
+
+  it('reports a missing login as one line and exits non-zero without a defect dump', () => {
+    const configDirectory = tempy.temporaryDirectory();
+
+    const result = spawnSync('bun', ['run', 'src/bin.ts', 'tools', 'list', 'gmail'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CI: '1',
+        NO_COLOR: '1',
+        COMPOSIO_CACHE_DIR: configDirectory,
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('You are not logged in yet. Please run `composio login`.');
+    expect(result.stderr).not.toContain('NotLoggedInError');
+    expect(result.stderr).not.toContain('Sources');
+  });
+
+  it('reports an unresolved project as one line and exits non-zero without a defect dump', () => {
+    const configDirectory = tempy.temporaryDirectory();
+    fs.writeFileSync(
+      path.join(configDirectory, 'user_data.json'),
+      JSON.stringify({
+        api_key: 'test-api-key',
+        base_url: 'https://backend.composio.dev',
+        web_url: 'https://platform.composio.dev',
+        org_id: null,
+        test_user_id: null,
+      })
+    );
+
+    const result = spawnSync('bun', ['run', 'src/bin.ts', 'connections', 'list'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CI: '1',
+        NO_COLOR: '1',
+        COMPOSIO_CACHE_DIR: configDirectory,
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain(
+      'No current org configured. Run `composio login` or `composio dev orgs switch`.'
+    );
+    expect(result.stderr).not.toContain('ProjectResolutionError');
+    expect(result.stderr).not.toContain('Sources');
   });
 
   it('reports a bare `composio run` as a usage error without a defect dump', () => {

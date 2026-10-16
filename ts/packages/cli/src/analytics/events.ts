@@ -191,6 +191,7 @@ const KNOWN_COMMAND_TOKENS = new Set([
 ]);
 
 const TOOL_NOT_FOUND_PATTERN = /\btool\b.*\bnot found\b/i;
+const TOOL_VALIDATION_PATTERN = /\b(?:validation|invalid parameter|invalid argument)\b/i;
 const TOOL_NOT_FOUND_CODES: ReadonlySet<number> = new Set([
   1147, // MCP_ToolNotFound
   1800, // ActionExecute_ToolNotFound
@@ -822,23 +823,24 @@ export const isMaybeToolNotFoundError = (params: {
   readonly errorSlug?: string;
   readonly status?: number;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) ||
-  params.status === 404 ||
-  params.errorSlug?.toLowerCase().includes('notfound') === true ||
-  TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) return true;
+  if (params.status === 404) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('notfound')) return true;
+  return TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+};
 
 export const isMaybeToolValidationError = (params: {
   readonly message?: string;
   readonly errorSlug?: string;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) ||
-  params.errorSlug?.toLowerCase().includes('validation') === true ||
-  params.errorSlug?.toLowerCase().includes('invalidparameter') === true ||
-  /\bvalidation\b/i.test(params.message ?? '') ||
-  /\binvalid parameter\b/i.test(params.message ?? '') ||
-  /\binvalid argument\b/i.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('validation') || errorSlug.includes('invalidparameter')) return true;
+  return TOOL_VALIDATION_PATTERN.test(params.message ?? '');
+};
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;

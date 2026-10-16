@@ -30,3 +30,30 @@ export type AuthConfigItem = Schema.Schema.Type<typeof AuthConfigItem>;
 
 export const AuthConfigItems = Schema.Array(AuthConfigItem);
 export type AuthConfigItems = Schema.Schema.Type<typeof AuthConfigItems>;
+
+// Auth config list response (single page with total_items for "Listing X of Y" display)
+export const AuthConfigListResponse = Schema.Struct({
+  items: AuthConfigItems,
+  total_items: Schema.Int,
+  total_pages: Schema.Int,
+  current_page: Schema.Int,
+  next_cursor: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'AuthConfigListResponse' });
+export type AuthConfigListResponse = Schema.Schema.Type<typeof AuthConfigListResponse>;
+
+// `auth-configs create` prints this response to stdout, so it stays an
+// allowlist rather than the client's full type: a field the API adds later
+// must not reach a pipe without a decision here.
+export const AuthConfigCreateResponse = Schema.Struct({
+  auth_config: Schema.Struct({
+    id: Schema.String,
+    auth_scheme: Schema.String,
+    is_composio_managed: Schema.Boolean,
+  }),
+  toolkit: Schema.Struct({
+    slug: Schema.String,
+  }),
+}).annotate({ identifier: 'AuthConfigCreateResponse' });
+export type AuthConfigCreateResponse = Schema.Schema.Type<typeof AuthConfigCreateResponse>;

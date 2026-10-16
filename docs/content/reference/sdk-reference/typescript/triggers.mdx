@@ -20,7 +20,7 @@ Create a new trigger instance for a user
 If the connected account id is not provided, the first connected account for the user and toolkit will be used
 
 ```typescript
-async create(userId: string, slug: string, body?: { connectedAccountId?: string; triggerConfig?: Record<string, unknown> }, requestOptions?: ComposioRequestOptions): Promise<{ triggerId: string }>
+async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceUpsertResponse>
 ```
 
 **Parameters**
@@ -29,12 +29,12 @@ async create(userId: string, slug: string, body?: { connectedAccountId?: string;
 |------|------|-------------|
 | `userId` | `string` | The user id of the trigger instance |
 | `slug` | `string` | The slug of the trigger instance |
-| `body?` | `\{ connectedAccountId?: string; triggerConfig?: Record<string, unknown> \}` | The parameters to create the trigger instance |
+| `body?` | `TriggerInstanceUpsertParams` | The parameters to create the trigger instance |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ triggerId: string \}>` — The created trigger instance
+`Promise<TriggerInstanceUpsertResponse>` — The created trigger instance
 
 ---
 
@@ -43,7 +43,7 @@ async create(userId: string, slug: string, body?: { connectedAccountId?: string;
 Delete a trigger instance
 
 ```typescript
-async delete(triggerId: string, requestOptions?: ComposioRequestOptions): Promise<{ triggerId: string }>
+async delete(triggerId: string, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceManageDeleteResponse>
 ```
 
 **Parameters**
@@ -55,7 +55,7 @@ async delete(triggerId: string, requestOptions?: ComposioRequestOptions): Promis
 
 **Returns**
 
-`Promise<\{ triggerId: string \}>`
+`Promise<TriggerInstanceManageDeleteResponse>`
 
 ---
 
@@ -107,7 +107,7 @@ Retrieve a trigger type by its slug for the provided version of the app
 Use the global toolkit versions param when initializing composio to pass a toolkitversion
 
 ```typescript
-async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<{ config: Record<string, unknown>; description: string; instructions?: string; name: string; payload: Record<string, unknown>; slug: string; toolkit: { logo: string; name: string; slug: string }; version?: string }>
+async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<TriggersTypeRetrieveResponse>
 ```
 
 **Parameters**
@@ -119,7 +119,7 @@ async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<{ 
 
 **Returns**
 
-`Promise<\{ config: Record<string, unknown>; description: string; instructions?: string; name: string; payload: Record<string, unknown>; slug: string; toolkit: \{ logo: string; name: string; slug: string \}; version?: string \}>` — The trigger type object
+`Promise<TriggersTypeRetrieveResponse>` — The trigger type object
 
 ---
 
@@ -128,19 +128,19 @@ async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<{ 
 Fetch list of all the active triggers
 
 ```typescript
-async listActive(query?: { authConfigIds?: string[] | null; connectedAccountIds?: string[] | null; cursor?: string; limit?: number; showDisabled?: boolean | null; triggerIds?: string[] | null; triggerNames?: string[] | null }, requestOptions?: ComposioRequestOptions): Promise<{ items: { connectedAccountId: string; disabledAt: string | null; id: string; state: Record<string, unknown>; triggerConfig: Record<string, unknown>; triggerData?: string; triggerName: string; updatedAt: string; uuid?: string }[]; nextCursor: string | null; totalPages: number }>
+async listActive(query?: TriggerInstanceListActiveParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceListActiveResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `\{ authConfigIds?: string[] \| null; connectedAccountIds?: string[] \| null; cursor?: string; limit?: number; showDisabled?: boolean \| null; triggerIds?: string[] \| null; triggerNames?: string[] \| null \}` | The query parameters to filter the trigger instances |
+| `query?` | `TriggerInstanceListActiveParams` | The query parameters to filter the trigger instances |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ items: \{ connectedAccountId: string; disabledAt: string \| null; id: string; state: Record<string, unknown>; triggerConfig: Record<string, unknown>; triggerData?: string; triggerName: string; updatedAt: string; uuid?: string \}[]; nextCursor: string \| null; totalPages: number \}>` — List of trigger instances
+`Promise<TriggerInstanceListActiveResponse>` — List of trigger instances
 
 **Example**
 
@@ -160,7 +160,7 @@ Fetches the list of all the available trigger enums
 This method is used by the CLI where filters are not required.
 
 ```typescript
-async listEnum(requestOptions?: ComposioRequestOptions): Promise<string[]>
+async listEnum(requestOptions?: ComposioRequestOptions): Promise<TriggersTypeRetrieveEnumResponse>
 ```
 
 **Parameters**
@@ -171,7 +171,7 @@ async listEnum(requestOptions?: ComposioRequestOptions): Promise<string[]>
 
 **Returns**
 
-`Promise<string[]>`
+`Promise<TriggersTypeRetrieveEnumResponse>`
 
 ---
 
@@ -180,19 +180,19 @@ async listEnum(requestOptions?: ComposioRequestOptions): Promise<string[]>
 List all the trigger types
 
 ```typescript
-async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: string[] | null }, requestOptions?: ComposioRequestOptions): Promise<{ items: { config: Record<string, unknown>; description: string; instructions?: string; name: string; payload: Record<string, unknown>; slug: string; toolkit: { logo: string; name: string; slug: string }; version?: string }[]; nextCursor?: string | null; totalPages: number }>
+async listTypes(query?: TriggersTypeListParams, requestOptions?: ComposioRequestOptions): Promise<TriggersTypeListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `\{ cursor?: string; limit?: number \| null; toolkits?: string[] \| null \}` | The query parameters to filter the trigger types |
+| `query?` | `TriggersTypeListParams` | The query parameters to filter the trigger types |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ items: \{ config: Record<string, unknown>; description: string; instructions?: string; name: string; payload: Record<string, unknown>; slug: string; toolkit: \{ logo: string; name: string; slug: string \}; version?: string \}[]; nextCursor?: string \| null; totalPages: number \}>` — The list of trigger types
+`Promise<TriggersTypeListResponse>` — The list of trigger types
 
 ---
 
@@ -283,14 +283,14 @@ If a subscription already exists, the first subscription is updated. Otherwise a
 subscription is created. By default this subscribes to V3 trigger message events.
 
 ```typescript
-async setWebhookSubscription(params: { enabledEvents?: string[]; version?: 'V1' | 'V2' | 'V3'; webhookUrl: string }): Promise<WebhookSubscription>
+async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<WebhookSubscription>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `params` | `\{ enabledEvents?: string[]; version?: 'V1' \| 'V2' \| 'V3'; webhookUrl: string \}` |
+| `params` | `SetWebhookSubscriptionParams` |
 
 **Returns**
 
@@ -311,15 +311,15 @@ await composio.triggers.setWebhookSubscription({
 Subscribe to all the triggers
 
 ```typescript
-async subscribe(fn: (_data: { id: string; metadata: { connectedAccount: { authConfigId: string; authConfigUUID: string; id: string; status: 'ACTIVE' | 'INACTIVE'; userId: string; uuid: string }; id: string; toolkitSlug: string; triggerConfig: Record<string, unknown>; triggerData?: string; triggerSlug: string; uuid: string }; originalPayload?: Record<string, unknown>; payload?: Record<string, unknown>; toolkitSlug: string; triggerSlug: string; userId: string; uuid: string }) => void, filters?: { authConfigId?: string; connectedAccountId?: string; toolkits?: string[]; triggerData?: string; triggerId?: string; triggerSlug?: string[]; userId?: string }, onSubscriptionError?: (data: Record<string, unknown>) => void): Promise<void>
+async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters?: TriggerSubscribeParams, onSubscriptionError?: (data: Record<string, unknown>) => void): Promise<void>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `fn` | `(_data: \{ id: string; metadata: \{ connectedAccount: \{ authConfigId: string; authConfigUUID: string; id: string; status: 'ACTIVE' \| 'INACTIVE'; userId: string; uuid: string \}; id: string; toolkitSlug: string; triggerConfig: Record<string, unknown>; triggerData?: string; triggerSlug: string; uuid: string \}; originalPayload?: Record<string, unknown>; payload?: Record<string, unknown>; toolkitSlug: string; triggerSlug: string; userId: string; uuid: string \}) => void` | The function to call when a trigger is received |
-| `filters?` | `\{ authConfigId?: string; connectedAccountId?: string; toolkits?: string[]; triggerData?: string; triggerId?: string; triggerSlug?: string[]; userId?: string \}` | The filters to apply to the triggers |
+| `fn` | `(_data: IncomingTriggerPayload) => void` | The function to call when a trigger is received |
+| `filters?` | `TriggerSubscribeParams` | The filters to apply to the triggers |
 | `onSubscriptionError?` | `(data: Record<string, unknown>) => void` | Optional callback invoked with the raw Pusher payload when the underlying subscription fails (for example on auth or permission rejection). The subscribe promise still resolves; this is the only programmatic signal of the failure. Errors thrown from — or promises rejected by — the callback are contained and logged. |
 
 **Returns**
@@ -365,7 +365,7 @@ await triggers.unsubscribe();
 Update an existing trigger instance
 
 ```typescript
-async update(triggerId: string, body: { status: 'enable' | 'disable' }, requestOptions?: ComposioRequestOptions): Promise<{ status: 'success' }>
+async update(triggerId: string, body: TriggerInstanceManageUpdateParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceManageUpdateResponse>
 ```
 
 **Parameters**
@@ -373,12 +373,12 @@ async update(triggerId: string, body: { status: 'enable' | 'disable' }, requestO
 | Name | Type | Description |
 |------|------|-------------|
 | `triggerId` | `string` | The Id of the trigger instance |
-| `body` | `\{ status: 'enable' \| 'disable' \}` | The parameters to update the trigger instance |
+| `body` | `TriggerInstanceManageUpdateParams` | The parameters to update the trigger instance |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ status: 'success' \}>` — The updated trigger instance response
+`Promise<TriggerInstanceManageUpdateResponse>` — The updated trigger instance response
 
 ---
 
@@ -394,14 +394,14 @@ The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${pa
 and is expected in the format: `v1,base64EncodedSignature`
 
 ```typescript
-async verifyWebhook(params: { id: string; payload: string; secret: string; signature: string; timestamp: string; tolerance?: number }): Promise<VerifyWebhookResult>
+async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params` | `\{ id: string; payload: string; secret: string; signature: string; timestamp: string; tolerance?: number \}` | The verification parameters |
+| `params` | `VerifyWebhookParams` | The verification parameters |
 
 **Returns**
 

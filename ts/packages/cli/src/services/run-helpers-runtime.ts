@@ -144,6 +144,17 @@ export const parseJson = (text: string): unknown => {
   );
 };
 
+// The most specific text a failed proxy response carries: a bare JSON string,
+// then its `message`, then its `error`, then the raw body.
+const proxyFailureDetail = (parsed: unknown, raw: string): string | undefined => {
+  if (typeof parsed === 'string') return parsed;
+  if (Predicate.isObject(parsed)) {
+    if (typeof parsed.message === 'string') return parsed.message;
+    if (typeof parsed.error === 'string') return parsed.error;
+  }
+  return raw.trim() || undefined;
+};
+
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
 const truncateDebugText = (value: unknown, max = 240) => {
@@ -697,16 +708,7 @@ const createProxyHelper = (params: {
     const raw = await response.text();
     const parsed = parseJson(raw);
     if (!response.ok) {
-      const responseMessage = Predicate.isObject(parsed) ? parsed.message : undefined;
-      const responseError = Predicate.isObject(parsed) ? parsed.error : undefined;
-      const detail =
-        typeof parsed === 'string'
-          ? parsed
-          : typeof responseMessage === 'string'
-            ? responseMessage
-            : typeof responseError === 'string'
-              ? responseError
-              : raw.trim() || undefined;
+      const detail = proxyFailureDetail(parsed, raw);
       const error = new Error(
         `Composio proxy request failed with status ${response.status}${detail ? `: ${detail}` : ''}`
       );

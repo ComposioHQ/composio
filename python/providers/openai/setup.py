@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_openai",
-    version="0.27.0",
+    version="0.28.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your OpenAI Function Call.",
@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     install_requires=["openai>=2.48.0", "composio"],
     include_package_data=True,
 )

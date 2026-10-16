@@ -156,6 +156,31 @@
               {
                 "name": "@effect/platform-bun",
                 "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
+              },
+              {
+                "name": "@composio/client",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination.js",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination.mjs",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/effect",
+                "importNames": ["make", "layer", "layerConfig", "layerFetch"],
+                "message": "Get the client from ComposioClientSingleton, which scopes it to the user, org and project and counts its requests."
               }
             ],
             "patterns": [
@@ -168,6 +193,14 @@
         ],
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
           {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
@@ -222,6 +255,18 @@
         "eslint-js/no-restricted-syntax": [
           "error",
           {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": ":matches(ForStatement, ForInStatement, ForOfStatement)",
+            "message": "No for loops in tests: parameterize with it.each/describe.each, and use array methods in helpers."
+          },
+          {
             "selector": "MemberExpression[object.name='Effect'][property.name=/^run/]",
             "message": "Run Effects through @effect/vitest (it.effect, it.live) instead of Effect.run* in tests."
           },
@@ -273,6 +318,16 @@
                 "name": "@effect/platform-bun",
                 "message": "Import the module by subpath, e.g. @effect/platform-bun/BunFileSystem; the package barrel is not part of the Effect v4 layout."
               },
+              {
+                "name": "@composio/client",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
+              {
+                "name": "@composio/client/pagination",
+                "allowTypeImports": true,
+                "message": "Call the API through the client from @composio/client/effect, obtained from ComposioClientSingleton. Type-only imports are allowed."
+              },
               { "name": "zod", "message": "Use Schema from effect for tool input validation." }
             ],
             "patterns": [
@@ -286,6 +341,14 @@
         ],
         "eslint-js/no-restricted-syntax": [
           "error",
+          {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
           {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
@@ -348,6 +411,14 @@
         "eslint-js/no-restricted-syntax": [
           "error",
           {
+            "selector": "MemberExpression[property.name='Do']",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
+            "selector": "MemberExpression[object.name=/^(Effect|Arr|Array|Option|Result|Stream)$/][property.name=/^(bind|bindTo|let)$/]",
+            "message": "Do notation is banned: use Effect.gen, or plain map/flatMap."
+          },
+          {
             "selector": "TryStatement",
             "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
           },
@@ -382,6 +453,42 @@
           {
             "selector": "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
             "message": "Read environment variables through effect/Config instead of process.env."
+          }
+        ]
+      }
+    },
+    {
+      // The JSON Schema semantics of the Zod converter are written once over
+      // an opaque schema type. Only the backends, the public type aliases, and
+      // the two entry modules speak Zod.
+      "files": [
+        "ts/packages/json-schema-to-zod/src/parsers/**/*.ts",
+        "ts/packages/json-schema-to-zod/src/utils/**/*.ts",
+        "ts/packages/json-schema-to-zod/src/convert.ts",
+        "ts/packages/json-schema-to-zod/src/context.ts",
+        "ts/packages/json-schema-to-zod/src/annotations.ts",
+        "ts/packages/json-schema-to-zod/src/whole-schema-validation.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              {
+                "name": "zod",
+                "message": "Shared converter code calls the backend on the parse context; only src/backend/** may import Zod."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["zod/*"],
+                "message": "Shared converter code calls the backend on the parse context; only src/backend/** may import Zod."
+              }
+            ]
           }
         ]
       }

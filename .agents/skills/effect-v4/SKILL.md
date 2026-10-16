@@ -19,7 +19,9 @@ See [versions.json](versions.json) for the full matrix (also `typescript`, `vite
 ## Read next
 
 - [references/core-patterns.md](references/core-patterns.md) — services, layers, typed
-  errors, Schema, choosing between `Effect.gen` and `Effect.fn`, and the v3→v4 rename table
+  errors, Schema, choosing between `Effect.gen` and `Effect.fn`, `Option` combinators in
+  place of `isSome` ternaries, driving time in tests with
+  `TestClock` (fork, adjust until the fiber settles, join) instead of `it.live`, and the v3→v4 rename table
   (labeled historical, for recognizing stale patterns).
 - [references/cli-surface.md](references/cli-surface.md) — `effect/cli`:
   `Command`, `Flag`, `Argument`, `GlobalFlag`, `CliConfig`, the custom

@@ -1,31 +1,21 @@
 import { Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { requireAuth } from 'src/effects/require-auth';
+import { failedWith, requestError } from 'src/effects/request-error';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
+import { idempotent } from 'src/services/composio-request';
 
-class ConnectedAccountsListRequestError extends Data.TaggedError(
+class ConnectedAccountsListRequestError extends requestError(
   'commands/ConnectedAccountsListRequestError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+) {}
 
 const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Filter by user ID'),
   Flag.optional
 );
 
@@ -56,20 +46,17 @@ const limit = Flag.Int('limit').pipe(
  */
 export const connectedAccountsCmd$List = Command.make(
   'list',
-  { toolkits, userId, status, limit },
-  ({ toolkits, userId, status, limit }) =>
+  { toolkits, status, limit },
+  ({ toolkits, status, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
+      const { userId } = yield* CommandSurface;
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
 
       const toolkitSlugs = Option.isSome(toolkits)
         ? toolkits.value.split(',').map(s => s.trim())
         : undefined;
-      const resolvedProject = yield* resolveCommandProject({
-        mode: 'developer',
-      }).pipe(Effect.mapError(formatResolveCommandProjectError));
+      const resolvedProject = yield* resolveSurfaceProject('developer');
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,
@@ -77,20 +64,17 @@ export const connectedAccountsCmd$List = Command.make(
 
       const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
-        Effect.tryPromise({
-          try: () =>
-            client.connectedAccounts.list({
+        client.connectedAccounts
+          .list(
+            {
               toolkit_slugs: toolkitSlugs,
               user_ids: Option.isSome(userId) ? [userId.value] : undefined,
               statuses: Option.isSome(status) ? [status.value] : undefined,
               limit: clampLimit(limit),
-            }),
-          catch: cause =>
-            new ConnectedAccountsListRequestError({
-              message: 'Failed to list connected accounts.',
-              cause,
-            }),
-        })
+            },
+            idempotent
+          )
+          .pipe(failedWith(ConnectedAccountsListRequestError, 'Failed to list connected accounts.'))
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);
 

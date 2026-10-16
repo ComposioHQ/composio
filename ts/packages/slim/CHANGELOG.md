@@ -1,5 +1,54 @@
 # @composio/slim
 
+## 0.25.0
+
+### Minor Changes
+
+- 79c2d1d: Requires `@composio/client` `2.0.0-rc.17`. The SDK now reports itself to the API client through the client's `identity` option instead of default headers. The headers sent with each request are unchanged, with one exception: on Cloudflare Workers and Vercel Edge with Node.js compatibility enabled, `x-client-runtime` now names that runtime instead of `nodejs`, and the polyfilled Node.js version is no longer sent as `x-runtime-version`. A `createSession()` clone no longer copies these headers into its `defaultHeaders`.
+
+  The API client owns these headers, so `defaultHeaders` and `createSession({ headers })` now reject `x-client-provenance`, `x-client-version`, `x-client-library`, `x-client-library-version`, `x-client-language`, `x-client-runtime`, `x-sdk-version`, `x-source`, `x-framework`, `x-runtime` and `x-runtime-version` with a `ComposioError` from `@composio/client`. The SDK used to overwrite such entries silently.
+
+  A custom provider whose `name` cannot be sent as a header value (anything other than printable ASCII with no leading or trailing whitespace) is reported as `unknown` in `x-framework`.
+
+- 40546c3: Add experimental support for tool calls that need the user's approval.
+
+  Sessions accept a `requireApproval` list next to the `toolkits`, `tools` and `tags` filters on `create()` and `update()`. A call to a matching tool doesn't run: `session.execute()` and `session.executeMeta()` throw `ComposioToolInputRequiredError` with the questions on `inputRequests`. To answer, repeat the same call with the user's answers in `inputResponses` and the error's `requestState`:
+
+  ```ts
+  const session = await composio.create('user_123', {
+    tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
+  });
+
+  try {
+    await session.execute('GMAIL_SEND_EMAIL', args);
+  } catch (error) {
+    if (!(error instanceof ComposioToolInputRequiredError)) throw error;
+    const inputResponses = await promptUser(error.inputRequests);
+    await session.execute('GMAIL_SEND_EMAIL', args, {
+      inputResponses,
+      requestState: error.requestState,
+    });
+  }
+  ```
+
+  `promptUser` is a placeholder for your application's consent UI. Display each request, wait for the user's response, and return the answers keyed by request ID. Forward `decline` and `cancel` responses unchanged.
+
+  `experimental.noElicitationSupportFallback` (`'deny'` or `'allow'`) sets what happens to such a call when the session's MCP client can't ask the user.
+
+  `session.executeMeta()` now takes these answers as its third argument, so its request options move to the fourth.
+
+  The Python SDK gains the same `require_approval` lists, `experimental.no_elicitation_support_fallback`, and `input_responses` and `request_state` on `session.execute()` and `session.execute_meta()`.
+
+### Patch Changes
+
+- f9a972b: Update the owned API client to `@composio/client@2.0.0-rc.16`. The SDK's public API and runtime behavior are unchanged.
+- 04cd5c4: Fix the trigger subscription lifecycle and contain errors from trigger handlers.
+
+  - `triggers.unsubscribe()` now closes the realtime connection, so a Node process can exit once it has unsubscribed. A later `triggers.subscribe()` opens a new connection.
+  - `triggers.unsubscribe()` before any `subscribe()` no longer fetches realtime credentials or creates a client.
+  - Concurrent `subscribe()` calls share one connection, and `unsubscribe()` cancels a subscription that is still connecting, so it never opens a connection or delivers events afterwards.
+  - A rejected promise from an `async` trigger handler is logged like a synchronous throw instead of escaping as an unhandled rejection that ends the process. Handler failures log the error's message rather than `{}`.
+
 ## 0.24.0
 
 ### Minor Changes

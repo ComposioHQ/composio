@@ -24,6 +24,7 @@ The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. This
 | additionalProperties   | Strict, passthrough, and typed catchall modes              |
 | Complex nested arrays  | Arrays of objects with nested arrays                       |
 | Union with constraints | anyOf with minLength, minimum, and required fields         |
+| `/v4` entry            | Builds a Zod v4 schema and checks the zod floor it needs   |
 
 ## Test Setup
 
@@ -31,6 +32,7 @@ This test runs **directly in Bun** (no Docker fixtures). The test file imports `
 
 ```typescript
 import { jsonSchemaToZod, type JsonSchema } from '@composio/json-schema-to-zod';
+import { jsonSchemaToZod as jsonSchemaToZodV4 } from '@composio/json-schema-to-zod/v4';
 ```
 
 Tests use `bun:test` assertions to verify schema conversion and parsing behavior.

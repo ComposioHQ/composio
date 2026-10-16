@@ -8,9 +8,8 @@ import { APP_CONFIG } from 'src/config';
  */
 export const setMinimumLogLevel = (logLevelFromCLI: Option.Option<LogLevel.LogLevel>) =>
   APP_CONFIG.LOG_LEVEL.pipe(
-    Effect.map(
-      (logLevelFromEnv): LogLevel.LogLevel =>
-        Option.getOrUndefined(logLevelFromCLI) ?? logLevelFromEnv ?? 'Info'
+    Effect.map((logLevelFromEnv): LogLevel.LogLevel =>
+      Option.getOrElse(logLevelFromCLI, () => logLevelFromEnv ?? 'Info')
     ),
     Effect.map(logLevel => Layer.succeed(References.MinimumLogLevel, logLevel)),
     Layer.unwrap

@@ -2,7 +2,6 @@ import { Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigsTable, formatAuthConfigsJson } from '../format';
@@ -37,8 +36,6 @@ export const authConfigsCmd$List = Command.make(
   { toolkits, query, limit },
   ({ toolkits, query, limit }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 
@@ -52,9 +49,11 @@ export const authConfigsCmd$List = Command.make(
       );
 
       if (result.items.length === 0) {
-        const hint = Option.isSome(toolkits)
-          ? `No auth configs found for toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio dev toolkits list`
-          : 'No auth configs found. Try broadening your search.';
+        const hint = Option.match(toolkits, {
+          onNone: () => 'No auth configs found. Try broadening your search.',
+          onSome: toolkit =>
+            `No auth configs found for toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`,
+        });
         yield* ui.log.warn(hint);
         return;
       }

@@ -2,19 +2,35 @@
 
 ## Command Files
 
-- Top-level command files use `<name>.cmd.ts`.
-- Nested command groups live in a directory with a group entrypoint.
+One directory per command under `src/commands/`, files sharing the command's dotted basename. The authoritative description, including the legacy shape and the test mirror, is "Command module layout" in `ts/packages/cli/AGENTS.md`; the short form:
+
+```
+src/commands/<group>/<group>.cmd.ts                 group entry: subcommand list only
+src/commands/<group>/<name>/<group>.<name>.cmd.ts   flags, description, examples, Command.make
+src/commands/<group>/<name>/<group>.<name>.handler.ts   (params) => Effect
+src/commands/<group>/<name>/<group>.<name>.format.ts    stderr renderer + stdout renderer
+src/commands/<group>/<name>/<group>.<name>.errors.ts    command-owned tagged errors, optional
+test/src/commands/<group>/<name>/<group>.<name>.cmd.test.ts        argv-level, required
+test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level, optional
+```
+
+- Top-level commands use the same shape without a group: `src/commands/<name>/<name>.cmd.ts`.
 - Register new commands through `src/commands/index.ts` or the nearest group entry.
+- A usage mistake the parser cannot see (flag combination, business rule, missing input) raises `CommandInputError` via `commandInputError('<command>')` from `src/commands/errors.ts`, with the `option` at fault; `cli-main.ts` prints the message and exits 1. Do not add a per-command message-only error class.
+- A command that needs a login pipes `requireLogin` from `src/effects/require-auth.ts` on itself or on its group entry after `Command.withSubcommands`; the handler never checks `apiKey`. `resolveCommandProject` fails with `ProjectResolutionError`; let it flow, it prints and exits 1 like `CommandInputError`.
+- A command still in the legacy single-file shape (`<group>/commands/<group>.<name>.cmd.ts`, or top-level `<name>.cmd.ts`) is migrated in the PR that next changes it substantively, one command per PR.
+- `pnpm run validate:command-tests` (in `pnpm test`) fails on a command without its mirrored `.cmd.test.ts`, on an orphan `.cmd.test.ts`, and on a stale exemption. Add the test with the command; do not add exemptions.
 
 ## Effect Patterns
 
 The CLI is on `effect@4.0.3` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
 
-Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.ts`:
+Common shape. The command file declares the surface and passes the handler to the three-argument `Command.make`:
 
 ```typescript
+// src/commands/tools/list/tools.list.cmd.ts
 import { Argument, Command, Flag } from 'effect/cli';
-import { Effect, Option } from 'effect';
+import { runToolsList } from './tools.list.handler';
 
 const toolkit = Argument.String('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list tools for (e.g. "gmail")')
@@ -30,14 +46,29 @@ const limit = Flag.Int('limit').pipe(
   Flag.withDescription('Number of results per page (1-1000)')
 );
 
-export const myCmd = Command.make(
-  'my-command',
-  { toolkit, query, limit },
-  ({ toolkit, query, limit }) =>
-    Effect.gen(function* () {
-      // resolve services with yield*
-    })
-).pipe(Command.withDescription('...'));
+export const toolsCmd$List = Command.make('list', { toolkit, query, limit }, runToolsList).pipe(
+  Command.withDescription('List tools in a toolkit.')
+);
+```
+
+The handler declares the params it needs as a plain type; the compiler checks that the command's flags satisfy it. No `Effect.gen` and no service access in the command file:
+
+```typescript
+// src/commands/tools/list/tools.list.handler.ts
+import { Effect, Option } from 'effect';
+import { TerminalUI } from 'src/services/terminal-ui';
+
+export type ToolsListParams = {
+  readonly toolkit: string;
+  readonly query: Option.Option<string>;
+  readonly limit: number;
+};
+
+export const runToolsList = ({ toolkit, query, limit }: ToolsListParams) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    // resolve services with yield*, render through ./tools.list.format
+  });
 ```
 
 `Args`/`Options` (v3 `@effect/cli`) are gone — use `Argument` for positionals and `Flag` for named options, both from `effect/cli`. Constructors are capitalized (`Argument.String`, `Flag.String`/`.Boolean`/`.Int`/`.Literals`); `Argument.variadic()` remains lowercase and must be called rather than piped as a bare reference. Combinators remain lowercase (`.withDefault`/`.withDescription`/`.withAlias`/`.optional`). Optional flags read via `Option.getOrUndefined(...)`/`Option.isSome(...)`, matching the `query`/`tags` pattern above.

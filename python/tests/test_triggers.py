@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 import httpx
 import pytest
 import requests
-from composio_client import NotFoundError, omit
+from composio_client import NoAuth, NotFoundError, ProjectAuth, UserAuth, omit
 
 from composio import exceptions
 from composio.core.models import triggers as triggers_module
@@ -2183,7 +2183,7 @@ class TestPusherClusterValidation:
     def _builder() -> _SubcriptionBuilder:
         client = Mock()
         client.base_url = "https://api.example.com"
-        client.api_key = "sk-secret-value"
+        client.sdk_auth = ProjectAuth("sk-secret-value")
         return _SubcriptionBuilder(client=client)
 
     @pytest.mark.parametrize("cluster", ["mt1", "eu", "ap-southeast-1", "us3"])
@@ -2197,8 +2197,7 @@ class TestPusherClusterValidation:
     def test_user_only_client_authorizes_the_channel_with_the_user_key(self):
         client = Mock()
         client.base_url = "https://api.example.com"
-        client.api_key = None
-        client.user_api_key = "uak_user_key"
+        client.sdk_auth = UserAuth("uak_user_key")
         client.default_headers = {}
 
         pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(
@@ -2208,13 +2207,11 @@ class TestPusherClusterValidation:
         assert "x-api-key" not in pusher.auth_endpoint_headers
         assert pusher.auth_endpoint_headers["x-user-api-key"] == "uak_user_key"
 
-    def test_user_key_default_header_authorizes_the_channel_over_the_project_key(
-        self,
-    ):
+    def test_user_key_default_header_authorizes_the_channel_without_auth(self):
+        """Under ``NoAuth`` a caller-placed user key header is the credential."""
         client = Mock()
         client.base_url = "https://api.example.com"
-        client.api_key = "sk-secret-value"
-        client.user_api_key = None
+        client.sdk_auth = NoAuth()
         client.default_headers = {"X-User-Api-Key": "uak_header_key"}
 
         pusher = _SubcriptionBuilder(client=client)._get_pusher_instance(

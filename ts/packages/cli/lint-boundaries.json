@@ -1,4 +1,11 @@
 {
+  "src/services/composio-clients.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "this module is the one place the client is built",
+      "target": "make as makeComposioClient,"
+    }
+  ],
   "src/services/detached-process.ts": [
     {
       "rule": "no-restricted-imports",
@@ -24,7 +31,7 @@
     {
       "rule": "no-restricted-imports",
       "reason": "MD5 for the presigned-upload checksum is not available in Web Crypto",
-      "target": "const { createHash } = await import('node:crypto');"
+      "target": "const { createHash } = yield* Effect.promise(() => import('node:crypto'));"
     }
   ]
 }

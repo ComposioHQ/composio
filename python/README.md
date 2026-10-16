@@ -18,7 +18,7 @@ Composio gives your AI agents 1000+ pre-authenticated toolkits, per-user session
 
 ## Install
 
-Requires Python 3.10+.
+Requires Python 3.11 through 3.15.
 
 ```bash
 pip install composio

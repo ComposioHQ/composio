@@ -54,7 +54,7 @@ export const probeHostInstallation = (host: AgentHost) =>
     // Presence means an actual directory: a file at the config path (or an
     // unreadable one) must not report the host as installed.
     const dirInfo = yield* Effect.option(fs.stat(yield* hostConfigDirectory(host)));
-    const configDirPresent = Option.isSome(dirInfo) && dirInfo.value.type === 'Directory';
+    const configDirPresent = Option.exists(dirInfo, info => info.type === 'Directory');
     const found = yield* Effect.forEach(KNOWN_BINARY_PATHS[host], entry =>
       exists(path.resolve(os.homedir, entry))
     );

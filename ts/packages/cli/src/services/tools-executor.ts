@@ -1,7 +1,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Context, Effect, Layer } from 'effect';
-import type { Composio } from '@composio/client';
+import { isComposioError, type ComposioClientShape } from '@composio/client/effect';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
@@ -19,7 +19,7 @@ import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-fil
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
-import { assertNotInputRequired } from 'src/utils/tool-input-required';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
@@ -33,7 +33,7 @@ import type { ComposioCliUserConfig } from 'src/services/cli-user-config';
 export interface ToolExecuteParams {
   readonly userId: string;
   readonly arguments: Record<string, unknown>;
-  readonly client?: Composio;
+  readonly client?: ComposioClientShape;
   readonly connectedAccounts?: Record<string, string>;
   /**
    * The org/project the command resolved. The executor's tool-schema lookup
@@ -71,6 +71,14 @@ export interface ToolExecuteResponse {
   readonly error: string | null;
   readonly logId: string;
   readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
+  readonly instantCharge?: InstantCharge;
+}
+
+/** Charge billed to the org when the call ran on a Composio instant account. */
+export interface InstantCharge {
+  readonly amount: string;
+  readonly currency: 'USD';
+  readonly chargedBy: 'composio';
 }
 
 export interface ToolsExecutor {
@@ -107,24 +115,40 @@ export const isExecutionSuccessful = (raw: {
   readonly result_type: 'completed' | 'failed';
 }): boolean => raw.result_type === 'completed';
 
+type ExecutedSessionResponse = Exclude<
+  SessionExecuteResponse | SessionExecuteMetaResponse,
+  { result_type: 'input_required' }
+>;
+
+const toInstantCharge = (raw: ExecutedSessionResponse): InstantCharge | undefined => {
+  if (!raw.instant_charge) return undefined;
+  return {
+    amount: raw.instant_charge.amount,
+    currency: raw.instant_charge.currency,
+    chargedBy: raw.instant_charge.charged_by,
+  };
+};
+
 /**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
-const normalizeResponse = (
-  raw: Exclude<
-    SessionExecuteResponse | SessionExecuteMetaResponse,
-    { result_type: 'input_required' }
-  >,
+export const normalizeResponse = (
+  raw: ExecutedSessionResponse,
   permissionGateResult?: PermissionGateResult
-): ToolExecuteResponse => ({
-  successful: isExecutionSuccessful(raw),
-  data: raw.data,
-  error: raw.error,
-  logId: raw.log_id,
-  ...(permissionGateResult?.approvalStatus
-    ? { permissionApproval: permissionGateResult.approvalStatus }
-    : {}),
-});
+): ToolExecuteResponse => {
+  const response: ToolExecuteResponse = {
+    successful: isExecutionSuccessful(raw),
+    data: raw.data,
+    error: raw.error,
+    logId: raw.log_id,
+    ...(permissionGateResult?.approvalStatus
+      ? { permissionApproval: permissionGateResult.approvalStatus }
+      : {}),
+  };
+  const instantCharge = toInstantCharge(raw);
+  if (!instantCharge) return response;
+  return { ...response, instantCharge };
+};
 
 /**
  * Detect in-band error hints in tool response data.
@@ -161,7 +185,7 @@ export const ToolsExecutorLive = Layer.effect(
   Effect.gen(function* () {
     // Resolve the client singleton at layer construction time.
     // The `get` instance method is an Effect.fn that lazily initializes
-    // the raw Composio client on first call — no environment requirements.
+    // the Composio client on first call — no environment requirements.
     const clientSingleton = yield* ComposioClientSingleton;
 
     // Held rather than required per call: which slugs resolve locally is an
@@ -203,51 +227,48 @@ export const ToolsExecutorLive = Layer.effect(
                     return Effect.succeed(params.arguments);
                   }
 
-                  return Effect.tryPromise({
-                    try: () =>
-                      uploadToolInputFiles({
-                        fs,
-                        path,
-                        toolSlug: slug,
-                        toolkitSlug,
-                        arguments_: params.arguments,
-                        inputSchema: definition.schema,
-                        client: resolvedClient,
-                      }),
-                    catch: cause =>
-                      cause instanceof ToolFileUploadError
-                        ? cause
-                        : new ToolFileUploadError({
-                            cause,
-                            message: cause instanceof Error ? cause.message : String(cause),
-                            reason: 'source-read',
-                          }),
-                  });
+                  // A presigned-URL request the API refused is reported as
+                  // an upload failure of the source, with the client's error
+                  // as its cause.
+                  return uploadToolInputFiles({
+                    fs,
+                    path,
+                    toolSlug: slug,
+                    toolkitSlug,
+                    arguments_: params.arguments,
+                    inputSchema: definition.schema,
+                    client: resolvedClient,
+                  }).pipe(
+                    Effect.catchIf(
+                      isComposioError,
+                      cause =>
+                        new ToolFileUploadError({
+                          cause,
+                          message: cause.message,
+                          reason: 'source-read',
+                        })
+                    )
+                  );
                 })
               );
 
-          const raw = yield* Effect.tryPromise({
-            // Never retry an execution: a retry after the backend already acted
-            // duplicates the side effect (e.g. sends the same email twice).
-            try: async () => {
-              const response: SessionExecuteResponse | SessionExecuteMetaResponse = isMetaToolSlug(
-                slug
-              )
-                ? await resolvedClient.toolRouter.session.executeMeta(
-                    sessionId,
-                    { slug, arguments: normalizedArguments },
-                    { maxRetries: 0 }
-                  )
-                : await resolvedClient.toolRouter.session.execute(
-                    sessionId,
-                    { tool_slug: slug, arguments: normalizedArguments },
-                    { maxRetries: 0 }
-                  );
-              assertNotInputRequired(`Tool ${slug}`, response);
-              return response;
-            },
-            catch: cause => cause,
-          });
+          // An execution is not `idempotent`, so it is sent once: a retry after the backend already acted
+          // duplicates the side effect (e.g. sends the same email twice). The
+          // response is not validated either, for the same reason.
+          const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* isMetaToolSlug(
+            slug
+          )
+            ? resolvedClient.toolRouter.session.executeMeta(sessionId, {
+                slug,
+                arguments: normalizedArguments,
+              })
+            : resolvedClient.toolRouter.session.execute(sessionId, {
+                tool_slug: slug,
+                arguments: normalizedArguments,
+              });
+          if (raw.result_type === 'input_required') {
+            return yield* toolInputRequiredError(`Tool ${slug}`, raw);
+          }
 
           return normalizeResponse(raw, permissionGateResult);
         }).pipe(

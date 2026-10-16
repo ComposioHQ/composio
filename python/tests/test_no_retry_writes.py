@@ -17,7 +17,7 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
-from composio_client import DEFAULT_MAX_RETRIES, APIError
+from composio_client import DEFAULT_MAX_RETRIES, APIError, ProjectAuth
 from composio_client import Composio as BaseComposio
 
 from composio.client import HttpClient
@@ -53,7 +53,7 @@ def _client_with_transport(
     """
     return HttpClient(
         provider="test",
-        api_key="sk-test",
+        auth=ProjectAuth("sk-test"),
         base_url="https://backend.invalid",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -65,7 +65,7 @@ class TestCopyOverride:
     def test_with_options_does_not_raise_and_overrides_max_retries(self) -> None:
         client = HttpClient(
             provider="myprovider",
-            api_key="sk-test",
+            auth=ProjectAuth("sk-test"),
             base_url="https://backend.invalid",
         )
 
@@ -83,7 +83,7 @@ class TestCopyOverride:
     def test_without_retries_is_a_cached_zero_retry_sibling(self) -> None:
         client = HttpClient(
             provider="test",
-            api_key="sk-test",
+            auth=ProjectAuth("sk-test"),
             base_url="https://backend.invalid",
         )
 
@@ -94,11 +94,11 @@ class TestCopyOverride:
         assert client.max_retries == DEFAULT_MAX_RETRIES
 
     def test_clone_preserves_strict_response_validation(self) -> None:
-        # The generated `copy` drops `_strict_response_validation`; the override
-        # re-injects it so the sibling differs from the parent only in retries.
+        # The sibling must differ from the parent only in retries, including
+        # `_strict_response_validation`, which the generated `copy` carries.
         client = HttpClient(
             provider="test",
-            api_key="sk-test",
+            auth=ProjectAuth("sk-test"),
             base_url="https://backend.invalid",
             _strict_response_validation=True,
         )
@@ -115,8 +115,8 @@ class TestStainlessCopyContract:
     """
 
     def test_base_copy_accepts_extra_kwargs(self) -> None:
-        # The override threads `provider` (and `_strict_response_validation`)
-        # through `_extra_kwargs`; the base `copy` must still accept it.
+        # The override threads `provider` (and the SDK logger) through
+        # `_extra_kwargs`; the base `copy` must still accept it.
         assert "_extra_kwargs" in inspect.signature(BaseComposio.copy).parameters
 
     def test_with_options_is_aliased_to_our_copy_override(self) -> None:

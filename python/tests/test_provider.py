@@ -7,6 +7,7 @@ This test module verifies provider functionality including:
 - Both agentic and non-agentic provider behavior
 """
 
+import importlib.util
 from types import SimpleNamespace
 from unittest.mock import Mock, call
 
@@ -781,6 +782,10 @@ class TestAgenticProviderFunctionality:
         assert wrapped[0]["has_executor"] is True
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("composio_langchain") is None,
+    reason="LangChain provider package is not installed",
+)
 class TestLangchainReservedKeywords:
     """Regression tests for PLEN-1671: ValueError when tool schema has Python reserved keywords as parameter names.
 
@@ -943,6 +948,10 @@ class TestLangchainReservedKeywords:
         assert captured == {"from": "2024-01-01"}
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("composio_langchain") is None,
+    reason="LangChain provider package is not installed",
+)
 class TestLangchainFreeFormObjectArguments:
     """Regression for issue #4064 at the Python provider boundary.
 

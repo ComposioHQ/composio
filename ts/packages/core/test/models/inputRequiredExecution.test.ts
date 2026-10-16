@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, assert } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { z } from 'zod/v3';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
@@ -52,9 +52,9 @@ const createClient = (body: unknown) => {
       })
   );
   const client = new ComposioClient({
-    apiKey: 'test-api-key',
+    auth: Auth.project('test-api-key'),
     baseURL: 'https://backend.invalid',
-    fetch,
+    transport: createFetchTransport({ fetch }),
   });
   return { client, fetch };
 };
@@ -131,7 +131,7 @@ describe('execution that requires user input', () => {
       assert(error instanceof ComposioToolInputRequiredError);
       expect(error.code).toBe('TS-SDK::TOOL_INPUT_REQUIRED');
       expect(error.message).toContain(`${subject} requires user input`);
-      expect(error.message).toContain('request_state');
+      expect(error.message).toContain('inputResponses');
       // The opaque state and the proxied URL stay out of the message.
       expect(error.message).not.toContain('opaque-state-token');
       expect(error.message).not.toContain('secret');
@@ -228,6 +228,74 @@ describe('execution that requires user input', () => {
       data: { id: 1 },
       headers: { 'x-request-id': 'req_1' },
     });
+  });
+});
+
+// The answers to an `input_required` call travel on the repeated call as
+// `input_responses`, with the `request_state` it returned.
+const answers = {
+  approval_1: { action: 'accept' as const, content: { decision: 'approve' } },
+};
+
+const answeringPaths: Array<{
+  name: string;
+  run: (session: ToolRouterSession) => Promise<unknown>;
+}> = [
+  {
+    name: 'session.execute',
+    run: session =>
+      session.execute(
+        'GMAIL_SEND_EMAIL',
+        { to: 'test@test.com' },
+        { inputResponses: answers, requestState: 'opaque-state-token' }
+      ),
+  },
+  {
+    name: 'session.executeMeta',
+    run: session =>
+      session.executeMeta(
+        'COMPOSIO_MULTI_EXECUTE_TOOL',
+        { tools: [] },
+        { inputResponses: answers, requestState: 'opaque-state-token' }
+      ),
+  },
+];
+
+const sentBody = (fetch: ReturnType<typeof createClient>['fetch']): Record<string, unknown> => {
+  const init = fetch.mock.calls[0]?.[1];
+  assert(typeof init?.body === 'string');
+  return z.record(z.unknown()).parse(JSON.parse(init.body));
+};
+
+describe('answering a call that required user input', () => {
+  it.each(answeringPaths)('$name sends the answers and the request state', async ({ run }) => {
+    const { client, fetch } = createClient({
+      result_type: 'completed',
+      data: { id: 'msg_1' },
+      error: null,
+      log_id: 'log_1',
+    });
+
+    await run(createSession(client));
+
+    expect(sentBody(fetch)).toMatchObject({
+      input_responses: answers,
+      request_state: 'opaque-state-token',
+    });
+  });
+
+  it('session.execute sends neither field without answers', async () => {
+    const { client, fetch } = createClient({
+      result_type: 'completed',
+      data: {},
+      error: null,
+      log_id: 'log_1',
+    });
+
+    await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+
+    expect(sentBody(fetch)).not.toHaveProperty('input_responses');
+    expect(sentBody(fetch)).not.toHaveProperty('request_state');
   });
 });
 

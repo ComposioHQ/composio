@@ -5,7 +5,7 @@ import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
-import { loginCmd } from './login.cmd';
+import { loginCmd } from './login/login.cmd';
 import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
@@ -24,11 +24,11 @@ import {
   RootHelpContext,
   showCommandHelp,
 } from './root-help';
-import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
+import { toolsCmd$Search } from './tools/search/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
 import { rootTriggersCmd } from './triggers/root-triggers.cmd';
-import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
+import { connectedAccountsCmd$Link } from './connected-accounts/link/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
@@ -42,6 +42,7 @@ import { withBackgroundUpdateCheck } from './background-update-check';
 import { debugCmd } from './debug.cmd';
 import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
+import { CommandSurface } from './surface';
 
 const ROOT_COMMANDS = [
   tagged(debugCmd),
@@ -60,8 +61,8 @@ const ROOT_COMMANDS = [
   tagged(installCmd),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
-  tagged(rootToolsCmd$Search),
-  tagged(rootConnectedAccountsCmd$Link),
+  tagged(toolsCmd$Search),
+  tagged(connectedAccountsCmd$Link),
   tagged(rootToolsCmd$Execute),
   tagged(rootConnectionsCmd),
   tagged(generateCmd),
@@ -85,7 +86,9 @@ export const buildRootCommand = (visibility: CommandVisibility) => {
   ]).pipe(
     Command.annotate(RootHelpMarker, true),
     Command.withGlobalFlags(CLI_DEBUG_GLOBAL_FLAGS),
-    withRootLogLevel
+    withRootLogLevel,
+    // The `dev` group provides its own surface around its subcommands; everything else is root.
+    Command.provide(CommandSurface.root)
   );
 };
 
