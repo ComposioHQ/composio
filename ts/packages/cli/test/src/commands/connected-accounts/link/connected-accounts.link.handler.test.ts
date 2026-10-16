@@ -2,8 +2,9 @@ import { make, type ComposioClientShape } from '@composio/client/effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Console, Effect, Layer, Option } from 'effect';
+import { ConfigProvider, Console, Effect, Fiber, Layer, Option } from 'effect';
 import { HttpClient } from 'effect/http';
+import { TestClock } from 'effect/testing';
 import * as tempy from 'tempy';
 import {
   handleLegacyAuthConfigLink,
@@ -14,6 +15,8 @@ import {
 } from 'src/commands/connected-accounts/link/connected-accounts.link.handler';
 import {
   AUTH_CONFIG_SCOPE_MESSAGE,
+  BROWSE_AUTH_CONFIGS_HINT,
+  BROWSE_TOOLKITS_HINT,
   LIST_REQUIRES_TOOLKIT_MESSAGE,
   LIST_WITH_AUTH_CONFIG_MESSAGE,
   ROOT_AUTH_CONFIG_MESSAGE,
@@ -39,6 +42,16 @@ import {
 import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import { makeOrgProject } from 'test/__utils__/models/account';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import open from 'open';
+import { afterEach, vi } from 'vitest';
+
+vi.mock('open', () => ({
+  default: vi.fn(async () => undefined),
+}));
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 // The consumer project the mock client resolves for `org_test`, and its user.
 const CONSUMER_USER_ID = 'consumer-user-org_test';
@@ -94,6 +107,14 @@ interface LinkFixture {
   readonly accounts?: ReadonlyArray<ConnectedAccountItem>;
   readonly directoryProject?: Option.Option<ProjectKeys>;
   readonly globalTestUserId?: Option.Option<string>;
+  /** Replaces the `link.create` answer, e.g. to fail it. */
+  readonly legacyLinkCreate?: () => Effect.Effect<unknown, unknown>;
+  /** Replaces the `toolRouter.session.link` answer, e.g. to fail it or drop a field. */
+  readonly toolRouterLink?: () => Effect.Effect<unknown, unknown>;
+  /** Makes `connectedAccounts.list` fail, to prove the alias-hints fetch is auxiliary. */
+  readonly connectedAccountsListFails?: boolean;
+  /** Makes the first N `connectedAccounts.retrieve` calls fail, for the polling retries. */
+  readonly retrieveFailsFirst?: number;
 }
 
 /** A request that creates a link, as the mock client saw it. */
@@ -148,6 +169,22 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
   const connectedAccounts = mockConnectedAccountResources(
     resolveConnectedAccountsTestData({ items: [...(fixture.accounts ?? [])] })
   );
+  let retrieveAttempts = 0;
+  const connectedAccountsResources = {
+    ...connectedAccounts,
+    connectedAccounts: {
+      ...connectedAccounts.connectedAccounts,
+      list: fixture.connectedAccountsListFails
+        ? () => Effect.fail(new Error('connectedAccounts.list is down'))
+        : connectedAccounts.connectedAccounts.list,
+      retrieve: (nanoid: string) => {
+        retrieveAttempts += 1;
+        return retrieveAttempts <= (fixture.retrieveFailsFirst ?? 0)
+          ? Effect.fail(new Error(`transient retrieve failure ${retrieveAttempts}`))
+          : connectedAccounts.connectedAccounts.retrieve(nanoid);
+      },
+    },
+  };
   const record = (operation: LinkRequest['operation'], requestParams: unknown) =>
     Effect.sync(() => requests.push({ operation, params: requestParams }));
   const clientFor = (scope: MockRequestScope): ComposioClientShape =>
@@ -156,11 +193,15 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
     ({
       ...baseClient,
       ...mockAccountResources({ projects: [DEVELOPER_PROJECT] }, scope),
-      ...connectedAccounts,
+      ...connectedAccountsResources,
       link: {
         create: (linkParams: { auth_config_id: string; user_id: string }) =>
           record('link.create', linkParams).pipe(
-            Effect.andThen(connectedAccounts.link.create(linkParams))
+            Effect.andThen(
+              fixture.legacyLinkCreate
+                ? fixture.legacyLinkCreate()
+                : connectedAccounts.link.create(linkParams)
+            )
           ),
       },
       toolRouter: {
@@ -170,11 +211,15 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
           create: () => Effect.succeed({ session_id: 'trs_handler_test' }),
           link: (sessionId: string, linkParams: { toolkit: string; alias?: string }) =>
             record('toolRouter.session.link', { sessionId, ...linkParams }).pipe(
-              Effect.as({
-                connected_account_id: 'con_new',
-                link_token: 'lt_test',
-                redirect_url: 'https://app.composio.dev/link?token=lt_test',
-              })
+              Effect.andThen(
+                fixture.toolRouterLink
+                  ? fixture.toolRouterLink()
+                  : Effect.succeed({
+                      connected_account_id: 'con_new',
+                      link_token: 'lt_test',
+                      redirect_url: 'https://app.composio.dev/link?token=lt_test',
+                    })
+              )
             ),
         },
       },
@@ -276,6 +321,32 @@ const toolRouterPendingJson = () =>
     redirect_url: TOOL_ROUTER_LINK_TARGET.redirect_url,
     toolkit: 'gmail',
     project_type: 'CONSUMER',
+  });
+
+/** The payload once polling saw `con_new` ACTIVE, byte for byte. */
+const toolRouterActiveJson = () =>
+  toJson({
+    status: 'success',
+    message: 'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
+    connected_account_id: 'con_new',
+    toolkit: 'gmail',
+    redirect_url: TOOL_ROUTER_LINK_TARGET.redirect_url,
+  });
+
+/**
+ * Runs an effect whose context is already provided on the test clock, with a pump fiber that
+ * keeps advancing the clock while it runs: every pump iteration lets the effect reach its next
+ * scheduled sleep, then moves the clock past it. Answers what the effect answered once done.
+ */
+const runWithAdvancingClock = <A, E>(effect: Effect.Effect<A, E>) =>
+  Effect.gen(function* () {
+    const run = yield* Effect.forkChild(effect);
+    const pump = yield* Effect.forkChild(
+      Effect.forever(Effect.andThen(Effect.yieldNow, () => TestClock.adjust('10 seconds')))
+    );
+    const result = yield* Fiber.join(run);
+    yield* Fiber.interrupt(pump);
+    return result;
   });
 
 const devSurface = (flags: { userId?: string; projectName?: string } = {}) =>
@@ -478,6 +549,20 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
     })
   );
 
+  it.effect('[Given] the list request fails [Then] fails with the request error', () =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({ connectedAccountsListFails: true });
+      const error = yield* handleListConnectedAccounts(
+        params({ toolkit: Option.some('gmail'), list: true })
+      ).pipe(Effect.flip, Effect.provide(layer));
+
+      expect(error).toMatchObject({
+        _tag: 'commands/ConnectedAccountsRequestError',
+        message: 'Failed to list connected accounts for "gmail".',
+      });
+    })
+  );
+
   it.effect(
     '[Given] dev --project-name and no user anywhere [Then] fails pointing at --user-id',
     () =>
@@ -552,6 +637,29 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
   );
 
   it.effect(
+    '[Given] the link request fails [Then] reports the message and the auth-config hint',
+    () =>
+      Effect.gen(function* () {
+        const { layer, requests } = linkHandlerTest({
+          surface: devSurface({ userId: 'user_1' }),
+          directoryProject: directory(Option.none()),
+          legacyLinkCreate: () => Effect.fail(new Error('quota exhausted')),
+        });
+        const output = yield* handleLegacyAuthConfigLink(
+          params({ authConfig: Option.some('ac_gmail') })
+        ).pipe(Effect.andThen(lines), Effect.provide(layer));
+
+        expect(output).toEqual(['quota exhausted', BROWSE_AUTH_CONFIGS_HINT]);
+        expect(requests).toEqual([
+          {
+            operation: 'link.create',
+            params: { auth_config_id: 'ac_gmail', user_id: 'user_1' },
+          },
+        ]);
+      })
+  );
+
+  it.effect(
     '[Given] an alias already in use [Then] points at the dev commands and sends nothing',
     () =>
       Effect.gen(function* () {
@@ -608,16 +716,163 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
         ).pipe(Effect.andThen(lines), Effect.provide(layer));
 
         expect(output).toContain('Connection successful');
-        expect(String(output.at(-1))).toBe(
-          toJson({
-            status: 'success',
-            message: 'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
-            connected_account_id: 'con_new',
-            toolkit: 'gmail',
-            redirect_url: 'https://app.composio.dev/link?token=lt_test',
-          })
-        );
+        expect(String(output.at(-1))).toBe(toolRouterActiveJson());
       })
+  );
+
+  it.effect(
+    '[Given] the link returns the existing account [Then] no --alias is needed to reuse it',
+    () =>
+      Effect.gen(function* () {
+        // The fixture account is both the hints entry and the link answer, so the
+        // additional-account guard lets the same account through.
+        const { layer } = linkHandlerTest({ accounts: [account({ id: 'con_new' })] });
+        const lastLine = yield* handleToolRouterLink(
+          params({ toolkit: Option.some('gmail') })
+        ).pipe(
+          Effect.andThen(lines),
+          Effect.map(all => String(all.at(-1))),
+          Effect.provide(layer)
+        );
+
+        expect(lastLine).toBe(toolRouterPendingJson());
+      })
+  );
+
+  it.effect('[Given] the alias-hints list request fails [Then] the link still runs', () =>
+    Effect.gen(function* () {
+      const { layer, requests } = linkHandlerTest({ connectedAccountsListFails: true });
+      const lastLine = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.andThen(lines),
+        Effect.map(all => String(all.at(-1))),
+        Effect.provide(layer)
+      );
+
+      expect(requests).toEqual([
+        {
+          operation: 'toolRouter.session.link',
+          params: { sessionId: 'trs_handler_test', toolkit: 'gmail' },
+        },
+      ]);
+      expect(lastLine).toBe(toolRouterPendingJson());
+    })
+  );
+
+  it.effect('[Given] the link request fails [Then] reports the cause and the browse hint', () =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        toolRouterLink: () => Effect.fail(new Error('offline')),
+      });
+      const output = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.andThen(lines),
+        Effect.provide(layer)
+      );
+
+      // `failedWith` keeps the client error in `.cause`, and the message prefers it.
+      expect(output).toEqual(['offline', BROWSE_TOOLKITS_HINT]);
+    })
+  );
+
+  it.effect('[Given] a redirect URL without an http scheme [Then] warns and still waits', () =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        accounts: [account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null })],
+        toolRouterLink: () =>
+          Effect.succeed({ connected_account_id: 'con_new', redirect_url: 'notaurl' }),
+      });
+      const output = yield* handleToolRouterLink(
+        params({ toolkit: Option.some('gmail'), noWait: false })
+      ).pipe(Effect.andThen(lines), Effect.provide(layer));
+
+      expect(output).toEqual([
+        'Linking gmail...',
+        'Open this URL in your browser to authorize',
+        '[Redirect URL] notaurl',
+        'Redirect URL has an unexpected scheme: notaurl',
+        'Open the URL manually if you trust the source.',
+        'Connection successful',
+        'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
+        toJson({
+          status: 'success',
+          message: 'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
+          connected_account_id: 'con_new',
+          toolkit: 'gmail',
+          redirect_url: 'notaurl',
+        }),
+      ]);
+      expect(vi.mocked(open)).not.toHaveBeenCalled();
+    })
+  );
+
+  it.effect('[Given] the browser fails to open [Then] points at the URL and still waits', () =>
+    Effect.gen(function* () {
+      vi.mocked(open).mockRejectedValueOnce(new Error('no browser'));
+      const { layer } = linkHandlerTest({
+        accounts: [account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null })],
+      });
+      const output = yield* handleToolRouterLink(
+        params({ toolkit: Option.some('gmail'), noWait: false, noBrowser: false })
+      ).pipe(Effect.andThen(lines), Effect.provide(layer));
+
+      expect(vi.mocked(open)).toHaveBeenCalledWith(TOOL_ROUTER_LINK_TARGET.redirect_url, {
+        wait: false,
+      });
+      expect(output).toEqual([
+        'Linking gmail...',
+        'Redirecting you to the authorization page',
+        `[Redirect URL] ${TOOL_ROUTER_LINK_TARGET.redirect_url}`,
+        'Could not open the browser automatically.',
+        'Open the URL above manually.',
+        'Connection successful',
+        'Connected account "con_new" is now ACTIVE (toolkit: gmail).',
+        toolRouterActiveJson(),
+      ]);
+    })
+  );
+
+  it.effect('[Given] one failed poll [Then] retries and still reaches ACTIVE', () =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        accounts: [account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null })],
+        retrieveFailsFirst: 1,
+      });
+      const lastLine = yield* runWithAdvancingClock(
+        handleToolRouterLink(params({ toolkit: Option.some('gmail'), noWait: false })).pipe(
+          Effect.andThen(lines),
+          Effect.map(all => String(all.at(-1))),
+          Effect.provide(layer)
+        )
+      );
+
+      expect(lastLine).toBe(toolRouterActiveJson());
+    })
+  );
+
+  it.effect('[Given] the account never turns ACTIVE [Then] gives up and reports the timeout', () =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        accounts: [account({ id: 'con_new', user_id: 'poll-source', status: 'INITIATED' })],
+      });
+      const error = yield* runWithAdvancingClock(
+        Effect.gen(function* () {
+          const error = yield* Effect.flip(
+            handleToolRouterLink(params({ toolkit: Option.some('gmail'), noWait: false }))
+          );
+          const output = yield* lines;
+          return { error, output };
+        }).pipe(Effect.provide(layer))
+      );
+
+      expect(error.error).toMatchObject({
+        _tag: 'commands/ConnectionPollingError',
+        connectedAccountId: 'con_new',
+        status: 'INITIATED',
+      });
+      expect(error.output).not.toContain('Connection successful');
+      expect(String(error.output.at(-1))).toBe(
+        'Timed out waiting for authorization. Run the command again.'
+      );
+    })
   );
 
   it.effect('[Given] an active account and no --alias [Then] lists it and prints no link', () =>
