@@ -1,6 +1,6 @@
 import { getEnvVariable } from './utils/env';
 import type { BaseComposioProvider } from './provider/BaseProvider';
-import ComposioClient from '@composio/client';
+import ComposioClient, { createFetchTransport } from '@composio/client';
 import type { LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
@@ -558,7 +558,7 @@ export class Composio<
       // Warns once per deprecated toolkit version reported through the
       // `Composio-Deprecated-Toolkits` response header. `createSession()`
       // clones go through this same constructor and inherit it.
-      fetch: createToolkitDeprecationFetch(),
+      transport: createFetchTransport({ fetch: createToolkitDeprecationFetch() }),
     });
 
     this.tools = new Tools(this.client, this.config);
