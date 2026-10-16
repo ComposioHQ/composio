@@ -13,6 +13,7 @@ import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import {
@@ -150,7 +151,10 @@ const layers = Layer.mergeAll(
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
-  Layer.merge(Logger.layer([Logger.consolePretty()]), Layer.succeed(Logger.LogToStderr, true))
+  Layer.merge(
+    Logger.layer([withoutClientNotices(Logger.consolePretty())]),
+    Layer.succeed(Logger.LogToStderr, true)
+  )
 ) satisfies RequiredLayer;
 
 export const teardown: Runtime.Teardown = <E, A>(

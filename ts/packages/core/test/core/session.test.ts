@@ -633,6 +633,18 @@ describe('Credential resolution at the transport boundary', () => {
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
     });
 
+    it('exports the organization API key placed in defaultHeaders when it is the only credential', async () => {
+      const orgKey = 'oak_headerOrgKey';
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, defaultHeaders: { 'x-org-api-key': orgKey } });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      expect(capturedHeaders(fetchMock).get('x-api-key')).toBeNull();
+      expect(capturedHeaders(fetchMock).get('x-org-api-key')).toBe(orgKey);
+      expect(session.mcp.headers).toEqual({ 'x-org-api-key': orgKey });
+    });
+
     it('exports the user API key a clone was given over the key the parent resolved', async () => {
       const otherUserKey = 'uak_overridingUserKey';
       const fetchMock = captureSessionFetch();

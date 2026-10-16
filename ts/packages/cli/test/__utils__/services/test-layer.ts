@@ -774,7 +774,6 @@ export const TestLayer = (input?: TestLiveInput) =>
         {
           auth: Auth.project('test'),
           baseURL: 'https://mock.invalid',
-          deprecationNotices: 'off',
         },
         dieOnNetworkCall
       ),

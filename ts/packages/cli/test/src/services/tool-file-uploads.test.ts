@@ -231,7 +231,6 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
       {
         auth: Auth.project('test'),
         baseURL: 'https://stub.invalid',
-        deprecationNotices: 'off',
       },
       HttpClient.make(() =>
         Effect.sync(() => reached.resolve()).pipe(

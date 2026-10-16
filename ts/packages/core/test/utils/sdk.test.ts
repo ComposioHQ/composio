@@ -245,6 +245,17 @@ describe('getSDKConfig credential resolution', () => {
       ).toEqual({ baseURL: DEFAULT_BASE_URL, apiKey: null });
     });
 
+    it('resolves to a null project key when an organization API key header is configured', () => {
+      vi.stubEnv('COMPOSIO_API_KEY', ENV_KEY);
+
+      expect(
+        getSDKConfig(undefined, null, { defaultHeaders: { 'X-Org-Api-Key': 'oak_headerKey' } })
+      ).toEqual({ baseURL: DEFAULT_BASE_URL, apiKey: null });
+      expect(() =>
+        getSDKConfig(undefined, null, { defaultHeaders: { 'x-org-api-key': '' } })
+      ).toThrow(ComposioNoAPIKeyError);
+    });
+
     it('matches the user API key header name case-insensitively', () => {
       expect(
         getSDKConfig(undefined, null, { defaultHeaders: { 'X-User-Api-Key': USER_KEY } }).apiKey
@@ -359,6 +370,25 @@ describe('resolveCredentialHeaders', () => {
   it('sends the resolved user key when the project key is disabled', () => {
     expect(
       resolveCredentialHeaders({ apiKey: null, userApiKey: USER_KEY, defaultHeaders: undefined })
+    ).toEqual({ 'x-user-api-key': USER_KEY });
+  });
+
+  it('sends the organization key only when no project or user key is held', () => {
+    expect(
+      resolveCredentialHeaders({
+        apiKey: null,
+        userApiKey: null,
+        orgApiKey: 'oak_orgKey',
+        defaultHeaders: undefined,
+      })
+    ).toEqual({ 'x-org-api-key': 'oak_orgKey' });
+    expect(
+      resolveCredentialHeaders({
+        apiKey: null,
+        userApiKey: USER_KEY,
+        orgApiKey: 'oak_orgKey',
+        defaultHeaders: undefined,
+      })
     ).toEqual({ 'x-user-api-key': USER_KEY });
   });
 
