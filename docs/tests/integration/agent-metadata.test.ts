@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
+import { getPublishedKbGuides, getKbGuideUrl } from '@/lib/kb/repository';
 import { fetchPage } from './helpers';
 
 const metadataSchema = z.object({
@@ -42,6 +43,28 @@ describe('agent-readable Markdown metadata', () => {
     const entry = sitemap.match(/<url>\s*<loc>https:\/\/docs\.composio\.dev\/docs\/quickstart<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/);
     expect(entry, 'known source freshness is published in the sitemap').not.toBeNull();
     expect(metadata[0].last_updated).toBe(entry![1]);
+  });
+
+  test('shared catalogs and manifests do not claim page freshness', async () => {
+    const guide = getPublishedKbGuides()[0];
+    expect(guide).toBeDefined();
+    const sitemap = await (await fetchPage('/sitemap.xml')).text();
+    const entries = sitemap.match(/<url>[\s\S]*?<\/url>/g) ?? [];
+    for (const path of [
+      '/reference/api-reference/files/postFilesUploadRequest',
+      '/reference/v3/api-reference/files/postFilesUploadRequest',
+      '/toolkits/github', '/toolkits/meta-tools/search_tools',
+      '/toolkits', '/toolkits/managed-auth', '/examples',
+      '/kb', '/kb/topic/authentication-and-connected-accounts',
+      getKbGuideUrl(guide),
+    ]) {
+      const response = await fetchPage(`${path}.md`, { timeout: 30_000 });
+      expect(response.status).toBe(200);
+      expect(parseMetadata(await response.text()).last_updated, path).toBeNull();
+      const entry = entries.find(item => item.includes(`<loc>https://docs.composio.dev${path}</loc>`));
+      expect(entry, path).toBeDefined();
+      expect(entry, path).not.toContain('<lastmod>');
+    }
   });
 
   test('REST versions and product routes support filtering without guessing SDK versions', async () => {
