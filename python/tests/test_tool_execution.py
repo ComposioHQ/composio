@@ -1,12 +1,15 @@
 """Test tool execution with toolkit versions and argument serialization."""
 
+import json
 import typing as t
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
 from composio_client import omit
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, Field, RootModel
 
+from composio.client import HttpClient
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools, _needs_serialization, _serialize_arguments
@@ -50,6 +53,68 @@ class TestToolExecution:
             no_auth=False,
             tags=[],
         )
+
+    @pytest.mark.parametrize(
+        "shape", ["direct", "list", "dict", "root", "tuple", "model"]
+    )
+    @pytest.mark.parametrize("alias_kind", ["alias", "serialization_alias"])
+    def test_execute_preserves_pydantic_aliases_on_wire(self, shape, alias_kind):
+        """Argument containers must send the model's output aliases to the API."""
+
+        class Block(BaseModel):
+            display_name: str = (
+                Field(alias="displayName")
+                if alias_kind == "alias"
+                else Field(
+                    validation_alias="inputName", serialization_alias="displayName"
+                )
+            )
+            note: t.Optional[str] = None
+            enabled: bool = True
+
+        class Envelope(BaseModel):
+            block: Block
+
+        block = Block.model_validate(
+            {
+                "displayName" if alias_kind == "alias" else "inputName": "paragraph",
+                "note": None,
+                "enabled": True,
+            }
+        )
+        expected = {"displayName": "paragraph", "note": None, "enabled": True}
+        values = {
+            "direct": (block, expected),
+            "list": ([block], [expected]),
+            "dict": ({"inner": block}, {"inner": expected}),
+            "root": (RootModel[list[Block]]([block]), [expected]),
+            "tuple": ((block,), [expected]),
+            "model": (Envelope(block=block), {"block": expected}),
+        }
+        value, expected_value = values[shape]
+        requests = []
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(
+                200, json={"data": {}, "error": None, "successful": True}
+            )
+
+        with HttpClient(
+            provider="test",
+            api_key="test-key",
+            base_url="https://backend.invalid",
+            http_client=httpx.Client(transport=httpx.MockTransport(respond)),
+        ) as client:
+            tools = Tools(client=client, provider=Mock())
+            tool = self.create_mock_tool("TEST_TOOL", "test")
+            tools._tool_schemas[tool.slug] = tool
+            tools.execute(tool.slug, {"payload": value}, version="v1.0.0")
+
+        assert len(requests) == 1
+        assert json.loads(requests[0].content)["arguments"] == {
+            "payload": expected_value
+        }
 
     def test_get_raw_tool_router_meta_tools_fetches_all_pages(self):
         """Test that ToolRouter session tools are fetched across all pages."""
