@@ -82,7 +82,7 @@ The prebuild, predev, and type-check steps generate `.generated/content-freshnes
 
 You can declare `last_updated: YYYY-MM-DD` or a timezone-qualified ISO timestamp in authored front matter. A date-only value means midnight UTC; an invalid value fails generation. Otherwise, freshness uses the source file's last Git commit. Dated changelog pages use the latest known update across entries for that date. A source commit records an edit, not a review or a guarantee that the guidance is current.
 
-Docs CI fetches full history. For other CI/CD builds, provide full history (`fetch-depth: 0` with `actions/checkout`) for complete freshness coverage. A shallow checkout retains dates for changes proven within its history but omits unknown shallow-boundary dates. Source archives without history also omit unknown dates. Neither case substitutes the checkout or build time.
+Docs CI fetches full history. The Vercel build command fetches missing history before running `bun run build`. If that fetch fails, the deployment fails instead of silently publishing incomplete freshness. For other CI/CD builds, provide full history (`fetch-depth: 0` with `actions/checkout`) for complete freshness coverage. A shallow checkout retains dates for changes proven within its history but omits unknown shallow-boundary dates. Source archives without history also omit unknown dates. Neither case substitutes the checkout or build time.
 
 ## Request review and verify publication
 

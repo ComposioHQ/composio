@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   buildContentFreshness, getExplicitLastUpdated, normalizeLastUpdated,
 } from '../../lib/content-freshness-build';
@@ -139,6 +139,42 @@ describe('source-backed page freshness', () => {
     git(shallow, 'fetch', '--deepen=1');
     const deeper = buildContentFreshness(shallow, definitions);
     expect(deeper.pages['/page']).toBe('2025-02-02T12:00:00.000Z');
+  });
+
+  test('Vercel fetches shallow history before building and stops if the fetch fails', () => {
+    const original = repository();
+    put(original, 'docs/page.mdx', 'original');
+    commit(original, initial);
+    put(original, 'unrelated.txt', 'updated');
+    commit(original, unrelated);
+    const shallow = temporaryDirectory();
+    git(shallow, 'clone', '--depth=1', pathToFileURL(original).href, '.');
+    const docs = join(shallow, 'docs');
+    const definitions = [{ pathname: '/page', sources: ['page.mdx'] }];
+    expect(buildContentFreshness(docs, definitions).pages['/page']).toBeUndefined();
+
+    // Replace only the expensive app build; exercise the real Git commands.
+    const bin = temporaryDirectory();
+    put(bin, 'bun', '#!/bin/sh\nset -eu\ntest "$1" = run\ntest "$2" = build\ngit rev-parse --is-shallow-repository > build-history-state\n');
+    chmodSync(join(bin, 'bun'), 0o755);
+    const script = fileURLToPath(new URL('../../scripts/vercel-build.sh', import.meta.url));
+    const run = () => execFileSync('sh', [script], {
+      cwd: docs, stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    });
+    run();
+    expect(readFileSync(join(docs, 'build-history-state'), 'utf8').trim()).toBe('false');
+    expect(buildContentFreshness(docs, definitions).pages['/page']).toBe('2025-01-01T12:00:00.000Z');
+
+    // Complete clones do not need a reachable remote.
+    git(shallow, 'remote', 'set-url', 'origin', join(original, 'missing'));
+    run();
+
+    // A failed fetch must stop before the build can publish unknown dates.
+    git(shallow, 'fetch', '--depth=1', pathToFileURL(original).href);
+    rmSync(join(docs, 'build-history-state'));
+    expect(() => run()).toThrow();
+    expect(existsSync(join(docs, 'build-history-state'))).toBe(false);
   });
 
   test('persists the artifact and serves it after source and Git removal', async () => {
