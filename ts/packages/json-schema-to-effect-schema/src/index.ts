@@ -163,7 +163,12 @@ const normalizeFormats = (schema: JsonObject): void => {
     return;
   }
 
-  if (schema.format === 'binary' || schema.contentEncoding !== undefined) {
+  // Mirrors parse-string.ts in @composio/json-schema-to-zod: only a base64
+  // `contentEncoding` is checked, case-insensitively (RFC 2045).
+  if (
+    typeof schema.contentEncoding === 'string' &&
+    schema.contentEncoding.toLowerCase() === 'base64'
+  ) {
     if (schema.pattern === undefined) {
       schema.pattern = BASE64_PATTERN;
     } else {
