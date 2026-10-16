@@ -11,7 +11,7 @@
   developer project, an incomplete link response, a toolkit whose auth
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
-- The CLI now uses `@composio/client@2.0.0-rc.18` (up from `2.0.0-rc.17`). No
+- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
   command changes.
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and
@@ -21,8 +21,7 @@
   life of the process, so the user API key is held only by the client making
   the request.
 - The API client's deprecation notices are dropped by the CLI's logger instead
-  of being turned off in the client, ready for `@composio/client@2.0.0-rc.19`.
-  Nothing new is printed.
+  of being turned off in the client. Nothing new is printed.
 
 ## 0.4.5
 
