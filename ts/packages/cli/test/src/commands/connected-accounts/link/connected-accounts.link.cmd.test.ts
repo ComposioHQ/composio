@@ -444,7 +444,7 @@ describe('CLI: composio dev connected-accounts link', () => {
 
           expect(lines).toEqual([
             'Linking gmail...',
-            'The API returned an incomplete link response (missing connected_account_id or redirect_url).',
+            'The link response from the API is missing `connected_account_id` or `redirect_url`.',
           ]);
         })
       );
