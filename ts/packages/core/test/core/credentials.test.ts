@@ -245,6 +245,24 @@ describe('Composio credentials and scope', () => {
       });
     });
 
+    it('authenticates with an x-org-api-key header alone when the project key is disabled', async () => {
+      const fetchMock = captureFetch();
+      const composio = new Composio({
+        ...baseConfig,
+        apiKey: null,
+        defaultHeaders: { 'x-org-api-key': 'oak_header' },
+      });
+
+      expect(composio.getClient().authMode).toBe('organization');
+      await composio.getClient().toolkits.retrieve('github');
+
+      expect(credentialHeaders(sentHeaders(fetchMock))).toEqual({
+        'x-api-key': null,
+        'x-user-api-key': null,
+        'x-org-api-key': 'oak_header',
+      });
+    });
+
     it('takes the project key from an x-api-key header', async () => {
       const fetchMock = captureFetch();
       const composio = new Composio({

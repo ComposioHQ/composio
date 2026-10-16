@@ -470,6 +470,18 @@ describe('PusherService channel authorization credentials', () => {
     expect(channelAuthHeaders()).toEqual({ 'x-user-api-key': 'uak_userKey' });
   });
 
+  it('sends the organization API key when it is the only key the SDK resolved', async () => {
+    const service = new PusherService({ baseURL } as never, {
+      apiKey: null,
+      userApiKey: null,
+      orgApiKey: 'oak_orgKey',
+    });
+
+    await service.subscribe(vi.fn());
+
+    expect(channelAuthHeaders()).toEqual({ 'x-org-api-key': 'oak_orgKey' });
+  });
+
   it('never reads a key back from the API client', async () => {
     const client = {
       baseURL,
