@@ -467,10 +467,15 @@ def _reject_async_callback(callback: t.Callable[..., t.Any], role: str) -> None:
     ``async def`` callback would only create a coroutine that is never
     awaited: the body never runs and the event is dropped silently.
     """
-    if inspect.iscoroutinefunction(callback) or inspect.iscoroutinefunction(
-        getattr(callback, "__call__", None)
+    target = callback
+    while isinstance(target, functools.partial):
+        target = target.func
+    if any(
+        check(candidate)
+        for candidate in (target, getattr(target, "__call__", None))
+        for check in (inspect.iscoroutinefunction, inspect.isasyncgenfunction)
     ):
-        name = getattr(callback, "__name__", type(callback).__name__)
+        name = getattr(target, "__name__", type(target).__name__)
         raise exceptions.ValidationError(
             f'{role} "{name}" is async. Trigger callbacks are called '
             f"synchronously and an async callback would never run; use a "
