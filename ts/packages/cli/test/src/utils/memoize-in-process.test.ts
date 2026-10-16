@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Deferred, Effect, Exit, Fiber } from 'effect';
+import { Cause, Deferred, Effect, Fiber } from 'effect';
 import { clearInProcessMemos, memoizeInProcess } from 'src/utils/memoize-in-process';
 
 describe('memoizeInProcess', () => {
@@ -25,16 +25,14 @@ describe('memoizeInProcess', () => {
   it.effect('drops a failure so the next caller retries', () =>
     Effect.gen(function* () {
       let calls = 0;
+      const outcomes = [Effect.fail(new Error('first call fails')), Effect.succeed(2)];
       const load = memoizeInProcess({
         keyOf: (key: string) => key,
-        make: () =>
-          Effect.suspend(() =>
-            ++calls === 1 ? Effect.fail(new Error('first call fails')) : Effect.succeed(calls)
-          ),
+        make: () => Effect.suspend(() => outcomes[calls++]),
       });
 
-      const first = yield* Effect.exit(load('k'));
-      expect(Exit.isFailure(first)).toBe(true);
+      const first = yield* Effect.flip(load('k'));
+      expect(first).toEqual(new Error('first call fails'));
 
       expect(yield* load('k')).toBe(2);
       expect(yield* load('k')).toBe(2);
@@ -45,16 +43,14 @@ describe('memoizeInProcess', () => {
   it.effect('drops a defect so the next caller retries', () =>
     Effect.gen(function* () {
       let calls = 0;
+      const outcomes = [Effect.die('first call dies'), Effect.succeed(2)];
       const load = memoizeInProcess({
         keyOf: (key: string) => key,
-        make: () =>
-          Effect.suspend(() =>
-            ++calls === 1 ? Effect.die('first call dies') : Effect.succeed(calls)
-          ),
+        make: () => Effect.suspend(() => outcomes[calls++]),
       });
 
-      const first = yield* Effect.exit(load('k'));
-      expect(Exit.isFailure(first)).toBe(true);
+      const first = yield* load('k').pipe(Effect.sandbox, Effect.flip);
+      expect(Cause.squash(first)).toBe('first call dies');
 
       expect(yield* load('k')).toBe(2);
       expect(calls).toBe(2);
@@ -92,24 +88,24 @@ describe('memoizeInProcess', () => {
     Effect.gen(function* () {
       const release = yield* Deferred.make<void>();
       let calls = 0;
+      const outcomes = [Effect.fail(new Error('first call fails')), Effect.succeed(2)];
       const load = memoizeInProcess({
         keyOf: (key: string) => key,
         make: () =>
           Effect.gen(function* () {
-            calls += 1;
+            const outcome = outcomes[calls++];
             yield* Deferred.await(release);
-            if (calls === 1) return yield* Effect.fail(new Error('first call fails'));
-            return calls;
+            return yield* outcome;
           }),
       });
 
-      const first = yield* Effect.forkChild(Effect.exit(load('k')));
-      const second = yield* Effect.forkChild(Effect.exit(load('k')));
+      const first = yield* Effect.forkChild(Effect.flip(load('k')));
+      const second = yield* Effect.forkChild(Effect.flip(load('k')));
       yield* Effect.yieldNow;
       yield* Deferred.succeed(release, undefined);
 
-      expect(Exit.isFailure(yield* Fiber.join(first))).toBe(true);
-      expect(Exit.isFailure(yield* Fiber.join(second))).toBe(true);
+      expect(yield* Fiber.join(first)).toEqual(new Error('first call fails'));
+      expect(yield* Fiber.join(second)).toEqual(new Error('first call fails'));
       expect(yield* load('k')).toBe(2);
       expect(calls).toBe(2);
     })

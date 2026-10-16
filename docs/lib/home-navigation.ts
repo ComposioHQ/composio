@@ -129,8 +129,11 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/session-configs',
+      '/docs/approvals',
       '/docs/instant-tools',
       '/docs/toolkits',
+      '/docs/tool-tags',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -164,14 +167,15 @@ export const DOCS_PRODUCTS = {
             links: [
               { url: '/docs/how-composio-works', label: 'What is a Session?' },
               { url: '/docs/configuring-sessions' },
-
+              { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
+              { url: '/docs/approvals' },
             ],
           },
           {
             type: 'group',
             label: 'Toolkits & Tools',
-            links: [{ url: '/docs/toolkits' }, { url: '/docs/instant-tools' }],
+            links: [{ url: '/docs/toolkits' }, { url: '/docs/tool-tags' }, { url: '/docs/instant-tools' }],
           },
           {
             type: 'group',

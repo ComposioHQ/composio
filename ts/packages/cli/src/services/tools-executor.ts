@@ -71,6 +71,14 @@ export interface ToolExecuteResponse {
   readonly error: string | null;
   readonly logId: string;
   readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
+  readonly instantCharge?: InstantCharge;
+}
+
+/** Charge billed to the org when the call ran on a Composio instant account. */
+export interface InstantCharge {
+  readonly amount: string;
+  readonly currency: 'USD';
+  readonly chargedBy: 'composio';
 }
 
 export interface ToolsExecutor {
@@ -107,24 +115,40 @@ export const isExecutionSuccessful = (raw: {
   readonly result_type: 'completed' | 'failed';
 }): boolean => raw.result_type === 'completed';
 
+type ExecutedSessionResponse = Exclude<
+  SessionExecuteResponse | SessionExecuteMetaResponse,
+  { result_type: 'input_required' }
+>;
+
+const toInstantCharge = (raw: ExecutedSessionResponse): InstantCharge | undefined => {
+  if (!raw.instant_charge) return undefined;
+  return {
+    amount: raw.instant_charge.amount,
+    currency: raw.instant_charge.currency,
+    chargedBy: raw.instant_charge.charged_by,
+  };
+};
+
 /**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
-const normalizeResponse = (
-  raw: Exclude<
-    SessionExecuteResponse | SessionExecuteMetaResponse,
-    { result_type: 'input_required' }
-  >,
+export const normalizeResponse = (
+  raw: ExecutedSessionResponse,
   permissionGateResult?: PermissionGateResult
-): ToolExecuteResponse => ({
-  successful: isExecutionSuccessful(raw),
-  data: raw.data,
-  error: raw.error,
-  logId: raw.log_id,
-  ...(permissionGateResult?.approvalStatus
-    ? { permissionApproval: permissionGateResult.approvalStatus }
-    : {}),
-});
+): ToolExecuteResponse => {
+  const response: ToolExecuteResponse = {
+    successful: isExecutionSuccessful(raw),
+    data: raw.data,
+    error: raw.error,
+    logId: raw.log_id,
+    ...(permissionGateResult?.approvalStatus
+      ? { permissionApproval: permissionGateResult.approvalStatus }
+      : {}),
+  };
+  const instantCharge = toInstantCharge(raw);
+  if (!instantCharge) return response;
+  return { ...response, instantCharge };
+};
 
 /**
  * Detect in-band error hints in tool response data.
@@ -228,22 +252,20 @@ export const ToolsExecutorLive = Layer.effect(
                 })
               );
 
-          // Never retry an execution: a retry after the backend already acted
+          // An execution is not `idempotent`, so it is sent once: a retry after the backend already acted
           // duplicates the side effect (e.g. sends the same email twice). The
           // response is not validated either, for the same reason.
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* isMetaToolSlug(
             slug
           )
-            ? resolvedClient.toolRouter.session.executeMeta(
-                sessionId,
-                { slug, arguments: normalizedArguments },
-                { maxRetries: 0, decode: false }
-              )
-            : resolvedClient.toolRouter.session.execute(
-                sessionId,
-                { tool_slug: slug, arguments: normalizedArguments },
-                { maxRetries: 0, decode: false }
-              );
+            ? resolvedClient.toolRouter.session.executeMeta(sessionId, {
+                slug,
+                arguments: normalizedArguments,
+              })
+            : resolvedClient.toolRouter.session.execute(sessionId, {
+                tool_slug: slug,
+                arguments: normalizedArguments,
+              });
           if (raw.result_type === 'input_required') {
             return yield* toolInputRequiredError(`Tool ${slug}`, raw);
           }

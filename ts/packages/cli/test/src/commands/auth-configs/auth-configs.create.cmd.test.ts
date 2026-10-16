@@ -126,11 +126,10 @@ describe('CLI: composio dev auth-configs create', () => {
     it => {
       it.effect('warns user to login', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-
-          expect(output).toContain('not logged in');
+          const error = yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']).pipe(
+            Effect.flip
+          );
+          expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
         })
       );
     }

@@ -1,15 +1,13 @@
+import { requireLogin } from 'src/effects/require-auth';
+import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   resolveArtifactsRoot,
   resolveCliSessionArtifacts,
@@ -25,6 +23,7 @@ import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
+import { idempotent } from 'src/services/composio-request';
 
 type TriggerCreateParams = NonNullable<
   Parameters<ComposioClientShape['triggerInstances']['upsert']>[1]
@@ -44,11 +43,7 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
   readonly cause?: unknown;
 }> {}
 
-class ListenOptionError extends Data.TaggedError('commands/ListenOptionError')<{
-  readonly message: string;
-}> {}
-
-const invalidOptionValue = (message: string) => new ListenOptionError({ message });
+const invalidOptionValue = commandInputError('listen');
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
@@ -106,22 +101,20 @@ const disableTemporaryTrigger = (params: {
   slug: string;
   triggerId: string;
 }) =>
-  params.client.triggerInstances.manage
-    .update(params.triggerId, { status: 'disable' }, { decode: false })
-    .pipe(
-      Effect.mapError(
-        cause =>
-          new ListenCommandError({
-            reason: 'disable_trigger',
-            // "Error: " is how these messages have always introduced the client's failure.
-            message: `Failed to disable temporary trigger "${params.triggerId}": Error: ${cause.message}`,
-            slug: params.slug,
-            cause,
-          })
-      ),
-      Effect.tapError(error => params.ui.log.warn(error.message)),
-      Effect.ignore
-    );
+  params.client.triggerInstances.manage.update(params.triggerId, { status: 'disable' }).pipe(
+    Effect.mapError(
+      cause =>
+        new ListenCommandError({
+          reason: 'disable_trigger',
+          // "Error: " is how these messages have always introduced the client's failure.
+          message: `Failed to disable temporary trigger "${params.triggerId}": Error: ${cause.message}`,
+          slug: params.slug,
+          cause,
+        })
+    ),
+    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.ignore
+  );
 
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
 
@@ -134,7 +127,8 @@ const parseCreateParams = (raw: string) =>
       invalidOptionValue(
         error.reason === 'not-a-record'
           ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
-          : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
+          : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'.",
+        '--params'
       )
     )
   );
@@ -147,7 +141,8 @@ const assertSupportedListenParams = (params: {
   params.listeningToProjectEvent && Object.keys(params.createParamsInput).length > 0
     ? Effect.fail(
         invalidOptionValue(
-          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`
+          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`,
+          '--params'
         )
       )
     : Effect.void;
@@ -164,7 +159,7 @@ const assertTriggerTypeExists = (params: {
   slug: string;
   toolkitSlug?: string;
 }) =>
-  params.client.triggersTypes.retrieve(params.slug, undefined, { decode: false }).pipe(
+  params.client.triggersTypes.retrieve(params.slug, undefined, idempotent).pipe(
     Effect.catchTag(
       '@composio/client/NotFoundError',
       cause =>
@@ -194,7 +189,8 @@ const resolveConnectedAccountIdForTrigger = (params: {
     if (!toolkitSlug) {
       return yield* Effect.fail(
         invalidOptionValue(
-          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
+          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`,
+          '<slug>'
         )
       );
     }
@@ -207,7 +203,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
           statuses: ['ACTIVE'],
           limit: 100,
         },
-        { decode: false }
+        idempotent
       )
       .pipe(
         Effect.mapError(
@@ -282,13 +278,18 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
 const parseStreamPath = (expression: string) =>
   Effect.gen(function* () {
     const trimmed = expression.trim();
+    const pathTokens: Array<string | number> = [];
+    // An empty --stream streams the whole event.
+    if (trimmed.length === 0) return pathTokens;
     if (!trimmed.startsWith('.')) {
       return yield* Effect.fail(
-        invalidOptionValue('Expected --stream to contain a jq-like path starting with "."')
+        invalidOptionValue(
+          'Expected --stream to contain a jq-like path starting with "."',
+          '--stream'
+        )
       );
     }
 
-    const pathTokens: Array<string | number> = [];
     const tokenPattern = /(?:\.([A-Za-z0-9_-]+))|(?:\[(\d+)\])/g;
     let lastIndex = 0;
 
@@ -296,7 +297,8 @@ const parseStreamPath = (expression: string) =>
       if ((match.index ?? -1) !== lastIndex) {
         return yield* Effect.fail(
           invalidOptionValue(
-            'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+            'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".',
+            '--stream'
           )
         );
       }
@@ -309,7 +311,8 @@ const parseStreamPath = (expression: string) =>
     if (lastIndex !== trimmed.length) {
       return yield* Effect.fail(
         invalidOptionValue(
-          'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+          'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".',
+          '--stream'
         )
       );
     }
@@ -395,7 +398,8 @@ const parseTimeoutMs = (value: string) =>
     if (!match || !Number.isFinite(amount) || amount <= 0 || unitMs === undefined) {
       return yield* Effect.fail(
         invalidOptionValue(
-          'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
+          'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".',
+          '--timeout'
         )
       );
     }
@@ -462,9 +466,7 @@ const resolveListenSetup = (params: {
       ? yield* parseTimeoutMs(params.timeout.value)
       : undefined;
     const streamPath = Option.isSome(params.stream)
-      ? params.stream.value.trim().length === 0
-        ? []
-        : yield* parseStreamPath(params.stream.value)
+      ? yield* parseStreamPath(params.stream.value)
       : undefined;
 
     return {
@@ -483,8 +485,6 @@ export const listenCmd = Command.make(
   { slug, params, maxEvents, timeout, stream, account, debug },
   ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
@@ -492,17 +492,7 @@ export const listenCmd = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(cause => {
-          const formatted = formatResolveCommandProjectError(cause);
-          return new ListenCommandError({
-            reason: 'project_context',
-            message: formatted.message,
-            slug,
-            cause,
-          });
-        })
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
@@ -551,7 +541,7 @@ export const listenCmd = Command.make(
       yield* Effect.acquireUseRelease(
         listeningToProjectEvent
           ? Effect.succeed<null | { trigger_id: string }>(null)
-          : client.triggerInstances.upsert(slug, createParams, { decode: false }).pipe(
+          : client.triggerInstances.upsert(slug, createParams).pipe(
               Effect.mapError(
                 cause =>
                   new ListenCommandError({
@@ -647,12 +637,7 @@ export const listenCmd = Command.make(
                   yield* emitStreamLine(`event: ${eventFilePath}`, ui);
 
                   if (shouldStream) {
-                    const streamValue =
-                      streamPath === undefined
-                        ? eventData
-                        : streamPath.length === 0
-                          ? eventData
-                          : applyStreamPath(eventData, streamPath);
+                    const streamValue = applyStreamPath(eventData, streamPath ?? []);
                     yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
                   }
 
@@ -686,8 +671,7 @@ export const listenCmd = Command.make(
             }
 
             if (maxEventsLimit === undefined && timeoutMs === undefined) {
-              yield* listenEffect;
-              return;
+              return yield* listenEffect;
             }
 
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
@@ -754,5 +738,6 @@ export const listenCmd = Command.make(
     {
       command: "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
     },
-  ])
+  ]),
+  requireLogin
 );

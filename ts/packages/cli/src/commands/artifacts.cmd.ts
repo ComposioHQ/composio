@@ -12,9 +12,10 @@ const cwdCmd = Command.make('cwd').pipe(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const artifacts = yield* resolveCliSessionArtifacts();
-      const directoryPath = Option.isSome(artifacts)
-        ? artifacts.value.directoryPath
-        : yield* resolveArtifactsRoot;
+      const directoryPath = yield* Option.match(artifacts, {
+        onSome: ({ directoryPath }) => Effect.succeed(directoryPath),
+        onNone: () => resolveArtifactsRoot,
+      });
       yield* ui.output(directoryPath, { force: true });
     })
   )

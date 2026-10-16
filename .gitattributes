@@ -14,6 +14,10 @@ pnpm-lock.yaml linguist-generated=true
 uv.lock linguist-generated=true
 **/bun.lock linguist-generated=true
 
+# Vitest snapshots (written by the test runner; verify by rerunning the suite,
+# not by reading the diff)
+**/__snapshots__/*.snap linguist-generated=true
+
 # Managed-block conformance fixtures are byte-exact inputs/outputs shared by
 # the sh harness and the TS reconciler test; never normalize their line endings.
 test/managed-block-fixtures/** -text

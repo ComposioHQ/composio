@@ -8,13 +8,12 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Fiber, Layer } from 'effect';
 import { HttpClient } from 'effect/http';
-import { BadRequestError, make } from '@composio/client/effect';
+import { Auth, BadRequestError, make } from '@composio/client/effect';
 import {
   ComposioBlockedInternalUrlError,
   ComposioSensitiveFilePathBlockedError,
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
-import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
 import {
   schemaHasFileUploadable,
   ToolFileUploadError,
@@ -230,13 +229,8 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
     let interrupted = false;
     const client = make(
       {
-        apiKey: 'test',
-        userApiKey: null,
-        orgApiKey: null,
+        auth: Auth.project('test'),
         baseURL: 'https://stub.invalid',
-        deprecationNotices: 'off',
-        decode: true,
-        schemas: composioSchemaLoaders,
       },
       HttpClient.make(() =>
         Effect.sync(() => reached.resolve()).pipe(

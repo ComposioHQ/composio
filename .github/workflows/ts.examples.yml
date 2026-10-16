@@ -68,6 +68,9 @@ jobs:
       - name: Lint examples
         run: pnpm run lint:examples
 
+      - name: Test approval examples and MCP elicitation
+        run: pnpm --filter approvals-example test
+
       # Prove the Cloudflare Workers entry bundles without secrets or deploying.
       - name: Cloudflare Workers dry-run build
         run: pnpm exec turbo cf:dry-run --filter='./ts/examples/*'

@@ -355,11 +355,65 @@ describe('composio-clients', () => {
         expect(headers.has('x-user-api-key')).toBe(false);
       }).pipe(Effect.provide(withSingleton))
     );
+
+    it.effect.each([
+      {
+        known: 'the org and the project',
+        orgId: 'org_1',
+        projectId: 'proj_1',
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the org only',
+        orgId: 'org_1',
+        projectId: undefined,
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the project only',
+        orgId: undefined,
+        projectId: 'proj_1',
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the org and the project, with a project key',
+        orgId: 'org_1',
+        projectId: 'proj_1',
+        projectApiKey: 'ak_project',
+        credentials: { user: null, project: 'ak_project' },
+      },
+    ])('getLatestToolVersion sends whichever of $known is known', params =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValue(jsonResponse({ tool_slug: 'GMAIL_SEND_EMAIL', version: '1' }));
+
+        yield* getLatestToolVersion({
+          apiKey: 'uak_test',
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          orgId: params.orgId,
+          projectId: params.projectId,
+          projectApiKey: params.projectApiKey,
+        });
+
+        const { headers } = requestOf(fetchSpy.mock.calls[0]);
+        expect(headers.get('x-org-id')).toBe(params.orgId ?? null);
+        expect(headers.get('x-project-id')).toBe(params.projectId ?? null);
+        expect({
+          user: headers.get('x-user-api-key'),
+          project: headers.get('x-api-key'),
+        }).toEqual(params.credentials);
+      }).pipe(Effect.provide(withSingleton))
+    );
   });
 
   describe('repository request core', () => {
-    for (const method of ['getToolkits', 'getTools', 'getTriggerTypes'] as const) {
-      it.effect(`${method} aborts an in-flight pagination request when interrupted`, () =>
+    it.effect.each(['getToolkits', 'getTools', 'getTriggerTypes'] as const)(
+      '%s aborts an in-flight pagination request when interrupted',
+      method =>
         Effect.gen(function* () {
           const started = Promise.withResolvers<AbortSignal>();
           const fetchSpy = vi
@@ -383,8 +437,7 @@ describe('composio-clients', () => {
           expect(requestSignal.aborted).toBe(true);
           expect(fetchSpy).toHaveBeenCalledTimes(2);
         }).pipe(Effect.provide(withRepository))
-      );
-    }
+    );
 
     it.effect('fetches every toolkit page, sorted by slug, and counts each request', () =>
       Effect.gen(function* () {
@@ -587,62 +640,16 @@ describe('composio-clients', () => {
         };
         vi.spyOn(globalThis, 'fetch')
           .mockResolvedValueOnce(jsonResponse(authConfig))
-          .mockResolvedValueOnce(
-            jsonResponse({
-              items: [connectedAccount],
-              total_items: 1,
-              total_pages: 1,
-              current_page: 1,
-              next_cursor: null,
-            })
-          );
+          .mockResolvedValueOnce(jsonResponse(connectedAccount));
         const repository = yield* ComposioToolkitsRepository;
 
         const decodedAuthConfig = yield* repository.getAuthConfig('ac_1');
-        const accounts = yield* repository.listConnectedAccounts({});
+        const account = yield* repository.getConnectedAccount('con_1');
 
         expect(JSON.stringify(decodedAuthConfig)).not.toContain('secret');
-        expect(JSON.stringify(accounts)).not.toContain('secret');
-        expect(accounts.items.map(item => item.id)).toEqual(['con_1']);
+        expect(JSON.stringify(account)).not.toContain('secret');
+        expect(account.id).toBe('con_1');
       }).pipe(Effect.provide(withRepository))
-    );
-
-    it.effect(
-      'listConnectedAccounts returns an account whose status this build does not know',
-      () =>
-        Effect.gen(function* () {
-          vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-            jsonResponse({
-              items: [
-                {
-                  id: 'con_1',
-                  status: 'QUARANTINED',
-                  status_reason: null,
-                  is_disabled: false,
-                  user_id: 'default',
-                  toolkit: { slug: 'gmail' },
-                  auth_config: {
-                    id: 'ac_1',
-                    auth_scheme: 'OAUTH2',
-                    is_composio_managed: true,
-                    is_disabled: false,
-                  },
-                  created_at: '2026-01-01T00:00:00Z',
-                  updated_at: '2026-01-01T00:00:00Z',
-                },
-              ],
-              total_items: 1,
-              total_pages: 1,
-              current_page: 1,
-              next_cursor: null,
-            })
-          );
-          const repository = yield* ComposioToolkitsRepository;
-
-          const accounts = yield* repository.listConnectedAccounts({});
-
-          expect(accounts.items.map(item => item.status)).toEqual(['QUARANTINED']);
-        }).pipe(Effect.provide(withRepository))
     );
 
     it.effect('listActiveTriggers defaults the page counts a response leaves out', () =>
@@ -777,10 +784,7 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
 
   const requestOf = (fetchSpy: ReturnType<typeof spyOnToolkitsFetch>) => {
     const [input, init] = fetchSpy.mock.calls[0]!;
-    const url = new URL(input instanceof Request ? input.url : String(input));
-    const headers = new Headers(input instanceof Request ? input.headers : undefined);
-    new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
-    return { url, headers };
+    return { url: new URL(String(input)), headers: new Headers(init?.headers) };
   };
 
   it.effect(

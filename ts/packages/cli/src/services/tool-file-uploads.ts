@@ -8,6 +8,7 @@ import type * as Path from 'effect/Path';
 import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
 import { Data, Effect, Predicate } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { idempotent } from 'src/services/composio-request';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -54,6 +55,12 @@ const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObje
 
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
+
+// `items` is either one schema or a tuple of schemas; keep only the schema records.
+const getItemSchemas = (items: unknown): ReadonlyArray<JsonSchema> => {
+  if (Array.isArray(items)) return items.filter(isSchemaRecord);
+  return isSchemaRecord(items) ? [items] : [];
+};
 
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariant(schema?.anyOf),
@@ -154,13 +161,9 @@ export const findFileUploadablePaths = (
     findFileUploadablePaths(variant, basePath)
   );
 
-  const itemPaths = Array.isArray(schema.items)
-    ? schema.items.flatMap(item =>
-        isSchemaRecord(item) ? findFileUploadablePaths(item, basePath) : []
-      )
-    : isSchemaRecord(schema.items)
-      ? findFileUploadablePaths(schema.items, basePath)
-      : [];
+  const itemPaths = getItemSchemas(schema.items).flatMap(item =>
+    findFileUploadablePaths(item, basePath)
+  );
 
   const seen = new Set<string>();
   return [...directPropertyPaths, ...variantPaths, ...itemPaths].filter(pathParts => {
@@ -281,6 +284,7 @@ const uploadFile = (params: {
     // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
     const { createHash } = yield* Effect.promise(() => import('node:crypto'));
     const md5 = createHash('md5').update(fileData.bytes).digest('hex');
+    // Issuing an upload URL changes nothing until the upload, so a retry is safe.
     const presigned = yield* params.client.files.createPresignedURL(
       {
         filename: fileData.fileName,
@@ -289,7 +293,7 @@ const uploadFile = (params: {
         tool_slug: params.toolSlug,
         toolkit_slug: params.toolkitSlug,
       },
-      { decode: false }
+      idempotent
     );
 
     const { ssrfSafeFetch } = yield* loadSsrfSafeFetch;
@@ -375,11 +379,7 @@ const hydrateFileUploads = (
     }
 
     if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
-      const itemSchema = Array.isArray(schema.items)
-        ? schema.items.find(isSchemaRecord)
-        : isSchemaRecord(schema.items)
-          ? schema.items
-          : undefined;
+      const itemSchema = getItemSchemas(schema.items).at(0);
 
       return yield* Effect.all(
         value.map(item => hydrateFileUploads(item, itemSchema, ctx)),

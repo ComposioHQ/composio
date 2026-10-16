@@ -9,7 +9,7 @@ import type { SessionRetrieveInfoResponse } from '@composio/client/resources/aut
 import { LatestToolVersionResponse } from 'src/models/tools';
 import { ComposioClientSingleton } from './composio-clients';
 import { HttpDecodingError, type ClientError } from './composio-errors';
-import { decode, undecoded } from './composio-request';
+import { decode, idempotent, validated } from './composio-request';
 
 /**
  * Account, session-info, and consumer helpers
@@ -71,33 +71,15 @@ export const sessionProjectApiKeyOf = (info: SessionInfoResponse): string | null
  */
 export type OrgProject = ProjectListResponse.Data;
 
-/**
- * Response from GET /api/v3.1/org/project/list.
- */
-export type OrgProjectListResponse = ProjectListResponse;
-
 export interface OrganizationSummary {
   readonly id: string;
   readonly name: string;
 }
 
-export interface OrganizationListResponse {
+interface OrganizationSummaryList {
   readonly data: ReadonlyArray<OrganizationSummary>;
   readonly total_items: number;
 }
-
-export interface OrganizationProjectSummary {
-  readonly id: string;
-  readonly name: string;
-}
-
-export interface OrganizationProjectListResponse {
-  readonly data: ReadonlyArray<OrganizationProjectSummary>;
-  readonly total_items: number;
-}
-
-export type ConsumerProjectResolveResponse = ProjectResolveResponse;
-export type ConsumerConnectedToolkitsResponse = ConsumerListConnectedToolkitsResponse;
 
 const orgScopedOptions = (orgId: string | undefined): RequestOptions | undefined =>
   orgId ? { headers: { 'x-org-id': orgId } } : undefined;
@@ -108,11 +90,14 @@ const orgScopedOptions = (orgId: string | undefined): RequestOptions | undefined
 export const listOrganizations = (params: {
   apiKey: string;
   limit?: number;
-}): Effect.Effect<OrganizationListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<OrganizationSummaryList, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    const response = yield* client.org.list({ limit: params.limit ?? 50 });
+    const response = yield* client.org.list(
+      { limit: params.limit ?? 50 },
+      { ...idempotent, ...validated }
+    );
     const organizations = response.organizations.map(
       (organization: OrgListResponse.Organization) =>
         ({ id: organization.id, name: organization.name }) satisfies OrganizationSummary
@@ -135,17 +120,17 @@ export const listOrganizationProjects = (params: {
   apiKey: string;
   orgId: string;
   limit?: number;
-}): Effect.Effect<OrganizationProjectListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<OrganizationSummaryList, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     const response = yield* client.org.project.list(
       { limit: params.limit ?? 50 },
-      { ...undecoded, ...orgScopedOptions(params.orgId) }
+      { ...orgScopedOptions(params.orgId), ...idempotent }
     );
     const projects = response.data.map(
       (project: OrgProject) =>
-        ({ id: project.id, name: project.name }) satisfies OrganizationProjectSummary
+        ({ id: project.id, name: project.name }) satisfies OrganizationSummary
     );
 
     return {
@@ -165,13 +150,13 @@ export const listOrgProjects = (params: {
   apiKey: string;
   orgId: string;
   limit?: number;
-}): Effect.Effect<OrgProjectListResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ProjectListResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.project.list(
       { list_all_org_projects: true, limit: params.limit ?? 50 },
-      { ...undecoded, ...orgScopedOptions(params.orgId) }
+      { ...orgScopedOptions(params.orgId), ...idempotent }
     );
   });
 
@@ -192,7 +177,7 @@ export const getSessionInfo = (params: {
     });
     // Read through a few fields only, and called after login has already
     // linked the session: drift in a field the CLI never reads must not fail it.
-    const info = yield* client.auth.session.retrieveInfo(undecoded);
+    const info = yield* client.auth.session.retrieveInfo(idempotent);
     return yield* requireSessionProject(info);
   });
 
@@ -216,7 +201,7 @@ export const getSessionInfoByUserApiKey = (params: {
     const client = yield* clientSingleton.getFor({ userApiKey: params.userApiKey });
     const info = yield* client.auth.session.retrieveInfo({
       ...orgScopedOptions(params.orgId),
-      ...undecoded,
+      ...idempotent,
     });
     return yield* requireSessionProject(info);
   });
@@ -274,7 +259,6 @@ export const createProjectApiKey = (params: {
     });
     const payload = yield* client.post(`/api/v3/org/project/${params.projectId}/api_keys/create`, {
       body: { name: params.name },
-      maxRetries: 0,
     });
     const createdApiKey = getApiKeyFromPayload(payload);
 
@@ -292,20 +276,23 @@ export const createProjectApiKey = (params: {
 export const resolveConsumerProject = (params: {
   apiKey: string;
   orgId: string;
-}): Effect.Effect<ConsumerProjectResolveResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ProjectResolveResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
     return yield* client.org.consumer.project.resolve(
-      { 'x-user-api-key': params.apiKey, 'x-org-id': params.orgId },
-      undecoded
+      {
+        'x-user-api-key': params.apiKey,
+        'x-org-id': params.orgId,
+      },
+      idempotent
     );
   });
 
 /**
  * Resolves the latest version of a tool. When `projectApiKey` is given the
- * request carries `x-api-key` instead of the user key, so exactly one
- * credential is sent.
+ * request is sent by a client that authenticates with it instead of the user
+ * key, so exactly one credential is sent.
  */
 export const getLatestToolVersion = (params: {
   apiKey: string;
@@ -316,21 +303,26 @@ export const getLatestToolVersion = (params: {
 }): Effect.Effect<LatestToolVersionResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const headers = {
-      ...(params.projectApiKey
-        ? { 'x-api-key': params.projectApiKey, 'x-user-api-key': null }
-        : {}),
-      ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
-      ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
-    };
-    const client = yield* clientSingleton.getFor({
-      userApiKey: params.apiKey,
-      orgId: params.orgId,
-      projectId: params.projectId,
-    });
+    const credential = params.projectApiKey
+      ? { projectApiKey: params.projectApiKey }
+      : { userApiKey: params.apiKey };
+    // A client's scope names the org and the project together; when only one
+    // of them is known it goes on the request, which an unscoped client allows.
+    const client = yield* clientSingleton.getFor(
+      params.orgId && params.projectId
+        ? { ...credential, orgId: params.orgId, projectId: params.projectId }
+        : credential
+    );
+    const headers =
+      params.orgId && params.projectId
+        ? undefined
+        : {
+            ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
+            ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
+          };
     const payload = yield* client.get(
       `/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
-      { headers }
+      { headers, ...idempotent }
     );
     return yield* decode(LatestToolVersionResponse)(payload);
   });
@@ -339,15 +331,18 @@ export const getConsumerConnectedToolkits = (params: {
   apiKey: string;
   orgId: string;
   consumerUserId: string;
-}): Effect.Effect<ConsumerConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
+}): Effect.Effect<ConsumerListConnectedToolkitsResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    return yield* client.org.consumer.listConnectedToolkits({
-      user_id: params.consumerUserId,
-      'x-user-api-key': params.apiKey,
-      'x-org-id': params.orgId,
-    });
+    return yield* client.org.consumer.listConnectedToolkits(
+      {
+        user_id: params.consumerUserId,
+        'x-user-api-key': params.apiKey,
+        'x-org-id': params.orgId,
+      },
+      { ...idempotent, ...validated }
+    );
   });
 
 export class DeveloperProjectNotFoundError extends Data.TaggedError(
@@ -362,7 +357,7 @@ export class AmbiguousDeveloperProjectNameError extends Data.TaggedError(
 )<{
   readonly orgId: string;
   readonly projectName: string;
-  readonly matches: ReadonlyArray<OrganizationProjectSummary>;
+  readonly matches: ReadonlyArray<OrganizationSummary>;
 }> {}
 
 export const findDeveloperProjectByName = (params: {
@@ -371,7 +366,7 @@ export const findDeveloperProjectByName = (params: {
   name: string;
   limit?: number;
 }): Effect.Effect<
-  OrganizationProjectSummary,
+  OrganizationSummary,
   DeveloperProjectNotFoundError | AmbiguousDeveloperProjectNameError | ClientError,
   ComposioClientSingleton
 > =>

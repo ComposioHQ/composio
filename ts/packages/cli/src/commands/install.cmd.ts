@@ -143,12 +143,11 @@ const resolveBinDir = (params: {
  * command wrote byte for byte, so any disagreement makes every delegated
  * install look stale and forces a needless inline rewrite.
  */
-export const renderWithHome = (dir: string, homedir: string): string =>
-  dir === homedir
-    ? '$HOME'
-    : dir.startsWith(`${homedir}/`)
-      ? `$HOME/${dir.slice(homedir.length + 1)}`
-      : dir;
+export const renderWithHome = (dir: string, homedir: string): string => {
+  if (dir === homedir) return '$HOME';
+  if (dir.startsWith(`${homedir}/`)) return `$HOME/${dir.slice(homedir.length + 1)}`;
+  return dir;
+};
 
 export const pathBlockForShell = (shell: Shell, binDir: string, homedir: string): string => {
   const rendered = renderWithHome(binDir, homedir);
@@ -290,15 +289,14 @@ const LEGACY_FISH_INSTALL_DIR_PREFIX = 'set --export COMPOSIO_INSTALL_DIR "';
  * `set --export COMPOSIO_INSTALL_DIR "<dir>"`. Matched structurally on the
  * prefix/quotes (any dir), like `isManagedPathAssignment`.
  */
+const isQuotedAssignment = (line: string, prefix: string): boolean =>
+  line.startsWith(prefix) && line.endsWith('"') && line.length > prefix.length;
+
 const isLegacyInstallDirAssignment = (line: string): boolean => {
   const trimmed = line.trim();
   return (
-    (trimmed.startsWith(LEGACY_POSIX_INSTALL_DIR_PREFIX) &&
-      trimmed.endsWith('"') &&
-      trimmed.length > LEGACY_POSIX_INSTALL_DIR_PREFIX.length) ||
-    (trimmed.startsWith(LEGACY_FISH_INSTALL_DIR_PREFIX) &&
-      trimmed.endsWith('"') &&
-      trimmed.length > LEGACY_FISH_INSTALL_DIR_PREFIX.length)
+    isQuotedAssignment(trimmed, LEGACY_POSIX_INSTALL_DIR_PREFIX) ||
+    isQuotedAssignment(trimmed, LEGACY_FISH_INSTALL_DIR_PREFIX)
   );
 };
 

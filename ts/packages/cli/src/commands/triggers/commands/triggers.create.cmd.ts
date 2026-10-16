@@ -1,7 +1,6 @@
 import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option, Result } from 'effect';
 import { parseJsonRecord } from 'src/utils/parse-json';
-import { requireAuth } from 'src/effects/require-auth';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -30,8 +29,6 @@ export const triggersCmd$Create = Command.make(
   { triggerName, connectedAccountId, triggerConfig },
   ({ triggerName, connectedAccountId, triggerConfig }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 

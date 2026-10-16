@@ -18,7 +18,7 @@ import {
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
+import { browserLogin } from 'src/effects/browser-login';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import {
@@ -40,6 +40,11 @@ import {
  *
  * - `--yes` / `-y` — auto-select the first project from the list
  */
+
+const noBrowserOpt = Flag.Boolean('no-browser').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Login without browser interaction')
+);
 
 const yesOpt = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
@@ -338,17 +343,19 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       testUserId: Option.none(),
     });
 
-    const selectedProject: OrgProject =
-      yes || orgProjects.data.length === 1
-        ? (selectDefaultProject({
-            projects: orgProjects.data,
-            defaultOrgId: orgIdValue,
-            defaultProjectId: projectIdValue,
-          }) ?? orgProjects.data[0])
-        : yield* ui.select<OrgProject>(
-            'Select a developer project:',
-            orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
-          );
+    const skipProjectPicker = yes || orgProjects.data.length === 1;
+    const defaultProject =
+      selectDefaultProject({
+        projects: orgProjects.data,
+        defaultOrgId: orgIdValue,
+        defaultProjectId: projectIdValue,
+      }) ?? orgProjects.data[0];
+    const selectedProject: OrgProject = skipProjectPicker
+      ? defaultProject
+      : yield* ui.select<OrgProject>(
+          'Select a developer project:',
+          orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
+        );
 
     const selected = orgProjectToKeys(selectedProject);
     yield* ui.log.step(`Using developer project "${selectedProject.name}"`);

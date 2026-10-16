@@ -1,21 +1,11 @@
-import {
-  Cache,
-  Context,
-  Duration,
-  Effect,
-  Exit,
-  Layer,
-  Option,
-  Stream,
-  Array,
-  Order,
-} from 'effect';
+import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import {
+  // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
-  VERSION as clientLibraryVersion,
+  Auth,
   type ComposioClientShape,
   type ConfigurationError,
 } from '@composio/client/effect';
@@ -28,16 +18,22 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
-import { cliRequestHeaders } from './client-provenance';
+import { cliClientIdentity } from './client-provenance';
+import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
 import { isClientConfigurationError } from 'src/utils/api-error-extraction';
-import { MAX_CONCURRENT_REQUESTS_PER_ENDPOINT, decode, undecoded } from './composio-request';
+import {
+  MAX_CONCURRENT_REQUESTS_PER_ENDPOINT,
+  decode,
+  idempotent,
+  validated,
+} from './composio-request';
 import { lookupOperations, resourceOperations } from './composio-resource-operations';
-import { composioSchemaLoaders } from './composio-schema-loaders';
+import { schemaLoaders } from '@composio/client/effect/schemas';
 import {
   InvalidToolkitsError,
   invalidToolkitOn404,
@@ -82,32 +78,23 @@ const sortBySlug = <T extends { readonly slug: string }>(
 const normalizeApiKey = (rawApiKey?: string): string | undefined =>
   typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
 
-const buildDefaultHeaders = (params: {
-  userApiKey?: string;
-  orgId?: string;
-  projectId?: string;
-  cliSessionId?: string;
-}): Record<string, string> | undefined => {
-  const defaultHeaders = {
-    ...cliRequestHeaders(),
-    'x-client-library': '@composio/client',
-    'x-client-library-version': clientLibraryVersion,
-    ...(params.userApiKey
-      ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
-      : {}),
-    ...(params.orgId && params.projectId
-      ? ({
-          'x-org-id': params.orgId,
-          'x-project-id': params.projectId,
-        } satisfies Record<string, string>)
-      : {}),
-    ...(params.cliSessionId
-      ? ({ 'x-cli-session-id': params.cliSessionId } satisfies Record<string, string>)
-      : {}),
-  };
+/**
+ * Which key a client sends: the user's (`userApiKey`, defaulting to the
+ * logged-in user's), or a project key in its place.
+ */
+type ClientCredential =
+  | { readonly userApiKey?: string; readonly projectApiKey?: undefined }
+  | { readonly projectApiKey: string; readonly userApiKey?: undefined };
 
-  return defaultHeaders;
-};
+/**
+ * Whose requests a client sends. The org and project headers are only sent
+ * together, so a scope names both or neither.
+ */
+export type ClientScope = ClientCredential &
+  (
+    | { readonly orgId: string; readonly projectId: string }
+    | { readonly orgId?: undefined; readonly projectId?: undefined }
+  );
 
 /**
  * Shape exposed by {@link ComposioClientSingleton}.
@@ -119,13 +106,12 @@ export interface ComposioClientSingletonShape {
    */
   readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
-   * The client for an explicit scope. `userApiKey` defaults to the user's key.
+   * The client for an explicit scope. `userApiKey` defaults to the user's key;
+   * a `projectApiKey` is sent instead of any user key.
    */
-  readonly getFor: (params: {
-    userApiKey?: string;
-    orgId?: string;
-    projectId?: string;
-  }) => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
+  readonly getFor: (
+    params: ClientScope
+  ) => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * Returns a snapshot of the accumulated metrics (total bytes received and
    * request count) across every client this singleton built.
@@ -142,16 +128,26 @@ export interface ComposioClientSingletonShape {
  */
 export type ClientBuildError = ConfigurationError | ComposioClientConfigurationError;
 
+// What each client built here addresses: its auth mode, a SHA-256 fingerprint
+// of its credential (never the key itself), org, and project. `getFor` builds
+// a new client on every call, so a memo over a client's reads keys on this
+// rather than on the instance.
+const clientScopeKeys = new WeakMap<ComposioClientShape, string>();
+let nextUnscopedClient = 0;
+
 /**
- * The scope a client is built for. A plain record is compared and hashed
- * structurally by `Equal` and `Hash`, so two lookups with the same fields
- * resolve to the same cache entry.
+ * A memo key for what `client` addresses. Two clients from
+ * {@link ComposioClientSingleton} with the same credential, org, and project
+ * share it; a client built anywhere else (a test double) gets one of its own.
  */
-interface ClientScope {
-  readonly userApiKey: string | undefined;
-  readonly orgId: string | undefined;
-  readonly projectId: string | undefined;
-}
+export const clientScopeKey = (client: ComposioClientShape): string => {
+  let key = clientScopeKeys.get(client);
+  if (key === undefined) {
+    key = `instance:${nextUnscopedClient++}`;
+    clientScopeKeys.set(client, key);
+  }
+  return key;
+};
 
 /**
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
@@ -159,10 +155,15 @@ interface ClientScope {
  *
  * Clients are built with `make`, which never consults the ambient process
  * environment: every credential and the base URL come from the CLI's own
- * configuration. Custom HTTP base URLs remain supported. The user key is
- * placed in `defaultHeaders` as `x-user-api-key`, which keeps today's wire
- * bytes on every operation; it is also passed as `userApiKey`, while the
- * caller-placed header still wins at dispatch.
+ * configuration. Custom HTTP base URLs remain supported. A client
+ * authenticates with `Auth.user` and the user key, with `Auth.project` when a
+ * caller names a project key, and with `Auth.none()` before anyone has logged
+ * in; the org and project go in its `scope`. No credential or scope header is
+ * placed in `defaultHeaders`, which the client refuses while `auth` and
+ * `scope` own them.
+ *
+ * Every lookup builds a new client (`make` costs a few microseconds), so no
+ * credential is held anywhere but in the client a caller is using.
  */
 const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
   Effect.gen(function* () {
@@ -170,31 +171,56 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
     const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
     const httpClient = yield* HttpClient.HttpClient;
 
-    const buildClient = (scope: ClientScope) =>
-      Effect.gen(function* () {
-        const cliSessionId = yield* getCurrentCwdSessionId();
+    // Read from disk once per process, with the services captured here.
+    const sessionIdServices =
+      yield* Effect.context<Effect.Services<ReturnType<typeof getCurrentCwdSessionId>>>();
+    const currentCwdSessionId = yield* Effect.cached(
+      getCurrentCwdSessionId().pipe(Effect.provideContext(sessionIdServices))
+    );
 
-        return yield* Effect.try({
+    // `ctx.data` is read per call: a login or logout changes the user key.
+    const getFor = (params?: ClientScope) =>
+      Effect.gen(function* () {
+        const cliSessionId = yield* currentCwdSessionId;
+        const userApiKey = normalizeApiKey(
+          params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
+        );
+        const auth =
+          params?.projectApiKey !== undefined
+            ? Auth.project(params.projectApiKey)
+            : userApiKey !== undefined
+              ? Auth.user(userApiKey)
+              : Auth.none();
+        const orgId = params?.orgId;
+        const projectId = params?.projectId;
+        const credential = params?.projectApiKey ?? userApiKey;
+        const credentialFingerprint =
+          credential !== undefined
+            ? yield* Effect.promise(() => sha256Hex(new TextEncoder().encode(credential)))
+            : '';
+
+        const client = yield* Effect.try({
           try: () =>
-            // Responses are validated against the CLI's loader table unless a
-            // call passes `decode: false`.
+            // A call that passes `decode: true` has its response validated
+            // against the client's schema for that operation.
             makeComposioClient(
               {
-                apiKey: null,
-                userApiKey: scope.userApiKey ?? null,
-                orgApiKey: null,
+                auth,
+                scope:
+                  orgId !== undefined && projectId !== undefined
+                    ? { organizationId: orgId, projectId }
+                    : undefined,
                 baseURL: ctx.data.baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
-                deprecationNotices: 'off',
-                defaultHeaders: buildDefaultHeaders({
-                  userApiKey: scope.userApiKey,
-                  orgId: scope.orgId,
-                  projectId: scope.projectId,
-                  cliSessionId,
-                }),
-                decode: true,
-                schemas: composioSchemaLoaders,
+                // The identity headers come from here; the client refuses them
+                // in `defaultHeaders`.
+                identity: cliClientIdentity(),
+                defaultHeaders:
+                  cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : undefined,
+                // Only a call that passes `idempotent` is retried.
+                maxRetries: 0,
+                schemas: schemaLoaders,
               },
               httpClient
             ),
@@ -208,28 +234,12 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                   cause,
                 }),
         });
+        clientScopeKeys.set(
+          client,
+          `${auth.mode}\u0000${credentialFingerprint}\u0000${orgId ?? ''}\u0000${projectId ?? ''}`
+        );
+        return client;
       });
-
-    // One client per scope, built once: concurrent first callers share the
-    // in-flight build. The lookup reads the session id from disk with the
-    // services captured here. A failed build is not kept (its entry's time to
-    // live is zero), so the next caller builds again instead of replaying a
-    // configuration error that a later login may have fixed.
-    const clients = yield* Cache.makeWith(buildClient, {
-      capacity: 64,
-      timeToLive: exit => (Exit.isSuccess(exit) ? Duration.infinity : Duration.zero),
-    });
-
-    // `ctx.data` is read per call: a login or logout changes the user key,
-    // and with it the scope.
-    const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
-      Effect.suspend(() =>
-        Cache.get(clients, {
-          userApiKey: normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)),
-          orgId: params?.orgId,
-          projectId: params?.projectId,
-        })
-      );
 
     return {
       get: Effect.fn(function* () {
@@ -247,11 +257,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
             }),
         });
       }),
-      getFor: Effect.fn(function* (params: {
-        userApiKey?: string;
-        orgId?: string;
-        projectId?: string;
-      }) {
+      getFor: Effect.fn(function* (params: ClientScope) {
         return yield* getFor(params);
       }),
       getMetrics: metrics.getMetrics,
@@ -299,12 +305,12 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
 
   const listToolkits = (managedBy?: 'project', scope?: ToolkitProjectScope) =>
     collectAll(scope ? clientSingleton.getFor(scope) : client, c =>
-      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, undecoded)
+      c.toolkits.listStream({ limit: MAX_PAGE_SIZE, managed_by: managedBy }, idempotent)
     ).pipe(Effect.flatMap(decode(Toolkits)), Effect.map(sortBySlug));
 
   const getToolkitDetailed = (slug: string) =>
     client.pipe(
-      Effect.flatMap(c => c.toolkits.retrieve(slug, undefined, undecoded)),
+      Effect.flatMap(c => c.toolkits.retrieve(slug, undefined, idempotent)),
       Effect.flatMap(decode(ToolkitDetailed))
     );
 
@@ -341,9 +347,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     ).pipe(Effect.map(sortBySlug));
 
   const listTools = (query: { toolkit_slug?: string; toolkit_versions: string }) =>
-    collectAll(client, c => c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE }, undecoded)).pipe(
-      Effect.flatMap(decode(Tools))
-    );
+    collectAll(client, c =>
+      c.tools.listStream({ ...query, limit: MAX_PAGE_SIZE }, idempotent)
+    ).pipe(Effect.flatMap(decode(Tools)));
 
   return {
     getToolkits,
@@ -355,7 +361,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getToolsAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.tools.retrieveEnum(undecoded)),
+        Effect.flatMap(c => c.tools.retrieveEnum(idempotent)),
         Effect.flatMap(decode(ToolsAsEnums))
       ),
     /**
@@ -385,7 +391,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getTriggerTypesAsEnums: () =>
       client.pipe(
-        Effect.flatMap(c => c.triggersTypes.retrieveEnum(undecoded)),
+        Effect.flatMap(c => c.triggersTypes.retrieveEnum(idempotent)),
         Effect.flatMap(decode(TriggerTypesAsEnums))
       ),
     /**
@@ -396,8 +402,11 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
     getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
       collectAll(client, c =>
         c.triggersTypes.listStream(
-          { limit: MAX_PAGE_SIZE, toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined },
-          undecoded
+          {
+            limit: MAX_PAGE_SIZE,
+            toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+          },
+          idempotent
         )
       ).pipe(Effect.flatMap(decode(TriggerTypes)), Effect.map(sortBySlug)),
     /**
@@ -493,7 +502,7 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     createSession: (params?: { scope?: 'user' | 'project' }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' }, undecoded)),
+        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' })),
         Effect.flatMap(decode(Session))
       ),
     /**
@@ -501,12 +510,13 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     getSession: (session: { id: string }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.getSession({ id: session.id }, undecoded)),
+        Effect.flatMap(c => c.cli.getSession({ id: session.id }, idempotent)),
         Effect.flatMap(decode(RetrievedSession))
       ),
-    getRealtimeCredentials: () => Effect.flatMap(client, c => c.cli.realtime.credentials()),
+    getRealtimeCredentials: () =>
+      Effect.flatMap(client, c => c.cli.realtime.credentials({ ...idempotent, ...validated })),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-      Effect.flatMap(client, c => c.cli.realtime.auth(params, undecoded)),
+      Effect.flatMap(client, c => c.cli.realtime.auth(params, idempotent)),
   };
 });
 

@@ -136,13 +136,6 @@ export const getCachedToolInputDefinition = (slug: string) =>
     };
   });
 
-export const getToolDefinitionCachePath = (slug: string) =>
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const cacheDir = yield* setupCacheDir;
-    return toolDefinitionPath(path, cacheDir, slug);
-  });
-
 export const cacheToolInputDefinition = (params: {
   readonly slug: string;
   readonly schema: Record<string, unknown>;
@@ -365,7 +358,10 @@ export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSche
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
   const objectSchema = decodeObjectSchemaWithProperties(schema);
-  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
+  return Option.match(objectSchema, {
+    onNone: () => [],
+    onSome: ({ properties }) => Object.keys(properties),
+  });
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -496,17 +492,6 @@ export const validateToolInputArgumentsWithDefinition = (
     );
 
     return { schemaPath, schema };
-  });
-
-export const validateToolInputArgumentsIfCached = (slug: string, args: Record<string, unknown>) =>
-  Effect.gen(function* () {
-    const cached = yield* getCachedToolInputDefinition(slug);
-    if (!cached) {
-      return false as const;
-    }
-
-    yield* validateToolInputArgumentsWithDefinition(slug, args, cached);
-    return true as const;
   });
 
 export const validateToolInputArguments = (

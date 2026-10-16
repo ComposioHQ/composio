@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
 
-import { InvalidPatternError, jsonSchemaToZod } from '../src/index';
+import { InvalidPatternError } from '../src/index';
 import type { JsonSchema } from '../src/types';
 import { compilePattern } from '../src/utils/compile-pattern';
 import {
@@ -11,6 +11,7 @@ import {
   isSafeForBacktracking,
 } from '../src/utils/linear-pattern';
 import { toUnicodePattern } from '../src/utils/unicode-pattern';
+import { builders } from './support/builders';
 
 /** Patterns whose RE2 translation must agree with the native Unicode engine. */
 const TRANSLATED_PATTERNS = [
@@ -141,12 +142,31 @@ const finishesQuickly = (run: () => void): void => {
 
 const ATTACK = `${'a'.repeat(40)}!`;
 
-describe('catastrophic backtracking (SEC-1178)', () => {
+describe('pattern matcher selection', () => {
+  it('leaves a lookahead pattern that could backtrack catastrophically unenforced', () => {
+    // Assembled at runtime so static analysis does not flag the test input
+    // itself as an inefficient regular expression.
+    const pattern = ['^(?=(a+)+', '$)a'].join('');
+    const regex = compilePattern('pattern', pattern, { path: [] });
+    expect(regex.matcher.kind).toBe('unenforced');
+    finishesQuickly(() => expect(regex.test(ATTACK)).toBe(true));
+    // The JSON Schema shown to the model still carries the pattern.
+    expect(regex.source).toBe(pattern);
+  });
+
+  it('picks RE2 for every pattern it can express', () => {
+    expect(createPatternMatcher('^(\\d+\\.)*\\d+$').kind).toBe('linear');
+    expect(createPatternMatcher('^[a-z\\_]+$').kind).toBe('linear');
+    expect(createPatternMatcher('^(?=.*[a-y])a').kind).toBe('backtracking');
+  });
+});
+
+describe.each(builders)('catastrophic backtracking (SEC-1178) ($name)', builder => {
   it.each(['^(?=a){1000000000}a$', `^z|(?=a)${'(?:a|aa)'.repeat(5)}a*a*b$`])(
     'leaves unsafe fallback pattern %s unenforced',
     pattern => {
       expect(createPatternMatcher(pattern).kind).toBe('unenforced');
-      const parsed = jsonSchemaToZod({ type: 'string', pattern });
+      const parsed = builder.convert({ type: 'string', pattern });
       expect(parsed.safeParse('a'.repeat(MAX_BACKTRACKING_INPUT_LENGTH)).success).toBe(true);
     }
   );
@@ -191,7 +211,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
             },
             $anchor: { extension: { x: { $anchor: 'target', ...target } }, ref: '#target' },
           }[location]!;
-          const parsed = jsonSchemaToZod({
+          const parsed = builder.convert({
             type: 'object',
             properties: { value: { $ref: ref } },
             ...extension,
@@ -221,7 +241,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
     'rejects unsupported key patterns in extension reference targets (%s) during conversion',
     (ref, identifier) => {
       expect(() =>
-        jsonSchemaToZod({
+        builder.convert({
           type: 'object',
           properties: { value: { $ref: ref } },
           x: {
@@ -235,7 +255,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   );
 
   it('keeps references through renamed keys in extension schemas valid', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'object',
       properties: {
         keys: { $ref: '#/x' },
@@ -248,7 +268,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   });
 
   it('follows reference cycles without rewriting instance data as schemas', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'object',
       properties: { value: { $ref: '#/x' } },
       x: {
@@ -261,13 +281,13 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   });
 
   it('runs a nested-quantifier pattern in linear time', () => {
-    const parsed = jsonSchemaToZod({ type: 'string', pattern: '^(a+)+$' });
+    const parsed = builder.convert({ type: 'string', pattern: '^(a+)+$' });
     finishesQuickly(() => expect(parsed.safeParse(ATTACK).success).toBe(false));
     expect(parsed.safeParse('aaa').success).toBe(true);
   });
 
   it('runs a backtracking patternProperties key in linear time', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'object',
       patternProperties: { '^(a|a)*$': { type: 'integer' } },
       additionalProperties: false,
@@ -290,7 +310,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
         },
       },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     finishesQuickly(() => {
       expect(parsed.safeParse({ handle: ATTACK }).success).toBe(false);
@@ -301,7 +321,7 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   });
 
   it('runs a backtracking propertyNames pattern in linear time', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'object',
       propertyNames: { pattern: '^(a+)+$' },
     });
@@ -310,18 +330,18 @@ describe('catastrophic backtracking (SEC-1178)', () => {
   });
 
   it('reports the schema pattern, not its per-value spelling, in guard errors', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'object',
       properties: { tags: { $ref: '#/$defs/tags' } },
       $defs: { tags: { type: 'object', patternProperties: { '^t_': { type: 'integer' } } } },
     });
     const result = parsed.safeParse({ tags: { t_1: 'x' } });
     expect(result.success).toBe(false);
-    expect(JSON.stringify(result.error?.issues)).not.toContain('t_1$');
+    expect(JSON.stringify(result.success ? [] : result.error.issues)).not.toContain('t_1$');
   });
 
   it('keeps enforcing a lookahead pattern that is safe to backtrack', () => {
-    const parsed = jsonSchemaToZod({
+    const parsed = builder.convert({
       type: 'string',
       pattern: '^(?=.*[a-z])(?=.*\\d)[a-z\\d]{8,}$',
     });
@@ -329,17 +349,6 @@ describe('catastrophic backtracking (SEC-1178)', () => {
     expect(parsed.safeParse('abcdefgh').success).toBe(false);
     // Past the input bound the fallback is skipped rather than risked.
     expect(parsed.safeParse('a'.repeat(MAX_BACKTRACKING_INPUT_LENGTH + 1)).success).toBe(true);
-  });
-
-  it('leaves a lookahead pattern that could backtrack catastrophically unenforced', () => {
-    // Assembled at runtime so static analysis does not flag the test input
-    // itself as an inefficient regular expression.
-    const pattern = ['^(?=(a+)+', '$)a'].join('');
-    const regex = compilePattern('pattern', pattern, { path: [] });
-    expect(regex.matcher.kind).toBe('unenforced');
-    finishesQuickly(() => expect(regex.test(ATTACK)).toBe(true));
-    // The JSON Schema shown to the model still carries the pattern.
-    expect(regex.source).toBe(pattern);
   });
 
   it('rejects a patternProperties key that needs a backtracking engine', () => {
@@ -351,18 +360,12 @@ describe('catastrophic backtracking (SEC-1178)', () => {
         $defs: { v: { type: 'object', patternProperties: { '^(?!x)': { type: 'string' } } } },
       },
     ] as JsonSchema[]) {
-      expect(() => jsonSchemaToZod(schema)).toThrow(InvalidPatternError);
+      expect(() => builder.convert(schema)).toThrow(InvalidPatternError);
     }
     try {
       compilePattern('patternProperties', '^(?!x)', { path: [] });
     } catch (error) {
       expect((error as InvalidPatternError).reason).toBe('unsupported');
     }
-  });
-
-  it('picks RE2 for every pattern it can express', () => {
-    expect(createPatternMatcher('^(\\d+\\.)*\\d+$').kind).toBe('linear');
-    expect(createPatternMatcher('^[a-z\\_]+$').kind).toBe('linear');
-    expect(createPatternMatcher('^(?=.*[a-y])a').kind).toBe('backtracking');
   });
 });

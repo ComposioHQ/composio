@@ -1,8 +1,8 @@
-import { make, type ComposioClientShape } from '@composio/client/effect';
+import { Auth, make, type ComposioClientShape } from '@composio/client/effect';
 import { Effect, Layer, Result } from 'effect';
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { composioSchemaLoaders } from 'src/services/composio-schema-loaders';
+import { schemaLoaders } from '@composio/client/effect/schemas';
 
 /** One request as it reached the stub transport. */
 export interface StubRequest {
@@ -14,9 +14,9 @@ export interface StubRequest {
 }
 
 /**
- * The Effect client the CLI builds in production (response decoding on, the
- * CLI's loader table), over a transport that records each request and answers
- * it with `respond`. Retries, status errors, and decoding are the client's own.
+ * The Effect client the CLI builds in production, over a transport that
+ * records each request and answers it with `respond`. Retries, status errors,
+ * and the validation a call asks for are the client's own.
  *
  * A retried call sleeps on Effect's clock, so a test whose answer is retryable
  * runs under `it.live` and answers with a `retry-after-ms: 0` header.
@@ -41,13 +41,10 @@ export const stubComposioClient = (
   );
   const client = make(
     {
-      apiKey: 'test',
-      userApiKey: null,
-      orgApiKey: null,
+      auth: Auth.project('test'),
       baseURL: 'https://stub.invalid',
-      deprecationNotices: 'off',
-      decode: true,
-      schemas: composioSchemaLoaders,
+      maxRetries: 0,
+      schemas: schemaLoaders,
     },
     httpClient
   );
@@ -86,3 +83,23 @@ export const stubClientResources = (
   );
   return { requests: stub.requests, layer };
 };
+
+/** A request the stub answers specially: its method and a prefix of its path. */
+export interface StubRoute {
+  readonly method: string;
+  readonly path: string;
+  readonly respond: () => Response;
+}
+
+/**
+ * A `respond` that answers a request with the first route whose method and
+ * path prefix match it, and every other request with `otherwise`.
+ */
+export const routeRequests =
+  (routes: ReadonlyArray<StubRoute>, otherwise: () => Response) =>
+  (request: StubRequest): Response => {
+    const route = routes.find(
+      ({ method, path }) => request.method === method && request.path.startsWith(path)
+    );
+    return (route?.respond ?? otherwise)();
+  };

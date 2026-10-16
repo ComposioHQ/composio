@@ -1,10 +1,11 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { requireAuth } from 'src/effects/require-auth';
+import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -13,10 +14,7 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -86,10 +84,7 @@ export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandEr
   readonly endpoint?: string;
 }> {}
 
-class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
@@ -288,13 +283,9 @@ export const proxyCmd = Command.make('proxy', {
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
         return yield* new ProxyCommandError({
@@ -370,11 +361,11 @@ export const proxyCmd = Command.make('proxy', {
                 method: normalizedMethod,
                 ...(parsedBody !== undefined ? { body: parsedBody } : {}),
                 ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-              },
-              // Never retry a proxied call: a retry after the upstream API
-              // already acted duplicates the side effect. The response is not
-              // validated either, for the same reason.
-              { maxRetries: 0, decode: false }
+              }
+              // A proxied call is not `idempotent`, so it is sent once: a retry
+              // after the upstream API already acted duplicates the side
+              // effect. The response is not validated either, for the same
+              // reason.
             )
             .pipe(
               Effect.mapError(failed),
@@ -411,5 +402,6 @@ export const proxyCmd = Command.make('proxy', {
         yield* ui.output(output);
       }
     })
-  )
+  ),
+  requireLogin
 );

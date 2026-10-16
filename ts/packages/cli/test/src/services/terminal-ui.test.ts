@@ -3,7 +3,7 @@ import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
 import stringWidth from 'fast-string-width';
-import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
+import { Data, Effect } from 'effect';
 import {
   clampSpinnerMessage,
   getTerminalCapabilities,
@@ -23,11 +23,8 @@ class TestFailure extends Data.TaggedError('test/TestFailure')<{
 
 const booleanStates = [false, true] as const;
 
-const ttyCombinations = pipe(
-  Arr.Do,
-  Arr.bind('stdin', () => booleanStates),
-  Arr.bind('stdout', () => booleanStates),
-  Arr.bind('stderr', () => booleanStates)
+const ttyCombinations = booleanStates.flatMap(stdin =>
+  booleanStates.flatMap(stdout => booleanStates.map(stderr => ({ stdin, stdout, stderr })))
 );
 
 /** An intentional Node.js Writable test double matching Clack's output contract. */
@@ -277,9 +274,7 @@ describe('TerminalUI', () => {
           expect(frames.length).toBeGreaterThan(0);
           expect(frames[0]).toContain('New version available: @composio');
           // A wrapped frame is what leaks lines on every redraw tick.
-          for (const frame of frames) {
-            expect(frame).not.toContain('\n');
-          }
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
         })
       )
     );
@@ -302,9 +297,7 @@ describe('TerminalUI', () => {
           const frames = clampedFrames(stderr);
           expect(frames.length).toBeGreaterThan(0);
           expect(frames[0]).toContain('New version available: @composio');
-          for (const frame of frames) {
-            expect(frame).not.toContain('\n');
-          }
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
         })
       )
     );
@@ -326,10 +319,8 @@ describe('TerminalUI', () => {
           const frames = clampedFrames(stderr);
           expect(frames.length).toBeGreaterThan(0);
           expect(frames[0]).toContain('New version');
-          for (const frame of frames) {
-            expect(frame).not.toContain('\n');
-            expect(stringWidth(frame)).toBeLessThanOrEqual(20);
-          }
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+          expect(Math.max(...frames.map(frame => stringWidth(frame)))).toBeLessThanOrEqual(20);
         })
       )
     );
@@ -351,10 +342,8 @@ describe('TerminalUI', () => {
           const frames = clampedFrames(stderr);
           expect(frames.length).toBeGreaterThan(0);
           expect(frames[0]).toContain('New version');
-          for (const frame of frames) {
-            expect(frame).not.toContain('\n');
-            expect(stringWidth(frame)).toBeLessThanOrEqual(20);
-          }
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+          expect(Math.max(...frames.map(frame => stringWidth(frame)))).toBeLessThanOrEqual(20);
         })
       )
     );
@@ -371,9 +360,7 @@ describe('TerminalUI', () => {
 
           const frames = clampedFrames(stderr);
           expect(frames.length).toBeGreaterThan(0);
-          for (const frame of frames) {
-            expect(frame).not.toContain('\n');
-          }
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
         })
       )
     );
@@ -503,11 +490,11 @@ describe('TerminalUI', () => {
     it.effect('withSpinner propagates errors', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        const exit = yield* Effect.exit(
-          ui.withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
-        );
+        const failure = yield* ui
+          .withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
+          .pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toEqual(new TestFailure({ message: 'network error' }));
       })
     );
 
@@ -519,13 +506,13 @@ describe('TerminalUI', () => {
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
-        const exit = yield* Effect.exit(
-          ui.useMakeSpinner('fetching data', _spinner =>
+        const failure = yield* ui
+          .useMakeSpinner('fetching data', _spinner =>
             Effect.fail(new TestFailure({ message: 'API returned 400' }))
           )
-        );
+          .pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toEqual(new TestFailure({ message: 'API returned 400' }));
 
         // The spinner error message should be captured
         const lines = yield* MockConsole.getLines();
@@ -589,17 +576,17 @@ describe('TerminalUI', () => {
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
 
-          const exit = yield* Effect.exit(
-            ui.useMakeSpinner('fetching', spinner =>
+          const failure = yield* ui
+            .useMakeSpinner('fetching', spinner =>
               Effect.gen(function* () {
                 // Simulate tapError pattern: callback calls spinner.error(), then the effect fails
                 yield* spinner.error('Login timed out. Please try again.');
                 return yield* new TestFailure({ message: 'timed out' });
               })
             )
-          );
+            .pipe(Effect.flip);
 
-          expect(Exit.isFailure(exit)).toBe(true);
+          expect(failure).toEqual(new TestFailure({ message: 'timed out' }));
 
           const lines = yield* MockConsole.getLines();
           // Should see the user's error message

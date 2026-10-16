@@ -67,11 +67,9 @@ const refreshInBackgroundIfStale = (
 ) =>
   Effect.gen(function* () {
     const now = yield* DateTime.now;
-    const isFresh = Option.match(learned, {
-      onNone: () => false,
-      onSome: known =>
-        Duration.isLessThan(DateTime.distance(known.refreshedAt, now), REFRESH_AFTER),
-    });
+    const isFresh = Option.exists(learned, known =>
+      Duration.isLessThan(DateTime.distance(known.refreshedAt, now), REFRESH_AFTER)
+    );
 
     if (isFresh) return;
 

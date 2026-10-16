@@ -21,8 +21,6 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
   readonly cause?: unknown;
 }> {}
 
-export type HttpError = ComposioError | HttpDecodingError;
-
 /**
  * A failure of a request made through the Effect client: a non-success status,
  * a transport failure, a timeout, or a response body that failed decoding.
@@ -55,4 +53,5 @@ export type ClientApiErrorTag = (typeof CLIENT_API_ERROR_TAGS)[number];
  * own tagged error, decoding a CLI-owned contract, or obtaining a client from
  * the singleton.
  */
-export type ClientError = HttpError | ComposioClientConfigurationError | NoSuchElementError;
+export type ClientError =
+  ComposioError | HttpDecodingError | ComposioClientConfigurationError | NoSuchElementError;

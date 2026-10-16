@@ -1,11 +1,8 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
-import {
-  stubClientResources,
-  type StubRequest,
-} from 'test/__utils__/services/stub-composio-client';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
@@ -86,27 +83,33 @@ const notFound = {
   },
 };
 
-const isTriggerTypeLookup = (request: StubRequest) =>
-  request.method === 'GET' && request.path.includes('/triggers_types/');
-
-const failureOf = (exit: Exit.Exit<unknown, unknown>) =>
-  Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+const TRIGGER_TYPES = '/api/v3.1/triggers_types/';
+const TRIGGER_UPSERT = '/api/v3.1/trigger_instances/';
 
 describe('CLI: composio listen over the API client', () => {
   layer(testLayer)('[Given] the API rejects the temporary trigger', it => {
     it.effect('[Then] the failure quotes the status and response body', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['triggerInstances', 'triggersTypes'], request =>
-          isTriggerTypeLookup(request)
-            ? Response.json({ slug: 'GMAIL_NEW_GMAIL_MESSAGE' })
-            : Response.json(invalidConfig, { status: 400 })
+        const stub = stubClientResources(
+          ['triggerInstances', 'triggersTypes'],
+          routeRequests(
+            [
+              {
+                method: 'GET',
+                path: TRIGGER_TYPES,
+                respond: () => Response.json({ slug: 'GMAIL_NEW_GMAIL_MESSAGE' }),
+              },
+            ],
+            () => Response.json(invalidConfig, { status: 400 })
+          )
         );
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(Effect.provide(stub.layer))
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(
+          Effect.provide(stub.layer),
+          Effect.flip
         );
 
-        expect(failureOf(exit)).toMatchObject({
+        expect(failure).toMatchObject({
           _tag: 'commands/ListenCommandError',
           reason: 'create_trigger',
           message: `Failed to create temporary trigger "GMAIL_NEW_GMAIL_MESSAGE": Error: ${invalidConfigText}`,
@@ -117,17 +120,26 @@ describe('CLI: composio listen over the API client', () => {
 
     it.effect('[Then] a trigger type the API does not know is reported as unknown', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['triggerInstances', 'triggersTypes'], request =>
-          isTriggerTypeLookup(request)
-            ? Response.json(notFound, { status: 404 })
-            : Response.json(invalidConfig, { status: 400 })
+        const stub = stubClientResources(
+          ['triggerInstances', 'triggersTypes'],
+          routeRequests(
+            [
+              {
+                method: 'GET',
+                path: TRIGGER_TYPES,
+                respond: () => Response.json(notFound, { status: 404 }),
+              },
+            ],
+            () => Response.json(invalidConfig, { status: 400 })
+          )
         );
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']).pipe(Effect.provide(stub.layer))
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']).pipe(
+          Effect.provide(stub.layer),
+          Effect.flip
         );
 
-        expect(failureOf(exit)).toMatchObject({
+        expect(failure).toMatchObject({
           _tag: 'commands/ListenCommandError',
           reason: 'unknown_trigger',
           message:
@@ -140,10 +152,18 @@ describe('CLI: composio listen over the API client', () => {
   layer(testLayer)('[Given] the temporary trigger cannot be disabled', it => {
     it.effect('[Then] the warning quotes the status and response body', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['triggerInstances'], request =>
-          request.method === 'POST'
-            ? Response.json({ trigger_id: TRIGGER_ID })
-            : Response.json(invalidConfig, { status: 400 })
+        const stub = stubClientResources(
+          ['triggerInstances'],
+          routeRequests(
+            [
+              {
+                method: 'POST',
+                path: TRIGGER_UPSERT,
+                respond: () => Response.json({ trigger_id: TRIGGER_ID }),
+              },
+            ],
+            () => Response.json(invalidConfig, { status: 400 })
+          )
         );
         yield* enableListen;
         yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE', '--max-events', '1']).pipe(
@@ -165,11 +185,12 @@ describe('CLI: composio listen over the API client', () => {
           Response.json(invalidConfig, { status: 400 })
         );
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(Effect.provide(stub.layer))
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(
+          Effect.provide(stub.layer),
+          Effect.flip
         );
 
-        expect(failureOf(exit)).toMatchObject({
+        expect(failure).toMatchObject({
           _tag: 'commands/ListenCommandError',
           reason: 'connected_accounts',
           message: `Failed to list connected accounts for "gmail": Error: ${invalidConfigText}`,

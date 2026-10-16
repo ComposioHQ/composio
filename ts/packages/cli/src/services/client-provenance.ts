@@ -1,4 +1,4 @@
-import { VERSION as clientLibraryVersion } from '@composio/client/effect';
+import { VERSION as clientLibraryVersion, type ClientIdentity } from '@composio/client/effect';
 import { APP_VERSION } from 'src/constants';
 
 const runtime = () =>
@@ -6,7 +6,23 @@ const runtime = () =>
     ? { name: 'BUN', version: Bun.version }
     : { name: 'NODEJS', version: process.versions.node };
 
-/** Product attribution shared by API clients and first-party raw HTTP requests. */
+/**
+ * The CLI as the API client reports it. The client sends the product headers
+ * from it, adds its own library headers, and detects the runtime version.
+ */
+export const cliClientIdentity = (): ClientIdentity => ({
+  product: '@composio/cli',
+  version: APP_VERSION,
+  source: 'CLI',
+  framework: 'cli',
+  runtime: runtime().name,
+});
+
+/**
+ * Product attribution for first-party HTTP requests that do not go through an
+ * API client (analytics dispatch, the agents service, the companion runtime).
+ * API clients get the same attribution from {@link cliClientIdentity}.
+ */
 export const cliRequestHeaders = (): Record<string, string> => ({
   'x-framework': 'cli',
   'x-source': 'CLI',

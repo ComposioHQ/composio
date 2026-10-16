@@ -1,7 +1,6 @@
-import { z } from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 import { half } from '../utils/half';
 import { its } from '../utils/its';
 
@@ -35,30 +34,30 @@ const isClosedObjectBranch = (
   branch.patternProperties === undefined &&
   !('$ref' in branch);
 
-const intersect = (branches: JsonSchema[], refs: Refs): z.ZodTypeAny => {
+const intersect = <S>(branches: JsonSchema[], ctx: ParseContext<S>): S => {
   if (branches.length === 1) {
     const item = branches[0];
 
     return parseSchema(item, {
-      ...refs,
-      path: [...refs.path, 'allOf', (item as never)[originalIndex]],
+      ...ctx,
+      path: [...ctx.path, 'allOf', (item as never)[originalIndex]],
     });
   }
 
   const [left, right] = half(branches);
-  return z.intersection(intersect(left, refs), intersect(right, refs));
+  return ctx.backend.intersection(intersect(left, ctx), intersect(right, ctx));
 };
 
-export function parseAllOf(
+export function parseAllOf<S>(
   jsonSchema: JsonSchemaObject & { allOf: JsonSchema[] },
-  refs: Refs
-): z.ZodTypeAny {
+  ctx: ParseContext<S>
+): S {
   if (jsonSchema.allOf.length === 0) {
-    return z.never();
+    return ctx.backend.never();
   }
 
   if (jsonSchema.allOf.length === 1) {
-    return intersect(ensureOriginalIndex(jsonSchema.allOf), refs);
+    return intersect(ensureOriginalIndex(jsonSchema.allOf), ctx);
   }
 
   // Sibling object branches must not reject each other's keys: each branch is
@@ -67,7 +66,7 @@ export function parseAllOf(
   const opened = jsonSchema.allOf.map(branch =>
     isClosedObjectBranch(branch) ? { ...branch, additionalProperties: true } : branch
   );
-  const parsed = intersect(ensureOriginalIndex(opened), refs);
+  const parsed = intersect(ensureOriginalIndex(opened), ctx);
 
   if (!jsonSchema.allOf.every(isClosedObjectBranch)) {
     return parsed;
@@ -77,15 +76,14 @@ export function parseAllOf(
     jsonSchema.allOf.flatMap(branch => Object.keys((branch as JsonSchemaObject).properties ?? {}))
   );
 
-  return parsed.superRefine((value, ctx) => {
+  return ctx.backend.superRefine<unknown>(parsed, (value, issues) => {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) return;
     const unrecognizedKeys = Object.keys(value).filter(key => !declaredKeys.has(key));
     if (unrecognizedKeys.length > 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.unrecognized_keys,
-        keys: unrecognizedKeys,
-        message: `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`,
-      });
+      issues.unrecognizedKeys(
+        unrecognizedKeys,
+        `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`
+      );
     }
   });
 }

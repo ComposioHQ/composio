@@ -435,9 +435,9 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         orgId: scope.orgId,
       });
       // The nano id, as `resolveCommandProject` hands it to `composio execute`:
-      // `getFor` keys its clients on these params, and the memoized
-      // connected-account list is keyed on the client, so a different project
-      // id here would mean a second `GET /connected_accounts` per execute.
+      // the memoized connected-account list is keyed on the client's org and
+      // project, so a different project id here would mean a second
+      // `GET /connected_accounts` per execute.
       const client = yield* clientSingleton.getFor({
         orgId: scope.orgId,
         projectId: consumerProject.project_nano_id,
@@ -474,20 +474,18 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         toolRouterAuthConfigs: mergeAuthConfigMappings({
           current: currentEntry?.toolRouterAuthConfigs,
-          next: Option.isSome(directToolkits)
-            ? {
-                authConfigs: directToolkits.value.authConfigs,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ authConfigs }) => ({ authConfigs }))
+          ),
         }),
         toolRouterConnectedAccounts: mergeConnectedAccountMappings({
           current: currentEntry?.toolRouterConnectedAccounts,
-          next: Option.isSome(directToolkits)
-            ? {
-                connectedAccounts: directToolkits.value.connectedAccounts,
-                availableConnectedAccounts: directToolkits.value.availableConnectedAccounts,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ connectedAccounts, availableConnectedAccounts }) => ({
+              connectedAccounts,
+              availableConnectedAccounts,
+            }))
+          ),
         }),
         ...searchSessionFields,
       },

@@ -1,6 +1,6 @@
 import { BadRequestError, type RequestOptions } from '@composio/client/effect';
 import { describe, expect, it, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Exit, Option } from 'effect';
+import { ConfigProvider, Effect, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
 import type {
   SessionCreateParams,
@@ -171,6 +171,7 @@ describe('CLI: composio proxy', () => {
             connected_accounts: { gmail: 'con_gmail_work' },
             manage_connections: { enable: false },
             toolkits: { enable: ['gmail'] },
+            instant: { return_instant_charge: true },
           });
           expect(proxyParams).toEqual({
             sessionId: 'trs_proxy_test',
@@ -188,9 +189,10 @@ describe('CLI: composio proxy', () => {
               ],
             },
           });
-          // A proxied call is never retried: a retry after the upstream API
-          // already acted would duplicate the side effect.
-          expect(proxyOptions).toEqual({ maxRetries: 0, decode: false });
+          // A proxied call does not ask for retries, so the client sends it
+          // once: a retry after the upstream API already acted would duplicate
+          // the side effect.
+          expect(proxyOptions).toBeUndefined();
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');
@@ -249,10 +251,7 @@ describe('CLI: composio proxy', () => {
 
           expect(createCalled).toBe(false);
           expect(failure).toBeInstanceOf(ProxyCommandError);
-          if (failure instanceof ProxyCommandError) {
-            expect(failure.reason).toBe('toolkit_not_connected');
-            expect(failure.toolkit).toBe('gmail');
-          }
+          expect(failure).toMatchObject({ reason: 'toolkit_not_connected', toolkit: 'gmail' });
 
           expect(output).toContain('Toolkit "gmail" is not connected for this user');
           expect(output).toContain('composio link gmail');
@@ -287,19 +286,22 @@ describe('CLI: composio proxy', () => {
             },
           });
 
-          const { exit, output } = yield* Effect.gen(function* () {
-            const exit = yield* cli([
+          const { failure, output } = yield* Effect.gen(function* () {
+            const failure = yield* cli([
               'proxy',
               'https://gmail.googleapis.com/gmail/v1/users/me/profile',
               '--toolkit',
               'gmail',
               '--skip-connection-check',
-            ]).pipe(Effect.exit);
+            ]).pipe(Effect.flip);
             const lines = yield* MockConsole.getLines({ stripAnsi: true });
-            return { exit, output: lines.join('\n') };
+            return { failure, output: lines.join('\n') };
           }).pipe(Effect.provide(live));
 
-          expect(Exit.isFailure(exit)).toBe(true);
+          expect(failure).toMatchObject({
+            name: 'ComposioNoActiveConnectionError',
+            toolkit: 'gmail',
+          });
 
           expect(output).toContain('No active connection found for toolkit "gmail"');
           expect(output).toContain('composio link gmail');
@@ -333,19 +335,19 @@ describe('CLI: composio proxy', () => {
             },
           });
 
-          const { exit, output } = yield* Effect.gen(function* () {
-            const exit = yield* cli([
+          const { failure, output } = yield* Effect.gen(function* () {
+            const failure = yield* cli([
               'proxy',
               'https://gmail.googleapis.com/gmail/v1/users/me/profile',
               '--toolkit',
               'gmail',
               '--skip-connection-check',
-            ]).pipe(Effect.exit);
+            ]).pipe(Effect.flip);
             const lines = yield* MockConsole.getLines({ stripAnsi: true });
-            return { exit, output: lines.join('\n') };
+            return { failure, output: lines.join('\n') };
           }).pipe(Effect.provide(live));
 
-          expect(Exit.isFailure(exit)).toBe(true);
+          expect(failure).toMatchObject({ _tag: 'commands/ProxyRequestError' });
           expect(output).toContain(
             'GET proxy call via \\"gmail\\" requires user input before it can run (1 input request) and was not executed.'
           );

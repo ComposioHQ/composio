@@ -14,6 +14,7 @@ import {
   getConsumerPermissionSnapshot,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { nonEmptyOrUndefined } from 'src/utils/optional-params';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -101,14 +102,14 @@ export const createToolRouterSessionContext = (
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
     const cachedConnectedAccounts = options?.cacheScope
       ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
 
@@ -129,7 +130,7 @@ export const createToolRouterSessionContext = (
             : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         }).pipe(
           Effect.map(connectionContext => ({
             ...connectionContext,
@@ -167,26 +168,24 @@ export const createToolRouterSessionContext = (
         })
       : undefined;
     return yield* client.toolRouter.session
-      .create(
-        {
-          user_id: userId,
-          auth_configs: connectionContext.authConfigs,
-          connected_accounts: connectionContext.connectedAccounts,
-          manage_connections: { enable: options?.manageConnections ?? false },
-          multi_account: options?.multiAccount
-            ? {
-                enable: options.multiAccount.enable,
-                max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
-                require_explicit_selection: options.multiAccount.requireExplicitSelection,
-              }
-            : undefined,
-          toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
-          experimental: permissionSnapshot?.enhancedControlsEnabled
-            ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
-            : undefined,
-        },
-        { decode: false }
-      )
+      .create({
+        user_id: userId,
+        auth_configs: connectionContext.authConfigs,
+        connected_accounts: connectionContext.connectedAccounts,
+        manage_connections: { enable: options?.manageConnections ?? false },
+        multi_account: options?.multiAccount
+          ? {
+              enable: options.multiAccount.enable,
+              max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
+              require_explicit_selection: options.multiAccount.requireExplicitSelection,
+            }
+          : undefined,
+        toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+        instant: { return_instant_charge: true },
+        experimental: permissionSnapshot?.enhancedControlsEnabled
+          ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
+          : undefined,
+      })
       .pipe(
         Effect.mapError(
           cause =>
@@ -207,26 +206,5 @@ export const createToolRouterSessionContext = (
       );
   });
 
-/** Backward-compatible helper for callers that only need the session id. */
-export const createToolRouterSession = (
-  client: ComposioClientShape,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => session.sessionId)
-  );
-
-/**
- * Resolve the Composio client and create a Tool Router session in one step.
- * Returns `{ client, sessionId }` — eliminates the 3-step boilerplate
- * (resolve singleton, get client, create session) repeated across commands.
- */
-export const resolveToolRouterSession = (
-  client: ComposioClientShape,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => ({ client, ...session }))
-  );
+/** The name commands create their Tool Router session by. */
+export const resolveToolRouterSession = createToolRouterSessionContext;

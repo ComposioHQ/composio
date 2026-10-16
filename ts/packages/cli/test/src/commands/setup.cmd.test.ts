@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Fiber, Latch } from 'effect';
+import { Effect, Exit, Fiber, Latch } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, vi } from 'vitest';
@@ -336,7 +336,16 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  for (const host of ['claude', 'codex'] as const) {
+  describe.each([
+    {
+      host: 'claude',
+      repairCommand: ['claude', 'plugin', 'enable', 'composio@composio', '--scope', 'user'],
+    },
+    {
+      host: 'codex',
+      repairCommand: ['codex', 'plugin', 'add', 'composio@composio', '--json'],
+    },
+  ] as const)('disabled $host plugin', ({ host, repairCommand }) => {
     const disabled = makeFakeHosts({
       [host]: { available: true, marketplace: 'canonical', plugin: 'disabled' },
     });
@@ -345,26 +354,17 @@ describe('CLI: composio setup', () => {
         commandRunner: disabled.runner,
         setupSkillInstaller: makeSkillInstaller(true),
       })
-    )(`disabled ${host} plugin`, it => {
+    )(it => {
       it.effect('repairs the plugin through the native path', () =>
         Effect.gen(function* () {
           yield* cli(['setup', '--target', host, '--yes']);
 
           expect(disabled.state[host].plugin).toBe('enabled');
-          if (host === 'claude') {
-            expect(disabled.commands).toContainEqual([
-              'claude',
-              'plugin',
-              'enable',
-              'composio@composio',
-              '--scope',
-              'user',
-            ]);
-          }
+          expect(disabled.commands).toContainEqual(repairCommand);
         })
       );
     });
-  }
+  });
 
   const freshCodex = makeFakeHosts({ codex: { available: true } });
   layer(TestLive({ commandRunner: freshCodex.runner }))('fresh Codex install', it => {
@@ -892,15 +892,12 @@ describe('CLI: composio setup', () => {
 
     it.effect('does not skip an explicitly requested missing host', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(
-          cli(['setup', '--target', 'claude', '--yes', '--if-present'])
+        const failure = yield* cli(['setup', '--target', 'claude', '--yes', '--if-present']).pipe(
+          Effect.flip
         );
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          expect(Cause.pretty(exit.cause)).toContain(
-            'claude is not installed or not available on PATH'
-          );
-        }
+        expect(failure).toMatchObject({
+          message: expect.stringContaining('claude is not installed or not available on PATH'),
+        });
       })
     );
   });
@@ -918,33 +915,30 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  for (const unsafeSource of [
+  describe.each([
     'http://github.com/ComposioHQ/composio-plugin-cc.git',
     'https://token@github.com/ComposioHQ/composio-plugin-cc.git',
     'https://github.com/ComposioHQ/composio-plugin-cc.git?token=secret',
-  ]) {
+  ])('unsafe marketplace source: %s', unsafeSource => {
     const unsafeMarketplace = makeFakeHosts(
       { claude: { available: true, marketplace: 'canonical' } },
       { marketplaceSource: { claude: unsafeSource } }
     );
-    layer(TestLive({ commandRunner: unsafeMarketplace.runner }))(
-      `unsafe marketplace source: ${unsafeSource}`,
-      it => {
-        it.effect('rejects a non-canonical GitHub URL', () =>
-          Effect.gen(function* () {
-            const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
+    layer(TestLive({ commandRunner: unsafeMarketplace.runner }))(it => {
+      it.effect('rejects a non-canonical GitHub URL', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
 
-            expect(Exit.isFailure(exit)).toBe(true);
-            expect(
-              unsafeMarketplace.commands.some(parts =>
-                ['add', 'install', 'enable'].some(operation => parts.includes(operation))
-              )
-            ).toBe(false);
-          })
-        );
-      }
-    );
-  }
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(
+            unsafeMarketplace.commands.some(parts =>
+              ['add', 'install', 'enable'].some(operation => parts.includes(operation))
+            )
+          ).toBe(false);
+        })
+      );
+    });
+  });
 
   const failedInspection = makeFakeHosts(
     { claude: { available: true } },
@@ -984,14 +978,12 @@ describe('CLI: composio setup', () => {
     it => {
       it.effect('fails automatic setup with actionable update instructions', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
+          const failure = yield* cli(['setup', '--target', 'auto', '--yes']).pipe(Effect.flip);
 
-          expect(Exit.isFailure(exit)).toBe(true);
-          if (Exit.isFailure(exit)) {
-            const renderedCause = Cause.pretty(exit.cause);
-            expect(renderedCause).toContain('requires JSON plugin inspection');
-            expect(renderedCause).toContain('claude update');
-          }
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('requires JSON plugin inspection'),
+          });
+          expect(failure).toMatchObject({ message: expect.stringContaining('claude update') });
           expect(legacyClaude.commands.some(parts => parts.includes('--json'))).toBe(false);
           expect(
             legacyClaude.commands.some(parts =>
@@ -1007,12 +999,11 @@ describe('CLI: composio setup', () => {
     it => {
       it.effect('fails automatic setup when no supported host remains', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
+          const failure = yield* cli(['setup', '--target', 'auto', '--yes']).pipe(Effect.flip);
 
-          expect(Exit.isFailure(exit)).toBe(true);
-          if (Exit.isFailure(exit)) {
-            expect(Cause.pretty(exit.cause)).toContain('requires Codex 0.139.0 or newer');
-          }
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('requires Codex 0.139.0 or newer'),
+          });
         })
       );
 
@@ -1032,15 +1023,15 @@ describe('CLI: composio setup', () => {
 
       it.effect('fails with an actionable upgrade message before running setup mutations', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
+          const failure = yield* cli(['setup', '--target', 'codex', '--yes']).pipe(Effect.flip);
 
-          expect(Exit.isFailure(exit)).toBe(true);
-          if (Exit.isFailure(exit)) {
-            const renderedCause = Cause.pretty(exit.cause);
-            expect(renderedCause).toContain('requires Codex 0.139.0 or newer');
-            expect(renderedCause).toContain('codex update');
-            expect(renderedCause).not.toContain("unexpected argument '--json'");
-          }
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('requires Codex 0.139.0 or newer'),
+          });
+          expect(failure).toMatchObject({ message: expect.stringContaining('codex update') });
+          expect(failure).not.toMatchObject({
+            message: expect.stringContaining("unexpected argument '--json'"),
+          });
           expect(legacyCodex.commands.some(parts => parts.includes('--json'))).toBe(false);
           expect(
             legacyCodex.commands.some(parts =>
@@ -1103,14 +1094,13 @@ describe('CLI: composio setup', () => {
   )('multi-host mutation failure', it => {
     it.effect('reports hosts completed before a later target fails', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
+        const failure = yield* cli(['setup', '--target', 'all', '--yes']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          expect(Cause.pretty(exit.cause)).toContain(
+        expect(failure).toMatchObject({
+          message: expect.stringContaining(
             'Setup completed for claude before a later target failed'
-          );
-        }
+          ),
+        });
         expect(laterMutationFailure.state.claude).toMatchObject({
           marketplace: 'canonical',
           plugin: 'enabled',
@@ -1151,22 +1141,22 @@ describe('CLI: composio setup', () => {
     it.effect('times out instead of blocking setup forever', () =>
       Effect.gen(function* () {
         const fiber = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(
-          Effect.exit,
+          Effect.flip,
           Effect.forkChild
         );
         yield* hostCommandReached.await;
         yield* Effect.yieldNow;
         yield* TestClock.adjust('2 minutes');
-        const exit = yield* Fiber.join(fiber);
+        const failure = yield* Fiber.join(fiber);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const renderedCause = Cause.pretty(exit.cause);
-          expect(renderedCause).toContain(
+        expect(failure).toMatchObject({
+          message: expect.stringContaining(
             'The `claude --version` command timed out after 2 minutes'
-          );
-          expect(renderedCause).not.toContain('not installed or not available on PATH');
-        }
+          ),
+        });
+        expect(failure).not.toMatchObject({
+          message: expect.stringContaining('not installed or not available on PATH'),
+        });
       })
     );
   });
@@ -1191,19 +1181,11 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: failedInstall.runner }))('native install failure', it => {
     it.effect('preserves the structured setup process failure as the command cause', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(SetupCommandError);
-          if (failure instanceof SetupCommandError) {
-            expect(failure.operation).toBe('setup');
-            expect(failure.cause).toBeInstanceOf(SetupProcessError);
-            if (failure.cause instanceof SetupProcessError) {
-              expect(failure.cause).toMatchObject({ target: 'claude', stage: 'mutate' });
-            }
-          }
-        }
+        const failure = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(SetupCommandError);
+        expect(failure).toMatchObject({ operation: 'setup', cause: expect.any(SetupProcessError) });
+        expect(failure).toMatchObject({ cause: { target: 'claude', stage: 'mutate' } });
       })
     );
   });
@@ -1226,13 +1208,6 @@ describe('CLI: composio setup', () => {
   });
 });
 
-const reasonCodeOf = (exit: Exit.Exit<unknown, unknown>): string | undefined => {
-  if (!Exit.isFailure(exit)) return undefined;
-  const failure = Cause.squash(exit.cause);
-  if (failure instanceof SetupCommandError) return failure.reasonCode;
-  return undefined;
-};
-
 const REASON_CODE_FIXTURES = {
   'only Claude Code installed': () => makeFakeHosts({ claude: { available: true } }),
   'no host installed': () => makeFakeHosts({}),
@@ -1246,37 +1221,32 @@ const REASON_CODE_FIXTURES = {
 
 const REASON_CODE_CASES: ReadonlyArray<{
   readonly hosts: keyof typeof REASON_CODE_FIXTURES;
-  readonly argv: ReadonlyArray<string>;
-  readonly expected: string;
+  readonly cases: ReadonlyArray<{ readonly args: string; readonly expected: string }>;
 }> = [
   {
     hosts: 'only Claude Code installed',
-    argv: ['--target', 'all', '--yes'],
-    expected: 'all_requires_both_hosts',
+    cases: [
+      { args: '--target all --yes', expected: 'all_requires_both_hosts' },
+      { args: '--target codex --yes', expected: 'target_not_installed' },
+      { args: '--target claude', expected: 'non_interactive_requires_yes' },
+    ],
   },
-  {
-    hosts: 'only Claude Code installed',
-    argv: ['--target', 'codex', '--yes'],
-    expected: 'target_not_installed',
-  },
-  {
-    hosts: 'only Claude Code installed',
-    argv: ['--target', 'claude'],
-    expected: 'non_interactive_requires_yes',
-  },
-  { hosts: 'no host installed', argv: ['--yes'], expected: 'no_host_detected' },
+  { hosts: 'no host installed', cases: [{ args: '--yes', expected: 'no_host_detected' }] },
   {
     hosts: 'unsupported Codex only',
-    argv: ['--target', 'codex', '--yes'],
-    expected: 'unsupported_host',
+    cases: [
+      { args: '--target codex --yes', expected: 'unsupported_host' },
+      { args: '--yes', expected: 'unsupported_host' },
+    ],
   },
-  { hosts: 'unsupported Codex only', argv: ['--yes'], expected: 'unsupported_host' },
   {
     hosts: 'marketplace conflict',
-    argv: ['--target', 'claude', '--yes'],
-    expected: 'marketplace_conflict',
+    cases: [{ args: '--target claude --yes', expected: 'marketplace_conflict' }],
   },
-  { hosts: 'native install failure', argv: ['--target', 'claude', '--yes'], expected: 'unknown' },
+  {
+    hosts: 'native install failure',
+    cases: [{ args: '--target claude --yes', expected: 'unknown' }],
+  },
 ];
 
 describe('CLI: composio setup failure reason codes', () => {
@@ -1284,19 +1254,18 @@ describe('CLI: composio setup failure reason codes', () => {
     process.exitCode = undefined;
   });
 
-  for (const [hosts, makeHosts] of Object.entries(REASON_CODE_FIXTURES)) {
-    const fake = makeHosts();
-    layer(TestLive({ commandRunner: fake.runner }))(hosts, it => {
-      for (const { argv, expected } of REASON_CODE_CASES.filter(c => c.hosts === hosts)) {
-        it.effect(`codes \`setup ${argv.join(' ')}\` as ${expected}`, () =>
-          Effect.gen(function* () {
-            const exit = yield* Effect.exit(cli(['setup', ...argv]));
-            expect(reasonCodeOf(exit)).toBe(expected);
-          })
-        );
-      }
+  describe.each(REASON_CODE_CASES)('$hosts', ({ hosts, cases }) => {
+    layer(TestLive({ commandRunner: REASON_CODE_FIXTURES[hosts]().runner }))(it => {
+      it.effect.each(cases)('codes `setup $args` as $expected', ({ args, expected }) =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['setup', ...args.split(' ')]).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(SetupCommandError);
+          expect(failure).toMatchObject({ reasonCode: expected });
+        })
+      );
     });
-  }
+  });
 });
 
 describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
@@ -1304,19 +1273,15 @@ describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
     process.exitCode = undefined;
   });
 
-  const messageOf = (exit: Exit.Exit<unknown, unknown>): string | undefined => {
-    if (!Exit.isFailure(exit)) return undefined;
-    const failure = Cause.squash(exit.cause);
-    return failure instanceof Error ? failure.message : String(failure);
-  };
-
   layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['only Claude Code installed']().runner }))(
     'targeted host missing',
     it => {
       it.effect('target_not_installed rerun carries --yes', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
-          expect(messageOf(exit)).toContain('rerun `composio setup --yes --target codex`');
+          const failure = yield* cli(['setup', '--target', 'codex', '--yes']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('rerun `composio setup --yes --target codex`'),
+          });
         })
       );
     }
@@ -1327,8 +1292,10 @@ describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
     it => {
       it.effect('no_host_detected rerun carries --yes', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--yes']));
-          expect(messageOf(exit)).toContain('rerun `composio setup --yes`');
+          const failure = yield* cli(['setup', '--yes']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('rerun `composio setup --yes`'),
+          });
         })
       );
     }
@@ -1339,8 +1306,10 @@ describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
     it => {
       it.effect('marketplace_conflict rerun carries --yes', () =>
         Effect.gen(function* () {
-          const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
-          expect(messageOf(exit)).toContain('rerun `composio setup --yes --target claude`');
+          const failure = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            message: expect.stringContaining('rerun `composio setup --yes --target claude`'),
+          });
         })
       );
     }

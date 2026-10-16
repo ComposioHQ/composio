@@ -1,6 +1,5 @@
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { listOrganizations } from 'src/services/composio-account';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -13,8 +12,6 @@ const limit = Flag.Int('limit').pipe(
 
 export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(ctx.data.apiKey);

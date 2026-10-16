@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -55,6 +56,6 @@ export async function generateMetadata({ params }: TopicPageProps): Promise<Meta
   return {
     title: `${area.title} knowledge`,
     description: area.description,
-    alternates: { canonical: `/kb/topic/${area.slug}` },
+    alternates: markdownAlternates(`/kb/topic/${area.slug}`),
   };
 }

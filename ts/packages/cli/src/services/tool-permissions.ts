@@ -25,6 +25,7 @@ import {
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { type ClientError } from 'src/services/composio-errors';
 import { ComposioUserContext } from 'src/services/user-context';
+import { idempotent } from 'src/services/composio-request';
 
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';
 
@@ -323,7 +324,11 @@ const requestJson = <S extends Schema.ConstraintDecoder<unknown>>(
     readonly message: string;
   }
 ): Effect.Effect<S['Type'], ToolPermissionsRequestError> =>
-  (method === 'GET' ? client.get(path) : client.post(path, { body })).pipe(
+  // Both endpoints are reads, including the POST that resolves permissions.
+  (method === 'GET'
+    ? client.get(path, idempotent)
+    : client.post(path, { body, ...idempotent })
+  ).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(responseSchema)),
     Effect.mapError(cause => new ToolPermissionsRequestError({ path, message, cause }))
   );
@@ -914,6 +919,12 @@ const COMPLETION_COPY: Readonly<
   },
 };
 
+const DECISION_BY_APPROVAL_PATH: ReadonlyMap<string, PermissionDecision> = new Map([
+  ['/allow-session', 'allow_session'],
+  ['/allow-once', 'allow_once'],
+  ['/deny', 'deny'],
+]);
+
 const completionHtml = (decision: PermissionDecision) => {
   const { title, body } = COMPLETION_COPY[decision];
   return `<!doctype html>
@@ -993,14 +1004,7 @@ const requestPermissionInBrowser = (params: {
         return;
       }
 
-      const decision =
-        url.pathname === '/allow-session'
-          ? 'allow_session'
-          : url.pathname === '/allow-once'
-            ? 'allow_once'
-            : url.pathname === '/deny'
-              ? 'deny'
-              : undefined;
+      const decision = DECISION_BY_APPROVAL_PATH.get(url.pathname);
       if (!decision) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
         return;

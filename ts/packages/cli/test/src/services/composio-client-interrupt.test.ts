@@ -50,7 +50,7 @@ const platformLayer = () =>
     )
   );
 
-const withRepository = () => Layer.provide(ComposioToolkitsRepository.Default, platformLayer());
+const withSingleton = () => Layer.provide(ComposioClientSingleton.Default, platformLayer());
 
 // The real executor over the real client singleton, plus every service that
 // `execute` and session creation require, with the credential store mocked above.
@@ -107,10 +107,10 @@ describe('interrupting a single-shot client request', () => {
     Effect.gen(function* () {
       const pending = pendingRequest();
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementationOnce(pending.respond);
-      const repository = yield* ComposioToolkitsRepository;
+      const client = yield* Effect.flatMap(ComposioClientSingleton, singleton => singleton.get());
 
       const fiber = yield* Effect.forkChild(
-        repository.listConnectedAccounts({ user_ids: ['default'], statuses: ['ACTIVE'] })
+        client.connectedAccounts.list({ user_ids: ['default'], statuses: ['ACTIVE'] })
       );
       const requestSignal = yield* pending.signal;
       expect(requestSignal.aborted).toBe(false);
@@ -120,7 +120,7 @@ describe('interrupting a single-shot client request', () => {
       expect(requestSignal.aborted).toBe(true);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(requestUrl(fetchSpy.mock.calls[0]).pathname).toBe('/api/v3.1/connected_accounts');
-    }).pipe(Effect.provide(withRepository()))
+    }).pipe(Effect.provide(withSingleton()))
   );
 
   it.effect('tool router session creation aborts the in-flight create request', () =>

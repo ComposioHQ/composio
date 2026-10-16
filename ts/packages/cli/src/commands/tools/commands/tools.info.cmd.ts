@@ -2,7 +2,6 @@ import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -25,8 +24,6 @@ const slug = Argument.String('slug').pipe(
  */
 export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 

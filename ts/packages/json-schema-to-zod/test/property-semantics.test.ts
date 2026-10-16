@@ -22,8 +22,8 @@ import Ajv from 'ajv';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { jsonSchemaToZod } from '../src/index';
 import type { JsonSchema, Serializable } from '../src/types';
+import { builders } from './support/builders';
 
 const SCALAR_TYPES = ['string', 'integer', 'number', 'boolean', 'null'] as const;
 type ScalarType = (typeof SCALAR_TYPES)[number];
@@ -117,7 +117,7 @@ const schemaAndInstance: fc.Arbitrary<{ schema: SchemaRecord; value: Serializabl
 
 const ajv = new Ajv({ strict: false });
 
-describe('scalar conversion matches the Draft 7 oracle', () => {
+describe.each(builders)('scalar conversion matches the Draft 7 oracle ($name)', builder => {
   it('accepts exactly what Ajv accepts, standalone and object-wrapped', () => {
     fc.assert(
       fc.property(schemaAndInstance, ({ schema, value }) => {
@@ -130,14 +130,14 @@ describe('scalar conversion matches the Draft 7 oracle', () => {
         const instance = { value };
 
         const oracleScalar = ajv.compile(schema)(value);
-        const zodScalar = jsonSchemaToZod(schema as JsonSchema).safeParse(value).success;
+        const zodScalar = builder.convert(schema as JsonSchema).safeParse(value).success;
         expect(
           zodScalar,
           `standalone schema=${JSON.stringify(schema)} value=${JSON.stringify(value)}`
         ).toBe(oracleScalar);
 
         const oracleObject = ajv.compile(objectSchema)(instance);
-        const zodObject = jsonSchemaToZod(objectSchema as JsonSchema).safeParse(instance).success;
+        const zodObject = builder.convert(objectSchema as JsonSchema).safeParse(instance).success;
         expect(
           zodObject,
           `wrapped schema=${JSON.stringify(schema)} value=${JSON.stringify(value)}`
