@@ -1,8 +1,6 @@
 import { commandInputError } from 'src/commands/errors';
 import { Command, Flag } from 'effect/cli';
-import * as FileSystem from 'effect/FileSystem';
-import * as Path from 'effect/Path';
-import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
+import { Data, DateTime, Effect, Option, Schedule } from 'effect';
 import open from 'open';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import {
@@ -18,8 +16,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
-import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
@@ -82,25 +79,9 @@ const agentOpt = Flag.Boolean('agent').pipe(
   Flag.withDescription('Sign up or log in using a Composio agent identity')
 );
 
-const PENDING_LOGIN_FILE_NAME = 'pending-login-session.json';
-const PENDING_LOGIN_TTL_MS = 10 * 60 * 1000;
 const LOGIN_POLL_INTERVAL_SECONDS = 5;
 const LOGIN_POLL_TIMEOUT_SECONDS = 10 * 60;
 const LOGIN_POLL_RETRIES = Math.ceil(LOGIN_POLL_TIMEOUT_SECONDS / LOGIN_POLL_INTERVAL_SECONDS);
-
-const PendingLoginSession = Schema.Struct({
-  key: Schema.String,
-  loginUrl: Schema.String,
-  expiresAt: Schema.String,
-  cachedAt: Schema.String,
-});
-type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
-
-class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
-  readonly message: string;
-  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
-  readonly cause?: unknown;
-}> {}
 
 class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
   readonly message: string;
@@ -120,79 +101,6 @@ class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganiz
 }> {}
 
 const invalidOptionValue = commandInputError('login');
-
-const pendingLoginPath = Effect.gen(function* () {
-  const path = yield* Path.Path;
-  const cacheDir = yield* setupCacheDir;
-  return path.join(cacheDir, PENDING_LOGIN_FILE_NAME);
-});
-
-const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const filePath = yield* pendingLoginPath;
-    const payload: PendingLoginSession = {
-      ...session,
-      cachedAt: new Date().toISOString(),
-    };
-    yield* atomicWritePrivateFileString({
-      fs,
-      target: filePath,
-      contents: `${JSON.stringify(payload, null, 2)}\n`,
-    });
-  });
-
-const clearPendingLoginSession = Effect.gen(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const filePath = yield* pendingLoginPath;
-  yield* fs.remove(filePath).pipe(Effect.ignore);
-});
-
-const readPendingLoginSession = Effect.gen(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const filePath = yield* pendingLoginPath;
-  const exists = yield* fs.exists(filePath);
-  if (!exists) {
-    return yield* new PendingLoginError({
-      message: 'No pending login found. Run `composio login < /dev/null` first.',
-      reason: 'missing',
-    });
-  }
-
-  const rawSession = yield* ensurePrivateFileMode({ fs, target: filePath }).pipe(
-    Effect.andThen(fs.readFileString(filePath, 'utf8')),
-    Effect.mapError(
-      cause =>
-        new PendingLoginError({
-          message: 'Failed to read pending login cache',
-          reason: 'io',
-          cause,
-        })
-    )
-  );
-  const session = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(PendingLoginSession))(
-    rawSession
-  ).pipe(
-    Effect.mapError(
-      cause =>
-        new PendingLoginError({
-          message: 'Pending login cache is invalid',
-          reason: 'invalid',
-          cause,
-        })
-    )
-  );
-  const cachedAt = Date.parse(session.cachedAt);
-  if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > PENDING_LOGIN_TTL_MS) {
-    yield* clearPendingLoginSession;
-    return yield* new PendingLoginError({
-      message: 'Pending login expired. Run `composio login < /dev/null` again.',
-      reason: 'expired',
-    });
-  }
-
-  return session;
-});
 
 const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
@@ -684,7 +592,8 @@ export const browserLogin = (params: {
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
     const pollCommand = 'composio login --poll';
     const expiresAt = DateTime.formatIso(session.expiresAt);
-    yield* writePendingLoginSession({
+    const pendingLogin = yield* PendingLoginSession;
+    yield* pendingLogin.write({
       key: session.id,
       loginUrl: url,
       expiresAt,
@@ -917,7 +826,8 @@ export const loginCmd = Command.make(
       }
 
       if (poll) {
-        const pendingLogin = yield* readPendingLoginSession;
+        const pendingLoginSession = yield* PendingLoginSession;
+        const pendingLogin = yield* pendingLoginSession.read;
         const loginResult = yield* loginWithKey({
           key: pendingLogin.key,
           noWait: false,
@@ -926,7 +836,7 @@ export const loginCmd = Command.make(
           defaultToFirstOrg: true,
           skipOutput: true,
         });
-        yield* clearPendingLoginSession;
+        yield* pendingLoginSession.clear;
         const pollSummaryParams = {
           email: loginResult.email,
           defaultOrgId: loginResult.orgId,

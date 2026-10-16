@@ -51,6 +51,7 @@ import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
@@ -126,6 +127,11 @@ export const SetupSkillInstallerLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
+export const PendingLoginSessionLive = Layer.provide(
+  PendingLoginSession.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
@@ -144,6 +150,7 @@ const layers = Layer.mergeAll(
   SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
+  PendingLoginSessionLive,
   BunServices.layer,
   BunFileSystem.layer,
   BunPath.layer,
