@@ -53,7 +53,7 @@
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.18.0",
-    "ai": "^6.0.302",
+    "ai": "^6.0.304",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
