@@ -458,6 +458,42 @@
       }
     },
     {
+      // The JSON Schema semantics of the Zod converter are written once over
+      // an opaque schema type. Only the backends, the public type aliases, and
+      // the two entry modules speak Zod.
+      "files": [
+        "ts/packages/json-schema-to-zod/src/parsers/**/*.ts",
+        "ts/packages/json-schema-to-zod/src/utils/**/*.ts",
+        "ts/packages/json-schema-to-zod/src/convert.ts",
+        "ts/packages/json-schema-to-zod/src/context.ts",
+        "ts/packages/json-schema-to-zod/src/annotations.ts",
+        "ts/packages/json-schema-to-zod/src/whole-schema-validation.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              {
+                "name": "zod",
+                "message": "Shared converter code calls the backend on the parse context; only src/backend/** may import Zod."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["zod/*"],
+                "message": "Shared converter code calls the backend on the parse context; only src/backend/** may import Zod."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       // Examples are console-driven references. Keep type-safety rules
       // (no-explicit-any, unused-vars) but drop console noise. The Buffer/crypto
       // restrictions above target SDK/Workers source; Node example scripts may

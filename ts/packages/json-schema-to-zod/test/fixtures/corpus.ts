@@ -11,7 +11,9 @@ export {
   acceptedFor,
   assertCorpusInvariants,
   loadObjectCases,
+  loadStrictCases,
   type CorpusCase,
   type CorpusInstance,
   type CorpusLanguage,
+  type StrictCase,
 } from '../../../core/test/fixtures/json-schema-conversion/corpus';

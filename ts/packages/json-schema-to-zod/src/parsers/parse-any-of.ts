@@ -1,19 +1,21 @@
-import { z } from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 
-export const parseAnyOf = (jsonSchema: JsonSchemaObject & { anyOf: JsonSchema[] }, refs: Refs) => {
+export const parseAnyOf = <S>(
+  jsonSchema: JsonSchemaObject & { anyOf: JsonSchema[] },
+  ctx: ParseContext<S>
+): S => {
   return jsonSchema.anyOf.length
     ? jsonSchema.anyOf.length === 1
       ? parseSchema(jsonSchema.anyOf[0], {
-          ...refs,
-          path: [...refs.path, 'anyOf', 0],
+          ...ctx,
+          path: [...ctx.path, 'anyOf', 0],
         })
-      : z.union(
+      : ctx.backend.union(
           jsonSchema.anyOf.map((schema, i) =>
-            parseSchema(schema, { ...refs, path: [...refs.path, 'anyOf', i] })
-          ) as [z.ZodTypeAny, z.ZodTypeAny]
+            parseSchema(schema, { ...ctx, path: [...ctx.path, 'anyOf', i] })
+          ) as [S, S]
         )
-    : z.any();
+    : ctx.backend.any();
 };
