@@ -50,7 +50,7 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@ai-sdk/provider-utils": "^5.0.58",
+    "@ai-sdk/provider-utils": "^5.0.59",
     "@langchain/core": "^1.2.17",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^26.6.4",
