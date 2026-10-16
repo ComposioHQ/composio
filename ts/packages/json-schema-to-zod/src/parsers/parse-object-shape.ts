@@ -44,10 +44,13 @@ export function parseObjectShape<S>(
     const parsedProperty = parseSchema(propJsonSchema, propCtx);
     // A permissive property (`$ref`, typeless constraints) already carries the
     // identical guard from the permissive branch of `selectParser`; attaching
-    // again would run two full interpretations of the document per parse.
+    // again would run two full interpretations of the document per parse. A
+    // `parserOverride` result skips `selectParser`, so with an override in
+    // play the property keeps its own guard.
+    const carriesGuard =
+      ctx.parserOverride === undefined && requiresPermissiveMaterialization(propJsonSchema);
     const propZodSchema =
-      requiresWholeSchemaValidation(propJsonSchema) &&
-      !requiresPermissiveMaterialization(propJsonSchema)
+      requiresWholeSchemaValidation(propJsonSchema) && !carriesGuard
         ? backend.attachGuard(
             parsedProperty,
             createWholeSchemaGuard(guardSchemaAt(propJsonSchema, propCtx))

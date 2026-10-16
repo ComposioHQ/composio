@@ -35,11 +35,37 @@ const countGuardAttachments = <S>(backend: ZodBackend<S>, schema: JsonSchemaObje
   return attachments;
 };
 
+/**
+ * Whether a typeless `{ not: { type: 'string' } }` property, replaced by a
+ * `parserOverride` with an unconstrained schema, accepts `value`. The override
+ * skips the parser that would guard the property, so the shape parser must
+ * still guard it.
+ */
+const overriddenPropertyAccepts = <S extends { safeParse(value: unknown): { success: boolean } }>(
+  backend: ZodBackend<S>,
+  value: unknown
+): boolean => {
+  const schema: JsonSchemaObject = { properties: { p: { not: { type: 'string' } } } };
+  const shape = parseObjectShape(schema, {
+    path: [],
+    seen: new Map(),
+    root: schema,
+    backend,
+    parserOverride: node => ('not' in node ? backend.any() : undefined),
+  });
+  return shape.p.safeParse(value).success;
+};
+
 const backends: ReadonlyArray<{
   name: string;
   attachmentsOf: (schema: JsonSchemaObject) => number;
+  overrideAccepts: (value: unknown) => boolean;
 }> = [
-  { name: 'zod-v3', attachmentsOf: schema => countGuardAttachments(zodV3Backend, schema) },
+  {
+    name: 'zod-v3',
+    attachmentsOf: schema => countGuardAttachments(zodV3Backend, schema),
+    overrideAccepts: value => overriddenPropertyAccepts(zodV3Backend, value),
+  },
   // The `/v4` backend cannot load below the floor (an embedded zod 4.0.0 core
   // inside zod 3.25.x), so it joins only where the installed copy meets it.
   ...(meetsZodV4Floor(version)
@@ -47,6 +73,7 @@ const backends: ReadonlyArray<{
         {
           name: 'zod-v4',
           attachmentsOf: (schema: JsonSchemaObject) => countGuardAttachments(zodV4Backend, schema),
+          overrideAccepts: (value: unknown) => overriddenPropertyAccepts(zodV4Backend, value),
         },
       ]
     : []),
@@ -78,5 +105,12 @@ describe.each(backends)('parseObjectShape guard attachments ($name)', ({ attachm
   it('attaches no guard for a plain property', () => {
     const attachments = attachmentsOf({ properties: { p: { type: 'string' } } });
     expect(attachments).toBe(0);
+  });
+});
+
+describe.each(backends)('parseObjectShape with a parserOverride ($name)', ({ overrideAccepts }) => {
+  it('keeps the guard on a permissive property the override replaces', () => {
+    expect(overrideAccepts('text')).toBe(false);
+    expect(overrideAccepts(1)).toBe(true);
   });
 });
