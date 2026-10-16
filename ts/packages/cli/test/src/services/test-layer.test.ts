@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import { Effect, Exit } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { Effect, Exit, Layer } from 'effect';
+import { FetchHttpClient } from 'effect/http';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
+import { CommandRunner } from 'src/services/command-runner';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { NodeOs } from 'src/services/node-os';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import {
   getSessionInfoByUserApiKey,
   listOrganizations,
@@ -8,9 +15,16 @@ import {
 } from 'src/services/composio-account';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { ConnectedAccountsTest, TestLive, ToolkitsTest } from 'test/__utils__';
+import {
+  CommandRunnerTest,
+  ConnectedAccountsTest,
+  SetupTest,
+  TestLive,
+  ToolkitsTest,
+} from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
+import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
 describe('TestLayer', () => {
   it.effect('leaves globalThis.fetch untouched', () =>
@@ -149,5 +163,105 @@ describe('ConnectedAccountsTest', () => {
 
       expect(Exit.hasDies(exit)).toBe(true);
     }).pipe(Effect.provide(ConnectedAccountsTest()))
+  );
+});
+
+// The runner doubles never spawn; a spawner that dies on use proves it.
+const noSpawn = Layer.succeed(
+  ChildProcessSpawner.ChildProcessSpawner,
+  ChildProcessSpawner.make(() => Effect.die('a runner double spawned a process'))
+);
+const failingRunner = CommandRunner.of({
+  run: () => Effect.succeed(3),
+  capture: () => Effect.succeed({ exitCode: 3, stdout: 'out', stderr: 'err' }),
+});
+
+describe('CommandRunnerTest', () => {
+  const command = ChildProcess.make('false');
+
+  it.effect.each([
+    { name: 'CommandRunnerTest', layer: CommandRunnerTest() },
+    { name: 'TestLive', layer: TestLive() },
+  ])('exits 0 with empty output without spawning through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const runner = yield* CommandRunner;
+      const exitCode = yield* runner.run(command);
+      const captured = yield* runner.capture(command);
+
+      expect(exitCode).toBe(0);
+      expect(captured).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+    }).pipe(Effect.provide(Layer.merge(layer, noSpawn)), Effect.scoped)
+  );
+
+  it.effect.each([
+    { name: 'CommandRunnerTest', layer: CommandRunnerTest(failingRunner) },
+    { name: 'TestLive', layer: TestLive({ commandRunner: failingRunner }) },
+  ])('answers with the runner the test passes through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const runner = yield* CommandRunner;
+      const captured = yield* runner.capture(command);
+
+      expect(captured).toEqual({ exitCode: 3, stdout: 'out', stderr: 'err' });
+    }).pipe(Effect.provide(Layer.merge(layer, noSpawn)), Effect.scoped)
+  );
+});
+
+describe('SetupTest', () => {
+  // `SetupSkillInstallerShape` names the services the real installer reads; the doubles read none.
+  const withInstallerServices = (layer: ReturnType<typeof SetupTest>) =>
+    Layer.mergeAll(
+      layer,
+      BunFileSystem.layer,
+      BunPath.layer,
+      FetchHttpClient.layer,
+      NodeOs.Default,
+      TerminalUITest
+    );
+  const readyInstaller = SetupSkillInstaller.of({
+    isClaudeSkillReady: Effect.succeed(true),
+    hasManagedClaudeSkill: Effect.succeed(true),
+    ensureClaudeSkill: Effect.succeed(false),
+    removeClaudeSkill: Effect.succeed(true),
+  });
+
+  it.effect.each([
+    { name: 'SetupTest', layer: withInstallerServices(SetupTest()) },
+    { name: 'TestLive', layer: TestLive() },
+  ])('installs no Claude skill and changes nothing, however often, through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const installer = yield* SetupSkillInstaller;
+      const answers = yield* Effect.all([
+        installer.ensureClaudeSkill,
+        installer.ensureClaudeSkill,
+        installer.isClaudeSkillReady,
+        installer.hasManagedClaudeSkill,
+        installer.removeClaudeSkill,
+      ]);
+
+      expect(answers).toEqual([false, false, false, false, false]);
+    }).pipe(Effect.provide(layer), Effect.scoped)
+  );
+
+  it.effect.each([
+    {
+      name: 'SetupTest',
+      layer: withInstallerServices(
+        SetupTest({ commandRunner: failingRunner, setupSkillInstaller: readyInstaller })
+      ),
+    },
+    {
+      name: 'TestLive',
+      layer: TestLive({ commandRunner: failingRunner, setupSkillInstaller: readyInstaller }),
+    },
+  ])('answers with the runner and installer the test passes through $name', ({ layer }) =>
+    Effect.gen(function* () {
+      const installer = yield* SetupSkillInstaller;
+      const runner = yield* CommandRunner;
+      const ready = yield* installer.isClaudeSkillReady;
+      const exitCode = yield* runner.run(ChildProcess.make('claude', ['--version']));
+
+      expect(ready).toBe(true);
+      expect(exitCode).toBe(3);
+    }).pipe(Effect.provide(Layer.merge(layer, noSpawn)), Effect.scoped)
   );
 });
