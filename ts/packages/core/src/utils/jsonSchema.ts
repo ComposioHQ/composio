@@ -515,7 +515,8 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
  *   added to it and widened to accept `null`, the emulation of optional
  *   fields that OpenAI structured outputs document.
  * - `unsupported-keyword-stripped` — an annotation keyword the API rejects
- *   (`default`, `examples`) was removed.
+ *   (`default`, `examples`, or a string `format` outside the accepted list)
+ *   was removed.
  * - `one-of-converted` — `oneOf` (unsupported) became `anyOf`.
  */
 export type StrictSchemaChangeReason =
@@ -566,6 +567,27 @@ const MAX_STRICT_CHANGES = 50;
 
 /** Annotation-only keywords OpenAI structured outputs rejects; safe to strip. */
 const STRICT_STRIP_KEYWORDS = new Set(['examples', 'default']);
+
+/**
+ * The `format` values OpenAI structured outputs accepts on a string schema,
+ * matched case-sensitively; any other value there is rejected with a 400.
+ * Formats on number and integer schemas are not checked.
+ */
+const STRICT_STRING_FORMATS = new Set([
+  'date-time',
+  'time',
+  'date',
+  'duration',
+  'email',
+  'hostname',
+  'ipv4',
+  'ipv6',
+  'uuid',
+]);
+
+/** Whether a `type` value admits strings; an absent `type` admits every type. */
+const admitsString = (type: unknown): boolean =>
+  type === undefined || type === 'string' || (Array.isArray(type) && type.includes('string'));
 
 /** Keywords OpenAI structured outputs reject and that have no lossless rewrite. */
 const STRICT_UNSUPPORTED_KEYWORDS = [
@@ -811,7 +833,8 @@ function createNullCheck(
  *    sends for such a property means "omitted"; the strict providers drop it
  *    before executing the tool (see {@link omitNullToolArguments});
  *  - `type` arrays are kept as-is (the API accepts them); `oneOf` becomes
- *    `anyOf`; `default` and `examples` are stripped;
+ *    `anyOf`; `default`, `examples`, and a string `format` the API does
+ *    not accept are stripped;
  *  - local `$ref`s into `$defs`/`definitions` are kept (the API supports
  *    them, including recursion) and the definitions themselves are
  *    normalized; an optional `$ref` property is widened with an `anyOf`
@@ -897,6 +920,19 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
           path,
           reason: 'unsupported-keyword-stripped',
           detail: `keyword "${key}" removed`,
+        });
+        continue;
+      }
+      if (
+        key === 'format' &&
+        typeof child === 'string' &&
+        !STRICT_STRING_FORMATS.has(child) &&
+        admitsString(value.type)
+      ) {
+        recordChange({
+          path,
+          reason: 'unsupported-keyword-stripped',
+          detail: `format "${child}" removed`,
         });
         continue;
       }
