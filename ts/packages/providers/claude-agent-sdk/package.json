@@ -50,12 +50,13 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "@composio/json-schema-to-zod": "workspace:*",
     "zod": "^4.5.4"
   },
   "peerDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.199",
     "@composio/core": ">=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.295",
