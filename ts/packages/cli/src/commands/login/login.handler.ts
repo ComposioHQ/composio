@@ -11,6 +11,7 @@ import {
   waitForLinkedSession,
 } from 'src/effects/browser-login';
 import type { RetrievedSession } from 'src/models/session';
+import { completeAgentLogin } from 'src/effects/complete-agent-login';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { linkAnalyticsIdentityForOrg } from 'src/effects/link-analytics-identity';
@@ -19,8 +20,6 @@ import {
   getOrSignupReadyAgent,
   getStoredReadyAgent,
   isAgentIdentityForApiKey,
-  loginWithAgentIdentity,
-  safeAgentSummary,
   type AgentIdentity,
 } from 'src/services/agents';
 import {
@@ -93,16 +92,6 @@ const offerSkillInstall = (skip: boolean) =>
       installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) }),
       Effect.succeed(canPrompt && !skip)
     );
-  });
-
-/** Stores an agent identity's credential as the CLI's login and reports it. */
-const completeAgentLogin = (identity: AgentIdentity) =>
-  Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    yield* loginWithAgentIdentity(identity);
-    const summary = safeAgentSummary(identity);
-    yield* ui.log.success(`Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`);
-    yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
   });
 
 /** The session, or a failure after telling the user to finish the browser step first. */
