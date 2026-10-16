@@ -1,6 +1,6 @@
 import { getEnvVariable } from './utils/env';
 import type { BaseComposioProvider } from './provider/BaseProvider';
-import ComposioClient from '@composio/client';
+import ComposioClient, { createFetchTransport } from '@composio/client';
 import type { LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
@@ -38,6 +38,7 @@ import { ToolRouter } from './models/ToolRouter';
 import { Sessions } from './models/Sessions';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
+import { createToolkitDeprecationFetch } from './utils/toolkitDeprecation';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -554,6 +555,10 @@ export class Composio<
       identity: getClientIdentity(this.provider),
       logger: clientLogForwarder,
       logLevel: toClientLogLevel(logger.getLevel()),
+      // Warns once per deprecated toolkit version reported through the
+      // `Composio-Deprecated-Toolkits` response header. `createSession()`
+      // clones go through this same constructor and inherit it.
+      transport: createFetchTransport({ fetch: createToolkitDeprecationFetch() }),
     });
 
     this.tools = new Tools(this.client, this.config);
