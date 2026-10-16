@@ -4730,6 +4730,273 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
           "typeName": "ZodNever",
         },
         "shape": {
+          "count": {
+            "checks": [
+              {
+                "kind": "int",
+                "message": undefined,
+              },
+            ],
+            "typeName": "ZodNumber",
+          },
+          "file": {
+            "options": [
+              {
+                "checks": [],
+                "typeName": "ZodString",
+              },
+              {
+                "typeName": "ZodNull",
+              },
+            ],
+            "typeName": "ZodUnion",
+          },
+          "format": {
+            "left": {
+              "checks": [],
+              "typeName": "ZodString",
+            },
+            "right": {
+              "typeName": "ZodEnum",
+              "values": [
+                "json",
+                "csv",
+              ],
+            },
+            "typeName": "ZodIntersection",
+          },
+          "repos": {
+            "element": {
+              "checks": [],
+              "typeName": "ZodString",
+            },
+            "typeName": "ZodArray",
+          },
+          "shouted": {
+            "checks": [],
+            "typeName": "ZodString",
+          },
+          "untyped": {
+            "typeName": "ZodAny",
+          },
+          "url": {
+            "checks": [
+              {
+                "kind": "url",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+        },
+        "typeName": "ZodObject",
+        "unknownKeys": "strict",
+      },
+      "jsonSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "integer",
+          },
+          "file": {
+            "type": [
+              "string",
+              "null",
+            ],
+          },
+          "format": {
+            "allOf": [
+              {
+                "type": "string",
+              },
+              {
+                "enum": [
+                  "json",
+                  "csv",
+                ],
+                "type": "string",
+              },
+            ],
+          },
+          "repos": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "shouted": {
+            "type": "string",
+          },
+          "untyped": {},
+          "url": {
+            "format": "uri",
+            "type": "string",
+          },
+        },
+        "required": [
+          "url",
+          "file",
+          "repos",
+          "shouted",
+          "count",
+          "format",
+        ],
+        "type": "object",
+      },
+    },
+    "id": "string-format-outside-accepted-list-stripped",
+  },
+  {
+    "fingerprint": {
+      "def": {
+        "catchall": {
+          "typeName": "ZodNever",
+        },
+        "shape": {
+          "date": {
+            "checks": [
+              {
+                "kind": "date",
+                "message": undefined,
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "date-time": {
+            "checks": [
+              {
+                "kind": "datetime",
+                "local": false,
+                "offset": true,
+                "precision": null,
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "duration": {
+            "checks": [
+              {
+                "kind": "duration",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "email": {
+            "checks": [
+              {
+                "kind": "email",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "hostname": {
+            "checks": [],
+            "typeName": "ZodString",
+          },
+          "ipv4": {
+            "checks": [
+              {
+                "kind": "ip",
+                "message": undefined,
+                "version": "v4",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "ipv6": {
+            "checks": [
+              {
+                "kind": "ip",
+                "message": undefined,
+                "version": "v6",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "time": {
+            "checks": [
+              {
+                "kind": "time",
+                "precision": null,
+              },
+            ],
+            "typeName": "ZodString",
+          },
+          "uuid": {
+            "checks": [
+              {
+                "kind": "uuid",
+              },
+            ],
+            "typeName": "ZodString",
+          },
+        },
+        "typeName": "ZodObject",
+        "unknownKeys": "strict",
+      },
+      "jsonSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string",
+          },
+          "date-time": {
+            "format": "date-time",
+            "type": "string",
+          },
+          "duration": {
+            "format": "duration",
+            "type": "string",
+          },
+          "email": {
+            "format": "email",
+            "type": "string",
+          },
+          "hostname": {
+            "type": "string",
+          },
+          "ipv4": {
+            "format": "ipv4",
+            "type": "string",
+          },
+          "ipv6": {
+            "format": "ipv6",
+            "type": "string",
+          },
+          "time": {
+            "format": "time",
+            "type": "string",
+          },
+          "uuid": {
+            "format": "uuid",
+            "type": "string",
+          },
+        },
+        "required": [
+          "date-time",
+          "time",
+          "date",
+          "duration",
+          "email",
+          "hostname",
+          "ipv4",
+          "ipv6",
+          "uuid",
+        ],
+        "type": "object",
+      },
+    },
+    "id": "accepted-string-formats-kept",
+  },
+  {
+    "fingerprint": {
+      "def": {
+        "catchall": {
+          "typeName": "ZodNever",
+        },
+        "shape": {
           "opts": {
             "left": {
               "typeName": "ZodAny",

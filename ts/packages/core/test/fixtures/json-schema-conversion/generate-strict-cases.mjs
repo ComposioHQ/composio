@@ -127,17 +127,31 @@ const cases = [
   ],
   [
     'string-format-outside-accepted-list-stripped',
-    'A string `format` the API rejects is stripped and reported; accepted string formats, formats on numbers, and a property named `format` stay.',
+    'A string `format` the API rejects is stripped and reported, including on a schema without `type` and for an accepted value in the wrong case; formats on numbers and a property named `format` stay.',
     obj(
       {
         url: { type: 'string', format: 'uri' },
         file: { type: ['string', 'null'], format: 'path' },
         repos: { type: 'array', items: { type: 'string', format: 'repo.nwo' } },
-        when: { type: 'string', format: 'date-time' },
+        untyped: { format: 'uri' },
+        shouted: { type: 'string', format: 'DATE-TIME' },
         count: { type: 'integer', format: 'int64' },
         format: { type: 'string', enum: ['json', 'csv'] },
       },
-      ['url', 'file', 'repos', 'when', 'count', 'format']
+      ['url', 'file', 'repos', 'untyped', 'shouted', 'count', 'format']
+    ),
+  ],
+  [
+    'accepted-string-formats-kept',
+    'Every string `format` the API accepts is kept unchanged.',
+    obj(
+      Object.fromEntries(
+        ['date-time', 'time', 'date', 'duration', 'email', 'hostname', 'ipv4', 'ipv6', 'uuid'].map(
+          format => [format, { type: 'string', format }]
+        )
+      ),
+      ['date-time', 'time', 'date', 'duration', 'email', 'hostname', 'ipv4', 'ipv6', 'uuid'],
+      { additionalProperties: false }
     ),
   ],
   [

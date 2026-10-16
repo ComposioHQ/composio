@@ -747,7 +747,7 @@
     },
     {
       "id": "string-format-outside-accepted-list-stripped",
-      "description": "A string `format` the API rejects is stripped and reported; accepted string formats, formats on numbers, and a property named `format` stay.",
+      "description": "A string `format` the API rejects is stripped and reported, including on a schema without `type` and for an accepted value in the wrong case; formats on numbers and a property named `format` stay.",
       "schema": {
         "type": "object",
         "properties": {
@@ -766,9 +766,12 @@
               "format": "repo.nwo"
             }
           },
-          "when": {
+          "untyped": {
+            "format": "uri"
+          },
+          "shouted": {
             "type": "string",
-            "format": "date-time"
+            "format": "DATE-TIME"
           },
           "count": {
             "type": "integer",
@@ -779,7 +782,7 @@
             "enum": ["json", "csv"]
           }
         },
-        "required": ["url", "file", "repos", "when", "count", "format"]
+        "required": ["url", "file", "repos", "untyped", "shouted", "count", "format"]
       },
       "strict": {
         "schema": {
@@ -797,9 +800,9 @@
                 "type": "string"
               }
             },
-            "when": {
-              "type": "string",
-              "format": "date-time"
+            "untyped": {},
+            "shouted": {
+              "type": "string"
             },
             "count": {
               "type": "integer",
@@ -810,7 +813,7 @@
               "enum": ["json", "csv"]
             }
           },
-          "required": ["url", "file", "repos", "when", "count", "format"],
+          "required": ["url", "file", "repos", "untyped", "shouted", "count", "format"],
           "additionalProperties": false
         }
       },
@@ -826,8 +829,128 @@
         {
           "path": "properties.repos.items",
           "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.shouted",
+          "reason": "unsupported-keyword-stripped"
         }
       ]
+    },
+    {
+      "id": "accepted-string-formats-kept",
+      "description": "Every string `format` the API accepts is kept unchanged.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "date-time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "time": {
+            "type": "string",
+            "format": "time"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "duration": {
+            "type": "string",
+            "format": "duration"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "hostname": {
+            "type": "string",
+            "format": "hostname"
+          },
+          "ipv4": {
+            "type": "string",
+            "format": "ipv4"
+          },
+          "ipv6": {
+            "type": "string",
+            "format": "ipv6"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "date-time",
+          "time",
+          "date",
+          "duration",
+          "email",
+          "hostname",
+          "ipv4",
+          "ipv6",
+          "uuid"
+        ],
+        "additionalProperties": false
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "date-time": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "time": {
+              "type": "string",
+              "format": "time"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "duration": {
+              "type": "string",
+              "format": "duration"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "hostname": {
+              "type": "string",
+              "format": "hostname"
+            },
+            "ipv4": {
+              "type": "string",
+              "format": "ipv4"
+            },
+            "ipv6": {
+              "type": "string",
+              "format": "ipv6"
+            },
+            "uuid": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "date-time",
+            "time",
+            "date",
+            "duration",
+            "email",
+            "hostname",
+            "ipv4",
+            "ipv6",
+            "uuid"
+          ],
+          "additionalProperties": false
+        }
+      }
     },
     {
       "id": "enum-values-are-data-not-keywords",
