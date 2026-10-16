@@ -746,6 +746,90 @@
       ]
     },
     {
+      "id": "string-format-outside-accepted-list-stripped",
+      "description": "A string `format` the API rejects is stripped and reported; accepted string formats, formats on numbers, and a property named `format` stay.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "file": {
+            "type": ["string", "null"],
+            "format": "path"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "repo.nwo"
+            }
+          },
+          "when": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["json", "csv"]
+          }
+        },
+        "required": ["url", "file", "repos", "when", "count", "format"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "file": {
+              "type": ["string", "null"]
+            },
+            "repos": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "when": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "count": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "format": {
+              "type": "string",
+              "enum": ["json", "csv"]
+            }
+          },
+          "required": ["url", "file", "repos", "when", "count", "format"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.url",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.file",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.repos.items",
+          "reason": "unsupported-keyword-stripped"
+        }
+      ]
+    },
+    {
       "id": "enum-values-are-data-not-keywords",
       "description": "Keys inside enum/const values are data and must not be treated as keywords.",
       "schema": {

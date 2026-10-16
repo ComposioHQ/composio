@@ -126,6 +126,21 @@ const cases = [
     obj({ name: { type: 'string', examples: ['a'], default: 'x' } }, ['name']),
   ],
   [
+    'string-format-outside-accepted-list-stripped',
+    'A string `format` the API rejects is stripped and reported; accepted string formats, formats on numbers, and a property named `format` stay.',
+    obj(
+      {
+        url: { type: 'string', format: 'uri' },
+        file: { type: ['string', 'null'], format: 'path' },
+        repos: { type: 'array', items: { type: 'string', format: 'repo.nwo' } },
+        when: { type: 'string', format: 'date-time' },
+        count: { type: 'integer', format: 'int64' },
+        format: { type: 'string', enum: ['json', 'csv'] },
+      },
+      ['url', 'file', 'repos', 'when', 'count', 'format']
+    ),
+  ],
+  [
     'enum-values-are-data-not-keywords',
     'Keys inside enum/const values are data and must not be treated as keywords.',
     obj({ opts: { enum: [{ default: 1, properties: {} }, null] } }, ['opts']),
