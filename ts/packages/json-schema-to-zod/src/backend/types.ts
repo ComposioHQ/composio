@@ -1,8 +1,20 @@
 import type { Serializable } from '../types';
 
 /** String formats the string parser asserts; every other `format` is an annotation. */
-export type StringFormat =
-  'email' | 'ip' | 'ipv4' | 'ipv6' | 'uri' | 'uuid' | 'date-time' | 'time' | 'date' | 'duration';
+export const ASSERTED_STRING_FORMATS = [
+  'email',
+  'ip',
+  'ipv4',
+  'ipv6',
+  'uri',
+  'uuid',
+  'date-time',
+  'time',
+  'date',
+  'duration',
+] as const;
+
+export type StringFormat = (typeof ASSERTED_STRING_FORMATS)[number];
 
 export type NumberBound = 'gt' | 'gte' | 'lt' | 'lte';
 

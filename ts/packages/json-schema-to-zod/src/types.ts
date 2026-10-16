@@ -29,10 +29,15 @@ export interface JsonSchemaObject extends Omit<
   | 'oneOf'
   | 'not'
   | 'definitions'
+  | 'exclusiveMinimum'
+  | 'exclusiveMaximum'
 > {
   min?: number;
   max?: number;
   example?: Serializable;
+  /** Draft 4/OpenAPI boolean spellings ride beside the Draft 7 numeric ones. */
+  exclusiveMinimum?: number | boolean;
+  exclusiveMaximum?: number | boolean;
 
   $defs?: JsonSchemaDefinitions;
   definitions?: JsonSchemaDefinitions;

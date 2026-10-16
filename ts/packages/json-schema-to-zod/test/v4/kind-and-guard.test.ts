@@ -106,4 +106,18 @@ describe('v4 kind and guard survival', () => {
     rejects(extended, { ref: 0 });
     expect(extended.safeParse({ ref: 2, more: 'x' }).success).toBe(true);
   });
+
+  it('does not fire the guard when zod runs the schema backward', () => {
+    const parsed = jsonSchemaToZod(guarded);
+    const forward = rejects(parsed, { q: 'cats', limit: 'ten' });
+    expect(forward.some(issue => issue.code === 'custom')).toBe(true);
+
+    // `.safeEncode()` runs zod's parse with direction `backward`. The
+    // whole-schema guard steps aside on that axis; the schema's own checks
+    // still reject the value, without the guard's custom issue on top.
+    const backward = parsed.safeEncode({ q: 'cats', limit: 'ten' });
+    expect(backward.success).toBe(false);
+    const issues = backward.success ? [] : backward.error.issues;
+    expect(issues.some(issue => issue.code === 'custom')).toBe(false);
+  });
 });

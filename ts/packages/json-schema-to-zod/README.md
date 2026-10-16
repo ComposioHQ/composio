@@ -27,6 +27,10 @@ const zodSchema = jsonSchemaToZod(jsonSchema);
 
 The root entry builds Zod v3 schemas (`zod/v3`), which every supported zod release ships.
 
+### Object-level keywords and `jsonSchemaToZodShape`
+
+`jsonSchemaToZodShape` converts each entry of `properties` on its own, so assertions that apply to the object as a whole have no place in the shape and are not enforced: `minProperties`, `maxProperties`, `propertyNames`, `uniqueItems`, or a `required` key with no declared property. Keywords on a property (`{ uniqueItems: true, type: 'array' }` as a property schema) are still enforced. When the object-level assertions must hold, use `jsonSchemaToZod`, or check them yourself on the `z.object(shape)` you build.
+
 ### Zod v4 schemas
 
 The `/v4` entry builds classic Zod v4 schemas (`zod/v4`) with the same function names, so a caller switches by changing the import path:

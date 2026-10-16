@@ -1,22 +1,13 @@
-import type { StringFormat } from './backend/types';
+import { ASSERTED_STRING_FORMATS, type StringFormat } from './backend/types';
 import type { JsonSchemaObject, Serializable } from './types';
 import { its } from './utils/its';
 
-const ASSERTED_STRING_FORMATS: ReadonlySet<StringFormat> = new Set<StringFormat>([
-  'email',
-  'ip',
-  'ipv4',
-  'ipv6',
-  'uri',
-  'uuid',
-  'date-time',
-  'time',
-  'date',
-  'duration',
-]);
+const ASSERTED_FORMAT_SET: ReadonlySet<StringFormat> = new Set<StringFormat>(
+  ASSERTED_STRING_FORMATS
+);
 
 export const isAssertedStringFormat = (format: unknown): format is StringFormat =>
-  typeof format === 'string' && ASSERTED_STRING_FORMATS.has(format as StringFormat);
+  typeof format === 'string' && ASSERTED_FORMAT_SET.has(format as StringFormat);
 
 /**
  * The description text a node carries: its `description`, else its `title`,

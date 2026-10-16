@@ -1,15 +1,7 @@
 import * as z from 'zod/v3';
 
-import type {
-  Decorations,
-  IssueSink,
-  ObjectPolicy,
-  RunFailure,
-  RunResult,
-  StringFormat,
-  WholeSchemaGuard,
-  ZodBackend,
-} from './types';
+import type { Decorations, IssueSink, StringFormat, WholeSchemaGuard, ZodBackend } from './types';
+import { applyObjectPolicy, buildTuple, run, withPath } from './shared';
 
 type S = z.ZodTypeAny;
 
@@ -67,9 +59,6 @@ const attachGuard = (schema: S, guard: WholeSchemaGuard): S => {
   const Guarded = guardedSchemaClass(schema.constructor as ZodSchemaClass);
   return new Guarded({ ...schema._def, wholeSchemaGuard } as GuardedDef);
 };
-
-const withPath = (path: ReadonlyArray<string | number> | undefined) =>
-  path === undefined ? {} : { path: [...path] };
 
 /** Issues raised through the refinement context; Zod prefixes the context path itself. */
 const sink = (ctx: z.RefinementCtx): IssueSink => ({
@@ -130,25 +119,6 @@ const stringFormat = (schema: S, format: StringFormat, message?: string): S => {
   }
 };
 
-const object = (shape: Readonly<Record<string, S>>, policy: ObjectPolicy<S>): S => {
-  const base = z.object(shape);
-  switch (policy.kind) {
-    case 'strict':
-      return base.strict();
-    case 'loose':
-      return base.passthrough();
-    case 'catchall':
-      return base.catchall(policy.schema);
-  }
-};
-
-const run = (schema: S, value: unknown): RunResult => {
-  const result = schema.safeParse(value);
-  return result.success
-    ? { success: true, data: result.data }
-    : { success: false, failure: result.error as RunFailure };
-};
-
 /** Zod v3 output: descriptions on `_def`, refinements as `ZodEffects`, the guard as a subclass. */
 export const zodV3Backend: ZodBackend<S> = {
   id: 'zod-v3',
@@ -176,12 +146,9 @@ export const zodV3Backend: ZodBackend<S> = {
   array: item => z.array(item),
   minItems: (schema, count, message) => (schema as z.ZodArray<S>).min(count, message),
   maxItems: (schema, count, message) => (schema as z.ZodArray<S>).max(count, message),
-  tuple: (items, rest) => {
-    const tuple = z.tuple(items as unknown as [S]);
-    return rest === undefined ? tuple : tuple.rest(rest);
-  },
+  tuple: (items, rest) => buildTuple<S>(z.tuple(items as unknown as [S]), rest),
 
-  object,
+  object: (shape, policy) => applyObjectPolicy<S>(z.object(shape), policy),
   record: value => z.record(value),
 
   union: options => z.union(options as unknown as [S, S]),

@@ -57,7 +57,7 @@ export const parseNumber = <S>(
   }
 
   if (typeof jsonSchema.minimum === 'number') {
-    if ((jsonSchema as unknown as { exclusiveMinimum?: boolean }).exclusiveMinimum === true) {
+    if (jsonSchema.exclusiveMinimum === true) {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,
@@ -84,7 +84,7 @@ export const parseNumber = <S>(
   }
 
   if (typeof jsonSchema.maximum === 'number') {
-    if ((jsonSchema as unknown as { exclusiveMaximum?: boolean }).exclusiveMaximum === true) {
+    if (jsonSchema.exclusiveMaximum === true) {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,

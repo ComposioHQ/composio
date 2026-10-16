@@ -5,6 +5,7 @@ import type { JsonSchemaObject } from '../types';
 import {
   createWholeSchemaGuard,
   guardSchemaAt,
+  requiresPermissiveMaterialization,
   requiresWholeSchemaValidation,
 } from '../whole-schema-validation';
 
@@ -41,12 +42,17 @@ export function parseObjectShape<S>(
     };
 
     const parsedProperty = parseSchema(propJsonSchema, propCtx);
-    const propZodSchema = requiresWholeSchemaValidation(propJsonSchema)
-      ? backend.attachGuard(
-          parsedProperty,
-          createWholeSchemaGuard(guardSchemaAt(propJsonSchema, propCtx))
-        )
-      : parsedProperty;
+    // A permissive property (`$ref`, typeless constraints) already carries the
+    // identical guard from the permissive branch of `selectParser`; attaching
+    // again would run two full interpretations of the document per parse.
+    const propZodSchema =
+      requiresWholeSchemaValidation(propJsonSchema) &&
+      !requiresPermissiveMaterialization(propJsonSchema)
+        ? backend.attachGuard(
+            parsedProperty,
+            createWholeSchemaGuard(guardSchemaAt(propJsonSchema, propCtx))
+          )
+        : parsedProperty;
 
     const required = Array.isArray(objectSchema.required)
       ? objectSchema.required.includes(key)

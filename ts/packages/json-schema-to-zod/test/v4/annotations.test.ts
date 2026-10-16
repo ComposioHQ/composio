@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as z4 from 'zod/v4';
 
 import { jsonSchemaToZod } from '../../src/v4';
+import { zodV4Backend } from '../../src/backend/zod-v4';
 import type { JsonSchema } from '../../src/types';
 
 type Json = Record<string, unknown>;
@@ -136,4 +137,36 @@ describe('v4 annotation forwarding', () => {
     expect(converted.description).toBe('Bytes');
     expect(converted.meta()).toEqual({ description: 'Bytes', format: 'binary' });
   });
+});
+
+describe('v4 decorate across wrapper kinds', () => {
+  /** Every wrapper kind `annotateInnermost` can receive, built through the backend itself. */
+  it.each([
+    ['optional', (inner: z4.ZodString) => zodV4Backend.optional(inner)],
+    ['nullable', (inner: z4.ZodString) => zodV4Backend.nullable(inner)],
+    ['prefault', (inner: z4.ZodString) => zodV4Backend.withDefault(inner, 'fallback')],
+    ['readonly', (inner: z4.ZodString) => zodV4Backend.readonly(inner)],
+  ] as const)(
+    'puts forwarded annotations on the innermost node under a %s wrapper',
+    (_name, make) => {
+      const inner = z4.string();
+      const decorated = zodV4Backend.decorate(make(inner).meta({ title: 'Wrapper' }), {
+        annotations: { format: 'binary' },
+      });
+
+      // A validation-shaped annotation on the wrapper would sit beside the
+      // wrapper's own rendering (`anyOf`, `default`, `readOnly`) and change
+      // what the schema accepts; it must land on the innermost node.
+      let deepest = decorated;
+      for (;;) {
+        const def = (deepest as unknown as { _zod: { def: { innerType?: z4.ZodType } } })._zod.def;
+        if (!def.innerType) break;
+        deepest = def.innerType;
+      }
+      expect(z4.globalRegistry.get(deepest)).toMatchObject({ format: 'binary' });
+      // The wrapper keeps the metadata it already carried through the rewrap.
+      expect(z4.globalRegistry.get(decorated)).toMatchObject({ title: 'Wrapper' });
+      expect(decorated.safeParse('data').success).toBe(true);
+    }
+  );
 });

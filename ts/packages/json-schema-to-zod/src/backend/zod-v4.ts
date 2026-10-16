@@ -1,15 +1,7 @@
 import * as z from 'zod/v4';
 
-import type {
-  Decorations,
-  IssueSink,
-  ObjectPolicy,
-  RunFailure,
-  RunResult,
-  StringFormat,
-  WholeSchemaGuard,
-  ZodBackend,
-} from './types';
+import type { Decorations, IssueSink, StringFormat, WholeSchemaGuard, ZodBackend } from './types';
+import { applyObjectPolicy, buildTuple, run, withPath } from './shared';
 
 type S = z.ZodType;
 
@@ -182,9 +174,6 @@ const decorate = (schema: S, decorations: Decorations): S => {
   return annotated;
 };
 
-const withPath = (path: ReadonlyArray<string | number> | undefined) =>
-  path === undefined ? {} : { path: [...path] };
-
 type RawIssue = Record<string, unknown>;
 
 /** Issues pushed onto a check payload; the enclosing schemas prefix the path. */
@@ -258,25 +247,6 @@ const stringFormat = (schema: S, format: StringFormat, message?: string): S => {
   }
 };
 
-const object = (shape: Readonly<Record<string, S>>, policy: ObjectPolicy<S>): S => {
-  const base = z.object(shape);
-  switch (policy.kind) {
-    case 'strict':
-      return base.strict();
-    case 'loose':
-      return base.passthrough();
-    case 'catchall':
-      return base.catchall(policy.schema);
-  }
-};
-
-const run = (schema: S, value: unknown): RunResult => {
-  const result = schema.safeParse(value);
-  return result.success
-    ? { success: true, data: result.data }
-    : { success: false, failure: result.error as RunFailure };
-};
-
 /** Zod v4 output: metadata in the global registry, refinements as checks, the guard as a run wrapper. */
 export const zodV4Backend: ZodBackend<S> = {
   id: 'zod-v4',
@@ -307,12 +277,9 @@ export const zodV4Backend: ZodBackend<S> = {
   array: item => z.array(item),
   minItems: (schema, count, message) => (schema as z.ZodArray<S>).min(count, message),
   maxItems: (schema, count, message) => (schema as z.ZodArray<S>).max(count, message),
-  tuple: (items, rest) => {
-    const tuple = z.tuple(items as unknown as [S]);
-    return rest === undefined ? tuple : tuple.rest(rest);
-  },
+  tuple: (items, rest) => buildTuple<S>(z.tuple(items as unknown as [S]), rest),
 
-  object,
+  object: (shape, policy) => applyObjectPolicy<S>(z.object(shape), policy),
   record: value => z.record(z.string(), value),
 
   union: options => z.union(options as unknown as [S, S]),
