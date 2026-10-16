@@ -869,7 +869,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                        Example: {'disable': ['GMAIL_DELETE_EMAIL']}
                      - ToolRouterToolsTagsConfig: Dict with 'tags' key.
                        Tags can be a list (shorthand for enable) or object with enable/disable.
-                       Example: {'tags': ['readOnlyHint', 'idempotentHint']}
+                       Example: {'tags': ['readOnlyHint', 'createHint']}
                        Example: {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
@@ -883,12 +883,11 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param tags: Optional global MCP tags to filter tools by.
                     Can be:
                     - List[str]: List of tag literals (shorthand for enable).
-                      Example: ['readOnlyHint', 'idempotentHint']
+                      Example: ['readOnlyHint', 'createHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
-                    Available tag values: 'readOnlyHint', 'createHint',
-                    'updateHint', 'destructiveHint', 'idempotentHint',
-                    'openWorldHint'.
+                    Tag values: 'readOnlyHint', 'createHint',
+                    'updateHint', 'destructiveHint'.
                     Experimental: the dict can also carry 'require_approval',
                     tags whose tools need the user's approval.
                     Example: {'require_approval': ['destructiveHint']}
@@ -1024,7 +1023,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Create a session with global tag filtering
             session = tool_router.create(
                 user_id='user_123',
-                tags=['readOnlyHint', 'idempotentHint']
+                tags=['readOnlyHint', 'createHint']
             )
 
             # Create a session with toolkit-specific tag filtering (array format)
@@ -1032,7 +1031,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': ['readOnlyHint']},
-                    'github': {'tags': ['readOnlyHint', 'idempotentHint']}
+                    'github': {'tags': ['readOnlyHint', 'createHint']}
                 }
             )
 

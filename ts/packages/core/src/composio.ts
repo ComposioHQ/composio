@@ -1,7 +1,7 @@
 import { getEnvVariable } from './utils/env';
 import type { BaseComposioProvider } from './provider/BaseProvider';
 import ComposioClient from '@composio/client';
-import type { Logger as ClientLogger, LogLevel as ClientLogLevel } from '@composio/client';
+import type { LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
@@ -50,7 +50,7 @@ export type ComposioConfig<
    *   project key; the SDK throws instead of sending it.
    * - `null`: disables project-key authentication entirely, including both fallbacks. The SDK
    *   then requires another credential (`userApiKey`, `orgApiKey`, or an `x-user-api-key`
-   *   entry in `defaultHeaders`) and sends no `x-api-key`; an `x-api-key` entry in
+   *   or `x-org-api-key` entry in `defaultHeaders`) and sends no `x-api-key`; an `x-api-key` entry in
    *   `defaultHeaders` is rejected, also on `createSession()` clones. The user API key
    *   then authenticates every request; the organization API key does when it is the
    *   only credential held.
@@ -299,11 +299,11 @@ const toClientLogLevel = (level: LogLevel): ClientLogLevel => {
  * at call time so a later `logger.configure()` is honoured. The client's
  * `info` records (per-request lifecycle) are forwarded as SDK `debug`.
  */
-const clientLoggerAdapter: ClientLogger = {
-  error: (...args) => logger.error(...args),
-  warn: (...args) => logger.warn(...args),
-  info: (...args) => logger.debug(...args),
-  debug: (...args) => logger.debug(...args),
+const clientLogForwarder: Pick<Console, 'debug' | 'info' | 'warn' | 'error'> = {
+  error: (...args: unknown[]) => logger.error(...args),
+  warn: (...args: unknown[]) => logger.warn(...args),
+  info: (...args: unknown[]) => logger.debug(...args),
+  debug: (...args: unknown[]) => logger.debug(...args),
 };
 
 /**
@@ -552,7 +552,7 @@ export class Composio<
         : {}),
       defaultHeaders,
       identity: getClientIdentity(this.provider),
-      logger: clientLoggerAdapter,
+      logger: clientLogForwarder,
       logLevel: toClientLogLevel(logger.getLevel()),
     });
 

@@ -19,6 +19,7 @@ import {
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
+import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
@@ -127,15 +128,16 @@ export interface ComposioClientSingletonShape {
  */
 export type ClientBuildError = ConfigurationError | ComposioClientConfigurationError;
 
-// What each client built here addresses: its auth mode, org, and project, never
-// its key. `getFor` builds a new client on every call, so a memo over a
-// client's reads keys on this rather than on the instance.
+// What each client built here addresses: its auth mode, a SHA-256 fingerprint
+// of its credential (never the key itself), org, and project. `getFor` builds
+// a new client on every call, so a memo over a client's reads keys on this
+// rather than on the instance.
 const clientScopeKeys = new WeakMap<ComposioClientShape, string>();
 let nextUnscopedClient = 0;
 
 /**
  * A memo key for what `client` addresses. Two clients from
- * {@link ComposioClientSingleton} with the same auth mode, org, and project
+ * {@link ComposioClientSingleton} with the same credential, org, and project
  * share it; a client built anywhere else (a test double) gets one of its own.
  */
 export const clientScopeKey = (client: ComposioClientShape): string => {
@@ -191,6 +193,11 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
               : Auth.none();
         const orgId = params?.orgId;
         const projectId = params?.projectId;
+        const credential = params?.projectApiKey ?? userApiKey;
+        const credentialFingerprint =
+          credential !== undefined
+            ? yield* Effect.promise(() => sha256Hex(new TextEncoder().encode(credential)))
+            : '';
 
         const client = yield* Effect.try({
           try: () =>
@@ -206,7 +213,6 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                 baseURL: ctx.data.baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
-                deprecationNotices: 'off',
                 // The identity headers come from here; the client refuses them
                 // in `defaultHeaders`.
                 identity: cliClientIdentity(),
@@ -228,7 +234,10 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                   cause,
                 }),
         });
-        clientScopeKeys.set(client, `${auth.mode}\u0000${orgId ?? ''}\u0000${projectId ?? ''}`);
+        clientScopeKeys.set(
+          client,
+          `${auth.mode}\u0000${credentialFingerprint}\u0000${orgId ?? ''}\u0000${projectId ?? ''}`
+        );
         return client;
       });
 

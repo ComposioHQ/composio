@@ -139,7 +139,8 @@ export class ToolRouter<
   /**
    * Derives the MCP config for a session from the auth context the session
    * request was made with: the project key when one is configured, otherwise
-   * the resolved user API key, plus the org/project scope when configured.
+   * the resolved user API key, otherwise the organization API key, plus the
+   * org/project scope when configured.
    * Headers are only attached when the MCP URL shares the client's API
    * origin. Any other destination throws when the caller passed `mcp: true`
    * and otherwise yields empty headers plus a warning; see
@@ -155,6 +156,7 @@ export class ToolRouter<
       apiBaseURL: this.client.baseURL,
       apiKey: this.config?.apiKey,
       userApiKey: this.config?.userApiKey,
+      orgApiKey: this.config?.orgApiKey,
       defaultHeaders: this.config?.defaultHeaders,
       orgId: this.config?.orgId,
       projectId: this.config?.projectId,

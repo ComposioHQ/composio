@@ -14,6 +14,7 @@ import { stubComposioClient } from 'test/__utils__/services/stub-composio-client
 import { idempotent, validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -493,13 +494,14 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig())));
   });
 
-  it.effect('keys clients for a memo by auth mode, org, and project, never by instance', () =>
+  it.effect('keys clients for a memo by credential, org, and project, never by instance', () =>
     Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
 
       const first = yield* clientSingleton.getFor(scope);
-      const second = yield* clientSingleton.getFor({ ...scope, userApiKey: 'uak_b' });
+      const second = yield* clientSingleton.getFor(scope);
+      const otherKey = yield* clientSingleton.getFor({ ...scope, userApiKey: 'uak_b' });
       const otherProject = yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' });
       const projectKey = yield* clientSingleton.getFor({
         projectApiKey: 'ak_a',
@@ -510,6 +512,7 @@ describe('ComposioClientSingleton client', () => {
 
       expect(second).not.toBe(first);
       expect(clientScopeKey(second)).toBe(clientScopeKey(first));
+      expect(clientScopeKey(otherKey)).not.toBe(clientScopeKey(first));
       expect(clientScopeKey(otherProject)).not.toBe(clientScopeKey(first));
       expect(clientScopeKey(projectKey)).not.toBe(clientScopeKey(first));
       expect(clientScopeKey(first)).not.toContain('uak_a');
@@ -519,7 +522,7 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig())))
   );
 
-  it.effect('lists active connected accounts once per org, project, and user', () => {
+  it.effect('lists active connected accounts once per credential, org, project, and user', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
       Promise.resolve(
         new Response(
@@ -559,6 +562,13 @@ describe('ComposioClientSingleton client', () => {
         userId: 'user_2',
       });
       expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+      // Another user key on the same scope never reads the first key's list.
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor({ ...scope, userApiKey: 'uak_other' }),
+        userId: 'user_1',
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(4);
     }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_memo']]))));
   });
 
@@ -695,7 +705,7 @@ describe('ComposioClientSingleton client', () => {
     );
   });
 
-  it.effect('logs nothing for a response that announces a deprecation', () => {
+  it.effect('drops the deprecation notice the client logs at the CLI logger', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ data: [] }), {
         status: 200,
@@ -707,11 +717,15 @@ describe('ComposioClientSingleton client', () => {
         },
       })
     );
-    const records: Array<unknown> = [];
-    const capturingLogger = Logger.layer([
+    const logged: Array<unknown> = [];
+    const shown: Array<unknown> = [];
+    const recordInto = (records: Array<unknown>) =>
       Logger.make<unknown, void>(({ message }) => {
         records.push(message);
-      }),
+      });
+    const capturingLogger = Logger.layer([
+      recordInto(logged),
+      withoutClientNotices(recordInto(shown)),
     ]);
 
     return Effect.gen(function* () {
@@ -719,7 +733,8 @@ describe('ComposioClientSingleton client', () => {
       const client = yield* clientSingleton.get();
       yield* listTools(client);
 
-      expect(records).toEqual([]);
+      expect(logged).toHaveLength(1);
+      expect(shown).toEqual([]);
     }).pipe(
       Effect.provide(
         Layer.merge(

@@ -525,7 +525,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and sandbox by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
- * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
+ * @param {Array<'readOnlyHint' | 'createHint' | 'updateHint' | 'destructiveHint'>} tags - Global tags to filter tools by the type of action they take
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
  * @param {ToolRouterInstant} [instant] - Experimental Instant usage policy. The project must allow Instant usage.

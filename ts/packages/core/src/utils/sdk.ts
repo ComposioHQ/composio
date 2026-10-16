@@ -157,8 +157,13 @@ const findHeader = (
  */
 export const getUserApiKeyHeader = (
   headers: ComposioRequestHeaders | undefined
+): { name: string; value: string } | undefined => getCredentialHeader(headers, USER_API_KEY_HEADER);
+
+const getCredentialHeader = (
+  headers: ComposioRequestHeaders | undefined,
+  name: string
 ): { name: string; value: string } | undefined => {
-  const header = findHeader(headers, USER_API_KEY_HEADER);
+  const header = findHeader(headers, name);
   return header && typeof header.value === 'string' && header.value.length > 0 ? header : undefined;
 };
 
@@ -167,6 +172,8 @@ export type CredentialHeaderInput = {
   apiKey: string | null | undefined;
   /** The user API key the client resolved (`userApiKey` option or `COMPOSIO_USER_API_KEY`). */
   userApiKey: string | null | undefined;
+  /** The organization API key the client resolved (`orgApiKey` option or `COMPOSIO_ORG_API_KEY`). */
+  orgApiKey?: string | null;
   /** The default headers configured on the SDK instance; only `x-user-api-key` is consulted. */
   defaultHeaders: ComposioRequestHeaders | undefined;
 };
@@ -177,8 +184,9 @@ export type CredentialHeaderInput = {
  * headers wins: the client treats a caller-placed credential header as the
  * credential and suppresses the configured keys. Otherwise the project key
  * travels as `x-api-key`, otherwise the resolved user API key as
- * `x-user-api-key`. Empty when no credential is held. The environment is
- * never consulted here.
+ * `x-user-api-key`, otherwise the organization API key as `x-org-api-key`
+ * (the order {@link toClientAuth} picks them in). Empty when no credential is
+ * held. The environment is never consulted here.
  */
 export const resolveCredentialHeaders = (input: CredentialHeaderInput): Record<string, string> => {
   const userApiKeyHeader = getUserApiKeyHeader(input.defaultHeaders);
@@ -190,6 +198,9 @@ export const resolveCredentialHeaders = (input: CredentialHeaderInput): Record<s
   }
   if (hasValue(input.userApiKey)) {
     return { [USER_API_KEY_HEADER]: input.userApiKey };
+  }
+  if (hasValue(input.orgApiKey)) {
+    return { [ORG_API_KEY_HEADER]: input.orgApiKey };
   }
   return {};
 };
@@ -345,12 +356,14 @@ export const resolveOrgApiKey = (orgApiKey: string | null | undefined): string |
 /**
  * Whether the instance holds a credential other than the project key: a user
  * or organization API key (explicit or environment-resolved, as the API client
- * will see it), or a user API key placed in the default headers.
+ * will see it), or a user or organization API key placed in the default
+ * headers, which {@link resolveSDKCredentials} folds in.
  */
 const hasAlternateCredential = (options: SDKConfigOptions): boolean =>
   resolveUserApiKey(options.userApiKey) !== undefined ||
   resolveOrgApiKey(options.orgApiKey) !== undefined ||
-  getUserApiKeyHeader(options.defaultHeaders) !== undefined;
+  getUserApiKeyHeader(options.defaultHeaders) !== undefined ||
+  getCredentialHeader(options.defaultHeaders, ORG_API_KEY_HEADER) !== undefined;
 
 /**
  * The credentials an SDK instance authenticates with, after the environment
@@ -465,7 +478,8 @@ export const toClientAuth = (credentials: SDKCredentials): Auth => {
  *   `api_key` is read, and the resolver only succeeds when the instance holds
  *   another credential: a `userApiKey` or `orgApiKey` (explicit, or resolved
  *   from `COMPOSIO_USER_API_KEY` / `COMPOSIO_ORG_API_KEY` the way the API
- *   client does), or a non-empty `x-user-api-key` entry in `defaultHeaders`.
+ *   client does), or a non-empty `x-user-api-key` or `x-org-api-key` entry in
+ *   `defaultHeaders`.
  *   An `x-api-key` entry in `defaultHeaders` (any letter case) is rejected in
  *   that mode: the project credential is only ever set from `apiKey`.
  *

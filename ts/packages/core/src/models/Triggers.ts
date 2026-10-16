@@ -161,6 +161,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     this.pusherService = new PusherService(client, {
       apiKey: config?.apiKey,
       userApiKey: config?.userApiKey,
+      orgApiKey: config?.orgApiKey,
       defaultHeaders: config?.defaultHeaders,
     });
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;

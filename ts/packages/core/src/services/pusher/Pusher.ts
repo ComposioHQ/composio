@@ -18,6 +18,8 @@ export type PusherServiceOptions = {
   apiKey?: string | null;
   /** The user API key the owning SDK instance resolved, or `null`. */
   userApiKey?: string | null;
+  /** The organization API key the owning SDK instance resolved, or `null`. */
+  orgApiKey?: string | null;
   /** Default headers of the owning SDK instance; only `x-user-api-key` is consulted. */
   defaultHeaders?: ComposioRequestHeaders;
 };
@@ -66,6 +68,7 @@ export class PusherService {
     this.authHeaders = resolveCredentialHeaders({
       apiKey: options.apiKey,
       userApiKey: options.userApiKey,
+      orgApiKey: options.orgApiKey,
       defaultHeaders: options.defaultHeaders,
     });
     telemetry.instrument(this, 'PusherService');

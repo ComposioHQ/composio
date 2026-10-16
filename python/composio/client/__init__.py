@@ -355,7 +355,6 @@ class HttpClient(BaseComposio, WithLogger):
         timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: t.Optional[t.Mapping[str, t.Optional[str]]] = None,
-        default_query: t.Optional[t.Mapping[str, object]] = None,
         identity: t.Optional[ClientIdentity] = None,
         http_client: t.Optional[Client] = None,
         logger: t.Optional[logging.Logger] = None,
@@ -380,7 +379,6 @@ class HttpClient(BaseComposio, WithLogger):
         :param default_headers: The default headers to use for the client. They
             may not name a credential header while ``auth`` holds a credential, nor
             a scope header while ``scope`` is set.
-        :param default_query: The default query parameters to use for the client.
         :param identity: How the client reports the SDK; derived from ``provider``
             when omitted. Clones pass the parent's.
         :param http_client: The HTTP client to use for the client.
@@ -395,16 +393,14 @@ class HttpClient(BaseComposio, WithLogger):
             timeout=timeout,
             max_retries=max_retries,
             default_headers=default_headers,
-            default_query=default_query,
             http_client=http_client,
             identity=identity if identity is not None else _client_identity(provider),
             _strict_response_validation=_strict_response_validation,
         )
         # The SDK's own reference to the credentials it authenticated with, for
         # the places that hand a key to something other than this client (the
-        # session MCP config, the realtime channel auth). The client's
-        # `api_key` / `user_api_key` read-back properties go in 2.0.0-rc.19,
-        # and `auth` is the generated `/auth` resource.
+        # session MCP config, the realtime channel auth). The client reads no
+        # key back, and `auth` is the generated `/auth` resource.
         self.sdk_auth: Auth = auth
         _install_client_log_forwarder(self._logger)
         self.provider = provider

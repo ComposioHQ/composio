@@ -128,7 +128,6 @@ const baseClient = make(
   {
     auth: Auth.project('test'),
     baseURL: 'https://mock.invalid',
-    deprecationNotices: 'off',
   },
   HttpClient.make(request =>
     Effect.die(new Error(`unexpected network call from the link handler test: ${request.url}`))
