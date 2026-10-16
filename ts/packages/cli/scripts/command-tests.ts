@@ -20,7 +20,6 @@ const TEST_SUFFIX = '.cmd.test.ts';
 export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'agent/commands/agent.claim.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.inbox.cmd.ts', reason: 'no test yet' },
-  { command: 'agent/commands/agent.login.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.signup.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.whoami.cmd.ts', reason: 'no test yet' },
   { command: 'artifacts.cmd.ts', reason: 'no test yet' },
