@@ -141,10 +141,11 @@ export const formatConnectedAccountChoices = (
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
 /**
- * Every active connected account of `userId`, fetched once per org, project,
- * and user for the lifetime of the process. The client's org and project come
- * from `clientScopeKey`: each `getFor` builds a new client, so two callers
- * holding different instances for the same project still share one fetch.
+ * Every active connected account of `userId`, fetched once per credential,
+ * org, project, and user for the lifetime of the process. The client's
+ * credential, org, and project come from `clientScopeKey`: each `getFor`
+ * builds a new client, so two callers holding different instances for the
+ * same key and project still share one fetch.
  *
  * `composio execute` needs this list twice on every call, from two code paths
  * that cannot see each other: `resolveConnectedAccountForToolkit` picks the
