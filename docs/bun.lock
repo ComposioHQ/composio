@@ -97,6 +97,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "next@16.3.8": "patches/next@16.3.8.patch",
+  },
   "overrides": {
     "@mastra/mcp": "1.17.2",
   },

@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import { toolkitsSource, getOgImageUrl } from '@/lib/source';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -8,7 +9,7 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { getAllToolkits } from '@/lib/toolkit-data';
+import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { resolveToolkit } from '@/lib/toolkit-resolution';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -159,7 +160,7 @@ export async function generateMetadata({
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
-      alternates: { canonical: '/toolkits' },
+      alternates: markdownAlternates('/toolkits'),
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
@@ -172,7 +173,7 @@ export async function generateMetadata({
     return {
       title: page.data.title,
       description: page.data.description,
-      alternates: { canonical: page.url },
+      alternates: markdownAlternates(page.url),
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
@@ -190,7 +191,9 @@ export async function generateMetadata({
       return {
         title,
         description,
-        alternates: { canonical: `/toolkits/${toolkit.slug}` },
+        alternates: await getToolkitBySlug(toolkit.slug)
+          ? markdownAlternates(`/toolkits/${toolkit.slug}`)
+          : { canonical: `/toolkits/${toolkit.slug}` },
         openGraph: { images: [ogImage] },
         twitter: { card: 'summary_large_image', images: [ogImage] },
       };
