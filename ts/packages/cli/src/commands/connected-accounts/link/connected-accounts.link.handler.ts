@@ -477,6 +477,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const { tree, userId, projectName } = yield* CommandSurface;
+    // The dispatcher never gets here without --auth-config. This narrows it for direct callers.
     if (Option.isNone(params.authConfig)) {
       return yield* ui.log.error(missingArgumentMessage(tree));
     }
@@ -599,6 +600,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const { tree, userId, projectName } = yield* CommandSurface;
+    // The dispatcher never gets here without a toolkit. This narrows it for direct callers.
     if (Option.isNone(params.toolkit)) {
       return yield* ui.log.error(missingArgumentMessage(tree));
     }
@@ -721,8 +723,8 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
 
 /**
  * Which flow the flags select, or none after reporting a usage mistake the parser cannot see.
- * A blank `--alias` and a root `--auth-config` (KTD4: the root tree is consumer-only) are usage
- * errors that exit 1; the other mistakes print and exit 0, as they always have.
+ * A blank `--alias` and a root `--auth-config` (the root tree is consumer-only) are usage errors
+ * that exit 1. The other mistakes print a message and exit 0.
  */
 const selectLinkFlow = (params: ConnectedAccountsLinkParams, tree: CommandTree) =>
   Effect.gen(function* () {

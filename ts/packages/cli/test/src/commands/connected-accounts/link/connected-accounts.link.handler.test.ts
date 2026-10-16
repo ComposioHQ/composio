@@ -256,7 +256,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       message: '`--alias` cannot be empty.',
     },
     {
-      name: '--auth-config on the root tree (KTD4)',
+      name: '--auth-config on the root tree, which is consumer-only',
       surface: CommandSurface.root,
       input: { toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
       option: '--auth-config',

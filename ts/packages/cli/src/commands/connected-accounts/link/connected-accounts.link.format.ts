@@ -1,4 +1,4 @@
-import { Effect, Option, pipe } from 'effect';
+import { Array as Arr, Effect, Option } from 'effect';
 import type { CommandTree } from 'src/commands/surface';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { CliProjectType } from 'src/services/command-project';
@@ -71,15 +71,20 @@ export const showRedirectUrl = (
     yield* ui.note(redirectUrl, 'Redirect URL');
   });
 
-/** `id (alias, word_id)` per account, comma separated; an account without labels is its id. */
-export const formatExistingAccountLabels = (items: ReadonlyArray<ExistingAccountLabel>) =>
+/** `id (alias, word_id)` per account, comma separated. An account without labels is its id. */
+const formatExistingAccountLabels = (items: ReadonlyArray<ExistingAccountLabel>) =>
   items
-    .map(item => {
-      const labels = [item.alias, item.word_id].filter(
-        (value): value is string => typeof value === 'string' && value.trim().length > 0
-      );
-      return labels.length > 0 ? `${item.id} (${labels.join(', ')})` : item.id;
-    })
+    .map(item =>
+      Arr.match(
+        [item.alias, item.word_id].filter(
+          (value): value is string => typeof value === 'string' && value.trim().length > 0
+        ),
+        {
+          onEmpty: () => item.id,
+          onNonEmpty: labels => `${item.id} (${labels.join(', ')})`,
+        }
+      )
+    )
     .join(', ');
 
 /** Why a second account needs `--alias`, and which accounts already exist for the scope. */
@@ -127,9 +132,11 @@ export const showConnectedAccounts = (
   toolkitSlug: string,
   items: ReadonlyArray<ConnectedAccountItem>
 ) =>
-  items.length === 0
-    ? ui.log.warn(`No active connected accounts found for "${toolkitSlug}".`)
-    : ui.note(formatConnectedAccountsTable(items), `${toolkitSlug}: connected accounts`);
+  Arr.match(items, {
+    onEmpty: () => ui.log.warn(`No active connected accounts found for "${toolkitSlug}".`),
+    onNonEmpty: accounts =>
+      ui.note(formatConnectedAccountsTable(accounts), `${toolkitSlug}: connected accounts`),
+  });
 
 /**
  * The dashboard page that connects a toolkit Composio does not manage auth for. Path segments
@@ -142,7 +149,7 @@ export const dashboardConnectUrl = (webURL: string, orgName: string, toolkitSlug
 export const unmanagedAuthMessage = (toolkitSlug: string, noBrowser: boolean) =>
   `Composio does not manage auth for "${toolkitSlug}" — ${noBrowser ? 'open the dashboard' : 'opening the dashboard'} to connect manually.`;
 
-/** The success line once polling sees the account `ACTIVE`. */
+/** The success line once polling sees the account `ACTIVE`. Also the `message` of its payload. */
 export const activeConnectionMessage = (account: {
   readonly id: string;
   readonly toolkit: { readonly slug: string };
@@ -150,55 +157,51 @@ export const activeConnectionMessage = (account: {
 
 // --- machine renderers (stdout) ---------------------------------------------------------------
 
+/**
+ * A payload as `link` prints it on stdout: indented by two spaces, without a trailing newline,
+ * since `ui.output` adds one. Key order is part of the output.
+ */
+const toStdoutJson = (payload: object) => JSON.stringify(payload, null, 2);
+
 /** The `--no-wait` payload: the link to finish by hand. `toolkit` is set by the Tool Router flow. */
 export const formatPendingLinkJson = (params: {
   readonly target: LinkTarget;
   readonly toolkit: Option.Option<string>;
   readonly projectType: CliProjectType;
 }) =>
-  JSON.stringify(
-    {
-      status: 'pending',
-      message: 'Complete authorization by opening the URL',
-      connected_account_id: params.target.connectedAccountId,
-      redirect_url: params.target.redirectUrl,
-      ...pipe(
-        params.toolkit,
-        Option.map(toolkit => ({ toolkit })),
-        Option.getOrElse(() => ({}))
-      ),
-      project_type: params.projectType,
-    },
-    null,
-    2
-  );
+  toStdoutJson({
+    status: 'pending',
+    message: 'Complete authorization by opening the URL',
+    connected_account_id: params.target.connectedAccountId,
+    redirect_url: params.target.redirectUrl,
+    ...Option.match(params.toolkit, { onNone: () => ({}), onSome: toolkit => ({ toolkit }) }),
+    project_type: params.projectType,
+  });
 
-/** The payload once the account is `ACTIVE`; `message` is the success line already printed. */
+/** The payload once the account is `ACTIVE`. */
 export const formatActiveLinkJson = (params: {
   readonly account: { readonly id: string; readonly toolkit: { readonly slug: string } };
   readonly redirectUrl: string;
 }) =>
-  JSON.stringify(
-    {
-      status: 'success',
-      message: activeConnectionMessage(params.account),
-      connected_account_id: params.account.id,
-      toolkit: params.account.toolkit.slug,
-      redirect_url: params.redirectUrl,
-    },
-    null,
-    2
-  );
+  toStdoutJson({
+    status: 'success',
+    message: activeConnectionMessage(params.account),
+    connected_account_id: params.account.id,
+    toolkit: params.account.toolkit.slug,
+    redirect_url: params.redirectUrl,
+  });
 
-/** The `--list` payload: the toolkit's active accounts, schema-filtered upstream. */
+/**
+ * The `--list` payload: the toolkit's active accounts, schema-filtered upstream. The empty case
+ * lists `items` before `total`, the other case after.
+ */
 export const formatConnectedAccountsListJson = (
   toolkitSlug: string,
   items: ReadonlyArray<ConnectedAccountItem>
 ) =>
-  JSON.stringify(
-    items.length === 0
-      ? { toolkit: toolkitSlug, items: [], total: 0 }
-      : { toolkit: toolkitSlug, total: items.length, items },
-    null,
-    2
+  toStdoutJson(
+    Arr.match(items, {
+      onEmpty: () => ({ toolkit: toolkitSlug, items: [], total: 0 }),
+      onNonEmpty: accounts => ({ toolkit: toolkitSlug, total: accounts.length, items: accounts }),
+    })
   );
