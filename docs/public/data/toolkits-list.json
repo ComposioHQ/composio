@@ -2386,7 +2386,10 @@
     "logo": "https://logos.composio.dev/api/api_sports",
     "category": "developer tools",
     "toolCount": 72,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "api_bible",
@@ -6972,7 +6975,10 @@
     "logo": "https://logos.composio.dev/api/ignav_flights",
     "category": "lifestyle & entertainment",
     "toolCount": 5,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "ignav_flights_mcp",
@@ -7977,7 +7983,10 @@
     "logo": "https://logos.composio.dev/api/lusha",
     "category": "people & contact data",
     "toolCount": 13,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "lyzr",
@@ -8410,7 +8419,10 @@
     "logo": "https://logos.composio.dev/api/minimax",
     "category": "artificial intelligence",
     "toolCount": 34,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "mintlify",
