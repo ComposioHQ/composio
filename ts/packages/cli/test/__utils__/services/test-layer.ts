@@ -35,6 +35,7 @@ import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
 import { NodeProcess } from 'src/services/node-process';
 import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -889,6 +890,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
       // never route through the root command still need the "no CLI flag override" default.
       cliDebugFlagsLayer(),
+      Layer.provide(
+        PendingLoginSession.Default,
+        Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
+      ),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)

@@ -5,7 +5,7 @@ import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
-import { loginCmd } from './login.cmd';
+import { loginCmd } from './login/login.cmd';
 import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';

@@ -18,7 +18,7 @@ import {
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
+import { browserLogin } from 'src/effects/browser-login';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import {
@@ -40,6 +40,11 @@ import {
  *
  * - `--yes` / `-y` — auto-select the first project from the list
  */
+
+const noBrowserOpt = Flag.Boolean('no-browser').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Login without browser interaction')
+);
 
 const yesOpt = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
