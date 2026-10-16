@@ -1,6 +1,7 @@
 """Tests for Triggers class."""
 
 import base64
+import functools
 import hashlib
 import hmac
 import json
@@ -2006,6 +2007,41 @@ class TestAsyncCallbackRejection:
 
         with pytest.raises(exceptions.ValidationError, match="Handler"):
             subscription.handle()(Handler())
+
+    def test_async_generator_handler_is_rejected(self, subscription):
+        async def on_event(event):
+            yield event
+
+        with pytest.raises(exceptions.ValidationError, match="on_event"):
+            subscription.handle()(on_event)
+
+        assert subscription._callbacks == []
+
+    def test_async_generator_callable_object_is_rejected(self, subscription):
+        class Handler:
+            async def __call__(self, event):
+                yield event
+
+        with pytest.raises(exceptions.ValidationError, match="Handler"):
+            subscription.handle()(Handler())
+
+    def test_partial_of_async_callable_object_is_rejected(self, subscription):
+        class Handler:
+            async def __call__(self, dependency, event):
+                pass
+
+        with pytest.raises(exceptions.ValidationError, match="Handler"):
+            subscription.handle()(functools.partial(Handler(), "dep"))
+
+        assert subscription._callbacks == []
+
+    def test_nested_partial_of_async_generator_is_rejected(self, subscription):
+        async def on_event(a, b, event):
+            yield event
+
+        wrapped = functools.partial(functools.partial(on_event, 1), 2)
+        with pytest.raises(exceptions.ValidationError, match="on_event"):
+            subscription.handle()(wrapped)
 
     def test_sync_handler_still_registers_and_runs(self, subscription):
         ran = []
