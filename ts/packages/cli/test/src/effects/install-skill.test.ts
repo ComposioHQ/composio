@@ -1,14 +1,5 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import {
-  Config,
-  ConfigProvider,
-  Effect,
-  Exit,
-  FileSystem,
-  Layer,
-  Path,
-  PlatformError,
-} from 'effect';
+import { Config, ConfigProvider, Effect, FileSystem, Layer, Path, PlatformError } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -362,10 +353,7 @@ describe('install-skill', () => {
       );
 
       expect(error).toBeInstanceOf(CliReleaseResolutionError);
-      if (error instanceof CliReleaseResolutionError) {
-        expect(error.reason).toBe('decode');
-        expect(error.cause).toBeDefined();
-      }
+      expect(error).toMatchObject({ reason: 'decode', cause: expect.anything() });
     })
   );
 
@@ -380,10 +368,7 @@ describe('install-skill', () => {
       const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
 
       expect(error).toBeInstanceOf(SkillInstallError);
-      if (error instanceof SkillInstallError) {
-        expect(error.phase).toBe('release');
-        expect(error.cause).toBeDefined();
-      }
+      expect(error).toMatchObject({ phase: 'release', cause: expect.anything() });
     })
   );
 
@@ -413,9 +398,10 @@ describe('install-skill', () => {
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(new TextEncoder().encode('not a zip'));
       const home = tempy.temporaryDirectory();
-      const exit = yield* Effect.exit(makeInstallEffect(home, apiBaseUrl));
+      const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
 
-      expect(Exit.isFailure(exit)).toBe(true);
+      expect(error).toBeInstanceOf(SkillInstallError);
+      expect(error).toMatchObject({ phase: 'extract' });
 
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;

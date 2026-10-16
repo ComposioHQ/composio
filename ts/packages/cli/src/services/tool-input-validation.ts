@@ -7,7 +7,8 @@ import {
 } from '@composio/json-schema-to-effect-schema';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { getLatestToolVersion } from 'src/services/composio-account';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
@@ -133,13 +134,6 @@ export const getCachedToolInputDefinition = (slug: string) =>
       schema: cached.inputSchema,
       version: cached.version,
     };
-  });
-
-export const getToolDefinitionCachePath = (slug: string) =>
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const cacheDir = yield* setupCacheDir;
-    return toolDefinitionPath(path, cacheDir, slug);
   });
 
 export const cacheToolInputDefinition = (params: {
@@ -364,7 +358,10 @@ export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSche
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
   const objectSchema = decodeObjectSchemaWithProperties(schema);
-  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
+  return Option.match(objectSchema, {
+    onNone: () => [],
+    onSome: ({ properties }) => Object.keys(properties),
+  });
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -495,17 +492,6 @@ export const validateToolInputArgumentsWithDefinition = (
     );
 
     return { schemaPath, schema };
-  });
-
-export const validateToolInputArgumentsIfCached = (slug: string, args: Record<string, unknown>) =>
-  Effect.gen(function* () {
-    const cached = yield* getCachedToolInputDefinition(slug);
-    if (!cached) {
-      return false as const;
-    }
-
-    yield* validateToolInputArgumentsWithDefinition(slug, args, cached);
-    return true as const;
   });
 
 export const validateToolInputArguments = (

@@ -80,9 +80,9 @@ export class ComposioSessionConfigConflictError extends ComposioError {
  *
  * `inputRequests` holds the questions, keyed by the ID the answers must
  * reuse. `requestState` is the opaque `request_state` the API returned; when
- * present it must be sent back unchanged together with the answers. The SDK
- * does not submit answers yet, so nothing was executed and the call is not
- * retried.
+ * present it must be sent back unchanged together with the answers. Nothing
+ * was executed and the call is not retried: to answer, repeat the same call
+ * with `inputResponses` and `requestState` in its options.
  */
 export class ComposioToolInputRequiredError extends ComposioError {
   /** Questions for the user, keyed by the ID the answers must reuse. */
@@ -104,12 +104,12 @@ export class ComposioToolInputRequiredError extends ComposioError {
     const count = Object.keys(details.inputRequests).length;
     super(
       `${subject} requires user input before it can run (${count} input request${count === 1 ? '' : 's'}) and was not executed. ` +
-        'The questions are on `inputRequests` and the opaque `request_state` to send back with the answers is on `requestState`.',
+        "The questions are on `inputRequests`. Repeat the call with the answers in `inputResponses` and this error's `requestState`.",
       {
         ...options,
         code: ToolRouterErrorCodes.TOOL_INPUT_REQUIRED,
         possibleFixes: options.possibleFixes ?? [
-          'Collect the answers described by `inputRequests`, then call the session execute endpoint again with `input_responses` and the unchanged `request_state`',
+          'Collect the answers described by `inputRequests`, then repeat the same call with `{ inputResponses, requestState }` in its options',
           'Remove the tool, its toolkit or its tags from the `require_approval` lists of the session configuration if no approval is intended',
         ],
       }

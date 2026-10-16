@@ -23,13 +23,6 @@ import { ConnectionDataSchema } from '../../types/connectedAccountAuthStates.typ
 import logger from '../logger';
 import { transform } from '../transform';
 
-type RawConnectedAccountResponseWithLabels = (
-  RawConnectedAccountRetrieveResponse | RawConnectedAccountListResponse['items'][0]
-) & {
-  word_id?: string | null;
-  alias?: string | null;
-};
-
 /**
  * Transforms the raw connected account response from the Composio API to the SDK format.
  *
@@ -45,8 +38,6 @@ type RawConnectedAccountResponseWithLabels = (
 export function transformConnectedAccountResponse(
   response: RawConnectedAccountRetrieveResponse | RawConnectedAccountListResponse['items'][0]
 ): ConnectedAccountRetrieveResponse {
-  const responseWithLabels = response as RawConnectedAccountResponseWithLabels;
-
   // Safely parse the state field, filtering out unsupported auth schemes
   const parseState = (state: unknown) => {
     try {
@@ -70,9 +61,9 @@ export function transformConnectedAccountResponse(
         isComposioManaged: response.auth_config.is_composio_managed,
         isDisabled: response.auth_config.is_disabled,
       },
-      wordId: responseWithLabels.word_id ?? null,
-      alias: responseWithLabels.alias ?? null,
-      data: (response as unknown as ConnectedAccountRetrieveResponse).data ?? undefined,
+      wordId: response.word_id ?? null,
+      alias: response.alias ?? null,
+      data: response.data ?? undefined,
       state: parseState(response.state),
       status: response.status,
       statusReason: response.status_reason,
@@ -86,17 +77,15 @@ export function transformConnectedAccountResponse(
       // caller isn't authorised to see the ACL), so distinguish "I can't
       // see the ACL" from "ACL is the default deny-by-default state" by
       // checking field presence.
-      experimental: responseWithLabels.experimental
+      experimental: response.experimental
         ? {
-            accountType: responseWithLabels.experimental.account_type,
-            aclConfigForShared: responseWithLabels.experimental.acl_config_for_shared
+            accountType: response.experimental.account_type,
+            aclConfigForShared: response.experimental.acl_config_for_shared
               ? {
-                  allowAllUsers:
-                    responseWithLabels.experimental.acl_config_for_shared.allow_all_users,
-                  allowedUserIds:
-                    responseWithLabels.experimental.acl_config_for_shared.allowed_user_ids,
+                  allowAllUsers: response.experimental.acl_config_for_shared.allow_all_users,
+                  allowedUserIds: response.experimental.acl_config_for_shared.allowed_user_ids,
                   notAllowedUserIds:
-                    responseWithLabels.experimental.acl_config_for_shared.not_allowed_user_ids,
+                    response.experimental.acl_config_for_shared.not_allowed_user_ids,
                 }
               : undefined,
           }

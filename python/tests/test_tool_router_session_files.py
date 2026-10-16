@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+from composio_client import ProjectAuth
 
 from composio.core.models.tool_router_session_files import (
     RemoteFile,
@@ -44,7 +45,7 @@ def mock_stream_response(
 def mock_client():
     """Create a mock HTTP client with files API."""
     client = MagicMock()
-    client.api_key = "test-api-key"
+    client.sdk_auth = ProjectAuth("test-api-key")
 
     # Mock files.list
     mock_list_response = MagicMock()

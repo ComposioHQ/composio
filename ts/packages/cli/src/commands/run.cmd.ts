@@ -1,3 +1,4 @@
+import { CommandInputError } from 'src/commands/errors';
 import process from 'node:process';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
@@ -197,15 +198,14 @@ const createRunHelpersPreloadFile = (
  * An ordinary usage mistake rather than a broken invariant, so it is a typed failure with a
  * one-line message instead of a defect: the caller sees the fix, not a stack trace.
  */
-export class MissingRunSourceError extends Data.TaggedError('commands/MissingRunSourceError')<{
-  readonly message: string;
-}> {}
-
 const MISSING_RUN_SOURCE_MESSAGE = [
   'Provide inline code or use --file to run a script file.',
   `  composio run 'console.log(1)'`,
   '  composio run --file ./script.ts',
 ].join('\n');
+
+const missingRunSource = () =>
+  new CommandInputError({ command: 'run', message: MISSING_RUN_SOURCE_MESSAGE });
 
 export const buildRunCommand = ({
   path,
@@ -261,7 +261,7 @@ export const buildRunCommand = ({
       };
     }
 
-    return yield* Effect.fail(new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE }));
+    return yield* Effect.fail(missingRunSource());
   });
 
 const resolveRunHelperContext = () =>
@@ -454,9 +454,7 @@ export const runCmd = Command.make('run', {
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
         if (Option.isNone(file) && !args[0]) {
-          return yield* Effect.fail(
-            new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE })
-          );
+          return yield* Effect.fail(missingRunSource());
         }
 
         const fs = yield* FileSystem.FileSystem;

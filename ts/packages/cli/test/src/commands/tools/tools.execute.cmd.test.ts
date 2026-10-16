@@ -3,22 +3,21 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Predicate } from 'effect';
-import { APIError } from '@composio/client';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option } from 'effect';
+import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
-import * as composioClients from 'src/services/composio-clients';
+import * as composioAccount from 'src/services/composio-account';
+import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import {
-  parseParallelExecuteArgs,
-  type ParallelExecuteArgumentError,
-} from 'src/commands/tools/commands/tools.execute.cmd';
+import { parseParallelExecuteArgs } from 'src/commands/tools/commands/tools.execute.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -38,6 +37,28 @@ vi.hoisted(() => {
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+type ApiErrorEnvelope = NonNullable<BadRequestError['details']>;
+
+// The client's error for a 400 answered with `envelope`.
+const clientBadRequest = (envelope: ApiErrorEnvelope) =>
+  new BadRequestError({
+    message: `400 ${JSON.stringify({ error: envelope })}`,
+    method: 'POST',
+    url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+    status: 400,
+    requestId: envelope.request_id,
+    details: envelope,
+    body: { error: envelope },
+  });
+
+const noActiveConnectionEnvelope: ApiErrorEnvelope = {
+  message: "No active connection found for toolkit(s) 'gmail' in this session",
+  code: 4302,
+  slug: 'ToolRouterV2_NoActiveConnection',
+  status: 400,
+  request_id: 'test-request-id',
+};
 
 // `testConfigProvider` pins its env, so it bypasses the per-test
 // `COMPOSIO_CACHE_DIR` stub, and the learned toolkit slugs resolve against the
@@ -83,30 +104,20 @@ const largeOutputConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_USER_API_KEY: 'test_api_key',
 }).pipe(ConfigProvider.orElse(testArtifactConfigProvider));
 
-const expectInvalidValueMessage = (failure: unknown, message: string) => {
-  expect(Predicate.isTagged(failure, 'commands/ParallelExecuteArgumentError')).toBe(true);
-  if (!Predicate.isTagged(failure, 'commands/ParallelExecuteArgumentError')) return;
+const expectInvalidValueMessage = (failure: unknown, message: string) =>
+  expect(failure).toMatchObject({
+    _tag: 'commands/CommandInputError',
+    message: expect.stringContaining(message),
+  });
 
-  expect((failure as ParallelExecuteArgumentError).message).toContain(message);
-};
-
-const parseLastJson = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as {
-        successful: boolean;
-        data: Record<string, unknown>;
-        error: string | null;
-        logId: string;
-      };
-    } catch {
-      // keep searching for the last JSON line
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
+/** The command's JSON result: `ui.output` prints it as the last console line. */
+const parseLastJson = (lines: ReadonlyArray<string>) =>
+  JSON.parse(String(lines.at(-1))) as {
+    successful: boolean;
+    data: Record<string, unknown>;
+    error: string | null;
+    logId: string;
+  };
 
 describe('CLI: composio execute', () => {
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
@@ -123,8 +134,16 @@ describe('CLI: composio execute', () => {
   );
 
   beforeEach(() => {
-    vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
-      Effect.fail(new composioClients.HttpServerError({}))
+    vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(() =>
+      Effect.fail(
+        new APIConnectionError({
+          message: 'Connection error.',
+          method: 'GET',
+          url: 'https://backend.composio.dev/api/v3/tools/{tool_slug}/get_latest_version',
+          reason: 'TransportError',
+          description: undefined,
+        })
+      )
     );
     vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
       Effect.succeed(Option.some(['gmail', 'github']))
@@ -140,11 +159,12 @@ describe('CLI: composio execute', () => {
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
   let recordedExecuteParams: Array<Record<string, unknown>> = [];
   // Records what one execution call carried; the account travels with the call, not the session.
-  const recordExecute = <T>(params: unknown, result: T): T => {
-    recordedExecuteParams.push(params as Record<string, unknown>);
-    return result;
-  };
-  let recordedProjectToolkitScopes: Array<composioClients.ToolkitProjectScope | undefined> = [];
+  const recordExecute = <T>(params: unknown, result: T) =>
+    Effect.sync(() => {
+      recordedExecuteParams.push(params as Record<string, unknown>);
+      return result;
+    });
+  let recordedProjectToolkitScopes: Array<ToolkitProjectScope | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
     recordedExecuteParams = [];
@@ -193,6 +213,46 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug },
+            error: null,
+            log_id: 'log_instant_charge',
+            instant_charge: {
+              amount: '0.005',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
+      },
+    })
+  )('[Given] an instant charge [Then] execute reports it in the success line and output', it => {
+    it.effect('prints the charge before the log id', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'EXA_SEARCH', '--skip-connection-check', '-d', '{"query":"a"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const text = lines.join('\n');
+        const output = parseLastJson(lines);
+
+        expect(text).toContain(
+          'Execution successful (instant charge: 0.005 USD, logId: log_instant_charge)'
+        );
+        expect(output).toHaveProperty('instantCharge', {
+          amount: '0.005',
+          currency: 'USD',
+          chargedBy: 'composio',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
     })
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.effect('executes via Tool Router with defaults', () =>
@@ -214,6 +274,7 @@ describe('CLI: composio execute', () => {
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
         expect(output.logId).toBe('log_test');
+        expect(output).not.toHaveProperty('instantCharge');
       })
     );
   });
@@ -325,23 +386,24 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_gmail_default_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_gmail_default_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -368,7 +430,7 @@ describe('CLI: composio execute', () => {
     it.effect('asks for the latest tool version once per execute on a schema cache hit', () =>
       Effect.gen(function* () {
         const latestVersion = vi
-          .spyOn(composioClients, 'getLatestToolVersion')
+          .spyOn(composioAccount, 'getLatestToolVersion')
           .mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
@@ -441,23 +503,24 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_gmail_explicit_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_gmail_explicit_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -603,23 +666,24 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_google_analytics_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_google_analytics_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -701,23 +765,24 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_custom_grain_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_custom_grain_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -835,23 +900,24 @@ describe('CLI: composio execute', () => {
         ],
       },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_posthog_test_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_posthog_test_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -892,23 +958,24 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        create: async params => {
-          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
-          return {
-            session_id: 'trs_posthog_cached_session',
-            config: {
-              user_id: params.user_id,
-              execute: {},
-              search: {},
-              preload: { tools: [] },
-              instant: false,
-            },
-            config_version: 1,
-            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
-          };
-        },
-        execute: async (_sessionId, params) =>
+        create: params =>
+          Effect.sync(() => {
+            recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+            return {
+              session_id: 'trs_posthog_cached_session',
+              config: {
+                user_id: params.user_id,
+                execute: {},
+                search: {},
+                preload: { tools: [] },
+                instant: false,
+              },
+              config_version: 1,
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            };
+          }),
+        execute: (_sessionId, params) =>
           recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
@@ -1228,7 +1295,7 @@ describe('CLI: composio execute', () => {
             }),
             'utf8'
           );
-          vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
+          vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(({ toolSlug }) =>
             Effect.succeed({ tool_slug: toolSlug, version: '20260115_00' })
           );
 
@@ -1250,10 +1317,7 @@ describe('CLI: composio execute', () => {
           };
           expect(refreshed.version).toBe('20260115_00');
           expect(refreshed.inputSchema.type).toBe('object');
-          const propertyKeys = Object.keys(
-            (refreshed.inputSchema.properties ?? {}) as Record<string, unknown>
-          );
-          expect(propertyKeys).toContain('recipient_email');
+          expect(refreshed.inputSchema.properties).toHaveProperty('recipient_email');
         })
       );
     }
@@ -1320,7 +1384,7 @@ describe('CLI: composio execute', () => {
           '{"recipient":42}',
         ]).pipe(
           Effect.flip,
-          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+          Effect.map(error => (error as Error).message)
         );
 
         expect(failure).toContain('Input validation failed for GMAIL_SEND_EMAIL');
@@ -1370,7 +1434,7 @@ describe('CLI: composio execute', () => {
     // so a tool call that does not wait for validation always gets through.
     const slowSchemaLookup = () =>
       vi
-        .spyOn(composioClients, 'getLatestToolVersion')
+        .spyOn(composioAccount, 'getLatestToolVersion')
         .mockImplementation(({ toolSlug }) =>
           Effect.promise(() => new Promise<void>(resolve => setTimeout(resolve, 25))).pipe(
             Effect.as({ tool_slug: toolSlug, version: '20260101_00' })
@@ -1385,7 +1449,7 @@ describe('CLI: composio execute', () => {
       '{"recipient":42}',
     ]).pipe(
       Effect.flip,
-      Effect.map(error => (error instanceof Error ? error.message : String(error)))
+      Effect.map(error => (error as Error).message)
     );
 
     it.effect('never sends the tool call on a schema cache miss', () =>
@@ -1461,7 +1525,7 @@ describe('CLI: composio execute', () => {
           '{"recipient_email":"karan"}',
         ]).pipe(
           Effect.flip,
-          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+          Effect.map(error => (error as Error).message)
         );
         expect(dryRunFailure).toContain('Could not compile the cached JSON schema');
       })
@@ -1640,17 +1704,22 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async (_sessionId, params) => {
-          if (params.tool_slug === 'GMAIL_SEND_EMAIL') {
-            throw new Error('gmail execution failed');
-          }
-          return {
-            result_type: 'completed' as const,
-            data: { tool_slug: params.tool_slug, arguments: params.arguments },
-            error: null,
-            log_id: 'log_parallel_success',
-          };
-        },
+        execute: (_sessionId, params) =>
+          params.tool_slug === 'GMAIL_SEND_EMAIL'
+            ? Effect.fail(
+                clientBadRequest({
+                  message: 'gmail execution failed',
+                  code: 4310,
+                  slug: 'ToolRouterV2_ExecutionFailed',
+                  status: 400,
+                })
+              )
+            : Effect.succeed({
+                result_type: 'completed' as const,
+                data: { tool_slug: params.tool_slug, arguments: params.arguments },
+                error: null,
+                log_id: 'log_parallel_success',
+              }),
       },
     })
   )('[Given] one parallel execution fails [Then] sibling results are retained', it => {
@@ -1666,23 +1735,76 @@ describe('CLI: composio execute', () => {
           'GITHUB_CREATE_ISSUE',
           '-d',
           '{"title":"Bug"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
-        const results =
-          Predicate.hasProperty(output, 'results') && Array.isArray(output.results)
-            ? output.results
-            : [];
+        const output = parseLastJson(lines) as unknown as {
+          successful: boolean;
+          results: ReadonlyArray<unknown>;
+        };
 
         expect(output.successful).toBe(false);
-        expect(results).toHaveLength(2);
-        expect(results).toEqual(
+        expect(output.results).toHaveLength(2);
+        expect(output.results).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ slug: 'GMAIL_SEND_EMAIL', successful: false }),
             expect.objectContaining({ slug: 'GITHUB_CREATE_ISSUE', successful: true }),
           ])
         );
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        executeMeta: () =>
+          Effect.succeed({
+            result_type: 'failed' as const,
+            data: { results: [], total_count: 2, success_count: 1, error_count: 1 },
+            error: '1 out of 2 tools failed',
+            log_id: 'log_parallel_batch',
+            instant_charge: {
+              amount: '0.025000',
+              currency: 'USD' as const,
+              charged_by: 'composio' as const,
+            },
+          }),
+      },
+    })
+  )('[Given] a parallel multi-execute batch fails with a charge [Then] the charge is kept', it => {
+    it.effect('reports instantCharge on the failed parallel result', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'COMPOSIO_MULTI_EXECUTE_TOOL',
+          '-d',
+          '{"tools":[]}',
+        ]).pipe(Effect.flip);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+        expect(error).toMatchObject({
+          _tag: 'ReportedToolExecutionError',
+          reason: 'parallel_failed',
+        });
+        expect(output).toMatchObject({
+          successful: false,
+          results: [
+            {
+              slug: 'COMPOSIO_MULTI_EXECUTE_TOOL',
+              successful: false,
+              error: '1 out of 2 tools failed',
+              logId: 'log_parallel_batch',
+              instantCharge: { amount: '0.025000', currency: 'USD', chargedBy: 'composio' },
+            },
+          ],
+        });
       })
     );
   });
@@ -1789,19 +1911,10 @@ describe('CLI: composio execute', () => {
           const tempFile = path.join(os.tmpdir(), `composio-upload-${crypto.randomUUID()}.txt`);
           fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
 
-          const originalFetch = globalThis.fetch;
-          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-            const url =
-              typeof input === 'string'
-                ? input
-                : input instanceof URL
-                  ? input.toString()
-                  : input.url;
-            if (url === 'https://s3.test.composio.dev/upload') {
-              return Promise.resolve(new Response(null, { status: 200 }));
-            }
-            return originalFetch(input, init);
-          });
+          // The S3 upload is the only request that reaches `fetch`.
+          const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockImplementation(async () => new Response(null, { status: 200 }));
 
           yield* cli([
             'execute',
@@ -1888,19 +2001,10 @@ describe('CLI: composio execute', () => {
           const tempFile = path.join(os.tmpdir(), `composio-inject-${crypto.randomUUID()}.png`);
           fs.writeFileSync(tempFile, 'png-binary-ish', 'utf8');
 
-          const originalFetch = globalThis.fetch;
-          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-            const url =
-              typeof input === 'string'
-                ? input
-                : input instanceof URL
-                  ? input.toString()
-                  : input.url;
-            if (url === 'https://s3.test.composio.dev/upload') {
-              return Promise.resolve(new Response(null, { status: 200 }));
-            }
-            return originalFetch(input, init);
-          });
+          // The S3 upload is the only request that reaches `fetch`.
+          const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockImplementation(async () => new Response(null, { status: 200 }));
 
           yield* cli([
             'execute',
@@ -1924,7 +2028,10 @@ describe('CLI: composio execute', () => {
               s3key: `uploads/${path.basename(tempFile)}`,
             },
           });
-          expect(fetchSpy).toHaveBeenCalled();
+          expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+            'https://s3.test.composio.dev/upload',
+            expect.objectContaining({ method: 'PUT' })
+          );
 
           fs.rmSync(tempFile, { force: true });
         })
@@ -1980,19 +2087,10 @@ describe('CLI: composio execute', () => {
           const tempFile = path.join(os.tmpdir(), `composio-nested-${crypto.randomUUID()}.png`);
           fs.writeFileSync(tempFile, 'nested-png-binary-ish', 'utf8');
 
-          const originalFetch = globalThis.fetch;
-          vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-            const url =
-              typeof input === 'string'
-                ? input
-                : input instanceof URL
-                  ? input.toString()
-                  : input.url;
-            if (url === 'https://s3.test.composio.dev/upload') {
-              return Promise.resolve(new Response(null, { status: 200 }));
-            }
-            return originalFetch(input, init);
-          });
+          // The S3 upload is the only request that reaches `fetch`.
+          const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockImplementation(async () => new Response(null, { status: 200 }));
 
           yield* cli([
             'execute',
@@ -2017,6 +2115,10 @@ describe('CLI: composio execute', () => {
               },
             },
           });
+          expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+            'https://s3.test.composio.dev/upload',
+            expect.objectContaining({ method: 'PUT' })
+          );
 
           fs.rmSync(tempFile, { force: true });
         })
@@ -2072,21 +2174,13 @@ describe('CLI: composio execute', () => {
           );
           fs.writeFileSync(tempFile, 'hello from failed cli upload', 'utf8');
 
-          const originalFetch = globalThis.fetch;
-          vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-            const url =
-              typeof input === 'string'
-                ? input
-                : input instanceof URL
-                  ? input.toString()
-                  : input.url;
-            if (url === 'https://s3.test.composio.dev/upload') {
-              return Promise.resolve(
+          // The S3 upload is the only request that reaches `fetch`.
+          const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockImplementation(
+              async () =>
                 new Response('Upload failed', { status: 500, statusText: 'Upload Failed' })
-              );
-            }
-            return originalFetch(input, init);
-          });
+            );
 
           const failure = yield* cli([
             'execute',
@@ -2099,10 +2193,14 @@ describe('CLI: composio execute', () => {
             }),
           ]).pipe(
             Effect.flip,
-            Effect.map(error => (error instanceof Error ? error.message : String(error)))
+            Effect.map(error => (error as Error).message)
           );
 
           expect(failure).toContain('Failed to upload file to S3');
+          expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+            'https://s3.test.composio.dev/upload',
+            expect.objectContaining({ method: 'PUT' })
+          );
 
           fs.rmSync(tempFile, { force: true });
         })
@@ -2147,7 +2245,7 @@ describe('CLI: composio execute', () => {
           '/tmp/example.txt',
         ]).pipe(
           Effect.flip,
-          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+          Effect.map(error => (error as Error).message)
         );
 
         expect(failure).toContain('has no file_uploadable input');
@@ -2211,7 +2309,7 @@ describe('CLI: composio execute', () => {
             '/tmp/example.txt',
           ]).pipe(
             Effect.flip,
-            Effect.map(error => (error instanceof Error ? error.message : String(error)))
+            Effect.map(error => (error as Error).message)
           );
 
           expect(failure).toContain('has multiple file_uploadable inputs');
@@ -2531,7 +2629,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2543,6 +2641,103 @@ describe('CLI: composio execute', () => {
     );
   });
 
+  // --- Execution order (flows through real ToolsExecutorLive) ---
+
+  // The backend transport creates the session before the gate; the Dashboard
+  // transport has no session to create. A denied tool is sent nowhere on either.
+  it.effect.each<{
+    readonly transport: string;
+    readonly env: Record<string, string>;
+    readonly calls: ReadonlyArray<string>;
+  }>([
+    {
+      transport: 'backend',
+      // A custom backend with no web URL keeps the backend transport.
+      env: { COMPOSIO_BASE_URL: 'https://composio.internal.example' },
+      calls: ['create'],
+    },
+    { transport: 'dashboard', env: {}, calls: [] },
+  ])(
+    'on the $transport transport, prepares in order and sends nothing once the permission gate denies',
+    ({ env, calls }) => {
+      const toolRouterCalls: Array<string> = [];
+      // Enhanced controls ask before every call; with no one to answer the
+      // prompt (as under test), the gate denies.
+      vi.spyOn(toolPermissions, 'getConsumerPermissionSnapshot').mockImplementation(params =>
+        Effect.succeed({
+          orgId: params.orgId,
+          projectId: params.projectId,
+          consumerUserId: params.consumerUserId,
+          enhancedControlsEnabled: true,
+          permissions: { default: 'ask_every_call' as const, overrides: {} },
+          connectedAccountIds: [],
+          fetchedAt: 1_767_225_600_000,
+        })
+      );
+
+      return Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(lines.join('\n')).toContain('requires interactive approval');
+        expect(toolRouterCalls).toEqual(calls);
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: ConfigProvider.fromEnv({
+              env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env },
+            }),
+            fixture: 'global-test-user-id',
+            stdin: { isTTY: true, data: '' },
+            dashboard: {
+              respond: () => {
+                toolRouterCalls.push('dashboard');
+                return Response.error();
+              },
+            },
+            toolRouter: {
+              create: params =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('create');
+                  return {
+                    session_id: 'trs_backend_session',
+                    config: {
+                      user_id: params.user_id,
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
+              execute: () =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('execute');
+                  return {
+                    result_type: 'completed' as const,
+                    data: {},
+                    error: null,
+                    log_id: 'log_test',
+                  };
+                }),
+            },
+          })
+        ),
+        Effect.scoped
+      );
+    }
+  );
+
   // --- Tool Router error path (flows through real ToolsExecutorLive) ---
 
   layer(
@@ -2551,22 +2746,7 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => {
-          throw APIError.generate(
-            400,
-            {
-              error: {
-                message: "No active connection found for toolkit(s) 'gmail' in this session",
-                code: 4302,
-                slug: 'ToolRouterV2_NoActiveConnection',
-                status: 400,
-                request_id: 'test-request-id',
-              },
-            },
-            undefined,
-            new Headers()
-          );
-        },
+        execute: () => Effect.fail(clientBadRequest(noActiveConnectionEnvelope)),
       },
     })
   )('[Given] Tool Router NoActiveConnection error [Then] prints connection tips', it => {
@@ -2577,7 +2757,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{"recipient":"to@example.com"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2595,12 +2775,13 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async (_sessionId, params) => ({
-          result_type: 'completed' as const,
-          data: { tool_slug: params.tool_slug, custom: 'response' },
-          error: null,
-          log_id: 'log_custom',
-        }),
+        execute: (_sessionId, params) =>
+          Effect.succeed({
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, custom: 'response' },
+            error: null,
+            log_id: 'log_custom',
+          }),
       },
     })
   )('[Given] custom Tool Router execute mock [Then] returns custom response', it => {
@@ -2624,27 +2805,28 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => ({
-          result_type: 'failed' as const,
-          data: {},
-          error: null,
-          log_id: 'log_failed',
-        }),
+        execute: () =>
+          Effect.succeed({
+            result_type: 'failed' as const,
+            data: {},
+            error: null,
+            log_id: 'log_failed',
+          }),
       },
     })
   )('[Given] Tool Router reports a failed execution with no error text', it => {
     it.effect('[Then] execute fails instead of reporting success', () =>
       Effect.gen(function* () {
-        const exit = yield* cli([
+        const failure = yield* cli([
           'execute',
           'GITHUB_STAR_REPO',
           '-d',
           '{"owner":"composio","repo":"composio"}',
-        ]).pipe(Effect.exit);
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toMatchObject({ _tag: 'ReportedToolExecutionError' });
         expect(output.successful).toBe(false);
         expect(output.error).toBeNull();
         expect(output.logId).toBe('log_failed');
@@ -2658,33 +2840,34 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
-        execute: async () => ({
-          result_type: 'input_required' as const,
-          input_requests: {
-            approval_1: {
-              type: 'elicitation' as const,
-              mode: 'form' as const,
-              message: 'Allow GITHUB_STAR_REPO to star this repository?',
-              requested_schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+        execute: () =>
+          Effect.succeed({
+            result_type: 'input_required' as const,
+            input_requests: {
+              approval_1: {
+                type: 'elicitation' as const,
+                mode: 'form' as const,
+                message: 'Allow GITHUB_STAR_REPO to star this repository?',
+                requested_schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+              },
             },
-          },
-          request_state: 'opaque-state-token',
-        }),
+            request_state: 'opaque-state-token',
+          }),
       },
     })
   )('[Given] Tool Router asks for user input [Then] execute fails without a result', it => {
     it.effect('reports that the tool requires user input', () =>
       Effect.gen(function* () {
-        const exit = yield* cli([
+        const failure = yield* cli([
           'execute',
           'GITHUB_STAR_REPO',
           '-d',
           '{"owner":"composio","repo":"composio"}',
-        ]).pipe(Effect.exit);
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toMatchObject({ _tag: 'ReportedToolExecutionError' });
         expect(output.successful).toBe(false);
         expect(output.error).toContain(
           'Tool GITHUB_STAR_REPO requires user input before it can run (1 input request) and was not executed.'
@@ -2715,7 +2898,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2730,19 +2913,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: APIError.generate(
-          400,
-          {
-            error: {
-              message: 'API error: invalid input',
-              code: 1001,
-              slug: 'Validation_Failed',
-              status: 400,
-            },
-          },
-          undefined,
-          new Headers()
-        ),
+        failWith: clientBadRequest({
+          message: 'API error: invalid input',
+          code: 1001,
+          slug: 'Validation_Failed',
+          status: 400,
+        }),
       },
     })
   )('[Given] executor throws an API error [Then] prints message and details', it => {
@@ -2753,7 +2929,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2788,7 +2964,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2824,7 +3000,7 @@ describe('CLI: composio execute', () => {
           'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
-        ]).pipe(Effect.catch(() => Effect.void));
+        ]).pipe(Effect.flip);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -2859,7 +3035,7 @@ describe('CLI: composio execute', () => {
     it.effect('omits connection tips for meta tool slugs', () =>
       Effect.gen(function* () {
         yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']).pipe(
-          Effect.catch(() => Effect.void)
+          Effect.flip
         );
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
@@ -2990,30 +3166,25 @@ describe('CLI: composio execute', () => {
   )('[Given] CI redaction enabled [Then] redacts id-like fields and logId', it => {
     it.effect('redacts id, threadId, logId but preserves labelIds', () =>
       Effect.gen(function* () {
-        const spy = vi
-          .spyOn(redactModule, 'redact')
-          .mockImplementation(
-            (({ prefix }: { value: string; prefix?: string }) =>
-              `${prefix ?? ''}<REDACTED>`) as typeof redactModule.redact
-          );
+        // The suite's `afterEach` restores this spy.
+        vi.spyOn(redactModule, 'redact').mockImplementation(
+          (({ prefix }: { value: string; prefix?: string }) =>
+            `${prefix ?? ''}<REDACTED>`) as typeof redactModule.redact
+        );
 
-        try {
-          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines) as unknown as {
-            data: { id: string; labelIds: string[]; threadId: string };
-            logId: string;
-            successful: boolean;
-          };
+        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient_email":"to@example.com"}']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          data: { id: string; labelIds: string[]; threadId: string };
+          logId: string;
+          successful: boolean;
+        };
 
-          expect(output.data.id).toBe('<REDACTED>');
-          expect(output.data.threadId).toBe('<REDACTED>');
-          expect(output.data.labelIds).toEqual(['SENT']);
-          expect(output.logId).toBe('log_<REDACTED>');
-          expect(output.successful).toBe(true);
-        } finally {
-          spy.mockRestore();
-        }
+        expect(output.data.id).toBe('<REDACTED>');
+        expect(output.data.threadId).toBe('<REDACTED>');
+        expect(output.data.labelIds).toEqual(['SENT']);
+        expect(output.logId).toBe('log_<REDACTED>');
+        expect(output.successful).toBe(true);
       })
     );
   });

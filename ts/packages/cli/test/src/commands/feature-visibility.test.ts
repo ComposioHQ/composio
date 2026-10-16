@@ -16,19 +16,22 @@ describe('CLI experimental feature visibility', () => {
     expect(rootNames(true)).toContain('listen');
   });
 
-  for (const enabled of [false, true]) {
-    layer(TestLive({ cliUserConfig: { experimentalFeatures: { listen: enabled } } }))(it => {
-      it.effect(`uses the same visibility for root help and help aliases (listen=${enabled})`, () =>
+  describe.each([
+    { listen: false, helpAlias: 'Failure' },
+    { listen: true, helpAlias: 'Success' },
+  ])('listen=$listen', ({ listen, helpAlias }) => {
+    layer(TestLive({ cliUserConfig: { experimentalFeatures: { listen } } }))(it => {
+      it.effect('uses the same visibility for root help and help aliases', () =>
         Effect.gen(function* () {
           yield* cli(['--help']);
           const output = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' })).join(
             '\n'
           );
-          expect(output.includes('listen')).toBe(enabled);
+          expect(output.includes('listen')).toBe(listen);
           const result = yield* Effect.result(cli(['help', 'listen']));
-          expect(result._tag === 'Success').toBe(enabled);
+          expect(result._tag).toBe(helpAlias);
         })
       );
     });
-  }
+  });
 });

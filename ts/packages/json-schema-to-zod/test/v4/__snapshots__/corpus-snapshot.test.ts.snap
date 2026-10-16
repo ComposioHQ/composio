@@ -1,0 +1,1052 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`v4 JSON Schema of the shared corpus > matches the pinned snapshot 1`] = `
+[
+  {
+    "id": "nested-free-form-object",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "dataset_query": {
+          "additionalProperties": {},
+          "properties": {},
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "root-free-form-absent-properties",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "root-free-form-empty-properties",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "free-form-object-in-array-items",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "records": {
+          "items": {
+            "additionalProperties": {},
+            "properties": {},
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "nested-pattern-properties-object",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "additionalProperties": {},
+          "properties": {},
+          "type": "object",
+        },
+      },
+      "required": [
+        "payload",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "schema-valued-additional-properties-in-array-items",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "records": {
+          "items": {
+            "additionalProperties": {
+              "type": "number",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "records",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "explicit-additional-properties-false",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "explicit-additional-properties-true",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "named-properties-strict-by-default",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "named-properties-with-pattern-properties",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "root-additional-properties-schema-valued",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {
+        "type": "number",
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-only-object",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "multiple-matching-patterns",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "declared-property-also-matching-a-pattern",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {
+        "x_id": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "schema-valued-additional-applies-only-to-unmatched-keys",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "empty-schema-additional-properties",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-enum",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-strict-nested-array",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "false-pattern-property-schema",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-type-union",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-json-integer",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-composed-const-exclusion",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "pattern-property-default-materialization",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-boolean-property-schemas",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {},
+        "forbidden": {
+          "not": {},
+        },
+      },
+      "required": [
+        "allowed",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-empty-and-null-schemas",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "anything": {},
+        "nullOnly": {
+          "type": "null",
+        },
+      },
+      "required": [
+        "anything",
+        "nullOnly",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-type-array-union",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "integer",
+            "null",
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-enum-intersects-declared-type",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "string",
+            },
+            {
+              "anyOf": [
+                {
+                  "const": 1,
+                  "type": "number",
+                },
+                {
+                  "const": "ready",
+                  "type": "string",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-null-only-unions",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "anyOf": {
+          "type": "null",
+        },
+        "typeArray": {
+          "type": "null",
+        },
+      },
+      "required": [
+        "typeArray",
+        "anyOf",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-scalar-constraints",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z]{2}$",
+          "type": "string",
+        },
+        "count": {
+          "exclusiveMinimum": 0,
+          "type": "number",
+        },
+      },
+      "required": [
+        "code",
+        "count",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-independent-numeric-bounds",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "lower": {
+          "exclusiveMinimum": 5,
+          "type": "number",
+        },
+        "upper": {
+          "exclusiveMaximum": 5,
+          "type": "number",
+        },
+      },
+      "required": [
+        "lower",
+        "upper",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-const-intersects-declared-type",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "string",
+            },
+            {
+              "const": 1,
+              "type": "number",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-compound-enum-values",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {},
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-const-null-and-false",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "flag": {
+          "allOf": [
+            {},
+            {
+              "const": false,
+              "type": "boolean",
+            },
+          ],
+        },
+        "maybe": {
+          "allOf": [
+            {},
+            {
+              "const": null,
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "maybe",
+        "flag",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-enum-boolean-number-identity",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "bits": {
+          "allOf": [
+            {},
+            {
+              "anyOf": [
+                {
+                  "const": 0,
+                  "type": "number",
+                },
+                {
+                  "const": 1,
+                  "type": "number",
+                },
+              ],
+            },
+          ],
+        },
+        "toggle": {
+          "allOf": [
+            {},
+            {
+              "const": true,
+              "type": "boolean",
+            },
+          ],
+        },
+      },
+      "required": [
+        "bits",
+        "toggle",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-enum-with-null-member",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {
+              "anyOf": [
+                {
+                  "const": "a",
+                  "type": "string",
+                },
+                {
+                  "const": null,
+                  "type": "null",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-const-constraint-conjunction",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "allOf": [
+            {
+              "type": "string",
+            },
+            {
+              "const": "a",
+              "type": "string",
+            },
+          ],
+        },
+      },
+      "required": [
+        "code",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-inclusive-numeric-boundaries",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "maximum": 10,
+          "minimum": 5,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "count",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-const-narrows-enum",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {
+              "const": "b",
+              "type": "string",
+            },
+            {
+              "enum": [
+                "a",
+                "b",
+              ],
+              "type": "string",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-compound-const-deep-equality",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {},
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-unicode-code-point-length",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "glyph": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "glyph",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-typeless-constraint-scoping",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {
+              "enum": [
+                "a",
+                "abc",
+              ],
+              "type": "string",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-float-multiple-of",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "step",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-draft4-boolean-exclusive-bounds",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "lower": {
+          "exclusiveMinimum": 5,
+          "type": "number",
+        },
+        "upper": {
+          "exclusiveMaximum": 5,
+          "type": "number",
+        },
+      },
+      "required": [
+        "lower",
+        "upper",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-type-array-constraint-scoping",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "minimum": 10,
+              "type": "number",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "primitive-empty-enum-optional-property",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {
+              "not": {},
+            },
+          ],
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "additional-property-default-materialization",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": false,
+            "type": "boolean",
+          },
+        },
+        "type": "object",
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-fixed-tuple-items",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "additionalItems": false,
+              "items": [],
+              "maxItems": 0,
+              "type": "array",
+            },
+            {
+              "additionalItems": false,
+              "items": [
+                {
+                  "type": "string",
+                },
+              ],
+              "maxItems": 1,
+              "minItems": 1,
+              "type": "array",
+            },
+            {
+              "additionalItems": false,
+              "items": [
+                {
+                  "type": "string",
+                },
+                {
+                  "type": "integer",
+                },
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-open-tuple-items",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "additionalItems": false,
+              "items": [],
+              "maxItems": 0,
+              "type": "array",
+            },
+            {
+              "additionalItems": false,
+              "items": [
+                {
+                  "type": "string",
+                },
+              ],
+              "maxItems": 1,
+              "minItems": 1,
+              "type": "array",
+            },
+            {
+              "additionalItems": {},
+              "items": [
+                {
+                  "type": "string",
+                },
+                {
+                  "type": "integer",
+                },
+              ],
+              "minItems": 2,
+              "type": "array",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-false-tuple-position",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "additionalItems": false,
+              "items": [],
+              "maxItems": 0,
+              "type": "array",
+            },
+            {
+              "additionalItems": false,
+              "items": [
+                {
+                  "type": "string",
+                },
+              ],
+              "maxItems": 1,
+              "minItems": 1,
+              "type": "array",
+            },
+            {
+              "additionalItems": false,
+              "items": [
+                {
+                  "type": "string",
+                },
+                {
+                  "not": {},
+                },
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-allof-object-intersection",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "properties": {
+            "a": {
+              "type": "string",
+            },
+            "b": {
+              "type": "integer",
+            },
+          },
+          "required": [
+            "a",
+            "b",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-allof-closed-object-branches",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "properties": {
+            "a": {
+              "type": "string",
+            },
+            "b": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "a",
+            "b",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-scalar-allof",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "string",
+            },
+            {
+              "pattern": "^[A-Z]+$",
+              "type": "string",
+            },
+          ],
+        },
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "id": "composition-oneof-exclusive-match",
+    "jsonSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "value": {},
+      },
+      "required": [
+        "value",
+      ],
+      "type": "object",
+    },
+  },
+]
+`;

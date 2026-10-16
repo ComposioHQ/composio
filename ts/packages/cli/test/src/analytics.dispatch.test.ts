@@ -37,13 +37,8 @@ vi.mock('node:child_process', () => ({
 
 const originalArgv = [...process.argv];
 
-const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
-  return Math.abs(hash >>> 0).toString(36);
-};
+/** The cache key of `/workspace/project`: its djb2 hash in base 36. */
+const WORKSPACE_PROJECT_CWD_HASH = '1uj8qfp';
 
 // Design contract: `FetchHttpClient.Fetch` is an `effect` `Context.Reference`
 // whose default value (`globalThis.fetch`) is memoized on first read (see the
@@ -145,7 +140,7 @@ describe('CLI analytics dispatch', () => {
           JSON.stringify({
             older: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_older',
                   // The TestClock sits at epoch 0, so these fixed instants are
                   // deterministically 30s and 60s in the future.
@@ -155,7 +150,7 @@ describe('CLI analytics dispatch', () => {
             },
             newer: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_newer',
                   expiresAt: '1970-01-01T00:01:00.000Z',
                 },

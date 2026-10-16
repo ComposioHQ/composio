@@ -1,5 +1,27 @@
 # @e2e-tests/cf-workers-tool-router-ai
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [79c2d1d]
+- Updated dependencies [f9a972b]
+- Updated dependencies [40546c3]
+- Updated dependencies [04cd5c4]
+  - @composio/core@0.25.0
+  - @composio/vercel@0.12.1
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [fd59eba]
+- Updated dependencies [79b4912]
+- Updated dependencies [59935c0]
+- Updated dependencies [58bcde8]
+  - @composio/core@0.24.0
+  - @composio/vercel@0.12.1
+
 ## 0.0.7
 
 ### Patch Changes

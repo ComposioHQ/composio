@@ -27,6 +27,9 @@ const createMockClient = () => ({
       url: vi.fn(),
     },
   },
+  withOptions() {
+    return this;
+  },
 });
 
 describe('MCP', () => {

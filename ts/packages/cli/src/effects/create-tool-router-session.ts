@@ -1,5 +1,5 @@
 import { Data, Effect, Option } from 'effect';
-import type { Composio } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import type { SessionCreateParams } from '@composio/client/resources/tool-router';
 import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
@@ -15,6 +15,7 @@ import {
   getConsumerPermissionSnapshot,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { nonEmptyOrUndefined } from 'src/utils/optional-params';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -68,7 +69,7 @@ export interface ToolRouterSessionContext {
  * Dashboard use only the connection context; the Dashboard owns the session.
  */
 export const resolveToolRouterSessionContext = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
@@ -108,14 +109,14 @@ export const resolveToolRouterSessionContext = (
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
     const cachedConnectedAccounts = options?.cacheScope
       ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
 
@@ -136,7 +137,7 @@ export const resolveToolRouterSessionContext = (
             : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
-          toolkits: requestedToolkits.length > 0 ? requestedToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         }).pipe(
           Effect.map(connectionContext => ({
             ...connectionContext,
@@ -186,6 +187,7 @@ export const resolveToolRouterSessionContext = (
             }
           : undefined,
         toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+        instant: { return_instant_charge: true },
         experimental: permissionSnapshot?.enhancedControlsEnabled
           ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
           : undefined,
@@ -201,18 +203,18 @@ export const resolveToolRouterSessionContext = (
 
 /** Create an ephemeral Tool Router session from an already resolved context. */
 export const createToolRouterSessionFromContext = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   { sessionConfig, ...context }: ToolRouterSessionContext
 ) =>
-  Effect.tryPromise({
-    try: () => client.toolRouter.session.create({ user_id: userId, ...sessionConfig }),
-    catch: cause =>
-      new ToolRouterSessionCreateError({
-        message: 'Failed to create a Tool Router session.',
-        cause,
-      }),
-  }).pipe(
+  client.toolRouter.session.create({ user_id: userId, ...sessionConfig }).pipe(
+    Effect.mapError(
+      cause =>
+        new ToolRouterSessionCreateError({
+          message: 'Failed to create a Tool Router session.',
+          cause,
+        })
+    ),
     Effect.map((session): CreatedToolRouterSession => ({
       sessionId: session.session_id,
       ...context,
@@ -227,7 +229,7 @@ export const createToolRouterSessionFromContext = (
  * so callers can resolve the dependency at layer construction time.
  */
 export const createToolRouterSessionContext = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
@@ -235,26 +237,5 @@ export const createToolRouterSessionContext = (
     Effect.flatMap(context => createToolRouterSessionFromContext(client, userId, context))
   );
 
-/** Backward-compatible helper for callers that only need the session id. */
-export const createToolRouterSession = (
-  client: Composio,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => session.sessionId)
-  );
-
-/**
- * Resolve the Composio client and create a Tool Router session in one step.
- * Returns `{ client, sessionId }` — eliminates the 3-step boilerplate
- * (resolve singleton, get client, create session) repeated across commands.
- */
-export const resolveToolRouterSession = (
-  client: Composio,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => ({ client, ...session }))
-  );
+/** The name commands create their Tool Router session by. */
+export const resolveToolRouterSession = createToolRouterSessionContext;

@@ -268,8 +268,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-            "x-experimental": true
+            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config (for example a region or subdomain). Non-secret values pre-fill the hosted Connect Link form; secret values are redacted in responses and never sent to the end user."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -403,8 +408,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-            "x-experimental": true
+            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config (for example a region or subdomain). Non-secret values pre-fill the hosted Connect Link form; secret values are redacted in responses and never sent to the end user."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -525,7 +535,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -612,7 +628,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -2797,8 +2819,13 @@
                           "shared_credentials": {
                             "type": "object",
                             "additionalProperties": {},
-                            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                            "x-experimental": true
+                            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+                            "deprecated": true
+                          },
+                          "shared_connection_fields": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Connection field values inherited by every connected account created under this auth config. Same value as shared_credentials; secret values are redacted."
                           },
                           "is_enabled_for_tool_router": {
                             "type": "boolean",
@@ -3130,8 +3157,13 @@
                     "shared_credentials": {
                       "type": "object",
                       "additionalProperties": {},
-                      "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                      "x-experimental": true
+                      "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+                      "deprecated": true
+                    },
+                    "shared_connection_fields": {
+                      "type": "object",
+                      "additionalProperties": {},
+                      "description": "Connection field values inherited by every connected account created under this auth config. Same value as shared_credentials; secret values are redacted."
                     },
                     "is_enabled_for_tool_router": {
                       "type": "boolean",
@@ -6798,9 +6830,6 @@
                           "dont_store_data"
                         ]
                       },
-                      "require_mcp_api_key": {
-                        "type": "boolean"
-                      },
                       "is_composio_link_enabled_for_managed_auth": {
                         "type": "boolean",
                         "description": "Whether to enable composio link for managed authentication. This key will be deprecated in the future. Please don't use this key."
@@ -9767,6 +9796,37 @@
                                   },
                                   "additionalProperties": false,
                                   "description": "Label and help text for the API key input on the connect page"
+                                },
+                                "additional_fields": {
+                                  "type": "object",
+                                  "properties": {
+                                    "generic_id": {
+                                      "type": "object",
+                                      "properties": {
+                                        "display_name": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 100,
+                                          "description": "Label shown to the user connecting their account"
+                                        },
+                                        "description": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 500,
+                                          "description": "Help text below the input"
+                                        }
+                                      },
+                                      "required": [
+                                        "display_name"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "generic_id"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Additional values each user enters when connecting. Reference each field in a header, for example X-Org-Id: {{generic_id}}. Use display_name for the user-facing label. Every user must supply each declared field. Values are not secret."
                                 }
                               },
                               "required": [
@@ -15396,7 +15456,8 @@
                   "managed_auth_by_composio": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Flag indicating if Composio manages authentication",
+                    "description": "Flag indicating if Composio manages authentication. When true, the generated URLs include the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
+                    "deprecated": true,
                     "example": true
                   },
                   "user_ids": {
@@ -15470,17 +15531,17 @@
                     "mcp_url": {
                       "type": "string",
                       "description": "Base MCP URL without any query parameters",
-                      "example": "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000"
+                      "example": "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000"
                     },
                     "connected_account_urls": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each connected account ID",
+                      "description": "List of URLs generated for each connected account ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
                       ]
                     },
                     "user_ids_url": {
@@ -15488,10 +15549,10 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each user ID",
+                      "description": "List of URLs generated for each user ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
                       ]
                     }
                   },
@@ -17564,7 +17625,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -17597,7 +17658,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -17619,7 +17680,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -17766,6 +17827,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -17834,8 +17900,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -17865,8 +17930,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -17889,6 +17953,8 @@
                                     "type": "string",
                                     "enum": [
                                       "readOnlyHint",
+                                      "createHint",
+                                      "updateHint",
                                       "destructiveHint",
                                       "idempotentHint",
                                       "openWorldHint"
@@ -17904,6 +17970,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -17916,6 +17984,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -17928,13 +17998,14 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
                                         ]
                                       },
-                                      "minItems": 1,
-                                      "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                                      "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                                       "x-experimental": true,
                                       "example": [
                                         "destructiveHint"
@@ -17943,7 +18014,7 @@
                                   }
                                 }
                               ],
-                              "description": "MCP tool annotation hints for this toolkit. Array format is treated as enabled list. Object format supports enabled and disabled lists, which replace the global tag filter for this toolkit, and experimentally the tags whose tools in this toolkit need approval.",
+                              "description": "Tags for this toolkit. Any `tags` object here fully replaces the session-wide `tags` for this toolkit, including one that only sets `require_approval`. Array format is treated as an enabled list.",
                               "example": {
                                 "disable": [
                                   "openWorldHint"
@@ -17958,8 +18029,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -17979,8 +18049,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -18004,6 +18073,8 @@
                           "type": "string",
                           "enum": [
                             "readOnlyHint",
+                            "createHint",
+                            "updateHint",
                             "destructiveHint",
                             "idempotentHint",
                             "openWorldHint"
@@ -18019,6 +18090,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -18031,6 +18104,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -18043,13 +18118,15 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
                               ]
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "destructiveHint"
@@ -18058,7 +18135,7 @@
                         }
                       }
                     ],
-                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports enabled (tool must have at least one) and disabled (tool must NOT have any) lists, and experimentally the tags whose tools need approval. Toolkit-level tags override the enabled/disabled filter.",
+                    "description": "Session-wide tags for filtering tools. Array format is treated as an enabled list. Object format supports `enable` (a tool must have at least one) and `disable` (a tool must have none), and experimentally the tags whose tools need approval. If a toolkit sets `tools.<toolkit>.tags`, its tools use that object instead of this one.",
                     "example": {
                       "disable": [
                         "openWorldHint"
@@ -18852,10 +18929,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -18950,6 +19033,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -18963,6 +19048,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -18976,6 +19063,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -19030,6 +19119,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -19043,6 +19134,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -19056,6 +19149,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -20164,10 +20259,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -20262,6 +20363,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -20275,6 +20378,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -20288,6 +20393,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -20342,6 +20449,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -20355,6 +20464,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -20368,6 +20479,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -20769,7 +20882,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -20802,7 +20915,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -20824,7 +20937,7 @@
                               "type": "string"
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "github"
@@ -20971,6 +21084,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -21031,8 +21149,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -21062,8 +21179,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -21086,6 +21202,8 @@
                                     "type": "string",
                                     "enum": [
                                       "readOnlyHint",
+                                      "createHint",
+                                      "updateHint",
                                       "destructiveHint",
                                       "idempotentHint",
                                       "openWorldHint"
@@ -21101,6 +21219,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -21113,6 +21233,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -21125,13 +21247,14 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
                                         ]
                                       },
-                                      "minItems": 1,
-                                      "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                                      "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                                       "x-experimental": true,
                                       "example": [
                                         "destructiveHint"
@@ -21140,7 +21263,7 @@
                                   }
                                 }
                               ],
-                              "description": "MCP tool annotation hints for this toolkit. Array format is treated as enabled list. Object format supports enabled and disabled lists, which replace the global tag filter for this toolkit, and experimentally the tags whose tools in this toolkit need approval.",
+                              "description": "Tags for this toolkit. Any `tags` object here fully replaces the session-wide `tags` for this toolkit, including one that only sets `require_approval`. Array format is treated as an enabled list.",
                               "example": {
                                 "disable": [
                                   "openWorldHint"
@@ -21155,8 +21278,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -21176,8 +21298,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "minItems": 1,
-                              "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
                               "x-experimental": true,
                               "example": [
                                 "GITHUB_DELETE_A_REPOSITORY"
@@ -21201,6 +21322,8 @@
                           "type": "string",
                           "enum": [
                             "readOnlyHint",
+                            "createHint",
+                            "updateHint",
                             "destructiveHint",
                             "idempotentHint",
                             "openWorldHint"
@@ -21216,6 +21339,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -21228,6 +21353,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -21240,13 +21367,15 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
                               ]
                             },
                             "minItems": 1,
-                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed.",
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
                             "x-experimental": true,
                             "example": [
                               "destructiveHint"
@@ -21255,7 +21384,7 @@
                         }
                       }
                     ],
-                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports enabled (tool must have at least one) and disabled (tool must NOT have any) lists, and experimentally the tags whose tools need approval. Toolkit-level tags override the enabled/disabled filter.",
+                    "description": "Session-wide tags for filtering tools. Array format is treated as an enabled list. Object format supports `enable` (a tool must have at least one) and `disable` (a tool must have none), and experimentally the tags whose tools need approval. If a toolkit sets `tools.<toolkit>.tags`, its tools use that object instead of this one.",
                     "example": {
                       "disable": [
                         "openWorldHint"
@@ -21674,10 +21803,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -21772,6 +21907,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -21785,6 +21922,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -21798,6 +21937,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -21852,6 +21993,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -21865,6 +22008,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -21878,6 +22023,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -23732,6 +23879,13 @@
                                   "type": "string"
                                 },
                                 "description": "Tools of this toolkit that run on the Composio instant account"
+                              },
+                              "prices": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "$ref": "#/components/schemas/ToolPricing"
+                                },
+                                "description": "Price of each tool, keyed by tool slug."
                               }
                             },
                             "required": [

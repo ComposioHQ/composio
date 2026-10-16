@@ -1,5 +1,4 @@
-import { z } from 'zod/v3';
-
+import type { ZodBackend } from '../backend/types';
 import type { JsonSchemaObject } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 
@@ -38,36 +37,39 @@ const isJsonMultipleOf = (value: number, multiple: number): boolean => {
   return scaledDividend % scaledDivisor === 0n;
 };
 
-export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'integer' }) => {
-  let zodSchema = z.number();
+export const parseNumber = <S>(
+  jsonSchema: JsonSchemaObject & { type: 'number' | 'integer' },
+  backend: ZodBackend<S>
+): S => {
+  let zodSchema = backend.number();
 
   let isInteger = false;
   if (jsonSchema.type === 'integer') {
     isInteger = true;
     zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'type', (zs, _, errorMsg) =>
-      zs.int(errorMsg)
+      backend.integer(zs, errorMsg)
     );
   } else if (jsonSchema.format === 'int64') {
     isInteger = true;
     zodSchema = extendSchemaWithMessage(zodSchema, jsonSchema, 'format', (zs, _, errorMsg) =>
-      zs.int(errorMsg)
+      backend.integer(zs, errorMsg)
     );
   }
 
   if (typeof jsonSchema.minimum === 'number') {
-    if ((jsonSchema as unknown as { exclusiveMinimum?: boolean }).exclusiveMinimum === true) {
+    if (jsonSchema.exclusiveMinimum === true) {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,
         'minimum',
-        (zs, minimum, errorMsg) => zs.gt(minimum, errorMsg)
+        (zs, minimum, errorMsg) => backend.bound(zs, 'gt', minimum, errorMsg)
       );
     } else {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,
         'minimum',
-        (zs, minimum, errorMsg) => zs.gte(minimum, errorMsg)
+        (zs, minimum, errorMsg) => backend.bound(zs, 'gte', minimum, errorMsg)
       );
     }
   }
@@ -76,24 +78,25 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       zodSchema,
       jsonSchema,
       'exclusiveMinimum',
-      (zs, exclusiveMinimum, errorMsg) => zs.gt(exclusiveMinimum as number, errorMsg)
+      (zs, exclusiveMinimum, errorMsg) =>
+        backend.bound(zs, 'gt', exclusiveMinimum as number, errorMsg)
     );
   }
 
   if (typeof jsonSchema.maximum === 'number') {
-    if ((jsonSchema as unknown as { exclusiveMaximum?: boolean }).exclusiveMaximum === true) {
+    if (jsonSchema.exclusiveMaximum === true) {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,
         'maximum',
-        (zs, maximum, errorMsg) => zs.lt(maximum, errorMsg)
+        (zs, maximum, errorMsg) => backend.bound(zs, 'lt', maximum, errorMsg)
       );
     } else {
       zodSchema = extendSchemaWithMessage(
         zodSchema,
         jsonSchema,
         'maximum',
-        (zs, maximum, errorMsg) => zs.lte(maximum, errorMsg)
+        (zs, maximum, errorMsg) => backend.bound(zs, 'lte', maximum, errorMsg)
       );
     }
   }
@@ -102,7 +105,8 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       zodSchema,
       jsonSchema,
       'exclusiveMaximum',
-      (zs, exclusiveMaximum, errorMsg) => zs.lt(exclusiveMaximum as number, errorMsg)
+      (zs, exclusiveMaximum, errorMsg) =>
+        backend.bound(zs, 'lt', exclusiveMaximum as number, errorMsg)
     );
   }
 
@@ -112,7 +116,7 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       zodSchema,
       { ...jsonSchema, minimum: jsonSchema.min },
       'minimum',
-      (zs, minimum, errorMsg) => zs.gte(minimum, errorMsg)
+      (zs, minimum, errorMsg) => backend.bound(zs, 'gte', minimum, errorMsg)
     );
   }
 
@@ -122,7 +126,7 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       zodSchema,
       { ...jsonSchema, maximum: jsonSchema.max },
       'maximum',
-      (zs, maximum, errorMsg) => zs.lte(maximum, errorMsg)
+      (zs, maximum, errorMsg) => backend.bound(zs, 'lte', maximum, errorMsg)
     );
   }
 
@@ -131,11 +135,13 @@ export const parseNumber = (jsonSchema: JsonSchemaObject & { type: 'number' | 'i
       jsonSchema as JsonSchemaObject & { errorMessage?: Record<string, string> }
     ).errorMessage?.multipleOf;
     if (jsonSchema.multipleOf === 1) {
-      return isInteger ? zodSchema : zodSchema.int(errorMessage);
+      return isInteger ? zodSchema : backend.integer(zodSchema, errorMessage);
     }
-    return zodSchema.refine(value => isJsonMultipleOf(value, jsonSchema.multipleOf!), {
-      message: errorMessage ?? `Number must be a multiple of ${jsonSchema.multipleOf}`,
-    });
+    return backend.refine<number>(
+      zodSchema,
+      value => isJsonMultipleOf(value, jsonSchema.multipleOf!),
+      errorMessage ?? `Number must be a multiple of ${jsonSchema.multipleOf}`
+    );
   }
 
   return zodSchema;

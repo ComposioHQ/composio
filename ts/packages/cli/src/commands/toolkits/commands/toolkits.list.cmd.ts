@@ -1,20 +1,16 @@
 import process from 'node:process';
 import { Command, Flag } from 'effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { idempotent } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
+import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
-
-class ToolkitsListRequestError extends Data.TaggedError('commands/ToolkitsListRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
 
 const query = Flag.String('query').pipe(
   Flag.withDescription('Text search by name, slug, or description'),
@@ -29,11 +25,6 @@ const limit = Flag.Int('limit').pipe(
 const connected = Flag.Boolean('connected').pipe(
   Flag.withDescription('Filter to connected toolkits only'),
   Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.optional,
-  Flag.withDescription('User ID for connection status (falls back to project/global test_user_id)')
 );
 
 /**
@@ -53,11 +44,10 @@ const userId = Flag.String('user-id').pipe(
  */
 export const toolkitsCmd$List = Command.make(
   'list',
-  { query, limit, connected, userId },
-  ({ query, limit, connected, userId }) =>
+  { query, limit, connected },
+  ({ query, limit, connected }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
+      const { userId } = yield* CommandSurface;
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const clientSingleton = yield* ComposioClientSingleton;
@@ -65,8 +55,13 @@ export const toolkitsCmd$List = Command.make(
       const userContext = yield* ComposioUserContext;
 
       const clampedLimit = clampLimit(limit);
+      // Resolved outside the session lookup, whose failures only drop the connection status.
+      const project = yield* namedProject;
       const resolvedProjectContext = yield* projectContext.resolve;
-      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const testUserId = directoryTestUserId(
+        resolvedProjectContext,
+        Option.map(project, named => named.projectId)
+      );
       const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
@@ -100,8 +95,11 @@ export const toolkitsCmd$List = Command.make(
       // Resolve session context in parallel with catalog fetch (saves one round trip).
       const sessionContextEffect = Option.isSome(resolvedUserId)
         ? Effect.gen(function* () {
-            const client = yield* clientSingleton.get();
-            return yield* resolveToolRouterSession(client, resolvedUserId.value);
+            const client = Option.isSome(project)
+              ? project.value.client
+              : yield* clientSingleton.get();
+            const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
+            return { client, sessionId };
           }).pipe(
             Effect.catch(error =>
               Effect.logDebug('Failed to create session:', error).pipe(Effect.as(undefined))
@@ -129,30 +127,30 @@ export const toolkitsCmd$List = Command.make(
       let sessionFailed = false;
       if (sessionContext) {
         const { client, sessionId } = sessionContext;
-        sessionItems = yield* Effect.tryPromise({
-          try: () =>
-            client.toolRouter.session.toolkits(sessionId, {
+        // The session items only add connection status to the catalog rows,
+        // and a failed read is already a silent fallback.
+        sessionItems = yield* client.toolRouter.session
+          .toolkits(
+            sessionId,
+            {
               search: Option.getOrUndefined(query),
               limit: clampedLimit,
               is_connected: Option.getOrUndefined(connected),
-            }),
-          catch: cause =>
-            new ToolkitsListRequestError({
-              message: 'Failed to fetch session toolkits.',
-              cause,
-            }),
-        }).pipe(
-          Effect.map(r => r.items),
-          Effect.catchTag('commands/ToolkitsListRequestError', error =>
-            Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
-              Effect.as(
-                [] as ReadonlyArray<
-                  import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
-                >
+            },
+            idempotent
+          )
+          .pipe(
+            Effect.map(r => r.items),
+            Effect.catch(error =>
+              Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
+                Effect.as(
+                  [] as ReadonlyArray<
+                    import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
+                  >
+                )
               )
             )
-          )
-        );
+          );
         if (sessionItems.length === 0) {
           sessionFailed = true;
           sessionItems = undefined;

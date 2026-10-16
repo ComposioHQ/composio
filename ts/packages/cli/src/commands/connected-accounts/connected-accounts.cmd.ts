@@ -1,8 +1,10 @@
+import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
+import { rejectsSharedFlags } from 'src/commands/surface';
 import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './commands/connected-accounts.whoami.cmd';
-import { connectedAccountsCmd$Link } from './commands/connected-accounts.link.cmd';
+import { connectedAccountsCmd$Link } from './link/connected-accounts.link.cmd';
 
 /**
  * CLI entry point for connected account management commands.
@@ -17,7 +19,8 @@ export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
   Command.withSubcommands([
     connectedAccountsCmd$Link,
     connectedAccountsCmd$List,
-    connectedAccountsCmd$Info,
-    connectedAccountsCmd$Whoami,
-  ])
+    connectedAccountsCmd$Info.pipe(rejectsSharedFlags('dev connected-accounts info')),
+    connectedAccountsCmd$Whoami.pipe(rejectsSharedFlags('dev connected-accounts whoami')),
+  ]),
+  requireLogin
 );

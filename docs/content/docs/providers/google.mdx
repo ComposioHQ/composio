@@ -17,6 +17,8 @@ In Python, the Gemini provider (`composio_gemini`) wraps Composio tools as typed
 
 Object arguments that declare no properties preserve arbitrary nested keys in both providers. The TypeScript provider also adds `type: "object"` to schema nodes that declare `properties` without a type, which is the shape Gemini expects for object schemas.
 
+If you use the Python `composio_google` provider with a manual Gemini loop, pass the Session to `composio.provider.execute_tool_call(session=session, function_call=function_call)` or `composio.provider.handle_response(session=session, response=response)`. Both helpers execute through that Session. Calls with `user_id` use direct execution for tools fetched with `tools.get()`. The `composio_gemini` callables in the example below already carry the Session.
+
 <Steps>
 <Step>
 **Install**

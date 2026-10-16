@@ -34,13 +34,23 @@ const TEST_ARCHIVE_RELATIVE_PATHS = [
 // What a complete install holds next to the executable.
 const writeLiveCompanions = (installDirectory: string) => {
   fs.mkdirSync(path.join(installDirectory, 'services'));
-  for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+  RUN_COMPANION_MODULE_FILENAMES.forEach(fileName => {
     fs.writeFileSync(
       path.join(installDirectory, fileName),
       `export * from "./services/${fileName}";\n`
     );
     fs.writeFileSync(path.join(installDirectory, 'services', fileName), 'export {};\n');
-  }
+  });
+};
+
+// What an install upgraded from an older release still holds: every legacy
+// placeholder, empty.
+const writeLegacyPlaceholders = (installDirectory: string) => {
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.forEach(relativePath => {
+    const filePath = path.join(installDirectory, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, '');
+  });
 };
 
 const stubRepairFetch = () => {
@@ -69,8 +79,9 @@ const mockArchiveContents = (missingRelativePath?: string) => {
   extractZipMock.mockImplementation(
     async (archivePath: string, options: { readonly dir: string }) => {
       const packageDirectory = path.join(options.dir, path.parse(archivePath).name);
-      for (const relativePath of TEST_ARCHIVE_RELATIVE_PATHS) {
-        if (relativePath === missingRelativePath) continue;
+      TEST_ARCHIVE_RELATIVE_PATHS.filter(
+        relativePath => relativePath !== missingRelativePath
+      ).forEach(relativePath => {
         const filePath = path.join(packageDirectory, relativePath);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(
@@ -79,7 +90,7 @@ const mockArchiveContents = (missingRelativePath?: string) => {
             ? ''
             : `new:${relativePath}`
         );
-      }
+      });
     }
   );
 };
@@ -149,11 +160,7 @@ describe('run-companion-modules', () => {
           const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-legacy-'));
           const execPath = path.join(installDirectory, 'composio');
           writeLiveCompanions(installDirectory);
-          for (const relativePath of RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS) {
-            const filePath = path.join(installDirectory, relativePath);
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
-            fs.writeFileSync(filePath, '');
-          }
+          writeLegacyPlaceholders(installDirectory);
           const fetchMock = stubRepairFetch();
 
           return yield* Effect.gen(function* () {
@@ -407,8 +414,8 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://github-proxy.test/repos/fork-owner/fork-repo/releases/tags/%40composio%2Fcli%409.9.9-test'
           );
         }).pipe(
@@ -450,8 +457,8 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(

@@ -7,8 +7,8 @@ import {
   Validator,
 } from '@cfworker/json-schema';
 import type { Schema as InterpreterSchema } from '@cfworker/json-schema';
-import { z } from 'zod/v3';
 
+import type { WholeSchemaGuard } from './backend/types';
 import type { JsonSchema, JsonSchemaObject } from './types';
 import { InvalidPatternError } from './utils/compile-pattern';
 import { createPatternMatcher, patternMatches, type PatternMatcher } from './utils/linear-pattern';
@@ -564,49 +564,6 @@ const prepareInterpreterSchema = (
   }
 };
 
-type WholeSchemaGuard = (value: unknown) => string | undefined;
-type GuardedDef = z.ZodTypeDef & { wholeSchemaGuard?: WholeSchemaGuard };
-type ZodSchemaClass = {
-  new (def: z.ZodTypeDef): z.ZodTypeAny;
-  prototype: z.ZodTypeAny;
-};
-
-const guardedSchemaClasses = new WeakMap<ZodSchemaClass, ZodSchemaClass>();
-
-/**
- * A subclass of the parsed schema's own class that checks the source value
- * against the guard before parsing it. Keeping the class, rather than wrapping
- * it in a pipeline, keeps the schema's kind: a guarded object is still a
- * `ZodObject` with a `shape`, which is what zod-to-json-schema and the MCP SDK
- * need to emit a root `type: "object"` for LLM tool parameters. The guard lives
- * on `_def`, so copies such as `.describe()` keep it.
- */
-const guardedSchemaClass = (Base: ZodSchemaClass): ZodSchemaClass => {
-  const cached = guardedSchemaClasses.get(Base);
-  if (cached) {
-    return cached;
-  }
-
-  const parseAsBase = Base.prototype._parse;
-  class Guarded extends Base {
-    override _parse(input: z.ParseInput): z.ParseReturnType<unknown> {
-      const failure = (this._def as GuardedDef).wholeSchemaGuard?.(input.data);
-      if (failure === undefined) {
-        return parseAsBase.call(this, input);
-      }
-      z.addIssueToContext(this._getOrReturnCtx(input), {
-        code: z.ZodIssueCode.custom,
-        message: failure,
-      });
-      return z.DIRTY(input.data);
-    }
-  }
-  guardedSchemaClasses.set(Base, Guarded);
-  // Guarding an already guarded schema reuses its class and composes guards.
-  guardedSchemaClasses.set(Guarded, Guarded);
-  return Guarded;
-};
-
 type PreparedInterpreter = {
   validator: Validator;
   formats: PatternFormats;
@@ -614,10 +571,13 @@ type PreparedInterpreter = {
   renamed: ReadonlyMap<string, string>;
 };
 
-export const withWholeSchemaValidation = (
-  jsonSchema: JsonSchema,
-  parsedSchema: z.ZodTypeAny
-): z.ZodTypeAny => {
+/**
+ * The Draft 7 guard for `jsonSchema`: validates a source value against the
+ * complete schema with the interpreter, with patterns spelled as the native
+ * parsers match them. The backend attaches it to the parsed schema so it runs
+ * before defaults and other transforms.
+ */
+export const createWholeSchemaGuard = (jsonSchema: JsonSchema): WholeSchemaGuard => {
   const patternMatchers = new Map<string, PatternMatcher>();
   const originalNodes = [...interpreterSchemaNodes(jsonSchema)];
   const schemaObjects = new WeakSet(originalNodes.map(node => node.value));
@@ -672,11 +632,7 @@ export const withWholeSchemaValidation = (
     });
   };
 
-  // Validate the source value before defaults and other Zod transforms run.
-  // Otherwise a missing required field can be synthesized and incorrectly
-  // appear valid to the JSON Schema interpreter.
-  const innerGuard = (parsedSchema._def as GuardedDef).wholeSchemaGuard;
-  const wholeSchemaGuard: WholeSchemaGuard = value => {
+  return value => {
     // The interpreter only reads formats from its process-wide table. This
     // guard's pattern formats live there only for this synchronous call, so
     // the table does not grow with every distinct pattern ever converted.
@@ -704,9 +660,6 @@ export const withWholeSchemaValidation = (
       });
       return error;
     }
-    return innerGuard?.(value);
+    return undefined;
   };
-
-  const Guarded = guardedSchemaClass(parsedSchema.constructor as ZodSchemaClass);
-  return new Guarded({ ...parsedSchema._def, wholeSchemaGuard } as GuardedDef);
 };

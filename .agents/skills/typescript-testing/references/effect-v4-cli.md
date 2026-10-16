@@ -13,8 +13,10 @@ repo-local `effect-v4` skill.
 
 - `it.effect` is the default tester. It runs inside `Effect.scoped` automatically, so a v3-style
   `it.scoped` is unnecessary — v4's `@effect/vitest` no longer exports `it.scoped`.
-- `it.live` runs against the real (non-`TestClock`) environment; reach for it only when a test must
-  observe real wall-clock behavior.
+- `it.live` runs against the real (non-`TestClock`) environment. Reach for it only when the code
+  under test sleeps outside Effect's clock; a retry, timeout, or `Effect.sleep` inside the code
+  under test is driven on `it.effect` by forking the effect, looping `Effect.yieldNow` and `TestClock.adjust`
+  until `fiber.pollUnsafe()` is set, and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
 ```ts no-check
@@ -105,8 +107,9 @@ choice.
   `Layer.provideMerge` over `Layer.provide` when the reference's value must stay visible to
   everything downstream (see the `ConfigProvider` comment in `test-layer.ts` for the bug this
   distinction fixed).
-- `TestClock` lives under `effect/testing`. The FastCheck bridge was removed in rc.113; native
-  arbitrary generation lives under `effect/Arbitrary`.
+- `TestClock` lives under `effect/testing`; `TestClock.adjust('1 minute')` resumes every sleep
+  scheduled inside the window, including ones a resumed retry schedules next. The FastCheck bridge
+  was removed in rc.113; native arbitrary generation lives under `effect/Arbitrary`.
 
 ## CLI behavior matrix
 

@@ -1,9 +1,11 @@
-import type { Composio } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Effect, Option, Schema } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
+import { idempotent } from 'src/services/composio-request';
+import { clientScopeKey } from 'src/services/composio-clients';
 
 // `status` is an open enum, so this is shape-identical to
 // `ConnectedAccountItem`; tool-router rows normalize statuses outside the
@@ -138,23 +140,12 @@ export const formatConnectedAccountChoices = (
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
-// `Composio` clients come from `ComposioClientSingleton`, one instance per
-// org/project, so identity is a sound cache key. Ids instead of the object
-// itself keep the memo key a string.
-const clientIds = new WeakMap<Composio, number>();
-let nextClientId = 0;
-const clientId = (client: Composio): number => {
-  let id = clientIds.get(client);
-  if (id === undefined) {
-    id = nextClientId++;
-    clientIds.set(client, id);
-  }
-  return id;
-};
-
 /**
- * Every active connected account of `userId`, fetched once per client and
- * user for the lifetime of the process.
+ * Every active connected account of `userId`, fetched once per credential,
+ * org, project, and user for the lifetime of the process. The client's
+ * credential, org, and project come from `clientScopeKey`: each `getFor`
+ * builds a new client, so two callers holding different instances for the
+ * same key and project still share one fetch.
  *
  * `composio execute` needs this list twice on every call, from two code paths
  * that cannot see each other: `resolveConnectedAccountForToolkit` picks the
@@ -164,24 +155,23 @@ const clientId = (client: Composio): number => {
  * their own `GET /connected_accounts`.
  *
  * The page size is the session path's existing one; a user with more active
- * accounts than that was already truncated there. Fails with the raw
- * rejection; each caller wraps it in its own error.
+ * accounts than that was already truncated there. Fails with the client's
+ * error; each caller wraps it in its own error.
  */
 const ACTIVE_ACCOUNTS_PAGE_SIZE = 1000;
 
 export const listActiveConnectedAccounts = memoizeInProcess({
-  keyOf: (input: { readonly client: Composio; readonly userId: string }) =>
-    `${clientId(input.client)}\u0000${input.userId}`,
+  keyOf: (input: { readonly client: ComposioClientShape; readonly userId: string }) =>
+    `${clientScopeKey(input.client)}\u0000${input.userId}`,
   make: ({ client, userId }) =>
-    Effect.tryPromise({
-      try: () =>
-        client.connectedAccounts.list({
-          user_ids: [userId],
-          statuses: ['ACTIVE'],
-          limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
-        }),
-      catch: cause => cause,
-    }),
+    client.connectedAccounts.list(
+      {
+        user_ids: [userId],
+        statuses: ['ACTIVE'],
+        limit: ACTIVE_ACCOUNTS_PAGE_SIZE,
+      },
+      idempotent
+    ),
 });
 
 const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
@@ -190,21 +180,21 @@ const TOOLKIT_ACCOUNTS_PAGE_SIZE = 100;
 // server order. Kept as the fallback so results stay identical when the
 // shared list cannot stand in for it.
 const fetchConnectedAccountsForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug: string;
 }) =>
-  Effect.tryPromise({
-    try: () =>
-      params.client.connectedAccounts.list({
+  params.client.connectedAccounts
+    .list(
+      {
         toolkit_slugs: [params.toolkitSlug],
         user_ids: [params.userId],
         statuses: ['ACTIVE'],
         limit: TOOLKIT_ACCOUNTS_PAGE_SIZE,
-      }),
-    // The raw rejection, so the caller's message reads as it always has.
-    catch: cause => cause,
-  }).pipe(Effect.map(response => response.items));
+      },
+      idempotent
+    )
+    .pipe(Effect.map(response => response.items));
 
 /**
  * The active accounts of one toolkit, derived from the shared per-user list
@@ -226,7 +216,7 @@ const fetchConnectedAccountsForToolkit = (params: {
  * so a padded `--toolkit` value resolves the same way on both paths.
  */
 export const listConnectedAccountsForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug: string;
 }) =>
@@ -257,7 +247,7 @@ export class ConnectedAccountResolutionError extends Data.TaggedError(
 }> {}
 
 export const resolveConnectedAccountForToolkit = (params: {
-  readonly client: Composio;
+  readonly client: ComposioClientShape;
   readonly toolkitSlug?: string;
   readonly userId: string;
   readonly selector: Option.Option<string>;
@@ -274,7 +264,8 @@ export const resolveConnectedAccountForToolkit = (params: {
       Effect.mapError(
         cause =>
           new ConnectedAccountResolutionError({
-            message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
+            // "Error: " is how this message has always introduced the client's failure.
+            message: `Failed to load connected accounts for toolkit "${toolkitSlug}": Error: ${cause.message}`,
             toolkitSlug,
             cause,
           })

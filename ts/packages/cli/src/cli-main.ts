@@ -13,6 +13,7 @@ import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import {
@@ -52,9 +53,10 @@ import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
-import { MissingRunSourceError } from 'src/commands/run.cmd';
+import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
@@ -132,6 +134,11 @@ export const SetupSkillInstallerLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
+export const PendingLoginSessionLive = Layer.provide(
+  PendingLoginSession.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
@@ -150,13 +157,17 @@ const layers = Layer.mergeAll(
   SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
+  PendingLoginSessionLive,
   BunServices.layer,
   BunFileSystem.layer,
   BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
-  Layer.merge(Logger.layer([Logger.consolePretty()]), Layer.succeed(Logger.LogToStderr, true))
+  Layer.merge(
+    Logger.layer([withoutClientNotices(Logger.consolePretty())]),
+    Layer.succeed(Logger.LogToStderr, true)
+  )
 ) satisfies RequiredLayer;
 
 export const teardown: Runtime.Teardown = <E, A>(
@@ -269,10 +280,11 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
-    // exit non-zero instead of routing it through the defect reporter below.
+    // A usage mistake, a missing login, or an unresolved project is not a broken invariant:
+    // print the one-line fix and exit non-zero instead of routing it through the defect
+    // reporter below.
     Effect.catchIf(
-      (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
+      (error): error is UsageFailure => isUsageFailure(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;

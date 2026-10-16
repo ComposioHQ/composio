@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { ListenCommandError } from 'src/commands/listen.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -182,79 +182,66 @@ describe('CLI: composio listen', () => {
       },
     })
   )('listen validation and domain failures', it => {
-    // v4 migration note: `CliError.InvalidValue` is a fixed flag/argument-name-and-value
-    // struct produced only by the parser. These are business-level validations (only
-    // knowable after parsing), so `listen.cmd.ts` models them as a plain typed domain error
-    // (`ListenOptionError`) instead — see the migration note above `invalidOptionValue`.
+    // Business-level validation (only knowable after parsing) raises `CommandInputError`;
+    // see `src/commands/errors.ts`.
     it.effect('reports malformed trigger params as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'composio.connected_account.expired', '--params', '[]'])
-        );
+        const failure = yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--params',
+          '[]',
+        ]).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
-        }
+        expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
       })
     );
 
     it.effect('reports malformed timeout values as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'composio.connected_account.expired', '--timeout', 'eventually'])
-        );
+        const failure = yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--timeout',
+          'eventually',
+        ]).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
-        }
+        expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
       })
     );
 
     it.effect('reports a missing active connection as a structured domain failure', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']));
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'connected_account_not_found',
-              toolkitSlug: 'gmail',
-            });
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'connected_account_not_found',
+          toolkitSlug: 'gmail',
+        });
       })
     );
 
     it.effect('reports an unknown trigger slug instead of a missing connection', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'BOGUS_SLUG_XYZ']));
+        const failure = yield* cli(['listen', 'BOGUS_SLUG_XYZ']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'unknown_trigger',
-              slug: 'BOGUS_SLUG_XYZ',
-              toolkitSlug: 'bogus',
-            });
-            expect(failure.message).toContain('Unknown trigger slug "BOGUS_SLUG_XYZ"');
-            expect(failure.message).toContain('composio triggers list <toolkit>');
-            expect(failure.message).not.toContain('composio link');
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'unknown_trigger',
+          slug: 'BOGUS_SLUG_XYZ',
+          toolkitSlug: 'bogus',
+          message: expect.stringContaining('Unknown trigger slug "BOGUS_SLUG_XYZ"'),
+        });
+        expect(failure).toHaveProperty(
+          'message',
+          expect.stringContaining('composio triggers list <toolkit>')
+        );
+        expect(failure).toHaveProperty('message', expect.not.stringContaining('composio link'));
       })
     );
   });
@@ -306,20 +293,14 @@ describe('CLI: composio listen', () => {
     it.effect('[Then] reports an unknown trigger slug instead of a creation failure', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']));
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'unknown_trigger',
-              slug: 'GMAIL_NEW_GMAIL_MESAGE',
-            });
-            expect(failure.message).toContain('Unknown trigger slug "GMAIL_NEW_GMAIL_MESAGE"');
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'unknown_trigger',
+          slug: 'GMAIL_NEW_GMAIL_MESAGE',
+          message: expect.stringContaining('Unknown trigger slug "GMAIL_NEW_GMAIL_MESAGE"'),
+        });
       })
     );
   });

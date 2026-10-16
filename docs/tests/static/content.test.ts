@@ -175,7 +175,7 @@ describe("Content - Context7 ingest rules", () => {
     ).toBe(true);
     expect(
       (rules as string[]).some(rule =>
-        rule.includes("This version-default change is limited to these five endpoints."),
+        rule.includes("Only those five endpoints change version defaults."),
       ),
     ).toBe(true);
     expect((rules as string[]).join("\n")).not.toMatch(/every non-tool endpoint.*unchanged/i);

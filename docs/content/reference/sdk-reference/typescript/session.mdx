@@ -35,7 +35,7 @@ Experimental — shape may change in future releases.
 at the SDK boundary.
 
 ```typescript
-async authorize(toolkit: string, options?: { alias?: string; callbackUrl?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] } } }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
+async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; }; }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -43,7 +43,7 @@ async authorize(toolkit: string, options?: { alias?: string; callbackUrl?: strin
 | Name | Type |
 |------|------|
 | `toolkit` | `string` |
-| `options?` | `\{ alias?: string; callbackUrl?: string; experimental?: \{ accountType?: ConnectedAccountType; aclConfigForShared?: \{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \} \} \}` |
+| `options?` | `\{ callbackUrl?: string; alias?: string; experimental?: \{ accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; \}; \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
@@ -96,7 +96,7 @@ Deleted sessions immediately stop being retrievable or executable. Deleting
 an already-deleted session surfaces the backend 404.
 
 ```typescript
-async delete(requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; sessionId: string }>
+async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
 ```
 
 **Parameters**
@@ -107,7 +107,7 @@ async delete(requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; 
 
 **Returns**
 
-`Promise<\{ deleted: true; sessionId: string \}>`
+`Promise<ToolRouterSessionDeleteResponse>`
 
 ---
 
@@ -126,7 +126,7 @@ For interactive flows that should surface the redirect URL instead of
 blocking, use `authorize()` and its `waitForConnection()` directly.
 
 ```typescript
-async ensureConnected(toolkit: string, options?: { alias?: string; callbackUrl?: string; experimental?: { accountType?: 'PRIVATE' | 'SHARED'; aclConfigForShared?: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] } }; timeout?: number }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionEnsureConnectedResult>
+async ensureConnected(toolkit: string, options?: ToolRouterSessionEnsureConnectedOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionEnsureConnectedResult>
 ```
 
 **Parameters**
@@ -134,7 +134,7 @@ async ensureConnected(toolkit: string, options?: { alias?: string; callbackUrl?:
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `string` | The toolkit slug to ensure a connection for (e.g. 'github') |
-| `options?` | `\{ alias?: string; callbackUrl?: string; experimental?: \{ accountType?: 'PRIVATE' \| 'SHARED'; aclConfigForShared?: \{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] \} \}; timeout?: number \}` | Optional authorization options plus `timeout` (ms to wait for a newly-initiated connection, default 60000) |
+| `options?` | `ToolRouterSessionEnsureConnectedOptions` | Optional authorization options plus `timeout` (ms to wait for a newly-initiated connection, default 60000) |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -162,7 +162,7 @@ the session's custom tools and toolkits. Custom tools are executed
 in-process; remote tools are sent to the Composio backend.
 
 ```typescript
-async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<...>
+async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
 ```
 
 **Parameters**
@@ -176,7 +176,42 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: 
 
 **Returns**
 
-`Promise<...>` — The tool execution result
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result
+
+---
+
+### executeMeta()
+
+Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+
+`session.execute()` also runs meta tools. This method only accepts meta
+tool slugs, so a typo is a type error instead of a failed request. The call
+is sent to the Composio backend as is: custom tools named in a
+`COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+
+```typescript
+async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `ToolRouterSessionMetaToolSlug` | The meta tool slug to execute |
+| `arguments_?` | `Record<string, unknown>` | Optional meta tool arguments |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result, in the same shape as `session.execute()`
+
+**Example**
+
+```typescript
+const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+  queries: [{ use_case: 'send an email' }],
+});
+```
 
 ---
 
@@ -187,14 +222,14 @@ first page starts with the live config (`isCurrent: true`); every
 `session.update()` archives the previous version as a history row.
 
 ```typescript
-async listConfigHistory(options?: { cursor?: string; limit?: number }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionListConfigHistoryResponse>
+async listConfigHistory(options?: ToolRouterSessionListConfigHistoryOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionListConfigHistoryResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `options?` | `\{ cursor?: string; limit?: number \}` | Optional `cursor` and `limit` (max 100) |
+| `options?` | `ToolRouterSessionListConfigHistoryOptions` | Optional `cursor` and `limit` (max 100) |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -217,14 +252,14 @@ Proxy an API call through Composio's auth layer using the session's connected ac
 The backend resolves the connected account from the toolkit within the session.
 
 ```typescript
-async proxyExecute(params: { body?: unknown; endpoint: string; method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; parameters?: { in: 'query' | 'header'; name: string; value: string | number }[]; toolkit: string }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
+async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params` | `\{ body?: unknown; endpoint: string; method: 'GET' \| 'POST' \| 'PUT' \| 'DELETE' \| 'PATCH'; parameters?: \{ in: 'query' \| 'header'; name: string; value: string \| number \}[]; toolkit: string \}` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
+| `params` | `SessionProxyExecuteParams` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -239,19 +274,19 @@ Search for tools by semantic use case.
 Returns relevant tools for the given query with schemas and guidance.
 
 ```typescript
-async search(params: { query: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ error: string | null; nextStepsGuidance: string[]; results: { difficulty?: string; error?: string | null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: { code: ...; description: ... }[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string }[]; session: { generateId: boolean; id: string; instructions: string }; success: boolean; timeInfo: { currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string }; toolkitConnectionStatuses: { connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; instantAccount?: { allowedToolSlugs: ...[] }; statusMessage: string; toolkit: string }[]; toolSchemas: Record<string, { description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: { args: { toolSlugs: ... }; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' }; toolkit: string; toolSlug: string }> }>
+async search(params: { query: string; toolkits?: string[]; }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionSearchResponse>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `params` | `\{ query: string; toolkits?: string[] \}` |
+| `params` | `\{ query: string; toolkits?: string[]; \}` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
-`Promise<\{ error: string \| null; nextStepsGuidance: string[]; results: \{ difficulty?: string; error?: string \| null; executionGuidance?: string; index: number; knownPitfalls?: string[]; memory?: Record<string, ...[]>; planId?: string; primaryToolSlugs: string[]; recommendedPlanSteps?: string[]; referenceWorkbenchSnippets?: \{ code: ...; description: ... \}[]; relatedToolSlugs: string[]; toolkits: string[]; useCase: string \}[]; session: \{ generateId: boolean; id: string; instructions: string \}; success: boolean; timeInfo: \{ currentTimeUtc: string; currentTimeUtcEpochSeconds: number; message: string \}; toolkitConnectionStatuses: \{ connectionDetails?: Record<string, unknown>; currentUserInfo?: Record<string, unknown>; description: string; hasActiveConnection: boolean; instantAccount?: \{ allowedToolSlugs: ...[] \}; statusMessage: string; toolkit: string \}[]; toolSchemas: Record<string, \{ description?: string; hasFullSchema?: boolean; inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown>; schemaRef?: \{ args: \{ toolSlugs: ... \}; message?: string; tool: 'COMPOSIO_GET_TOOL_SCHEMAS' \}; toolkit: string; toolSlug: string \}> \}>`
+`Promise<ToolRouterSessionSearchResponse>`
 
 ---
 
@@ -261,14 +296,14 @@ Query the connection state of toolkits in the session.
 Supports pagination and filtering by toolkit slugs.
 
 ```typescript
-async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
+async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `options?` | `\{ cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] \}` |
+| `options?` | `ToolRouterToolkitsOptions` |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
@@ -286,7 +321,7 @@ When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_
 is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
 ```typescript
-async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType>
+async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType<TProvider['wrapTools']>>
 ```
 
 **Parameters**
@@ -298,7 +333,7 @@ async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequest
 
 **Returns**
 
-`Promise<ReturnType>`
+`Promise<ReturnType<TProvider['wrapTools']>>`
 
 ---
 
@@ -338,7 +373,7 @@ for example for an archived or missing config, surface unchanged.
 successful response, and the updated `config` is returned.
 
 ```typescript
-async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<Config>
+async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionConfig>
 ```
 
 **Parameters**
@@ -350,6 +385,6 @@ async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioReq
 
 **Returns**
 
-`Promise<Config>`
+`Promise<ToolRouterSessionConfig>`
 
 ---

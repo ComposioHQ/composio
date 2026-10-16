@@ -2,8 +2,8 @@ import { Argument, Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { formatConnectedAccountInfo } from '../format';
 
 const id = Argument.String('id').pipe(
@@ -21,8 +21,6 @@ const id = Argument.String('id').pipe(
  */
 export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 
@@ -42,8 +40,8 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
       .pipe(
         Effect.asSome,
         Effect.catchTag(
-          'services/HttpServerError',
-          handleHttpServerError(ui, {
+          CLIENT_API_ERROR_TAGS,
+          handleClientApiError(ui, {
             fallbackMessage: `Failed to fetch connected account "${idValue}".`,
             hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
             fallbackValue: Option.none(),
