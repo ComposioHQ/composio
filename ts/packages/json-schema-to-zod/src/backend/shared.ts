@@ -1,4 +1,4 @@
-import type { ObjectPolicy, RunFailure, RunResult } from './types';
+import type { ObjectPolicy, RunFailure, RunResult, WholeSchemaGuard } from './types';
 
 /** An object schema the object policies can be applied to. */
 type PolicyBase<S> = S & {
@@ -19,6 +19,12 @@ type SafeParseLike = {
 /** Spreads an optional relative issue path into an issue body. */
 export const withPath = (path: ReadonlyArray<string | number> | undefined) =>
   path === undefined ? {} : { path: [...path] };
+
+/** Runs `guard` first and falls back to the guard already on the schema. */
+export const composeGuards = (
+  guard: WholeSchemaGuard,
+  inner: WholeSchemaGuard | undefined
+): WholeSchemaGuard => (inner ? value => guard(value) ?? inner(value) : guard);
 
 /** Runs the schema; the failure carries the backend's own error with its issues. */
 export const run = (schema: SafeParseLike, value: unknown): RunResult => {

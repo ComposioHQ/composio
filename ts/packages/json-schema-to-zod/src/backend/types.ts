@@ -71,8 +71,6 @@ export interface Decorations {
  * schema type `S`.
  */
 export interface ZodBackend<S> {
-  readonly id: 'zod-v3' | 'zod-v4';
-
   /** Whether a `parserOverride` result is a schema of this backend. */
   isSchema(value: unknown): value is S;
   isNever(schema: S): boolean;

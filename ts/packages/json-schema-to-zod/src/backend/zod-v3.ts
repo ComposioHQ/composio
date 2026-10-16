@@ -1,7 +1,7 @@
 import * as z from 'zod/v3';
 
 import type { Decorations, IssueSink, StringFormat, WholeSchemaGuard, ZodBackend } from './types';
-import { applyObjectPolicy, buildTuple, run, withPath } from './shared';
+import { applyObjectPolicy, buildTuple, composeGuards, run, withPath } from './shared';
 
 type S = z.ZodTypeAny;
 
@@ -51,10 +51,7 @@ const attachGuard = (schema: S, guard: WholeSchemaGuard): S => {
   // Validate the source value before defaults and other Zod transforms run.
   // Otherwise a missing required field can be synthesized and incorrectly
   // appear valid to the JSON Schema interpreter.
-  const innerGuard = (schema._def as GuardedDef).wholeSchemaGuard;
-  const wholeSchemaGuard: WholeSchemaGuard = innerGuard
-    ? value => guard(value) ?? innerGuard(value)
-    : guard;
+  const wholeSchemaGuard = composeGuards(guard, (schema._def as GuardedDef).wholeSchemaGuard);
 
   const Guarded = guardedSchemaClass(schema.constructor as ZodSchemaClass);
   return new Guarded({ ...schema._def, wholeSchemaGuard } as GuardedDef);
@@ -121,8 +118,6 @@ const stringFormat = (schema: S, format: StringFormat, message?: string): S => {
 
 /** Zod v3 output: descriptions on `_def`, refinements as `ZodEffects`, the guard as a subclass. */
 export const zodV3Backend: ZodBackend<S> = {
-  id: 'zod-v3',
-
   isSchema: (value): value is S => value instanceof z.ZodType,
   isNever: schema => schema instanceof z.ZodNever,
 

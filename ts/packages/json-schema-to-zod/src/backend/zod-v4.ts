@@ -1,7 +1,7 @@
 import * as z from 'zod/v4';
 
 import type { Decorations, IssueSink, StringFormat, WholeSchemaGuard, ZodBackend } from './types';
-import { applyObjectPolicy, buildTuple, run, withPath } from './shared';
+import { applyObjectPolicy, buildTuple, composeGuards, run, withPath } from './shared';
 
 type S = z.ZodType;
 
@@ -49,18 +49,15 @@ const instrumentedClass = (Base: SchemaConstructor): SchemaConstructor => {
     zod.constr = Instrumented as unknown as SchemaConstructor;
     const runAsBase = zod.run;
     zod.run = (payload, ctx) => {
+      const fail = (message: string): Payload => {
+        payload.issues.push({ code: 'custom', message, input: payload.value, inst, path: [] });
+        return payload;
+      };
       const guard = zod.def.wholeSchemaGuard;
       if (guard !== undefined && ctx.direction !== 'backward') {
         const failure = guard(payload.value);
         if (failure !== undefined) {
-          payload.issues.push({
-            code: 'custom',
-            message: failure,
-            input: payload.value,
-            inst,
-            path: [],
-          });
-          return payload;
+          return fail(failure);
         }
       }
       if (zod.def.type !== 'intersection') {
@@ -72,14 +69,7 @@ const instrumentedClass = (Base: SchemaConstructor): SchemaConstructor => {
         if (!isUnmergeable(error)) {
           throw error;
         }
-        payload.issues.push({
-          code: 'custom',
-          message: error.message,
-          input: payload.value,
-          inst,
-          path: [],
-        });
-        return payload;
+        return fail(error.message);
       }
     };
     return inst;
@@ -106,10 +96,7 @@ const rebuild = (schema: S, def: InstrumentedDef): S => {
 
 const attachGuard = (schema: S, guard: WholeSchemaGuard): S => {
   const zod = internals(schema);
-  const innerGuard = zod.def.wholeSchemaGuard;
-  const wholeSchemaGuard: WholeSchemaGuard = innerGuard
-    ? value => guard(value) ?? innerGuard(value)
-    : guard;
+  const wholeSchemaGuard = composeGuards(guard, zod.def.wholeSchemaGuard);
   return rebuild(schema, z.core.util.mergeDefs(zod.def, { wholeSchemaGuard }) as InstrumentedDef);
 };
 
@@ -249,8 +236,6 @@ const stringFormat = (schema: S, format: StringFormat, message?: string): S => {
 
 /** Zod v4 output: metadata in the global registry, refinements as checks, the guard as a run wrapper. */
 export const zodV4Backend: ZodBackend<S> = {
-  id: 'zod-v4',
-
   isSchema: (value): value is S => value instanceof z.ZodType,
   isNever: schema => schema instanceof z.ZodNever,
 
