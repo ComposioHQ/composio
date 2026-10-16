@@ -24,7 +24,7 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
-from composio.core.models.base import Resource, credential_headers, header_value
+from composio.core.models.base import Resource, credential_headers, scope_headers
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
     assert_no_custom_tool_slugs_in_preload,
@@ -43,9 +43,7 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_attach_experimental,
 )
 from composio.core.models.tool_router_constants import (
-    ORG_ID_HEADER,
     PRELOAD_TOOLS_ALL,
-    PROJECT_ID_HEADER,
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
@@ -674,13 +672,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Create an MCP server config object with authentication headers.
 
-        The headers mirror the effective auth of the underlying client: the
-        ``x-user-api-key`` default header when one is placed (the client sends
-        it and suppresses the configured keys), otherwise its project key as
-        ``x-api-key``, otherwise the resolved ``user_api_key`` option as
-        ``x-user-api-key``, plus ``x-org-id`` / ``x-project-id`` when the
-        client carries an explicit scope. No other default header is copied
-        and the environment is never re-read.
+        The headers mirror the effective auth of the underlying client, read
+        from the ``auth`` and ``scope`` the SDK built it with: its project key
+        as ``x-api-key``, otherwise its user key as ``x-user-api-key`` (see
+        :func:`~composio.core.models.base.credential_headers`), plus
+        ``x-org-id`` / ``x-project-id`` when the client carries an explicit
+        ``scope``. No other default header is copied and the environment is
+        never re-read.
 
         The headers are only attached when the MCP URL has the same origin as
         the client's API base URL, whatever scheme is configured: that origin
@@ -712,12 +710,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
             return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers={})
 
-        default_headers: t.Mapping[str, t.Any] = self._client.default_headers
-        headers: t.Dict[str, t.Optional[str]] = dict(credential_headers(self._client))
-        for scope_header in (ORG_ID_HEADER, PROJECT_ID_HEADER):
-            scope_value = header_value(default_headers, scope_header)
-            if scope_value:
-                headers[scope_header] = scope_value
+        headers: t.Dict[str, t.Optional[str]] = {
+            **credential_headers(self._client),
+            **scope_headers(self._client),
+        }
         return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
     def _transform_tags_params(

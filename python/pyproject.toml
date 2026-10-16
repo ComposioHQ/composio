@@ -7,7 +7,7 @@ requires-python = ">=3.11,<3.16"
 dependencies = [
     "pysher>=1.0.8",
     "pydantic>=2.11.9",
-    "composio-client==2.0.0rc17",
+    "composio-client==2.0.0rc18",
     "typing-extensions>=4.16.0",
     "openai>=2.48.0",
     "json-schema-to-pydantic>=0.4.11",

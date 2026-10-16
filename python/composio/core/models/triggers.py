@@ -1029,7 +1029,6 @@ class _SubcriptionBuilder(WithLogger):
         """Initialize pusher client."""
         super().__init__()
         self._client = client
-        self.api_key = self._client.api_key
         self.base_url = self._client.base_url
         self.internal = Internal(client=self._client)
         self.subscription = TriggerSubscription(client=self._client)

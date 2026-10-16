@@ -8,7 +8,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Fiber, Layer } from 'effect';
 import { HttpClient } from 'effect/http';
-import { BadRequestError, make } from '@composio/client/effect';
+import { Auth, BadRequestError, make } from '@composio/client/effect';
 import {
   ComposioBlockedInternalUrlError,
   ComposioSensitiveFilePathBlockedError,
@@ -229,9 +229,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
     let interrupted = false;
     const client = make(
       {
-        apiKey: 'test',
-        userApiKey: null,
-        orgApiKey: null,
+        auth: Auth.project('test'),
         baseURL: 'https://stub.invalid',
         deprecationNotices: 'off',
       },

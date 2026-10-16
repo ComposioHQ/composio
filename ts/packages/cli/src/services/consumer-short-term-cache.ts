@@ -435,9 +435,9 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         orgId: scope.orgId,
       });
       // The nano id, as `resolveCommandProject` hands it to `composio execute`:
-      // `getFor` keys its clients on these params, and the memoized
-      // connected-account list is keyed on the client, so a different project
-      // id here would mean a second `GET /connected_accounts` per execute.
+      // the memoized connected-account list is keyed on the client's org and
+      // project, so a different project id here would mean a second
+      // `GET /connected_accounts` per execute.
       const client = yield* clientSingleton.getFor({
         orgId: scope.orgId,
         projectId: consumerProject.project_nano_id,

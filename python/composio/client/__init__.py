@@ -18,18 +18,15 @@ from composio_client import (
     NOT_GIVEN,
     APIError,
     APIStatusError,
+    Auth,
     ClientIdentity,
     NotGiven,
+    Scope,
 )
 from composio_client import Composio as BaseComposio
-from composio_client._base_client import HeaderParam, RequestOptions
 from httpx import URL, Client, Response, Timeout
 
-from composio.core.models.tool_router_constants import (
-    PROJECT_API_KEY_HEADER,
-    USER_API_KEY_HEADER,
-)
-from composio.exceptions import ComposioError, InvalidParams
+from composio.exceptions import ComposioError
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 
 
@@ -351,94 +348,48 @@ class HttpClient(BaseComposio, WithLogger):
         self,
         *,
         provider: str,
-        api_key: t.Optional[str] = None,
-        disable_api_key: bool = False,
-        user_api_key: t.Optional[str] = None,
-        org_api_key: t.Optional[str] = None,
+        auth: Auth,
+        scope: t.Optional[Scope] = None,
         environment: te.Union[NotGiven, APIEnvironment] = "production",
         base_url: t.Optional[t.Union[str, URL, NotGiven]] = NOT_GIVEN,
         timeout: t.Optional[t.Union[float, Timeout, NotGiven]] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
-        default_headers: t.Optional[t.Mapping[str, str]] = None,
+        default_headers: t.Optional[t.Mapping[str, t.Optional[str]]] = None,
         default_query: t.Optional[t.Mapping[str, object]] = None,
+        identity: t.Optional[ClientIdentity] = None,
         http_client: t.Optional[Client] = None,
         logger: t.Optional[logging.Logger] = None,
         logging_level: t.Optional[LogLevel] = None,
         _strict_response_validation: bool = False,
-        _environment_variables: t.Optional[t.Mapping[str, str]] = None,
     ) -> None:
         """
         Initialize the client.
 
         :param provider: The provider to use for the client.
+        :param auth: How the client authenticates (``ProjectAuth``, ``UserAuth``,
+            ``AutoAuth``, ...). The client reads no environment variable; the SDK
+            resolves the keys before constructing it.
+        :param scope: The organization and project requests are routed to, sent
+            as ``x-org-id`` / ``x-project-id``.
         :param logger: Logger that receives SDK and ``composio_client`` records.
         :param logging_level: Level applied to the SDK and ``composio_client`` loggers.
-        :param api_key: The API key to use for the client.
-        :param disable_api_key: Turn project-key authentication off, including the
-            ``COMPOSIO_API_KEY`` fallback; ``None`` alone keeps that fallback.
-        :param _environment_variables: Environment snapshot the generated client
-            resolves its fallbacks from instead of ``os.environ``; clones of a
-            client built from a snapshot receive an empty one.
-        :param user_api_key: User API key, sent only on operations that require it.
-        :param org_api_key: Organization API key, sent only on operations that require it.
         :param environment: The environment to use for the client.
         :param base_url: The base URL to use for the client.
         :param timeout: The timeout to use for the client.
         :param max_retries: The maximum number of retries to use for the client.
-        :param default_headers: The default headers to use for the client.
+        :param default_headers: The default headers to use for the client. They
+            may not name a credential header while ``auth`` holds a credential, nor
+            a scope header while ``scope`` is set.
         :param default_query: The default query parameters to use for the client.
+        :param identity: How the client reports the SDK; derived from ``provider``
+            when omitted. Clones pass the parent's.
         :param http_client: The HTTP client to use for the client.
         """
         WithLogger.__init__(self, logger=logger, logging_level=logging_level)
-        self._disable_api_key = disable_api_key
-        if disable_api_key:
-            # The project credential is only ever set from `api_key`: a raw
-            # `x-api-key` default header would bypass the disabled project key.
-            project_key_header = next(
-                (
-                    name
-                    for name in (default_headers or {})
-                    if name.lower() == PROJECT_API_KEY_HEADER
-                ),
-                None,
-            )
-            if project_key_header is not None:
-                raise InvalidParams(
-                    f"`disable_api_key=True` sends no project key, but "
-                    f"`default_headers` carries a `{project_key_header}` entry; "
-                    "pass the project API key as `api_key` instead of a raw "
-                    f"`{PROJECT_API_KEY_HEADER}` header, or remove the entry to "
-                    "authenticate with the user API key alone"
-                )
-            # The generated client reads COMPOSIO_API_KEY whenever `api_key` is
-            # None, so hand it an environment without that variable. Clones
-            # inherit the resolved values and an empty snapshot.
-            api_key = None
-            if _environment_variables is None:
-                _environment_variables = {
-                    name: value
-                    for name, value in os.environ.items()
-                    if name != "COMPOSIO_API_KEY"
-                }
-            # The generated client sends its user key only on operations whose
-            # security scheme names it, which excludes sessions. The resolved
-            # user key is placed as the `x-user-api-key` default header instead,
-            # so every request carries exactly that credential.
-            resolved_user_api_key = user_api_key or _environment_variables.get(
-                "COMPOSIO_USER_API_KEY"
-            )
-            if resolved_user_api_key and not any(
-                name.lower() == USER_API_KEY_HEADER for name in (default_headers or {})
-            ):
-                default_headers = {
-                    **(default_headers or {}),
-                    USER_API_KEY_HEADER: resolved_user_api_key,
-                }
         BaseComposio.__init__(
             self,
-            api_key=api_key,
-            user_api_key=user_api_key,
-            org_api_key=org_api_key,
+            auth=auth,
+            scope=scope,
             environment=environment,
             base_url=base_url,
             timeout=timeout,
@@ -446,10 +397,15 @@ class HttpClient(BaseComposio, WithLogger):
             default_headers=default_headers,
             default_query=default_query,
             http_client=http_client,
-            identity=_client_identity(provider),
+            identity=identity if identity is not None else _client_identity(provider),
             _strict_response_validation=_strict_response_validation,
-            _environment_variables=_environment_variables,
         )
+        # The SDK's own reference to the credentials it authenticated with, for
+        # the places that hand a key to something other than this client (the
+        # session MCP config, the realtime channel auth). The client's
+        # `api_key` / `user_api_key` read-back properties go in 2.0.0-rc.19,
+        # and `auth` is the generated `/auth` resource.
+        self.sdk_auth: Auth = auth
         _install_client_log_forwarder(self._logger)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
@@ -469,25 +425,17 @@ class HttpClient(BaseComposio, WithLogger):
         **kwargs: t.Any,
     ) -> te.Self:
         """
-        Clone the client, re-injecting the required ``provider`` keyword.
+        Clone the client, re-injecting the SDK-only constructor keywords.
 
-        The Stainless-generated ``copy`` rebuilds the client via
-        ``self.__class__(...)`` without passing ``provider``, which this subclass
-        requires — so the inherited ``copy``/``with_options`` raise ``TypeError``.
-        Threading ``provider`` through ``_extra_kwargs`` makes them work again
-        (e.g. ``with_options(max_retries=0)``).
+        The generated ``copy`` rebuilds the client via ``type(self)(...)`` with
+        the parent's ``auth``, ``scope``, ``identity`` and options, but cannot
+        know ``provider``, which this subclass requires, or the SDK logger.
+        Threading them through ``_extra_kwargs`` makes ``copy`` /
+        ``with_options`` work (e.g. ``with_options(max_retries=0)``).
         """
         return super().copy(  # type: ignore[misc]
             _extra_kwargs={
                 "provider": self.provider,
-                # Clones keep the project key disabled, so a default header
-                # added through `with_options` goes through the same checks.
-                "disable_api_key": self._disable_api_key,
-                # The generated `copy` does not re-pass `_strict_response_validation`,
-                # so without this the clone would silently fall back to the default
-                # (False) even when the original had it enabled — keeping the sibling
-                # a faithful copy that differs from the parent only in `max_retries`.
-                "_strict_response_validation": self._strict_response_validation,
                 # Share the parent's logger; otherwise constructing the clone
                 # rebinds the process-wide client log forwarder to the default
                 # `composio` logger.
@@ -564,29 +512,21 @@ class HttpClient(BaseComposio, WithLogger):
             super()._make_status_error(err_msg, body=body, response=response)
         )
 
-    def _headers_for(
-        self,
-        url: str,
-        *,
-        json_body: t.Optional[t.Dict[str, t.Any]],
-        method_headers: t.Optional[HeaderParam],
-        options: RequestOptions,
-        withdrawn: bool,
-        scheme: str,
-    ) -> t.Dict[str, str]:
+    def _headers_for(self, url: str, **kwargs: t.Any) -> t.Dict[str, str]:
         """
-        Add the request id at the active generated client's dispatch boundary.
+        Add ``x-request-id`` to every dispatch to the API origin.
 
-        The identity headers come from the client's ``identity``.
+        The client builds every other header itself (credential from ``auth``,
+        ``x-org-id`` / ``x-project-id`` from ``scope``, identity from
+        ``identity``) and generates no request id, so this is all the override
+        still does. The client calls it once per logical call (its retries
+        reuse those headers) and again for each redirect hop, so a fresh id is
+        minted per call and per same-origin hop unless the caller pinned one in
+        ``default_headers`` or the request context. The keywords are forwarded
+        untouched so the override does not depend on the client's private
+        signature.
         """
-        headers = super()._headers_for(
-            url,
-            json_body=json_body,
-            method_headers=method_headers,
-            options=options,
-            withdrawn=withdrawn,
-            scheme=scheme,
-        )
+        headers = super()._headers_for(url, **kwargs)
         target, base = URL(url), URL(self.base_url)
         if (target.scheme, target.host, target.port) != (
             base.scheme,

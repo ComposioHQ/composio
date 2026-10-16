@@ -19,6 +19,7 @@ from unittest.mock import Mock
 
 import httpx
 import pytest
+from composio_client import ProjectAuth
 
 from composio import ComposioDeprecationWarning
 from composio.client import HttpClient
@@ -147,7 +148,7 @@ def _transport_mcp(requests: t.Optional[t.List[httpx.Request]] = None) -> MCP:
 
     client = HttpClient(
         provider="test",
-        api_key="ak_test",
+        auth=ProjectAuth("ak_test"),
         base_url="https://backend.composio.dev",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -204,6 +205,7 @@ _DEFAULT_FILTERS_SCRIPT = """
 import warnings
 
 import httpx
+from composio_client import ProjectAuth
 
 from composio.client import HttpClient
 from composio.core.models.mcp import MCP
@@ -222,7 +224,7 @@ def handler(request):
 mcp = MCP(
     HttpClient(
         provider="test",
-        api_key="ak_test",
+        auth=ProjectAuth("ak_test"),
         base_url="https://backend.composio.dev",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )

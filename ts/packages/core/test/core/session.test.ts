@@ -495,7 +495,7 @@ describe('Credential resolution at the transport boundary', () => {
     expect(headers.get('x-api-key')).toBeNull();
     expect(headers.get('x-user-api-key')).toBe(userKey);
     expect(composio.getConfig().apiKey).toBeNull();
-    expect(composio.getClient().apiKey).toBeNull();
+    expect(composio.getClient().authMode).toBe('user');
   });
 
   it('sends only the user API key header when the project key is disabled via defaultHeaders', async () => {

@@ -355,6 +355,59 @@ describe('composio-clients', () => {
         expect(headers.has('x-user-api-key')).toBe(false);
       }).pipe(Effect.provide(withSingleton))
     );
+
+    it.effect.each([
+      {
+        known: 'the org and the project',
+        orgId: 'org_1',
+        projectId: 'proj_1',
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the org only',
+        orgId: 'org_1',
+        projectId: undefined,
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the project only',
+        orgId: undefined,
+        projectId: 'proj_1',
+        projectApiKey: undefined,
+        credentials: { user: 'uak_test', project: null },
+      },
+      {
+        known: 'the org and the project, with a project key',
+        orgId: 'org_1',
+        projectId: 'proj_1',
+        projectApiKey: 'ak_project',
+        credentials: { user: null, project: 'ak_project' },
+      },
+    ])('getLatestToolVersion sends whichever of $known is known', params =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValue(jsonResponse({ tool_slug: 'GMAIL_SEND_EMAIL', version: '1' }));
+
+        yield* getLatestToolVersion({
+          apiKey: 'uak_test',
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          orgId: params.orgId,
+          projectId: params.projectId,
+          projectApiKey: params.projectApiKey,
+        });
+
+        const { headers } = requestOf(fetchSpy.mock.calls[0]);
+        expect(headers.get('x-org-id')).toBe(params.orgId ?? null);
+        expect(headers.get('x-project-id')).toBe(params.projectId ?? null);
+        expect({
+          user: headers.get('x-user-api-key'),
+          project: headers.get('x-api-key'),
+        }).toEqual(params.credentials);
+      }).pipe(Effect.provide(withSingleton))
+    );
   });
 
   describe('repository request core', () => {

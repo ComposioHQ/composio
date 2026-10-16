@@ -992,8 +992,7 @@ export class Tools<
          * @deprecated The `customConnectionData` execute param is deprecated and will be
          * removed in a future release. Use `customAuthParams` instead.
          */
-        custom_connection_data:
-          body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
+        custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
         version: toolkitVersion,
@@ -1390,8 +1389,6 @@ export class Tools<
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // oxlint-disable-next-line typescript/ban-ts-comment -- generated client versions disagree about this deprecated field
-      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import {
+  Auth,
   make as makeComposioClient,
   type ComposioError,
   type RequestOptions,
@@ -38,6 +39,7 @@ import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type ClientScope,
 } from 'src/services/composio-clients';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { TriggerInstanceItem } from 'src/models/triggers';
@@ -771,9 +773,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const mockComposioClient = withShadows(
       makeComposioClient(
         {
-          apiKey: 'test',
-          userApiKey: null,
-          orgApiKey: null,
+          auth: Auth.project('test'),
           baseURL: 'https://mock.invalid',
           deprecationNotices: 'off',
         },
@@ -788,7 +788,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const scopedClients = new Map<string, typeof mockComposioClient>();
     const mockClientFor = (scope: MockRequestScope) => {
-      const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
+      const key = JSON.stringify([scope.userApiKey, scope.apiKey, scope.orgId, scope.projectId]);
       const cached = scopedClients.get(key);
       if (cached) return cached;
       const scoped = withShadows(mockComposioClient, mockAccountResources(accountData, scope));
@@ -802,8 +802,13 @@ export const TestLayer = (input?: TestLiveInput) =>
         get: Effect.fn(function* () {
           return mockClientFor({});
         }),
-        getFor: Effect.fn(function* (params: MockRequestScope) {
-          return mockClientFor(params);
+        getFor: Effect.fn(function* (params: ClientScope) {
+          return mockClientFor({
+            userApiKey: params.userApiKey,
+            apiKey: params.projectApiKey,
+            orgId: params.orgId,
+            projectId: params.projectId,
+          });
         }),
         getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
       })

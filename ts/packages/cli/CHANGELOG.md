@@ -11,6 +11,15 @@
   developer project, an incomplete link response, a toolkit whose auth
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
+- The CLI now uses `@composio/client@2.0.0-rc.18` (up from `2.0.0-rc.17`). No
+  command changes.
+- API requests now authenticate through the API client's `auth` option (the
+  logged-in user's API key, or no credential before login) and name the org and
+  project through its `scope`, instead of the CLI placing `x-user-api-key`,
+  `x-org-id` and `x-project-id` in default headers. The headers sent are
+  unchanged. The CLI no longer keeps a client per API key and project for the
+  life of the process, so the user API key is held only by the client making
+  the request.
 
 ## 0.4.5
 

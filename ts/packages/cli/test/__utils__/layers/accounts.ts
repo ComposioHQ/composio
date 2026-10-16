@@ -6,10 +6,12 @@ import { TIMESTAMP } from '../models/account';
 
 /**
  * The credentials and scope one mock-client request carries: the parameters
- * the client was obtained with, overridden by per-request headers.
+ * the client was obtained with, and the org or project an unscoped client
+ * names on the request itself.
  */
 export interface MockRequestScope {
   readonly userApiKey?: string;
+  /** The project key the client authenticates with, in place of a user key. */
   readonly apiKey?: string;
   readonly orgId?: string;
   readonly projectId?: string;
@@ -71,13 +73,14 @@ const withTestData = <A>(value: A | undefined, operation: MockAccountRequest['op
 const LATEST_TOOL_VERSION_PATH = /^\/api\/v3\/tools\/[^/]+\/get_latest_version$/;
 const CREATE_PROJECT_API_KEY_PATH = /^\/api\/v3\/org\/project\/[^/]+\/api_keys\/create$/;
 
+// The credential is the client's own; an unscoped client may still name the
+// org or project on one request.
 const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
   // The CLI only ever passes plain header records.
   const headers = (options?.headers ?? {}) as Record<string, string | null | undefined>;
-  const userApiKey = headers['x-user-api-key'];
   return {
-    userApiKey: userApiKey === null ? undefined : (userApiKey ?? base.userApiKey),
-    apiKey: headers['x-api-key'] ?? undefined,
+    userApiKey: base.userApiKey,
+    apiKey: base.apiKey,
     orgId: headers['x-org-id'] ?? base.orgId,
     projectId: headers['x-project-id'] ?? base.projectId,
   };
