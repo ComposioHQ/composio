@@ -71,16 +71,15 @@ import type {
 import { Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
-import { CommandRunner, type CommandRunnerShape } from 'src/services/command-runner';
+import type { CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
-import {
-  SetupSkillInstaller,
-  type SetupSkillInstallerShape,
-} from 'src/services/setup-skill-installer';
+import type { SetupSkillInstallerShape } from 'src/services/setup-skill-installer';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { notFoundError } from '../layers/not-found';
 import { DEFAULT_PAGE_LIMIT } from '../layers/page';
+import { CommandRunnerTest } from '../layers/command-runner';
+import { SetupSkillInstallerTest } from '../layers/setup';
 import {
   resolveToolkitsTestData,
   toolkitCatalogMethods,
@@ -852,37 +851,10 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
-    // CommandRunner mock — default returns exit code 0
-    const CommandRunnerTest = input?.commandRunner
-      ? Layer.succeed(CommandRunner, input.commandRunner)
-      : Layer.succeed(
-          CommandRunner,
-          CommandRunner.of({
-            run: () => Effect.succeed(0),
-            capture: () =>
-              Effect.succeed({
-                exitCode: 0,
-                stdout: '',
-                stderr: '',
-              }),
-          })
-        );
-
     // TerminalUI — use provided override or default TerminalUITest
     const TerminalUILayer = input?.terminalUI
       ? Layer.succeed(TerminalUI, input.terminalUI)
       : TerminalUITest;
-
-    const SetupSkillInstallerTest = Layer.succeed(
-      SetupSkillInstaller,
-      input?.setupSkillInstaller ??
-        SetupSkillInstaller.of({
-          isClaudeSkillReady: Effect.succeed(false),
-          hasManagedClaudeSkill: Effect.succeed(false),
-          ensureClaudeSkill: Effect.succeed(false),
-          removeClaudeSkill: Effect.succeed(false),
-        })
-    );
 
     const _console = yield* MockConsole.make;
 
@@ -904,8 +876,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
-      CommandRunnerTest,
-      SetupSkillInstallerTest,
+      CommandRunnerTest(input?.commandRunner),
+      SetupSkillInstallerTest(input?.setupSkillInstaller),
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunServices.layer,

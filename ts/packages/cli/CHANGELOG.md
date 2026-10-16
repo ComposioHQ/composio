@@ -62,6 +62,11 @@ toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
 consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
   check, where it used to fail as an unrecognized flag.
 
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as plain text in a
+  binary field or hex in a `base16` field. Only `contentEncoding: "base64"` is
+  checked as base64.
+
 ## 0.4.4
 
 ### Patch Changes
