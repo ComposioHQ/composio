@@ -3,13 +3,15 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
+from pydantic import BaseModel as PydanticBaseModel
 
 from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import (
     AuthSchemeL,
+    Toolkit,
+    ToolkitListResponse,
     toolkit_list_params,
-    toolkit_list_response,
     toolkit_recommend_scopes_params,
     toolkit_recommend_scopes_response,
     toolkit_retrieve_changelog_response,
@@ -28,6 +30,15 @@ AuthFieldsT: t.TypeAlias = t.List[
     | toolkit_retrieve_response.AuthConfigDetailFieldsAuthConfigCreationRequired
     | toolkit_retrieve_response.AuthConfigDetailFieldsAuthConfigCreationOptional
 ]
+
+
+def _normalize_toolkit_items(items: t.Sequence[t.Any]) -> t.List[Toolkit]:
+    return [
+        Toolkit.model_validate(item.model_dump())
+        if isinstance(item, PydanticBaseModel)
+        else item
+        for item in items
+    ]
 
 
 class Toolkits(Resource):
@@ -52,18 +63,21 @@ class Toolkits(Resource):
         limit: t.Optional[float] = None,
         sort_by: t.Optional[t.Literal["usage", "alphabetically"]] = None,
         managed_by: t.Optional[t.Literal["composio", "all", "project"]] = None,
-    ) -> toolkit_list_response.ToolkitListResponse:
+    ) -> ToolkitListResponse:
         """List all toolkits."""
-        return self._client.toolkits.list(
+        response = self._client.toolkits.list(
             category=none_to_omit(category),
             cursor=none_to_omit(cursor),
             limit=none_to_omit(limit),
             managed_by=none_to_omit(managed_by),
             sort_by=none_to_omit(sort_by),
         )
+        if isinstance(response, PydanticBaseModel):
+            return ToolkitListResponse.model_validate(response.model_dump())
+        return t.cast(ToolkitListResponse, response)
 
     @t.overload
-    def get(self) -> t.List[toolkit_list_response.Item]:
+    def get(self) -> t.List[Toolkit]:
         """Get all toolkits."""
 
     @t.overload
@@ -75,7 +89,7 @@ class Toolkits(Resource):
         self,
         *,
         query: toolkit_list_params.ToolkitListParams,
-    ) -> t.List[toolkit_list_response.Item]:
+    ) -> t.List[Toolkit]:
         """Get a list of toolkits by query."""
 
     def get(
@@ -85,11 +99,13 @@ class Toolkits(Resource):
         query: t.Optional[toolkit_list_params.ToolkitListParams] = None,
     ) -> t.Union[
         toolkit_retrieve_response.ToolkitRetrieveResponse,
-        t.List[toolkit_list_response.Item],
+        t.List[Toolkit],
     ]:
         if slug is not None:
             return self._client.toolkits.retrieve(slug=slug)
-        return self._client.toolkits.list(**(query or {})).items
+        return _normalize_toolkit_items(
+            self._client.toolkits.list(**(query or {})).items
+        )
 
     def get_many(
         self,
@@ -117,14 +133,15 @@ class Toolkits(Resource):
             for toolkit in toolkits:
                 print(toolkit.slug, toolkit.name)
         """
-        return self._client.toolkits.retrieve_multi(
+        response = self._client.toolkits.retrieve_multi(
             toolkits=list(slugs),
             category=none_to_omit(category),
             managed_by=none_to_omit(managed_by),
             sort_by=none_to_omit(sort_by),
             limit=none_to_omit(limit),
             cursor=none_to_omit(cursor),
-        ).items
+        )
+        return _normalize_toolkit_items(response.items)
 
     def changelog(
         self,

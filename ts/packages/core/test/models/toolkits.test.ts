@@ -122,6 +122,16 @@ describe('Toolkits', () => {
   });
 
   describe('get', () => {
+    it('exposes Instant support from a public toolkit list item', async () => {
+      mockClient.toolkits.list.mockResolvedValue({
+        items: [{ ...mockToolkitListResponse.items[0], instant: { supported: true } }],
+      });
+
+      const result = await toolkits.get({});
+
+      expect(result[0]?.instant).toEqual({ supported: true });
+    });
+
     it('should get a list of toolkits', async () => {
       mockClient.toolkits.list.mockResolvedValue(mockToolkitListResponse);
 
