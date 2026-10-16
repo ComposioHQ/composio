@@ -36,7 +36,7 @@ const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 /** Keys the process will ever record; past this, new versions are neither recorded nor warned about. */
 const MAX_TRACKED_VERSIONS = 1024;
 
-export const DeprecatedToolkitEntrySchema = z.object({
+const DeprecatedToolkitEntrySchema = z.object({
   slug: z.string().min(1),
   version: z.string().min(1),
   deprecatedAt: z.date().optional(),
@@ -112,7 +112,7 @@ const decodeSfDate = (raw: string): Date | undefined => {
 /** Header parameters the SDK understands, by wire name. */
 const KNOWN_PARAMETERS = new Map<
   string,
-  { name: keyof DeprecatedToolkitEntry; kind: 'string' | 'date' }
+  { name: Exclude<keyof DeprecatedToolkitEntry, 'slug'>; kind: 'string' | 'date' }
 >([
   ['version', { name: 'version', kind: 'string' }],
   ['reason', { name: 'reason', kind: 'string' }],
@@ -131,13 +131,12 @@ const parseItem = (item: string): DeprecatedToolkitEntry | undefined => {
   const candidate: Record<string, unknown> = { slug: decodeSfString(head) };
   for (const param of params) {
     const separator = param.indexOf('=');
-    const key = (separator === -1 ? param : param.slice(0, separator)).trim();
-    const rawValue = separator === -1 ? undefined : param.slice(separator + 1).trim();
-    if (rawValue === undefined) continue;
+    if (separator === -1) continue;
+    const key = param.slice(0, separator).trim();
+    const rawValue = param.slice(separator + 1).trim();
     const field = KNOWN_PARAMETERS.get(key);
     if (field === undefined) continue;
     const decoded = field.kind === 'string' ? decodeSfString(rawValue) : decodeSfDate(rawValue);
-    // A known parameter with the wrong type invalidates the whole item.
     if (decoded === undefined) return undefined;
     candidate[field.name] = decoded;
   }
@@ -224,6 +223,7 @@ const warnDeprecatedToolkits = (response: Response): void => {
   const value = response.headers.get(TOOLKIT_DEPRECATION_HEADER);
   if (value === null || value.length === 0) return;
   if (value.length > MAX_HEADER_LENGTH || CONTROL_CHARACTERS.test(value)) return;
+  if (warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS) return;
   const fresh: DeprecatedToolkitEntry[] = [];
   for (const entry of parseDeprecatedToolkitsHeader(value)) {
     const key = dedupeKey(entry);
@@ -249,7 +249,7 @@ const warnDeprecatedToolkits = (response: Response): void => {
 export function createToolkitDeprecationFetch(
   baseFetch?: typeof globalThis.fetch
 ): typeof globalThis.fetch {
-  const wrapped = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const target = baseFetch ?? globalThis.fetch;
     const response = await target(input, init);
     try {
@@ -263,7 +263,6 @@ export function createToolkitDeprecationFetch(
     }
     return response;
   };
-  return wrapped;
 }
 
 /** Clears the once-per-process record. Tests only. */
