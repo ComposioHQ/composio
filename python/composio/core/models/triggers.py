@@ -4,6 +4,7 @@ import base64
 import functools
 import hashlib
 import hmac
+import inspect
 import json
 import logging
 import re
@@ -459,6 +460,29 @@ TriggerCallback = t.Callable[[TriggerEvent], None]
 SubscriptionErrorCallback = t.Callable[[t.Dict[str, t.Any]], None]
 
 
+def _reject_async_callback(callback: t.Callable[..., t.Any], role: str) -> None:
+    """Raise if ``callback`` is async.
+
+    Trigger callbacks are called synchronously on worker threads, so an
+    ``async def`` callback would only create a coroutine that is never
+    awaited: the body never runs and the event is dropped silently.
+    """
+    target = callback
+    while isinstance(target, functools.partial):
+        target = target.func
+    if any(
+        check(candidate)
+        for candidate in (target, getattr(target, "__call__", None))
+        for check in (inspect.iscoroutinefunction, inspect.isasyncgenfunction)
+    ):
+        name = getattr(target, "__name__", type(target).__name__)
+        raise exceptions.ValidationError(
+            f'{role} "{name}" is async. Trigger callbacks are called '
+            f"synchronously and an async callback would never run; use a "
+            f"regular 'def' function instead of 'async def'."
+        )
+
+
 # Realtime trigger frames can carry message bodies / PII, so the raw frame is
 # never logged in full — only a bounded preview when it fails to parse.
 _MAX_LOGGED_FRAME_CHARS = 512
@@ -608,6 +632,7 @@ class TriggerSubscription(Resource):
         """Register a trigger callaback."""
 
         def _wrap(f: TriggerCallback) -> TriggerCallback:
+            _reject_async_callback(f, "Trigger callback")
             self.logger.debug(f"Registering callback `{f.__name__}`")
             self._callbacks.append((f, filters))
             return f
@@ -1357,9 +1382,13 @@ class Triggers(Resource):
             pysher performs channel auth synchronously). Establish-time failures
             also make ``subscribe()`` raise the underlying error promptly
             instead of waiting out the timeout. Exceptions raised inside the
-            callback are contained and logged, never rethrown.
+            callback are contained and logged, never rethrown. The callback
+            must be a regular function; an ``async def`` callback raises
+            ``ValidationError``.
         :return: The trigger subscription handler.
         """
+        if on_subscription_error is not None:
+            _reject_async_callback(on_subscription_error, "on_subscription_error")
         return _SubcriptionBuilder(client=self._client).connect(
             timeout=timeout,
             on_subscription_error=on_subscription_error,

@@ -1,6 +1,7 @@
 """Tests for Triggers class."""
 
 import base64
+import functools
 import hashlib
 import hmac
 import json
@@ -1959,6 +1960,111 @@ class TestSubscriptionBuilderConnectTimeout:
 
         assert time.monotonic() - started < 5.0
         pusher.disconnect.assert_called_once()
+
+
+class TestAsyncCallbackRejection:
+    """Async trigger callbacks are rejected when registered (#4810).
+
+    Callbacks run synchronously, so an ``async def`` callback would only
+    create a coroutine that is never awaited and its body would never run.
+    """
+
+    _FRAME = json.dumps(
+        {
+            "id": "evt_1",
+            "type": "composio.trigger.message",
+            "timestamp": "2026-10-11T00:00:00Z",
+            "metadata": {
+                "trigger_id": "ti_1",
+                "trigger_slug": "GITHUB_COMMIT_EVENT",
+                "user_id": "user_1",
+                "connected_account_id": "ca_1",
+                "auth_config_id": "ac_1",
+                "log_id": "log_1",
+            },
+            "data": {},
+        }
+    )
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_async_handler_is_rejected_at_registration(self, subscription):
+        async def on_event(event):
+            pass
+
+        with pytest.raises(exceptions.ValidationError, match="on_event"):
+            subscription.handle()(on_event)
+
+        assert subscription._callbacks == []
+
+    def test_async_callable_object_is_rejected(self, subscription):
+        class Handler:
+            async def __call__(self, event):
+                pass
+
+        with pytest.raises(exceptions.ValidationError, match="Handler"):
+            subscription.handle()(Handler())
+
+    def test_async_generator_handler_is_rejected(self, subscription):
+        async def on_event(event):
+            yield event
+
+        with pytest.raises(exceptions.ValidationError, match="on_event"):
+            subscription.handle()(on_event)
+
+        assert subscription._callbacks == []
+
+    def test_async_generator_callable_object_is_rejected(self, subscription):
+        class Handler:
+            async def __call__(self, event):
+                yield event
+
+        with pytest.raises(exceptions.ValidationError, match="Handler"):
+            subscription.handle()(Handler())
+
+    def test_partial_of_async_callable_object_is_rejected(self, subscription):
+        class Handler:
+            async def __call__(self, dependency, event):
+                pass
+
+        with pytest.raises(exceptions.ValidationError, match="Handler"):
+            subscription.handle()(functools.partial(Handler(), "dep"))
+
+        assert subscription._callbacks == []
+
+    def test_nested_partial_of_async_generator_is_rejected(self, subscription):
+        async def on_event(a, b, event):
+            yield event
+
+        wrapped = functools.partial(functools.partial(on_event, 1), 2)
+        with pytest.raises(exceptions.ValidationError, match="on_event"):
+            subscription.handle()(wrapped)
+
+    def test_sync_handler_still_registers_and_runs(self, subscription):
+        ran = []
+
+        @subscription.handle()
+        def on_event(event):
+            ran.append(event["id"])
+
+        subscription._handle_event(self._FRAME)
+
+        assert ran == ["ti_1"]
+
+    def test_async_subscription_error_callback_is_rejected_before_connecting(self):
+        async def on_error(payload):
+            pass
+
+        with patch(
+            "composio.core.models.triggers._SubcriptionBuilder"
+        ) as mock_builder_class:
+            with pytest.raises(exceptions.ValidationError, match="on_error"):
+                Triggers(client=Mock()).subscribe(on_subscription_error=on_error)
+
+            mock_builder_class.assert_not_called()
 
 
 class TestSubscriptionErrorHandler:
