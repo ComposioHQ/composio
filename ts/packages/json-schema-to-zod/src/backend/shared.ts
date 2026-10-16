@@ -29,9 +29,10 @@ export const composeGuards = (
 /** Runs the schema; the failure carries the backend's own error with its issues. */
 export const run = (schema: SafeParseLike, value: unknown): RunResult => {
   const result = schema.safeParse(value);
-  return result.success
-    ? { success: true, data: result.data }
-    : { success: false, failure: result.error as RunFailure };
+  const { success } = result;
+  return success
+    ? { success, data: result.data }
+    : { success, failure: result.error as RunFailure };
 };
 
 /** Applies one of the object policies the parsers use to a built object schema. */
