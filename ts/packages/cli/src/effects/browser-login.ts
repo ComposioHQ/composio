@@ -45,7 +45,7 @@ const POLL_COMMAND = 'composio login --poll';
 
 // --- presentation -----------------------------------------------------------------------------
 
-export const formatNonInteractiveLoginInstructions = (params: {
+const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
   readonly pollCommand: string;
 }) => `Open this URL in your browser to log in:
@@ -60,14 +60,14 @@ hint: For agents: Show the URL above to the user to click, then run the command 
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
-export const formatLoginSuccessMessage = (params: {
+const formatLoginSuccessMessage = (params: {
   readonly email?: string;
   readonly orgName?: string;
 }): string =>
   `Logged in ${params.email ? `as ${params.email}` : 'successfully'}${params.orgName ? ` in "${params.orgName}"` : ''}`;
 
 /** The stdout payload of a completed login. */
-export const formatLoginCompleteJson = (params: {
+const formatLoginCompleteJson = (params: {
   readonly email?: string;
   readonly orgId: string;
   readonly orgName?: string;
@@ -113,7 +113,7 @@ export const playgroundTestUserId = (
   );
 
 /** The session, or a `poll` failure naming its status while it is not linked yet. */
-export const requireLinkedSession = (session: RetrievedSession) =>
+const requireLinkedSession = (session: RetrievedSession) =>
   session.status === 'linked'
     ? Effect.succeed(session)
     : Effect.fail(

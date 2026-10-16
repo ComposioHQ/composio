@@ -15,7 +15,7 @@ import { NodeOs } from './node-os';
 export const PENDING_LOGIN_FILE_NAME = 'pending-login-session.json';
 
 /** How long a cached login stays usable, counted from when it was cached. */
-export const PENDING_LOGIN_TTL_MS = 10 * 60 * 1000;
+const PENDING_LOGIN_TTL_MS = 10 * 60 * 1000;
 
 export const PendingLogin = Schema.Struct({
   key: Schema.String,

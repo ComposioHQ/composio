@@ -252,7 +252,7 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
   });
 
 /** `login --agent`: logs in with the stored agent identity, signing one up when there is none. */
-export const handleAgentLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
+const handleAgentLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
   handleAgentAuthError(
     Effect.gen(function* () {
       yield* ensureAgentSignupAllowed;
