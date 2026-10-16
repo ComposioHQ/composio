@@ -291,7 +291,7 @@ const waitForActiveConnection = (
       );
     }
 
-    yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
+    yield* ui.useMakeSpinner('Waiting for authorization...', spinner =>
       pollUntilActive(client, target.connectedAccountId).pipe(
         Effect.tap(account =>
           Effect.all([
@@ -300,7 +300,9 @@ const waitForActiveConnection = (
             ui.output(formatActiveLinkJson({ account, redirectUrl: target.redirectUrl })),
           ])
         ),
-        Effect.tapError(() => spinner.error('Connection timed out. Please try again.'))
+        Effect.tapError(() =>
+          spinner.error('Timed out waiting for authorization. Run the command again.')
+        )
       )
     );
   });
@@ -412,7 +414,7 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
           new MissingLinkUserIdError({
             message: missingUserIdMessage(
               projectName,
-              'Missing user id. Provide --user-id or run composio dev init/login first.'
+              'Missing user id. Provide --user-id, or run composio dev init or composio login first.'
             ),
             flow: 'list',
           })

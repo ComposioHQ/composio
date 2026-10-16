@@ -1,5 +1,16 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio link` and `composio dev connected-accounts link` reword their usage
+  and status messages on stderr: the rejected `--auth-config` on the root
+  command, a missing toolkit, `--list` without a toolkit, `--auth-config`
+  without a developer project, an incomplete link response, a toolkit whose
+  auth Composio does not manage, and the authorization timeout. Exit codes and
+  the JSON printed on stdout are unchanged.
+
 ## 0.4.5
 
 ### Patch Changes

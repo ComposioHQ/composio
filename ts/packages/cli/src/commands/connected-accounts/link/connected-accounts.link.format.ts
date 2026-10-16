@@ -21,30 +21,30 @@ export interface LinkTarget {
 // --- usage messages the parser cannot produce; printed on stderr --------------------------
 
 export const ROOT_AUTH_CONFIG_MESSAGE =
-  'Top-level `composio link` is consumer-only and does not accept `--auth-config`. Use `composio dev connected-accounts link --auth-config ...` for developer-scoped usage.';
+  "`composio link` does not accept `--auth-config`. To link through a developer project's auth config, run `composio dev connected-accounts link --auth-config <id>`.";
 
 export const TOOLKIT_AND_AUTH_CONFIG_MESSAGE =
-  'Cannot use both <toolkit> and --auth-config. Choose one:\n' +
+  'Pass a toolkit or `--auth-config`, not both.\n' +
   '  Tool Router: composio dev connected-accounts link <toolkit>\n' +
   '  Legacy:      composio dev connected-accounts link --auth-config <id>';
 
 export const missingArgumentMessage = (tree: CommandTree) =>
   tree === 'root'
-    ? 'Missing argument. Provide a toolkit slug:\n  composio link github'
-    : 'Missing argument. Provide a toolkit slug or --auth-config:\n' +
+    ? 'Pass the toolkit to link.\n  composio link github'
+    : 'Pass the toolkit to link, or `--auth-config`.\n' +
       '  composio dev connected-accounts link github\n' +
-      '  composio dev connected-accounts link --auth-config "ac_..."';
+      '  composio dev connected-accounts link --auth-config <id>';
 
 export const LIST_REQUIRES_TOOLKIT_MESSAGE =
-  '`--list` requires a toolkit slug, e.g. `composio link gmail --list`.';
+  '`--list` needs a toolkit, for example `composio link gmail --list`.';
 
 export const LIST_WITH_AUTH_CONFIG_MESSAGE = '`--list` cannot be combined with `--auth-config`.';
 
 export const AUTH_CONFIG_SCOPE_MESSAGE =
-  '`--auth-config` is developer-project scoped. Pass `--project-name <name>` or run from a directory initialized with `composio dev init`.';
+  '`--auth-config` needs a developer project. Pass `--project-name <name>`, or run the command in a directory set up with `composio dev init`.';
 
 export const INCOMPLETE_LINK_RESPONSE_MESSAGE =
-  'The API returned an incomplete link response (missing connected_account_id or redirect_url).';
+  'The link response from the API is missing `connected_account_id` or `redirect_url`.';
 
 export const BROWSE_TOOLKITS_HINT = 'Browse available toolkits:\n> composio dev toolkits list';
 
@@ -147,7 +147,7 @@ export const dashboardConnectUrl = (webURL: string, orgName: string, toolkitSlug
 
 /** The warning that precedes the dashboard URL when Composio does not manage a toolkit's auth. */
 export const unmanagedAuthMessage = (toolkitSlug: string, noBrowser: boolean) =>
-  `Composio does not manage auth for "${toolkitSlug}" — ${noBrowser ? 'open the dashboard' : 'opening the dashboard'} to connect manually.`;
+  `Composio does not manage auth for "${toolkitSlug}". ${noBrowser ? 'Open the dashboard to connect it there.' : 'Opening the dashboard to connect it there.'}`;
 
 /** The success line once polling sees the account `ACTIVE`. Also the `message` of its payload. */
 export const activeConnectionMessage = (account: {
