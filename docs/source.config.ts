@@ -72,6 +72,8 @@ const docsSchema = frontmatterSchema.extend({
    *  category lane, toolkit logos, and whether it surfaces in "Featured". */
   gallery: z
     .object({
+      /** Architecture pages appear in their own section, outside runnable examples. */
+      section: z.enum(['examples', 'reference-architectures']).optional(),
       /** Category lanes this example belongs to (can be more than one). */
       categories: z
         .array(

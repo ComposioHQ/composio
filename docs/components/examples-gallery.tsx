@@ -18,6 +18,7 @@ export interface GalleryItem {
   title: string;
   description: string;
   href: string;
+  section?: 'examples' | 'reference-architectures';
   categories: Category[];
   logos: string[];
   featured?: boolean;
@@ -121,7 +122,7 @@ function ExampleCard({ ex, index }: { ex: GalleryItem; index: number }) {
       </div>
 
       <div className="mt-auto flex items-center gap-1.5 border-t border-fd-border px-5 py-3 font-mono text-[11px] uppercase tracking-wide text-fd-muted-foreground transition-colors group-hover:text-[var(--composio-brand)]">
-        Read guide
+        {ex.section === 'reference-architectures' ? 'Read architecture' : 'Read guide'}
         <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </div>
     </Link>
@@ -141,14 +142,17 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
   );
 
   const visible = useMemo(() => {
-    if (active === 'Featured') return resolved.filter((e) => e.featured);
-    return resolved.filter((e) => e.categories.includes(active));
+    const examples = resolved.filter((e) => e.section !== 'reference-architectures');
+    if (active === 'Featured') return examples.filter((e) => e.featured);
+    return examples.filter((e) => e.categories.includes(active));
   }, [active, resolved]);
 
+  const architectures = resolved.filter((e) => e.section === 'reference-architectures');
   const countFor = (label: 'Featured' | Category) =>
-    label === 'Featured'
-      ? resolved.filter((e) => e.featured).length
-      : resolved.filter((e) => e.categories.includes(label)).length;
+    resolved.filter((e) =>
+      e.section !== 'reference-architectures' &&
+      (label === 'Featured' ? e.featured : e.categories.includes(label)),
+    ).length;
 
   return (
     <div className="exg w-full px-5 py-12 [grid-area:main] sm:px-8 lg:px-12 lg:py-16">
@@ -158,11 +162,10 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
           Examples
         </p>
         <h1 className="font-sans text-4xl font-normal leading-[1.05] tracking-tight text-fd-foreground sm:text-5xl lg:text-6xl">
-          Featured examples
+          Examples
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-fd-muted-foreground sm:text-lg">
-          End-to-end builds that wire Composio into working agents. Each one is a
-          complete project you can read top to bottom and run.
+          Runnable agents and reference architectures for building with Composio.
         </p>
         <Link
           href="/examples/sdk-examples"
@@ -172,6 +175,11 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
           <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </header>
+
+      <h2 className="font-sans text-2xl font-medium text-fd-foreground">Runnable examples</h2>
+      <p className="mb-6 mt-3 max-w-2xl text-sm leading-relaxed text-fd-muted-foreground">
+        Complete projects you can read top to bottom and run.
+      </p>
 
       {/* Filter pills */}
       <div className="mb-9 flex flex-wrap gap-2 border-b border-fd-border pb-6">
@@ -220,6 +228,23 @@ export function ExamplesGallery({ items }: { items: GalleryItem[] }) {
         <div className="border border-dashed border-fd-border px-6 py-16 text-center font-mono text-sm text-fd-muted-foreground">
           More examples in this category are on the way.
         </div>
+      )}
+
+      {architectures.length > 0 && (
+        <section aria-labelledby="reference-architectures" className="mt-16 border-t border-fd-border pt-10">
+          <h2 id="reference-architectures" className="font-sans text-2xl font-medium text-fd-foreground">
+            Reference architectures
+          </h2>
+          <p className="mb-6 mt-3 max-w-2xl text-sm leading-relaxed text-fd-muted-foreground">
+            Application designs with diagrams, component responsibilities, and the
+            decisions behind them. Adapt them to your stack.
+          </p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {architectures.map((ex, i) => (
+              <ExampleCard key={ex.href} ex={ex} index={i} />
+            ))}
+          </div>
+        </section>
       )}
 
       <style>{`
