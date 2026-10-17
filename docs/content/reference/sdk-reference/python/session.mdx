@@ -108,7 +108,7 @@ def search(query: str, model: str | None = ...) -> ToolRouterSessionSearchRespon
 Execute a tool within the session.  For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the original slug (e.g. "GREP") when that original slug is unique across the session's custom tools and toolkits. Custom tools are executed in-process; remote tools are sent to the Composio backend.
 
 ```python
-def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ...) -> ToolRouterSessionExecuteResponse
+def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ..., input_responses: Dict[str, ToolRouterInputResponse | None] = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
 **Parameters**
@@ -118,6 +118,8 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str
 | `tool_slug` | `str` |
 | `arguments?` | `Dict[str, Any \| None]` |
 | `account?` | `str \| None` |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse \| None]` |
+| `request_state?` | `str \| None` |
 
 **Returns**
 
@@ -135,7 +137,7 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str
 Execute a Composio meta tool (`COMPOSIO_*`) within the session.  `execute` also runs meta tools. This method only accepts meta tool slugs, so a typo is a type error instead of a failed request. The call is sent to the Composio backend as is: custom tools named in a `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
 ```python
-def execute_meta(slug: ToolRouterSessionMetaToolSlug, arguments: Dict[str, Any | None] = ...) -> ToolRouterSessionExecuteResponse
+def execute_meta(slug: ToolRouterSessionMetaToolSlug, arguments: Dict[str, Any | None] = ..., input_responses: Dict[str, ToolRouterInputResponse | None] = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
 **Parameters**
@@ -144,6 +146,8 @@ def execute_meta(slug: ToolRouterSessionMetaToolSlug, arguments: Dict[str, Any |
 |------|------|
 | `slug` | `ToolRouterSessionMetaToolSlug` |
 | `arguments?` | `Dict[str, Any \| None]` |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse \| None]` |
+| `request_state?` | `str \| None` |
 
 **Returns**
 
@@ -305,4 +309,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L242)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L254)
