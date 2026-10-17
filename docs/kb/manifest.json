@@ -695,7 +695,7 @@
       "lastVerifiedAt": "2026-08-12",
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",
-      "state": "published",
+      "state": "retired",
       "featured": false
     },
     {
@@ -1153,7 +1153,7 @@
       "lastVerifiedAt": "2026-08-17",
       "reviewAfter": "2026-11-15",
       "freshness": "evergreen",
-      "state": "published",
+      "state": "retired",
       "featured": false
     },
     {

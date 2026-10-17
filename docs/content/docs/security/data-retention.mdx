@@ -1,7 +1,7 @@
 ---
 title: Data retention
-description: The standard retention policy for every plan. What Composio stores from tool calls, how long logs and files are retained, and where your data flows.
-keywords: [data retention, retention policy, log retention, privacy, zero data retention, sub-processors, data flow, file ttl]
+description: The standard retention policy for every plan. What Composio stores from tool calls, how Composio uses your data, how long logs and files are retained, and where your data flows.
+keywords: [data retention, retention policy, log retention, privacy, model training, AI training, zero data retention, sub-processors, data flow, file ttl]
 ---
 
 Composio stores logs for tool executions so you can observe and debug your agents. This retention policy applies on every plan.
@@ -18,9 +18,17 @@ Composio creates logs for tool executions and trigger events. These logs contain
 - By default, the **request arguments** and **response data** for each tool execution.
 - For trigger events, similar audit metadata and, by default, the trigger payloads.
 
+## How Composio uses your data
+
+Composio does not use your data to train AI models. Here, your data means the request and response payloads of your tool calls and trigger events, including your end users' emails, messages, and files.
+
+Composio uses usage metadata, such as which tools run, how often, and whether they succeed, to operate and improve the service, including its machine learning and generative AI models. Usage metadata does not include payload contents.
+
+The apps your agents connect to, your model provider, and other third-party services follow their own data policies.
+
 ## How long logs are retained
 
-Tool execution logs and trigger event logs are retained for up to **one year**, after which they are automatically deleted.
+Composio keeps tool execution logs and trigger event logs for **one year**, then deletes them automatically. If you delete your organization, Composio deletes its logs within **30 days**.
 
 ## How long files are available
 
