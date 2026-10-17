@@ -118,7 +118,7 @@
   "contributors": [
     "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@hono/node-server": "^2.1.4",
     "@type-challenges/utils": "^0.1.1",

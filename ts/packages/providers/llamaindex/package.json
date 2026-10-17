@@ -41,7 +41,7 @@
     "llamaindex"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
     "llamaindex": "^0.12.0"

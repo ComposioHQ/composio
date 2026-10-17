@@ -100,7 +100,7 @@
   "contributors": [
     "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "peerDependencies": {
     "zod": ">=3.25.76 <5"
   },
