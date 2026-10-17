@@ -1,5 +1,5 @@
 ---
-title: Data retention
+title: Data retention and handling
 description: The standard retention policy for every plan. What Composio stores from tool calls, how long logs and files are retained, and where your data flows.
 keywords: [data retention, retention policy, log retention, privacy, zero data retention, sub-processors, data flow, file ttl]
 ---
@@ -21,6 +21,18 @@ Composio creates logs for tool executions and trigger events. These logs contain
 ## How long logs are retained
 
 Tool execution logs and trigger event logs are retained for up to **one year**, after which they are automatically deleted.
+
+When an organization is deleted, Composio deletes its execution logs, including request and response payloads, within **30 days**.
+
+## Model training
+
+Composio does not use request arguments, response data, or trigger payloads to train or improve AI or machine learning models, on any plan.
+
+Composio may use execution metadata to improve the platform, train models, or produce aggregate analytics, but only after de-identifying it. Execution metadata is the toolkit and action, status, error codes, timing, and counts. De-identification removes organization, project, user, and connected-account identifiers and IP addresses. Composio may keep de-identified metadata indefinitely, and it never contains payloads or error message text. See the [Terms of Service](https://composio.dev/terms), [Privacy Policy](https://composio.dev/privacy), and [Data Processing Addendum](https://composio.dev/legal/dpa).
+
+## Your account data
+
+Composio keeps account data about your organization and its members until you ask for it to be deleted. Members who stop using Composio are deactivated and receive no marketing emails or product updates. To permanently delete account data, email [support@composio.dev](mailto:support@composio.dev). Composio completes deletion within 30 days and keeps only a hashed email address to suppress future emails, plus records the law requires, such as billing records.
 
 ## How long files are available
 
