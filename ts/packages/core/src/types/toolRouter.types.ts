@@ -10,7 +10,7 @@ import type {
   SessionCreateResponse,
   SessionExecuteMetaParams,
   SessionExecuteParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,
@@ -873,11 +873,15 @@ export type ToolRouterSessionExecuteMetaFn = (
   requestOptions?: ComposioRequestOptions
 ) => Promise<ToolRouterSessionExecuteResponse>;
 
-export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
+export type ToolRouterSessionPreloadConfig = NonNullable<
+  SessionCreateResponse['config']
+>['preload'];
 
-export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
+export type ToolRouterSessionWorkbenchConfig = NonNullable<
+  NonNullable<SessionCreateResponse['config']>['workbench']
+>;
 
-export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
+export type ToolRouterSessionWarning = NonNullable<SessionCreateResponse['warnings']>[number];
 
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
@@ -885,7 +889,7 @@ export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
  * preload, sandbox (`workbench`), search, execute, proxy execute and Instant
  * settings.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+export type ToolRouterSessionConfig = NonNullable<SessionCreateResponse['config']>;
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -1206,7 +1210,9 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
  * The session configuration at one version, as stored by the API. This is
  * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+export type ToolRouterSessionConfigHistoryConfig = NonNullable<
+  SessionConfigHistoryResponse['items'][number]['config']
+>;
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */

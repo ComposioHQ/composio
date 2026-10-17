@@ -3,7 +3,7 @@
  * to the official @composio/client proxy execute params.
  */
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
-import type { SessionProxyExecuteParams as ClientProxyExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { SessionProxyExecuteParams as ClientProxyExecuteParams } from '@composio/client/resources/tool-router/session';
 
 /**
  * Transform SDK session proxy params to the official client request format.

@@ -79,7 +79,7 @@ import type {
   SessionPatchParams,
   SessionPatchResponse,
   SessionSearchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import {
@@ -484,7 +484,7 @@ export class ToolRouterSession<
       ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
       ...(opts.alias !== undefined && { alias: opts.alias }),
       ...(experimentalWire !== undefined && {
-        experimental: experimentalWire as SessionLinkParams.Experimental,
+        experimental: experimentalWire as NonNullable<SessionLinkParams['experimental']>,
       }),
     };
 
@@ -667,9 +667,9 @@ export class ToolRouterSession<
     },
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionSearchResponse> {
-    const experimental = inlineCustomToolsExperimental<SessionSearchParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionSearchParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     const searchParams = {
       queries: [{ use_case: params.query }],
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
@@ -738,9 +738,9 @@ export class ToolRouterSession<
     if (options?.account) {
       executeParams.account = options.account;
     }
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       executeParams.experimental = experimental;
     }
@@ -790,9 +790,9 @@ export class ToolRouterSession<
       arguments: arguments_ ?? {},
       ...inputResponseParams(options),
     };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteMetaParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteMetaParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       executeMetaParams.experimental = experimental;
     }
@@ -1025,9 +1025,9 @@ export class ToolRouterSession<
     tool?: Tool
   ): Promise<ToolExecuteResponse> {
     const body = { sessionId: this.sessionId, arguments: input };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, { experimental });
     }

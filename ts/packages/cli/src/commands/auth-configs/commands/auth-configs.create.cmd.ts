@@ -90,7 +90,10 @@ export const authConfigsCmd$Create = Command.make(
           toolkit: { slug: toolkit },
           auth_config: {
             type: 'use_custom_auth' as const,
-            authScheme: authScheme.value as AuthConfigCreateParams.UnionMember1['authScheme'],
+            authScheme: authScheme.value as Extract<
+              NonNullable<AuthConfigCreateParams['auth_config']>,
+              { authScheme: unknown }
+            >['authScheme'],
             name: nameValue,
             credentials:
               parsedCustomCredentials || scopesList

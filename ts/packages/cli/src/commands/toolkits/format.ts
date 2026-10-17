@@ -3,7 +3,7 @@ import type { SessionToolkitsResponse } from '@composio/client/resources/tool-ro
 import { bold, gray, green, dim } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-type SessionToolkitItem = SessionToolkitsResponse.Item;
+type SessionToolkitItem = SessionToolkitsResponse['items'][number];
 
 const formatAuthConfigField = (field: {
   name: string;
