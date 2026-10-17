@@ -51,6 +51,10 @@ e2e(import.meta.url, {
         expect(result.stdout).toContain('V7_EXECUTION_OPTIONS_OK');
       });
 
+      it('sends the source schema and validates with Zod', () => {
+        expect(result.stdout).toContain('SOURCE_SCHEMA_OK');
+      });
+
       it('produces a ToolSet-compatible collection', () => {
         expect(result.stdout).toContain('TOOL_SET_OK');
       });
