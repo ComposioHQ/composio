@@ -657,11 +657,19 @@
         },
         {
           "sourcePath": "platform/compliance-data-handling/public.md",
-          "sourceHeading": "Zero data retention and no-training requirements"
+          "sourceHeading": "Payload data vs. execution metadata"
         },
         {
           "sourcePath": "platform/compliance-data-handling/public.md",
           "sourceHeading": "Model training"
+        },
+        {
+          "sourcePath": "platform/compliance-data-handling/public.md",
+          "sourceHeading": "Retention"
+        },
+        {
+          "sourcePath": "platform/compliance-data-handling/public.md",
+          "sourceHeading": "Zero data retention and stronger terms"
         },
         {
           "sourcePath": "platform/compliance-data-handling/public.md",
@@ -691,7 +699,7 @@
       ],
       "relatedGuides": [],
       "externalResources": [],
-      "updatedAt": "2026-07-24",
+      "updatedAt": "2026-10-17",
       "lastVerifiedAt": "2026-08-12",
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",
