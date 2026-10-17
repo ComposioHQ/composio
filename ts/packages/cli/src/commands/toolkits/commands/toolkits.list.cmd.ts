@@ -121,7 +121,7 @@ export const toolkitsCmd$List = Command.make(
       // When session context is available, fetch session toolkits for connection status.
       let sessionItems:
         | ReadonlyArray<
-            import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
+            import('@composio/client/resources/tool-router').SessionToolkitsResponse['items'][number]
           >
         | undefined;
       let sessionFailed = false;
@@ -145,7 +145,7 @@ export const toolkitsCmd$List = Command.make(
               Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
                 Effect.as(
                   [] as ReadonlyArray<
-                    import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
+                    import('@composio/client/resources/tool-router').SessionToolkitsResponse['items'][number]
                   >
                 )
               )
