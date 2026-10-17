@@ -7779,6 +7779,12 @@
                         "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Defaults to false.",
                         "x-experimental": true
                       },
+                      "restrict_egress_to_composio": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Set to true to confine the workbench sandbox to Composio: code running in it can reach the Composio API and its own storage volume, and no other network destination. Defaults to false. Set at session creation only.",
+                        "x-experimental": true
+                      },
                       "no_elicitation_support_fallback": {
                         "type": "string",
                         "enum": [
