@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import functools
 import hashlib
@@ -254,6 +255,38 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
         mimetype = mimetypes.guess(file=file)
     with file.open("rb") as data:
         _upload_to_presigned_url(url=url, data=data, mimetype=mimetype)
+    return True
+
+
+async def read_file_chunks_async(
+    file_path: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE
+) -> t.AsyncGenerator[bytes, None]:
+    """Asynchronously read a file in binary chunks off the main event loop."""
+    loop = asyncio.get_running_loop()
+    with file_path.open("rb") as fp:
+        while True:
+            chunk = await loop.run_in_executor(None, fp.read, chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
+
+async def upload_async(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
+    """Asynchronously upload file to presigned S3 URL without blocking the main event loop.
+
+    Args:
+        url: Presigned S3 upload URL
+        file: Path to file to upload
+        mimetype: Content type to send with the upload.
+
+    Returns:
+        True if the upload succeeded.
+    """
+    if mimetype is None:
+        mimetype = mimetypes.guess(file=file)
+
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, upload, url, file, mimetype)
     return True
 
 
@@ -666,6 +699,89 @@ class FileUploadable(BaseModel):
         )
         upload(url=s3meta.new_presigned_url, file=file, mimetype=mimetype)
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
+
+    @classmethod
+    async def from_path_async(
+        cls,
+        client: HttpClient,
+        file: t.Union[str, Path],
+        tool: str,
+        toolkit: str,
+        *,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_allowlist: t.Optional[t.Sequence[Path]] = None,
+        before_file_upload: t.Optional["BeforeFileUploadContextCallable"] = None,
+    ) -> te.Self:
+        """Asynchronously create a FileUploadable from a local file path or public URL.
+
+        Executes file path verification and uploads the payload without blocking the
+        main event loop.
+        """
+        file_str = str(file) if isinstance(file, Path) else file
+        path_in = file_str
+        source: t.Literal["url", "path"] = (
+            "url" if isinstance(file_str, str) and _is_url(file_str) else "path"
+        )
+
+        if before_file_upload is not None:
+            out = before_file_upload(
+                {
+                    "path": path_in,
+                    "source": source,
+                    "tool": tool,
+                    "toolkit": toolkit,
+                }
+            )
+            if out is False:
+                raise FileUploadAbortedError(
+                    "File upload was aborted because before_file_upload returned False."
+                )
+            if isinstance(out, str):
+                path_in = out
+
+        if isinstance(path_in, str) and _is_url(path_in):
+            return cls.from_url(client=client, url=path_in, tool=tool, toolkit=toolkit)
+
+        if file_upload_allowlist is not None:
+            assert_path_inside_upload_dirs(path_in, file_upload_allowlist)
+
+        assert_safe_local_file_upload_path(
+            path_in,
+            enabled=sensitive_file_upload_protection,
+            additional_deny_segments=file_upload_path_deny_segments,
+        )
+
+        file_obj = Path(path_in)
+        if not file_obj.exists():
+            raise SDKFileNotFoundError(
+                f"File not found: {file_obj}. Please provide a valid file path."
+            )
+
+        if not file_obj.is_file():
+            raise SDKFileNotFoundError(
+                f"Not a file: {file_obj}. Please provide a valid file path."
+            )
+
+        if not os.access(file_obj, os.R_OK):
+            raise SDKFileNotFoundError(
+                f"File not readable: {file_obj}. Please check the file permissions."
+            )
+
+        loop = asyncio.get_running_loop()
+        mimetype = mimetypes.guess(file=file_obj)
+        md5_digest = await loop.run_in_executor(None, get_md5, file_obj)
+
+        s3meta = _request_presigned_upload(
+            client,
+            filename=file_obj.name,
+            md5=md5_digest,
+            mimetype=mimetype,
+            tool=tool,
+            toolkit=toolkit,
+        )
+        await upload_async(url=s3meta.new_presigned_url, file=file_obj, mimetype=mimetype)
+        return cls(name=file_obj.name, mimetype=mimetype, s3key=s3meta.key)
 
 
 def _discard_partial_download(outfile: Path) -> None:
