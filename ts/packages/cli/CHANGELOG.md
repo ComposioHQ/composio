@@ -52,6 +52,11 @@
   environment selects, since agents.composio.dev issued its key. A rejected
   user API key now prints how to log in again, naming the backend and
   Dashboard when they are not production's.
+- `composio connections list` now prints each account's `id`, its `alias`
+  whenever it has one (previously only when a toolkit had several accounts),
+  and `display_name` — the provider identity from `state.val.displayName`,
+  trimmed and capped at 200 characters — when Composio has filled one in.
+  Nothing else is read from `state`.
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,

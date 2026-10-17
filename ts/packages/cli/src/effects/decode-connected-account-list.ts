@@ -1,6 +1,7 @@
-import { Effect, Match, Schema, type SchemaIssue } from 'effect';
+import { Effect, Match, Option, Predicate, Schema, type SchemaIssue } from 'effect';
 import {
   ConnectedAccountItems,
+  displayNameFromState,
   isKnownConnectedAccountStatus,
 } from 'src/models/connected-accounts';
 import {
@@ -54,6 +55,26 @@ const warnOnUnknownStatuses = (
   });
 
 /**
+ * Re-derives `display_name` for each item of a raw fallback payload from its
+ * `state`, exactly as `ConnectedAccountItem` would, and removes any top-level
+ * `display_name` so an unchecked server value cannot reach the output.
+ */
+const withSanitizedDisplayNames = (rawResult: unknown): unknown => {
+  if (!Predicate.isObject(rawResult) || !Array.isArray(rawResult.items)) return rawResult;
+  return {
+    ...rawResult,
+    items: rawResult.items.map((item: unknown) => {
+      if (!Predicate.isObject(item)) return item;
+      const { display_name: _dropped, ...rest } = item;
+      return Option.match(displayNameFromState(item.state), {
+        onNone: () => rest,
+        onSome: display_name => ({ ...rest, display_name }),
+      });
+    }),
+  };
+};
+
+/**
  * Decodes a raw `client.connectedAccounts.list(...)` response against
  * `ConnectedAccountListResponse`, falling back to the raw payload on
  * `SchemaError`.
@@ -81,7 +102,7 @@ export const decodeConnectedAccountListWithFallback = (
               `Mismatched fields: ${formatParseErrorRedacted(error)}`
           );
           // Safe: callers only read non-credential fields.
-          return rawResult as ConnectedAccountListResponseType;
+          return withSanitizedDisplayNames(rawResult) as ConnectedAccountListResponseType;
         })
       )
     );
