@@ -9,6 +9,19 @@ Composio creates a connected account when a user completes the flow defined by a
 
 Each account is addressed by its `nanoid`. List endpoints accept filters so you can find accounts by user, toolkit, or auth config.
 
+## Account ownership
+
+Composio uses your application's `user_id` to scope connected accounts, but the `user_id` response field is deprecated and may be absent. Do not use a connected-account response to recover ownership. Store the mapping between your application's user ID and the connected account `nanoid` when you create or link an account.
+
+When you already know a user ID you need to reconcile, pass it to the list endpoint with the `user_ids` filter. Query one user ID at a time when you need to associate every result with that user:
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123' \
+  -H "x-api-key: YOUR_PROJECT_API_KEY"
+```
+
+The filter returns accounts associated with those IDs. It does not make `user_id` a stable field in each response item.
+
 ## Link auth (Composio Connect Links)
 
 A Composio Connect Link is a hosted, secure sign-in page. You create one with the create auth link session endpoint, redirect the user to the returned URL, and Composio handles the rest: the user signs in, Composio creates the connected account, and Composio stores and refreshes its tokens. Credentials never pass through your app. This works for all Composio managed connections, with no OAuth credentials to set up.
