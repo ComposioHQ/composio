@@ -1,0 +1,36 @@
+---
+title: Tool tags
+description: How Composio tags each tool by the action it takes, and how sessions use the tags
+keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, governance, permissions]
+---
+
+Every tool has a **tag** that describes the action it takes: reading, creating, updating or deleting. In [sessions](/docs/configuring-sessions), you can use tags to configure the tools available in the session.
+
+## Tags
+
+| Tag | The tool | For example |
+| --- | --- | --- |
+| `readOnlyHint` | Reads data without changing anything. This includes tools that search, list, compute or export data. | Fetch emails, list pull requests, export a report |
+| `createHint` | Adds something new, such as a message, record or file. It doesn't change anything that already exists. | Send an email, create an issue |
+| `updateHint` | Changes something that already exists, such as its content or settings. It doesn't delete anything. | Edit an issue, rename a file |
+| `destructiveHint` | Deletes something, such as a file, record or repository. A tool that can delete something has this tag, even if it also creates or updates. | Delete a file, delete a repository |
+
+## How tools are tagged
+
+Composio tags tools on a best-effort basis, based on each tool's description and behavior. For MCP tools, Composio infers the tag from the tool's description and the hints the MCP server provides.
+
+## Using tags in a session
+
+A session can allow, block or require approval for tools by their tag, and override this for specific toolkits:
+
+- To block tools, see [Filtering tools by tags](/docs/configuring-sessions#filtering-tools-by-tags).
+- To require approval, see [Approvals](/docs/approvals).
+
+## Next
+
+<Card
+  icon={<Wrench />}
+  title="Approvals"
+  href="/docs/approvals"
+  description="Require the user's approval before tools run."
+/>

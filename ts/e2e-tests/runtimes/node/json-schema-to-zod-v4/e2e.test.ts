@@ -6,6 +6,7 @@
  */
 
 import { jsonSchemaToZod, type JsonSchema } from '@composio/json-schema-to-zod';
+import { jsonSchemaToZod as jsonSchemaToZodV4 } from '@composio/json-schema-to-zod/v4';
 import { e2e } from '@e2e-tests/utils';
 import { describe, it, expect } from 'bun:test';
 
@@ -108,6 +109,32 @@ e2e(import.meta.url, {
           expect(zodSchema.parse('hello')).toBe('hello');
           expect(zodSchema.parse(42)).toBe(42);
           expect(() => zodSchema.parse(true)).toThrow();
+        });
+      });
+
+      describe('/v4 entry', () => {
+        it('builds a zod v4 schema on a copy that meets the floor', () => {
+          const schema: JsonSchema = {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Name' },
+              count: { type: 'integer' },
+            },
+            required: ['name'],
+          };
+          const zodSchema = jsonSchemaToZodV4(schema);
+          const { version } = (
+            zodSchema as unknown as {
+              _zod: { version: { major: number; minor: number; patch: number } };
+            }
+          )._zod;
+
+          expect(version.major).toBe(4);
+          expect(version.minor > 1 || (version.minor === 1 && version.patch >= 13)).toBe(true);
+          expect(zodSchema.parse({ name: 'Ada', count: 2 })).toEqual({ name: 'Ada', count: 2 });
+          expect(() => zodSchema.parse({ count: 2 })).toThrow();
+          expect(() => zodSchema.parse({ name: 'Ada', count: 2.5 })).toThrow();
+          expect(zodSchema.description).toBeUndefined();
         });
       });
 

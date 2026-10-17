@@ -1291,6 +1291,70 @@
         "./python/providers/openai_agents",
         "./python"
       ]
+    },
+    {
+      "id": "ts/approvals/verify",
+      "lang": "ts",
+      "file": "ts/examples/approvals/src/verify.ts",
+      "tier": "1",
+      "env": [
+        "COMPOSIO_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "pkg": "approvals-example"
+    },
+    {
+      "id": "ts/approvals/verify-mcp",
+      "lang": "ts",
+      "file": "ts/examples/approvals/src/verify-mcp.ts",
+      "tier": "1",
+      "env": [
+        "COMPOSIO_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180,
+      "pkg": "approvals-example"
+    },
+    {
+      "id": "py/approvals/verify",
+      "lang": "py",
+      "file": "python/examples/verify_approvals.py",
+      "tier": "1",
+      "env": [
+        "COMPOSIO_API_KEY"
+      ],
+      "toolkits": [
+        "hackernews"
+      ],
+      "timeoutSec": 180
+    },
+    {
+      "id": "ts/approvals/terminal",
+      "lang": "ts",
+      "file": "ts/examples/approvals/src/index.ts",
+      "tier": "X",
+      "reason": "stdin-repl; unattended verification has dedicated tier-1 entries",
+      "pkg": "approvals-example"
+    },
+    {
+      "id": "ts/approvals/mcp",
+      "lang": "ts",
+      "file": "ts/examples/approvals/src/mcp.ts",
+      "tier": "X",
+      "reason": "stdin-repl; unattended verification has dedicated tier-1 entries",
+      "pkg": "approvals-example"
+    },
+    {
+      "id": "py/approvals/terminal",
+      "lang": "py",
+      "file": "python/examples/approvals.py",
+      "tier": "X",
+      "reason": "stdin-repl; unattended verification has dedicated tier-1 entries"
     }
   ]
 }

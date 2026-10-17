@@ -1,15 +1,19 @@
 """Test tool execution with toolkit versions and argument serialization."""
 
+import json
 import typing as t
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
-from composio_client import omit
-from pydantic import BaseModel, RootModel
+from composio_client import ProjectAuth, omit
+from pydantic import BaseModel, Field, RootModel
 
+from composio.client import HttpClient
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools, _needs_serialization, _serialize_arguments
+from composio.core.provider._openai import OpenAIProvider
 from composio.exceptions import ToolVersionRequiredError
 from tests.conftest import mock_http_client
 
@@ -1424,6 +1428,93 @@ class TestSerializeArguments:
 
         result = _serialize_arguments({"outer": {"inner": Inner(value=42)}})
         assert result == {"outer": {"inner": {"value": 42}}}
+
+    @pytest.mark.parametrize("shape", ["direct", "list", "dict", "root", "tuple"])
+    @pytest.mark.parametrize("serialization_alias", [None, "label"])
+    def test_execute_preserves_model_aliases_on_the_wire(
+        self, shape, serialization_alias
+    ):
+        """Model arguments must use the same names as their JSON schema."""
+
+        class Block(BaseModel):
+            display_name: str = Field(
+                alias="displayName", serialization_alias=serialization_alias
+            )
+
+        block = Block(displayName="paragraph")
+        expected = {serialization_alias or "displayName": "paragraph"}
+        schema = Block.model_json_schema(mode="serialization")
+        if shape in ("list", "tuple", "root"):
+            value = [block]
+            expected = [expected]
+            schema = {"type": "array", "items": schema}
+            if shape == "tuple":
+                value = tuple(value)
+            elif shape == "root":
+                value = RootModel[list[Block]](value)
+        elif shape == "dict":
+            value = {"child": block}
+            expected = {"child": expected}
+            schema = {"type": "object", "properties": {"child": schema}}
+        else:
+            value = block
+
+        tool = TestToolExecution().create_mock_tool("TEST_TOOL", "test")
+        tool.input_parameters = {
+            "type": "object",
+            "properties": {"payload": schema},
+        }
+        bodies = []
+
+        def respond(request):
+            if request.method == "GET":
+                return httpx.Response(200, json=tool.model_dump(mode="json"))
+            bodies.append(json.loads(request.content))
+            return httpx.Response(
+                200, json={"data": {}, "error": None, "successful": True}
+            )
+
+        with httpx.Client(transport=httpx.MockTransport(respond)) as transport:
+            client = HttpClient(
+                provider="openai",
+                auth=ProjectAuth("test-key"),
+                base_url="https://composio.invalid",
+                http_client=transport,
+            )
+            tools = Tools(client=client, provider=OpenAIProvider())
+            result = tools.execute(
+                "TEST_TOOL",
+                arguments={"payload": value},
+                version="v1.0.0",
+            )
+
+        assert result["successful"] is True
+        assert len(bodies) == 1
+        assert bodies[0]["arguments"] == {"payload": expected}
+
+    def test_model_aliases_preserve_defaults_and_nulls(self):
+        class Child(BaseModel):
+            display_name: str = Field(alias="displayName")
+            optional_value: str | None = Field(default=None, alias="optionalValue")
+            default_value: int = Field(default=42, alias="defaultValue")
+
+        class Parent(BaseModel):
+            child_model: Child = Field(alias="childModel")
+
+        child = Child(displayName="paragraph")
+        parent = Parent(childModel=child)
+
+        assert _serialize_arguments({"payload": parent}) == {
+            "payload": {
+                "childModel": {
+                    "displayName": "paragraph",
+                    "optionalValue": None,
+                    "defaultValue": 42,
+                }
+            }
+        }
+        assert parent.child_model is child
+        assert child.model_fields_set == {"display_name"}
 
     def test_execute_tool_serializes_pydantic_arguments(self):
         """Regression test for PLEN-1514: Pydantic models in arguments must be

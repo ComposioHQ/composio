@@ -14,9 +14,9 @@ import {
 // exactly that.
 const foreign = <E extends Error & { readonly _tag: string }>(error: E): E => {
   const clone = Object.create(Error.prototype) as E;
-  for (const key of Object.getOwnPropertyNames(error)) {
-    Object.defineProperty(clone, key, Object.getOwnPropertyDescriptor(error, key)!);
-  }
+  Object.getOwnPropertyNames(error).forEach(key =>
+    Object.defineProperty(clone, key, Object.getOwnPropertyDescriptor(error, key)!)
+  );
   // `stack` is a lazy accessor bound to the original instance; a real foreign
   // instance owns its own, so give the clone a plain copy.
   Object.defineProperty(clone, 'stack', { value: error.stack, configurable: true });

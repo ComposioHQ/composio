@@ -723,7 +723,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python" }
 dependencies = [
     { name = "composio-client" },
@@ -757,7 +757,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = "==2.0.0rc17" },
+    { name = "composio-client", specifier = "==2.0.0rc19" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
     { name = "jsonschema", specifier = ">=4.23.0" },
     { name = "openai", specifier = ">=2.48.0" },
@@ -788,7 +788,7 @@ dev = [
 
 [[package]]
 name = "composio-anthropic"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
@@ -803,21 +803,21 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0rc17"
+version = "2.0.0rc19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/5b/46db80356fd2fe5c4b47256bf2f8f8d0821609eafb6f9016a36c4aceb90f/composio_client-2.0.0rc17.tar.gz", hash = "sha256:9e6f3df1910518f4cd7c65c9a573986e11f0dbe02be0ec72175616fc3d7a45b1", size = 620910, upload-time = "2026-10-15T19:45:14.864Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/b0/892c075f29639ae235aed971654ace1295363700f6e722795909bd3a9b43/composio_client-2.0.0rc19.tar.gz", hash = "sha256:565f76236c0fcaece194935fd3e88c73a9fb0250e2d93630fda2abddc0ac807c", size = 632179, upload-time = "2026-10-16T00:41:29.118Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/38/078d855a7c0f7edd24786e184a032a14333042367f0434b9beab5ecfa16e/composio_client-2.0.0rc17-py3-none-any.whl", hash = "sha256:cf12b509818fe077d58def2e5ca9c6931c5e7646e43506283204e3b823207f3a", size = 448281, upload-time = "2026-10-15T19:45:12.857Z" },
+    { url = "https://files.pythonhosted.org/packages/07/7c/85936107e4353b069a150c830b124df7f092a9af4e5da718ea659ca61581/composio_client-2.0.0rc19-py3-none-any.whl", hash = "sha256:5e93220fd5188b46d05f0e2685d16b59a951ed281754fa3e3338661f22ac3113", size = 452798, upload-time = "2026-10-16T00:41:27.202Z" },
 ]
 
 [[package]]
 name = "composio-crewai"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
@@ -832,7 +832,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-gemini"
-version = "0.27.0"
+version = "0.28.0"
 source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
@@ -847,7 +847,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/google" }
 dependencies = [
     { name = "composio" },
@@ -862,7 +862,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google-adk"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
@@ -877,7 +877,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-langchain"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
@@ -892,7 +892,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
@@ -907,7 +907,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai-agents"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },

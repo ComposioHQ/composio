@@ -5,6 +5,7 @@ import { decodeConnectedAccountItems } from 'src/effects/decode-connected-accoun
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { idempotent } from 'src/services/composio-request';
+import { clientScopeKey } from 'src/services/composio-clients';
 
 // `status` is an open enum, so this is shape-identical to
 // `ConnectedAccountItem`; tool-router rows normalize statuses outside the
@@ -139,23 +140,12 @@ export const formatConnectedAccountChoices = (
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
 
-// Clients come from `ComposioClientSingleton`, one instance per
-// org/project, so identity is a sound cache key. Ids instead of the object
-// itself keep the memo key a string.
-const clientIds = new WeakMap<ComposioClientShape, number>();
-let nextClientId = 0;
-const clientId = (client: ComposioClientShape): number => {
-  let id = clientIds.get(client);
-  if (id === undefined) {
-    id = nextClientId++;
-    clientIds.set(client, id);
-  }
-  return id;
-};
-
 /**
- * Every active connected account of `userId`, fetched once per client and
- * user for the lifetime of the process.
+ * Every active connected account of `userId`, fetched once per credential,
+ * org, project, and user for the lifetime of the process. The client's
+ * credential, org, and project come from `clientScopeKey`: each `getFor`
+ * builds a new client, so two callers holding different instances for the
+ * same key and project still share one fetch.
  *
  * `composio execute` needs this list twice on every call, from two code paths
  * that cannot see each other: `resolveConnectedAccountForToolkit` picks the
@@ -172,7 +162,7 @@ const ACTIVE_ACCOUNTS_PAGE_SIZE = 1000;
 
 export const listActiveConnectedAccounts = memoizeInProcess({
   keyOf: (input: { readonly client: ComposioClientShape; readonly userId: string }) =>
-    `${clientId(input.client)}\u0000${input.userId}`,
+    `${clientScopeKey(input.client)}\u0000${input.userId}`,
   make: ({ client, userId }) =>
     client.connectedAccounts.list(
       {

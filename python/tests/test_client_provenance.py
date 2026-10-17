@@ -6,6 +6,7 @@ from importlib.metadata import version
 import httpx
 import pytest
 from composio_client import ComposioError as ClientComposioError
+from composio_client import ProjectAuth
 
 from composio.client import HttpClient
 
@@ -20,7 +21,7 @@ def test_product_provenance_on_request(clone):
 
     with HttpClient(
         provider="test-provider",
-        api_key="test-key",
+        auth=ProjectAuth("test-key"),
         base_url="https://backend.invalid",
         http_client=httpx.Client(transport=httpx.MockTransport(respond)),
     ) as client:
@@ -49,7 +50,7 @@ def test_product_provenance_is_not_added_to_another_origin():
 
     with HttpClient(
         provider="test-provider",
-        api_key="test-key",
+        auth=ProjectAuth("test-key"),
         base_url="https://backend.invalid",
         http_client=httpx.Client(transport=httpx.MockTransport(respond)),
     ) as client:
@@ -68,7 +69,7 @@ def test_identity_headers_are_refused_in_default_headers(header):
     ):
         HttpClient(
             provider="test-provider",
-            api_key="test-key",
+            auth=ProjectAuth("test-key"),
             base_url="https://backend.invalid",
             default_headers={header: "caller-value"},
         )
@@ -84,7 +85,7 @@ def test_unsendable_provider_name_is_reported_as_unknown(provider):
 
     with HttpClient(
         provider=provider,
-        api_key="test-key",
+        auth=ProjectAuth("test-key"),
         base_url="https://backend.invalid",
         http_client=httpx.Client(transport=httpx.MockTransport(respond)),
     ) as client:

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import ComposioClient, { createFetchTransport } from '@composio/client';
+import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
@@ -33,7 +33,7 @@ const createFailingClient = () => {
       })
   );
   const client = new ComposioClient({
-    apiKey: 'test-api-key',
+    auth: Auth.project('test-api-key'),
     baseURL: 'https://backend.invalid',
     transport: createFetchTransport({ fetch }),
   });

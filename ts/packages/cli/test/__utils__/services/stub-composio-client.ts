@@ -1,4 +1,4 @@
-import { make, type ComposioClientShape } from '@composio/client/effect';
+import { Auth, make, type ComposioClientShape } from '@composio/client/effect';
 import { Effect, Layer, Result } from 'effect';
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -41,11 +41,8 @@ export const stubComposioClient = (
   );
   const client = make(
     {
-      apiKey: 'test',
-      userApiKey: null,
-      orgApiKey: null,
+      auth: Auth.project('test'),
       baseURL: 'https://stub.invalid',
-      deprecationNotices: 'off',
       maxRetries: 0,
       schemas: schemaLoaders,
     },

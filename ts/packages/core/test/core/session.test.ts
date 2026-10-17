@@ -495,7 +495,7 @@ describe('Credential resolution at the transport boundary', () => {
     expect(headers.get('x-api-key')).toBeNull();
     expect(headers.get('x-user-api-key')).toBe(userKey);
     expect(composio.getConfig().apiKey).toBeNull();
-    expect(composio.getClient().apiKey).toBeNull();
+    expect(composio.getClient().authMode).toBe('user');
   });
 
   it('sends only the user API key header when the project key is disabled via defaultHeaders', async () => {
@@ -631,6 +631,18 @@ describe('Credential resolution at the transport boundary', () => {
       expect(capturedHeaders(fetchMock).get('x-api-key')).toBeNull();
       expect(capturedHeaders(fetchMock).get('x-user-api-key')).toBe(userKey);
       expect(session.mcp.headers).toEqual({ 'x-user-api-key': userKey });
+    });
+
+    it('exports the organization API key placed in defaultHeaders when it is the only credential', async () => {
+      const orgKey = 'oak_headerOrgKey';
+      const fetchMock = captureSessionFetch();
+
+      const composio = build({ apiKey: null, defaultHeaders: { 'x-org-api-key': orgKey } });
+      const session = await composio.sessions.create('user_123', { mcp: true });
+
+      expect(capturedHeaders(fetchMock).get('x-api-key')).toBeNull();
+      expect(capturedHeaders(fetchMock).get('x-org-api-key')).toBe(orgKey);
+      expect(session.mcp.headers).toEqual({ 'x-org-api-key': orgKey });
     });
 
     it('exports the user API key a clone was given over the key the parent resolved', async () => {

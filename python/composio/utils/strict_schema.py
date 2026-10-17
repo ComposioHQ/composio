@@ -4,7 +4,8 @@ Python counterpart of the TypeScript SDK's ``toStrictJsonSchema``
 (``ts/packages/core/src/utils/jsonSchema.ts``). OpenAI's structured-output
 contract requires *every* object node — not just the root — to list all of its
 properties in ``required``, set ``additionalProperties: False`` and avoid
-annotation-only keywords. Optional fields are emulated the way OpenAI
+annotation-only keywords, including a string ``format`` outside the accepted
+list. Optional fields are emulated the way OpenAI
 documents: the property stays, becomes required, and is widened to accept
 ``null`` (``"type": ["string", "null"]`` or an extra ``anyOf`` branch). Nothing
 is dropped, so the model keeps every parameter it could pass before; the strict
@@ -40,6 +41,23 @@ MAX_NULL_CHECK_NODES = 2_000
 
 # Annotation-only keywords OpenAI structured outputs rejects; safe to strip.
 STRICT_STRIP_KEYWORDS = frozenset({"examples", "default"})
+
+# The `format` values OpenAI structured outputs accepts on a string schema,
+# matched case-sensitively; any other value there is rejected with a 400.
+# Formats on number and integer schemas are not checked.
+STRICT_STRING_FORMATS = frozenset(
+    {
+        "date-time",
+        "time",
+        "date",
+        "duration",
+        "email",
+        "hostname",
+        "ipv4",
+        "ipv6",
+        "uuid",
+    }
+)
 
 # Keywords whose values are literal data, not schemas - never recursed as schemas.
 INSTANCE_VALUE_KEYWORDS = frozenset({"const", "default", "enum", "examples"})
@@ -126,6 +144,15 @@ class StrictJsonSchemaResult(t.NamedTuple):
 
 def _join_path(parent: str, key: str) -> str:
     return f"{parent}.{key}" if parent else key
+
+
+def _admits_string(type_: t.Any) -> bool:
+    """Whether a `type` value admits strings; an absent `type` admits every type."""
+    return (
+        type_ is None
+        or type_ == "string"
+        or (isinstance(type_, list) and "string" in type_)
+    )
 
 
 # The only keywords that can reject a ``null`` instance; every other keyword
@@ -424,6 +451,16 @@ class _Walker:
             if key in STRICT_STRIP_KEYWORDS:
                 self.record(
                     path, "unsupported-keyword-stripped", f'keyword "{key}" removed'
+                )
+                continue
+            if (
+                key == "format"
+                and isinstance(child, str)
+                and child not in STRICT_STRING_FORMATS
+                and _admits_string(value.get("type"))
+            ):
+                self.record(
+                    path, "unsupported-keyword-stripped", f'format "{child}" removed'
                 )
                 continue
             node[key] = child

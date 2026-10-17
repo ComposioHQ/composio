@@ -13,6 +13,7 @@ import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import {
@@ -51,6 +52,7 @@ import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install.cmd';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
@@ -126,6 +128,11 @@ export const SetupSkillInstallerLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
+export const PendingLoginSessionLive = Layer.provide(
+  PendingLoginSession.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
@@ -144,13 +151,17 @@ const layers = Layer.mergeAll(
   SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
+  PendingLoginSessionLive,
   BunServices.layer,
   BunFileSystem.layer,
   BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
-  Layer.merge(Logger.layer([Logger.consolePretty()]), Layer.succeed(Logger.LogToStderr, true))
+  Layer.merge(
+    Logger.layer([withoutClientNotices(Logger.consolePretty())]),
+    Layer.succeed(Logger.LogToStderr, true)
+  )
 ) satisfies RequiredLayer;
 
 export const teardown: Runtime.Teardown = <E, A>(

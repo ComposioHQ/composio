@@ -7,18 +7,19 @@
   },
   "scripts": {
     "build:agent-index": "bun scripts/build-agent-index.ts",
+    "build:content-freshness": "fumadocs-mdx && bun scripts/build-content-freshness.ts",
     "build:kb-semantic": "bun run generate:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts",
     "check:kb-semantic": "bun run check:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts --check",
     "verify:kb": "bun scripts/verify-kb.ts",
     "import:kb": "bun scripts/import-support-knowledge.ts",
     "generate:kb": "bun scripts/generate-kb.ts",
     "check:kb": "bun scripts/generate-kb.ts --check",
-    "prebuild": "bun run generate:kb && bun scripts/build-agent-index.ts",
+    "prebuild": "bun run generate:kb && bun scripts/build-agent-index.ts && bun run build:content-freshness",
     "build": "next build",
-    "predev": "bun run generate:kb && bun scripts/build-agent-index.ts",
+    "predev": "bun run generate:kb && bun scripts/build-agent-index.ts && bun run build:content-freshness",
     "dev": "next dev",
     "start": "next start",
-    "types:check": "bun run generate:kb && bun scripts/build-agent-index.ts && fumadocs-mdx && next typegen && bun ./node_modules/typescript-7/bin/tsc --noEmit",
+    "types:check": "bun run generate:kb && bun scripts/build-agent-index.ts && bun run build:content-freshness && next typegen && bun ./node_modules/typescript-7/bin/tsc --noEmit",
     "postinstall": "bun scripts/generate-kb.ts && fumadocs-mdx",
     "lint": "oxlint .",
     "lint:links": "bun scripts/validate-links.ts && bun run lint:links:sdk",
@@ -84,7 +85,7 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "^0.11.4",
     "@composio/claude-agent-sdk": "^0.12.1",
-    "@composio/core": "^0.23.0",
+    "@composio/core": "^0.24.0",
     "@composio/google": "^0.12.0",
     "@composio/langchain": "^0.11.1",
     "@composio/llamaindex": "^0.11.1",
@@ -128,6 +129,9 @@
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
     "unist-util-visit": "^5.1.0"
+  },
+  "patchedDependencies": {
+    "next@16.3.8": "patches/next@16.3.8.patch"
   },
   "overrides": {
     "@mastra/mcp": "1.17.2"

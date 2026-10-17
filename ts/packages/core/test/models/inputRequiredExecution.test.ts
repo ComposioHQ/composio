@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, assert } from 'vitest';
-import ComposioClient, { createFetchTransport } from '@composio/client';
+import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { z } from 'zod/v3';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
@@ -52,7 +52,7 @@ const createClient = (body: unknown) => {
       })
   );
   const client = new ComposioClient({
-    apiKey: 'test-api-key',
+    auth: Auth.project('test-api-key'),
     baseURL: 'https://backend.invalid',
     transport: createFetchTransport({ fetch }),
   });

@@ -165,42 +165,6 @@ describe('CLI: composio agent', () => {
     );
   });
 
-  layer(TestLive())(it => {
-    it.effect('agent login restores an existing agent from composio_agent_key', () =>
-      Effect.gen(function* () {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-          jsonResponse({
-            ...agentSignupResponse,
-            composio_agent_key: 'cak_existing',
-            agent_key: 'cak_existing',
-          })
-        );
-
-        yield* cli(['agent', 'login', 'cak_existing']);
-
-        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
-          expect.stringContaining('/api/whoami'),
-          expect.objectContaining({
-            method: 'GET',
-            headers: expect.objectContaining({ Authorization: 'Bearer cak_existing' }),
-          })
-        );
-        const ctx = yield* ComposioUserContext;
-        expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
-        expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
-
-        const fs = yield* FileSystem.FileSystem;
-        const cacheDir = yield* setupCacheDir;
-        const agentConfigRaw = yield* fs.readFileString(path.join(cacheDir, 'agent.json'), 'utf8');
-        expect(JSON.parse(agentConfigRaw)).toMatchObject({
-          composio_agent_key: 'cak_existing',
-          agent_key: 'cak_existing',
-          composio: { user_api_key: 'uak_agent' },
-        });
-      })
-    );
-  });
-
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
     it.effect('agent commands show a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
@@ -220,17 +184,6 @@ describe('CLI: composio agent', () => {
 
         expect(output).toContain('currently signed in to Composio as a regular user');
         expect(output).toContain('composio signup');
-        expect(process.exitCode).toBe(1);
-      })
-    );
-
-    it.effect('agent login shows a soft auth warning when signed in as a human user', () =>
-      Effect.gen(function* () {
-        yield* cli(['agent', 'login', 'cak_existing']);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-        expect(output).toContain('currently signed in to Composio as a regular user');
-        expect(output).toContain('composio logout');
         expect(process.exitCode).toBe(1);
       })
     );

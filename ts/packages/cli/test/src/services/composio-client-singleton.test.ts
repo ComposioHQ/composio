@@ -8,10 +8,13 @@ import { ConfigProvider, Effect, Exit, Layer, Logger } from 'effect';
 import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import { VERSION as clientLibraryVersion, type ComposioClientShape } from '@composio/client/effect';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, clientScopeKey } from 'src/services/composio-clients';
+import { listActiveConnectedAccounts } from 'src/services/connected-account-selection';
+import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
 import { idempotent, validated } from 'src/services/composio-request';
 import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -53,10 +56,10 @@ const okResponse = () =>
 // (djb2Hash + base36): the seeded cache key below must be byte-identical to what
 // the service computes for process.cwd() when it looks up the CLI session.
 const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
+  const hash = Array.from({ length: cwd.length }, (_, index) => cwd.charCodeAt(index)).reduce(
+    (acc, code) => (acc * 33) ^ code,
+    5381
+  );
   return Math.abs(hash >>> 0).toString(36);
 };
 
@@ -161,6 +164,45 @@ describe('ComposioClientSingleton headers', () => {
     );
   });
 
+  it.effect('reads the cwd CLI session ID once for every client it builds', () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(okResponse()));
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+    ]);
+
+    return Effect.gen(function* () {
+      const path = yield* Path.Path;
+      vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
+      yield* writeCliSessionCache(homedir, {
+        id: 'cli_s_first',
+        expiresAt: '1970-01-01T00:01:00.000Z',
+      });
+      const clientSingleton = yield* ComposioClientSingleton;
+      yield* listTools(yield* clientSingleton.get());
+
+      yield* writeCliSessionCache(homedir, {
+        id: 'cli_s_second',
+        expiresAt: '1970-01-01T00:01:00.000Z',
+      });
+      yield* listTools(
+        yield* clientSingleton.getFor({ userApiKey: 'uak_other', orgId: 'o', projectId: 'p' })
+      );
+
+      const sessionIds = fetchSpy.mock.calls.map(call =>
+        new Headers((call[1] as RequestInit).headers).get('x-cli-session-id')
+      );
+      expect(sessionIds).toEqual(['cli_s_first', 'cli_s_first']);
+    }).pipe(
+      Effect.provide(
+        Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
   it.effect('omits an expired cwd CLI session ID', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
@@ -258,8 +300,8 @@ describe('ComposioClientSingleton headers', () => {
     return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      // `auth.session.retrieveInfo` is an operation where the client would
-      // attach its own `userApiKey` credential; the caller-placed header wins.
+      // The client authenticates with `Auth.user`, so the user key is its one
+      // credential on every operation.
       yield* client.auth.session.retrieveInfo();
 
       const [input, init] = fetchSpy.mock.calls[0]!;
@@ -413,38 +455,122 @@ describe('ComposioClientSingleton client', () => {
     }).pipe(Effect.provide(singletonLayer(baseConfig())));
   });
 
-  it.effect('caches one client per key, org, and project', () =>
+  it.effect('sends a project key in place of the user key, with the scope', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getFor({
+        projectApiKey: 'ak_project',
+        orgId: 'org_a',
+        projectId: 'proj_a',
+      });
+      yield* listTools(client);
+
+      const headers = sentHeaders(fetchSpy.mock.calls[0]!);
+      expect(headers.get('x-api-key')).toBe('ak_project');
+      expect(headers.has('x-user-api-key')).toBe(false);
+      expect(headers.get('x-org-id')).toBe('org_a');
+      expect(headers.get('x-project-id')).toBe('proj_a');
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_user']]))));
+  });
+
+  it.effect('refuses a request that names another org than its scope, before sending', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.getFor({
+        userApiKey: 'uak_scope',
+        orgId: 'org_a',
+        projectId: 'proj_a',
+      });
+      const error = yield* Effect.flip(
+        client.get('/api/v3/tools/X/get_latest_version', { headers: { 'x-org-id': 'org_b' } })
+      );
+
+      expect(error._tag).toBe('@composio/client/ConfigurationError');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(singletonLayer(baseConfig())));
+  });
+
+  it.effect('keys clients for a memo by credential, org, and project, never by instance', () =>
     Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
       const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
 
       const first = yield* clientSingleton.getFor(scope);
       const second = yield* clientSingleton.getFor(scope);
+      const otherKey = yield* clientSingleton.getFor({ ...scope, userApiKey: 'uak_b' });
       const otherProject = yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' });
+      const projectKey = yield* clientSingleton.getFor({
+        projectApiKey: 'ak_a',
+        orgId: 'org_a',
+        projectId: 'proj_a',
+      });
+      const { client: elsewhere } = stubComposioClient(okResponse);
 
-      expect(second).toBe(first);
-      expect(otherProject).not.toBe(first);
+      expect(second).not.toBe(first);
+      expect(clientScopeKey(second)).toBe(clientScopeKey(first));
+      expect(clientScopeKey(otherKey)).not.toBe(clientScopeKey(first));
+      expect(clientScopeKey(otherProject)).not.toBe(clientScopeKey(first));
+      expect(clientScopeKey(projectKey)).not.toBe(clientScopeKey(first));
+      expect(clientScopeKey(first)).not.toContain('uak_a');
+      // A client built outside the singleton is keyed on its own.
+      expect(clientScopeKey(elsewhere)).toBe(clientScopeKey(elsewhere));
+      expect(clientScopeKey(elsewhere)).not.toBe(clientScopeKey(first));
     }).pipe(Effect.provide(singletonLayer(baseConfig())))
   );
 
-  it.effect('hands concurrent first callers of a scope the same client', () =>
-    Effect.gen(function* () {
+  it.effect('lists active connected accounts once per credential, org, project, and user', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            items: [],
+            total_items: 0,
+            total_pages: 1,
+            current_page: 1,
+            next_cursor: null,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    );
+
+    return Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
-      const scope = { userApiKey: 'uak_a', orgId: 'org_a', projectId: 'proj_a' };
+      const scope = { orgId: 'org_a', projectId: 'proj_a' };
 
-      const [first, second, third] = yield* Effect.all(
-        [
-          clientSingleton.getFor(scope),
-          clientSingleton.getFor({ ...scope }),
-          clientSingleton.getFor(scope),
-        ],
-        { concurrency: 'unbounded' }
-      );
+      // Two lookups of one scope hand back two instances; they share one fetch.
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor(scope),
+        userId: 'user_1',
+      });
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor(scope),
+        userId: 'user_1',
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-      expect(second).toBe(first);
-      expect(third).toBe(first);
-    }).pipe(Effect.provide(singletonLayer(baseConfig())))
-  );
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor({ ...scope, projectId: 'proj_b' }),
+        userId: 'user_1',
+      });
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor(scope),
+        userId: 'user_2',
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+      // Another user key on the same scope never reads the first key's list.
+      yield* listActiveConnectedAccounts({
+        client: yield* clientSingleton.getFor({ ...scope, userApiKey: 'uak_other' }),
+        userId: 'user_1',
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(4);
+    }).pipe(Effect.provide(singletonLayer(baseConfig([['COMPOSIO_USER_API_KEY', 'uak_memo']]))));
+  });
 
   it.effect('counts requests on its own transport beside an application FetchHttpClient', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
@@ -579,7 +705,7 @@ describe('ComposioClientSingleton client', () => {
     );
   });
 
-  it.effect('logs nothing for a response that announces a deprecation', () => {
+  it.effect('drops the deprecation notice the client logs at the CLI logger', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ data: [] }), {
         status: 200,
@@ -591,11 +717,15 @@ describe('ComposioClientSingleton client', () => {
         },
       })
     );
-    const records: Array<unknown> = [];
-    const capturingLogger = Logger.layer([
+    const logged: Array<unknown> = [];
+    const shown: Array<unknown> = [];
+    const recordInto = (records: Array<unknown>) =>
       Logger.make<unknown, void>(({ message }) => {
         records.push(message);
-      }),
+      });
+    const capturingLogger = Logger.layer([
+      recordInto(logged),
+      withoutClientNotices(recordInto(shown)),
     ]);
 
     return Effect.gen(function* () {
@@ -603,7 +733,8 @@ describe('ComposioClientSingleton client', () => {
       const client = yield* clientSingleton.get();
       yield* listTools(client);
 
-      expect(records).toEqual([]);
+      expect(logged).toHaveLength(1);
+      expect(shown).toEqual([]);
     }).pipe(
       Effect.provide(
         Layer.merge(

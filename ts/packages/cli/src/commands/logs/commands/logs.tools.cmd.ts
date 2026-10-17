@@ -2,6 +2,7 @@ import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { failedWith, requestError } from 'src/effects/request-error';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { CommandSurface } from 'src/commands/surface';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -92,6 +93,9 @@ const status = Flag.String('status').pipe(
   Flag.optional
 );
 
+// Declared for its help row, which documents the comma-separated filter in place of the `dev`
+// group's shared row. The parser hands every `--user-id` under `dev` to the shared flag, so
+// the value is read from `CommandSurface`.
 const userId = Flag.String('user-id').pipe(
   Flag.withDescription('Filter by user id(s), comma-separated'),
   Flag.optional
@@ -167,6 +171,7 @@ export const logsCmd$Tools = Command.make(
     sessionId,
   }) =>
     Effect.gen(function* () {
+      const userIdFilter = Option.orElse((yield* CommandSurface).userId, () => userId);
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
@@ -177,7 +182,7 @@ export const logsCmd$Tools = Command.make(
         connectedAccountId: Option.getOrUndefined(connectedAccountId),
         authConfigId: Option.getOrUndefined(authConfigId),
         status: Option.getOrUndefined(status),
-        userId: Option.getOrUndefined(userId),
+        userId: Option.getOrUndefined(userIdFilter),
         logId: Option.getOrUndefined(logIdFilter),
         toolRouterSessionId: Option.getOrUndefined(toolRouterSessionId),
         sessionId: Option.getOrUndefined(sessionId),

@@ -4,11 +4,68 @@
 
 ### Patch Changes
 
+- `composio link` and `composio dev connected-accounts link` reword their usage
+  and status messages on stderr: the rejected `--auth-config` on the root
+  command, a toolkit passed together with `--auth-config`, a missing toolkit,
+  `--list` without a toolkit, a missing user id, `--auth-config` without a
+  developer project, an incomplete link response, a toolkit whose auth
+  Composio does not manage, and the waiting and timeout lines shown while a
+  link is pending. Exit codes and the JSON printed on stdout are unchanged.
+- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
+  command changes.
+- API requests now authenticate through the API client's `auth` option (the
+  logged-in user's API key, or no credential before login) and name the org and
+  project through its `scope`, instead of the CLI placing `x-user-api-key`,
+  `x-org-id` and `x-project-id` in default headers. The headers sent are
+  unchanged. The CLI no longer keeps a client per API key and project for the
+  life of the process, so the user API key is held only by the client making
+  the request.
+- The API client's deprecation notices are dropped by the CLI's logger instead
+  of being turned off in the client. Nothing new is printed.
+
+## 0.4.5
+
+### Patch Changes
+
+- Retry only API reads that are safe to repeat. Mutating calls are sent once,
+  including when a request times out after the server may have acted.
+- Commands that require login now fail consistently with a usage error.
+  Project-resolution failures retain their specific error type.
+- Tolerate API response fields the command does not consume while continuing
+  to validate fields used for output, credentials, and cached data.
 - The CLI now uses `@composio/client@2.0.0-rc.17` (up from `2.0.0-rc.14`). No
   command changes.
 - API requests now carry the CLI's product, version and runtime headers through
   the API client's `identity` option instead of default headers. The headers
   sent are unchanged.
+- `--user-id` and `--project-name` are now flags of the `composio dev` group,
+  accepted before or after the subcommand name (`composio dev --user-id alice
+toolkits info gmail` and `composio dev toolkits info gmail --user-id alice`
+  both work) and documented once, with one description each, on every `dev`
+  page. `dev playground-execute` (including `--parallel`),
+  `dev connected-accounts link`, `dev connected-accounts list`,
+  `dev toolkits info`, `dev toolkits list`, `dev listen` and
+  `dev triggers listen` read them from the group instead of declaring their
+  own; `dev logs tools` and `dev logs triggers` read the group's `--user-id` as
+  their comma-separated filter. The other `dev` commands still fail with exit 1
+  on a flag they cannot honor, now with a usage error naming it instead of an
+  unrecognized-flag error: `--project-name` on all of them, `--user-id` on all
+  but `dev logs`. `composio dev --mode` rejects both.
+  Without `--user-id`, a `dev` command given `--project-name` for another
+  project falls back to the global test user instead of the directory's
+  `test_user_id`, which belongs to the directory's project:
+  `dev playground-execute`, `dev connected-accounts link`,
+  `dev toolkits info` and `dev toolkits list`. With neither test user set,
+  the missing-user error now points at `--user-id` or `composio login`.
+- `composio link --help` now lists `--auth-config`. The root command still
+  rejects it, now with the message ``Top-level `composio link` is
+consumer-only and does not accept `--auth-config`.`` (exit 1) after the login
+  check, where it used to fail as an unrecognized flag.
+
+- `composio execute` no longer rejects tool input for string parameters with
+  `format: "binary"` or a non-base64 `contentEncoding`, such as plain text in a
+  binary field or hex in a `base16` field. Only `contentEncoding: "base64"` is
+  checked as base64.
 
 ## 0.4.4
 

@@ -291,8 +291,8 @@ export const resolveConsumerProject = (params: {
 
 /**
  * Resolves the latest version of a tool. When `projectApiKey` is given the
- * request carries `x-api-key` instead of the user key, so exactly one
- * credential is sent.
+ * request is sent by a client that authenticates with it instead of the user
+ * key, so exactly one credential is sent.
  */
 export const getLatestToolVersion = (params: {
   apiKey: string;
@@ -303,19 +303,23 @@ export const getLatestToolVersion = (params: {
 }): Effect.Effect<LatestToolVersionResponse, ClientError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
-    const headers = {
-      ...(params.projectApiKey
-        ? { 'x-api-key': params.projectApiKey, 'x-user-api-key': null }
-        : {}),
-      ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
-      ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
-    };
-    // The headers above carry whichever of the org and project is known.
+    const credential = params.projectApiKey
+      ? { projectApiKey: params.projectApiKey }
+      : { userApiKey: params.apiKey };
+    // A client's scope names the org and the project together; when only one
+    // of them is known it goes on the request, which an unscoped client allows.
     const client = yield* clientSingleton.getFor(
       params.orgId && params.projectId
-        ? { userApiKey: params.apiKey, orgId: params.orgId, projectId: params.projectId }
-        : { userApiKey: params.apiKey }
+        ? { ...credential, orgId: params.orgId, projectId: params.projectId }
+        : credential
     );
+    const headers =
+      params.orgId && params.projectId
+        ? undefined
+        : {
+            ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
+            ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
+          };
     const payload = yield* client.get(
       `/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
       { headers, ...idempotent }

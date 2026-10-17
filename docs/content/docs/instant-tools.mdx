@@ -7,6 +7,7 @@ experimental: true
 
 Instant Tools run supported actions on Composio's provider accounts and charge your organization's Composio balance. Your users don't need a separate provider account or API key.
 
+- **Set up basic controls:** [Allow or exclude toolkits and tools](#allow-or-exclude-specific-toolkits-and-tools), or [turn Instant off](#turn-instant-off).
 - **Want approval before spending?** Keep execution in your application and [ask before each call](#approve-a-tool-call-before-spending).
 - **Need a Session spend cap?** There is no built-in dollar cap. Use an [application-side budget](#limit-session-spending), or disable Instant with `instant=False` in Python or `instant: false` in TypeScript.
 
@@ -21,6 +22,72 @@ Once enabled, eligible tools can use Instant in new and existing Sessions unless
 
 <Callout type="info" title="Experimental access">
 If the setting is unavailable, contact [support@composio.dev](mailto:support@composio.dev) to request access.
+</Callout>
+
+## Control Instant usage
+
+The Session's top-level `toolkits` filter controls which toolkits your agent can use. The separate `instant` setting controls whether it can use Composio's Instant accounts for those tools.
+
+### Allow or exclude specific toolkits and tools
+
+Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["exa", "firecrawl"],
+    instant={
+        "toolkits": {"enable": ["exa"]},
+        "tools": {"exa": {"enable": ["EXA_SEARCH"]}},
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+const composio = new Composio();
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["exa", "firecrawl"],
+  instant: {
+    toolkits: { enable: ["exa"] },
+    tools: { exa: { enable: ["EXA_SEARCH"] } },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Use `disable` instead of `enable` to exclude the listed toolkits or tools. Each filter accepts one or the other, not both. Toolkit and tool filters intersect; they cannot enable anything excluded by the Session's top-level filters.
+
+Omitting `instant.toolkits` leaves other eligible toolkits permitted. A `tools.exa` rule alone does not restrict Instant to Exa.
+
+### Turn Instant off
+
+Your own connected accounts remain available when you disable Instant:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(instant=False)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+const composio = new Composio();
+const session = await composio.create("user_123");
+// ---cut---
+await session.update({ instant: false });
+```
+</Tab>
+</Tabs>
+
+<Callout type="warning" title="Updating a disabled Session">
+Passing any `instant` object after `instant=false` re-enables Instant usage if the project allows it, even if you only set charge reporting. Keep `instant` as `false` when the Session must not spend. Omitting `instant` from an update preserves the existing policy.
 </Callout>
 
 ## Approve a tool call before spending
@@ -114,74 +181,9 @@ For a per-Session budget, enforce it in the same application-side executor that 
 
 Use exact decimal arithmetic for USD amounts. Reject any call whose maximum cost you cannot bound if you need a strict dollar limit. For the simpler policy “no unapproved paid calls,” use the approval example above. To prevent all Instant spending in a Session, [turn Instant off](#turn-instant-off).
 
-## Control Instant usage
-
-The Session's top-level `toolkits` filter controls which toolkits your agent can use. The separate `instant` setting controls whether it can use Composio's Instant accounts for those tools.
-
-### Turn Instant off
-
-Your own connected accounts remain available when you disable Instant:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session.update(instant=False)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-const composio = new Composio();
-const session = await composio.create("user_123");
-// ---cut---
-await session.update({ instant: false });
-```
-</Tab>
-</Tabs>
-
-<Callout type="warning" title="Updating a disabled Session">
-Passing any `instant` object after `instant=false` re-enables Instant usage if the project allows it, even if you only set charge reporting. Keep `instant` as `false` when the Session must not spend. Omitting `instant` from an update preserves the existing policy.
-</Callout>
+## Report charges and use Instant tools
 
 <Accordions>
-<Accordion title="Allow or exclude specific toolkits and tools">
-
-Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["exa", "firecrawl"],
-    instant={
-        "toolkits": {"enable": ["exa"]},
-        "tools": {"exa": {"enable": ["EXA_SEARCH"]}},
-    },
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-const composio = new Composio();
-// ---cut---
-const session = await composio.create("user_123", {
-  toolkits: ["exa", "firecrawl"],
-  instant: {
-    toolkits: { enable: ["exa"] },
-    tools: { exa: { enable: ["EXA_SEARCH"] } },
-  },
-});
-```
-</Tab>
-</Tabs>
-
-Use `disable` instead of `enable` to exclude the listed toolkits or tools. Each filter accepts one or the other, not both. Toolkit and tool filters intersect; they cannot enable anything excluded by the Session's top-level filters.
-
-Omitting `instant.toolkits` leaves other eligible toolkits permitted. A `tools.exa` rule alone does not restrict Instant to Exa.
-
-</Accordion>
 <Accordion title="Report charges and show prices">
 ### Return the charge with a call
 
@@ -299,6 +301,8 @@ Instant support is **per tool**. A toolkit supporting Instant does not mean ever
 - [Get a tool](/reference/api-reference/tools/getToolsByToolSlug) with `include_pricing=true` to check its support, rate, and input schema before executing it.
 
 Follow `next_cursor` when listing tools or toolkits, including pages with no Instant matches. Instant metadata is absent for older toolkit versions and ineligible tools. Neither `no_auth` nor `composio_managed_auth_schemes` indicates Instant support.
+
+You can also change price reporting on an existing Session with `session.update(instant={"return_prices_in_search": True})` in Python or `await session.update({ instant: { returnPricesInSearch: true } })` in TypeScript.
 
 ## Know which account runs the tool
 

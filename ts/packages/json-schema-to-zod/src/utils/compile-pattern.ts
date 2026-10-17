@@ -1,4 +1,4 @@
-import type { Refs } from '../types';
+import type { RefsOf } from '../context';
 import { createPatternMatcher, patternMatches, type PatternMatcher } from './linear-pattern';
 
 /**
@@ -98,7 +98,7 @@ export class SchemaPatternRegExp extends RegExp {
 export const compilePattern = (
   keyword: 'pattern' | 'patternProperties',
   pattern: string,
-  refs: Pick<Refs, 'path'>
+  refs: Pick<RefsOf<unknown>, 'path'>
 ): SchemaPatternRegExp => {
   const path = keyword === 'pattern' ? refs.path : [...refs.path, 'patternProperties', pattern];
 

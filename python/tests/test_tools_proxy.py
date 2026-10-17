@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import httpx
 import pytest
+from composio_client import ProjectAuth
 
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
@@ -28,7 +29,7 @@ def _proxy_body(**kwargs: t.Any) -> t.Dict[str, t.Any]:
 
     client = HttpClient(
         provider="test",
-        api_key="sk-test",
+        auth=ProjectAuth("sk-test"),
         base_url="https://backend.invalid",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )

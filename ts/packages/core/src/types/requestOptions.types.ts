@@ -1,4 +1,4 @@
-import type ComposioClient from '@composio/client';
+import type { RequestOptions as ClientRequestOptions } from '@composio/client';
 
 /**
  * Per-request transport options for cancelling an SDK call.
@@ -37,15 +37,6 @@ export type ComposioRequestOptions = {
    */
   signal?: AbortSignal;
 };
-
-/**
- * The `@composio/client` per-request transport options, reached via a public
- * method whose only parameter is that type (`tools.retrieveEnum`). The
- * `internal/*` subpath that declares `RequestOptions` is not in the package's
- * `exports`, so we derive it structurally instead of deep-importing it.
- * @internal
- */
-type ClientRequestOptions = NonNullable<Parameters<ComposioClient['tools']['retrieveEnum']>[0]>;
 
 /**
  * Compile-time guards: {@link ComposioRequestOptions} is forwarded verbatim to

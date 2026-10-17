@@ -9,7 +9,17 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from composio_client import ConflictError, omit
+from composio_client import (
+    Auth,
+    AutoAuth,
+    ConflictError,
+    NoAuth,
+    ProjectAuth,
+    Scope,
+    UserAuth,
+    omit,
+)
+from composio_client import ComposioError as ClientComposioError
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
@@ -58,8 +68,8 @@ class GrepInput(BaseModel):
 def mock_client():
     """Create a mock HTTP client."""
     client = mock_http_client(MagicMock)
-    client.api_key = "test-api-key"
-    client.user_api_key = None
+    client.sdk_auth = ProjectAuth("test-api-key")
+    client.scope = None
     client.base_url = httpx.URL("https://backend.composio.dev")
     client.default_headers = {}
 
@@ -311,7 +321,7 @@ class TestToolRouter:
 
         client = HttpClient(
             provider="test",
-            api_key="sk-test",
+            auth=ProjectAuth("sk-test"),
             base_url="https://backend.invalid",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -2366,7 +2376,7 @@ class TestInstantContractTransport:
     )
     def test_create_and_patch_send_new_policy(self, policy):
         client, requests = _transport_client(
-            api_key="ak_test", base_url="https://backend.composio.dev"
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
         router = ToolRouter(client=client, provider=MagicMock())
         session = router.create(user_id="user_123", instant=policy)
@@ -2420,7 +2430,7 @@ class TestInstantContractTransport:
 
         client = HttpClient(
             provider="test",
-            api_key="ak_test",
+            auth=ProjectAuth("ak_test"),
             base_url="https://backend.composio.dev",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -2453,7 +2463,7 @@ class TestInstantContractTransport:
 
         client = HttpClient(
             provider="test",
-            api_key="ak_test",
+            auth=ProjectAuth("ak_test"),
             base_url="https://backend.composio.dev",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -2509,7 +2519,7 @@ def _answering_client(
 
     client = HttpClient(
         provider="test",
-        api_key="ak_test",
+        auth=ProjectAuth("ak_test"),
         base_url="https://backend.composio.dev",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -2584,7 +2594,7 @@ class TestApprovalRules:
 
     def test_create_sends_approval_lists_and_fallback(self):
         client, requests = _transport_client(
-            api_key="ak_test", base_url="https://backend.composio.dev"
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
 
         ToolRouter(client=client, provider=MagicMock()).create(
@@ -2626,7 +2636,7 @@ class TestApprovalRules:
 
     def test_update_sends_approval_lists_and_fallback(self):
         client, requests = _transport_client(
-            api_key="ak_test", base_url="https://backend.composio.dev"
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
         session = ToolRouter(client=client, provider=MagicMock()).create(
             user_id="user_123"
@@ -3065,10 +3075,9 @@ def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
 
 def _transport_client(
     *,
-    api_key: t.Optional[str],
+    auth: Auth,
     base_url: str,
-    disable_api_key: bool = False,
-    user_api_key: t.Optional[str] = None,
+    scope: t.Optional[Scope] = None,
     default_headers: t.Optional[t.Dict[str, str]] = None,
     mcp_url: str = MCP_SAME_ORIGIN_URL,
 ) -> t.Tuple[HttpClient, t.List[httpx.Request]]:
@@ -3080,9 +3089,8 @@ def _transport_client(
 
     client = HttpClient(
         provider="test",
-        api_key=api_key,
-        disable_api_key=disable_api_key,
-        user_api_key=user_api_key,
+        auth=auth,
+        scope=scope,
         base_url=base_url,
         default_headers=default_headers,
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
@@ -3096,7 +3104,7 @@ class TestMcpAuthContext:
     def test_project_key_session_exports_only_the_project_key(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key="ak_project_key",
+                auth=ProjectAuth("ak_project_key"),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-request-id": "req-1"},
             )
@@ -3110,9 +3118,7 @@ class TestMcpAuthContext:
     def test_user_key_option_session_exports_only_the_user_key(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
-                user_api_key="uak_user_key",
+                auth=UserAuth("uak_user_key"),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-request-id": "r"},
             )
@@ -3125,10 +3131,10 @@ class TestMcpAuthContext:
         assert session.mcp.headers == {"x-user-api-key": "uak_user_key"}
 
     def test_user_key_header_session_exports_only_the_user_key(self):
+        """Under ``NoAuth`` a caller-placed user key header is the credential."""
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
+                auth=NoAuth(),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-user-api-key": "uak_user_key", "x-request-id": "r"},
             )
@@ -3142,15 +3148,10 @@ class TestMcpAuthContext:
 
     def test_scope_headers_are_exported_with_the_user_key(self):
         client, requests = _transport_client(
-            api_key=None,
-            disable_api_key=True,
-            user_api_key="uak_user_key",
+            auth=UserAuth("uak_user_key"),
+            scope=Scope(organization_id="org_nano_abc", project_id="proj_nano_xyz"),
             base_url="https://backend.composio.dev",
-            default_headers={
-                "x-org-id": "org_nano_abc",
-                "x-project-id": "proj_nano_xyz",
-                "x-request-id": "r",
-            },
+            default_headers={"x-request-id": "r"},
         )
         session = ToolRouter(client=client, provider=MagicMock()).use(
             "session_123", mcp=True
@@ -3167,8 +3168,7 @@ class TestMcpAuthContext:
     def test_retrieve_preserves_the_user_key_after_environment_changes(self):
         with patch.dict(os.environ, {}, clear=True):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
+                auth=NoAuth(),
                 base_url="https://backend.composio.dev",
                 default_headers={"X-User-Api-Key": "uak_user_key"},
             )
@@ -3183,7 +3183,7 @@ class TestMcpAuthContext:
     def test_no_credential_exports_no_headers_without_reading_the_environment(
         self, tool_router, mock_client
     ):
-        mock_client.api_key = None
+        mock_client.sdk_auth = NoAuth()
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_ambient"}):
             session = tool_router.create(user_id="user_123", mcp=True)
 
@@ -3263,23 +3263,49 @@ class TestMcpAuthContext:
         assert "The MCP URL has an opaque origin" in caplog.text
         assert "test-api-key" not in caplog.text
 
-    def test_user_key_default_header_wins_over_the_configured_project_key(self):
+    def test_user_key_default_header_beside_a_project_key_is_refused(self):
+        """A second credential next to ``auth`` cannot be configured at all, so
+        the request and the MCP export can never disagree about it."""
+        with pytest.raises(ClientComposioError, match="`x-user-api-key`"):
+            _transport_client(
+                auth=ProjectAuth("ak_project_key"),
+                base_url="https://backend.composio.dev",
+                default_headers={"x-user-api-key": "uak_header_key"},
+            )
+
+    def test_project_key_beside_a_user_key_exports_the_project_key(self):
         client, requests = _transport_client(
-            api_key="ak_project_key",
+            auth=AutoAuth(project="ak_project_key", user="uak_user_key"),
             base_url="https://backend.composio.dev",
-            default_headers={"x-user-api-key": "uak_header_key"},
         )
         session = ToolRouter(client=client, provider=MagicMock()).create(
             user_id="user_123", mcp=True
         )
 
-        assert "x-api-key" not in requests[0].headers
-        assert requests[0].headers["x-user-api-key"] == "uak_header_key"
-        assert session.mcp.headers == {"x-user-api-key": "uak_header_key"}
+        assert requests[0].headers["x-api-key"] == "ak_project_key"
+        assert "x-user-api-key" not in requests[0].headers
+        assert session.mcp.headers == {"x-api-key": "ak_project_key"}
+
+    def test_scope_without_an_organization_exports_only_the_project_id(self):
+        client, requests = _transport_client(
+            auth=UserAuth("uak_user_key"),
+            scope=Scope(project_id="proj_nano_xyz"),
+            base_url="https://backend.composio.dev",
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123", mcp=True
+        )
+
+        assert "x-org-id" not in requests[0].headers
+        assert requests[0].headers["x-project-id"] == "proj_nano_xyz"
+        assert session.mcp.headers == {
+            "x-user-api-key": "uak_user_key",
+            "x-project-id": "proj_nano_xyz",
+        }
 
     def test_invalid_port_in_mcp_url_raises_the_typed_error(self):
         client, _ = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="https://backend.composio.dev",
             mcp_url="https://backend.composio.dev:bad/mcp",
         )
@@ -3292,7 +3318,7 @@ class TestMcpAuthContext:
 
     def test_malformed_mcp_url_is_not_echoed_in_the_error(self):
         client, _ = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="https://backend.composio.dev",
             mcp_url="not-a-url?token=secret_value",
         )
@@ -3313,7 +3339,7 @@ class TestMcpAuthContext:
 
     def test_same_origin_plain_http_base_url_exports_credentials(self):
         client, requests = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="http://localhost:3000",
             mcp_url="http://localhost:3000/api/v3/tool_router/session/session_123/mcp",
         )

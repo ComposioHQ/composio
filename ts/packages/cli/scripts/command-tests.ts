@@ -20,20 +20,11 @@ const TEST_SUFFIX = '.cmd.test.ts';
 export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'agent/commands/agent.claim.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.inbox.cmd.ts', reason: 'no test yet' },
-  { command: 'agent/commands/agent.login.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.signup.cmd.ts', reason: 'no test yet' },
   { command: 'agent/commands/agent.whoami.cmd.ts', reason: 'no test yet' },
   { command: 'artifacts.cmd.ts', reason: 'no test yet' },
   { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
   { command: 'debug.cmd.ts', reason: 'no test yet' },
-  {
-    command: 'generate/generate.py.cmd.ts',
-    reason: 'thin wrapper over py.generate; covered by py/py.generate.cmd.test.ts',
-  },
-  {
-    command: 'generate/generate.ts.cmd.ts',
-    reason: 'thin wrapper over ts.generate; covered by ts/ts.generate.cmd.test.ts',
-  },
   {
     command: 'logs/commands/logs.triggers.cmd.ts',
     reason: 'covered by logs.triggers.client.cmd.test.ts; split pending',
