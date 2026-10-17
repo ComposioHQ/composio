@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Option } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option } from 'effect';
 import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -12,6 +12,7 @@ import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
@@ -156,12 +157,18 @@ describe('CLI: composio execute', () => {
   });
 
   let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
+  let recordedExecuteParams: Array<Record<string, unknown>> = [];
+  // Records what one execution call carried; the account travels with the call, not the session.
+  const recordExecute = <T>(params: unknown, result: T) =>
+    Effect.sync(() => {
+      recordedExecuteParams.push(params as Record<string, unknown>);
+      return result;
+    });
   let recordedProjectToolkitScopes: Array<ToolkitProjectScope | undefined> = [];
-  let recordedExecuteOptions: Array<{ maxRetries?: number; decode?: boolean } | undefined> = [];
   beforeEach(() => {
     recordedSessionCreateParams = [];
+    recordedExecuteParams = [];
     recordedProjectToolkitScopes = [];
-    recordedExecuteOptions = [];
   });
 
   layer(
@@ -262,7 +269,7 @@ describe('CLI: composio execute', () => {
         const output = parseLastJson(lines);
 
         expect(outputText).not.toContain('Response\n{');
-        // Response flows through real ToolsExecutorLive → mock session.execute
+        // Response flows through real ToolsExecutorLive → test Dashboard → mock session.execute
         expect(output.successful).toBe(true);
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
@@ -396,30 +403,17 @@ describe('CLI: composio execute', () => {
               tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
             };
           }),
-        execute: (_sessionId, params, options) =>
-          Effect.sync(() => {
-            recordedExecuteOptions.push(options);
-            return {
-              result_type: 'completed' as const,
-              data: { tool_slug: params.tool_slug, arguments: params.arguments },
-              error: null,
-              log_id: 'log_gmail_default',
-            };
-          }),
-        executeMeta: (_sessionId, params, options) =>
-          Effect.sync(() => {
-            recordedExecuteOptions.push(options);
-            return {
-              result_type: 'completed' as const,
-              data: { slug: params.slug, arguments: params.arguments },
-              error: null,
-              log_id: 'log_meta_default',
-            };
+        execute: (_sessionId, params) =>
+          recordExecute(params, {
+            result_type: 'completed' as const,
+            data: { tool_slug: params.tool_slug, arguments: params.arguments },
+            error: null,
+            log_id: 'log_gmail_default',
           }),
       },
     })
-  )('[Given] default alias exists [Then] execute pins the default connected account', it => {
-    it.effect('passes connected_accounts with the default alias account', () =>
+  )('[Given] default alias exists [Then] execute sends the default connected account', it => {
+    it.effect('sends the default alias account with the call', () =>
       Effect.gen(function* () {
         yield* cli([
           'execute',
@@ -429,21 +423,7 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          gmail: 'con_gmail_default',
-        });
-        // An execution does not ask for retries or validation, so the client
-        // sends it once: a retry after the backend already acted would
-        // duplicate the side effect.
-        expect(recordedExecuteOptions.at(-1)).toBeUndefined();
-      })
-    );
-
-    it.effect('never retries a meta tool execution', () =>
-      Effect.gen(function* () {
-        yield* cli(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
-
-        expect(recordedExecuteOptions).toEqual([undefined]);
+        expect(recordedExecuteParams[0]?.account).toBe('con_gmail_default');
       })
     );
 
@@ -541,7 +521,7 @@ describe('CLI: composio execute', () => {
             };
           }),
         execute: (_sessionId, params) =>
-          Effect.succeed({
+          recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
@@ -549,7 +529,7 @@ describe('CLI: composio execute', () => {
           }),
       },
     })
-  )('[Given] --account selector [Then] execute pins the matched connected account', it => {
+  )('[Given] --account selector [Then] execute sends the matched connected account', it => {
     it.effect('matches even when a stale config disables the former experiment', () =>
       Effect.gen(function* () {
         const cliConfig = yield* ComposioCliUserConfig;
@@ -567,9 +547,7 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          gmail: 'con_gmail_secondary',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_gmail_secondary');
       })
     );
 
@@ -590,8 +568,8 @@ describe('CLI: composio execute', () => {
         ]);
 
         expect(recordedSessionCreateParams).toHaveLength(2);
-        expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
-          expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
+        expect(recordedExecuteParams.map(params => params.account)).toEqual(
+          expect.arrayContaining(['con_gmail_secondary', 'con_gmail_default'])
         );
       })
     );
@@ -624,8 +602,8 @@ describe('CLI: composio execute', () => {
           { recipient: 'repeat-first@example.com' },
           { recipient: 'repeat-second@example.com' },
         ]);
-        expect(recordedSessionCreateParams.map(params => params.connected_accounts)).toEqual(
-          expect.arrayContaining([{ gmail: 'con_gmail_secondary' }, { gmail: 'con_gmail_default' }])
+        expect(recordedExecuteParams.map(params => params.account)).toEqual(
+          expect.arrayContaining(['con_gmail_secondary', 'con_gmail_default'])
         );
         expect(recordedSessionCreateParams).toHaveLength(2);
       })
@@ -706,7 +684,7 @@ describe('CLI: composio execute', () => {
             };
           }),
         execute: (_sessionId, params) =>
-          Effect.succeed({
+          recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
@@ -727,9 +705,7 @@ describe('CLI: composio execute', () => {
           '{"property_id":"1"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
-          google_analytics: 'con_google_analytics_default',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_google_analytics_default');
       })
     );
 
@@ -745,9 +721,7 @@ describe('CLI: composio execute', () => {
           '{"message":"hi"}',
         ]);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toMatchObject({
-          microsoft_teams: 'con_microsoft_teams_default',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('con_microsoft_teams_default');
       })
     );
   });
@@ -809,7 +783,7 @@ describe('CLI: composio execute', () => {
             };
           }),
         execute: (_sessionId, params) =>
-          Effect.succeed({
+          recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
@@ -840,9 +814,7 @@ describe('CLI: composio execute', () => {
             '{"query":"ada"}',
           ]);
 
-          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-            custom_grain: 'ca_1',
-          });
+          expect(recordedExecuteParams[0]?.account).toBe('ca_1');
           // Every lookup — account selection, the permission gate, error
           // mapping — must ask for the project execute resolved.
           expect(recordedProjectToolkitScopes.length).toBeGreaterThan(0);
@@ -896,9 +868,7 @@ describe('CLI: composio execute', () => {
 
         yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']);
 
-        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-          custom_grain: 'ca_1',
-        });
+        expect(recordedExecuteParams[0]?.account).toBe('ca_1');
       })
     );
   });
@@ -948,7 +918,7 @@ describe('CLI: composio execute', () => {
             };
           }),
         execute: (_sessionId, params) =>
-          Effect.succeed({
+          recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
@@ -957,9 +927,9 @@ describe('CLI: composio execute', () => {
       },
     })
   )(
-    '[Given] a non-managed connected account [Then] execute preloads auth configs into the Tool Router session',
+    '[Given] a non-managed connected account [Then] execute leaves the session to the Dashboard',
     it => {
-      it.effect('passes explicit auth_configs for custom auth toolkits', () =>
+      it.effect('sends the connected account and no auth configs for custom auth toolkits', () =>
         Effect.gen(function* () {
           yield* cli([
             'execute',
@@ -974,15 +944,9 @@ describe('CLI: composio execute', () => {
           expect(output.successful).toBe(true);
           expect(recordedSessionCreateParams).toHaveLength(1);
           expect(recordedSessionCreateParams[0]?.user_id).toEqual(expect.any(String));
-          expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
-            posthog: 'ac_posthog_custom',
-          });
-          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-            posthog: 'con_posthog_active',
-          });
-          expect(recordedSessionCreateParams[0]?.instant).toEqual({
-            return_instant_charge: true,
-          });
+          // The Dashboard owns the session, so the CLI sends it no auth configs.
+          expect(recordedSessionCreateParams[0]?.auth_configs).toBeUndefined();
+          expect(recordedExecuteParams[0]?.account).toBe('con_posthog_active');
         })
       );
     }
@@ -1012,7 +976,7 @@ describe('CLI: composio execute', () => {
             };
           }),
         execute: (_sessionId, params) =>
-          Effect.succeed({
+          recordExecute(params, {
             result_type: 'completed' as const,
             data: { tool_slug: params.tool_slug, arguments: params.arguments },
             error: null,
@@ -1020,8 +984,8 @@ describe('CLI: composio execute', () => {
           }),
       },
     })
-  )('[Given] cached auth configs [Then] execute seeds the session from cache', it => {
-    it.effect('uses cached auth_configs for consumer execute sessions', () =>
+  )('[Given] cached auth configs [Then] execute sends no cached session settings', it => {
+    it.effect('sends no cached auth configs on consumer executions', () =>
       Effect.gen(function* () {
         vi.spyOn(
           consumerShortTermCache,
@@ -1045,9 +1009,8 @@ describe('CLI: composio execute', () => {
         ]);
 
         expect(recordedSessionCreateParams).toHaveLength(1);
-        expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
-          posthog: 'ac_posthog_cached',
-        });
+        // The Dashboard owns the session, so the CLI sends it no auth configs.
+        expect(recordedSessionCreateParams[0]?.auth_configs).toBeUndefined();
       })
     );
   });
@@ -2677,6 +2640,103 @@ describe('CLI: composio execute', () => {
       })
     );
   });
+
+  // --- Execution order (flows through real ToolsExecutorLive) ---
+
+  // The backend transport creates the session before the gate; the Dashboard
+  // transport has no session to create. A denied tool is sent nowhere on either.
+  it.effect.each<{
+    readonly transport: string;
+    readonly env: Record<string, string>;
+    readonly calls: ReadonlyArray<string>;
+  }>([
+    {
+      transport: 'backend',
+      // A custom backend with no web URL keeps the backend transport.
+      env: { COMPOSIO_BASE_URL: 'https://composio.internal.example' },
+      calls: ['create'],
+    },
+    { transport: 'dashboard', env: {}, calls: [] },
+  ])(
+    'on the $transport transport, prepares in order and sends nothing once the permission gate denies',
+    ({ env, calls }) => {
+      const toolRouterCalls: Array<string> = [];
+      // Enhanced controls ask before every call; with no one to answer the
+      // prompt (as under test), the gate denies.
+      vi.spyOn(toolPermissions, 'getConsumerPermissionSnapshot').mockImplementation(params =>
+        Effect.succeed({
+          orgId: params.orgId,
+          projectId: params.projectId,
+          consumerUserId: params.consumerUserId,
+          enhancedControlsEnabled: true,
+          permissions: { default: 'ask_every_call' as const, overrides: {} },
+          connectedAccountIds: [],
+          fetchedAt: 1_767_225_600_000,
+        })
+      );
+
+      return Effect.gen(function* () {
+        const exit = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]).pipe(Effect.exit);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(lines.join('\n')).toContain('requires interactive approval');
+        expect(toolRouterCalls).toEqual(calls);
+      }).pipe(
+        Effect.provide(
+          TestLive({
+            baseConfigProvider: ConfigProvider.fromEnv({
+              env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env },
+            }),
+            fixture: 'global-test-user-id',
+            stdin: { isTTY: true, data: '' },
+            dashboard: {
+              respond: () => {
+                toolRouterCalls.push('dashboard');
+                return Response.error();
+              },
+            },
+            toolRouter: {
+              create: params =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('create');
+                  return {
+                    session_id: 'trs_backend_session',
+                    config: {
+                      user_id: params.user_id,
+                      execute: {},
+                      search: {},
+                      preload: { tools: [] },
+                      instant: false,
+                    },
+                    config_version: 1,
+                    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+                    tool_router_tools: [],
+                  };
+                }),
+              execute: () =>
+                Effect.sync(() => {
+                  toolRouterCalls.push('execute');
+                  return {
+                    result_type: 'completed' as const,
+                    data: {},
+                    error: null,
+                    log_id: 'log_test',
+                  };
+                }),
+            },
+          })
+        ),
+        Effect.scoped
+      );
+    }
+  );
 
   // --- Tool Router error path (flows through real ToolsExecutorLive) ---
 
