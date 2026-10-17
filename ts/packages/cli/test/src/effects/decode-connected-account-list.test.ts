@@ -64,6 +64,60 @@ describe('decodeConnectedAccountItems', () => {
     );
   });
 
+  layer(TestLayer)('[Given] a state carrying a provider identity next to credentials', it => {
+    it.effect('keeps only the trimmed display name from state', () =>
+      Effect.gen(function* () {
+        const raw = makeItem({
+          state: {
+            authScheme: 'OAUTH2',
+            val: {
+              displayName: '  ada@example.com  ',
+              access_token: 'must-not-leak',
+              refresh_token: 'must-not-leak',
+            },
+          },
+          data: { access_token: 'must-not-leak' },
+        });
+
+        const items = yield* decodeConnectedAccountItems([raw]);
+
+        expect(items).toStrictEqual([makeItem({ display_name: 'ada@example.com' })]);
+        expect(JSON.stringify(items)).not.toContain('must-not-leak');
+      })
+    );
+
+    it.effect('keeps a display name of exactly 200 characters', () =>
+      Effect.gen(function* () {
+        const displayName = 'a'.repeat(200);
+
+        const items = yield* decodeConnectedAccountItems([
+          makeItem({ state: { val: { displayName } } }),
+        ]);
+
+        expect(items).toStrictEqual([makeItem({ display_name: displayName })]);
+      })
+    );
+  });
+
+  layer(TestLayer)('[Given] no usable state.val.displayName', it => {
+    it.effect.each([
+      ['state is null', { state: null }],
+      ['state is not an object', { state: 'opaque' }],
+      ['state has no val', { state: { authScheme: 'OAUTH2' } }],
+      ['val has no displayName', { state: { val: { access_token: 'must-not-leak' } } }],
+      ['displayName is blank', { state: { val: { displayName: '   ' } } }],
+      ['displayName is not a string', { state: { val: { displayName: 42 } } }],
+      ['displayName is over 200 characters', { state: { val: { displayName: 'a'.repeat(201) } } }],
+      ['only a top-level display_name is sent', { display_name: 'ada@example.com' }],
+    ] as const)('leaves display_name out when %s', ([, overrides]) =>
+      Effect.gen(function* () {
+        const items = yield* decodeConnectedAccountItems([makeItem(overrides)]);
+
+        expect(items).toStrictEqual([makeItem()]);
+      })
+    );
+  });
+
   layer(TestLayer)('[Given] a malformed payload', it => {
     it.effect('fails with SchemaError', () =>
       Effect.gen(function* () {
@@ -94,6 +148,37 @@ describe('decodeConnectedAccountListWithFallback', () => {
         const output = (yield* MockConsole.getLines()).join('\n');
         expect(output).toContain('QUANTUM_LINKED');
         expect(output).toContain('composio upgrade');
+      })
+    );
+  });
+
+  layer(TestLayer)('[Given] a response whose envelope does not match', it => {
+    it.effect('falls back with display_name derived only from state', () =>
+      Effect.gen(function* () {
+        const raw = {
+          items: [
+            makeItem({
+              id: 'con_named',
+              state: { val: { displayName: '  ada@example.com  ' } },
+            }),
+            makeItem({ id: 'con_object', display_name: { email: 'ada@example.com' } }),
+            makeItem({ id: 'con_too_long', display_name: 'a'.repeat(201) }),
+          ],
+          total_items: '3',
+          total_pages: 1,
+          current_page: 1,
+          next_cursor: null,
+        };
+
+        const result = yield* decodeConnectedAccountListWithFallback(raw);
+
+        expect(result.items.map(item => [item.id, item.display_name])).toStrictEqual([
+          ['con_named', 'ada@example.com'],
+          ['con_object', undefined],
+          ['con_too_long', undefined],
+        ]);
+        expect(result.items[1]).not.toHaveProperty('display_name');
+        expect(result.items[2]).not.toHaveProperty('display_name');
       })
     );
   });
