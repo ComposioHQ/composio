@@ -4,7 +4,7 @@ title: "Compliance, Data Retention, and Model Training"
 description: "Public guidance for data retention, model training, compliance, and enterprise security reviews."
 category: "security-and-trust"
 visibility: "public"
-timestamp: "2026-10-17T00:00:00Z"
+timestamp: "2026-07-24T00:00:00Z"
 tags:
   - "compliance"
   - "retention"
@@ -19,30 +19,15 @@ tags:
 - The [data-retention documentation](https://docs.composio.dev/docs/security/data-retention) explains tool-call log retention, per-project log-storage controls, returned-file URL lifetime, and where data flows during execution.
 - The [Composio Trust Center](https://trust.composio.dev) provides current compliance reports and sub-processor information.
 
-## Payload data vs. execution metadata
+## Zero data retention and no-training requirements
 
-- **Payload data** is the request arguments and response data of tool executions and Proxy Execute requests, plus trigger payloads. It is the content agents read from or write to connected apps, such as email, Slack messages, calendar entries, and files.
-- **Execution metadata** is operational data Composio generates about each call, such as the toolkit and action, status, error codes, timing, and counts. It does not include payload data or error message text.
+Standard plans do not guarantee end-to-end zero data retention or zero training. The per-project **Don't store data** setting reduces what Composio stores, but it does not govern data retained or processed by third-party providers.
+
+Customers who require contractual zero-data-retention, no-training, DPA, or security-review terms should use the Enterprise track so the requirements can be scoped explicitly.
 
 ## Model training
 
-On every plan, Composio does not use payload data to train or improve AI or machine learning models. The [Terms of Service](https://composio.dev/terms), [Privacy Policy](https://composio.dev/privacy), and [Data Processing Addendum](https://composio.dev/legal/dpa) all state this.
-
-Composio may de-identify execution metadata by removing organization, project, user, and connected-account identifiers and IP addresses. It may then use that data to improve the platform, train machine learning models, and produce aggregate analytics. De-identified execution metadata is not linked to a customer or individual, and Composio may keep it indefinitely.
-
-Features that use third-party providers are also governed by those providers' terms. See [Third-party providers](#third-party-providers).
-
-## Retention
-
-- **Payload data**: unless Zero Data Retention (ZDR) is on, payload data is kept in execution logs for up to one year and then automatically deleted. With ZDR on, Composio does not store payloads for covered calls.
-- **Organization deletion**: when an organization is deleted, Composio deletes its payload data and execution logs within 30 days.
-- **Account data** (organizations, members, developers): Composio keeps it until the customer asks for deletion. Churned members are deactivated and receive no marketing emails or product updates. On an explicit deletion request, Composio permanently deletes the account data within 30 days. It keeps only a hashed email address so the person gets no further emails, plus any records the law requires, such as billing records.
-
-## Zero data retention and stronger terms
-
-ZDR stops Composio from storing payloads, but it does not govern data retained or processed by third-party providers. See [Zero Data Retention](https://docs.composio.dev/docs/security/zero-data-retention).
-
-Customers who need shorter retention windows, contractual zero data retention, or bespoke DPA or security-review terms should use the Enterprise track so the requirements can be scoped explicitly.
+Do not infer a blanket no-training guarantee. Features that use third-party providers are also governed by those providers' terms. For an end-to-end contractual no-training requirement, use the Enterprise track.
 
 ## FedRAMP
 
