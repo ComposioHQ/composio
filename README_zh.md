@@ -112,6 +112,7 @@ curl -fsSL https://composio.dev/install | sh
 使用 `composio search` 查找工具，`composio execute` 运行工具，`composio link` 连接账户，`composio run` 用 TypeScript 编排工作流。参见 [CLI 文档](https://docs.composio.dev/docs/cli)。
 
 <a name="providers"></a>
+
 ## Provider 适配（Providers）
 
 provider 会把 Composio 工具适配为你的 agent 框架原生的工具格式：
