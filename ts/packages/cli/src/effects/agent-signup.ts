@@ -1,6 +1,8 @@
 import { Effect } from 'effect';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {
+  AGENT_SUMMARY_NOTE_TITLE,
+  agentSummaryLines,
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
   loginWithAgentIdentity,
@@ -41,16 +43,8 @@ export const runAgentSignupFlow = (params: AgentSignupFlowParams) =>
       const summary = safeAgentSummary(identity);
 
       yield* ui.note(
-        [
-          `Type: agent`,
-          `Status: ${summary.status}`,
-          `Email: ${summary.email ?? 'unknown'}`,
-          `Slug: ${summary.slug ?? 'unknown'}`,
-          `Current Org ID: ${summary.org_id ?? 'pending'}`,
-          `Project ID: ${summary.project_id ?? 'pending'}`,
-          `Agent key: stored in ~/.composio/agent.json`,
-        ].join('\n'),
-        'Composio Agent'
+        [...agentSummaryLines(summary), `Agent key: stored in ~/.composio/agent.json`].join('\n'),
+        AGENT_SUMMARY_NOTE_TITLE
       );
 
       if (!params.noWait && !params.noLogin) {

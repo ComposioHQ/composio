@@ -1,4 +1,4 @@
-import { Auth, make, type ComposioClientShape } from '@composio/client/effect';
+import type { ComposioClientShape } from '@composio/client/effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Console, Effect, Layer, Option } from 'effect';
@@ -14,8 +14,9 @@ import { hostOnlyEnvConfigProvider } from '../live-env-config-provider';
 import { makeSessionInfo } from '../models/account';
 import * as MockConsole from '../services/mock-console';
 import { terminalUITestImpl } from '../services/terminal-ui-test';
-import { mockAccountResources, type MockRequestScope } from './accounts';
+import type { MockRequestScope } from './accounts';
 import { ToolkitsTest } from './toolkits';
+import { makeShadowClient } from './shadow-client';
 
 /** What the CLI is logged in with when an agent handler test starts. */
 export interface AgentHandlerFixture {
@@ -29,32 +30,21 @@ export interface AgentHandlerOutput {
   readonly force: boolean;
 }
 
-// A resource the account mocks do not shadow reaches this transport and dies with its URL.
-const baseClient = make(
-  { auth: Auth.project('test'), baseURL: 'https://mock.invalid' },
-  HttpClient.make(request =>
-    Effect.die(new Error(`unexpected network call from an agent handler test: ${request.url}`))
-  )
-);
-
 const clientFor = (scope: MockRequestScope): ComposioClientShape =>
   // The shadows answer only the fields `loginWithAgentIdentity` reads; `test-layer.ts` shadows
   // its mock client the same way.
-  ({
-    ...baseClient,
-    ...mockAccountResources(
-      {
-        sessionInfo: makeSessionInfo({
-          orgId: scope.orgId ?? 'org_agent',
-          orgName: 'Agent Org',
-          orgMemberId: 'mem_agent',
-          userId: 'user_agent',
-          email: 'agent@agent.composio.ai',
-        }),
-      },
-      scope
-    ),
-  }) as unknown as ComposioClientShape;
+  makeShadowClient(
+    {
+      sessionInfo: makeSessionInfo({
+        orgId: scope.orgId ?? 'org_agent',
+        orgName: 'Agent Org',
+        orgMemberId: 'mem_agent',
+        userId: 'user_agent',
+        email: 'agent@agent.composio.ai',
+      }),
+    },
+    scope
+  );
 
 /**
  * What an `agent` handler needs without argv or `TestLive`: a headless terminal whose stdout
