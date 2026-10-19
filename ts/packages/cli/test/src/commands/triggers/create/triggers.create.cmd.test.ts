@@ -11,7 +11,7 @@ const dangerousDevConfig = {
   cliUserConfig: { developerDangerousCommandsEnabled: true },
 } as const;
 
-describe('CLI: composio dev triggers mutations', () => {
+describe('CLI: composio dev triggers create', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with valid args [Then] creates trigger',
     it => {
@@ -57,28 +57,6 @@ describe('CLI: composio dev triggers mutations', () => {
     }
   );
 
-  layer(TestLive(dangerousDevConfig))('[Given] enable with ID [Then] enables trigger', it => {
-    it.effect('enables trigger successfully', () =>
-      Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'enable', 'trg_123']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-        expect(output).toContain('enabled');
-      })
-    );
-  });
-
-  layer(TestLive(dangerousDevConfig))('[Given] disable with ID [Then] disables trigger', it => {
-    it.effect('disables trigger successfully', () =>
-      Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'disable', 'trg_123', '--dangerously-allow']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-        expect(output).toContain('disabled');
-      })
-    );
-  });
-
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with non-object JSON config [Then] shows type validation error',
     it => {
@@ -113,34 +91,6 @@ describe('CLI: composio dev triggers mutations', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('--trigger-config must be a JSON object');
-        })
-      );
-    }
-  );
-
-  layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for enable [Then] warns about missing argument',
-    it => {
-      it.effect('shows missing id warning', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'enable']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
-        })
-      );
-    }
-  );
-
-  layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for disable [Then] warns about missing argument',
-    it => {
-      it.effect('shows missing id warning', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'disable', '--dangerously-allow']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
         })
       );
     }
