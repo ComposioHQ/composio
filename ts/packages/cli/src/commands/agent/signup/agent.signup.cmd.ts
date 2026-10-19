@@ -1,5 +1,5 @@
 import { Command, Flag } from 'effect/cli';
-import { runAgentSignupFlow } from 'src/effects/agent-signup';
+import { runAgentSignup } from './agent.signup.handler';
 
 const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
@@ -20,6 +20,5 @@ const force = Flag.Boolean('force').pipe(
 export const agentCmd$Signup = Command.make(
   'signup',
   { noWait, noLogin, force },
-  ({ noWait, noLogin, force }) =>
-    runAgentSignupFlow({ noWait, noLogin, force, commandLabel: 'composio agent signup' })
+  runAgentSignup
 ).pipe(Command.withDescription('Sign up and optionally log in as a Composio agent.'));
