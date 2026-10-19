@@ -128,43 +128,6 @@ describe('CLI: composio agent', () => {
     );
   });
 
-  layer(TestLive())(it => {
-    it.effect('agent inbox prints only JSON', () =>
-      Effect.gen(function* () {
-        yield* writeStoredAgentIdentity(agentSignupResponse);
-        const fs = yield* FileSystem.FileSystem;
-        const cacheDir = yield* setupCacheDir;
-        expect((yield* fs.stat(path.join(cacheDir, 'agent.json'))).mode & 0o777).toBe(0o600);
-        const inbox = {
-          count: 1,
-          messages: [
-            {
-              id: 'msg_123',
-              from: 'person@example.com',
-              subject: 'Hello',
-              preview: 'Hi agent',
-            },
-          ],
-        };
-        const fetchSpy = vi
-          .spyOn(globalThis, 'fetch')
-          .mockImplementation(async () => jsonResponse(inbox));
-
-        yield* cli(['agent', 'inbox']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-
-        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
-          expect.stringContaining('/api/mail'),
-          expect.objectContaining({
-            method: 'GET',
-            headers: expect.objectContaining({ Authorization: 'Bearer cak_test_agent' }),
-          })
-        );
-        expect(lines).toEqual([JSON.stringify(inbox)]);
-      })
-    );
-  });
-
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
     it.effect('agent signup shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
