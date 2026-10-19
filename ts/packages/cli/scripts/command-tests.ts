@@ -21,7 +21,6 @@ export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'artifacts.cmd.ts', reason: 'no test yet' },
   { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
   { command: 'debug.cmd.ts', reason: 'no test yet' },
-  { command: 'orgs/commands/orgs.list.cmd.ts', reason: 'no test yet' },
   { command: 'signup.cmd.ts', reason: 'no test yet' },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
   { command: 'upgrade.cmd.ts', reason: 'no test yet' },
