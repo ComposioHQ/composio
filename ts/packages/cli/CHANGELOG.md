@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Upgrade note: if `composio execute` answers "Instant tools in Composio
+  Connect now run through the Composio dashboard", you are on 0.4.5 or older.
+  Run `composio upgrade` and retry. From this version on, `composio execute`
+  reaches those tools through the Dashboard.
+
 - `composio execute` now sends the execution itself (single, `--parallel`, and
   meta tools) through the Composio Dashboard instead of calling the backend
   directly. Output, exit codes, error details, connection tips, and `--json`
