@@ -39,7 +39,7 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
 import { withBackgroundUpdateCheck } from './background-update-check';
-import { debugCmd } from './debug.cmd';
+import { debugCmd } from './debug/debug.cmd';
 import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 import { CommandSurface } from './surface';
