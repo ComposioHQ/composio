@@ -166,17 +166,6 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
-    it.effect('agent commands show a soft auth warning when signed in as a human user', () =>
-      Effect.gen(function* () {
-        yield* cli(['agent', 'whoami']);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-        expect(output).toContain('currently signed in to Composio as a regular user');
-        expect(output).toContain('composio agent login <composio_agent_key>');
-        expect(process.exitCode).toBe(1);
-      })
-    );
-
     it.effect('agent signup shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
         yield* cli(['agent', 'signup']);

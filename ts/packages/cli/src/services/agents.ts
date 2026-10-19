@@ -155,7 +155,7 @@ export const normalizeAgentIdentity = (
     fallbackAgentKey
   );
 
-type SafeAgentSummary = {
+export type SafeAgentSummary = {
   readonly account_type: 'agent';
   readonly status: AgentStatus;
   readonly slug: string | null;
