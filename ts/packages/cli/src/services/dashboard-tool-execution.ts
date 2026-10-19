@@ -1,4 +1,20 @@
-import { APIError } from '@composio/client';
+import {
+  APIError,
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+  NotFoundError,
+  PermissionDeniedError,
+  RateLimitError,
+  UnprocessableEntityError,
+  type APIErrorFields,
+  type APIStatusError,
+} from '@composio/client/effect';
+import type {
+  SessionExecuteMetaResponse,
+  SessionExecuteResponse,
+} from '@composio/client/resources/tool-router';
 import { Config, Context, Data, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
@@ -6,6 +22,7 @@ import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
 import { APP_CONFIG } from 'src/config';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 
 export interface DashboardToolExecutionRequest {
   readonly slug: string;
@@ -38,11 +55,37 @@ export class DashboardToolExecutionError extends Data.TaggedError(
 
 const JsonObject = Schema.Record(Schema.String, Schema.Unknown);
 
-const ExecutionResponse = Schema.Struct({
-  data: JsonObject,
-  error: Schema.NullOr(Schema.String),
-  log_id: Schema.String,
-});
+/** A backend execute answer that carries a result rather than a request for more input. */
+export type DashboardExecutionResult = Exclude<
+  SessionExecuteResponse | SessionExecuteMetaResponse,
+  { result_type: 'input_required' }
+>;
+
+// The backend's answer is relayed as the backend sent it. Like the backend
+// transport, the CLI checks only what tells a result from a request for input:
+// the tool has already run, so a missing field must not turn its result into
+// an error.
+const ExecutionResult = Schema.StructWithRest(
+  Schema.Struct({ result_type: Schema.Literals(['completed', 'failed']) }),
+  [JsonObject]
+);
+
+const ExecutionResponse = Schema.Union([
+  ExecutionResult,
+  Schema.Struct({
+    result_type: Schema.Literal('input_required'),
+    input_requests: Schema.Record(
+      Schema.String,
+      Schema.Struct({
+        type: Schema.Literal('elicitation'),
+        mode: Schema.Literal('form'),
+        message: Schema.String,
+        requested_schema: JsonObject,
+      })
+    ),
+    request_state: Schema.optional(Schema.String),
+  }),
+]);
 
 // Fields beyond the named ones (a validation failure's `errors`, say) are kept,
 // so the rebuilt `APIError` carries the same body the backend sent.
@@ -83,6 +126,45 @@ const ProcedureReply = Schema.Union([
 ]);
 
 const decodeProcedureReply = Schema.decodeUnknownEffect(Schema.fromJsonString(ProcedureReply));
+
+/**
+ * The error `@composio/client` fails with for the same backend response, so
+ * error mapping, connection tips and telemetry need no second code path. The
+ * status classes and the message follow the client's own rules.
+ */
+const relayedApiError = (
+  url: string,
+  status: number,
+  envelope: Schema.Schema.Type<typeof ApiErrorEnvelope>
+): APIStatusError => {
+  const body = { error: envelope };
+  const fields: APIErrorFields = {
+    message: `${status} ${JSON.stringify(body)}`,
+    method: 'POST',
+    url,
+    status,
+    requestId: envelope.request_id,
+    details:
+      envelope.code !== undefined && envelope.slug !== undefined && envelope.status !== undefined
+        ? {
+            ...envelope,
+            code: envelope.code,
+            slug: envelope.slug,
+            status: envelope.status,
+          }
+        : undefined,
+    body,
+  };
+  if (status === 400) return new BadRequestError(fields);
+  if (status === 401) return new AuthenticationError(fields);
+  if (status === 403) return new PermissionDeniedError(fields);
+  if (status === 404) return new NotFoundError(fields);
+  if (status === 409) return new ConflictError(fields);
+  if (status === 422) return new UnprocessableEntityError(fields);
+  if (status === 429) return new RateLimitError(fields);
+  if (status >= 500) return new InternalServerError(fields);
+  return new APIError(fields);
+};
 
 const withoutTrailingSlashes = (url: string) => url.replace(/\/+$/, '');
 
@@ -179,7 +261,8 @@ const makeDashboardToolExecution = Effect.gen(function* () {
       // Lets the Dashboard's product analytics join the CLI's own events. Sent
       // only while telemetry is enabled, and only on these requests.
       const installId = yield* readInstallIdWhenTelemetryEnabled;
-      const request = HttpClientRequest.post(`${dashboard.base}/api/cli/trpc/${procedure}`).pipe(
+      const url = `${dashboard.base}/api/cli/trpc/${procedure}`;
+      const request = HttpClientRequest.post(url).pipe(
         HttpClientRequest.setHeaders({
           ...cliRequestHeaders(),
           accept: 'application/json',
@@ -246,13 +329,16 @@ const makeDashboardToolExecution = Effect.gen(function* () {
 
       const outcome = reply.result.data.json;
       if (!outcome.ok) {
-        // The same error `@composio/client` raises for this backend response, so
-        // error mapping, connection tips and telemetry need no second code path.
-        return yield* Effect.fail(
-          APIError.generate(outcome.status, { error: outcome.error }, undefined, new Headers())
+        return yield* Effect.fail(relayedApiError(url, outcome.status, outcome.error));
+      }
+      if (outcome.response.result_type === 'input_required') {
+        return yield* toolInputRequiredError(
+          `Tool ${input.tool_slug ?? input.slug}`,
+          outcome.response
         );
       }
-      return outcome.response;
+      // Not validated beyond `result_type`; see `ExecutionResult`.
+      return outcome.response as DashboardExecutionResult;
     });
 
   return {

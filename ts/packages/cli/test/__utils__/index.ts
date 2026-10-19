@@ -7,6 +7,12 @@ export { ToolkitsTest } from './layers/toolkits';
 export { ConnectedAccountsTest } from './layers/connected-accounts';
 export { CommandRunnerTest } from './layers/command-runner';
 export { SetupTest } from './layers/setup';
+export {
+  DashboardToolExecutionTest,
+  dashboardProcedureError,
+  dashboardProcedureResult,
+  type DashboardTestRequest,
+} from './layers/dashboard';
 export { cli } from './cli';
 export { pkg };
 export { withHttpServer } from './http-server';

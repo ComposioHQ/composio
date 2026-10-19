@@ -313,12 +313,10 @@ describe('CLI: composio run', () => {
     },
   ] as const;
 
-  for (const testCase of webURLForwarding) {
+  describe.each(webURLForwarding)('$name', testCase => {
     layer(
       RunTestLive({
-        baseConfigProvider: ConfigProvider.fromEnv({ env: testCase.env }).pipe(
-          extendConfigProvider
-        ),
+        baseConfigProvider: ConfigProvider.fromEnv({ env: testCase.env }),
       })
     )(it => {
       // A forwarded web URL is what moves a script's `execute()` onto the
@@ -340,7 +338,7 @@ describe('CLI: composio run', () => {
           })
       );
     });
-  }
+  });
 
   layer(Layer.merge(RunTestLive(), telemetryDebugModeLayer(true)))(it => {
     it.effect(

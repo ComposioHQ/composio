@@ -5,7 +5,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, vi } from 'vitest';
-import { APIError } from '@composio/client';
+import { isAPIError } from '@composio/client/effect';
 import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from 'effect';
 import { TestClock } from 'effect/testing';
 import {
@@ -21,7 +21,6 @@ import {
   resolveConsumerExecutionTransport,
 } from 'src/services/dashboard-tool-execution';
 import { cliRequestHeaders } from 'src/services/client-provenance';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ComposioUserContext } from 'src/services/user-context';
 import { extractApiErrorDetails } from 'src/utils/api-error-extraction';
@@ -63,7 +62,17 @@ const platform = (home: string) =>
   );
 type Platform = Layer.Success<ReturnType<typeof platform>>;
 
-const emptyHome = () => fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+const temporaryHomes: Array<string> = [];
+const emptyHome = () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-home-'));
+  temporaryHomes.push(home);
+  return home;
+};
+
+afterEach(() => {
+  temporaryHomes.forEach(home => fs.rmSync(home, { recursive: true, force: true }));
+  temporaryHomes.length = 0;
+});
 
 const userContext = (
   overrides: { webURL?: string; apiKey?: Option.Option<string>; home?: string } = {}
@@ -120,13 +129,29 @@ const withDashboard = <A, E>(
         )
       )
     ),
-    Effect.provide(platform(overrides?.home ?? emptyHome()))
+    Effect.provide(platform(overrides?.home ?? emptyHome())),
+    Effect.provide(
+      ConfigProvider.layer(
+        ConfigProvider.fromEnv({
+          env: Object.fromEntries(
+            Object.entries(process.env).filter(
+              (entry): entry is [string, string] => entry[1] !== undefined
+            )
+          ),
+        })
+      )
+    )
   );
 };
 
 const successOutcome = {
   ok: true,
-  response: { data: { id: 'msg_1' }, error: null, log_id: 'log_dashboard' },
+  response: {
+    result_type: 'completed',
+    data: { id: 'msg_1' },
+    error: null,
+    log_id: 'log_dashboard',
+  },
 };
 
 const executeRequest = {
@@ -141,7 +166,12 @@ describe('DashboardToolExecution', () => {
       Effect.gen(function* () {
         const response = yield* dashboard.execute(executeRequest);
 
-        expect(response).toEqual({ data: { id: 'msg_1' }, error: null, log_id: 'log_dashboard' });
+        expect(response).toEqual({
+          result_type: 'completed',
+          data: { id: 'msg_1' },
+          error: null,
+          log_id: 'log_dashboard',
+        });
         expect(requests).toHaveLength(1);
         const [request] = requests;
         expect(request?.method).toBe('POST');
@@ -200,7 +230,7 @@ describe('DashboardToolExecution', () => {
     )
   );
 
-  for (const webURL of ['https://web.example.test', 'https://web.example.test/']) {
+  describe.each(['https://web.example.test', 'https://web.example.test/'])('%s', webURL => {
     it.effect(`builds the same request URL from ${webURL}`, () =>
       withDashboard(
         succeedWith(successOutcome),
@@ -212,9 +242,9 @@ describe('DashboardToolExecution', () => {
         { webURL }
       )
     );
-  }
+  });
 
-  it.effect('rebuilds an API error from a relayed backend failure', () =>
+  it.effect('fails a relayed backend failure with the client status error', () =>
     withDashboard(
       succeedWith({
         ok: false,
@@ -232,7 +262,8 @@ describe('DashboardToolExecution', () => {
         Effect.gen(function* () {
           const failure = yield* dashboard.execute(executeRequest).pipe(Effect.flip);
 
-          expect(failure).toBeInstanceOf(APIError);
+          // The client's own status class for a 402, as the backend transport fails with.
+          expect(isAPIError(failure) && failure._tag).toBe('@composio/client/APIError');
           expect(extractApiErrorDetails(failure)).toEqual({
             message: 'Insufficient wallet balance',
             code: 4020,
@@ -391,7 +422,7 @@ describe('DashboardToolExecution', () => {
     { name: 'an unparseable value', webURL: 'not a url s3cret-value' },
   ];
 
-  for (const testCase of rejectedURLs) {
+  describe.each(rejectedURLs)('$name', testCase => {
     it.effect(`sends nothing to a Dashboard URL with ${testCase.name}`, () =>
       withDashboard(
         succeedWith(successOutcome),
@@ -408,23 +439,26 @@ describe('DashboardToolExecution', () => {
         { webURL: testCase.webURL }
       )
     );
-  }
+  });
 
-  for (const webURL of ['http://localhost:3000', 'http://127.0.0.1:3000/', 'http://[::1]:3000']) {
-    it.effect(`allows plain http for the loopback host in ${webURL}`, () =>
-      withDashboard(
-        succeedWith(successOutcome),
-        (dashboard, requests) =>
-          Effect.gen(function* () {
-            yield* dashboard.execute(executeRequest);
-            expect(requests.map(request => request.url)).toEqual([
-              `${webURL.replace(/\/$/, '')}/api/cli/trpc/execute`,
-            ]);
-          }),
-        { webURL }
-      )
-    );
-  }
+  describe.each(['http://localhost:3000', 'http://127.0.0.1:3000/', 'http://[::1]:3000'])(
+    '%s',
+    webURL => {
+      it.effect(`allows plain http for the loopback host in ${webURL}`, () =>
+        withDashboard(
+          succeedWith(successOutcome),
+          (dashboard, requests) =>
+            Effect.gen(function* () {
+              yield* dashboard.execute(executeRequest);
+              expect(requests.map(request => request.url)).toEqual([
+                `${webURL.replace(/\/$/, '')}/api/cli/trpc/execute`,
+              ]);
+            }),
+          { webURL }
+        )
+      );
+    }
+  );
 
   it.effect('names only the origin of the Dashboard in a transport error', () =>
     withDashboard(
@@ -541,12 +575,12 @@ describe('DashboardToolExecution install ID header', () => {
     })
   );
 
-  for (const optOut of [
+  describe.each([
     'COMPOSIO_CLI_TELEMETRY_DISABLED',
     'TELEMETRY_DISABLED',
     'COMPOSIO_DISABLE_TELEMETRY',
     'CI',
-  ]) {
+  ])('%s', optOut => {
     it.effect(`omits the header when ${optOut} opts out of telemetry`, () =>
       Effect.gen(function* () {
         enableTelemetry();
@@ -556,7 +590,7 @@ describe('DashboardToolExecution install ID header', () => {
         expect(yield* sentInstallId(home)).toEqual([undefined, undefined]);
       })
     );
-  }
+  });
 
   it.effect('omits the header and creates no install ID when none is stored', () =>
     Effect.gen(function* () {
@@ -586,9 +620,7 @@ describe('DashboardToolExecution install ID header', () => {
 describe('resolveConsumerExecutionTransport', () => {
   const resolveWith = (env: Record<string, string>) =>
     resolveConsumerExecutionTransport.pipe(
-      Effect.provide(
-        ConfigProvider.layer(ConfigProvider.fromEnv({ env }).pipe(extendConfigProvider))
-      )
+      Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env })))
     );
 
   const cases: ReadonlyArray<{
@@ -630,11 +662,11 @@ describe('resolveConsumerExecutionTransport', () => {
     },
   ];
 
-  for (const testCase of cases) {
+  describe.each(cases)('$name', testCase => {
     it.effect(`uses the ${testCase.expected} transport for ${testCase.name}`, () =>
       Effect.gen(function* () {
         expect(yield* resolveWith(testCase.env)).toBe(testCase.expected);
       })
     );
-  }
+  });
 });

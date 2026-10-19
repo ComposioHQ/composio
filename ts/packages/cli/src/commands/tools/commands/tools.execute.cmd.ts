@@ -18,13 +18,13 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
+import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import type {
   InstantCharge,
   ToolExecuteParams,
   ToolExecuteResponse,
 } from 'src/services/tools-executor';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
-import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';

@@ -3,21 +3,23 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { APIError } from '@composio/client';
+import { APIConnectionError, APIError, type ComposioError } from '@composio/client/effect';
+import type { SessionExecuteResponse } from '@composio/client/resources/tool-router';
 import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
 import { TestClock } from 'effect/testing';
-import { extendConfigProvider } from 'src/services/config';
-import * as composioClients from 'src/services/composio-clients';
+import * as composioAccount from 'src/services/composio-account';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
 import { ComposioUserContext } from 'src/services/user-context';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
 import {
+  cli,
   dashboardProcedureError,
   dashboardProcedureResult,
+  MockConsole,
+  TestLive,
   type DashboardTestRequest,
-  type TestLiveInput,
-} from 'test/__utils__/services/test-layer';
+} from 'test/__utils__';
+import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
 vi.mock('node:dns/promises', () => ({
   lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
@@ -32,9 +34,9 @@ vi.hoisted(() => {
 const DEFAULT_DASHBOARD = 'https://dashboard.composio.dev';
 
 const configProvider = (env: Record<string, string> = {}) =>
-  ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env } }).pipe(
-    extendConfigProvider
-  );
+  ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key', ...env } });
+
+const temporaryCacheDirs: Array<string> = [];
 
 /**
  * A cache directory whose `user_data.json` stores the given URLs, as a login
@@ -42,6 +44,7 @@ const configProvider = (env: Record<string, string> = {}) =>
  */
 const cacheDirWithStoredURLs = (stored: { base_url?: string; web_url?: string }) => {
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-cache-'));
+  temporaryCacheDirs.push(cacheDir);
   fs.writeFileSync(
     path.join(cacheDir, 'user_data.json'),
     JSON.stringify({
@@ -73,17 +76,17 @@ type ToolRouterCall = { readonly method: 'create' | 'execute' | 'executeMeta' } 
 const makeWorld = (options: {
   readonly env?: Record<string, string>;
   readonly dashboard?: (request: DashboardTestRequest) => Response | Promise<Response>;
-  readonly backendExecute?: () => Promise<{
-    data: Record<string, unknown>;
-    error: string | null;
-    log_id: string;
-  }>;
+  readonly backendExecute?: () => Effect.Effect<SessionExecuteResponse, ComposioError>;
   readonly input?: Partial<TestLiveInput>;
 }) => {
   const dashboardRequests: Array<DashboardTestRequest> = [];
   const toolRouterCalls: Array<ToolRouterCall> = [];
-  const backendResponse = async (data: Record<string, unknown>) =>
-    options.backendExecute ? options.backendExecute() : { data, error: null, log_id: 'log_test' };
+  const backendResponse = (
+    data: Record<string, unknown>
+  ): Effect.Effect<SessionExecuteResponse, ComposioError> =>
+    options.backendExecute
+      ? options.backendExecute()
+      : Effect.succeed({ result_type: 'completed', data, error: null, log_id: 'log_test' });
 
   const layer = TestLive({
     baseConfigProvider: configProvider(options.env),
@@ -96,28 +99,36 @@ const makeWorld = (options: {
           ? options.dashboard(request)
           : dashboardProcedureResult({
               ok: true,
-              response: { data: { id: 'msg_1' }, error: null, log_id: 'log_test' },
+              response: {
+                result_type: 'completed',
+                data: { id: 'msg_1' },
+                error: null,
+                log_id: 'log_test',
+              },
             });
       },
     },
     toolRouter: {
-      create: async params => {
-        toolRouterCalls.push({ method: 'create', params });
-        return {
-          session_id: 'trs_backend_session',
-          config: { user_id: params.user_id },
-          mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
-          tool_router_tools: [],
-        } as never;
-      },
-      execute: async (sessionId, params, requestOptions) => {
-        toolRouterCalls.push({ method: 'execute', sessionId, params, requestOptions });
-        return backendResponse({ id: 'msg_1' });
-      },
-      executeMeta: async (sessionId, params, requestOptions) => {
-        toolRouterCalls.push({ method: 'executeMeta', sessionId, params, requestOptions });
-        return backendResponse({ id: 'msg_1' });
-      },
+      create: params =>
+        Effect.sync(() => {
+          toolRouterCalls.push({ method: 'create', params });
+          return {
+            session_id: 'trs_backend_session',
+            config: { user_id: params.user_id },
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: [],
+          } as never;
+        }),
+      execute: (sessionId, params, requestOptions) =>
+        Effect.suspend(() => {
+          toolRouterCalls.push({ method: 'execute', sessionId, params, requestOptions });
+          return backendResponse({ id: 'msg_1' });
+        }),
+      executeMeta: (sessionId, params, requestOptions) =>
+        Effect.suspend(() => {
+          toolRouterCalls.push({ method: 'executeMeta', sessionId, params, requestOptions });
+          return backendResponse({ id: 'msg_1' });
+        }),
     },
     ...options.input,
   });
@@ -143,11 +154,9 @@ const decodeJsonRecord = Schema.decodeUnknownSync(Schema.fromJsonString(JsonReco
 const decodeProcedureBody = Schema.decodeUnknownSync(Schema.Struct({ json: JsonRecord }));
 
 const lastJson = (lines: ReadonlyArray<string>): Record<string, unknown> => {
-  for (const line of [...lines].reverse()) {
-    if (!line.trimStart().startsWith('{')) continue;
-    return decodeJsonRecord(line);
-  }
-  throw new Error('Expected JSON output but none found');
+  const line = lines.findLast(candidate => candidate.trimStart().startsWith('{'));
+  if (line === undefined) throw new Error('Expected JSON output but none found');
+  return decodeJsonRecord(line);
 };
 
 const requestJson = (request: DashboardTestRequest | undefined) =>
@@ -172,8 +181,16 @@ const walletExhausted = {
 
 describe('CLI: composio execute transport', () => {
   beforeEach(() => {
-    vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
-      Effect.fail(new composioClients.HttpServerError({}))
+    vi.spyOn(composioAccount, 'getLatestToolVersion').mockImplementation(() =>
+      Effect.fail(
+        new APIConnectionError({
+          message: 'Connection error.',
+          method: 'GET',
+          url: 'https://backend.composio.dev/api/v3/tools/{tool_slug}/get_latest_version',
+          reason: 'TransportError',
+          description: undefined,
+        })
+      )
     );
     vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
       Effect.succeed(Option.some(['gmail', 'github']))
@@ -184,6 +201,8 @@ describe('CLI: composio execute transport', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    temporaryCacheDirs.forEach(directory => fs.rmSync(directory, { recursive: true, force: true }));
+    temporaryCacheDirs.length = 0;
   });
 
   it.effect('sends a consumer execution to the Dashboard and prints what the backend prints', () =>
@@ -218,6 +237,61 @@ describe('CLI: composio execute transport', () => {
     })
   );
 
+  describe.each(['GMAIL_SEND_EMAIL', 'COMPOSIO_SEARCH_TOOLS'])('%s', slug => {
+    describe.each(['failed', 'input_required'] as const)('%s', resultType => {
+      it.effect(`preserves ${resultType} replies for ${slug} on both transports`, () =>
+        Effect.gen(function* () {
+          const response: SessionExecuteResponse =
+            resultType === 'failed'
+              ? { result_type: 'failed', data: {}, error: null, log_id: 'log_failed' }
+              : {
+                  result_type: 'input_required',
+                  input_requests: {
+                    approval: {
+                      type: 'elicitation',
+                      mode: 'form',
+                      message: 'Approve this tool?',
+                      requested_schema: { type: 'object' },
+                    },
+                  },
+                  request_state: 'opaque-state-token',
+                };
+          const viaDashboard = makeWorld({
+            dashboard: () => dashboardProcedureResult({ ok: true, response }),
+          });
+          const viaBackend = makeWorld({
+            env: backendOnlyEnv,
+            backendExecute: () => Effect.succeed(response),
+          });
+          const args = ['execute', slug, '--skip-connection-check', '-d', '{}'];
+          const dashboardRun = yield* viaDashboard.run(args);
+          const backendRun = yield* viaBackend.run(args);
+
+          expect(Exit.isFailure(dashboardRun.exit)).toBe(true);
+          expect(Exit.isFailure(backendRun.exit)).toBe(true);
+          expect(dashboardRun.lines).toEqual(backendRun.lines);
+          expect(lastJson(dashboardRun.lines)).toMatchObject({ successful: false });
+          if (resultType === 'input_required') {
+            expect(dashboardRun.output).toContain('requires user input before it can run');
+            expect(dashboardRun.output).not.toContain('opaque-state-token');
+          } else {
+            expect(lastJson(dashboardRun.lines)).toMatchObject({
+              error: null,
+              logId: 'log_failed',
+            });
+          }
+          expect(viaDashboard.dashboardRequests).toHaveLength(1);
+          expect(viaDashboard.toolRouterCalls).toEqual([]);
+          expect(viaBackend.toolRouterCalls.map(call => call.method)).toEqual([
+            'create',
+            slug === 'COMPOSIO_SEARCH_TOOLS' ? 'executeMeta' : 'execute',
+          ]);
+          expect(viaBackend.toolRouterCalls.at(-1)?.requestOptions).toBeUndefined();
+        })
+      );
+    });
+  });
+
   it.effect('keeps the backend transport for a custom backend with no web URL', () =>
     Effect.gen(function* () {
       const world = makeWorld({ env: backendOnlyEnv });
@@ -227,9 +301,9 @@ describe('CLI: composio execute transport', () => {
       expect(Exit.isSuccess(exit)).toBe(true);
       expect(world.dashboardRequests).toEqual([]);
       expect(world.toolRouterCalls.map(call => call.method)).toEqual(['create', 'execute']);
-      // An execution is never retried: a retry after the backend already acted
-      // would duplicate the side effect.
-      expect(world.toolRouterCalls.at(-1)?.requestOptions).toEqual({ maxRetries: 0 });
+      // An execution does not ask for retries, so the client sends it once: a
+      // retry after the backend already acted would duplicate the side effect.
+      expect(world.toolRouterCalls.at(-1)?.requestOptions).toBeUndefined();
     })
   );
 
@@ -240,32 +314,30 @@ describe('CLI: composio execute transport', () => {
       yield* world.run(['execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']);
 
       expect(world.dashboardRequests).toEqual([]);
-      expect(world.toolRouterCalls.at(-1)).toMatchObject({
-        method: 'executeMeta',
-        requestOptions: { maxRetries: 0 },
-      });
+      expect(world.toolRouterCalls.at(-1)).toMatchObject({ method: 'executeMeta' });
+      expect(world.toolRouterCalls.at(-1)?.requestOptions).toBeUndefined();
     })
   );
 
-  for (const webURL of [
-    'https://dashboard.internal.example',
-    'https://dashboard.internal.example/',
-  ]) {
-    it.effect(`uses the Dashboard at ${webURL} when both URLs are overridden`, () =>
-      Effect.gen(function* () {
-        // This is also the environment a `composio run` script's `execute()`
-        // gives its child CLI: the parent forwards both URLs.
-        const world = makeWorld({ env: { ...backendOnlyEnv, COMPOSIO_WEB_URL: webURL } });
+  describe.each(['https://dashboard.internal.example', 'https://dashboard.internal.example/'])(
+    '%s',
+    webURL => {
+      it.effect(`uses the Dashboard at ${webURL} when both URLs are overridden`, () =>
+        Effect.gen(function* () {
+          // This is also the environment a `composio run` script's `execute()`
+          // gives its child CLI: the parent forwards both URLs.
+          const world = makeWorld({ env: { ...backendOnlyEnv, COMPOSIO_WEB_URL: webURL } });
 
-        yield* world.run(EXECUTE_GMAIL);
+          yield* world.run(EXECUTE_GMAIL);
 
-        expect(world.dashboardRequests.map(request => request.url)).toEqual([
-          'https://dashboard.internal.example/api/cli/trpc/execute',
-        ]);
-        expect(world.toolRouterCalls).toEqual([]);
-      })
-    );
-  }
+          expect(world.dashboardRequests.map(request => request.url)).toEqual([
+            'https://dashboard.internal.example/api/cli/trpc/execute',
+          ]);
+          expect(world.toolRouterCalls).toEqual([]);
+        })
+      );
+    }
+  );
 
   it.effect('sends a meta tool to the executeMeta procedure', () =>
     Effect.gen(function* () {
@@ -309,6 +381,7 @@ describe('CLI: composio execute transport', () => {
             : dashboardProcedureResult({
                 ok: true,
                 response: {
+                  result_type: 'completed',
                   data: { ran: requestJson(request)?.tool_slug },
                   error: null,
                   log_id: 'log_parallel',
@@ -385,7 +458,7 @@ describe('CLI: composio execute transport', () => {
           events.push('dashboard:execute');
           return dashboardProcedureResult({
             ok: true,
-            response: { data: {}, error: null, log_id: 'log_upload' },
+            response: { result_type: 'completed', data: {}, error: null, log_id: 'log_upload' },
           });
         },
         input: {
@@ -472,8 +545,16 @@ describe('CLI: composio execute transport', () => {
       const viaBackend = makeWorld({
         env: backendOnlyEnv,
         backendExecute: () =>
-          Promise.reject(
-            APIError.generate(402, { error: walletExhausted }, undefined, new Headers())
+          Effect.fail(
+            new APIError({
+              message: `402 ${JSON.stringify({ error: walletExhausted })}`,
+              method: 'POST',
+              url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+              status: 402,
+              requestId: walletExhausted.request_id,
+              details: walletExhausted,
+              body: { error: walletExhausted },
+            })
           ),
       });
 
@@ -584,7 +665,7 @@ describe('CLI: composio execute transport', () => {
     },
   ];
 
-  for (const testCase of storedURLCases) {
+  describe.each(storedURLCases)('$name', testCase => {
     it.effect(`sends the key to one consistent environment given ${testCase.name}`, () =>
       Effect.gen(function* () {
         const world = makeWorld({
@@ -613,7 +694,7 @@ describe('CLI: composio execute transport', () => {
         }
       })
     );
-  }
+  });
 
   const unsafeWebURLs: ReadonlyArray<{ readonly name: string; readonly webURL: string }> = [
     { name: 'plain http to a remote host', webURL: 'http://dashboard.internal.example' },
@@ -623,7 +704,7 @@ describe('CLI: composio execute transport', () => {
     },
   ];
 
-  for (const testCase of unsafeWebURLs) {
+  describe.each(unsafeWebURLs)('$name', testCase => {
     it.effect(`refuses a web URL with ${testCase.name} without sending or echoing it`, () =>
       Effect.gen(function* () {
         const world = makeWorld({ env: { COMPOSIO_WEB_URL: testCase.webURL } });
@@ -640,7 +721,7 @@ describe('CLI: composio execute transport', () => {
         expect(lastJson(lines)).toMatchObject({ successful: false });
       })
     );
-  }
+  });
 
   it.effect('reports a Dashboard timeout once, saying the tool may still have run', () =>
     Effect.gen(function* () {
@@ -676,7 +757,7 @@ describe('CLI: composio execute transport', () => {
     },
   ];
 
-  for (const testCase of unreachable) {
+  describe.each(unreachable)('$name', testCase => {
     it.effect(`names the Dashboard and does not resend or fall back when ${testCase.name}`, () =>
       Effect.gen(function* () {
         const world = makeWorld({ dashboard: testCase.dashboard });
@@ -690,5 +771,5 @@ describe('CLI: composio execute transport', () => {
         expect(world.toolRouterCalls).toEqual([]);
       })
     );
-  }
+  });
 });
