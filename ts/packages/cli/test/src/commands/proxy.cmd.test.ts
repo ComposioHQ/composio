@@ -193,7 +193,7 @@ describe('CLI: composio proxy', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] no --account and several connected accounts, none aliased default [Then] proxy fails instead of silently picking one',
     it => {
-      it.effect('fails before creating a session, same as composio execute would', () =>
+      it.effect('fails before creating a session', () =>
         Effect.gen(function* () {
           let createCalled = false;
           const live = TestLive({
