@@ -1,8 +1,5 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { Effect, Option } from 'effect';
-import { APP_VERSION } from 'src/constants';
-import { UpgradeBinary } from 'src/services/upgrade-binary';
-import { installSkillSafe } from 'src/effects/install-skill';
+import { runUpgrade } from './upgrade.handler';
 
 const betaOpt = Flag.Boolean('beta').pipe(
   Flag.withAlias('b'),
@@ -16,16 +13,6 @@ const versionArg = Argument.String('version').pipe(
   ),
   Argument.optional
 );
-
-const RELEASE_TAG_PREFIX = '@composio/cli@';
-
-const normalizeReleaseTag = (input: string): string => {
-  const trimmed = input.trim();
-  if (trimmed.startsWith(RELEASE_TAG_PREFIX)) return trimmed;
-  // Allow leading "v" for friendliness, e.g. "v0.13.1"
-  const stripped = trimmed.replace(/^v/, '');
-  return `${RELEASE_TAG_PREFIX}${stripped}`;
-};
 
 /**
  * CLI command to upgrade the CLI to the latest available version,
@@ -42,15 +29,7 @@ const normalizeReleaseTag = (input: string): string => {
 export const upgradeCmd = Command.make(
   'upgrade',
   { beta: betaOpt, version: versionArg },
-  ({ beta, version }) =>
-    Effect.gen(function* () {
-      const upgradeBinary = yield* UpgradeBinary;
-      const tag = Option.getOrUndefined(Option.map(version, normalizeReleaseTag));
-      const newReleaseTag = yield* upgradeBinary.upgrade({ prerelease: beta, tag });
-      yield* installSkillSafe({
-        releaseTag: newReleaseTag ?? tag ?? `@composio/cli@${APP_VERSION}`,
-      });
-    })
+  runUpgrade
 ).pipe(
   Command.withDescription(
     'Upgrade your Composio CLI. Pass a version (e.g. "0.13.1" or "0.13.1-beta.42") to install a specific release, or omit it to install the latest.'

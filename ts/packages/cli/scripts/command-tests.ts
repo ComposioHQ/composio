@@ -44,7 +44,6 @@ export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
     reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
   },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
-  { command: 'upgrade.cmd.ts', reason: 'no test yet' },
 ];
 
 // A group entry is `<dir>.cmd.ts` or `root-<dir>.cmd.ts` inside `<dir>/` when
