@@ -16,7 +16,8 @@ import { CliUserConfig } from 'src/models/cli-user-config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const BIN_DIR = '/opt/composio/bin';
 
@@ -57,12 +58,24 @@ const makeSink = () => {
  * What the install handler needs and nothing more: the real filesystem over a fresh home
  * directory, the running executable at `execPath`, the given environment, and a terminal
  * whose stderr is a pipe, so every report line is written plain and can be compared exactly.
+ * Pass `ui` to swap the terminal out — e.g. for a recording UI that pins the decorated
+ * (`canDecorate=true`) report channel.
  */
 const installTest = (
-  params: { readonly env?: Record<string, string>; readonly execPath?: string } = {}
+  params: {
+    readonly env?: Record<string, string>;
+    readonly execPath?: string;
+    readonly ui?: Layer.Layer<TerminalUI>;
+  } = {}
 ) => {
   const home = tempy.temporaryDirectory({ prefix: 'install-handler' });
   const stderr = makeSink();
+  const uiLayer =
+    params.ui ??
+    Layer.succeed(
+      TerminalUI,
+      makeTerminalUI({ stdin: { isTTY: false }, stdout: makeSink(), stderr })
+    );
   const layer = Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
@@ -77,10 +90,7 @@ const installTest = (
         setExitCode: () => Effect.void,
       })
     ),
-    Layer.succeed(
-      TerminalUI,
-      makeTerminalUI({ stdin: { isTTY: false }, stdout: makeSink(), stderr })
-    ),
+    uiLayer,
     Layer.succeed(ComposioCliUserConfig, cliUserConfig),
     ConfigProvider.layer(ConfigProvider.fromEnv({ env: { PATH: '/usr/bin:/bin', ...params.env } }))
   );
@@ -97,6 +107,43 @@ const readHomeFile = (home: string, file: string) =>
     const fs = yield* FileSystem.FileSystem;
     return yield* fs.readFileString(path.join(home, file));
   });
+
+/**
+ * A stderr-TTY terminal (`canDecorate=true`, the interactive default) that records where
+ * `makeInstallReporter`'s decorated arm sends each report: status lines to `log.step`,
+ * per-file confirmations to `log.success`, aborts to `log.error`, boxed hints to `note`,
+ * and the plain `error` fallback never touched.
+ */
+const decoratedInstallUI = () => {
+  const calls = {
+    step: [] as string[],
+    success: [] as string[],
+    warn: [] as string[],
+    error: [] as string[],
+    note: [] as [message: string, title: string | undefined][],
+    plainError: [] as string[],
+  };
+  const ui = TerminalUI.of({
+    ...terminalUITestImpl,
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: false },
+        stdout: { isTTY: false },
+        stderr: { isTTY: true },
+      })
+    ),
+    error: data => Effect.sync(() => calls.plainError.push(data)),
+    log: {
+      ...terminalUITestImpl.log,
+      success: message => Effect.sync(() => calls.success.push(message)),
+      warn: message => Effect.sync(() => calls.warn.push(message)),
+      error: message => Effect.sync(() => calls.error.push(message)),
+      step: message => Effect.sync(() => calls.step.push(message)),
+    },
+    note: (message, title) => Effect.sync(() => calls.note.push([message, title])),
+  });
+  return { calls, layer: Layer.succeed(TerminalUI, ui) };
+};
 
 describe('installShellIntegration', () => {
   it.effect('zsh: writes ~/.zshrc and prints the restart hint', () => {
@@ -288,6 +335,55 @@ describe('runInstall', () => {
       yield* runInstall({ completions: true, noCompletions: false, shell: Option.none() });
 
       expect(stderrLines()[2]).toBe('Completions: will install shell completions');
+    }).pipe(Effect.provide(layer));
+  });
+});
+
+describe('decorated reporter (stderr TTY)', () => {
+  it.effect(
+    'zsh: reports route to the log/note channels with the same content and no plain prefixes',
+    () => {
+      const { calls, layer: ui } = decoratedInstallUI();
+      const { home, layer, stderrLines } = installTest({ env: { SHELL: '/bin/zsh' }, ui });
+      return Effect.gen(function* () {
+        yield* installShellIntegration({ completions: false });
+
+        expect(calls.step).toEqual([
+          'Detected shell: zsh',
+          `PATH: will add ${BIN_DIR} to $PATH`,
+          'Completions: skipped for zsh',
+        ]);
+        expect(calls.success).toEqual(['Updated ~/.zshrc']);
+        expect(calls.note).toEqual([['source ~/.zshrc', 'Restart your shell to apply changes']]);
+        expect(calls.warn).toEqual([]);
+        expect(calls.error).toEqual([]);
+        expect(calls.plainError).toEqual([]);
+        expect(stderrLines()).toEqual([]);
+        expect(yield* readHomeFile(home, '.zshrc')).toBe(
+          `\n# Composio CLI\nexport PATH="${BIN_DIR}:$PATH"\n`
+        );
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect('abort: the failure line routes to log.error without the error: prefix', () => {
+    const { calls, layer: ui } = decoratedInstallUI();
+    const { home, layer } = installTest({
+      env: { SHELL: '/bin/zsh', COMPOSIO_BIN_DIR: '/tmp/x$(evil)' },
+      ui,
+    });
+    return Effect.gen(function* () {
+      const error = yield* Effect.flip(installShellIntegration({ completions: false }));
+
+      expect(error).toEqual(new ShellSetupAbortError({ message: BIN_DIR_UNSAFE_MESSAGE }));
+      expect(calls.error).toEqual([BIN_DIR_UNSAFE_MESSAGE]);
+      expect(calls.step).toEqual([]);
+      expect(calls.success).toEqual([]);
+      expect(calls.warn).toEqual([]);
+      expect(calls.note).toEqual([]);
+      expect(calls.plainError).toEqual([]);
+      const fs = yield* FileSystem.FileSystem;
+      expect(yield* fs.exists(path.join(home, '.zshrc'))).toBe(false);
     }).pipe(Effect.provide(layer));
   });
 });
