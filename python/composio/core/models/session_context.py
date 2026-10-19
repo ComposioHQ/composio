@@ -9,10 +9,11 @@ from __future__ import annotations
 import typing as t
 
 from composio_client import omit
-from composio_client.types.tool_router.session_proxy_execute_params import Parameter
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
+from composio_client.types.tool_router.session_proxy_execute_params import Parameter
+
 from composio.client import HttpClient
 from composio.core.models.custom_tool_execution import (
     assert_unambiguous_custom_tool_slug,
@@ -22,6 +23,8 @@ from composio.core.models.custom_tool_execution import (
 from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     InlineCustomToolsWirePayload,
+    ToolRouterSessionProxyExecuteBlocked,
+    ToolRouterSessionProxyExecuteCompleted,
     ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.inline_custom_tools_payload import (
@@ -29,11 +32,12 @@ from composio.core.models.inline_custom_tools_payload import (
 )
 from composio.core.models.tools import (
     _serialize_arguments,
+    parse_blocked_response,
+    parse_hook_results,
     require_execute_result,
     require_executed,
 )
 from composio.exceptions import ValidationError
-
 
 _VALID_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "PATCH"})
 _VALID_PARAM_TYPES = frozenset({"header", "query"})
@@ -86,6 +90,7 @@ def proxy_execute_impl(
                 )
             )
 
+    subject = f"{method} proxy call for toolkit {toolkit}"
     # Disable retries: a proxied call is a non-idempotent write, and a silent
     # retry after a read timeout can duplicate the side effect.
     response = require_executed(
@@ -97,17 +102,36 @@ def proxy_execute_impl(
             body=body if body is not None else omit,
             parameters=api_params if api_params else omit,
         ),
-        f"{method} proxy call for toolkit {toolkit}",
+        subject,
     )
+
+    # A blocked request has no HTTP response, so it is read before ``status``.
+    blocked = parse_blocked_response(response, subject)
+    if blocked is not None:
+        blocked_result: ToolRouterSessionProxyExecuteBlocked = {
+            "result_type": "blocked",
+            "block_reason": {
+                "type": blocked.reason.type,
+                "hook_id": blocked.reason.hook_id,
+            },
+            "message": blocked.message,
+        }
+        if blocked.hook_results is not None:
+            blocked_result["hook_results"] = blocked.hook_results
+        return blocked_result
 
     # ``status`` and ``size`` are ``float`` on the generated model and pydantic
     # coerces, so they arrive as ``200.0``/``123.0``. Narrow them here: an HTTP
     # status and a byte count are integers, and TypeScript reports them as such.
-    result: ToolRouterSessionProxyExecuteResponse = {
+    result: ToolRouterSessionProxyExecuteCompleted = {
+        "result_type": "completed",
         "status": int(response.status),
         "data": response.data,
         "headers": response.headers,
     }
+    hook_results = parse_hook_results(response, subject)
+    if hook_results is not None:
+        result["hook_results"] = hook_results
     binary_data = response.binary_data
     if binary_data is not None:
         result["binary_data"] = {

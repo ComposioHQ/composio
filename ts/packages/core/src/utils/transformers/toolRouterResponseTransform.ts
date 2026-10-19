@@ -8,10 +8,54 @@ import type {
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
 import { ValidationError } from '../../errors/ValidationErrors';
-import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
+import {
+  ToolRouterHookResultSchema,
+  type ToolRouterSessionExecuteResponse,
+  type ToolRouterSessionProxyExecuteResponse,
+} from '../../types/toolRouter.types';
 
-/** The `result_type` values of a call that ran. `input_required` is raised before this is read. */
-const ExecutedResponseSchema = z.object({ result_type: z.enum(['completed', 'failed']) });
+/**
+ * The `result_type` values of a call that ran, with the results of the
+ * session hooks that applied. `input_required` and `blocked` are handled
+ * before this is read.
+ */
+const ExecutedResponseSchema = z.object({
+  result_type: z.enum(['completed', 'failed']),
+  hook_results: z.array(ToolRouterHookResultSchema).optional(),
+});
+
+/** A call a session hook blocked. The generated client does not type it yet. */
+const BlockedResponseSchema = z.object({
+  result_type: z.literal('blocked'),
+  reason: z.object({
+    type: z.enum(['request_blocked', 'response_blocked']),
+    hook_id: z.string(),
+  }),
+  message: z.string(),
+  // Only session execute carries these; session proxy execute leaves them out.
+  log_id: z.string().optional(),
+  instant_charge: z.unknown().optional(),
+  hook_results: z.array(ToolRouterHookResultSchema).optional(),
+});
+type BlockedResponse = z.infer<typeof BlockedResponseSchema>;
+
+const IsBlockedSchema = z.object({ result_type: z.literal('blocked') });
+
+/**
+ * Reads a `blocked` response, or returns `undefined` for any other
+ * `result_type`. A `blocked` response that does not match its schema is
+ * raised rather than read as a result.
+ */
+function parseBlockedResponse(raw: unknown, subject: string): BlockedResponse | undefined {
+  if (!IsBlockedSchema.safeParse(raw).success) return undefined;
+  const blocked = BlockedResponseSchema.safeParse(raw);
+  if (!blocked.success) {
+    throw new ValidationError(`${subject} returned a malformed blocked response`, {
+      cause: blocked.error,
+    });
+  }
+  return blocked.data;
+}
 
 /**
  * Whether a session tool execution succeeded. `resultType` decides: a `failed`
@@ -210,8 +254,25 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
  * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
-export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
+export function transformExecuteResponse(
+  raw: SessionExecuteResponse,
+  toolSlug: string
+): ToolRouterSessionExecuteResponse {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
+  const blocked = parseBlockedResponse(raw, `Tool ${toolSlug}`);
+  if (blocked) {
+    // The agent reads `error`, so a blocked call reaches it as a failed call
+    // with the hook's message.
+    return {
+      data: {},
+      error: blocked.message,
+      logId: blocked.log_id ?? '',
+      resultType: 'blocked',
+      blockReason: { type: blocked.reason.type, hookId: blocked.reason.hook_id },
+      ...(blocked.hook_results !== undefined && { hookResults: blocked.hook_results }),
+      ...(blocked.instant_charge !== undefined && { instantCharge: blocked.instant_charge }),
+    };
+  }
   const executed = ExecutedResponseSchema.safeParse(raw);
   if (!executed.success) {
     throw new ValidationError(
@@ -225,5 +286,55 @@ export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: 
     logId: raw.log_id,
     resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    ...(executed.data.hook_results !== undefined && { hookResults: executed.data.hook_results }),
+  };
+}
+
+/** Hook results on a proxied request that was sent. */
+const ProxyCompletedHookResultsSchema = z.object({
+  hook_results: z.array(ToolRouterHookResultSchema).optional(),
+});
+
+/**
+ * Projects a session proxy execute response onto the SDK's shape: a request a
+ * session hook blocked comes back as `resultType: 'blocked'` with no HTTP
+ * response.
+ */
+export function transformProxyExecuteResponse(
+  raw: SessionProxyExecuteResponse,
+  subject: string
+): ToolRouterSessionProxyExecuteResponse {
+  assertNotInputRequired(raw, subject);
+  const blocked = parseBlockedResponse(raw, subject);
+  if (blocked) {
+    return {
+      resultType: 'blocked',
+      blockReason: { type: blocked.reason.type, hookId: blocked.reason.hook_id },
+      message: blocked.message,
+      ...(blocked.hook_results !== undefined && { hookResults: blocked.hook_results }),
+    };
+  }
+  const hookResults = ProxyCompletedHookResultsSchema.safeParse(raw);
+  if (!hookResults.success) {
+    throw new ValidationError(`${subject} returned malformed hook results`, {
+      cause: hookResults.error,
+    });
+  }
+  return {
+    resultType: 'completed',
+    status: raw.status,
+    data: raw.data,
+    headers: raw.headers,
+    ...(raw.binary_data && {
+      binaryData: {
+        contentType: raw.binary_data.content_type,
+        size: raw.binary_data.size,
+        url: raw.binary_data.url,
+        expiresAt: raw.binary_data.expires_at,
+      },
+    }),
+    ...(hookResults.data.hook_results !== undefined && {
+      hookResults: hookResults.data.hook_results,
+    }),
   };
 }

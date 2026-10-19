@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
+from composio.core.models.session_context import SessionContextImpl
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -47,7 +48,6 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
-from composio.core.models.session_context import SessionContextImpl
 from composio.exceptions import (
     InvalidParams,
     MCPDestinationError,
@@ -2798,9 +2798,164 @@ class TestExecutionRequiresUserInput:
         result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
 
         assert result == {
+            "result_type": "completed",
             "status": 201,
             "data": {"id": 1},
             "headers": {"x-request-id": "req_1"},
+        }
+
+
+_BLOCKED_CALL_JSON: t.Dict[str, t.Any] = {
+    "result_type": "blocked",
+    "reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+    "message": "Blocked by session policy: No external email",
+    "log_id": "",
+    "hook_results": [
+        {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+    ],
+}
+
+
+class TestSessionHooks:
+    """A session hook can block a call before it runs, or block its result
+    before the agent sees it. The API answers ``result_type: "blocked"``,
+    which has no data and no HTTP response.
+
+    The cases run a real client over a stub transport so they cover the wire
+    shape the generated client hands to the SDK.
+    """
+
+    _HOOKS: t.List[t.Any] = [
+        {
+            "type": "before_execute",
+            "id": "no_external_email",
+            "name": "No external email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "prompt",
+                "prompt": "Sending email to anyone outside example.org",
+                "on_match": "block",
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "block_injection",
+            "applies_to": "all",
+            "handler": {"type": "prompt_injection", "on_match": "block"},
+        },
+    ]
+
+    def test_create_sends_hooks(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123", hooks=self._HOOKS)
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["extra_body"] == {"hooks": self._HOOKS}
+
+    def test_create_omits_hooks_by_default(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123")
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "extra_body" not in kwargs
+
+    @pytest.mark.parametrize(
+        ("hooks", "expected"),
+        [
+            pytest.param(_HOOKS, _HOOKS, id="replace"),
+            pytest.param(None, None, id="remove"),
+        ],
+    )
+    def test_update_sends_hooks(self, hooks, expected):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+
+        session.update(hooks=hooks)
+
+        body = json.loads(requests[-1].content)
+        assert body["hooks"] == expected
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).execute(
+                    "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).execute("GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}),
+                id="custom tool context execute",
+            ),
+        ],
+    )
+    def test_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = run(client)
+
+        assert result.result_type == "blocked"
+        assert result.data == {}
+        assert result.error == "Blocked by session policy: No external email"
+        assert result.log_id == ""
+        assert result.block_reason == {
+            "type": "request_blocked",
+            "hook_id": "no_external_email",
+        }
+        assert result.hook_results == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+        ]
+
+    def test_blocked_call_reaches_the_agent_as_a_failed_call(self):
+        """Every provider hands the agent ``data``, ``error`` and
+        ``successful``, so this is what the agent sees in any framework."""
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = _session_tool_execute_fn(client)(
+            "GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}
+        )
+
+        assert result["successful"] is False
+        assert result["data"] == {}
+        assert result["error"] == "Blocked by session policy: No external email"
+
+    def test_malformed_blocked_response_is_raised(self):
+        malformed = {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "reason"}
+        client, _ = _answering_client(malformed)
+
+        with pytest.raises(ValidationError):
+            _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
+                id="session.proxy_execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).proxy_execute(**_PROXY_PARAMS),
+                id="custom tool context proxy_execute",
+            ),
+        ],
+    )
+    def test_proxy_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(
+            {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "log_id"}
+        )
+
+        assert run(client) == {
+            "result_type": "blocked",
+            "block_reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+            "message": "Blocked by session policy: No external email",
+            "hook_results": [
+                {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+            ],
         }
 
 
