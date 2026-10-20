@@ -12,7 +12,7 @@ import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
-import { artifactsCmd } from './artifacts.cmd';
+import { artifactsCmd } from './artifacts/artifacts.cmd';
 import { installCmd } from './install/install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
