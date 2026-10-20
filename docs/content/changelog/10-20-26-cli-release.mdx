@@ -1,0 +1,22 @@
+---
+title: 'CLI 0.4.6 runs `composio execute` through the Composio Dashboard'
+description: 'The CLI sends tool executions through the Composio Dashboard, validates a custom Dashboard URL before sending, and rewords `composio link` messages.'
+date: '2026-10-20'
+---
+
+`composio execute` now sends tool executions through the Composio Dashboard instead of calling the backend API directly. You don't need to log in again or change any configuration.
+
+### Release versions
+
+| SDK            | Version |
+| -------------- | ------- |
+| CLI `composio` | `0.4.6` |
+
+### Improvements
+
+- **`composio execute` goes through the Dashboard.** Single executions, `--parallel` executions, and meta tools all use the Dashboard at `https://dashboard.composio.dev`. Output, exit codes, error details, connection tips, and `--json` shapes stay the same. If the backend is unavailable, the CLI shows the Dashboard's error message. If your network restricts outbound hosts, allow `dashboard.composio.dev` as well as `backend.composio.dev`. Every other command, including `composio dev playground-execute`, still calls the backend API.
+- **Executions are sent once.** The CLI sends each execution request once, without retrying or following redirects. After 15 minutes it stops waiting and reports that the tool may still have run.
+- **Custom deployments.** If you set `COMPOSIO_BASE_URL` without `COMPOSIO_WEB_URL`, `composio execute` keeps calling that backend. To use a deployment's Dashboard, set both. `COMPOSIO_WEB_URL` must be an `https://` URL without credentials, a query string, or a fragment (`http://` is accepted only for `localhost`). Otherwise `composio execute` fails before sending anything.
+- **Telemetry install ID.** When telemetry is enabled, `composio execute` sends the CLI's anonymous install ID, the random UUID stored in `~/.composio/analytics.json`, to the Dashboard in an `x-cli-install-id` header. The header is never sent to the backend API. It isn't sent when you set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI`.
+- **Clearer `composio link` messages.** `composio link` and `composio dev connected-accounts link` reword their usage errors and their waiting and timeout lines on stderr. Exit codes and the JSON on stdout are unchanged.
+- **API client.** The CLI uses `@composio/client` `2.0.0-rc.19`. Commands are unchanged.
