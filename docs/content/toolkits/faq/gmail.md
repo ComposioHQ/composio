@@ -34,22 +34,44 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ## How do I send an email with an attachment?
 
-When using the Composio SDK, pass a local file path or a public URL directly as a string to the `attachment` field. The SDK's auto-upload feature (enabled by default) handles uploading the file and converting it to the required format. You do not need to construct the `{ s3key, name, mimetype }` object manually.
+Use a [session](/docs/quickstart) so your agent discovers the email tool at runtime instead of hard-coding an action slug. Upload the attachment to the session's sandbox, then pass its sandbox path in the request.
+
+Install `composio`, `composio-openai-agents`, and `openai-agents`, and set `COMPOSIO_API_KEY` and `OPENAI_API_KEY`. [Connect Gmail for your user](/docs/authentication/manually-authenticating), and replace `./report.pdf` and the recipient below with your own values.
 
 ```python
-result = composio.tools.execute(
-    slug="GMAIL_SEND_EMAIL",
-    user_id="user-123",
-    arguments={
-        "recipient_email": "recipient@example.com",
-        "subject": "Report attached",
-        "body": "See attached.",
-        "attachment": "https://example.com/report.pdf",
-    },
+from agents import Agent, Runner
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(provider=OpenAIAgentsProvider())
+session = composio.create(user_id="user-123", toolkits=["gmail"])
+
+uploaded = session.experimental.files.upload("./report.pdf")
+attachment_path = (
+    f"{uploaded.sandbox_mount_prefix.rstrip('/')}/"
+    f"{uploaded.mount_relative_path.lstrip('/')}"
 )
+
+agent = Agent(
+    name="Email assistant",
+    instructions=(
+        "Discover the appropriate tools to send the requested email. "
+        "Use the remote sandbox's get_mount_file_s3_key helper to get the "
+        "attachment's storage key. Pass it to the email tool in a file object "
+        "with name, mimetype, and s3key, not as a sandbox path. "
+        "If a tool fails, report the error instead of claiming the email was sent."
+    ),
+    tools=session.tools(),
+)
+result = Runner.run_sync(
+    agent,
+    "Send an email to recipient@example.com with subject 'Report attached' "
+    f"and body 'See attached.', attaching {attachment_path}.",
+)
+print(result.final_output)
 ```
 
-This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
+The agent can read the uploaded file in the remote sandbox, not from your application's local filesystem. This uses an explicit upload and does not require automatic file handling. The files API is experimental. See [sandbox files and mounts](/docs/sandbox/remote#files-and-mounts) for upload options and limits.
 
 ## Why can Gmail filter setup show an app-blocked error?
 
