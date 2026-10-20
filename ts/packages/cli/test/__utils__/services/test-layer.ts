@@ -51,6 +51,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { DashboardToolExecutionTest, type DashboardTestResponder } from '../layers/dashboard';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
@@ -199,6 +200,20 @@ export interface TestLiveInput {
     respondWith?: ToolExecuteResponse;
     /** Called each time the mock executor actually runs a tool call. */
     onExecute?: (slug: string) => void;
+  };
+
+  /**
+   * Stand in for the Dashboard endpoints `composio execute` sends consumer
+   * executions to.
+   *
+   * By default the test Dashboard does what the real one does with a request:
+   * it creates a Tool Router session itself and executes on the mock client's
+   * `toolRouter.session.*` handlers, relaying their answer or their status
+   * error. Set `respond` to answer yourself; a rejection is delivered to the
+   * CLI as a network failure.
+   */
+  dashboard?: {
+    respond?: DashboardTestResponder;
   };
 
   /**
@@ -847,7 +862,17 @@ export const TestLayer = (input?: TestLiveInput) =>
         )
       : Layer.provide(
           ToolsExecutorLive,
-          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+          Layer.mergeAll(
+            ComposioClientSingletonTest,
+            ToolkitSlugCatalogTest,
+            Layer.provide(
+              DashboardToolExecutionTest({
+                toolRouter: mockComposioClient.toolRouter,
+                respond: input?.dashboard?.respond,
+              }),
+              ComposioUserContextTest
+            )
+          )
         );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
