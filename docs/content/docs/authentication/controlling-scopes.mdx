@@ -4,7 +4,7 @@ description: Override the default OAuth scopes Composio requests for a toolkit
 keywords: [oauth scopes, scopes, permissions, custom scopes, user scopes, least privilege]
 ---
 
-Scopes are the permissions an OAuth toolkit grants your app: read email, write to a repo, manage calendar events. Composio requests a sensible set of default scopes for each toolkit, so most apps never set scopes at all. Override them when the defaults grant too much or too little: to follow least privilege, or to reach an API the defaults don't cover.
+OAuth scopes define the access an app requests from a provider: read email, write to a repo, or manage calendar events. Composio supplies default scopes for each toolkit. Choose a different set when you need less access or a permission the defaults don't cover.
 
 You control scopes on an [auth config](/docs/authentication#behind-the-scenes), then [pass that auth config to a session](#use-the-auth-config-in-a-session) so the session requests your scopes when users connect.
 
@@ -24,9 +24,25 @@ Scope recommendations and grant-context APIs are experimental. Review the recomm
 
 Toolkit auth details also expose `required_scopes` (Python) or `requiredScopes` (TypeScript): scopes the auth method always requests, regardless of tool-specific scopes. Auth fields expose `user_visible` or `userVisible` to indicate whether the hosted connection flow displays them. These fields may be absent when the API does not provide them.
 
+## Check what your OAuth app can request
+
+Before changing scopes, distinguish these three sets:
+
+| Scope set | What it tells you |
+| --- | --- |
+| Toolkit defaults and tool recommendations | The permissions Composio requests by default or a tool needs. Inspect the OAuth `scopes` field under `auth_config_details[].fields.auth_config_creation` in [Get toolkit](/reference/api-reference/toolkits/getToolkitsBySlug). |
+| Scopes available to the selected OAuth app | The permissions that app is configured and, where required, approved to request. A provider-supported scope is not automatically available on Composio's managed app. |
+| Scopes granted to a connection | The permissions the provider actually granted during that connection's authorization. Saving a scope on an auth config does not grant it to an existing connection. |
+
+For managed Google OAuth, use the scopes offered when creating the auth config in the dashboard. An API update that accepts a different scope does not establish that Google's managed-client approval covers it. Unsupported scopes can stop authorization with **This app is blocked** before a connection becomes active.
+
+If your product requires `gmail.readonly`, the broader `https://mail.google.com/` scope does not meet that requirement: it also permits composing, sending, and permanently deleting mail. Use your own approved OAuth app when the managed app doesn't offer the narrow scope you need. Review [Google OAuth setup and consent](/kb/guide/platform-google-oauth) for provider verification requirements.
+
 ## Set scopes with Composio managed auth
 
-Pass a `scopes` field in `credentials` to override the defaults while still using Composio's managed OAuth app. Give scopes as a comma-separated string.
+Pass a `scopes` field in `credentials` to request a supported scope set with Composio's managed OAuth app. Give scopes as a comma-separated string. This does not add permissions to the provider's registration for that managed app.
+
+Some providers also enforce app-level required permissions. For example, trimming a managed HubSpot config's `scopes` does not remove permissions HubSpot marks as required for the shared app. Use a custom HubSpot app if its required permissions exceed your needs. See [HubSpot scope guidance](/toolkits/hubspot).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -36,11 +52,11 @@ from composio import Composio
 composio = Composio()
 
 auth_config = composio.auth_configs.create(
-    toolkit="hubspot",
+    toolkit="github",
     options={
         "type": "use_composio_managed_auth",
-        "name": "HubSpot",
-        "credentials": {"scopes": "sales-email-read,tickets"},
+        "name": "GitHub profile",
+        "credentials": {"scopes": "read:user"},
     },
 )
 ```
@@ -51,10 +67,10 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 // ---cut---
-const authConfig = await composio.authConfigs.create('hubspot', {
+const authConfig = await composio.authConfigs.create('github', {
   type: 'use_composio_managed_auth',
-  name: 'HubSpot',
-  credentials: { scopes: 'sales-email-read,tickets' },
+  name: 'GitHub profile',
+  credentials: { scopes: 'read:user' },
 });
 ```
 </Tab>
@@ -62,7 +78,7 @@ const authConfig = await composio.authConfigs.create('hubspot', {
 
 ## Set scopes with your own OAuth app
 
-When you bring your own OAuth credentials, put `scopes` alongside the client ID and secret. Make sure your OAuth app has those scopes approved in the provider's portal.
+When you bring your own OAuth credentials, put `scopes` alongside the client ID and secret. Configure those same scopes in the provider's portal and complete any applicable provider verification. Composio does not transfer its managed-app approvals to your OAuth client.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -131,8 +147,12 @@ await composio.authConfigs.update('ac_1234', {
 </Tabs>
 
 <Callout type="warn">
-Changing scopes affects new connections only. Users with an existing [connected account](/docs/authentication#behind-the-scenes) keep the scopes they already granted until they reconnect. To apply new scopes to a current user, have them re-authenticate.
+Changing an auth config does not change the permissions already granted to an existing [connected account](/docs/authentication#behind-the-scenes). Authorize a new connection with the updated config, then use the connected-account ID returned by that flow. Reconnecting with an unchanged config requests the same scope set again.
 </Callout>
+
+When you add access, request the complete scope set the new connection needs. For example, a Google Super connection that needs Sheets, Tasks, Docs, and Slides should request all four capabilities together. Permissions still shown in Google Account settings do not prove that a newly issued connection has them.
+
+When you remove access, verify the new connection against your intended permissions before switching your application to it. If access must stop immediately, disable the old connection in Composio; changing the config alone does not disable it. Provider revocation has its own scope and can affect other credentials tied to the same grant. See [Connected accounts](/docs/auth-configuration/connected-accounts#revoke-accounts).
 
 ## Use the auth config in a session
 
