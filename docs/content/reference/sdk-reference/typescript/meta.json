@@ -20,6 +20,10 @@
     "usage",
     "webhook-endpoints",
     "webhooks",
-    "webhook-subscriptions"
+    "webhook-subscriptions",
+    "session-options",
+    "session-create-options",
+    "session-update-options",
+    "session-config"
   ]
 }

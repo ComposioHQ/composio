@@ -1,0 +1,305 @@
+---
+title: "Session create options"
+description: "Create-time Session options and their nested field shapes."
+---
+
+Generated from `@composio/core@0.25.0`.
+
+[All Session contracts](/reference/sdk-reference/typescript/session-options)
+
+## Create input
+
+`ToolRouterCreateSessionConfig` is the second argument to `composio.create(userId, options)` and `composio.sessions.create(userId, options)`.
+
+```typescript
+import type { ToolRouterCreateSessionConfig } from '@composio/core';
+
+const options: ToolRouterCreateSessionConfig = { toolkits: ['gmail'], tools: { gmail: ['GMAIL_SEND_EMAIL'] } };
+```
+
+`toolkits` is a list of toolkit slugs or a toolkit policy object. `tools` is a map keyed by toolkit slug. Its values accept a tool list or one policy object. Nested alternatives below are separate shapes, not fields to combine.
+
+Omit a field to use the default configuration. Empty lists and maps are supplied values, not omission. Schema defaults and source descriptions below document each field; an optional outer block does not imply every nested schema default is sent.
+
+Tables describe the exported TypeScript types (`z.infer` output). A field with a schema default can still be required in its TypeScript type. For example, include `sandbox.enable` when you supply a typed sandbox config, even though the runtime parser can fill it. A schema default is not permission to omit a field marked required.
+
+`experimental.sessionConfigId` applies a saved Session config. It cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools`, or `experimental.customToolkits`, including empty lists or maps. Per-session fields such as accounts, sandbox, and preload remain allowed.
+
+Pass either `sandbox` or its deprecated alias `workbench`, not both. `sessionPreset: "direct_tools"` defaults `manageConnections` to `false`, sandbox to `{ enable: false }`, and preload to `{ tools: "all" }`; explicit overrides win.
+
+`experimental.customTools` contains [CustomTool](#custom-tool) values and `experimental.customToolkits` contains [CustomToolkit](#custom-toolkit) values. Import these types from `@composio/core`; construct values with `createCustomTool()` / `createCustomToolkit()` from `@composio/core/experimental`.
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sessionPreset` | `"direct_tools"` \| `undefined` | No | Shortcut to expose every tool allowed by the session filters directly in session.tools() and the MCP tool list. This disables meta tools by default (search, multi-execute, manage-connections, and workbench). Use when all tools are known upfront and helper/meta tools are not needed. Without this preset, ToolRouter uses its default configuration with meta tools enabled. |
+| `mcp` | `boolean` \| `undefined` | No | When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type, and an MCP URL that is not on the API base URL origin throws `ComposioMCPDestinationError` instead of leaving `session.mcp.headers` empty with a warning. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp |
+| `tools` | Record&lt;`string`, Array&lt;`string`&gt; \| Array&lt;`string`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-2) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-3) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-4) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-5)&gt; \| `undefined` | No | The tools to use in the tool router session |
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-4-tags-variant-2) \| `undefined` | No | Global tags to filter the tools by |
+| `toolkits` | Array&lt;`string`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-toolkits-variant-2) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-toolkits-variant-3) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-toolkits-variant-4) \| `undefined` | No | The toolkits to use in the tool router session |
+| `instant` | `false` \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2) \| `undefined` | No | Experimental Instant usage policy. Omission permits eligible tools when the project allows Instant usage; false disables it for this Session. |
+| `authConfigs` | Record&lt;`string`, `string`&gt; \| `undefined` | No | The auth configs to use in the tool router session. The key is the toolkit slug, the value is the auth config id. |
+| `connectedAccounts` | Record&lt;`string`, `string` \| Array&lt;`string`&gt;&gt; \| `undefined` | No | The connected accounts to use in the tool router session. The key is the toolkit slug, the value is a connected account id or an array of ids. Only one account per toolkit is allowed when multi-account mode is disabled. |
+| `manageConnections` | `boolean` \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-manage-connections-variant-2) \| `undefined` | No | The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings. |
+| `sandbox` | [`ToolRouterSandboxConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-sandbox) \| `undefined` | No | The sandbox config for this session. Prefer this over workbench. |
+| `workbench` | [`ToolRouterSandboxConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-sandbox) \| `undefined` | No | Deprecated alias for sandbox. Accepted for backwards compatibility. |
+| `multiAccount` | [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-multi-account) \| `undefined` | No | Multi-account configuration for this session |
+| `proxyExecute` | `boolean` \| [`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-proxy-execute-variant-2) \| `undefined` | No | Proxy execute configuration for this session; a boolean is shorthand for `{ enable }`. Rejected by the API when enable is false and sandbox.enableProxyExecution is true. |
+| `preload` | [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-preload) \| `undefined` | No | Preload configuration for tools that should be exposed without search. |
+| `experimental` | [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-experimental) \| `undefined` | No | Experimental features configuration - not stable, may be modified or removed |
+
+<a id="create-input-tools-value-variant-1" />
+
+### ToolRouterToolsParam
+
+Type: Array&lt;`string`&gt;
+
+
+<a id="create-input-tools-value-variant-2-variant-2" />
+
+### tools-value-variant-2-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | The tools to enable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="create-input-tools-value-variant-2-variant-3" />
+
+### tools-value-variant-2-variant-3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | The tools to disable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="create-input-tools-value-variant-2-variant-4" />
+
+### tools-value-variant-2-variant-4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-4-tags-variant-2) | Yes | The tags to filter the tools by, this will override the global tags |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="create-input-tools-value-variant-2-variant-4-tags-variant-2" />
+
+### tools-value-variant-2-variant-4-tags-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | The tags to enable in the tool router session |
+| `disable` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | The tags to disable in the tool router session |
+| `requireApproval` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | Experimental. Tools with any of these tags need the user approval before they run |
+
+<a id="create-input-tools-value-variant-2-variant-5" />
+
+### tools-value-variant-2-variant-5
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requireApproval` | Array&lt;`string`&gt; | Yes | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="create-input-tools-value-variant-2" />
+
+### ToolRouterConfigTools
+
+Type: Array&lt;`string`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-2) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-3) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-4) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-5)
+
+
+<a id="create-input-tags" />
+
+### ToolRouterConfigTags
+
+Type: Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2-variant-4-tags-variant-2)
+
+
+<a id="create-input-toolkits-variant-2" />
+
+### toolkits-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | List of toolkits to disable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="create-input-toolkits-variant-3" />
+
+### toolkits-variant-3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | List of toolkits to enable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="create-input-toolkits-variant-4" />
+
+### toolkits-variant-4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requireApproval` | Array&lt;`string`&gt; | Yes | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="create-input-instant-variant-2" />
+
+### instant-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolkits` | [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2-toolkits-variant-1) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2-toolkits-variant-2) \| `undefined` | No |  |
+| `tools` | Record&lt;`string`, [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2-tools-value-variant-1) \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2-tools-value-variant-2)&gt; \| `undefined` | No |  |
+| `returnInstantCharge` | `boolean` \| `undefined` | No |  |
+| `returnPricesInSearch` | `boolean` \| `undefined` | No |  |
+
+<a id="create-input-instant-variant-2-toolkits-variant-1" />
+
+### instant-variant-2-toolkits-variant-1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | List of toolkits to enable in the tool router session |
+
+<a id="create-input-instant-variant-2-toolkits-variant-2" />
+
+### instant-variant-2-toolkits-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | List of toolkits to disable in the tool router session |
+
+<a id="create-input-instant-variant-2-tools-value-variant-1" />
+
+### instant-variant-2-tools-value-variant-1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="create-input-instant-variant-2-tools-value-variant-2" />
+
+### instant-variant-2-tools-value-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="create-input-instant" />
+
+### ToolRouterInstant
+
+Type: `false` \| [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-instant-variant-2)
+
+
+<a id="create-input-manage-connections-variant-2" />
+
+### manage-connections-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No | Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually |
+| `callbackUrl` | `string` \| `undefined` | No | The callback uri to use in the tool router session |
+| `waitForConnections` | `boolean` \| `undefined` | No | Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready |
+
+<a id="create-input-sandbox" />
+
+### sandbox
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` | Yes | Whether to enable the sandbox entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session. Schema default: `true`. |
+| `enableProxyExecution` | `boolean` \| `undefined` | No | Whether to enable proxy execution in the session sandbox |
+| `autoOffloadThreshold` | `number` \| `undefined` | No | The auto offload threshold in characters for tool execution to move into the sandbox |
+| `sandboxSize` | `"standard"` \| `"medium"` \| `"large"` \| `"xlarge"` \| `undefined` | No | Sandbox compute tier. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists. |
+
+<a id="create-input-sandbox-sandbox-size" />
+
+### SandboxSize
+
+Type: `"standard"` \| `"medium"` \| `"large"` \| `"xlarge"`
+
+
+<a id="create-input-multi-account" />
+
+### multi-account
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` | Yes | When true, enables multi-account mode for this session. Defaults to false. Schema default: `false`. |
+| `maxAccountsPerToolkit` | `number` (int, min: 2, max: 10) \| `undefined` | No | Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled. |
+| `requireExplicitSelection` | `boolean` \| `undefined` | No | When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account. |
+
+<a id="create-input-proxy-execute-variant-2" />
+
+### proxy-execute-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` | Yes | true exposes the COMPOSIO_PROXY_EXECUTE meta tool. false also turns off the sandbox proxy_execute() helper. |
+
+<a id="create-input-proxy-execute" />
+
+### ToolRouterProxyExecute
+
+Type: `boolean` \| [`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-proxy-execute-variant-2)
+
+
+<a id="create-input-preload" />
+
+### preload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tools` | Array&lt;`string`&gt; \| `"all"` \| `undefined` | No | Tool slugs to preload into session.tools() and the MCP tool list, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set. |
+
+<a id="create-input-experimental" />
+
+### experimental
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `assistivePrompt` | [`object`](/reference/sdk-reference/typescript/session-create-options#create-input-experimental-assistive-prompt) \| `undefined` | No | Configuration for assistive prompt generation |
+| `customTools` | Array&lt;[`CustomTool`](/reference/sdk-reference/typescript/session-create-options#custom-tool)&gt; \| `undefined` | No | Custom tools to include in this session. Created via createCustomTool() from @composio/core/experimental. |
+| `customToolkits` | Array&lt;[`CustomToolkit`](/reference/sdk-reference/typescript/session-create-options#custom-toolkit)&gt; \| `undefined` | No | Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental. |
+| `sessionConfigId` | `string` \| `undefined` | No | ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits. |
+| `noElicitationSupportFallback` | `"deny"` \| `"allow"` \| `undefined` | No | Experimental. What happens to a call that needs approval when the MCP client cannot ask the user |
+
+<a id="create-input-experimental-assistive-prompt" />
+
+### experimental-assistive-prompt
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userTimezone` | `string` \| `undefined` | No | IANA timezone identifier (e.g., "America/New_York", "Europe/London") for timezone-aware assistive prompts |
+
+## Custom definitions
+
+Custom tool and toolkit fields below resolve the SDK interfaces. Zod validators and execute callbacks remain named leaf contracts rather than expanding their implementation internals.
+
+<a id="custom-tool" />
+
+### CustomTool
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | `string` | Yes |  |
+| `name` | `string` | Yes |  |
+| `description` | `string` | Yes |  |
+| `extendsToolkit` | `undefined` \| `string` | No | Composio toolkit slug that this tool extends (inherits auth from). Must be a valid Composio toolkit slug. Validated by the backend. Undefined means the tool doesn't need any Composio-managed authentication. |
+| `preload` | `undefined` \| `false` \| `true` | No | Include this custom tool in session.tools() so it can be called without searching first. |
+| `inputSchema` | Record&lt;`string`, `unknown`&gt; | Yes |  |
+| `outputSchema` | `undefined` \| Record&lt;`string`, `unknown`&gt; | No | JSON Schema representation of the output (for backend documentation) |
+| `inputParams` | `AnyZodSchema` | Yes |  |
+| `execute` | `CustomToolExecuteFn&lt;AnyZodSchema&gt;` | Yes | Direct reference to the execute function — useful for testing |
+
+<a id="custom-toolkit" />
+
+### CustomToolkit
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | `string` | Yes |  |
+| `name` | `string` | Yes |  |
+| `description` | `string` | Yes |  |
+| `preload` | `undefined` \| `false` \| `true` | No | Default session.tools() exposure for tools in this custom toolkit. Tool-level preload values override this default. |
+| `tools` | Array&lt;[`CustomTool`](/reference/sdk-reference/typescript/session-create-options#custom-tool)&gt; | Yes |  |

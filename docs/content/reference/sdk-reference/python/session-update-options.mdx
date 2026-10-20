@@ -1,0 +1,463 @@
+---
+title: "Session update options"
+description: "Python session update options and source-derived nested types."
+---
+
+Generated from `composio==0.28.0`.
+
+[Compare Session contracts](/reference/sdk-reference/python/session-options).
+
+Partially update the session configuration.  Only the fields provided are changed; omitted fields are preserved. For each policy block `None` removes the stored override (which can increase access: `toolkits=None` restores the unrestricted default, while `toolkits={"enable": []}` denies every app toolkit and is sent as-is). Supplied `tools`, `auth_configs` and `connected_accounts` maps replace the stored map entirely. Inside `manage_connections`, `callback_url=None` removes only the stored callback URL. Experimental `instant` accepts `False` to disable billed access or an object to set its filters; it does not accept `None`. Any object, even one that only sets `return_instant_charge` or `return_prices_in_search`, re-enables Instant usage on a Session set to `False`. `proxy_execute` takes a bool or `{"enable": bool}`; `True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool, `False` also turns off the sandbox `proxy_execute()` helper, and `None` removes the stored block.  By default the request carries no precondition: the last writer wins. Pass `expected_config_version` (for example this object's `config_version`) to make the update conditional: the API then applies it only when the stored version still matches, and a concurrent change raises `SessionConfigConflictError` (HTTP 409) instead of being overwritten. The API must support the `expected_config_version` field; otherwise it rejects the request with a 400. `expected_config_version=False` is the same as omitting it. The PATCH is never retried by the transport, so a 409 is reported exactly once. On conflict this object stays unchanged: re-fetch the session with `composio.sessions.use(session_id)` and retry against the fresh `config_version`.  `config`, `config_version` and `preload` are refreshed in place only after a successful response, and the updated `config` is returned.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All other parameters use the same types as the generated `client.tool_router.session.patch()` method.
+
+## Update input
+
+| Parameter | Type | SDK default | Description |
+| --- | --- | --- | --- |
+| `toolkits` | `Union[Optional[`[`session_patch_params.Toolkits`](#session-patch-params-toolkits)`], 'Omit']` | `omit` | Toolkit configuration - specify either enable toolkits (allowlist) or disable<br />toolkits (denylist). Mutually exclusive. |
+| `instant` | `Union[Literal[False], `[`ToolRouterInstantConfig`](#tool-router-session-toolrouterinstantconfig)`, 'Omit']` | `omit` |  |
+| `tools` | `Union[Optional[Dict[str, `[`session_patch_params.Tools`](#session-patch-params-tools)`]], 'Omit']` | `omit` | Tool-level configuration per toolkit.<br /><br />Allows you to enable, disable, or filter by tags for specific tools within each<br />toolkit. Every slug passed in `enable` / `disable` must be a valid Composio tool<br />slug for that toolkit .  invalid or typo'd slugs fail session creation with a<br />clear error listing which ones didn't match. |
+| `tags` | `Union[Optional[`[`session_patch_params.Tags`](#session-patch-params-tags)`], 'Omit']` | `omit` | Global MCP tool annotation hints for filtering.<br /><br />Array format is treated as enabled list. Object format supports both enabled<br />(tool must have at least one) and disabled (tool must NOT have any) lists.<br />Toolkit-level tags override this. Toolkit enabled/disabled lists take precedence<br />over tag filtering. |
+| `auth_configs` | `Union[Optional[Dict[str, str]], 'Omit']` | `omit` | The auth configs to use for the session.<br /><br />This will override the default behavior and use the given auth config when<br />specific toolkits are being executed |
+| `connected_accounts` | `Union[Optional[Dict[str, SequenceNotStr[str]]], 'Omit']` | `omit` | The connected accounts to use for the session, as an array of nano-IDs per<br />toolkit. This overrides the default behaviour and pins specific connected<br />accounts when toolkits are executed. Each account must exist (not deleted or<br />disabled) and belong to the same `user_id` as the session. Multi-account<br />sessions can pin multiple; non-multi-account sessions are capped at length 1. |
+| `manage_connections` | `Union[Optional[`[`session_patch_params.ManageConnections`](#session-patch-params-manageconnections)`], Optional[`[`ToolRouterUpdateManageConnectionsConfig`](#tool-router-session-toolrouterupdatemanageconnectionsconfig)`], 'Omit']` | `omit` |  |
+| `sandbox` | `Union[Optional[`[`session_patch_params.Workbench`](#session-patch-params-workbench)`], 'Omit']` | `omit` |  |
+| `workbench` | `Union[Optional[`[`session_patch_params.Workbench`](#session-patch-params-workbench)`], 'Omit']` | `omit` |  |
+| `multi_account` | `Union[Optional[`[`session_patch_params.MultiAccount`](#session-patch-params-multiaccount)`], Optional[`[`ToolRouterUpdateMultiAccountConfig`](#tool-router-session-toolrouterupdatemultiaccountconfig)`], 'Omit']` | `omit` |  |
+| `proxy_execute` | `Union[Optional[Union[bool, `[`ToolRouterProxyExecuteConfig`](#tool-router-session-toolrouterproxyexecuteconfig)`]], 'Omit']` | `omit` |  |
+| `preload` | `Union[Optional[`[`session_patch_params.Preload`](#session-patch-params-preload)`], 'Omit']` | `omit` | Preload configuration.<br /><br />Use an explicit list for frequently used tool slugs, or "all" to dynamically<br />expose every app tool allowed by positive toolkits/tools/tags filters. |
+| `search` | `Union[Optional[`[`session_patch_params.Search`](#session-patch-params-search)`], 'Omit']` | `omit` |  |
+| `execute` | `Union[Optional[`[`session_patch_params.Execute`](#session-patch-params-execute)`], 'Omit']` | `omit` |  |
+| `experimental` | `Union[Optional[`[`session_patch_params.Experimental`](#session-patch-params-experimental)`], Optional[`[`ToolRouterUpdateExperimentalConfig`](#tool-router-session-toolrouterupdateexperimentalconfig)`], 'Omit']` | `omit` |  |
+| `expected_config_version` | `Union[int, None, Literal[False]]` | `None` |  |
+
+Import the omission sentinel only when you need to pass it explicitly:
+
+```python
+from composio_client import Omit, omit
+```
+
+`SequenceNotStr[str]` means a sequence of strings, not a single string. Omission and nullability are separate: an optional dictionary key may be absent even when its value type does not include `None`.
+
+## Nested definitions
+
+Required keys, nullable values, and model defaults are shown independently. A response model's `None` default is not a server policy default. Source docstrings describe server defaults where specified.
+
+<a id="session-patch-params-toolkits"></a>
+
+### Toolkits
+
+```python
+from composio_client.types.tool_router.session_patch_params import Toolkits
+```
+
+`Union[`[`ToolkitsEnable`](#session-patch-params-toolkitsenable)`, `[`ToolkitsDisable`](#session-patch-params-toolkitsdisable)`, `[`ToolkitsRequireApproval`](#session-patch-params-toolkitsrequireapproval)`]`
+
+<a id="tool-router-session-toolrouterinstantconfig"></a>
+
+### ToolRouterInstantConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L154)
+
+Experimental Instant usage policy for a Session.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `toolkits` | `Union[`[`ToolRouterInstantEnable`](#tool-router-session-toolrouterinstantenable)`, `[`ToolRouterInstantDisable`](#tool-router-session-toolrouterinstantdisable)`]` | Optional key | Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive. |
+| `tools` | `Dict[str, Union[`[`ToolRouterInstantEnable`](#tool-router-session-toolrouterinstantenable)`, `[`ToolRouterInstantDisable`](#tool-router-session-toolrouterinstantdisable)`]]` | Optional key | Per-toolkit enable or disable lists that restrict instant usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them. |
+| `return_instant_charge` | `bool` | Optional key | Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage. |
+| `return_prices_in_search` | `bool` | Optional key | Experimental. Show each Instant tool's price in Session search results,<br />    under `instant_account.prices`. Controls visibility only. |
+
+<a id="session-patch-params-tools"></a>
+
+### Tools
+
+```python
+from composio_client.types.tool_router.session_patch_params import Tools
+```
+
+`Union[`[`ToolsEnable`](#session-patch-params-toolsenable)`, `[`ToolsDisable`](#session-patch-params-toolsdisable)`, `[`ToolsTags`](#session-patch-params-toolstags)`, `[`ToolsRequireApproval`](#session-patch-params-toolsrequireapproval)`]`
+
+<a id="session-patch-params-tags"></a>
+
+### Tags
+
+```python
+from composio_client.types.tool_router.session_patch_params import Tags
+```
+
+`Union[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']], `[`TagsUnionMember1`](#session-patch-params-tagsunionmember1)`]`
+
+<a id="session-patch-params-manageconnections"></a>
+
+### ManageConnections
+
+```python
+from composio_client.types.tool_router.session_patch_params import ManageConnections
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `callback_url` | `str` | Optional key | The URL to redirect to after a user completes authentication for a connected<br />account. This allows you to handle the auth callback in your own application. |
+| `enable` | `Optional[bool]` | Optional key | Whether to enable the connection manager for automatic connection handling.<br /><br />If true, we will provide a tool your agent can use to initiate connections to<br />toolkits if it doesnt exist. If set to false, then you have to manage<br />connections manually. |
+| `enable_connection_removal` | `Optional[bool]` | Optional key | Enable the "remove" action in COMPOSIO_MANAGE_CONNECTIONS to allow deleting<br />connected accounts. Default true. |
+| `enable_wait_for_connections` | `Optional[bool]` | Optional key | When true, the COMPOSIO_WAIT_FOR_CONNECTIONS tool is available for agents to<br />poll connection status after sharing auth URLs. Default is false (disabled). May<br />not work reliably with GPT models. |
+
+<a id="tool-router-session-toolrouterupdatemanageconnectionsconfig"></a>
+
+### ToolRouterUpdateManageConnectionsConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterUpdateManageConnectionsConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L211)
+
+`manage_connections` shape accepted by `ToolRouterSession.update`.
+
+Only the supplied subfields travel. Unlike the create-time config,
+`callback_url=None` removes the stored callback URL while leaving the
+sibling connection settings untouched.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `Optional[bool]` | Optional key |  |
+| `callback_url` | `Optional[str]` | Optional key |  |
+| `enable_connection_removal` | `Optional[bool]` | Optional key |  |
+| `enable_wait_for_connections` | `Optional[bool]` | Optional key |  |
+
+<a id="session-patch-params-workbench"></a>
+
+### Workbench
+
+```python
+from composio_client.types.tool_router.session_patch_params import Workbench
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `auto_offload_threshold` | `float` | Optional key | Character threshold for automatic offloading.<br /><br />When workbench response exceeds this threshold, it will be automatically<br />offloaded. Default is picked automatically based on the response size. |
+| `enable` | `bool` | Optional key | Set to false to disable the workbench entirely.<br /><br />When disabled, no code execution tools are available in the session. |
+| `enable_proxy_execution` | `bool` | Optional key | Whether proxy execution is enabled.<br /><br />When enabled, workbench can call URLs and APIs directly. |
+| `sandbox_size` | `Literal['standard', 'medium', 'large', 'xlarge']` | Optional key | Sandbox compute tier: standard (1 vCPU / 1 GB), medium (2 vCPU / 2 GB), large (4<br />vCPU / 4 GB), xlarge (8 vCPU / 8 GB). Patching this value recreates the sandbox<br />on next access .  sandbox FS state is lost, but /mnt/files/ R2 mount persists. |
+| `enable_tool_execution` | `bool` | Optional key |  |
+
+<a id="session-patch-params-multiaccount"></a>
+
+### MultiAccount
+
+```python
+from composio_client.types.tool_router.session_patch_params import MultiAccount
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key | When true, enables multi-account mode for this session.<br /><br />When not set, falls back to org/project-level configuration. |
+| `max_accounts_per_toolkit` | `int` | Optional key | Maximum number of connected accounts allowed per toolkit.<br /><br />Must be between 2 and 10. |
+| `require_explicit_selection` | `bool` | Optional key | When true, the agent must explicitly select which account to use.<br /><br />When false (default), the first/default account is used automatically. |
+
+<a id="tool-router-session-toolrouterupdatemultiaccountconfig"></a>
+
+### ToolRouterUpdateMultiAccountConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterUpdateMultiAccountConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L225)
+
+`multi_account` shape accepted by `ToolRouterSession.update`.
+
+`max_accounts_per_toolkit=None` removes the stored maximum so the
+default applies again.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key |  |
+| `max_accounts_per_toolkit` | `Optional[int]` | Optional key |  |
+| `require_explicit_selection` | `bool` | Optional key |  |
+
+<a id="tool-router-session-toolrouterproxyexecuteconfig"></a>
+
+### ToolRouterProxyExecuteConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterProxyExecuteConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L165)
+
+Proxy execute settings for a Session.
+
+`enable=True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool and
+`enable=False` also turns off the sandbox `proxy_execute()` helper.
+Leaving the block out keeps the meta tool off while
+`sandbox.enable_proxy_execution` controls the helper.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Required |  |
+
+<a id="session-patch-params-preload"></a>
+
+### Preload
+
+```python
+from composio_client.types.tool_router.session_patch_params import Preload
+```
+
+Preload configuration.
+
+Use an explicit list for frequently used tool slugs, or "all" to dynamically expose every app tool allowed by positive toolkits/tools/tags filters.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tools` | `Union[SequenceNotStr[str], str]` | Optional key | Explicit tool slugs to preload, or "all" to dynamically expose all current and<br />future app tools allowed by the positive session filters. "all" is capped at<br />1000 tools and is not supported without a positive allowlist. |
+
+<a id="session-patch-params-search"></a>
+
+### Search
+
+```python
+from composio_client.types.tool_router.session_patch_params import Search
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key |  |
+
+<a id="session-patch-params-execute"></a>
+
+### Execute
+
+```python
+from composio_client.types.tool_router.session_patch_params import Execute
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable_multi_execute` | `bool` | Optional key |  |
+
+<a id="session-patch-params-experimental"></a>
+
+### Experimental
+
+```python
+from composio_client.types.tool_router.session_patch_params import Experimental
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `link_url_overwrite` | `str` | Optional key | Experimental base URL override for connection link redirects created from this<br />tool-router session. When set, link creation returns<br />`${link_url_overwrite}/link/{link_token}` instead of the default Composio<br />Connect base URL. Use only when your integration needs links to open through a<br />custom Connect host. |
+| `permissions` | [`ExperimentalPermissions`](#session-patch-params-experimentalpermissions) | Optional key | Per-tool elicitation permission config.<br /><br />Replaces the stored block when provided. |
+| `fast_mode` | `bool` | Optional key |  |
+| `submit_feedback` | [`CurrentExperimentalSubmitFeedback`](#session-patch-params-currentexperimentalsubmitfeedback) | Optional key |  |
+| `no_elicitation_support_fallback` | `Literal['deny', 'allow']` | Optional key |  |
+| `session_config_id` | `str` | Optional key |  |
+
+<a id="tool-router-session-toolrouterupdateexperimentalconfig"></a>
+
+### ToolRouterUpdateExperimentalConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterUpdateExperimentalConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L237)
+
+`experimental` shape accepted by `ToolRouterSession.update`.
+
+Each leaf follows the PATCH contract: omit to keep the stored value,
+`None` to remove it, a value to replace it.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `permissions` | `Optional[Dict[str, Any]]` | Optional key |  |
+| `link_url_overwrite` | `Optional[str]` | Optional key |  |
+| `fast_mode` | `Optional[bool]` | Optional key |  |
+| `submit_feedback` | `Optional[Dict[str, bool]]` | Optional key |  |
+| `session_config_id` | `str` | Optional key |  |
+| `no_elicitation_support_fallback` | `Literal['deny', 'allow']` | Optional key | What happens to a call that needs the user's approval when the<br />    session's MCP client can't ask the user: `"deny"` or `"allow"`. |
+
+<a id="session-patch-params-toolkitsenable"></a>
+
+### ToolkitsEnable
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolkitsEnable
+```
+
+Enable only specific toolkits (allowlist)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `SequenceNotStr[str]` | Required | Only these specific toolkits will be enabled |
+| `require_approval` | `SequenceNotStr[str]` | Optional key |  |
+
+<a id="session-patch-params-toolkitsdisable"></a>
+
+### ToolkitsDisable
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolkitsDisable
+```
+
+Disable specific toolkits (denylist)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `SequenceNotStr[str]` | Required | These specific toolkits will be disabled |
+| `require_approval` | `SequenceNotStr[str]` | Optional key |  |
+
+<a id="session-patch-params-toolkitsrequireapproval"></a>
+
+### ToolkitsRequireApproval
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolkitsRequireApproval
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `SequenceNotStr[str]` | Required | Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. |
+
+<a id="tool-router-session-toolrouterinstantenable"></a>
+
+### ToolRouterInstantEnable
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantEnable
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L146)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `List[str]` | Required |  |
+
+<a id="tool-router-session-toolrouterinstantdisable"></a>
+
+### ToolRouterInstantDisable
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantDisable
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L150)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `List[str]` | Required |  |
+
+<a id="session-patch-params-toolsenable"></a>
+
+### ToolsEnable
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolsEnable
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `SequenceNotStr[str]` | Required | Only these specific tools will be available for this toolkit |
+| `require_approval` | `SequenceNotStr[str]` | Optional key |  |
+
+<a id="session-patch-params-toolsdisable"></a>
+
+### ToolsDisable
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolsDisable
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `SequenceNotStr[str]` | Required | These specific tools will be disabled for this toolkit |
+| `require_approval` | `SequenceNotStr[str]` | Optional key |  |
+
+<a id="session-patch-params-toolstags"></a>
+
+### ToolsTags
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolsTags
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tags` | `Union[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']], `[`ToolsTagsTagsUnionMember1`](#session-patch-params-toolstagstagsunionmember1)`]` | Required | MCP tags to filter tools.<br /><br />Array format is treated as enabled list. Object format supports both enabled and<br />disabled lists. |
+| `require_approval` | `SequenceNotStr[str]` | Optional key |  |
+
+<a id="session-patch-params-toolsrequireapproval"></a>
+
+### ToolsRequireApproval
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolsRequireApproval
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `SequenceNotStr[str]` | Required | Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. |
+
+<a id="session-patch-params-tagsunionmember1"></a>
+
+### TagsUnionMember1
+
+```python
+from composio_client.types.tool_router.session_patch_params import TagsUnionMember1
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]` | Optional key |  |
+| `enable` | `list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]` | Optional key |  |
+| `require_approval` | `list[Literal['readOnlyHint', 'createHint', 'updateHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]` | Optional key |  |
+
+<a id="session-patch-params-experimentalpermissions"></a>
+
+### ExperimentalPermissions
+
+```python
+from composio_client.types.tool_router.session_patch_params import ExperimentalPermissions
+```
+
+Per-tool elicitation permission config.
+
+Replaces the stored block when provided.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `default` | `Literal['allow_all', 'ask_every_call', 'ask_once_per_session']` | Required | Default elicitation behavior when no override matches.<br /><br />`allow_all` runs every tool without prompting; `ask_every_call` prompts on each<br />invocation; `ask_once_per_session` prompts once and remembers the answer for the<br />rest of the session. |
+| `overrides` | `Dict[str, Literal['always_allow', 'always_deny', 'ask_once', 'ask_always']]` | Optional key | Per-tool overrides keyed by `${toolSlug}:${connectedAccountId ?? "__none__"}`,<br />plus account-wide overrides keyed by `*:${connectedAccountId ?? "__none__"}`.<br />Exact tool overrides take precedence over account-wide overrides. `always_allow`<br />skips the prompt and runs the tool; `always_deny` blocks the tool; `ask_once`<br />prompts once per session (allow/deny) and remembers; `ask_always` prompts on<br />every call with allow-once/allow-session/deny, ignoring any cached session<br />allow. Overrides take precedence over `default`. |
+
+<a id="session-patch-params-currentexperimentalsubmitfeedback"></a>
+
+### CurrentExperimentalSubmitFeedback
+
+```python
+from composio_client.types.tool_router.session_patch_params import CurrentExperimentalSubmitFeedback
+```
+
+Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Replaces the stored block when provided; `enable` is required when the block is sent.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Required | Set to true to expose the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session, false to hide it. |
+
+<a id="session-patch-params-toolstagstagsunionmember1"></a>
+
+### ToolsTagsTagsUnionMember1
+
+```python
+from composio_client.types.tool_router.session_patch_params import ToolsTagsTagsUnionMember1
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]` | Optional key |  |
+| `enable` | `list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]` | Optional key |  |
+| `require_approval` | `list[Literal['readOnlyHint', 'createHint', 'updateHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]` | Optional key |  |

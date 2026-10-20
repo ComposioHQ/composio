@@ -1,0 +1,38 @@
+---
+title: "Session options and config"
+description: "Find the create, PATCH, or returned Session configuration contract."
+---
+
+Generated from `@composio/core@0.25.0`.
+
+Session create options, PATCH options, and returned configuration are different contracts. Choose the one you need.
+
+| Contract | Where you use it | Omission and names |
+|----------|------------------|--------------------|
+| [Create options](/reference/sdk-reference/typescript/session-create-options#create-input) | `composio.create(userId, options)` or `composio.sessions.create(userId, options)` | Camel-case input. Omit fields to use defaults. |
+| [Update options](/reference/sdk-reference/typescript/session-update-options#update-input) | `session.update(options)` | Camel-case PATCH input. Omit to preserve; `null` removes only where permitted. |
+| [Returned config](/reference/sdk-reference/typescript/session-config#returned-config) | `session.config` or the result of `session.update()` | Server-normalized snake_case fields. Not a create or PATCH input. |
+
+`toolkits` accepts toolkit slugs or a policy object. `tools` is a map keyed by toolkit slug, not a tool list. Each contract page links its full nested shapes.
+
+[Sessions](/reference/sdk-reference/typescript/sessions) documents session creation. [Session](/reference/sdk-reference/typescript/session) documents `update()` and `config`.
+
+## Type imports
+
+Import these public aliases from `@composio/core`. Each link opens the exact resolved contract.
+
+- [`SandboxSize`](/reference/sdk-reference/typescript/session-create-options#create-input-sandbox-sandbox-size)
+- [`ToolRouterSandboxConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-sandbox)
+- [`ToolRouterInstant`](/reference/sdk-reference/typescript/session-create-options#create-input-instant)
+- [`ToolRouterConfigTags`](/reference/sdk-reference/typescript/session-create-options#create-input-tags)
+- [`ToolRouterToolsParam`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-1)
+- [`ToolRouterConfigTools`](/reference/sdk-reference/typescript/session-create-options#create-input-tools-value-variant-2)
+- [`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/typescript/session-create-options#create-input-proxy-execute-variant-2)
+- [`ToolRouterProxyExecute`](/reference/sdk-reference/typescript/session-create-options#create-input-proxy-execute)
+- [`ToolRouterCreateSessionConfig`](/reference/sdk-reference/typescript/session-create-options#create-input)
+- [`ToolRouterSessionPreloadConfig`](/reference/sdk-reference/typescript/session-config#returned-config-preload)
+- [`ToolRouterSessionWorkbenchConfig`](/reference/sdk-reference/typescript/session-config#returned-config-workbench-variant-2)
+- [`ToolRouterSessionConfig`](/reference/sdk-reference/typescript/session-config#returned-config)
+- [`ToolRouterUpdateManageConnectionsConfig`](/reference/sdk-reference/typescript/session-update-options#update-input-manage-connections-variant-2)
+- [`ToolRouterUpdateExperimentalConfig`](/reference/sdk-reference/typescript/session-update-options#update-input-experimental)
+- [`ToolRouterUpdateSessionConfig`](/reference/sdk-reference/typescript/session-update-options#update-input)

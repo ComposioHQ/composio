@@ -1,0 +1,53 @@
+---
+title: "Session options"
+description: "Compare Python Session create, update, and returned-config contracts."
+---
+
+Generated from `composio==0.28.0`.
+
+Choose the contract for the Session operation you're using. Create input, PATCH input, and returned config are not interchangeable.
+
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.create(user_id="user_123", toolkits=["github"])
+config = session.update(toolkits={"enable": []})
+print(config.user_id)
+```
+
+## Contracts
+
+| Contract | Entry point | Omission and shape |
+| --- | --- | --- |
+| [Create input](/reference/sdk-reference/python/session-create-options#create-input) | `composio.create()` / `composio.sessions.create()` | Optional policy blocks default to `None`. Python has no saved-config `config` create parameter. |
+| [PATCH input](/reference/sdk-reference/python/session-update-options#update-input) | `session.update()` | Omit to preserve a setting; `None` removes an override where supported. Supplied maps replace stored maps. Empty allowlists deny all. Instant accepts `False` or an object, not `None`. |
+| [Returned config](/reference/sdk-reference/python/session-config#returned-config) | `session.config` / `session.update()` return value | SDK `ToolRouterSessionConfig` Protocol. Filters use `enabled` / `disabled`; sandbox settings use `workbench`. |
+
+Each contract page includes all its reachable nested definitions, exact type imports, and source docstrings. The returned Session config is distinct from saved Session configs.
+
+## SDK type imports
+
+Import the SDK types named by the contracts from the modules below. Nested SDK and generated-client types show their exact imports beside their definitions.
+
+| Type | Import module |
+| --- | --- |
+| [`ToolRouterToolkitsEnableConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsenableconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterToolkitsDisableConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsdisableconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterToolkitsRequireApprovalConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsrequireapprovalconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterToolsConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolsconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterConfigTags`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterconfigtags) | `composio.core.models.tool_router` |
+| [`ToolRouterManageConnectionsConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutermanageconnectionsconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterSandboxConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutersandboxconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterWorkbenchConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterworkbenchconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterMultiAccountConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutermultiaccountconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/python/session-create-options#tool-router-session-toolrouterproxyexecuteconfig) | `composio.core.models.tool_router_session` |
+| [`ToolRouterPreloadConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterpreloadconfig) | `composio.core.models.tool_router` |
+| [`SessionPreset`](/reference/sdk-reference/python/session-create-options#tool-router-sessionpreset) | `composio.core.models.tool_router` |
+| [`ToolRouterExperimentalConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterexperimentalconfig) | `composio.core.models.tool_router` |
+| [`ToolRouterInstantConfig`](/reference/sdk-reference/python/session-create-options#tool-router-session-toolrouterinstantconfig) | `composio.core.models.tool_router_session` |
+| [`ToolRouterUpdateManageConnectionsConfig`](/reference/sdk-reference/python/session-update-options#tool-router-session-toolrouterupdatemanageconnectionsconfig) | `composio.core.models.tool_router_session` |
+| [`ToolRouterUpdateMultiAccountConfig`](/reference/sdk-reference/python/session-update-options#tool-router-session-toolrouterupdatemultiaccountconfig) | `composio.core.models.tool_router_session` |
+| [`ToolRouterUpdateExperimentalConfig`](/reference/sdk-reference/python/session-update-options#tool-router-session-toolrouterupdateexperimentalconfig) | `composio.core.models.tool_router_session` |
+| [`ToolRouterSessionConfig`](/reference/sdk-reference/python/session-config#tool-router-session-toolroutersessionconfig) | `composio.core.models.tool_router_session` |
+| `Omit`, `omit` | `composio_client` |
