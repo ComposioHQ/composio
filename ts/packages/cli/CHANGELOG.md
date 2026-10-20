@@ -1,5 +1,14 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio dev triggers create` accepts `--user-id` and sends it to the API
+  for trigger ownership checks on projects with 2FA enabled. Without the flag,
+  it uses the project's test user id, then the global test user id. Calls with
+  a connected account and no configured test user keep omitting `user_id`.
+
 ## 0.5.0
 
 ### Minor Changes

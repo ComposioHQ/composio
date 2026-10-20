@@ -1,9 +1,12 @@
 import { Effect, Match, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
+import { CommandSurface } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
+import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { ComposioUserContext } from 'src/services/user-context';
 import { parseJsonRecord, type JsonParsingError } from 'src/utils/parse-json';
 
 export type TriggersCreateParams = {
@@ -57,6 +60,9 @@ export const runTriggersCreate = ({
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
+    const { userId } = yield* CommandSurface;
+    const projectContext = yield* ProjectContext;
+    const userContext = yield* ComposioUserContext;
 
     if (Option.isNone(triggerName)) {
       return yield* invalidInput(
@@ -70,12 +76,19 @@ export const runTriggersCreate = ({
       return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
+    const project = yield* projectContext.resolve;
+    const resolvedUserId = userId.pipe(
+      Option.orElse(() => Option.flatMap(project, keys => keys.testUserId)),
+      Option.orElse(() => userContext.data.testUserId)
+    );
+
     const createdOpt = yield* ui
       .withSpinner(
         `Creating trigger "${triggerName.value}"...`,
         repo.createTrigger(triggerName.value, {
           connected_account_id: Option.getOrUndefined(connectedAccountId),
           trigger_config: parsedTriggerConfig.success,
+          user_id: Option.getOrUndefined(resolvedUserId),
         })
       )
       .pipe(
