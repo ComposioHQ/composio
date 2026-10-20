@@ -322,3 +322,23 @@ class TestArrayItemSchemas:
         monkeypatch.setattr(openapi, "_type_to_parameter", counting)
         _annotation(prop)
         assert calls < 100_000
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_long_type_list_stops_at_the_work_budget(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        # Every member copies the whole schema, so members past the budget
+        # must not be visited at all.
+        prop: t.Dict[str, t.Any] = {"type": ["string"] * 10_000}
+        calls = 0
+        convert = openapi._type_to_parameter
+
+        def counting(*args: t.Any, **kwargs: t.Any) -> t.Any:
+            nonlocal calls
+            calls += 1
+            return convert(*args, **kwargs)
+
+        monkeypatch.setattr(openapi, "_type_to_parameter", counting)
+        assert _annotation(prop) == t.Union[str, t.Any]
+        assert calls <= openapi._MAX_SCHEMA_NODES + 1

@@ -75,16 +75,21 @@ def _type_to_parameter(
         # list of types, e.g. {"type": ["string", "null"]}, rather than an anyOf.
         if not p_type:
             return t.Any
-        return t.Union[
-            tuple(
+        members = []
+        for member in p_type:
+            # Each member copies the whole schema, so stop once nothing is left
+            # to convert it with.
+            if _budget.nodes <= 0:
+                members.append(t.Any)
+                break
+            members.append(
                 _type_to_parameter(
                     schema={**schema, "type": member},
                     _depth=_depth + 1,
                     _budget=_budget,
                 )
-                for member in p_type
             )
-        ]
+        return t.Union[tuple(members)]
 
     if p_type in OPENAPI_TO_PYTHON:
         return OPENAPI_TO_PYTHON[p_type]
