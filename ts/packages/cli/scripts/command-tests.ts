@@ -20,7 +20,6 @@ const TEST_SUFFIX = '.cmd.test.ts';
 export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
-  { command: 'upgrade.cmd.ts', reason: 'no test yet' },
 ];
 
 // A group entry is `<dir>.cmd.ts` or `root-<dir>.cmd.ts` inside `<dir>/` when

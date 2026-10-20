@@ -3,7 +3,7 @@ import { CliOutput, Command } from 'effect/cli';
 import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
-import { upgradeCmd } from './upgrade.cmd';
+import { upgradeCmd } from './upgrade/upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login/login.cmd';
 import { signupCmd } from './signup/signup.cmd';
