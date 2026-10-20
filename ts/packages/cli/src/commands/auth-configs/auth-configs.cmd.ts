@@ -1,8 +1,8 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
-import { authConfigsCmd$List } from './commands/auth-configs.list.cmd';
-import { authConfigsCmd$Info } from './commands/auth-configs.info.cmd';
-import { authConfigsCmd$Create } from './commands/auth-configs.create.cmd';
+import { authConfigsCmd$List } from './list/auth-configs.list.cmd';
+import { authConfigsCmd$Info } from './info/auth-configs.info.cmd';
+import { authConfigsCmd$Create } from './create/auth-configs.create.cmd';
 
 /**
  * CLI entry point for auth config management commands.

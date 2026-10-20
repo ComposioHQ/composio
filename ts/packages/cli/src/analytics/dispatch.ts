@@ -263,8 +263,21 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
   return installId;
 });
 
+// A process whose bounded lock wait expired (a live lock held elsewhere) must
+// still adopt an install_id another process already persisted, so concurrent
+// first-run events converge on one identity instead of each racer minting its
+// own. The fallback only reads: persistence stays exclusive to the lock-holding
+// path, and an unlocked write here could clobber a concurrent state merge.
+const adoptOrMintInstallId = Effect.gen(function* () {
+  const state = yield* readAnalyticsState;
+  if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
+    return state.install_id;
+  }
+  return yield* makeInstallId;
+});
+
 const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
-  Effect.catch(() => makeInstallId)
+  Effect.catch(() => adoptOrMintInstallId)
 );
 
 const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
