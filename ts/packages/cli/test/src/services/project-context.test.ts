@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect, FileSystem, Layer, Option } from 'effect';
+import { vi } from 'vitest';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { ProjectContext } from 'src/services/project-context';
@@ -59,9 +60,15 @@ const sources: ReadonlyArray<{
   name: string;
   env: Record<string, string>;
   files: ReadonlyArray<readonly [string, string]>;
+  inheritsDirectoryUser: boolean;
 }> = [
-  { name: 'process environment', env: scope, files: [] },
-  { name: '.composio/.env', env: {}, files: [[`${directory}/.composio/.env`, dotenv]] },
+  { name: 'process environment', env: scope, files: [], inheritsDirectoryUser: false },
+  {
+    name: '.composio/.env',
+    env: {},
+    files: [[`${directory}/.composio/.env`, dotenv]],
+    inheritsDirectoryUser: true,
+  },
 ];
 
 const profiles = [
@@ -98,17 +105,19 @@ describe('ProjectContext test user metadata', () => {
       const keys = Option.getOrThrow(result);
       expect(keys.orgId).toBe('org_test');
       expect(keys.projectId).toBe('proj_test');
-      expect(Option.getOrNull(keys.testUserId)).toBe(profile.expectedUser);
+      expect(Option.getOrNull(keys.testUserId)).toBe(
+        source.inheritsDirectoryUser ? profile.expectedUser : null
+      );
       expect(Option.isNone(keys.projectName)).toBe(true);
     })
   );
 
-  it.effect.each(sources)('$name: finds the matching profile from a subdirectory', source =>
+  it.effect.each(sources)('$name: preserves test-user policy from a subdirectory', source =>
     Effect.gen(function* () {
       const files = new Map([...source.files, [jsonPath, JSON.stringify(profile)]]);
       const result = yield* resolveProject(files, source.env, `${directory}/nested`);
       expect(Option.getOrNull(Option.flatMap(result, keys => keys.testUserId))).toBe(
-        'project-user'
+        source.inheritsDirectoryUser ? 'project-user' : null
       );
     })
   );
@@ -165,7 +174,29 @@ describe('ProjectContext test user metadata', () => {
       const keys = Option.getOrThrow(result);
       expect(keys.orgId).toBe('org_test');
       expect(keys.projectId).toBe('proj_test');
-      expect(Option.getOrNull(keys.testUserId)).toBe('project-user');
+      expect(Option.getOrNull(keys.testUserId)).toBeNull();
     })
+  );
+
+  it.effect.each([directory, home])(
+    'process environment ignores repository files, including a forged profile in %s',
+    profileDirectory =>
+      Effect.gen(function* () {
+        const files = new Map([
+          [
+            `${profileDirectory}/.composio/project.json`,
+            JSON.stringify({ ...profile, test_user_id: 'attacker-selected-user' }),
+          ],
+          [`${directory}/.composio/.env`, dotenv],
+        ]);
+        const hasFile = vi.spyOn(files, 'has');
+        const readFile = vi.spyOn(files, 'get');
+        const keys = Option.getOrThrow(yield* resolveProject(files, scope));
+        expect(keys.orgId).toBe(scope.COMPOSIO_ORG_ID);
+        expect(keys.projectId).toBe(scope.COMPOSIO_PROJECT_ID);
+        expect(Option.isNone(keys.testUserId)).toBe(true);
+        expect(hasFile).not.toHaveBeenCalled();
+        expect(readFile).not.toHaveBeenCalled();
+      })
   );
 });

@@ -50,7 +50,8 @@ const parseEnvFile = (content: string): Map<string, string> => {
  * 1. System env vars (COMPOSIO_ORG_ID, COMPOSIO_PROJECT_ID)
  * 2. Per-directory .composio/.env (only allowed keys)
  * 3. Per-directory .composio/project.json (walk up from CWD, stop at homedir)
- * The nearest JSON profile supplies its test user only when its org+project match.
+ * Directory .env scopes inherit a test user only from a matching JSON profile.
+ * System env vars override repository configuration, including its test user.
  */
 const makeProjectContext = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -67,10 +68,9 @@ const makeProjectContext = Effect.gen(function* () {
       // 1. Check env vars (highest priority)
       const envOrgId = yield* APP_CONFIG.ORG_ID;
       const envProjectId = yield* APP_CONFIG.PROJECT_ID;
-      let envContext = Option.none<ProjectKeys>();
       if (envOrgId !== undefined && envProjectId !== undefined) {
         yield* Effect.logDebug('ProjectContext: resolved from env vars');
-        envContext = Option.some<ProjectKeys>({
+        return Option.some<ProjectKeys>({
           orgId: envOrgId,
           projectId: envProjectId,
           projectName: Option.none(),
@@ -81,6 +81,7 @@ const makeProjectContext = Effect.gen(function* () {
       }
 
       // 2. Walk up from CWD, stop at homedir (not filesystem root)
+      let envContext = Option.none<ProjectKeys>();
       const stopAt = os.homedir;
 
       for (const dir of yield* getAncestors(proc.cwd)) {
