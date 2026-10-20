@@ -1,0 +1,274 @@
+---
+title: "Session results"
+description: "Session method signatures, response models, and Pydantic serialization."
+---
+
+A Session gives you search and execution methods scoped to one user. Create one with `composio.sessions.create()`, or reuse its ID with `composio.sessions.use()`. See the full [Session reference](/reference/sdk-reference/python/session) for connection and configuration methods.
+
+```python
+from composio import Composio
+from composio.core.models.tool_router_session import (
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionSearchResponse,
+)
+
+composio = Composio()
+created = composio.sessions.create(user_id="user-123")
+session = composio.sessions.use(created.session_id)
+search: ToolRouterSessionSearchResponse = session.search(
+    query="Find GitHub repositories",
+)
+print(search.model_dump(mode="json"))
+result: ToolRouterSessionExecuteResponse = session.execute(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "Find GitHub repositories"}]},
+)
+if result.result_type == "completed":
+    print(result.data)
+else:
+    print(result.error, result.log_id)
+print(result.model_dump(mode="json"))
+print(result.model_dump_json())
+```
+
+Set `COMPOSIO_API_KEY` before running this example. It executes a read-only discovery meta tool; no connected account is needed. The schemas below can be read without credentials.
+
+## Method contracts
+
+`execute(tool_slug, *, arguments=None, ...)` takes the tool's arguments as the keyword-only `arguments` parameter. Its [execution result](#toolroutersessionexecuteresponse) is also returned by `execute_meta()`. [Search results](#toolroutersessionsearchresponse) are separate models with tool schemas and guidance. [Input responses](#toolrouterinputresponse) carry answers to user-input requests. The signatures below come directly from the current method source, including keyword-only markers and defaults; `t` is Python's `typing` module.
+
+### search
+
+[Method definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L923)
+
+```python
+def search(*, query: str, model: t.Optional[str]=None) -> ToolRouterSessionSearchResponse: ...
+```
+
+### execute
+
+[Method definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L943)
+
+```python
+def execute(tool_slug: str, *, arguments: t.Optional[t.Dict[str, t.Any]]=None, account: t.Optional[str]=None, input_responses: t.Optional[t.Dict[str, ToolRouterInputResponse]]=None, request_state: t.Optional[str]=None) -> ToolRouterSessionExecuteResponse: ...
+```
+
+### execute_meta
+
+[Method definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L1014)
+
+```python
+def execute_meta(slug: ToolRouterSessionMetaToolSlug, *, arguments: t.Optional[t.Dict[str, t.Any]]=None, input_responses: t.Optional[t.Dict[str, ToolRouterInputResponse]]=None, request_state: t.Optional[str]=None) -> ToolRouterSessionExecuteResponse: ...
+```
+
+### proxy_execute
+
+[Method definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L1146)
+
+```python
+def proxy_execute(*, toolkit: str, endpoint: str, method: t.Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: t.Any=None, parameters: t.Optional[t.List[t.Dict[str, t.Any]]]=None) -> ToolRouterSessionProxyExecuteResponse: ...
+```
+
+### tools
+
+[Method definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L373)
+
+```python
+def tools(modifiers: t.Optional['Modifiers']=None) -> TToolCollection: ...
+```
+
+
+`tools()` returns provider-wrapped tool definitions for your AI framework, not search results or an execution response. Framework tool-call handlers and provider result objects have their own contracts. Don't apply the Session response fields to them. See [Tools](/reference/sdk-reference/python/tools).
+
+For example, [`OpenAIProvider.handle_tool_calls(session=session, response=completion)`](https://github.com/composiohq/composio/blob/next/python/composio/core/provider/_openai.py) returns a list of [`ToolExecutionResponse` dictionaries](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py), not Session Pydantic models. Import `OpenAIProvider` from `composio_openai` when using that provider.
+
+## Execution status and errors
+
+Read `result_type`, which is `"completed"` or `"failed"`, rather than testing whether `error` is truthy. Failed executions can have a `None` or empty error. The Session result has no `successful` field. The log identifier is `log_id`, not `tool_log_id`; locally executed custom tools return an empty log ID.
+
+Calls that require user input raise `composio.exceptions.ToolInputRequiredError` instead of returning an execution result. Repeat the same call with `input_responses` and `request_state` from that exception. Transport failures raise; missing or unknown execution discriminants raise `composio.exceptions.ValidationError`.
+
+## Imports and serialization
+
+Import `ToolRouterSessionExecuteResponse`, `ToolRouterSessionSearchResponse`, `ToolRouterSessionMetaToolSlug`, and `ToolRouterInputResponse` from `composio.core.models.tool_router_session`. The response aliases point to the installed `composio_client` Pydantic models. See their [SDK definitions](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py).
+
+Execution and search results are Pydantic models, not dictionaries. Use attribute access for fields, `model_dump()` for a Python dictionary, `model_dump(mode="json")` for JSON-compatible values, or `model_dump_json()` for a JSON string. These methods serialize nested response models too. `json.dumps(result)` does not serialize the model directly.
+
+`proxy_execute()` returns a `ToolRouterSessionProxyExecuteResponse` dictionary, not the execution Pydantic model. Import that type from `composio.core.models.custom_tool_types`; use `json.dumps(proxy_result)` rather than `proxy_result.model_dump_json()`. See its [type definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/custom_tool_types.py).
+
+## Response schemas
+
+These field tables are generated with Pydantic from the actual response models and input-response type. They include every nested model definition. JSON `string`, `integer`, `number`, `boolean`, and `null` correspond to Python `str`, `int`, `float`, `bool`, and `None`. `Any` accepts any value. Required means the field must be present; a nullable type can also hold `None`. Nested rows are required only within their containing object. These are SDK model shapes, not provider result objects.
+
+The client model schema allows a nullable `result_type` for decoding wire responses. Session execution only returns `"completed"` or `"failed"`: input-required responses raise before returning, and missing or unsupported values fail validation. `instant_charge` is present only when requested by the Session and available.
+
+### ToolRouterSessionExecuteResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `data` | `dict[str, Any \| null]` | yes |
+| `error` | `string \| null` | no |
+| `log_id` | `string` | yes |
+| `instant_charge` | `CurrentSessionExecuteResponseInstantCharge \| null` | no |
+| `result_type` | `"completed" \| "failed" \| null` | no |
+
+Definitions: [`CurrentSessionExecuteResponseInstantCharge`](#currentsessionexecuteresponseinstantcharge).
+
+#### CurrentSessionExecuteResponseInstantCharge
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `amount` | `string` | yes |
+| `currency` | `"USD"` | yes |
+| `charged_by` | `"composio"` | yes |
+
+### ToolRouterSessionSearchResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `error` | `string \| null` | no |
+| `next_steps_guidance` | `list[string]` | yes |
+| `results` | `list[Result]` | yes |
+| `session` | `Session` | yes |
+| `success` | `boolean` | yes |
+| `time_info` | `TimeInfo` | yes |
+| `tool_schemas` | `dict[str, ToolSchemas]` | yes |
+| `toolkit_connection_statuses` | `list[ToolkitConnectionStatus]` | yes |
+
+Definitions: [`CurrentToolkitConnectionStatusInstantAccount`](#currenttoolkitconnectionstatusinstantaccount), [`CurrentToolkitConnectionStatusInstantAccountPricesValue`](#currenttoolkitconnectionstatusinstantaccountpricesvalue), [`Result`](#result), [`ResultReferenceWorkbenchSnippet`](#resultreferenceworkbenchsnippet), [`Session`](#session), [`TimeInfo`](#timeinfo), [`ToolSchemas`](#toolschemas), [`ToolSchemasSchemaRef`](#toolschemasschemaref), [`ToolSchemasSchemaRefArgs`](#toolschemasschemarefargs), [`ToolkitConnectionStatus`](#toolkitconnectionstatus), [`ToolkitConnectionStatusAccount`](#toolkitconnectionstatusaccount).
+
+#### CurrentToolkitConnectionStatusInstantAccount
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `allowed_tool_slugs` | `list[string]` | yes |
+| `prices` | `dict[str, CurrentToolkitConnectionStatusInstantAccountPricesValue] \| null` | no |
+
+#### CurrentToolkitConnectionStatusInstantAccountPricesValue
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `description` | `string \| null` | no |
+| `discount` | `string \| null` | no |
+
+#### Result
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `difficulty` | `string \| null` | no |
+| `error` | `string \| null` | no |
+| `execution_guidance` | `string \| null` | no |
+| `index` | `number` | yes |
+| `known_pitfalls` | `list[string] \| null` | no |
+| `memory` | `dict[str, list[string]] \| null` | no |
+| `plan_id` | `string \| null` | no |
+| `primary_tool_slugs` | `list[string]` | yes |
+| `recommended_plan_steps` | `list[string] \| null` | no |
+| `reference_workbench_snippets` | `list[ResultReferenceWorkbenchSnippet] \| null` | no |
+| `related_tool_slugs` | `list[string]` | yes |
+| `toolkits` | `list[string]` | yes |
+| `use_case` | `string` | yes |
+| `cached_plan_usecase` | `string \| null` | no |
+
+#### ResultReferenceWorkbenchSnippet
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `code` | `string` | yes |
+| `description` | `string` | yes |
+
+#### Session
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `generate_id` | `boolean` | yes |
+| `id` | `string` | yes |
+| `instructions` | `string` | yes |
+
+#### TimeInfo
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `current_time_utc` | `string` | yes |
+| `current_time_utc_epoch_seconds` | `number` | yes |
+| `message` | `string` | yes |
+
+#### ToolSchemas
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `description` | `string \| null` | no |
+| `has_full_schema` | `boolean \| null` | no |
+| `input_schema` | `dict[str, Any \| null] \| null` | no |
+| `output_schema` | `dict[str, Any \| null] \| null` | no |
+| `schema_ref` | `ToolSchemasSchemaRef \| null` | no |
+| `tool_slug` | `string` | yes |
+| `toolkit` | `string` | yes |
+
+#### ToolSchemasSchemaRef
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `args` | `ToolSchemasSchemaRefArgs` | yes |
+| `message` | `string \| null` | no |
+| `tool` | `"COMPOSIO_GET_TOOL_SCHEMAS"` | yes |
+
+#### ToolSchemasSchemaRefArgs
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `tool_slugs` | `list[string]` | yes |
+
+#### ToolkitConnectionStatus
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `account_selection` | `"required" \| null` | no |
+| `account_type` | `"PRIVATE" \| "SHARED" \| null` | no |
+| `accounts` | `list[ToolkitConnectionStatusAccount] \| null` | no |
+| `connection_details` | `dict[str, Any \| null] \| null` | no |
+| `current_user_info` | `dict[str, Any \| null] \| null` | no |
+| `description` | `string` | yes |
+| `has_active_connection` | `boolean` | yes |
+| `status_message` | `string` | yes |
+| `toolkit` | `string` | yes |
+| `instant_account` | `CurrentToolkitConnectionStatusInstantAccount \| null` | no |
+
+#### ToolkitConnectionStatusAccount
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `account_type` | `"PRIVATE" \| "SHARED" \| null` | no |
+| `alias` | `string \| null` | no |
+| `created_at` | `string` | yes |
+| `id` | `string` | yes |
+| `is_default` | `boolean` | yes |
+| `status` | `string` | yes |
+| `user_info` | `dict[str, Any \| null] \| null` | no |
+
+### ToolRouterSessionProxyExecuteResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `status` | `integer` | yes |
+| `data` | `Any` | yes |
+| `headers` | `dict[str, string] \| null` | yes |
+| `binary_data` | `ProxyExecuteBinaryData` | no |
+
+Definitions: [`ProxyExecuteBinaryData`](#proxyexecutebinarydata).
+
+#### ProxyExecuteBinaryData
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `content_type` | `string` | yes |
+| `size` | `integer` | yes |
+| `url` | `string` | yes |
+| `expires_at` | `string \| null` | yes |
+
+### ToolRouterInputResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `action` | `"accept" \| "decline" \| "cancel"` | yes |
+| `content` | `dict[str, Any \| null]` | no |

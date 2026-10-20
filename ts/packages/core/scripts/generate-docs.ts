@@ -12,6 +12,13 @@ import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import ts from 'typescript';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { JSONSchema7, JSONSchema7Definition } from 'json-schema';
+import {
+  ToolRouterSessionExecuteResponseSchema,
+  ToolRouterSessionSearchResponseSchema,
+} from '../src/types/toolRouter.types';
 
 // Paths (relative to ts/packages/core)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -987,6 +994,12 @@ export function generateClassMdx(classDoc: ClassDoc): string {
   lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
+  if (classDoc.name === 'ToolRouterSession') {
+    lines.push(
+      'See [Session results](/reference/sdk-reference/typescript/session-results) for exact search and execution schemas, imports, and serialization.'
+    );
+    lines.push('');
+  }
 
   // Class-level deprecation callout (rendered as a fumadocs warning callout).
   if (classDoc.deprecated !== undefined) {
@@ -1236,6 +1249,195 @@ async function runTypeDoc(): Promise<TypeDocProject> {
   return JSON.parse(jsonContent) as TypeDocProject;
 }
 
+/** Keep result structures tied to the same schemas used by Session at runtime. */
+export function sessionResultSchemas() {
+  return {
+    ToolRouterSessionExecuteResponse: zodToJsonSchema(ToolRouterSessionExecuteResponseSchema, {
+      $refStrategy: 'none',
+    }),
+    ToolRouterSessionSearchResponse: zodToJsonSchema(ToolRouterSessionSearchResponseSchema, {
+      $refStrategy: 'none',
+    }),
+  };
+}
+
+export function renderSessionSchemaTable(schema: JSONSchema7): string {
+  function fieldType(field: JSONSchema7Definition): string {
+    if (typeof field === 'boolean') return field ? 'unknown' : 'never';
+    if (field.$ref) return field.$ref.split('/').at(-1)!;
+    const union = field.anyOf ?? field.oneOf;
+    if (union) return union.map(fieldType).join(' | ');
+    if (field.enum) return field.enum.map(value => JSON.stringify(value)).join(' | ');
+    if (field.const !== undefined) return JSON.stringify(field.const);
+    if (field.type === 'array') {
+      return `Array<${fieldType(Array.isArray(field.items) ? {} : (field.items ?? {}))}>`;
+    }
+    if (field.type === 'object' && !field.properties) {
+      return `Record<string, ${fieldType(field.additionalProperties ?? true)}>`;
+    }
+    return Array.isArray(field.type) ? field.type.join(' | ') : (field.type ?? 'unknown');
+  }
+  function rows(obj: JSONSchema7, prefix = ''): string[] {
+    const result: string[] = [];
+    for (const [name, field] of Object.entries(obj.properties ?? {})) {
+      const path = `${prefix}${name}`;
+      const type = fieldType(field).replace(/\|/g, '\\|');
+      result.push(`| \`${path}\` | \`${type}\` | ${obj.required?.includes(name) ? 'yes' : 'no'} |`);
+      if (typeof field === 'boolean') continue;
+      result.push(...rows(field, `${path}.`));
+      if (
+        field.type === 'array' &&
+        field.items &&
+        !Array.isArray(field.items) &&
+        typeof field.items !== 'boolean'
+      ) {
+        result.push(...rows(field.items, `${path}[].`));
+      }
+      if (field.type === 'object' && typeof field.additionalProperties === 'object') {
+        result.push(...rows(field.additionalProperties, `${path}[key].`));
+      }
+    }
+    return result;
+  }
+  return ['| Field | JSON value type | Required |', '|---|---|---|', ...rows(schema)].join('\n');
+}
+
+export function generateSessionResultsMdx(): string {
+  const modelPath = join(PACKAGE_DIR, 'src/models/ToolRouterSession.ts');
+  const model = ts.createSourceFile(
+    modelPath,
+    readFileSync(modelPath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true
+  );
+  const session = model.statements.find(
+    (node): node is ts.ClassDeclaration =>
+      ts.isClassDeclaration(node) && node.name?.text === 'ToolRouterSession'
+  );
+  if (!session) throw new Error('ToolRouterSession source class not found');
+  const methods = ['search', 'execute', 'executeMeta', 'proxyExecute', 'tools'];
+  const signatures = methods.map(name => {
+    const method = session.members.find(
+      (node): node is ts.MethodDeclaration =>
+        ts.isMethodDeclaration(node) && node.name.getText(model) === name
+    );
+    if (!method?.type) throw new Error(`Session.${name} must have an explicit return type`);
+    const line = model.getLineAndCharacterOfPosition(method.getStart(model)).line + 1;
+    return [
+      `### ${name}`,
+      '',
+      `[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L${line})`,
+      '',
+      '```typescript',
+      `${name}(${method.parameters.map(p => p.getText(model)).join(', ')}): ${method.type.getText(model)}`,
+      '```',
+      '',
+    ].join('\n');
+  });
+  const typesPath = join(PACKAGE_DIR, 'src/types/toolRouter.types.ts');
+  const types = ts.createSourceFile(
+    typesPath,
+    readFileSync(typesPath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true
+  );
+  const definitions = [
+    'ToolRouterSessionExecuteOptions',
+    'ToolRouterInputResponse',
+    'ToolRouterSessionMetaToolSlug',
+    'ToolRouterSessionExecuteMetaOptions',
+    'ToolRouterSessionProxyExecuteResponse',
+  ].map(name => {
+    const node = types.statements.find(
+      (node): node is ts.InterfaceDeclaration | ts.TypeAliasDeclaration =>
+        (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
+        node.name.text === name
+    );
+    if (!node) throw new Error(`Missing Session contract: ${name}`);
+    const line = types.getLineAndCharacterOfPosition(node.getStart(types)).line + 1;
+    return [
+      `### ${name}`,
+      '',
+      `[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L${line})`,
+      '',
+      '```typescript',
+      ts.createPrinter({ removeComments: true }).printNode(ts.EmitHint.Unspecified, node, types),
+      '```',
+      '',
+    ].join('\n');
+  });
+  const schemas = Object.entries(sessionResultSchemas()).map(([name, schema]) =>
+    [`### ${name}`, '', renderSessionSchemaTable(schema), ''].join('\n')
+  );
+  return `---
+title: "Session results"
+description: "Session method signatures, execution results, search fields, and serialization."
+---
+
+A Session gives you search and execution methods scoped to one user. Create one with \`composio.sessions.create()\`, or reuse its ID with \`composio.sessions.use()\`. See [Sessions](/reference/sdk-reference/typescript/sessions) and the full [Session method reference](/reference/sdk-reference/typescript/session).
+
+\`\`\`typescript
+import {
+  Composio,
+  type ToolRouterSessionExecuteResponse,
+  type ToolRouterSessionSearchResponse,
+} from '@composio/core';
+
+const composio = new Composio();
+const created = await composio.sessions.create('user-123');
+const session = await composio.sessions.use(created.sessionId);
+const search: ToolRouterSessionSearchResponse = await session.search({
+  query: 'Find GitHub repositories',
+});
+console.log(search.toolSchemas);
+const result: ToolRouterSessionExecuteResponse = await session.execute(
+  'COMPOSIO_SEARCH_TOOLS',
+  { queries: [{ use_case: 'Find GitHub repositories' }] },
+);
+if (result.resultType === 'completed') {
+  console.log(result.data);
+} else {
+  console.error(result.error, result.logId);
+}
+console.log(JSON.stringify(result));
+\`\`\`
+
+Set \`COMPOSIO_API_KEY\` before running this example. It executes a read-only discovery meta tool; no connected account is needed. The schemas below can be read without credentials.
+
+## Method contracts
+
+\`execute(toolSlug, arguments_, options?, requestOptions?)\` takes the tool's arguments directly as its second parameter, not an object wrapping \`arguments\`. Its [execution result](#toolroutersessionexecuteresponse) is also returned by \`executeMeta()\`. [Search results](#toolroutersessionsearchresponse) are separate objects with tool schemas and guidance.
+
+Execution argument types: [\`ToolRouterSessionExecuteOptions\`](#toolroutersessionexecuteoptions), [\`ToolRouterSessionExecuteMetaOptions\`](#toolroutersessionexecutemetaoptions), and [\`ToolRouterInputResponse\`](#toolrouterinputresponse). Proxy calls return [\`ToolRouterSessionProxyExecuteResponse\`](#toolroutersessionproxyexecuteresponse).
+
+${signatures.join('\n')}
+
+\`tools()\` returns provider-wrapped tool definitions for your AI framework, not search results or an execution response. Framework tool-call handlers and provider result objects have their own contracts. Don't apply the Session response fields to them. See [Tools](/reference/sdk-reference/typescript/tools).
+
+For example, [\`OpenAIProvider.handleToolCalls(session, completion)\`](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/provider/OpenAIProvider.ts) returns OpenAI tool-message objects (\`OpenAI.ChatCompletionToolMessageParam[]\`), not \`ToolRouterSessionExecuteResponse[]\`. Import \`OpenAIProvider\` from \`@composio/core\`.
+
+## Execution status and errors
+
+Read \`resultType\`, which is \`'completed'\` or \`'failed'\`, rather than testing whether \`error\` is truthy. Failed executions can have a null or empty error. The Session result has no \`successful\` field. The log identifier is \`logId\`; locally executed custom tools return an empty log ID.
+
+Calls that require user input throw \`ComposioToolInputRequiredError\` instead of returning an execution result. Repeat the same call with \`options.inputResponses\` and \`options.requestState\` from that error. Transport and validation failures also throw.
+
+## Argument and proxy result definitions
+
+These declarations are copied from the current SDK source during generation. Import the public types below from \`@composio/core\`. Client-qualified names in aliases refer to the pinned \`@composio/client\` dependency imported by the [SDK type module](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+${definitions.join('\n')}
+
+\`ComposioRequestOptions\` is also exported from \`@composio/core\`. See its [source definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/requestOptions.types.ts). Proxy arguments use [\`SessionProxyExecuteParams\`](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+## Response schemas
+
+These field tables are generated from the SDK's runtime Zod schemas, including every nested search field. Required means the field must be present within its containing object. JSON \`integer\` and \`number\` both correspond to TypeScript \`number\`; \`unknown\` accepts any value. Tool-specific \`data\`, \`inputSchema\`, and \`outputSchema\` remain open objects. These are SDK response shapes, not provider or raw HTTP response shapes. Import both response type names from \`@composio/core\`; see their [source definitions](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+${schemas.join('\n')}
+`;
+}
+
 async function main() {
   console.log('Starting TypeScript SDK documentation generation...\n');
   console.log(`Package dir: ${PACKAGE_DIR}`);
@@ -1287,6 +1489,8 @@ async function main() {
     });
   }
 
+  await writeFile(join(OUTPUT_DIR, 'session-results.mdx'), generateSessionResultsMdx());
+
   // Generate index page
   const classesTable = documented
     .map(
@@ -1337,7 +1541,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   // Generate meta.json for sidebar
   const meta = {
     title: 'TypeScript SDK',
-    pages: documented.map(({ name }) => slugFor(name)),
+    pages: [...documented.map(({ name }) => slugFor(name)), 'session-results'],
   };
   await writeFile(join(OUTPUT_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
 
@@ -1351,7 +1555,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   console.log('\nGeneration complete!');
   console.log(`  Output: ${OUTPUT_DIR}`);
   console.log(`  Classes: ${documented.map(d => d.name).join(', ')}`);
-  console.log(`  Files generated: ${documented.length + 2}`); // +2 for index.mdx and meta.json
+  console.log(`  Files generated: ${documented.length + 3}`); // index, navigation, and results
 }
 
 function isDirectRun(): boolean {

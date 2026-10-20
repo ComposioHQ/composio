@@ -1,0 +1,226 @@
+---
+title: "Session results"
+description: "Session method signatures, execution results, search fields, and serialization."
+---
+
+A Session gives you search and execution methods scoped to one user. Create one with `composio.sessions.create()`, or reuse its ID with `composio.sessions.use()`. See [Sessions](/reference/sdk-reference/typescript/sessions) and the full [Session method reference](/reference/sdk-reference/typescript/session).
+
+```typescript
+import {
+  Composio,
+  type ToolRouterSessionExecuteResponse,
+  type ToolRouterSessionSearchResponse,
+} from '@composio/core';
+
+const composio = new Composio();
+const created = await composio.sessions.create('user-123');
+const session = await composio.sessions.use(created.sessionId);
+const search: ToolRouterSessionSearchResponse = await session.search({
+  query: 'Find GitHub repositories',
+});
+console.log(search.toolSchemas);
+const result: ToolRouterSessionExecuteResponse = await session.execute(
+  'COMPOSIO_SEARCH_TOOLS',
+  { queries: [{ use_case: 'Find GitHub repositories' }] },
+);
+if (result.resultType === 'completed') {
+  console.log(result.data);
+} else {
+  console.error(result.error, result.logId);
+}
+console.log(JSON.stringify(result));
+```
+
+Set `COMPOSIO_API_KEY` before running this example. It executes a read-only discovery meta tool; no connected account is needed. The schemas below can be read without credentials.
+
+## Method contracts
+
+`execute(toolSlug, arguments_, options?, requestOptions?)` takes the tool's arguments directly as its second parameter, not an object wrapping `arguments`. Its [execution result](#toolroutersessionexecuteresponse) is also returned by `executeMeta()`. [Search results](#toolroutersessionsearchresponse) are separate objects with tool schemas and guidance.
+
+Execution argument types: [`ToolRouterSessionExecuteOptions`](#toolroutersessionexecuteoptions), [`ToolRouterSessionExecuteMetaOptions`](#toolroutersessionexecutemetaoptions), and [`ToolRouterInputResponse`](#toolrouterinputresponse). Proxy calls return [`ToolRouterSessionProxyExecuteResponse`](#toolroutersessionproxyexecuteresponse).
+
+### search
+
+[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L663)
+
+```typescript
+search(params: {
+      query: string;
+      toolkits?: string[];
+    }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionSearchResponse>
+```
+
+### execute
+
+[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L703)
+
+```typescript
+execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+```
+
+### executeMeta
+
+[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L782)
+
+```typescript
+executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteMetaOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+```
+
+### proxyExecute
+
+[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L821)
+
+```typescript
+proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
+```
+
+### tools
+
+[Method definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/models/ToolRouterSession.ts#L242)
+
+```typescript
+tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType<TProvider['wrapTools']>>
+```
+
+
+`tools()` returns provider-wrapped tool definitions for your AI framework, not search results or an execution response. Framework tool-call handlers and provider result objects have their own contracts. Don't apply the Session response fields to them. See [Tools](/reference/sdk-reference/typescript/tools).
+
+For example, [`OpenAIProvider.handleToolCalls(session, completion)`](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/provider/OpenAIProvider.ts) returns OpenAI tool-message objects (`OpenAI.ChatCompletionToolMessageParam[]`), not `ToolRouterSessionExecuteResponse[]`. Import `OpenAIProvider` from `@composio/core`.
+
+## Execution status and errors
+
+Read `resultType`, which is `'completed'` or `'failed'`, rather than testing whether `error` is truthy. Failed executions can have a null or empty error. The Session result has no `successful` field. The log identifier is `logId`; locally executed custom tools return an empty log ID.
+
+Calls that require user input throw `ComposioToolInputRequiredError` instead of returning an execution result. Repeat the same call with `options.inputResponses` and `options.requestState` from that error. Transport and validation failures also throw.
+
+## Argument and proxy result definitions
+
+These declarations are copied from the current SDK source during generation. Import the public types below from `@composio/core`. Client-qualified names in aliases refer to the pinned `@composio/client` dependency imported by the [SDK type module](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+### ToolRouterSessionExecuteOptions
+
+[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L820)
+
+```typescript
+export interface ToolRouterSessionExecuteOptions {
+    account?: string;
+    inputResponses?: Record<string, ToolRouterInputResponse>;
+    requestState?: string;
+}
+```
+
+### ToolRouterInputResponse
+
+[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L855)
+
+```typescript
+export type ToolRouterInputResponse = NonNullable<SessionExecuteParams['input_responses']>[string];
+```
+
+### ToolRouterSessionMetaToolSlug
+
+[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L861)
+
+```typescript
+export type ToolRouterSessionMetaToolSlug = SessionExecuteMetaParams['slug'];
+```
+
+### ToolRouterSessionExecuteMetaOptions
+
+[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L864)
+
+```typescript
+export type ToolRouterSessionExecuteMetaOptions = Pick<ToolRouterSessionExecuteOptions, 'inputResponses' | 'requestState'>;
+```
+
+### ToolRouterSessionProxyExecuteResponse
+
+[Type definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts#L769)
+
+```typescript
+export interface ToolRouterSessionProxyExecuteResponse {
+    status: number;
+    data?: unknown;
+    headers?: Record<string, string>;
+    binaryData?: {
+        contentType: string;
+        size: number;
+        url: string;
+        expiresAt?: string;
+    };
+}
+```
+
+
+`ComposioRequestOptions` is also exported from `@composio/core`. See its [source definition](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/requestOptions.types.ts). Proxy arguments use [`SessionProxyExecuteParams`](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+## Response schemas
+
+These field tables are generated from the SDK's runtime Zod schemas, including every nested search field. Required means the field must be present within its containing object. JSON `integer` and `number` both correspond to TypeScript `number`; `unknown` accepts any value. Tool-specific `data`, `inputSchema`, and `outputSchema` remain open objects. These are SDK response shapes, not provider or raw HTTP response shapes. Import both response type names from `@composio/core`; see their [source definitions](https://github.com/composiohq/composio/blob/next/ts/packages/core/src/types/toolRouter.types.ts).
+
+### ToolRouterSessionExecuteResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `data` | `Record<string, unknown>` | yes |
+| `error` | `string \| null` | yes |
+| `logId` | `string` | yes |
+| `resultType` | `"completed" \| "failed"` | yes |
+| `instantCharge` | `unknown` | no |
+
+### ToolRouterSessionSearchResponse
+
+| Field | JSON value type | Required |
+|---|---|---|
+| `success` | `boolean` | yes |
+| `error` | `string \| null` | yes |
+| `results` | `Array<object>` | yes |
+| `results[].index` | `number` | yes |
+| `results[].useCase` | `string` | yes |
+| `results[].primaryToolSlugs` | `Array<string>` | yes |
+| `results[].relatedToolSlugs` | `Array<string>` | yes |
+| `results[].toolkits` | `Array<string>` | yes |
+| `results[].difficulty` | `string` | no |
+| `results[].error` | `string \| null` | no |
+| `results[].executionGuidance` | `string` | no |
+| `results[].knownPitfalls` | `Array<string>` | no |
+| `results[].memory` | `Record<string, Array<string>>` | no |
+| `results[].planId` | `string` | no |
+| `results[].recommendedPlanSteps` | `Array<string>` | no |
+| `results[].referenceWorkbenchSnippets` | `Array<object>` | no |
+| `results[].referenceWorkbenchSnippets[].code` | `string` | yes |
+| `results[].referenceWorkbenchSnippets[].description` | `string` | yes |
+| `toolSchemas` | `Record<string, object>` | yes |
+| `toolSchemas[key].toolSlug` | `string` | yes |
+| `toolSchemas[key].toolkit` | `string` | yes |
+| `toolSchemas[key].description` | `string` | no |
+| `toolSchemas[key].hasFullSchema` | `boolean` | no |
+| `toolSchemas[key].inputSchema` | `Record<string, unknown>` | no |
+| `toolSchemas[key].outputSchema` | `Record<string, unknown>` | no |
+| `toolSchemas[key].schemaRef` | `object` | no |
+| `toolSchemas[key].schemaRef.args` | `object` | yes |
+| `toolSchemas[key].schemaRef.args.toolSlugs` | `Array<string>` | yes |
+| `toolSchemas[key].schemaRef.message` | `string` | no |
+| `toolSchemas[key].schemaRef.tool` | `"COMPOSIO_GET_TOOL_SCHEMAS"` | yes |
+| `toolkitConnectionStatuses` | `Array<object>` | yes |
+| `toolkitConnectionStatuses[].toolkit` | `string` | yes |
+| `toolkitConnectionStatuses[].description` | `string` | yes |
+| `toolkitConnectionStatuses[].hasActiveConnection` | `boolean` | yes |
+| `toolkitConnectionStatuses[].statusMessage` | `string` | yes |
+| `toolkitConnectionStatuses[].connectionDetails` | `Record<string, unknown>` | no |
+| `toolkitConnectionStatuses[].currentUserInfo` | `Record<string, unknown>` | no |
+| `toolkitConnectionStatuses[].instantAccount` | `object` | no |
+| `toolkitConnectionStatuses[].instantAccount.allowedToolSlugs` | `Array<string>` | yes |
+| `toolkitConnectionStatuses[].instantAccount.prices` | `Record<string, object>` | no |
+| `toolkitConnectionStatuses[].instantAccount.prices[key].description` | `string` | no |
+| `toolkitConnectionStatuses[].instantAccount.prices[key].discount` | `string \| null` | no |
+| `nextStepsGuidance` | `Array<string>` | yes |
+| `session` | `object` | yes |
+| `session.id` | `string` | yes |
+| `session.generateId` | `boolean` | yes |
+| `session.instructions` | `string` | yes |
+| `timeInfo` | `object` | yes |
+| `timeInfo.currentTimeUtc` | `string` | yes |
+| `timeInfo.currentTimeUtcEpochSeconds` | `number` | yes |
+| `timeInfo.message` | `string` | yes |
+

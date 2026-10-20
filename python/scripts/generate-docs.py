@@ -10,6 +10,8 @@ Run: cd python && uv run --with griffe python scripts/generate-docs.py
 
 from __future__ import annotations
 
+import ast
+import inspect
 import json
 import re
 import shutil
@@ -406,6 +408,14 @@ def generate_class_mdx(
     lines.append(f"description: {escape_yaml_string(desc)}")
     lines.append("---")
     lines.append("")
+    if info["name"] == "ToolRouterSession":
+        lines.extend(
+            [
+                "See [Session results](/reference/sdk-reference/python/session-results) "
+                "for exact search and execution schemas, imports, and serialization.",
+                "",
+            ]
+        )
 
     # Class-level deprecation callout (rendered as a fumadocs warning callout).
     deprecated_note = info.get("deprecated")
@@ -629,6 +639,178 @@ result = composio.tools.execute(
 """
 
 
+def session_result_schemas() -> dict[str, dict[str, Any]]:
+    """Use the installed client's actual models, not a second response schema."""
+    from pydantic import TypeAdapter
+
+    from composio.core.models.tool_router_session import (
+        ToolRouterInputResponse,
+        ToolRouterSessionExecuteResponse,
+        ToolRouterSessionProxyExecuteResponse,
+        ToolRouterSessionSearchResponse,
+    )
+
+    return {
+        name: TypeAdapter(model).json_schema(by_alias=False)
+        for name, model in {
+            "ToolRouterSessionExecuteResponse": ToolRouterSessionExecuteResponse,
+            "ToolRouterSessionSearchResponse": ToolRouterSessionSearchResponse,
+            "ToolRouterSessionProxyExecuteResponse": ToolRouterSessionProxyExecuteResponse,
+            "ToolRouterInputResponse": ToolRouterInputResponse,
+        }.items()
+    }
+
+
+def session_method_signature(method: Any) -> str:
+    """Preserve keyword-only markers, annotations, and defaults from source."""
+    node = ast.parse(textwrap.dedent(inspect.getsource(method))).body[0]
+    if not isinstance(node, ast.FunctionDef) or node.returns is None:
+        raise ValueError("Session methods must have explicit return annotations")
+    node.args.args = [arg for arg in node.args.args if arg.arg != "self"]
+    return (
+        f"def {node.name}({ast.unparse(node.args)}) -> {ast.unparse(node.returns)}: ..."
+    )
+
+
+def render_schema_tables(schema: dict[str, Any]) -> str:
+    """Render nested properties and model references without duplicating shapes."""
+
+    def field_type(field: dict[str, Any]) -> str:
+        if "$ref" in field:
+            return field["$ref"].rsplit("/", 1)[-1]
+        for union in ("anyOf", "oneOf"):
+            if union in field:
+                return " | ".join(field_type(part) for part in field[union])
+        if "enum" in field:
+            return " | ".join(json.dumps(value) for value in field["enum"])
+        if "const" in field:
+            return json.dumps(field["const"])
+        kind = field.get("type", "Any")
+        if kind == "array":
+            return f"list[{field_type(field.get('items', {}))}]"
+        if kind == "object" and "properties" not in field:
+            extra = field.get("additionalProperties", True)
+            value = field_type(extra) if isinstance(extra, dict) else "Any"
+            return f"dict[str, {value}]"
+        return str(kind)
+
+    def rows(obj: dict[str, Any], prefix: str = "") -> list[str]:
+        result = []
+        for name, field in obj.get("properties", {}).items():
+            path = f"{prefix}{name}"
+            kind = field_type(field).replace("|", "\\|")
+            required = "yes" if name in obj.get("required", []) else "no"
+            result.append(f"| `{path}` | `{kind}` | {required} |")
+            result.extend(rows(field, f"{path}."))
+            if field.get("type") == "array":
+                result.extend(rows(field.get("items", {}), f"{path}[]."))
+        return result
+
+    table = ["| Field | JSON value type | Required |", "|---|---|---|"]
+    lines = [*table, *rows(schema)]
+    definitions = schema.get("$defs", {})
+    if definitions:
+        links = [f"[`{name}`](#{name.lower()})" for name in definitions]
+        lines.extend(["", "Definitions: " + ", ".join(links) + "."])
+    for name, definition in definitions.items():
+        lines.extend(["", f"#### {name}", ""])
+        if "properties" in definition:
+            lines.extend([*table, *rows(definition)])
+        else:
+            lines.append(f"`{field_type(definition)}`")
+    return "\n".join(lines)
+
+
+def generate_session_results_mdx() -> str:
+    """Generate the compact Session contract from method source and Pydantic."""
+    from composio.core.models.tool_router_session import ToolRouterSession
+
+    methods = []
+    for name in ("search", "execute", "execute_meta", "proxy_execute", "tools"):
+        method = getattr(ToolRouterSession, name)
+        line = inspect.getsourcelines(method)[1]
+        methods.append(
+            f"### {name}\n\n"
+            f"[Method definition]({GITHUB_BASE}/composio/core/models/"
+            f"tool_router_session.py#L{line})\n\n"
+            f"```python\n{session_method_signature(method)}\n```\n"
+        )
+    schemas = []
+    for name, schema in session_result_schemas().items():
+        schemas.append(f"### {name}\n\n{render_schema_tables(schema)}\n")
+    return (
+        """---
+title: "Session results"
+description: "Session method signatures, response models, and Pydantic serialization."
+---
+
+A Session gives you search and execution methods scoped to one user. Create one with `composio.sessions.create()`, or reuse its ID with `composio.sessions.use()`. See the full [Session reference](/reference/sdk-reference/python/session) for connection and configuration methods.
+
+```python
+from composio import Composio
+from composio.core.models.tool_router_session import (
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionSearchResponse,
+)
+
+composio = Composio()
+created = composio.sessions.create(user_id="user-123")
+session = composio.sessions.use(created.session_id)
+search: ToolRouterSessionSearchResponse = session.search(
+    query="Find GitHub repositories",
+)
+print(search.model_dump(mode="json"))
+result: ToolRouterSessionExecuteResponse = session.execute(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "Find GitHub repositories"}]},
+)
+if result.result_type == "completed":
+    print(result.data)
+else:
+    print(result.error, result.log_id)
+print(result.model_dump(mode="json"))
+print(result.model_dump_json())
+```
+
+Set `COMPOSIO_API_KEY` before running this example. It executes a read-only discovery meta tool; no connected account is needed. The schemas below can be read without credentials.
+
+## Method contracts
+
+`execute(tool_slug, *, arguments=None, ...)` takes the tool's arguments as the keyword-only `arguments` parameter. Its [execution result](#toolroutersessionexecuteresponse) is also returned by `execute_meta()`. [Search results](#toolroutersessionsearchresponse) are separate models with tool schemas and guidance. [Input responses](#toolrouterinputresponse) carry answers to user-input requests. The signatures below come directly from the current method source, including keyword-only markers and defaults; `t` is Python's `typing` module.
+
+"""
+        + "\n".join(methods)
+        + """
+
+`tools()` returns provider-wrapped tool definitions for your AI framework, not search results or an execution response. Framework tool-call handlers and provider result objects have their own contracts. Don't apply the Session response fields to them. See [Tools](/reference/sdk-reference/python/tools).
+
+For example, [`OpenAIProvider.handle_tool_calls(session=session, response=completion)`](https://github.com/composiohq/composio/blob/next/python/composio/core/provider/_openai.py) returns a list of [`ToolExecutionResponse` dictionaries](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py), not Session Pydantic models. Import `OpenAIProvider` from `composio_openai` when using that provider.
+
+## Execution status and errors
+
+Read `result_type`, which is `"completed"` or `"failed"`, rather than testing whether `error` is truthy. Failed executions can have a `None` or empty error. The Session result has no `successful` field. The log identifier is `log_id`, not `tool_log_id`; locally executed custom tools return an empty log ID.
+
+Calls that require user input raise `composio.exceptions.ToolInputRequiredError` instead of returning an execution result. Repeat the same call with `input_responses` and `request_state` from that exception. Transport failures raise; missing or unknown execution discriminants raise `composio.exceptions.ValidationError`.
+
+## Imports and serialization
+
+Import `ToolRouterSessionExecuteResponse`, `ToolRouterSessionSearchResponse`, `ToolRouterSessionMetaToolSlug`, and `ToolRouterInputResponse` from `composio.core.models.tool_router_session`. The response aliases point to the installed `composio_client` Pydantic models. See their [SDK definitions](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py).
+
+Execution and search results are Pydantic models, not dictionaries. Use attribute access for fields, `model_dump()` for a Python dictionary, `model_dump(mode="json")` for JSON-compatible values, or `model_dump_json()` for a JSON string. These methods serialize nested response models too. `json.dumps(result)` does not serialize the model directly.
+
+`proxy_execute()` returns a `ToolRouterSessionProxyExecuteResponse` dictionary, not the execution Pydantic model. Import that type from `composio.core.models.custom_tool_types`; use `json.dumps(proxy_result)` rather than `proxy_result.model_dump_json()`. See its [type definition](https://github.com/composiohq/composio/blob/next/python/composio/core/models/custom_tool_types.py).
+
+## Response schemas
+
+These field tables are generated with Pydantic from the actual response models and input-response type. They include every nested model definition. JSON `string`, `integer`, `number`, `boolean`, and `null` correspond to Python `str`, `int`, `float`, `bool`, and `None`. `Any` accepts any value. Required means the field must be present; a nullable type can also hold `None`. Nested rows are required only within their containing object. These are SDK model shapes, not provider result objects.
+
+The client model schema allows a nullable `result_type` for decoding wire responses. Session execution only returns `"completed"` or `"failed"`: input-required responses raise before returning, and missing or unsupported values fail validation. `instant_charge` is present only when requested by the Session and available.
+
+"""
+        + "\n".join(schemas)
+    )
+
+
 def main():
     griffe_module = load_griffe()
 
@@ -766,10 +948,13 @@ def main():
     index_content = generate_index_mdx(documented_classes, decorators)
     (OUTPUT_DIR / "index.mdx").write_text(index_content)
 
+    (OUTPUT_DIR / "session-results.mdx").write_text(generate_session_results_mdx())
+
     # Generate meta.json
     meta = {
         "title": "Python SDK",
-        "pages": [slug_for(c["name"]) for c in documented_classes],
+        "pages": [slug_for(c["name"]) for c in documented_classes]
+        + ["session-results"],
     }
     (OUTPUT_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
 
