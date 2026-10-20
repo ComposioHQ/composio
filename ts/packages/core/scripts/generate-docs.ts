@@ -1281,7 +1281,7 @@ export function renderSessionSchemaTable(schema: JSONSchema7): string {
     const result: string[] = [];
     for (const [name, field] of Object.entries(obj.properties ?? {})) {
       const path = `${prefix}${name}`;
-      const type = fieldType(field).replace(/\|/g, '\\|');
+      const type = escapeTypeForMdx(fieldType(field));
       result.push(`| \`${path}\` | \`${type}\` | ${obj.required?.includes(name) ? 'yes' : 'no'} |`);
       if (typeof field === 'boolean') continue;
       result.push(...rows(field, `${path}.`));
