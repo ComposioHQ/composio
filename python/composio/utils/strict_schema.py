@@ -111,6 +111,7 @@ StrictSchemaChangeReason = t.Literal[
     "optional-property-nullable",
     "unsupported-keyword-stripped",
     "one-of-converted",
+    "nullable-converted",
 ]
 
 
@@ -227,6 +228,11 @@ class _NullCheck:
     emits instead of the one it was given: the rewrite types every node that
     declares ``properties`` as an object, so such a node stops accepting null.
 
+    ``follow_refs=False`` makes every ``$ref`` reject null without resolving
+    it. Folding ``nullable`` needs that, because a ``$ref`` can lead back to
+    the node being folded, whose source still accepts null. It costs at most
+    a redundant null branch.
+
     One instance serves every check against a document, and an answer is
     computed once per node. A reference cycle never yields a null by itself,
     so a node met again while it is being evaluated counts as rejecting. An
@@ -240,9 +246,15 @@ class _NullCheck:
     one of them neither repeats the work nor trusts the answer.
     """
 
-    def __init__(self, root: dict[str, t.Any], strict_output: bool = False) -> None:
+    def __init__(
+        self,
+        root: dict[str, t.Any],
+        strict_output: bool = False,
+        follow_refs: bool = True,
+    ) -> None:
         self.root = root
         self.strict_output = strict_output
+        self.follow_refs = follow_refs
         # id(node) -> (node, answer, what it leans on). Holding the node keeps
         # its id from being reused while the answer is remembered.
         self.answers: dict[int, tuple[dict[str, t.Any], bool, int]] = {}
@@ -318,6 +330,10 @@ class _NullCheck:
         return result
 
     def _keywords_accept(self, node: dict[str, t.Any]) -> bool:
+        # OpenAPI ``nullable: true`` admits null whatever the other keywords
+        # say, as the Zod conversion reads it.
+        if node.get("nullable") is True:
+            return True
         accepts = self.accepts
         node_type = node.get("type")
         if isinstance(node_type, str) and node_type != "null":
@@ -335,6 +351,8 @@ class _NullCheck:
         if "const" in node and node["const"] is not None:
             return False
         if "$ref" in node:
+            if not self.follow_refs:
+                return False
             ref = node["$ref"]
             resolution = (
                 _try_resolve_pointer(self.root, ref) if isinstance(ref, str) else None
@@ -389,6 +407,9 @@ class _Walker:
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
         self.null_check = _NullCheck(root, strict_output=True)
+        self.null_check_without_refs = _NullCheck(
+            root, strict_output=True, follow_refs=False
+        )
         # Resolved references, re-checked against the rewritten schema.
         self.references: list[tuple[str, str]] = []
 
@@ -448,6 +469,8 @@ class _Walker:
 
         node: dict[str, t.Any] = {}
         for key, child in value.items():
+            if key == "nullable":
+                continue
             if key in STRICT_STRIP_KEYWORDS:
                 self.record(
                     path, "unsupported-keyword-stripped", f'keyword "{key}" removed'
@@ -479,6 +502,25 @@ class _Walker:
         if "properties" in node and not isinstance(node["properties"], dict):
             self.reject(path, "properties", "properties is not an object")
 
+        normalized = self.normalize_node(node, mode, depth, path)
+        if "nullable" not in value:
+            return normalized
+        widened = (
+            _widen_to_nullable(normalized, self.null_check_without_refs)
+            if value["nullable"] is True
+            else normalized
+        )
+        if widened is normalized:
+            self.record(
+                path, "unsupported-keyword-stripped", 'keyword "nullable" removed'
+            )
+        else:
+            self.record(path, "nullable-converted", "nullable became a null type")
+        return widened
+
+    def normalize_node(
+        self, node: dict[str, t.Any], mode: str, depth: int, path: str
+    ) -> dict[str, t.Any]:
         out = self.walk_children(node, mode, depth, path)
 
         ref = node.get("$ref")
@@ -553,7 +595,9 @@ def to_strict_json_schema(schema: t.Any) -> StrictJsonSchemaResult:
     Applies the strict contract at every depth: every object lists all of its
     properties in ``required`` and is closed; optional properties are widened
     to accept ``null`` instead of being dropped; ``oneOf`` becomes ``anyOf``;
-    ``default`` and ``examples`` are stripped; local ``$ref`` pointers into
+    ``default`` and ``examples`` are stripped; OpenAPI ``nullable`` is
+    stripped and a node that set it to ``true`` accepts ``null``; local
+    ``$ref`` pointers into
     ``$defs`` or ``definitions`` are kept and the definitions are normalized
     where they are declared; ``required`` arrays are de-duplicated last.
     Constructs strict mode cannot express are listed in ``unsupported``; when

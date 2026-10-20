@@ -155,6 +155,44 @@ const cases = [
     ),
   ],
   [
+    'openapi-nullable-folded',
+    'OpenAPI `nullable`, which Anthropic rejects on an object, is removed; `true` widens the node to accept null the way the Zod conversion reads it, including on a typed enum, and `false` is dropped.',
+    obj(
+      {
+        cfg: {
+          type: 'object',
+          nullable: true,
+          properties: { a: { type: 'string' } },
+          required: ['a'],
+        },
+        note: { type: 'string', nullable: true },
+        mode: { type: 'string', enum: ['asc', 'desc'], nullable: true },
+        untyped: { nullable: true, description: 'anything' },
+        count: { type: 'integer', nullable: false },
+        rows: {
+          type: 'array',
+          items: { type: 'object', nullable: true, properties: { id: { type: 'string' } } },
+        },
+      },
+      ['cfg', 'mode', 'count', 'rows']
+    ),
+  ],
+  [
+    'recursive-nullable-union-gets-null-branch',
+    'A `nullable: true` union that refers back to itself, or a nullable reference to the root, gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.',
+    obj(
+      { a: { $ref: '#/$defs/A' }, b: { $ref: '#/$defs/B' }, self: { $ref: '#', nullable: true } },
+      ['a', 'b', 'self'],
+      {
+        $defs: {
+          A: { anyOf: [{ $ref: '#/$defs/A' }, { type: 'string' }], nullable: true },
+          B: { anyOf: [{ $ref: '#/$defs/Nullable' }, { type: 'string' }], nullable: true },
+          Nullable: { type: ['string', 'null'] },
+        },
+      }
+    ),
+  ],
+  [
     'enum-values-are-data-not-keywords',
     'Keys inside enum/const values are data and must not be treated as keywords.',
     obj({ opts: { enum: [{ default: 1, properties: {} }, null] } }, ['opts']),
@@ -540,6 +578,22 @@ const cases = [
   ],
 ];
 const argumentCases = {
+  'recursive-nullable-union-gets-null-branch': [
+    { input: { a: null, b: null, self: null }, output: { a: null, b: null, self: null } },
+  ],
+  'openapi-nullable-folded': [
+    {
+      input: {
+        cfg: null,
+        note: null,
+        mode: null,
+        untyped: null,
+        count: null,
+        rows: [null, { id: null }],
+      },
+      output: { cfg: null, note: null, mode: null, untyped: null, rows: [null, {}] },
+    },
+  ],
   'optional-ref-to-typeless-object-wrapped': [
     { input: { cfg: null }, output: { cfg: null } },
     { input: { cfg: { url: 'u' } }, output: { cfg: { url: 'u' } } },
