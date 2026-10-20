@@ -5195,6 +5195,10 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
             "guarded": true,
             "typeName": "ZodAny",
           },
+          "self": {
+            "guarded": true,
+            "typeName": "ZodAny",
+          },
         },
         "typeName": "ZodObject",
         "unknownKeys": "strict",
@@ -5205,10 +5209,12 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
         "properties": {
           "a": {},
           "b": {},
+          "self": {},
         },
         "required": [
           "a",
           "b",
+          "self",
         ],
         "type": "object",
       },

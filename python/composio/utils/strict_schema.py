@@ -228,6 +228,11 @@ class _NullCheck:
     emits instead of the one it was given: the rewrite types every node that
     declares ``properties`` as an object, so such a node stops accepting null.
 
+    ``follow_refs=False`` makes every ``$ref`` reject null without resolving
+    it. Folding ``nullable`` needs that, because a ``$ref`` can lead back to
+    the node being folded, whose source still accepts null. It costs at most
+    a redundant null branch.
+
     One instance serves every check against a document, and an answer is
     computed once per node. A reference cycle never yields a null by itself,
     so a node met again while it is being evaluated counts as rejecting. An
@@ -241,9 +246,15 @@ class _NullCheck:
     one of them neither repeats the work nor trusts the answer.
     """
 
-    def __init__(self, root: dict[str, t.Any], strict_output: bool = False) -> None:
+    def __init__(
+        self,
+        root: dict[str, t.Any],
+        strict_output: bool = False,
+        follow_refs: bool = True,
+    ) -> None:
         self.root = root
         self.strict_output = strict_output
+        self.follow_refs = follow_refs
         # id(node) -> (node, answer, what it leans on). Holding the node keeps
         # its id from being reused while the answer is remembered.
         self.answers: dict[int, tuple[dict[str, t.Any], bool, int]] = {}
@@ -340,6 +351,8 @@ class _NullCheck:
         if "const" in node and node["const"] is not None:
             return False
         if "$ref" in node:
+            if not self.follow_refs:
+                return False
             ref = node["$ref"]
             resolution = (
                 _try_resolve_pointer(self.root, ref) if isinstance(ref, str) else None
@@ -394,10 +407,9 @@ class _Walker:
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
         self.null_check = _NullCheck(root, strict_output=True)
-        # A ``$ref`` from a ``nullable: true`` node can lead back to that node,
-        # whose source still reads as accepting null, so the fold treats every
-        # ``$ref`` as rejecting null. This costs at most a redundant null branch.
-        self.null_check_without_refs = _NullCheck({}, strict_output=True)
+        self.null_check_without_refs = _NullCheck(
+            root, strict_output=True, follow_refs=False
+        )
         # Resolved references, re-checked against the rewritten schema.
         self.references: list[tuple[str, str]] = []
 

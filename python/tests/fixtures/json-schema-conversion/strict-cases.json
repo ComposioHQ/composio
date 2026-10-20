@@ -1117,7 +1117,7 @@
     },
     {
       "id": "recursive-nullable-union-gets-null-branch",
-      "description": "A `nullable: true` union that refers back to itself gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.",
+      "description": "A `nullable: true` union that refers back to itself, or a nullable reference to the root, gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.",
       "schema": {
         "type": "object",
         "properties": {
@@ -1126,9 +1126,13 @@
           },
           "b": {
             "$ref": "#/$defs/B"
+          },
+          "self": {
+            "$ref": "#",
+            "nullable": true
           }
         },
-        "required": ["a", "b"],
+        "required": ["a", "b", "self"],
         "$defs": {
           "A": {
             "anyOf": [
@@ -1166,9 +1170,19 @@
             },
             "b": {
               "$ref": "#/$defs/B"
+            },
+            "self": {
+              "anyOf": [
+                {
+                  "$ref": "#"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
-          "required": ["a", "b"],
+          "required": ["a", "b", "self"],
           "$defs": {
             "A": {
               "anyOf": [
@@ -1205,6 +1219,10 @@
       },
       "changes": [
         {
+          "path": "properties.self",
+          "reason": "nullable-converted"
+        },
+        {
           "path": "$defs.A",
           "reason": "nullable-converted"
         },
@@ -1217,11 +1235,13 @@
         {
           "input": {
             "a": null,
-            "b": null
+            "b": null,
+            "self": null
           },
           "output": {
             "a": null,
-            "b": null
+            "b": null,
+            "self": null
           }
         }
       ]
