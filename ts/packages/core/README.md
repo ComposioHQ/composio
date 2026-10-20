@@ -34,6 +34,27 @@ const session = await composio.use(sessionId);
 
 See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
 
+## Find the Sessions API and types
+
+Use `composio.sessions.create(userId, options)` and `composio.sessions.use(sessionId)`. The `composio.create` and `composio.use` methods above are shortcuts for these canonical APIs.
+
+```typescript
+import type {
+  ToolRouterCreateSessionConfig,
+  ToolRouterUpdateSessionConfig,
+  ToolRouterSessionConfig,
+} from '@composio/core';
+```
+
+`ToolRouterCreateSessionConfig` describes create options; `ToolRouterUpdateSessionConfig` describes the patch passed to `session.update()`. `ToolRouterSessionConfig` describes the server-returned `session.config`, not create input. Sessions is the public API name; existing `ToolRouter*` type and file names still describe Sessions. Don't use the deprecated `composio.toolRouter` entrypoint for new code.
+
+You can read these files without credentials or executing SDK code:
+
+- API source: [`src/models/Sessions.ts`](src/models/Sessions.ts) mounts the API; [`src/models/ToolRouter.ts`](src/models/ToolRouter.ts) implements its inherited `create()` and `use()` methods. Returned Session methods live in [`src/models/ToolRouterSession.ts`](src/models/ToolRouterSession.ts).
+- Input schemas, public config types, and returned config aliases: [`src/types/toolRouter.types.ts`](src/types/toolRouter.types.ts).
+- Installed reference files: [`dist/docs/reference/sdk-reference/typescript/sessions.mdx`](dist/docs/reference/sdk-reference/typescript/sessions.mdx) and [`dist/docs/reference/sdk-reference/typescript/session.mdx`](dist/docs/reference/sdk-reference/typescript/session.mdx). These paths are relative to the installed `@composio/core` package root. Read the files directly; site-root links inside generated MDX refer to the documentation website, not local files.
+- Canonical plain Markdown: [Sessions API](https://docs.composio.dev/reference/sdk-reference/typescript/sessions.md) and [Session API](https://docs.composio.dev/reference/sdk-reference/typescript/session.md).
+
 ## Providers
 
 A provider formats session tools for your agent framework and wires up execution:

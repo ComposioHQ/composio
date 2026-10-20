@@ -45,6 +45,14 @@ session = composio.use(session_id)
 
 See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
 
+## Find the Sessions API and types
+
+Use `composio.sessions.create(user_id="user_123", ...)` and `composio.sessions.use(session_id)`. The `composio.create` and `composio.use` methods above are shortcuts. Sessions is the public API name; existing `ToolRouter*` classes and source files implement it. Don't use the deprecated `composio.tool_router` entrypoint for new code.
+
+Start with the [package-local Sessions import and source map](composio/SESSION_API.md). It ships as `composio/SESSION_API.md` in the wheel alongside the Python source, so you can read signatures and types without credentials or runtime introspection. Create keyword arguments, update keyword arguments, and the returned `session.config` are distinct shapes, not interchangeable config objects.
+
+Canonical plain Markdown references: [Composio and Sessions entrypoints](https://docs.composio.dev/reference/sdk-reference/python/composio.md) and [Session methods](https://docs.composio.dev/reference/sdk-reference/python/session.md).
+
 ## Use with an agent framework
 
 Provider packages adapt `session.tools()` to your framework's native tool format. With [OpenAI Agents](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai_agents):

@@ -40,4 +40,5 @@ setup(
         "urllib3>=2.7.0",
     ],
     include_package_data=True,
+    package_data={"composio": ["SESSION_API.md"]},
 )
