@@ -94,11 +94,16 @@ jobs:
           uv venv --python ${{ matrix.python-version }}
           source .venv/bin/activate
           uv pip install -e .
-          for provider in crewai langchain langgraph gemini google openai_agents claude_agent_sdk anthropic; do
+          expected=""
+          for provider in crewai langchain langgraph gemini google openai_agents claude_agent_sdk anthropic google_adk llamaindex; do
             if [[ " $EXCLUDED_PACKAGES " != *" $provider "* ]]; then
               uv pip install -e "providers/$provider"
+              expected="$expected $provider"
             fi
           done
+          # The free-form argument matrix fails, rather than skips, for every
+          # provider this leg installs.
+          echo "COMPOSIO_EXPECTED_PROVIDERS=$expected" >> "$GITHUB_ENV"
           uv pip install hypothesis pytest pytest-mock
 
       - name: Run Import Tests
@@ -109,6 +114,7 @@ jobs:
           # The Gemini and Google provider tests skip when these are missing, so
           # fail here instead of letting the unit tests skip silently.
           python -c "import composio_gemini, composio_google, google.genai; print('✓ Gemini and Google provider imports successful')"
+          python -c "import composio_google_adk, composio_llamaindex; print('✓ Google ADK and LlamaIndex provider imports successful')"
 
       - name: Test Autogen Provider Installation
         run: |
@@ -120,9 +126,10 @@ jobs:
           source autogen-env/bin/activate
           uv pip install -e . -e providers/autogen pytest pytest-mock
           python -c "import composio_autogen; print('✓ Autogen provider import successful')"
-          python -m pytest \
+          COMPOSIO_EXPECTED_PROVIDERS=autogen python -m pytest \
             tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults \
             tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default \
+            tests/test_provider_argument_serialization.py \
             -v --tb=short
 
       - name: Test TypeSafe Provider

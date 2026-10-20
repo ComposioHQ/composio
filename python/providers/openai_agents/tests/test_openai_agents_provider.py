@@ -265,3 +265,80 @@ def test_strict_defaults_to_false():
     wrapped_tool = OpenAIAgentsProvider().wrap_tool(tool, lambda **kwargs: {})
 
     assert wrapped_tool.strict_json_schema is False
+
+
+def _wrap_tool(input_parameters, strict=False):
+    tool = MagicMock(
+        slug="FREE_FORM",
+        description="Accept free-form arguments",
+        input_parameters=input_parameters,
+    )
+    wrapped_tool = OpenAIAgentsProvider(strict=strict).wrap_tool(
+        tool, lambda **kwargs: {}
+    )
+    return wrapped_tool
+
+
+@pytest.mark.parametrize(
+    "additional_properties",
+    [True, {"type": "string"}, False],
+    ids=["true", "schema", "false"],
+)
+def test_root_keeps_the_source_additional_properties(additional_properties):
+    """A root that sets ``additionalProperties`` is advertised with that value."""
+    wrapped_tool = _wrap_tool(
+        {
+            "type": "object",
+            "properties": {"title": {"type": "string"}},
+            "additionalProperties": additional_properties,
+        }
+    )
+
+    assert (
+        wrapped_tool.params_json_schema["additionalProperties"] == additional_properties
+    )
+
+
+def test_root_without_properties_is_advertised_open():
+    """A root that names no properties and omits ``additionalProperties`` is
+    open, so the model may send arbitrary keys.
+    """
+    wrapped_tool = _wrap_tool({"type": "object"})
+
+    assert wrapped_tool.params_json_schema == {
+        "type": "object",
+        "additionalProperties": True,
+    }
+
+
+def test_root_pattern_properties_survive():
+    """Root ``patternProperties`` stay in the advertised schema alongside the
+    source's closed ``additionalProperties``.
+    """
+    wrapped_tool = _wrap_tool(
+        {
+            "type": "object",
+            "patternProperties": {"^count_": {"type": "integer", "minimum": 1}},
+            "additionalProperties": False,
+        }
+    )
+
+    assert wrapped_tool.params_json_schema == {
+        "type": "object",
+        "patternProperties": {"^count_": {"type": "integer", "minimum": 1}},
+        "additionalProperties": False,
+    }
+
+
+def test_strict_mode_free_form_root_falls_back_and_is_advertised_open():
+    """Strict mode cannot express an open root, so it registers the tool
+    without strict mode and advertises the root open.
+    """
+    wrapped_tool = _wrap_tool({"type": "object", "properties": {}}, strict=True)
+
+    assert wrapped_tool.strict_json_schema is False
+    assert wrapped_tool.params_json_schema == {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": True,
+    }

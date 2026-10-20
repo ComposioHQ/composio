@@ -55,7 +55,7 @@ PROVIDER_PACKAGES: t.Final[dict[str, Classification]] = {
     "autogen": Classification(
         "resolves-refs",
         "builds a Python signature from properties, so refs must be inlined first",
-        via="substitute_reserved_python_keywords",
+        via="alias_tool_input_schema",
     ),
     "claude_agent_sdk": Classification(
         "resolves-refs",
