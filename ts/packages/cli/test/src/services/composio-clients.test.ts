@@ -13,7 +13,11 @@ import {
   listOrganizations,
   listOrgProjects,
 } from 'src/services/composio-account';
-import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioClientSingleton,
+  ComposioSessionRepository,
+  ComposioToolkitsRepository,
+} from 'src/services/composio-clients';
 import { InvalidToolkitsError } from 'src/services/toolkit-version-validation';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { isClientApiError } from 'src/utils/api-error-extraction';
@@ -819,5 +823,63 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
       expect(headers.has('x-org-id')).toBe(false);
       expect(headers.has('x-project-id')).toBe(false);
     }).pipe(Effect.provide(repositoryLayer()))
+  );
+});
+
+describe('ComposioSessionRepository', () => {
+  const withSessionRepository = Layer.provide(ComposioSessionRepository.Default, platformLayer());
+  const SESSION_ID = '0f5b3c1a-9d2e-4b7a-8c6d-1e2f3a4b5c6d';
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.effect('getSession reads get-session by id and decodes a linked session', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        jsonResponse({
+          id: SESSION_ID,
+          code: '3DBC90',
+          expiresAt: '2026-10-20T00:10:00.000Z',
+          status: 'linked',
+          api_key: 'uak_minted',
+          account: { id: 'acc_1', email: 'dev@example.com', name: 'Dev' },
+          scope: 'user',
+        })
+      );
+      const repository = yield* ComposioSessionRepository;
+
+      const session = yield* repository.getSession({ id: SESSION_ID });
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const { url, headers } = requestOf(fetchSpy.mock.calls[0]);
+      expect(url.pathname).toBe('/api/v3.1/cli/get-session');
+      expect(url.searchParams.get('id')).toBe(SESSION_ID);
+      expect(headers.get('x-user-api-key')).toBe('uak_config');
+      assert.strictEqual(session.status, 'linked');
+      assert.strictEqual(session.status === 'linked' && session.api_key, 'uak_minted');
+    }).pipe(Effect.provide(withSessionRepository))
+  );
+
+  it.effect('getSession decodes a pending session with no key', () =>
+    Effect.gen(function* () {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        jsonResponse({
+          id: SESSION_ID,
+          code: '3DBC90',
+          expiresAt: '2026-10-20T00:10:00.000Z',
+          status: 'pending',
+          api_key: null,
+          account: null,
+          scope: 'user',
+        })
+      );
+      const repository = yield* ComposioSessionRepository;
+
+      const session = yield* repository.getSession({ id: SESSION_ID });
+
+      assert.strictEqual(session.status, 'pending');
+      assert.strictEqual(session.api_key, null);
+    }).pipe(Effect.provide(withSessionRepository))
   );
 });

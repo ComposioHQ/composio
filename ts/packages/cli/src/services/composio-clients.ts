@@ -507,10 +507,14 @@ const makeComposioSessionRepository = Effect.gen(function* () {
       ),
     /**
      * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+     * A raw `get`: get-session is internal to the login flow and is leaving Apollo's public spec (PRDE-1702),
+     * so the generated `cli.getSession` method is going away.
      */
     getSession: (session: { id: string }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.getSession({ id: session.id }, idempotent)),
+        Effect.flatMap(c =>
+          c.get('/api/v3.1/cli/get-session', { query: { id: session.id }, ...idempotent })
+        ),
         Effect.flatMap(decode(RetrievedSession))
       ),
     getRealtimeCredentials: () =>
