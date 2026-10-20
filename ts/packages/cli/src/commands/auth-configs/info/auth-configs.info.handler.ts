@@ -1,30 +1,23 @@
 import { Effect, Option } from 'effect';
-import { Argument, Command } from 'effect/cli';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
-import { TerminalUI } from 'src/services/terminal-ui';
 import { handleClientApiError } from 'src/effects/handle-http-error';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
-import { formatAuthConfigInfo } from '../format';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { formatAuthConfigInfo } from './auth-configs.info.format';
 
-const id = Argument.String('id').pipe(
-  Argument.withDescription('Auth config ID (nanoid)'),
-  Argument.optional
-);
+export type AuthConfigsInfoParams = {
+  readonly id: Option.Option<string>;
+};
 
 /**
- * View details of a specific auth config.
- *
- * @example
- * ```bash
- * composio dev auth-configs info "ac_1232323"
- * ```
+ * Show one auth config: the details on stderr, the JSON on stdout. A missing `<id>` warns and
+ * exits 0; an API failure is reported with a hint and exits 1.
  */
-export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
+export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 
-    // Missing ID guard
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
@@ -59,5 +52,4 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
     yield* ui.note(formatAuthConfigInfo(item), `Auth Config: ${item.name}`);
 
     yield* ui.output(JSON.stringify(item, null, 2));
-  })
-).pipe(Command.withDescription('View details of a specific auth config.'));
+  });
