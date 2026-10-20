@@ -71,6 +71,13 @@ describe('rejectedUserApiKeyHint', () => {
       web: 'https://app.example.test',
       prefix: 'COMPOSIO_WEB_URL=https://app.example.test ',
     },
+    {
+      name: 'URLs with shell characters',
+      base: "https://api.example.test/o'brien",
+      web: 'https://app.example.test/preview&team',
+      prefix:
+        "COMPOSIO_BASE_URL='https://api.example.test/o'\\''brien' COMPOSIO_WEB_URL='https://app.example.test/preview&team' ",
+    },
   ])('[Given] a stored login on $name [Then] the login command targets it', c =>
     Effect.gen(function* () {
       expect(yield* hintFor(c.base, c.web)).toBe(

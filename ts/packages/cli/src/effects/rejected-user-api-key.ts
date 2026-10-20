@@ -15,6 +15,10 @@ export const isRejectedUserApiKey = (value: unknown): boolean =>
  * Dashboard the other variables already select, so the new login session opens where it can
  * be completed.
  */
+/** `value` as one shell word: unchanged when it is plainly safe, else single-quoted. */
+const shellWord = (value: string) =>
+  /^[\w@%+=:,./-]+$/u.test(value) ? value : `'${value.replaceAll("'", `'\\''`)}'`;
+
 const loginTargetPrefix = (baseURL: string, webURL: string) => {
   const base = withoutTrailingSlashes(baseURL);
   const [backendVar, impliedWebURL] =
@@ -22,9 +26,10 @@ const loginTargetPrefix = (baseURL: string, webURL: string) => {
       ? ['', constants.DEFAULT_WEB_URL]
       : base === withoutTrailingSlashes(constants.STAGING_BASE_URL)
         ? ['COMPOSIO_ENVIRONMENT=staging ', constants.STAGING_WEB_URL]
-        : [`COMPOSIO_BASE_URL=${base} `, constants.DEFAULT_WEB_URL];
+        : [`COMPOSIO_BASE_URL=${shellWord(base)} `, constants.DEFAULT_WEB_URL];
   const web = withoutTrailingSlashes(webURL);
-  const webVar = web === withoutTrailingSlashes(impliedWebURL) ? '' : `COMPOSIO_WEB_URL=${web} `;
+  const webVar =
+    web === withoutTrailingSlashes(impliedWebURL) ? '' : `COMPOSIO_WEB_URL=${shellWord(web)} `;
   return `${backendVar}${webVar}`;
 };
 
