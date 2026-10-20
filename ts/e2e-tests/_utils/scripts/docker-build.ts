@@ -14,7 +14,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { WELL_KNOWN_NODE_VERSIONS } from '../src/const';
+import { WELL_KNOWN_NODE_VERSIONS, nodeDigestFor } from '../src/const';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -77,7 +77,7 @@ async function buildNodeImage(nodeVersion: string, repoRoot: string): Promise<bo
   console.log(`\nBuilding image for Node.js ${nodeVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} --build-arg NODE_VERSION_DIGEST=${nodeDigestFor(nodeVersion)} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -122,7 +122,7 @@ async function buildCliImage(
   console.log(`\nBuilding image for CLI ${cliVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} --build-arg NODE_VERSION_DIGEST=${nodeDigestFor(toolchain.nodeVersion)} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
