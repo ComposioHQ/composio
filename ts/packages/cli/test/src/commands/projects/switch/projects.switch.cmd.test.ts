@@ -6,9 +6,14 @@ describe('CLI: composio dev projects switch', () => {
   layer(TestLive({ cliUserConfig: { developerDangerousCommandsEnabled: true } }))(it => {
     it.effect('[Then] it reports global developer project switching is deprecated', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'projects', 'switch']).pipe(Effect.catch(() => Effect.void));
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toMatch(/composio dev init/);
+        yield* cli(['dev', 'projects', 'switch']);
+
+        const stdout = yield* MockConsole.getLines({ stream: 'stdout' });
+        const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
+        expect(stdout).toEqual([]);
+        expect(stderr).toEqual([
+          'Global developer project switching is no longer supported. Run `composio dev init` in a directory to bind it to a developer project.',
+        ]);
       })
     );
   });
