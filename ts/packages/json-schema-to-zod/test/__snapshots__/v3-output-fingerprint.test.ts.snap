@@ -4997,6 +4997,195 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
           "typeName": "ZodNever",
         },
         "shape": {
+          "cfg": {
+            "innerType": {
+              "catchall": {
+                "typeName": "ZodNever",
+              },
+              "shape": {
+                "a": {
+                  "checks": [],
+                  "typeName": "ZodString",
+                },
+              },
+              "typeName": "ZodObject",
+              "unknownKeys": "strict",
+            },
+            "typeName": "ZodNullable",
+          },
+          "count": {
+            "checks": [
+              {
+                "kind": "int",
+                "message": undefined,
+              },
+            ],
+            "typeName": "ZodNumber",
+          },
+          "mode": {
+            "innerType": {
+              "left": {
+                "checks": [],
+                "typeName": "ZodString",
+              },
+              "right": {
+                "typeName": "ZodEnum",
+                "values": [
+                  "asc",
+                  "desc",
+                ],
+              },
+              "typeName": "ZodIntersection",
+            },
+            "typeName": "ZodNullable",
+          },
+          "note": {
+            "innerType": {
+              "innerType": {
+                "checks": [],
+                "typeName": "ZodString",
+              },
+              "typeName": "ZodNullable",
+            },
+            "typeName": "ZodOptional",
+          },
+          "rows": {
+            "element": {
+              "innerType": {
+                "catchall": {
+                  "typeName": "ZodNever",
+                },
+                "shape": {
+                  "id": {
+                    "innerType": {
+                      "checks": [],
+                      "typeName": "ZodString",
+                    },
+                    "typeName": "ZodOptional",
+                  },
+                },
+                "typeName": "ZodObject",
+                "unknownKeys": "strict",
+              },
+              "typeName": "ZodNullable",
+            },
+            "typeName": "ZodArray",
+          },
+          "untyped": {
+            "description": "anything",
+            "innerType": {
+              "description": "anything",
+              "innerType": {
+                "typeName": "ZodAny",
+              },
+              "typeName": "ZodNullable",
+            },
+            "typeName": "ZodOptional",
+          },
+        },
+        "typeName": "ZodObject",
+        "unknownKeys": "strict",
+      },
+      "jsonSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "properties": {
+          "cfg": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "a": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "a",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "count": {
+            "type": "integer",
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "type": "string",
+                  },
+                  {
+                    "enum": [
+                      "asc",
+                      "desc",
+                    ],
+                    "type": "string",
+                  },
+                ],
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "note": {
+            "type": [
+              "string",
+              "null",
+            ],
+          },
+          "rows": {
+            "items": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                    },
+                  },
+                  "type": "object",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "type": "array",
+          },
+          "untyped": {
+            "anyOf": [
+              {},
+              {
+                "type": "null",
+              },
+            ],
+            "description": "anything",
+          },
+        },
+        "required": [
+          "cfg",
+          "mode",
+          "count",
+          "rows",
+        ],
+        "type": "object",
+      },
+    },
+    "id": "openapi-nullable-folded",
+  },
+  {
+    "fingerprint": {
+      "def": {
+        "catchall": {
+          "typeName": "ZodNever",
+        },
+        "shape": {
           "opts": {
             "left": {
               "typeName": "ZodAny",

@@ -953,6 +953,169 @@
       }
     },
     {
+      "id": "openapi-nullable-folded",
+      "description": "OpenAPI `nullable`, which Anthropic rejects on an object, is removed; `true` widens the node to accept null the way the Zod conversion reads it, including on a typed enum, and `false` is dropped.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": ["a"]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "nullable": true
+          },
+          "untyped": {
+            "nullable": true,
+            "description": "anything"
+          },
+          "count": {
+            "type": "integer",
+            "nullable": false
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "nullable": true,
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": ["cfg", "mode", "count", "rows"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "type": ["object", "null"],
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            },
+            "note": {
+              "type": ["string", "null"]
+            },
+            "mode": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "untyped": {
+              "description": "anything"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": ["object", "null"],
+                "properties": {
+                  "id": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["cfg", "note", "mode", "untyped", "count", "rows"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.mode",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.count",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.rows.items.properties.id",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.rows.items",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "count": null,
+            "rows": [
+              null,
+              {
+                "id": null
+              }
+            ]
+          },
+          "output": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "rows": [null, {}]
+          }
+        }
+      ]
+    },
+    {
       "id": "enum-values-are-data-not-keywords",
       "description": "Keys inside enum/const values are data and must not be treated as keywords.",
       "schema": {
