@@ -1,6 +1,6 @@
 # @composio/cli
 
-## Unreleased
+## 0.4.6
 
 ### Patch Changes
 
