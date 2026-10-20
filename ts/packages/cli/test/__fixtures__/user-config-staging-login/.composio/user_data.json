@@ -1,0 +1,6 @@
+{
+  "api_key": "uak_staging_login",
+  "base_url": "https://staging-backend.composio.dev",
+  "web_url": "https://staging-dashboard.composio.dev/",
+  "org_id": "org_1"
+}

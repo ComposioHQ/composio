@@ -134,6 +134,7 @@ const listTest = (fixture: ListFixture = {}) => {
           projectId: Option.none(),
           testUserId: Option.none(),
         },
+        backendMismatch: Option.none(),
         isLoggedIn: () => true,
         logout: Effect.void,
         login: () => Effect.void,

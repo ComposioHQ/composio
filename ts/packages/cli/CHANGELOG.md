@@ -37,6 +37,21 @@
   - `composio dev triggers create` without a `<trigger-name>`, or with
     `--trigger-config` that is not a JSON object
   - `composio dev triggers enable` without an `<id>`
+- The CLI now calls the backend you logged in to. `composio login` already
+  recorded it as `base_url` in `user_data.json`, but every command replaced it
+  with the production default unless `COMPOSIO_BASE_URL` or
+  `COMPOSIO_ENVIRONMENT` was set, so a staging login sent its key to production
+  and failed with `Invalid or revoked user API key`. Those variables still win
+  when set, and the CLI warns on stderr when one sends the stored key to a
+  different backend than the one that issued it. A key from
+  `COMPOSIO_USER_API_KEY` keeps using the backend the environment selects.
+  `composio execute` follows the same rule for the Dashboard it calls, using
+  the recorded `web_url`. `composio orgs switch` no longer rewrites the
+  recorded backend, and a key from `COMPOSIO_USER_API_KEY` is no longer written
+  to `user_data.json`. `composio login --agent` records the backend the
+  environment selects, since agents.composio.dev issued its key. A rejected
+  user API key now prints how to log in again, naming the backend and
+  Dashboard when they are not production's.
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,

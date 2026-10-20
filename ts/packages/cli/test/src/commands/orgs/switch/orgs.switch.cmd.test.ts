@@ -169,4 +169,30 @@ describe('CLI: composio orgs switch', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      fixture: 'user-config-staging-login',
+      baseConfigProvider: ConfigProvider.fromEnvRecord({
+        COMPOSIO_BASE_URL: 'https://backend.composio.dev',
+      }),
+      accountData: {
+        sessionInfo: () =>
+          makeSessionInfo({ orgId: 'org_2', orgName: 'Org 2', orgMemberId: 'member_2' }),
+      },
+    })
+  )('[Given] a staging login and COMPOSIO_BASE_URL pointing elsewhere', it => {
+    it.effect('[Then] it switches the org and keeps the backend the login was issued by', () =>
+      Effect.gen(function* () {
+        yield* cli(['orgs', 'switch', '--org-id', 'org_2']);
+
+        expect(yield* readStoredUserConfig).toMatchObject({
+          api_key: 'uak_staging_login',
+          org_id: 'org_2',
+          base_url: 'https://staging-backend.composio.dev',
+          web_url: 'https://staging-dashboard.composio.dev/',
+        });
+      })
+    );
+  });
 });
