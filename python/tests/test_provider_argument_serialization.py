@@ -751,6 +751,27 @@ REJECTION_CASES: t.Dict[str, t.Tuple[t.Dict[str, t.Any], t.Dict[str, t.Any]]] = 
         },
         {"count_x": "nope"},
     ),
+    # Unknown root keys on a schema that declares properties and omits
+    # additionalProperties are rejected, not dropped.
+    "closed_root_unknown_key": (
+        {
+            "type": "object",
+            "title": "ClosedRoot",
+            "properties": {"title": {"type": "string"}},
+            "required": ["title"],
+        },
+        {"title": "t", "extra": 1},
+    ),
+    # String-encoded scalars are rejected, not coerced.
+    "string_for_integer": (
+        {
+            "type": "object",
+            "title": "IntegerArgument",
+            "properties": {"limit": {"type": "integer"}},
+            "required": ["limit"],
+        },
+        {"limit": "5"},
+    ),
 }
 
 
