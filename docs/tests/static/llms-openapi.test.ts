@@ -15,17 +15,8 @@ mock.module("next/navigation", () => ({
   usePathname: () => "/reference/api-reference/tasks",
   useSearchParams: () => new URLSearchParams(),
 }));
-mock.module("@/lib/toolkit-data", () => ({
-  getAllToolkits: async () => [],
-  getAllToolkitsSync: () => [],
-  getToolkitBySlug: async () => null,
-}));
-mock.module("@/lib/meta-tools-data", () => ({
-  getAllMetaTools: async () => [],
-  getMetaToolBySlug: async () => null,
-}));
-// Keep toolkit-schema real: module mocks persist across files in Bun and would
-// replace the transformations tested by toolkit-schema.test.ts when it runs later.
+// Keep toolkit catalogs and toolkit-schema real: module mocks persist across
+// files in Bun and would replace data and transformations used by later suites.
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;
 let degradedPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").degradedPageToMarkdown;
