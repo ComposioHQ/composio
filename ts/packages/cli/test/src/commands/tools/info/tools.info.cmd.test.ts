@@ -132,15 +132,18 @@ describe('CLI: composio tools info', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no slug [Then] warns missing argument',
+    '[Given] no slug [Then] fails with a usage error',
     it => {
-      it.effect('shows missing argument warning', () =>
+      it.effect('raises a CommandInputError naming <slug>', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'info']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const failure = yield* cli(['tools', 'info']).pipe(Effect.flip);
 
-          expect(output).toContain('Missing required argument');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<slug>',
+            message: expect.stringContaining('Missing required argument: <slug>'),
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

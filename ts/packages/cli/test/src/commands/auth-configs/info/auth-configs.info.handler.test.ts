@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Effect, Option } from 'effect';
 import { runAuthConfigsInfo } from 'src/commands/auth-configs/info/auth-configs.info.handler';
+import { isUsageFailure } from 'src/commands/errors';
 import { MockConsole } from 'test/__utils__';
 import { AuthConfigsHandlerTest } from 'test/__utils__/layers/auth-configs';
 import { makeAuthConfigItem } from 'test/__utils__/models/auth-configs';
@@ -23,17 +24,25 @@ describe('runAuthConfigsInfo', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect('[Given] no ID [Then] warns, sends no request, and exits 0', () => {
+  it.effect('[Given] no ID [Then] fails with a usage error before any request', () => {
     // The stub repository dies on any call, so reaching the API fails the test.
     const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
       repository: { getAuthConfig: () => Effect.die('getAuthConfig must not be called') },
     });
     return Effect.gen(function* () {
-      yield* runAuthConfigsInfo({ id: Option.none() });
+      const failure = yield* runAuthConfigsInfo({ id: Option.none() }).pipe(Effect.flip);
 
-      expect(yield* MockConsole.getLines({ stream: 'stderr' })).toEqual([
-        'Missing required argument: <id>',
-      ]);
+      expect(failure).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        command: 'dev auth-configs info',
+        option: '<id>',
+        message: expect.stringMatching(
+          /^Missing required argument: <id>\n[\s\S]*> composio dev auth-configs list$/
+        ),
+      });
+      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      expect(isUsageFailure(failure)).toBe(true);
+      expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);
       expect(exitCode()).toBeUndefined();
     }).pipe(Effect.provide(layer));

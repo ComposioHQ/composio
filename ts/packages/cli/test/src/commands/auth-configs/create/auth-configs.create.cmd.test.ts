@@ -97,11 +97,11 @@ describe('CLI: composio dev auth-configs create', () => {
   });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
-    '[Given] invalid JSON in --custom-credentials [Then] shows error',
+    '[Given] invalid JSON in --custom-credentials [Then] fails with a usage error',
     it => {
-      it.effect('shows JSON parse error', () =>
+      it.effect('raises a CommandInputError naming --custom-credentials', () =>
         Effect.gen(function* () {
-          yield* cli([
+          const failure = yield* cli([
             'dev',
             'auth-configs',
             'create',
@@ -111,11 +111,14 @@ describe('CLI: composio dev auth-configs create', () => {
             'OAUTH2',
             '--custom-credentials',
             '{invalid json}',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          ]).pipe(Effect.flip);
 
-          expect(output).toContain('Invalid JSON');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '--custom-credentials',
+            message: expect.stringContaining('Invalid JSON in --custom-credentials'),
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

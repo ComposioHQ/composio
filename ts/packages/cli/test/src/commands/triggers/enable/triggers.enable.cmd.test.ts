@@ -1,5 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
+import { isUsageFailure } from 'src/commands/errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
@@ -28,14 +29,31 @@ describe('CLI: composio dev triggers enable', () => {
   });
 
   layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for enable [Then] warns about missing argument',
+    '[Given] missing ID for enable [Then] fails with a usage error before any request',
     it => {
-      it.effect('shows missing id warning', () =>
+      it.effect('raises a CommandInputError naming <id>', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'enable']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
+          // Every repository method dies, so reaching the API fails the test.
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({})
+          );
+          const failure = yield* cli(['dev', 'triggers', 'enable']).pipe(
+            Effect.provide(repository),
+            Effect.flip
+          );
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev triggers enable',
+            option: '<id>',
+            message: expect.stringMatching(
+              /^Missing required argument: <id>\n[\s\S]*> composio dev triggers status --show-disabled$/
+            ),
+          });
+          // `cli-main.ts` prints a usage failure on stderr and exits 1.
+          expect(isUsageFailure(failure)).toBe(true);
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

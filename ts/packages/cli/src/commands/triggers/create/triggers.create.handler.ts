@@ -1,4 +1,5 @@
 import { Effect, Match, Option, Result } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -18,24 +19,30 @@ const parseTriggerConfig = (triggerConfig: Option.Option<string>) =>
     onSome: parseJsonRecord,
   });
 
-const reportInvalidTriggerConfig = (ui: TerminalUI, error: JsonParsingError) =>
-  Match.value(error.reason).pipe(
-    Match.when('not-a-record', () =>
-      ui.log.error('--trigger-config must be a JSON object (e.g. \'{"key":"value"}\').')
+const invalidInput = commandInputError('dev triggers create');
+
+/** The usage error for a `--trigger-config` that is not valid JSON or not a JSON object. */
+const invalidTriggerConfig = (error: JsonParsingError) =>
+  invalidInput(
+    Match.value(error.reason).pipe(
+      Match.when(
+        'not-a-record',
+        () => '--trigger-config must be a JSON object (e.g. \'{"key":"value"}\').'
+      ),
+      Match.when(
+        'syntax',
+        () =>
+          'Invalid JSON in --trigger-config. Please provide valid JSON.\nExample:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
+      ),
+      Match.exhaustive
     ),
-    Match.when('syntax', () =>
-      Effect.andThen(
-        ui.log.error('Invalid JSON in --trigger-config. Please provide valid JSON.'),
-        ui.log.step(
-          'Example:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
-        )
-      )
-    ),
-    Match.exhaustive
+    '--trigger-config'
   );
 
 /**
- * Create a trigger instance.
+ * Create a trigger instance. A missing `<trigger-name>` or an invalid `--trigger-config` fails
+ * with a `CommandInputError` before any request; an API failure is reported with a hint and
+ * exits 1.
  *
  * @example
  * ```bash
@@ -52,17 +59,15 @@ export const runTriggersCreate = ({
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(triggerName)) {
-      yield* ui.log.warn('Missing required argument: <trigger-name>');
-      yield* ui.log.step(
-        'Try specifying a trigger slug, e.g.:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --connected-account-id "con_123"'
+      return yield* invalidInput(
+        'Missing required argument: <trigger-name>\nTry specifying a trigger slug, e.g.:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --connected-account-id "con_123"',
+        '<trigger-name>'
       );
-      return;
     }
 
     const parsedTriggerConfig = parseTriggerConfig(triggerConfig);
     if (Result.isFailure(parsedTriggerConfig)) {
-      yield* reportInvalidTriggerConfig(ui, parsedTriggerConfig.failure);
-      return;
+      return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
     const createdOpt = yield* ui

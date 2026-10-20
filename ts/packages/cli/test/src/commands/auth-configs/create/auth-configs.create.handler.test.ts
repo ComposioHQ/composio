@@ -6,6 +6,7 @@ import {
   runAuthConfigsCreate,
   type AuthConfigsCreateParams,
 } from 'src/commands/auth-configs/create/auth-configs.create.handler';
+import { isUsageFailure } from 'src/commands/errors';
 import { MockConsole } from 'test/__utils__';
 import { AuthConfigsHandlerTest } from 'test/__utils__/layers/auth-configs';
 import { notFoundError } from 'test/__utils__/layers/not-found';
@@ -125,21 +126,29 @@ describe('runAuthConfigsCreate', () => {
     { name: 'malformed JSON', customCredentials: '{invalid json}' },
     { name: 'a JSON array', customCredentials: '["client_id"]' },
   ])(
-    '[Given] $name in --custom-credentials [Then] reports it, sends no request, and exits 0',
+    '[Given] $name in --custom-credentials [Then] fails with a usage error before any request',
     ({ customCredentials }) => {
       const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
         repository: { createAuthConfig: () => Effect.die('createAuthConfig must not be called') },
       });
       return Effect.gen(function* () {
-        yield* runAuthConfigsCreate({
+        const failure = yield* runAuthConfigsCreate({
           ...params,
           authScheme: Option.some('OAUTH2'),
           customCredentials: Option.some(customCredentials),
-        });
+        }).pipe(Effect.flip);
 
-        expect(yield* MockConsole.getLines({ stream: 'stderr' })).toEqual([
-          'Invalid JSON in --custom-credentials. Please provide valid JSON.',
-        ]);
+        expect(failure).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'dev auth-configs create',
+          option: '--custom-credentials',
+          message: expect.stringMatching(
+            /^Invalid JSON in --custom-credentials\. Please provide valid JSON\.\nExample:\n> composio dev auth-configs create /
+          ),
+        });
+        // `cli-main.ts` prints a usage failure on stderr and exits 1.
+        expect(isUsageFailure(failure)).toBe(true);
+        expect(yield* MockConsole.getLines()).toEqual([]);
         expect(outputs).toEqual([]);
         expect(exitCode()).toBeUndefined();
       }).pipe(Effect.provide(layer));

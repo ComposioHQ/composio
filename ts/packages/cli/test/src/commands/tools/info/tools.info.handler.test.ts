@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { isUsageFailure } from 'src/commands/errors';
 import { runToolsInfo } from 'src/commands/tools/info/tools.info.handler';
 import {
   MISSING_SLUG_HINT,
@@ -7,9 +8,11 @@ import {
   toolNotFoundMessage,
 } from 'src/commands/tools/info/tools.info.format';
 import type { Tools } from 'src/models/tools';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { MockConsole, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const TOOLS: Tools = [
   {
@@ -54,12 +57,24 @@ describe('runToolsInfo', () => {
     process.exitCode = undefined;
   });
 
-  it.effect('[Given] no slug [Then] warns with an example and keeps exit code 0', () => {
+  it.effect('[Given] no slug [Then] fails with a usage error before any request', () => {
     const { layer, outputs } = toolsInfoTest();
     return Effect.gen(function* () {
-      yield* runToolsInfo({ slug: Option.none() });
+      const failure = yield* runToolsInfo({ slug: Option.none() }).pipe(
+        // Every repository method dies, so reaching the API fails the test.
+        Effect.provide(Layer.succeed(ComposioToolkitsRepository, makeToolkitsRepositoryStub({}))),
+        Effect.flip
+      );
 
-      expect(yield* MockConsole.getLines()).toEqual([MISSING_SLUG_MESSAGE, MISSING_SLUG_HINT]);
+      expect(failure).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        command: 'tools info',
+        option: '<slug>',
+        message: `${MISSING_SLUG_MESSAGE}\n${MISSING_SLUG_HINT}`,
+      });
+      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      expect(isUsageFailure(failure)).toBe(true);
+      expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);
       expect(process.exitCode).toBeUndefined();
     }).pipe(Effect.provide(layer));
