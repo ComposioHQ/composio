@@ -11,6 +11,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import type { UserData } from 'src/models/user-data';
 import { MockConsole } from 'test/__utils__';
 import type { MockAccountRequest, MockRequestScope } from 'test/__utils__/layers/accounts';
 import { makeShadowClient } from 'test/__utils__/layers/shadow-client';
@@ -114,12 +115,15 @@ const orgsSwitchTest = (fixture: OrgsSwitchFixture = {}) => {
           projectId: Option.none(),
           testUserId: fixture.testUserId ?? Option.none(),
         },
+        backendMismatch: Option.none(),
         isLoggedIn: () => Option.isSome(apiKey),
         logout: Effect.void,
         login: () => Effect.die('orgs switch must update the org, not log in again'),
-        update: data =>
+        update: (data: Partial<UserData>) =>
           Effect.sync(() => {
-            orgUpdates.push(Option.getOrUndefined(data.orgId ?? Option.none()));
+            orgUpdates.push(
+              data.orgId === undefined ? undefined : Option.getOrUndefined(data.orgId)
+            );
           }),
       })
     ),
