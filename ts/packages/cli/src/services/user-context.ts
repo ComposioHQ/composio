@@ -160,11 +160,17 @@ export class ComposioUserContext extends Context.Service<
     readonly backendMismatch: Option.Option<BackendMismatch>;
     isLoggedIn: () => boolean;
     logout: Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
-    /** Stores a login, recording the backend this run resolved as the one that issued the key. */
+    /**
+     * Stores a login and records the backend that issued its key: by default the backend this
+     * run resolved (the one the caller verified the key against), or with `issuer:
+     * 'environment'` the backend the env vars select, ignoring any earlier stored login, for a
+     * key no stored backend issued (an agent identity from agents.composio.dev).
+     */
     login: (
       apiKey: string,
       orgId?: string,
-      testUserId?: string
+      testUserId?: string,
+      options?: LoginOptions
     ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
     /** Changes stored fields. The login's backend is only ever recorded by `login`. */
     update: (
@@ -172,6 +178,11 @@ export class ComposioUserContext extends Context.Service<
     ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
   }
 >()('ComposioUserData') {}
+
+export interface LoginOptions {
+  /** Which backend issued the key; `'resolved'` when absent. */
+  readonly issuer?: 'resolved' | 'environment';
+}
 
 export const rawComposioUserContextLive = Layer.effect(
   ComposioUserContext,
@@ -197,6 +208,11 @@ export const rawComposioUserContextLive = Layer.effect(
     const cacheDir = yield* setupCacheDir;
     const jsonUserConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
 
+    // The stored login's key (user_data.json or the keyring). `userData.apiKey` is the key
+    // requests use, COMPOSIO_USER_API_KEY first; only this one is ever written back, so an
+    // update made while that variable is set cannot pair its key with the stored backend.
+    let storedApiKey: Option.Option<string> = Option.none();
+
     // `baseURL` and `webURL` hold what is stored: the backend the stored login was issued by.
     let userData = UserData.make({
       apiKey,
@@ -210,16 +226,17 @@ export const rawComposioUserContextLive = Layer.effect(
     // The backend the stored login was issued by. A key from COMPOSIO_USER_API_KEY is not
     // the stored login's, and a recorded backend without a stored key is no login.
     const storedLogin = (): Option.Option<StoredBackend> =>
-      Option.isSome(apiKey) || Option.isNone(userData.apiKey)
+      Option.isSome(apiKey) || Option.isNone(storedApiKey)
         ? Option.none()
         : Option.map(userData.baseURL, baseURL => ({ baseURL, webURL: userData.webURL }));
     const currentBackend = () => resolveBackend(envBackend, storedLogin());
 
     const writeJson = (snapshot: UserData) =>
       Effect.gen(function* () {
-        const onDisk: UserData = keepApiKeyInFile
-          ? snapshot
-          : { ...snapshot, apiKey: Option.none() };
+        const onDisk: UserData = {
+          ...snapshot,
+          apiKey: keepApiKeyInFile ? storedApiKey : Option.none(),
+        };
         const encoded = yield* userDataToJSON(onDisk);
         const normalized = yield* normalizeEncodedUserData(encoded, !keepApiKeyInFile);
         yield* Effect.logDebug('Saving user data:', redactSensitiveLogValue(onDisk));
@@ -232,6 +249,7 @@ export const rawComposioUserContextLive = Layer.effect(
 
     const logout = Effect.gen(function* () {
       yield* deleteKeyring(kDeps);
+      storedApiKey = Option.none();
       const cleared: UserData = {
         apiKey: Option.none(),
         baseURL: Option.none(),
@@ -244,14 +262,17 @@ export const rawComposioUserContextLive = Layer.effect(
       yield* writeJson(cleared);
     });
 
-    const login = (apiKey: string, orgId?: string, testUserId?: string) =>
+    const login = (apiKey: string, orgId?: string, testUserId?: string, options?: LoginOptions) =>
       Effect.gen(function* () {
-        // The caller verified the key against the backend this run resolved.
-        const backend = currentBackend();
+        const backend =
+          options?.issuer === 'environment'
+            ? resolveBackend(envBackend, Option.none())
+            : currentBackend();
         const keyringOk = yield* writeKeyring(kDeps, apiKey);
         // Keyring write failed (NoStorageAccess / headless Linux): keep api_key in the JSON
         // so it survives across process restarts.
         keepApiKeyInFile = useLegacyStorage || !keyringOk;
+        storedApiKey = Option.some(apiKey);
         const next: UserData = {
           ...userData,
           apiKey: Option.some(apiKey),
@@ -284,6 +305,7 @@ export const rawComposioUserContextLive = Layer.effect(
       const userDataJson = yield* fs.readFileString(jsonUserConfigPath, 'utf8');
       const parsedUserData = (yield* userDataFromJSON(userDataJson)) satisfies UserData;
       yield* Effect.logDebug('User data (parsed):', redactSensitiveLogValue(parsedUserData));
+      storedApiKey = parsedUserData.apiKey;
 
       const overriddenUserData = {
         ...userData,
@@ -326,6 +348,7 @@ export const rawComposioUserContextLive = Layer.effect(
       const fromKeyring = yield* readKeyring(kDeps);
 
       if (Option.isSome(fromKeyring)) {
+        storedApiKey = fromKeyring;
         userData = { ...userData, apiKey: fromKeyring };
         if (Option.isSome(plaintextOnDisk)) {
           yield* Effect.logDebug('Clearing stale plaintext api_key from user_data.json');
