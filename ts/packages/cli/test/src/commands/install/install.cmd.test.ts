@@ -5,11 +5,9 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect, Exit } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import { NodeOs } from 'src/services/node-os';
-import {
-  installShellIntegration,
-  ShellSetupAbortError,
-  type Shell,
-} from 'src/commands/install.cmd';
+import { ShellSetupAbortError } from 'src/commands/install/install.errors';
+import { installShellIntegration } from 'src/commands/install/install.handler';
+import type { Shell } from 'src/services/shell-config';
 import { makeTerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
