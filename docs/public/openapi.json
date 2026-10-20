@@ -880,6 +880,216 @@
           "deprecated"
         ]
       },
+      "SessionHooks": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "before_execute"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,64}$",
+                  "description": "Unique within the session. Shows up in results and logs."
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "A readable name. The agent sees it when this hook blocks a call."
+                },
+                "applies_to": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "all"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 1,
+                          "description": "Toolkit slugs"
+                        }
+                      },
+                      "required": [
+                        "toolkits"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                },
+                "handler": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "prompt"
+                      ]
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                    },
+                    "on_match": {
+                      "type": "string",
+                      "enum": [
+                        "block"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "prompt",
+                    "on_match"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "applies_to",
+                "handler"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "after_execute"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,64}$",
+                  "description": "Unique within the session. Shows up in results and logs."
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "A readable name. The agent sees it when this hook blocks a call."
+                },
+                "applies_to": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "all"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 1,
+                          "description": "Toolkit slugs"
+                        }
+                      },
+                      "required": [
+                        "toolkits"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                },
+                "handler": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "prompt"
+                          ]
+                        },
+                        "prompt": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000,
+                          "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                        },
+                        "on_match": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "prompt",
+                        "on_match"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "prompt_injection"
+                          ]
+                        },
+                        "on_match": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "on_match"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "applies_to",
+                "handler"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "maxItems": 20,
+        "description": "Hooks that run on this session's tool calls."
+      },
       "ToolRouterSessionV31ConfigHistoryListResponse": {
         "type": "object",
         "properties": {
@@ -1369,6 +1579,9 @@
                       ],
                       "description": "Proxy execute configuration for this session. Omitted when not set."
                     },
+                    "hooks": {
+                      "$ref": "#/components/schemas/SessionHooks"
+                    },
                     "preload": {
                       "type": "object",
                       "properties": {
@@ -1472,6 +1685,58 @@
           "total_items"
         ]
       },
+      "HookResult": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The hook id"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "evaluated"
+                ]
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "continue",
+                  "block"
+                ],
+                "description": "What the hook decided"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "outcome"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The hook id"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unavailable"
+                ],
+                "description": "The hook could not be evaluated"
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ]
+          }
+        ]
+      },
       "ExecuteCompleted": {
         "type": "object",
         "properties": {
@@ -1531,6 +1796,13 @@
             "type": "string",
             "description": "Unique identifier for the execution log",
             "example": "log_abc123xyz"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
           }
         },
         "required": [
@@ -1599,6 +1871,13 @@
             "type": "string",
             "description": "Unique identifier for the execution log",
             "example": "log_abc123xyz"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
           }
         },
         "required": [
@@ -1606,6 +1885,114 @@
           "data",
           "error",
           "log_id"
+        ]
+      },
+      "BlockReason": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "request_blocked"
+                ],
+                "description": "A before_execute hook stopped the call. The tool did not run."
+              },
+              "hook_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "hook_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "response_blocked"
+                ],
+                "description": "An after_execute hook stopped the call. The tool ran; its response was withheld."
+              },
+              "hook_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "hook_id"
+            ]
+          }
+        ]
+      },
+      "ExecuteBlocked": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "blocked"
+            ],
+            "description": "A session hook stopped the call"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/BlockReason"
+          },
+          "message": {
+            "type": "string",
+            "description": "A message for the agent. It includes the hook's name, when it has one; the hook id is in `reason`.",
+            "example": "Blocked by session policy: No external email"
+          },
+          "log_id": {
+            "type": "string",
+            "description": "The execution log ID. Only set when the tool ran and its response was blocked."
+          },
+          "instant_charge": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ],
+                "description": "Currency of the instant charge. Always USD."
+              },
+              "charged_by": {
+                "type": "string",
+                "enum": [
+                  "composio"
+                ],
+                "description": "Entity charging for instant usage. Always composio."
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "charged_by"
+            ],
+            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Only set when the tool ran and its response was blocked."
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "reason",
+          "message"
         ]
       },
       "UserInputRequest": {
@@ -2377,11 +2764,50 @@
               "content-type": "application/json",
               "cache-control": "no-cache"
             }
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this request. Omitted when none applied."
           }
         },
         "required": [
           "result_type",
           "status"
+        ]
+      },
+      "ProxyExecuteBlocked": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "blocked"
+            ],
+            "description": "A session hook stopped the call"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/BlockReason"
+          },
+          "message": {
+            "type": "string",
+            "description": "A message for the agent. It includes the hook's name, when it has one; the hook id is in `reason`.",
+            "example": "Blocked by session policy: No external email"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "reason",
+          "message"
         ]
       },
       "ToolRouterToolkitsListResponse": {
@@ -3255,7 +3681,7 @@
     "/api/v3.1/api_key_revocation": {
       "post": {
         "summary": "Revoke Composio API keys",
-        "description": "Public endpoint for reporting and revoking Composio API keys that have been leaked (e.g. via the GitHub Secret Scanning Partner Program, third-party scanners, or self-reported leaks). Accepts project (ak_*), user (uak_*), and org (oak_*) keys in a single batch. Matched keys are revoked and stop working immediately. The response shape is constant regardless of whether any submitted key matched, so callers cannot use this endpoint to probe key existence. The endpoint is rate limited; requests over the limit receive a 429.",
+        "description": "Public endpoint for reporting and revoking Composio API keys that have been leaked (e.g. via the GitHub Secret Scanning Partner Program, third-party scanners, or self-reported leaks). Accepts project (ak_*), user (uak_*), and org (oak_*) keys in a single batch. Matched keys are revoked and stop working immediately. The response shape is constant regardless of whether any submitted key matched, so callers cannot use this endpoint to probe key existence. If a key cannot be revoked, the endpoint returns 500 and the request should be retried. The endpoint is rate limited; requests over the limit receive a 429.",
         "tags": [
           "API Keys"
         ],
@@ -3331,7 +3757,7 @@
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "A key could not be revoked. Retry the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7779,6 +8205,12 @@
                         "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Defaults to false.",
                         "x-experimental": true
                       },
+                      "restrict_egress_to_composio": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Set to true to confine the workbench sandbox to Composio: code running in it can reach the Composio API and its own storage volume, and no other network destination. Defaults to false. Set at session creation only.",
+                        "x-experimental": true
+                      },
                       "no_elicitation_support_fallback": {
                         "type": "string",
                         "enum": [
@@ -7819,6 +8251,16 @@
                     },
                     "additionalProperties": false,
                     "description": "Preload configuration. Use an explicit list for frequently used tool slugs, or \"all\" to dynamically expose every app tool allowed by positive toolkits/tools/tags filters."
+                  },
+                  "hooks": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/SessionHooks"
+                      },
+                      {
+                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
+                      }
+                    ]
                   },
                   "search": {
                     "type": "object",
@@ -8555,6 +8997,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -9452,6 +9897,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -10466,6 +10914,18 @@
                     },
                     "additionalProperties": false
                   },
+                  "hooks": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/SessionHooks"
+                      },
+                      {
+                        "nullable": true,
+                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it.",
+                        "type": "object"
+                      }
+                    ]
+                  },
                   "experimental": {
                     "type": "object",
                     "nullable": true,
@@ -11066,6 +11526,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -12261,6 +12724,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -13851,6 +14317,9 @@
                       "$ref": "#/components/schemas/ExecuteFailed"
                     },
                     {
+                      "$ref": "#/components/schemas/ExecuteBlocked"
+                    },
+                    {
                       "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
@@ -13859,6 +14328,7 @@
                     "mapping": {
                       "completed": "#/components/schemas/ExecuteCompleted",
                       "failed": "#/components/schemas/ExecuteFailed",
+                      "blocked": "#/components/schemas/ExecuteBlocked",
                       "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
@@ -14260,6 +14730,9 @@
                       "$ref": "#/components/schemas/ExecuteFailed"
                     },
                     {
+                      "$ref": "#/components/schemas/ExecuteBlocked"
+                    },
+                    {
                       "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
@@ -14268,6 +14741,7 @@
                     "mapping": {
                       "completed": "#/components/schemas/ExecuteCompleted",
                       "failed": "#/components/schemas/ExecuteFailed",
+                      "blocked": "#/components/schemas/ExecuteBlocked",
                       "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
@@ -29669,6 +30143,9 @@
                       "$ref": "#/components/schemas/ProxyExecuteCompleted"
                     },
                     {
+                      "$ref": "#/components/schemas/ProxyExecuteBlocked"
+                    },
+                    {
                       "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   ],
@@ -29676,6 +30153,7 @@
                     "propertyName": "result_type",
                     "mapping": {
                       "completed": "#/components/schemas/ProxyExecuteCompleted",
+                      "blocked": "#/components/schemas/ProxyExecuteBlocked",
                       "input_required": "#/components/schemas/ExecuteRequiresUserInput"
                     }
                   }
