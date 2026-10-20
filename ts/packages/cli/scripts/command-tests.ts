@@ -27,18 +27,6 @@ export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   },
   { command: 'orgs/commands/orgs.list.cmd.ts', reason: 'no test yet' },
   { command: 'signup.cmd.ts', reason: 'no test yet' },
-  {
-    command: 'triggers/commands/triggers.create.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
-  {
-    command: 'triggers/commands/triggers.disable.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
-  {
-    command: 'triggers/commands/triggers.enable.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
   { command: 'upgrade.cmd.ts', reason: 'no test yet' },
 ];

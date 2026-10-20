@@ -1,6 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, Layer } from 'effect';
+import type { TriggerInstanceUpsertParams } from '@composio/client/resources/trigger-instances';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { notFoundError } from 'test/__utils__/layers/not-found';
+import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
@@ -11,7 +16,7 @@ const dangerousDevConfig = {
   cliUserConfig: { developerDangerousCommandsEnabled: true },
 } as const;
 
-describe('CLI: composio dev triggers mutations', () => {
+describe('CLI: composio dev triggers create', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with valid args [Then] creates trigger',
     it => {
@@ -30,6 +35,47 @@ describe('CLI: composio dev triggers mutations', () => {
 
           expect(output).toContain('Trigger created');
           expect(output).toContain('trg_gmail_new_gmail_message_con_123');
+          expect(lines.at(-1)).toBe(
+            JSON.stringify({ trigger_id: 'trg_gmail_new_gmail_message_con_123' }, null, 2)
+          );
+        })
+      );
+    }
+  );
+
+  layer(TestLive(dangerousDevConfig))(
+    '[Given] create with a JSON object config [Then] sends it as the trigger config',
+    it => {
+      it.effect('passes the parsed config and connected account to the API', () =>
+        Effect.gen(function* () {
+          const calls: Array<{ slug: string; params?: TriggerInstanceUpsertParams }> = [];
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({
+              createTrigger: (slug, params) =>
+                Effect.sync(() => {
+                  calls.push({ slug, params });
+                  return { trigger_id: 'trg_new' };
+                }),
+            })
+          );
+          yield* cli([
+            'dev',
+            'triggers',
+            'create',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--connected-account-id',
+            'con_123',
+            '--trigger-config',
+            '{"labelIds":"INBOX"}',
+          ]).pipe(Effect.provide(repository));
+
+          expect(calls).toEqual([
+            {
+              slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+              params: { connected_account_id: 'con_123', trigger_config: { labelIds: 'INBOX' } },
+            },
+          ]);
         })
       );
     }
@@ -56,28 +102,6 @@ describe('CLI: composio dev triggers mutations', () => {
       );
     }
   );
-
-  layer(TestLive(dangerousDevConfig))('[Given] enable with ID [Then] enables trigger', it => {
-    it.effect('enables trigger successfully', () =>
-      Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'enable', 'trg_123']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-        expect(output).toContain('enabled');
-      })
-    );
-  });
-
-  layer(TestLive(dangerousDevConfig))('[Given] disable with ID [Then] disables trigger', it => {
-    it.effect('disables trigger successfully', () =>
-      Effect.gen(function* () {
-        yield* cli(['dev', 'triggers', 'disable', 'trg_123', '--dangerously-allow']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-        expect(output).toContain('disabled');
-      })
-    );
-  });
 
   layer(TestLive(dangerousDevConfig))(
     '[Given] create with non-object JSON config [Then] shows type validation error',
@@ -119,28 +143,40 @@ describe('CLI: composio dev triggers mutations', () => {
   );
 
   layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for enable [Then] warns about missing argument',
+    '[Given] create without a trigger name [Then] warns about missing argument',
     it => {
-      it.effect('shows missing id warning', () =>
+      it.effect('shows missing trigger-name warning', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'enable']);
+          yield* cli(['dev', 'triggers', 'create']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
+          expect(output).toContain('Missing required argument: <trigger-name>');
         })
       );
     }
   );
 
   layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for disable [Then] warns about missing argument',
+    '[Given] the API rejects the create [Then] reports the failure and exits 1',
     it => {
-      it.effect('shows missing id warning', () =>
+      it.effect('prints the fallback message and the list hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'disable', '--dangerously-allow']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
+          const proc = recordingNodeProcess();
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({
+              createTrigger: () => Effect.fail(notFoundError('Trigger type not found')),
+            })
+          );
+          yield* cli(['dev', 'triggers', 'create', 'UNKNOWN_TRIGGER']).pipe(
+            Effect.provide(Layer.merge(repository, proc.layer))
+          );
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+          expect(output).toContain('Failed to create trigger "UNKNOWN_TRIGGER".');
+          expect(output).toContain('composio dev triggers list');
+          expect(output).not.toContain('Trigger created');
+          expect(proc.exitCode()).toBe(1);
         })
       );
     }
