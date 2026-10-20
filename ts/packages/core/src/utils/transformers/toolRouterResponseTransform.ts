@@ -15,13 +15,12 @@ import {
 } from '../../types/toolRouter.types';
 
 /**
- * The `result_type` values of a call that ran, with the results of the
- * session hooks that applied. `input_required` and `blocked` are handled
- * before this is read.
+ * The `result_type` values of a call that ran. `input_required` and `blocked`
+ * are handled before this is read. `hook_results` is validated in its own step
+ * so a shape drift there doesn't read as an unknown `result_type`.
  */
 const ExecutedResponseSchema = z.object({
   result_type: z.enum(['completed', 'failed']),
-  hook_results: z.array(ToolRouterHookResultSchema).optional(),
 });
 
 /** A call a session hook blocked. The generated client does not type it yet. */
@@ -252,7 +251,7 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  *
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
- * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
+ * @throws {ValidationError} If the response carries no `result_type`, one this SDK does not know, or malformed `hook_results`
  */
 export function transformExecuteResponse(
   raw: SessionExecuteResponse,
@@ -280,18 +279,26 @@ export function transformExecuteResponse(
       { cause: executed.error }
     );
   }
+  const hookResults = CompletedHookResultsSchema.safeParse(raw);
+  if (!hookResults.success) {
+    throw new ValidationError(`Tool ${toolSlug} returned malformed hook results`, {
+      cause: hookResults.error,
+    });
+  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
     resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
-    ...(executed.data.hook_results !== undefined && { hookResults: executed.data.hook_results }),
+    ...(hookResults.data.hook_results !== undefined && {
+      hookResults: hookResults.data.hook_results,
+    }),
   };
 }
 
-/** Hook results on a proxied request that was sent. */
-const ProxyCompletedHookResultsSchema = z.object({
+/** Hook results on a call that ran: session execute, or a proxied request that was sent. */
+const CompletedHookResultsSchema = z.object({
   hook_results: z.array(ToolRouterHookResultSchema).optional(),
 });
 
@@ -314,7 +321,7 @@ export function transformProxyExecuteResponse(
       ...(blocked.hook_results !== undefined && { hookResults: blocked.hook_results }),
     };
   }
-  const hookResults = ProxyCompletedHookResultsSchema.safeParse(raw);
+  const hookResults = CompletedHookResultsSchema.safeParse(raw);
   if (!hookResults.success) {
     throw new ValidationError(`${subject} returned malformed hook results`, {
       cause: hookResults.error,

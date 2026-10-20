@@ -1190,6 +1190,16 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if proxy_execute is not None:
             create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
         if hooks is not None:
+            if (
+                experimental is not None
+                and t.cast(t.Dict[str, t.Any], experimental).get("session_config_id")
+                is not None
+            ):
+                raise InvalidParams(
+                    "`hooks` cannot be combined with "
+                    "`experimental={'session_config_id': ...}`; create the session "
+                    "from the saved config and add hooks in a separate update() call"
+                )
             # The generated client has no typed parameter for ``hooks`` yet.
             create_params["extra_body"] = {"hooks": hooks}
 

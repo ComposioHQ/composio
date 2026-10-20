@@ -157,6 +157,20 @@ describe('session execute when a hook blocks the call', () => {
       ValidationError
     );
   });
+
+  it('raises malformed hook results on a completed call as malformed hook results', async () => {
+    const { client } = createClient({
+      result_type: 'completed',
+      data: { id: 'msg_1' },
+      error: null,
+      log_id: 'log_1',
+      hook_results: [{ id: 'no_external_email', status: 'nope' }],
+    });
+
+    await expect(createSession(client).execute('GMAIL_SEND_EMAIL', {})).rejects.toThrow(
+      'returned malformed hook results'
+    );
+  });
 });
 
 describe('session proxy execute when a hook blocks the request', () => {
@@ -195,5 +209,19 @@ describe('session proxy execute when a hook blocks the request', () => {
       data: { id: 'msg_1' },
       headers: { 'content-type': 'application/json' },
     });
+  });
+
+  it('raises malformed hook results on a completed response as malformed hook results', async () => {
+    const { client } = createClient({
+      result_type: 'completed',
+      status: 200,
+      data: { id: 'msg_1' },
+      headers: {},
+      hook_results: [{ id: 'no_external_email', status: 'nope' }],
+    });
+
+    await expect(createSession(client).proxyExecute(proxyParams)).rejects.toThrow(
+      'returned malformed hook results'
+    );
   });
 });

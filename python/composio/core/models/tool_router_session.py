@@ -1298,7 +1298,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         off the sandbox ``proxy_execute()`` helper, and ``None`` removes the
         stored block.
         ``hooks`` replaces the whole list of hooks, and ``None`` removes every
-        hook.
+        hook. ``hooks`` cannot be combined with
+        ``experimental={'session_config_id': ...}`` (``hooks=None`` counts).
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1334,6 +1335,16 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             raise exceptions.InvalidParams(
                 "`instant` does not accept None; pass False to disable "
                 "Instant usage, or omit it to keep the stored policy"
+            )
+        if (
+            not isinstance(hooks, Omit)
+            and isinstance(experimental, dict)
+            and experimental.get("session_config_id") is not None
+        ):
+            raise exceptions.InvalidParams(
+                "`hooks` cannot be combined with `experimental={'session_config_id': ...}`; "
+                "a saved Session config sets the session's access policy, so apply "
+                "hooks in a separate update"
             )
 
         precondition: t.Union[int, "Omit"]

@@ -2876,6 +2876,37 @@ class TestSessionHooks:
         assert body["hooks"] == expected
 
     @pytest.mark.parametrize(
+        "hooks",
+        [
+            pytest.param(_HOOKS, id="replace"),
+            pytest.param(None, id="remove"),
+        ],
+    )
+    def test_update_rejects_hooks_with_session_config_id(self, hooks):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+        requests.clear()
+
+        with pytest.raises(InvalidParams):
+            session.update(hooks=hooks, experimental={"session_config_id": "sc_1"})
+
+        assert requests == []
+
+    def test_create_rejects_hooks_with_session_config_id(
+        self, tool_router, mock_client
+    ):
+        with pytest.raises(InvalidParams):
+            tool_router.create(
+                user_id="user_123",
+                hooks=self._HOOKS,
+                experimental=t.cast(t.Any, {"session_config_id": "sc_1"}),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    @pytest.mark.parametrize(
         "run",
         [
             pytest.param(
@@ -3012,6 +3043,19 @@ class TestSessionHooks:
         with pytest.raises(ValidationError):
             _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
 
+    def test_malformed_hook_results_is_raised(self):
+        """A completed response whose hook results violate the schema raises a
+        malformed hook results error, not an unknown result_type."""
+        client, _ = _answering_client(
+            {
+                **_COMPLETED_JSON,
+                "hook_results": [{"id": "block_injection", "status": "nope"}],
+            }
+        )
+
+        with pytest.raises(ValidationError, match="malformed hook results"):
+            _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
     @pytest.mark.parametrize(
         "run",
         [
@@ -3040,6 +3084,20 @@ class TestSessionHooks:
                 {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
             ],
         }
+
+    def test_proxy_execute_malformed_hook_results_is_raised(self):
+        client, _ = _answering_client(
+            {
+                "result_type": "completed",
+                "status": 200,
+                "data": {"id": 1},
+                "headers": {},
+                "hook_results": [{"id": "block_injection", "status": "nope"}],
+            }
+        )
+
+        with pytest.raises(ValidationError, match="malformed hook results"):
+            _created_session(client).proxy_execute(**_PROXY_PARAMS)
 
 
 class _NoInput(BaseModel):
