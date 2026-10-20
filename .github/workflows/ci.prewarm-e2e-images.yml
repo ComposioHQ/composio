@@ -1,0 +1,139 @@
+name: Prewarm E2E image caches
+
+# The e2e Dockerfiles resolve their base images from public.ecr.aws, and on a
+# cold GitHub Actions buildx cache that resolution hits anonymous ECR rate
+# limits (HTTP 429) before a single test runs. The PR jobs that build the
+# composio-e2e-* images only pass when their cache scope is still warm or the
+# registry pull succeeds, so this workflow rebuilds every scope those jobs
+# restore from (e2e-install-*, e2e-node-*, e2e-cli) and leaves the layers in
+# the GitHub Actions cache. Scheduled runs only fire on the default branch
+# (next); dispatch it by hand after changing a toolchain pin or an e2e
+# Dockerfile.
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: prewarm-e2e-images
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  toolchain-versions:
+    name: Read toolchain versions and digests
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.versions.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read versions
+        id: versions
+        run: |
+          set -euo pipefail
+          toolchain_file=toolchain-versions.json
+
+          if ! jq -e '.node | type == "array" and length > 0' "$toolchain_file" >/dev/null; then
+            echo "::error::toolchain-versions.json must contain a non-empty \"node\" array."
+            exit 1
+          fi
+
+          # Prewarm pins base images by digest so a warmed cache is only reused
+          # for exactly the image the e2e jobs resolve. Without the map the
+          # node and cli entries below could drift from the digests those jobs
+          # build with.
+          if ! jq -e '.nodeDigests | type == "object"' "$toolchain_file" >/dev/null; then
+            echo "::error::toolchain-versions.json is missing the \"nodeDigests\" map ({\"<node-version>\": \"sha256:...\"}). Add it next to the \"node\" array so the e2e-node-* and e2e-cli caches can be warmed."
+            exit 1
+          fi
+
+          missing_digests=$(jq -r '. as $root | [$root.node[] | select(($root.nodeDigests[.] // "") == "")] | join(", ")' "$toolchain_file")
+          if [[ -n "$missing_digests" ]]; then
+            echo "::error::toolchain-versions.json is missing \"nodeDigests\" entries for: ${missing_digests}. Every version in \"node\" needs a \"sha256:...\" digest."
+            exit 1
+          fi
+
+          # Install image variants, mirroring the CLI Install E2E matrix.
+          install_matrix=$(jq -cn '
+            ["bash", "zsh", "fish"] | map({
+              "name": "install image (\(.))",
+              "dockerfile": "ts/e2e-tests/_utils/Dockerfile.install",
+              "tag": "composio-e2e-install:\(.)",
+              "cache-scope": "e2e-install-\(.)",
+              "cache-target": "",
+              "build-args": "INSTALL_SHELL=\(.)"
+            })')
+
+          # Node toolchain images, one per version in toolchain-versions.json.
+          node_matrix=$(jq -c '
+            . as $root
+            | [$root.node[] as $version | {
+                "name": "node toolchain (\($version))",
+                "dockerfile": "ts/e2e-tests/_utils/Dockerfile.node",
+                "tag": "composio-e2e-node:\($version)",
+                "cache-scope": "e2e-node-\($version)",
+                "cache-target": "toolchain",
+                "build-args": "NODE_VERSION=\($version)\nNODE_VERSION_DIGEST=\($root.nodeDigests[$version])"
+              }]' "$toolchain_file")
+
+          # The cli toolchain image uses the same NODE_VERSION and CLI_VERSION
+          # as the E2E Test Typescript SDK cli docker job: Node from mise.lock
+          # and the version from ts/packages/cli/package.json.
+          cli_version=$(node -p "require('./ts/packages/cli/package.json').version")
+          cli_node_version=$(bash .github/scripts/read-mise-lock-version.sh node)
+          cli_digest=$(jq -r --arg version "$cli_node_version" '.nodeDigests[$version] // ""' "$toolchain_file")
+          if [[ -z "$cli_digest" ]]; then
+            echo "::error::toolchain-versions.json has no \"nodeDigests\" entry for ${cli_node_version}, the Node.js version pinned in mise.lock that Dockerfile.cli builds on. Add a \"${cli_node_version}\" digest so the e2e-cli cache can be warmed."
+            exit 1
+          fi
+          cli_matrix=$(jq -cn \
+            --arg cli_version "$cli_version" \
+            --arg cli_node_version "$cli_node_version" \
+            --arg cli_digest "$cli_digest" \
+            '[{
+              "name": "cli toolchain",
+              "dockerfile": "ts/e2e-tests/_utils/Dockerfile.cli",
+              "tag": "composio-e2e-cli:prewarm",
+              "cache-scope": "e2e-cli",
+              "cache-target": "toolchain",
+              "build-args": "CLI_VERSION=\($cli_version)\nNODE_VERSION=\($cli_node_version)\nNODE_VERSION_DIGEST=\($cli_digest)"
+            }]')
+
+          matrix=$(jq -cn \
+            --argjson install "$install_matrix" \
+            --argjson node "$node_matrix" \
+            --argjson cli "$cli_matrix" \
+            '{include: ($install + $node + $cli)}')
+          jq . <<< "$matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  prewarm:
+    name: Prewarm ${{ matrix.name }}
+    needs: toolchain-versions
+    runs-on: ubuntu-latest
+    # Cold builds are the point of this workflow, so allow more time than the
+    # warm rebuilds inside the e2e jobs.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.toolchain-versions.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The composite action restores the scope from the GitHub Actions cache,
+      # rebuilds what is missing, and saves it back; toolchain targets save
+      # cache-only layers instead of loading an image.
+      - name: Prewarm the ${{ matrix.cache-scope }} cache
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          tag: ${{ matrix.tag }}
+          cache-scope: ${{ matrix.cache-scope }}
+          cache-target: ${{ matrix.cache-target }}
+          build-args: ${{ matrix.build-args }}
