@@ -25,6 +25,10 @@ dependencies = [
     # the streaming API our download size limit relies on) and
     # GHSA-qccp-gfcp-xxvc (sensitive headers forwarded across origins).
     "urllib3>=2.7.0",
+    # `requests` verifies TLS against certifi's bundle. 2026.10.19 removes
+    # the emSign ECC Root CA - G3 root after eight eMudhra intermediate keys
+    # were compromised; older bundles still trust certificates they issue.
+    "certifi>=2026.10.19",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
