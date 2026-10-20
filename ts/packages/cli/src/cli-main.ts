@@ -41,6 +41,8 @@ import {
   ComposioUserContextLive as _ComposioUserContextLive,
 } from 'src/services/user-context';
 import { formatBackendMismatch } from 'src/config/backend';
+import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
+import { extractMessage } from 'src/utils/api-error-extraction';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -326,6 +328,16 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           yield* ui.error(error.message);
           process.exitCode = 1;
         })
+    ),
+    // A rejected user API key gets the backend's message and the way to log in again, from
+    // whichever command it escaped.
+    Effect.catchIf(isRejectedUserApiKey, error =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error(extractMessage(error) ?? 'The user API key was rejected.');
+        yield* ui.error(yield* rejectedUserApiKeyHint);
+        process.exitCode = 1;
+      })
     ),
     Effect.catchIf(
       (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,

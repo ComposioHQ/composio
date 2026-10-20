@@ -47,7 +47,8 @@
   `COMPOSIO_USER_API_KEY` keeps using the backend the environment selects.
   `composio execute` follows the same rule for the Dashboard it calls, using
   the recorded `web_url`. `composio orgs switch` no longer rewrites the
-  recorded backend.
+  recorded backend, and a rejected user API key now prints how to log in again,
+  naming the backend when it is not production.
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,

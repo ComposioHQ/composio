@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
+import { withHttpServer } from 'test/__utils__/http-server';
 
 describe('CLI process error handling', () => {
   it.each([
@@ -246,5 +247,44 @@ describe('CLI backend of a stored login', () => {
       env: cliEnv(configDirectory),
     });
     expect(unset.stderr).not.toContain('sends your stored API key');
+  });
+
+  it('sends requests to the stored backend and explains a rejected key', async () => {
+    const requests: Array<{ url?: string; key?: string | string[] }> = [];
+    await withHttpServer(
+      (req, res) => {
+        requests.push({ url: req.url, key: req.headers['x-user-api-key'] });
+        res.writeHead(401, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            error: {
+              message: 'Invalid or revoked user API key',
+              code: 1803,
+              slug: 'UserApiKey_Unauthorized',
+              status: 401,
+            },
+          })
+        );
+      },
+      async baseURL => {
+        const configDirectory = storedLogin(baseURL);
+        const child = spawn('bun', ['run', 'src/bin.ts', 'orgs', 'list'], {
+          cwd: process.cwd(),
+          env: cliEnv(configDirectory),
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', chunk => (stdout += String(chunk)));
+        child.stderr.on('data', chunk => (stderr += String(chunk)));
+        const status = await new Promise<number | null>(resolve => child.on('close', resolve));
+
+        expect(requests.length).toBeGreaterThan(0);
+        expect(requests[0]?.key).toBe('uak_stored');
+        expect(status).toBe(1);
+        expect(stdout).toBe('');
+        expect(stderr).toContain('Invalid or revoked user API key');
+        expect(stderr).toContain(`composio logout && COMPOSIO_BASE_URL=${baseURL} composio login`);
+      }
+    );
   });
 });
