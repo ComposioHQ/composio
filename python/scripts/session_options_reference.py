@@ -28,7 +28,7 @@ class Shapes:
 
     def __init__(self, sources: dict[str, str]):
         self.modules = {name: ast.parse(source) for name, source in sources.items()}
-        self.definitions = {}
+        self.definitions: dict[tuple[str, str], ast.ClassDef | ast.expr] = {}
         self.imports = {}
         self.pending = []
         for module, tree in self.modules.items():
@@ -78,7 +78,9 @@ class Shapes:
         parts = []
         cursor = 0
         # Keep literals intact: a quoted Literal string must never become a link.
-        pattern = r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*"""
+        pattern = (
+            r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*"""
+        )
         for match in re.finditer(pattern, text):
             token = match.group()
             key = (
@@ -101,13 +103,18 @@ class Shapes:
         return "".join(parts)
 
     def method(self, module: str, cls: str, name: str) -> ast.FunctionDef:
+        definition = self.definitions[module, cls]
+        if not isinstance(definition, ast.ClassDef):
+            raise ValueError(f"{module}.{cls} must be a class")
         return next(
             node
-            for node in reversed(self.definitions[module, cls].body)
+            for node in reversed(definition.body)
             if isinstance(node, ast.FunctionDef) and node.name == name
         )
 
-    def fields(self, module: str, node: ast.ClassDef):
+    def fields(self, module: str, node: ast.AST):
+        if not isinstance(node, ast.ClassDef):
+            raise ValueError(f"Expected a class definition in {module}")
         fields = []
         total = not any(
             k.arg == "total"
@@ -174,6 +181,10 @@ def parameter_rows(
 ):
     rows = []
     for param, default in zip(method.args.kwonlyargs, method.args.kw_defaults):
+        if param.annotation is None:
+            raise ValueError(
+                f"Missing annotation for {module}.{method.name}.{param.arg}"
+            )
         default_text = (
             f"`{ast.unparse(default)}`" if default is not None else "Required"
         )

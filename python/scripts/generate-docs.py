@@ -562,8 +562,9 @@ def generate_class_mdx(
                 options_page, options_section = "session-create-options", "create-input"
             elif info["name"] == "ToolRouterSession" and method["name"] == "update":
                 options_page, options_section = "session-update-options", "update-input"
-            method_links = {**config_links, **contract_links.get(options_page, {})}
+            method_links = dict(config_links)
             if options_page:
+                method_links.update(contract_links.get(options_page, {}))
                 lines.extend(
                     [
                         f"[Complete options and nested types](/reference/sdk-reference/python/"
