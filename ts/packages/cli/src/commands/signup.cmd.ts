@@ -1,14 +1,5 @@
 import { Command, Flag } from 'effect/cli';
-import { Effect } from 'effect';
-import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
-import {
-  ensureAgentSignupAllowed,
-  getOrSignupReadyAgent,
-  loginWithAgentIdentity,
-  safeAgentSummary,
-  signupAgent,
-} from 'src/services/agents';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { runAgentSignupFlow } from 'src/effects/agent-signup';
 
 const noWait = Flag.Boolean('no-wait').pipe(
   Flag.withDefault(false),
@@ -26,57 +17,8 @@ const force = Flag.Boolean('force').pipe(
   Flag.withDescription('Create a new agent identity even if ~/.composio/agent.json already exists')
 );
 
-export const runAgentSignup = (params: {
-  noWait: boolean;
-  noLogin: boolean;
-  force: boolean;
-  commandLabel?: string;
-}) =>
-  handleAgentAuthError(
-    Effect.gen(function* () {
-      const ui = yield* TerminalUI;
-      const commandLabel = params.commandLabel ?? 'composio signup';
-
-      yield* ensureAgentSignupAllowed;
-      yield* ui.intro(commandLabel);
-      yield* ui.log.info(
-        `${commandLabel} signs you up as a Composio agent. This flow is fully non-interactive and does not open a browser.`
-      );
-
-      const identity = yield* params.noWait
-        ? signupAgent({ wait: false })
-        : getOrSignupReadyAgent({ force: params.force });
-      const summary = safeAgentSummary(identity);
-
-      yield* ui.note(
-        [
-          `Type: agent`,
-          `Status: ${summary.status}`,
-          `Email: ${summary.email ?? 'unknown'}`,
-          `Slug: ${summary.slug ?? 'unknown'}`,
-          `Current Org ID: ${summary.org_id ?? 'pending'}`,
-          `Project ID: ${summary.project_id ?? 'pending'}`,
-          `Agent key: stored in ~/.composio/agent.json`,
-        ].join('\n'),
-        'Composio Agent'
-      );
-
-      if (!params.noWait && !params.noLogin) {
-        yield* loginWithAgentIdentity(identity);
-        yield* ui.log.success('Logged in with the Composio agent identity.');
-      } else if (params.noWait) {
-        yield* ui.log.info('Signup is pending. Run `composio agent whoami` to poll status.');
-      }
-
-      yield* ui.output(
-        JSON.stringify({ ...summary, logged_in: !params.noWait && !params.noLogin })
-      );
-      yield* ui.outro('Agent setup complete.');
-    })
-  );
-
 export const signupCmd = Command.make(
   'signup',
   { noWait, noLogin, force },
-  ({ noWait, noLogin, force }) => runAgentSignup({ noWait, noLogin, force })
+  ({ noWait, noLogin, force }) => runAgentSignupFlow({ noWait, noLogin, force })
 ).pipe(Command.withDescription('Sign up and optionally log in as a Composio agent.'));
