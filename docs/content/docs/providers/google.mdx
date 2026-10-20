@@ -207,6 +207,16 @@ for event in events:
 </Step>
 </Steps>
 
+### Argument validation
+
+The Python Google ADK provider validates tool arguments against the tool's JSON schema before execution. It preserves every key the schema allows, including keys allowed by `additionalProperties` or `patternProperties`. If the model omits an optional argument, the schema's declared default applies; arguments without defaults stay absent. Invalid `patternProperties` or schema-valued `additionalProperties` raise an error when the tool is wrapped.
+
+<Callout type="warn">
+Invalid arguments return an error result to the agent: `{"successful": false, "error": "...", "data": null}`. Values must match their declared types: `"5"` is rejected for an integer argument. For schemas with named properties, unknown top-level keys are rejected unless the schema allows them.
+</Callout>
+
+ADK builds tool declarations from named parameters, so a wholly free-form argument object isn't advertised as open and the model may omit its keys. Free-form objects nested under a declared argument work with ADK.
+
 </IntegrationContent>
 
 </IntegrationTabs>
