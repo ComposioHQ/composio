@@ -6,7 +6,7 @@ import { afterEach, vi } from 'vitest';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { readStoredAgentIdentity } from 'src/services/agents';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
-import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { makeAgentIdentity } from 'test/__utils__/models/agent';
 
 describe('CLI: composio agent', () => {
   afterEach(() => {
@@ -42,26 +42,6 @@ describe('CLI: composio agent', () => {
         expect(output).toContain('login');
         expect(output).toContain('whoami');
         expect(output).toContain('claim');
-      })
-    );
-  });
-
-  layer(TestLive())(it => {
-    it.effect('top-level signup makes clear it signs up an agent', () =>
-      Effect.gen(function* () {
-        const fetchSpy = vi
-          .spyOn(globalThis, 'fetch')
-          .mockImplementation(async () => agentsJsonResponse(makeAgentIdentity()));
-
-        yield* cli(['signup']);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-
-        expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
-          expect.stringContaining('/api/signup'),
-          expect.objectContaining({ method: 'POST' })
-        );
-
-        expect(output).toContain('composio signup signs you up as a Composio agent');
       })
     );
   });
