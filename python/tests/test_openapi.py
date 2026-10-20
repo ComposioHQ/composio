@@ -221,6 +221,41 @@ class TestArrayItemSchemas:
 
     @pytest.mark.unit
     @pytest.mark.schema
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf"])
+    def test_item_enum_keeps_priority_over_combiner(self, combiner: str):
+        assert (
+            _annotation(
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["open", "closed"],
+                        combiner: [{"type": "string"}, {"type": "null"}],
+                    },
+                }
+            )
+            == t.List[t.Literal["open", "closed"]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf"])
+    def test_item_type_keeps_priority_over_combiner(self, combiner: str):
+        assert (
+            _annotation(
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        combiner: [{"type": "string"}, {"type": "null"}],
+                    },
+                }
+            )
+            == t.List[str]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
     @pytest.mark.parametrize(
         "prop",
         [
@@ -231,3 +266,26 @@ class TestArrayItemSchemas:
     )
     def test_unconstrained_items_still_resolve_to_any(self, prop: t.Dict[str, t.Any]):
         assert _annotation(prop) == t.List[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf", "allOf"])
+    def test_deeply_nested_item_combiners_are_bounded(self, combiner: str):
+        items: t.Dict[str, t.Any] = {"type": "string"}
+        for _ in range(400):
+            items = {combiner: [items]}
+        assert _annotation({"type": "array", "items": items}) == t.List[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_deeply_nested_array_items_are_bounded(self):
+        prop: t.Dict[str, t.Any] = {"type": "string"}
+        for _ in range(400):
+            prop = {"type": "array", "items": prop}
+        annotation = _annotation(prop)
+        depth = 0
+        while t.get_origin(annotation) is list:
+            depth += 1
+            annotation = t.get_args(annotation)[0]
+        assert 0 < depth < 400
+        assert annotation is t.Any

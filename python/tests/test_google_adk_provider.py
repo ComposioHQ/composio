@@ -12,12 +12,17 @@ google_adk = pytest.importorskip("composio_google_adk")
 @pytest.mark.unit
 @pytest.mark.schema
 @pytest.mark.parametrize("combiner", ["anyOf", "oneOf"])
-def test_nullable_array_items_reach_the_adk_declaration(combiner, monkeypatch):
+# Exceed the converter budget without hitting unrelated schema-copy limits.
+@pytest.mark.parametrize("depth", [0, 96], ids=["nullable", "depth-limit"])
+def test_array_items_reach_the_adk_declaration(combiner, depth, monkeypatch):
     def reject_network(*args, **kwargs):
         pytest.fail("Tool declaration generation must not use the network")
 
     monkeypatch.setattr(socket.socket, "connect", reject_network)
     monkeypatch.setattr(socket, "getaddrinfo", reject_network)
+    items = {combiner: [{"type": "string"}, {"type": "null"}]}
+    for _ in range(depth):
+        items = {combiner: [items]}
     tool = Tool.model_construct(
         slug="offline_schema_probe",
         description="Offline schema probe",
@@ -26,7 +31,7 @@ def test_nullable_array_items_reach_the_adk_declaration(combiner, monkeypatch):
             "properties": {
                 "values": {
                     "type": "array",
-                    "items": {combiner: [{"type": "string"}, {"type": "null"}]},
+                    "items": items,
                 }
             },
             "required": ["values"],
@@ -38,6 +43,8 @@ def test_nullable_array_items_reach_the_adk_declaration(combiner, monkeypatch):
 
     wrapped = google_adk.GoogleAdkProvider().wrap_tool(tool, execute_tool=execute_tool)
     declaration = wrapped._get_declaration()
-    assert declaration.parameters_json_schema["properties"]["values"]["items"] == {
-        "anyOf": [{"type": "string"}, {"type": "null"}]
-    }
+    expected_items = {} if depth else {"anyOf": [{"type": "string"}, {"type": "null"}]}
+    assert (
+        declaration.parameters_json_schema["properties"]["values"]["items"]
+        == expected_items
+    )
