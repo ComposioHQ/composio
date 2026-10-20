@@ -85,6 +85,28 @@ describe('ClaudeAgentSDKProvider schema sent to the model', () => {
     });
     expect(properties.count).toMatchObject({ type: 'integer', minimum: 0 });
   });
+
+  it('keeps a defaulted field optional and shows its default', async () => {
+    const { client, inputSchema, accepts } = await register(
+      buildTool({
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+          page: { type: 'integer', default: 1 },
+        },
+        required: ['query'],
+      })
+    );
+    const acceptsWithoutPage = await accepts({ query: 'q' });
+    await client.close();
+
+    expect(inputSchema.required).toEqual(['query']);
+    expect((inputSchema.properties as Record<string, Json>).page).toMatchObject({
+      type: 'integer',
+      default: 1,
+    });
+    expect(acceptsWithoutPage).toBe(true);
+  });
 });
 
 describe('ClaudeAgentSDKProvider tool-call validation', () => {
