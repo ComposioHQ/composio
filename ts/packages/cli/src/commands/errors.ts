@@ -1,5 +1,6 @@
 import { Data } from 'effect';
 import { ProjectResolutionError } from 'src/services/command-project';
+import { ConnectedAccountResolutionError } from 'src/services/connected-account-selection';
 
 /**
  * A usage mistake the parser cannot see: a flag combination, a value that fails a business
@@ -28,12 +29,14 @@ export const notLoggedIn = (): NotLoggedInError =>
  * Failures the user fixes by changing the invocation or their setup, not defects. `cli-main.ts`
  * prints the message as one line on stderr and exits 1.
  */
-export type UsageFailure = CommandInputError | NotLoggedInError | ProjectResolutionError;
+export type UsageFailure =
+  CommandInputError | NotLoggedInError | ProjectResolutionError | ConnectedAccountResolutionError;
 
 export const isUsageFailure = (error: unknown): error is UsageFailure =>
   error instanceof CommandInputError ||
   error instanceof NotLoggedInError ||
-  error instanceof ProjectResolutionError;
+  error instanceof ProjectResolutionError ||
+  error instanceof ConnectedAccountResolutionError;
 
 /** Builds the constructor a command uses for its own input errors. */
 export const commandInputError =

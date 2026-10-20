@@ -499,3 +499,30 @@ describe('reported tool execution failures', () => {
     30_000
   );
 });
+
+describe('account selection errors', () => {
+  it(
+    '[Given] an `--account` that matches no connected account [Then] prints the message as one line and exits 1',
+    () =>
+      withHttpServer(fakeComposio, async baseUrl => {
+        const result = await runCliAgainst(baseUrl, [
+          'execute',
+          'GMAIL_FETCH_EMAILS',
+          '--account',
+          'does-not-exist-xyz',
+          '-d',
+          '{}',
+        ]);
+
+        expect(result.status).toBe(1);
+        expect(result.stdout).toBe('');
+        expect(result.stderr.trim()).toBe(
+          'No connected account matched "does-not-exist-xyz" for toolkit "gmail". No active connected accounts were found for that toolkit.'
+        );
+        expect(result.stderr).not.toContain('💥');
+        expect(result.stderr).not.toContain('ConnectedAccountResolutionError');
+        expect(result.stderr).not.toContain('composio-cli');
+      }),
+    30_000
+  );
+});

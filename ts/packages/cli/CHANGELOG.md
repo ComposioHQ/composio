@@ -11,6 +11,13 @@
   messages on stderr are unchanged. In `composio run`, `execute()` still
   rejects with the tool's error message and the failed result.
 
+- `composio execute` and `composio proxy` now report an `--account` that
+  matches no connected account (`No connected account matched "…"`) as one
+  line on stderr and exit 1, like other usage errors. They used to print it
+  under a `💥` banner with the error tag and a stack location, as if the CLI had
+  crashed. A failure to load the toolkit's connected accounts is reported the
+  same way. Nothing is printed on stdout.
+
 - `composio execute` now sends the execution itself (single, `--parallel`, and
   meta tools) through the Composio Dashboard instead of calling the backend
   directly. Output, exit codes, error details, connection tips, and `--json`
