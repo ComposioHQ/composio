@@ -2940,6 +2940,46 @@ class TestSessionHooks:
             {"id": "block_injection", "status": "unavailable"}
         ]
 
+    def test_blocked_response_from_typed_client_models(self):
+        """A regenerated client returns ``reason`` and ``hook_results`` as its
+        own nested models instead of dicts."""
+        from composio.core.models.tools import parse_blocked_response
+
+        class _Reason(BaseModel):
+            type: str
+            hook_id: str
+
+        class _HookResult(BaseModel):
+            id: str
+            status: str
+            outcome: t.Optional[str] = None
+
+        class _Blocked(BaseModel):
+            result_type: str
+            reason: _Reason
+            message: str
+            hook_results: t.List[_HookResult]
+
+        blocked = parse_blocked_response(
+            _Blocked(
+                result_type="blocked",
+                reason=_Reason(type="request_blocked", hook_id="no_external_email"),
+                message="Blocked by session policy",
+                hook_results=[
+                    _HookResult(
+                        id="no_external_email", status="evaluated", outcome="block"
+                    )
+                ],
+            ),
+            "Tool GMAIL_SEND_EMAIL",
+        )
+
+        assert blocked is not None
+        assert blocked.reason.hook_id == "no_external_email"
+        assert blocked.hook_results == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+        ]
+
     def test_malformed_blocked_response_is_raised(self):
         malformed = {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "reason"}
         client, _ = _answering_client(malformed)

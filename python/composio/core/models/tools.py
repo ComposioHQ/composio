@@ -210,11 +210,26 @@ def parse_blocked_response(
     if getattr(response, "result_type", None) != "blocked":
         return None
     try:
-        return BlockedResponse.model_validate(dict(response))
+        return BlockedResponse.model_validate(
+            {key: _plain(value) for key, value in dict(response).items()}
+        )
     except PydanticValidationError as exc:
         raise ValidationError(
             f"{subject} returned a malformed blocked response"
         ) from exc
+
+
+def _plain(value: t.Any) -> t.Any:
+    """Nested client models as plain data.
+
+    The generated client may return ``reason`` and ``hook_results`` as its own
+    nested models; the SDK validates plain data against its own types.
+    """
+    if isinstance(value, PydanticBaseModel):
+        return value.model_dump()
+    if isinstance(value, list):
+        return [_plain(item) for item in value]
+    return value
 
 
 def _response_field(response: t.Any, name: str) -> t.Any:
@@ -237,7 +252,7 @@ def parse_hook_results(
 
     :raises ValidationError: If ``hook_results`` does not match its shape.
     """
-    raw = _response_field(response, "hook_results")
+    raw = _plain(_response_field(response, "hook_results"))
     if raw is None:
         return None
     try:
