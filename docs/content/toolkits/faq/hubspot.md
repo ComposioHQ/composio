@@ -10,7 +10,7 @@ If this warning blocks your rollout, use your own HubSpot OAuth app credentials 
 
 Use Composio-managed auth when you want the fastest setup and the default Composio HubSpot app covers the permissions you need.
 
-With Composio-managed HubSpot auth, you can only remove optional scopes that are already available on the Composio-managed HubSpot app.
+Composio-managed HubSpot auth uses the shared app's configured permissions. Editing `optional_scopes` is not supported for managed auth. A successful API response to a top-level `optional_scopes` field does not prove that the managed config changed.
 
 You cannot add new scopes to the managed app, and you cannot remove scopes that are non-optional for that managed auth config. If you need a different scope set, create a custom HubSpot OAuth app and configure those scopes there.
 
@@ -18,7 +18,7 @@ Use your own HubSpot OAuth app when you need a different scope set, your own app
 
 ## How do scopes work in HubSpot?
 
-The scope category must match between Composio and your HubSpot developer app.
+For your own HubSpot OAuth app, the scope category must match between Composio and your HubSpot developer app. The configuration below applies to custom OAuth, not to changing the managed app's permissions.
 
 - Scopes in Composio `scopes` must be configured in HubSpot as **Required** or **Conditionally required**.
 - Scopes in Composio `optional_scopes` must be configured in HubSpot as **Optional**.
@@ -84,7 +84,7 @@ After changing scopes, reconnect affected HubSpot accounts. Existing connected a
 ## What are common HubSpot troubleshooting checks?
 
 - **Scope mismatch or callback errors:** confirm every requested scope is enabled in HubSpot and is in the same category in both HubSpot and Composio.
-- **Missing-scope tool errors:** add the missing scope to the auth config and HubSpot developer app, then reconnect the account.
+- **Missing-scope tool errors:** for custom OAuth, add the missing scope to both the auth config and your HubSpot developer app, then authorize a new connection. For managed auth, use a custom OAuth app when the managed app's permission set does not cover your needs.
 - **Contact list/search limit errors:** `HUBSPOT_SEARCH_CONTACTS_BY_CRITERIA` and `HUBSPOT_LIST_CONTACTS_PAGE` support a maximum `limit` of 100 results per request.
 - **Webhook setup errors:** HubSpot webhooks require a public app with an App ID and Developer API Key. Private or internal apps cannot receive webhooks.
 - **Refresh or expiry errors:** Common causes include the user revoking the app in HubSpot, HubSpot app credentials changing, the refresh token being invalidated, or the connected account being reauthorized with a different app configuration. After rotating custom OAuth credentials or changing the HubSpot developer app, reconnect affected HubSpot accounts.
