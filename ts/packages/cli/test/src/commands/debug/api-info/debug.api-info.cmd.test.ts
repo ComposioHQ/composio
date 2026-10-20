@@ -47,6 +47,24 @@ describe('CLI: composio debug api-info', () => {
     );
   });
 
+  layer(TestLive({ fixture: 'user-config-with-empty-api-key', terminalUI: confirmingUI }))(
+    '[Given] a stored login whose key is empty',
+    it => {
+      it.effect('[Then] fails naming the missing key and prints nothing on stdout', () =>
+        Effect.gen(function* () {
+          const error = yield* cli(['debug', 'api-info']).pipe(Effect.flip);
+
+          expect(error).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'debug',
+            message: NO_API_KEY_MESSAGE,
+          });
+          expect(yield* MockConsole.getLines({ stream: 'stdout' })).toEqual([]);
+        })
+      );
+    }
+  );
+
   layer(TestLive({ fixture: LOGGED_IN_FIXTURE, terminalUI: confirmingUI }))(
     '[Given] a stored login and a confirmation',
     it => {

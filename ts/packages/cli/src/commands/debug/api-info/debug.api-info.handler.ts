@@ -46,7 +46,10 @@ export const runDebugApiInfo = () =>
       return yield* debugError(ABORTED_MESSAGE);
     }
     const ctx = yield* ComposioUserContext;
-    const apiKey = yield* Effect.fromOption(ctx.data.apiKey, () => debugError(NO_API_KEY_MESSAGE));
+    const apiKey = yield* Effect.fromOption(
+      Option.filter(ctx.data.apiKey, key => key.length > 0),
+      () => debugError(NO_API_KEY_MESSAGE)
+    );
     const consumerProject = yield* resolveConsumerProject;
     yield* ui.output(
       formatDebugApiInfo({
