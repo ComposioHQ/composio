@@ -28,7 +28,7 @@ catalogs:
       specifier: ^5.20261012.1
       version: 5.20261012.1
     '@composio/client':
-      specifier: 2.0.0-rc.19
+      specifier: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8
       version: 2.0.0-rc.19
     '@effect/language-service':
       specifier: ^0.87.4
@@ -990,7 +990,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1238,7 +1238,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1344,7 +1344,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1764,7 +1764,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2328,8 +2328,9 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.19':
-    resolution: {integrity: sha512-EdBq7KXefbLXwK4F4wUtlG/e37pSxBQCAjJLRAgb0tHhiifDVqsmB/9AzLzpDsDfDKL/3UMUtYUiVUYaD87BVA==}
+  '@composio/client@https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8':
+    resolution: {integrity: sha512-1CjR6XpJa60iAzlDsku+Wc1ZN2ABJbhqTcwKeuOiDQcaxA6jZ++4osxIBYvtlPFLDwrggKhMvqQ1ruQ+3inyLA==, tarball: https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8}
+    version: 2.0.0-rc.19
     engines: {node: '>=22'}
     peerDependencies:
       effect: '*'
@@ -7590,7 +7591,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.19(effect@4.0.3)':
+  '@composio/client@https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8(effect@4.0.3)':
     optionalDependencies:
       effect: 4.0.3
 

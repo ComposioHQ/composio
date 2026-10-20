@@ -11,8 +11,11 @@
   developer project, an incomplete link response, a toolkit whose auth
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
-- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
-  command changes.
+- The CLI now uses `@composio/client@2.0.0-rc.20` (up from `2.0.0-rc.17`),
+  which drops the Stainless resource structure: resource classes, class
+  statics, namespace-member types and the `.js`/`.mjs` subpath spellings are
+  gone. The CLI's type imports move to the one `@composio/client/resources/*`
+  spelling; no command changes.
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and
   project through its `scope`, instead of the CLI placing `x-user-api-key`,
