@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import re
+import tomllib
 from pathlib import Path
 from typing import Callable
 
@@ -77,7 +78,7 @@ class Shapes:
         parts = []
         cursor = 0
         # Keep literals intact: a quoted Literal string must never become a link.
-        pattern = r"(['\"])(?:\\.|(?!\1).)*?\1|\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*"
+        pattern = r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*"""
         for match in re.finditer(pattern, text):
             token = match.group()
             key = (
@@ -309,6 +310,9 @@ def frontmatter(title: str, description: str) -> list[str]:
 
 
 def generate_session_options(package_dir: Path, parse_docstring, normalize):
+    version = tomllib.loads((package_dir / "pyproject.toml").read_text())["project"][
+        "version"
+    ]
     spec = importlib.util.find_spec("composio_client")
     if spec is None or spec.origin is None:
         raise RuntimeError(
@@ -339,6 +343,7 @@ def generate_session_options(package_dir: Path, parse_docstring, normalize):
         lines = frontmatter(
             title, f"Python {title.lower()} and source-derived nested types."
         )
+        lines.extend([f"Generated from `composio=={version}`.", ""])
         lines.extend([f"[Compare Session contracts]({BASE_URL}).", ""])
         if slug == "session-create-options":
             method = shapes.method(ROUTER, "ToolRouter", "create")
@@ -417,6 +422,7 @@ def generate_session_options(package_dir: Path, parse_docstring, normalize):
         "Session options",
         "Compare Python Session create, update, and returned-config contracts.",
     )
+    lines.extend([f"Generated from `composio=={version}`.", ""])
     lines.extend(
         [
             "Choose the contract for the Session operation you're using. "

@@ -32,7 +32,7 @@ describe('Session option shape references', () => {
     }
     for (const content of Object.values(pages)) {
       for (const match of content.matchAll(
-        /\]\((session-(?:create-options|update-options|config))#([^)]*)\)/g
+        /\]\(\/reference\/sdk-reference\/typescript\/(session-(?:create-options|update-options|config))#([^)]*)\)/g
       )) {
         expect(anchors[match[1]]?.has(match[2]), `${match[1]}#${match[2]}`).toBe(true);
       }
@@ -43,7 +43,9 @@ describe('Session option shape references', () => {
     const signature = 'const config: ToolRouterSessionConfig = session.config;';
     const source = `\`ToolRouterSessionConfig\`\n\`\`\`typescript\n${signature}\n\`\`\``;
     const linked = linkSessionOptionOccurrences(source);
-    expect(linked).toContain('[`ToolRouterSessionConfig`](session-config#returned-config)');
+    expect(linked).toContain(
+      '[`ToolRouterSessionConfig`](/reference/sdk-reference/typescript/session-config#returned-config)'
+    );
     expect(linked).toContain(`\`\`\`typescript\n${signature}\n\`\`\``);
     expect(linkSessionOptionOccurrences(linked)).toBe(linked);
   });

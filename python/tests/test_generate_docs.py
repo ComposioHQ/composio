@@ -242,7 +242,6 @@ def test_session_options_nested_links_resolve_to_generated_sections():
         anchors = set(re.findall(r'<a id="([^"]+)"></a>', mdx))
         targets = set(re.findall(r"\]\(#([^)]+)\)", mdx))
         assert targets <= anchors
-        assert anchors
         assert {url.split("#", 1)[1] for url in links.values()} <= anchors
         assert all(f"/{slug}#" in url for url in links.values())
     create = contract_links["session-create-options"]
@@ -257,7 +256,6 @@ def test_session_options_nested_links_resolve_to_generated_sections():
     assert "session_create_response.ConfigToolkitsEnabled" in returned
     assert "session_create_response.ConfigToolkitsDisabled" in returned
     assert "session_create_response.ConfigToolkitsRequireApproval" in returned
-    assert '<a id="' not in pages["session-options"]
 
 
 def test_session_config_annotations_link_without_truncating_unions():

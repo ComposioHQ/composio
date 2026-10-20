@@ -39,7 +39,7 @@ export function withoutFrontmatter(content: string): string {
  * Falls back to this when data.toc is unavailable (outside Next.js runtime).
  * Uses github-slugger to match rehype-slug's algorithm (handles Unicode, duplicate suffixes).
  */
-function extractHeadingsFromContent(content: string): string[] {
+export function extractHeadingsFromContent(content: string): string[] {
   const slugger = new GithubSlugger();
   const headings: string[] = [];
   let inCodeBlock = false;
@@ -49,6 +49,8 @@ function extractHeadingsFromContent(content: string): string[] {
       continue;
     }
     if (inCodeBlock) continue;
+    const anchor = line.match(/^\s*<a\s+id=(?:"([^"]+)"|'([^']+)')\s*(?:\/>|>\s*<\/a>)/);
+    if (anchor) headings.push(anchor[1] ?? anchor[2]);
     const match = line.match(/^#{1,6}\s+(.+)$/);
     if (match) {
       headings.push(slugger.slug(match[1]));
@@ -72,17 +74,17 @@ const textPageDataSchema = z.object({
  */
 async function getHeadingsForPage(page: PageOf): Promise<string[]> {
   const tocData = tocPageDataSchema.safeParse(page.data);
-  if (tocData.success && tocData.data.toc.length > 0) {
-    return tocData.data.toc.flatMap(item => {
-      const entry = tocEntrySchema.safeParse(item);
-      return entry.success ? [entry.data.url.slice(1)] : [];
-    });
-  }
+  const headings = tocData.success
+    ? tocData.data.toc.flatMap(item => {
+        const entry = tocEntrySchema.safeParse(item);
+        return entry.success ? [entry.data.url.slice(1)] : [];
+      })
+    : [];
   const textData = textPageDataSchema.safeParse(page.data);
   if (textData.success) {
     try {
       const content = await textData.data.getText('raw');
-      return extractHeadingsFromContent(content);
+      return [...new Set([...headings, ...extractHeadingsFromContent(content)])];
     } catch {
       // fall through
     }
@@ -90,12 +92,12 @@ async function getHeadingsForPage(page: PageOf): Promise<string[]> {
   if (page.absolutePath) {
     try {
       const content = await readFile(page.absolutePath, 'utf-8');
-      return extractHeadingsFromContent(content);
+      return [...new Set([...headings, ...extractHeadingsFromContent(content)])];
     } catch {
       // fall through
     }
   }
-  return [];
+  return headings;
 }
 
 /**
@@ -127,8 +129,7 @@ export async function getKnowledgeToolkitRouteEntries() {
 
 const EXTERNAL_FETCH_HEADERS = {
   // Some hosts reject requests without a browser-like UA (bot filters).
-  'user-agent':
-    'Mozilla/5.0 (compatible; composio-docs-link-check; +https://docs.composio.dev)',
+  'user-agent': 'Mozilla/5.0 (compatible; composio-docs-link-check; +https://docs.composio.dev)',
   accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
 };
 
@@ -190,8 +191,8 @@ async function checkLinks() {
   const referenceSource = await getReferenceSource();
   const knowledgeDiscoveryPaths = await getLocalKnowledgeDiscoveryPaths();
   const knowledgeTopicEntries = knowledgeDiscoveryPaths
-    .filter((path) => path.startsWith('/kb/topic/'))
-    .map((path) => ({ value: path.slice('/kb/topic/'.length), hashes: [] as string[] }));
+    .filter(path => path.startsWith('/kb/topic/'))
+    .map(path => ({ value: path.slice('/kb/topic/'.length), hashes: [] as string[] }));
   const [
     docsEntries,
     refEntries,
@@ -209,9 +210,10 @@ async function checkLinks() {
     getDynamicToolkitEntries(),
     getKnowledgeToolkitRouteEntries(),
   ]);
-  const knowledgeGuideEntries = knowledgeBaseEntries.flatMap((entry) => {
+  const knowledgeGuideEntries = knowledgeBaseEntries.flatMap(entry => {
     const value = entry.value;
-    if (!value || Array.isArray(value) || typeof value === 'string' || !('slug' in value)) return [];
+    if (!value || Array.isArray(value) || typeof value === 'string' || !('slug' in value))
+      return [];
     const slug = value.slug;
     const segments = Array.isArray(slug) ? slug : [slug];
     return segments.length === 2 && segments[0] === 'guide'

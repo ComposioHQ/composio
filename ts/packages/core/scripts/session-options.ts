@@ -16,7 +16,12 @@ const slug = (text: string) =>
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .toLowerCase();
 const cell = (text: string) =>
-  text.replace(/\|/g, '\\|').replace(/\n/g, ' ').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  text
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\n/g, ' ')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 const code = (text: string) => `\`${cell(text)}\``;
 const sectionPage = (id: string) =>
   id.startsWith('update-input')
@@ -24,7 +29,8 @@ const sectionPage = (id: string) =>
     : id.startsWith('returned-config')
       ? 'session-config'
       : 'session-create-options';
-const link = (label: string, id: string) => `[${code(label)}](${sectionPage(id)}#${id})`;
+const link = (label: string, id: string) =>
+  `[${code(label)}](/reference/sdk-reference/typescript/${sectionPage(id)}#${id})`;
 
 /** Link only documented public type names, including names inside generic types. */
 export function sessionOptionTypeLinks(type: string): string | undefined {
@@ -53,7 +59,7 @@ export function linkSessionOptionOccurrences(mdx: string): string {
             name => TYPE_SECTIONS[name]
           );
           return names.length === 1
-            ? `[${original}](${sectionPage(TYPE_SECTIONS[names[0]])}#${TYPE_SECTIONS[names[0]]})`
+            ? `[${original}](/reference/sdk-reference/typescript/${sectionPage(TYPE_SECTIONS[names[0]])}#${TYPE_SECTIONS[names[0]]})`
             : original;
         }
       );
@@ -303,6 +309,9 @@ export function renderReturnedConfig(
 }
 
 export function generateSessionOptionPages(packageDir: string): Record<string, string> {
+  const { version } = z
+    .object({ version: z.string() })
+    .parse(JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')));
   const sourcePath = join(packageDir, 'src/types/toolRouter.types.ts');
   const source = ts.createSourceFile(
     sourcePath,
@@ -376,6 +385,8 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
       `description: ${JSON.stringify(description)}`,
       '---',
       '',
+      `Generated from \`@composio/core@${version}\`.`,
+      '',
       ...content,
     ].join('\n');
   return {
@@ -387,13 +398,13 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
         '',
         '| Contract | Where you use it | Omission and names |',
         '|----------|------------------|--------------------|',
-        '| [Create options](session-create-options#create-input) | `composio.create(userId, options)` or `composio.sessions.create(userId, options)` | Camel-case input. Omit fields to use defaults. |',
-        '| [Update options](session-update-options#update-input) | `session.update(options)` | Camel-case PATCH input. Omit to preserve; `null` removes only where permitted. |',
-        '| [Returned config](session-config#returned-config) | `session.config` or the result of `session.update()` | Server-normalized snake_case fields. Not a create or PATCH input. |',
+        '| [Create options](/reference/sdk-reference/typescript/session-create-options#create-input) | `composio.create(userId, options)` or `composio.sessions.create(userId, options)` | Camel-case input. Omit fields to use defaults. |',
+        '| [Update options](/reference/sdk-reference/typescript/session-update-options#update-input) | `session.update(options)` | Camel-case PATCH input. Omit to preserve; `null` removes only where permitted. |',
+        '| [Returned config](/reference/sdk-reference/typescript/session-config#returned-config) | `session.config` or the result of `session.update()` | Server-normalized snake_case fields. Not a create or PATCH input. |',
         '',
         '`toolkits` accepts toolkit slugs or a policy object. `tools` is a map keyed by toolkit slug, not a tool list. Each contract page links its full nested shapes.',
         '',
-        '[Sessions](sessions) documents session creation. [Session](session) documents `update()` and `config`.',
+        '[Sessions](/reference/sdk-reference/typescript/sessions) documents session creation. [Session](/reference/sdk-reference/typescript/session) documents `update()` and `config`.',
         '',
         '## Type imports',
         '',
@@ -407,7 +418,7 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
       'Session create options',
       'Create-time Session options and their nested field shapes.',
       [
-        '[All Session contracts](session-options)',
+        '[All Session contracts](/reference/sdk-reference/typescript/session-options)',
         '',
         '## Create input',
         '',
@@ -443,7 +454,7 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
       'Session update options',
       'PATCH Session options and their nested field shapes.',
       [
-        '[All Session contracts](session-options)',
+        '[All Session contracts](/reference/sdk-reference/typescript/session-options)',
         '',
         '## Update input',
         '',
@@ -457,7 +468,7 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
         '',
         '`tools`, `authConfigs`, and `connectedAccounts` replace their whole stored maps. Inside `manageConnections`, `callbackUrl: null` removes only the callback URL. `instant` does not accept `null`: `false` disables it, and any policy object re-enables it, even one containing only a visibility setting.',
         '',
-        '`experimental.sessionConfigId` cannot be combined with `toolkits`, `tools`, or `tags`, including `null`. Pass either `sandbox` or `workbench`, not both. A successful update refreshes `session.config` and returns the [server config](session-config#returned-config).',
+        '`experimental.sessionConfigId` cannot be combined with `toolkits`, `tools`, or `tags`, including `null`. Pass either `sandbox` or `workbench`, not both. A successful update refreshes `session.config` and returns the [server config](/reference/sdk-reference/typescript/session-config#returned-config).',
         '',
         renderSections(update.sections),
       ]
@@ -466,7 +477,7 @@ export function generateSessionOptionPages(packageDir: string): Record<string, s
       'Session returned config',
       'Server-returned Session configuration and its nested field shapes.',
       [
-        '[All Session contracts](session-options)',
+        '[All Session contracts](/reference/sdk-reference/typescript/session-options)',
         '',
         '## Returned config',
         '',

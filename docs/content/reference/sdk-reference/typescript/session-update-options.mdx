@@ -3,7 +3,9 @@ title: "Session update options"
 description: "PATCH Session options and their nested field shapes."
 ---
 
-[All Session contracts](session-options)
+Generated from `@composio/core@0.25.0`.
+
+[All Session contracts](/reference/sdk-reference/typescript/session-options)
 
 ## Update input
 
@@ -17,27 +19,27 @@ The field types follow the exported TypeScript contract. In particular, update-t
 
 `tools`, `authConfigs`, and `connectedAccounts` replace their whole stored maps. Inside `manageConnections`, `callbackUrl: null` removes only the callback URL. `instant` does not accept `null`: `false` disables it, and any policy object re-enables it, even one containing only a visibility setting.
 
-`experimental.sessionConfigId` cannot be combined with `toolkits`, `tools`, or `tags`, including `null`. Pass either `sandbox` or `workbench`, not both. A successful update refreshes `session.config` and returns the [server config](session-config#returned-config).
+`experimental.sessionConfigId` cannot be combined with `toolkits`, `tools`, or `tags`, including `null`. Pass either `sandbox` or `workbench`, not both. A successful update refreshes `session.config` and returns the [server config](/reference/sdk-reference/typescript/session-config#returned-config).
 
 ### Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `instant` | `false` \| [`object`](session-update-options#update-input-instant-variant-2) \| `undefined` | No | Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values. |
-| `toolkits` | Array&lt;`string`&gt; \| [`object`](session-update-options#update-input-toolkits-variant-2) \| [`object`](session-update-options#update-input-toolkits-variant-3) \| [`object`](session-update-options#update-input-toolkits-variant-4) \| `null` \| `undefined` | No | Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default |
-| `tools` | Record&lt;`string`, Array&lt;`string`&gt; \| Array&lt;`string`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-2) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-3) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-5)&gt; \| `null` \| `undefined` | No | Replaces the entire stored tools map; `null` removes the override |
-| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) \| `null` \| `undefined` | No | Replaces the global tag policy; `null` removes the override |
+| `instant` | `false` \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-instant-variant-2) \| `undefined` | No | Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values. |
+| `toolkits` | Array&lt;`string`&gt; \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-toolkits-variant-2) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-toolkits-variant-3) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-toolkits-variant-4) \| `null` \| `undefined` | No | Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default |
+| `tools` | Record&lt;`string`, Array&lt;`string`&gt; \| Array&lt;`string`&gt; \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-2) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-3) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-4) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-5)&gt; \| `null` \| `undefined` | No | Replaces the entire stored tools map; `null` removes the override |
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) \| `null` \| `undefined` | No | Replaces the global tag policy; `null` removes the override |
 | `authConfigs` | Record&lt;`string`, `string`&gt; \| `null` \| `undefined` | No | Replaces the entire stored auth config map; `null` removes the override |
 | `connectedAccounts` | `Record&lt;string, string[]&gt;` \| `null` \| `undefined` | No | Replaces the entire stored connected accounts map; `null` removes the override |
-| `manageConnections` | `boolean` \| [`ToolRouterUpdateManageConnectionsConfig`](session-update-options#update-input-manage-connections-variant-2) \| `null` \| `undefined` | No |  |
-| `sandbox` | [`object`](session-update-options#update-input-sandbox) \| `null` \| `undefined` | No |  |
-| `workbench` | [`object`](session-update-options#update-input-workbench) \| `null` \| `undefined` | No |  |
-| `multiAccount` | [`object`](session-update-options#update-input-multi-account) \| `null` \| `undefined` | No | `null` removes the session override; the mode then resolves to disabled |
-| `proxyExecute` | `boolean` \| [`ToolRouterProxyExecuteConfig`](session-update-options#update-input-proxy-execute-variant-2) \| `null` \| `undefined` | No | Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it |
-| `preload` | [`object`](session-update-options#update-input-preload) \| `null` \| `undefined` | No | Replaces the stored preload; `null` removes it |
-| `search` | [`object`](session-update-options#update-input-search) \| `null` \| `undefined` | No | Replaces the search block; `null` removes it and restores the defaults |
-| `execute` | [`object`](session-update-options#update-input-execute) \| `null` \| `undefined` | No | Replaces the execute block; `null` removes it and restores the defaults |
-| `experimental` | [`ToolRouterUpdateExperimentalConfig`](session-update-options#update-input-experimental) \| `null` \| `undefined` | No | Experimental settings; `null` removes the stored block |
+| `manageConnections` | `boolean` \| [`ToolRouterUpdateManageConnectionsConfig`](/reference/sdk-reference/typescript/session-update-options#update-input-manage-connections-variant-2) \| `null` \| `undefined` | No |  |
+| `sandbox` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-sandbox) \| `null` \| `undefined` | No |  |
+| `workbench` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-workbench) \| `null` \| `undefined` | No |  |
+| `multiAccount` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-multi-account) \| `null` \| `undefined` | No | `null` removes the session override; the mode then resolves to disabled |
+| `proxyExecute` | `boolean` \| [`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/typescript/session-update-options#update-input-proxy-execute-variant-2) \| `null` \| `undefined` | No | Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it |
+| `preload` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-preload) \| `null` \| `undefined` | No | Replaces the stored preload; `null` removes it |
+| `search` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-search) \| `null` \| `undefined` | No | Replaces the search block; `null` removes it and restores the defaults |
+| `execute` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-execute) \| `null` \| `undefined` | No | Replaces the execute block; `null` removes it and restores the defaults |
+| `experimental` | [`ToolRouterUpdateExperimentalConfig`](/reference/sdk-reference/typescript/session-update-options#update-input-experimental) \| `null` \| `undefined` | No | Experimental settings; `null` removes the stored block |
 | `expectedConfigVersion` | `number` (int, min: 0) \| `false` \| `undefined` | No | Precondition sent as `expected_config_version`. A positive integer (for example `session.configVersion`) makes the update conditional, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten; the API must support the field. Omitted or `false`: no precondition (last writer wins) |
 
 <a id="update-input-instant-variant-2" />
@@ -46,8 +48,8 @@ The field types follow the exported TypeScript contract. In particular, update-t
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `toolkits` | [`object`](session-update-options#update-input-instant-variant-2-toolkits-variant-1) \| [`object`](session-update-options#update-input-instant-variant-2-toolkits-variant-2) \| `undefined` | No |  |
-| `tools` | Record&lt;`string`, [`object`](session-update-options#update-input-instant-variant-2-tools-value-variant-1) \| [`object`](session-update-options#update-input-instant-variant-2-tools-value-variant-2)&gt; \| `undefined` | No |  |
+| `toolkits` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-instant-variant-2-toolkits-variant-1) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-instant-variant-2-toolkits-variant-2) \| `undefined` | No |  |
+| `tools` | Record&lt;`string`, [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-instant-variant-2-tools-value-variant-1) \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-instant-variant-2-tools-value-variant-2)&gt; \| `undefined` | No |  |
 | `returnInstantCharge` | `boolean` \| `undefined` | No |  |
 | `returnPricesInSearch` | `boolean` \| `undefined` | No |  |
 
@@ -133,7 +135,7 @@ The field types follow the exported TypeScript contract. In particular, update-t
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) | Yes | The tags to filter the tools by, this will override the global tags |
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) | Yes | The tags to filter the tools by, this will override the global tags |
 | `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
 
 <a id="update-input-tools-value-variant-2-variant-4-tags-variant-2" />
@@ -235,10 +237,10 @@ The field types follow the exported TypeScript contract. In particular, update-t
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `permissions` | [`object`](session-update-options#update-input-experimental-permissions) \| `null` \| `undefined` | No | Per-tool elicitation permission config. `null` removes the stored block |
+| `permissions` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-experimental-permissions) \| `null` \| `undefined` | No | Per-tool elicitation permission config. `null` removes the stored block |
 | `linkUrlOverwrite` | `string` \| `null` \| `undefined` | No | Base URL override for connection link redirects. `null` removes the stored override |
 | `fastMode` | `boolean` \| `null` \| `undefined` | No | Fast search mode. `null` removes the stored override |
-| `submitFeedback` | [`object`](session-update-options#update-input-experimental-submit-feedback) \| `null` \| `undefined` | No | Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block |
+| `submitFeedback` | [`object`](/reference/sdk-reference/typescript/session-update-options#update-input-experimental-submit-feedback) \| `null` \| `undefined` | No | Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block |
 | `noElicitationSupportFallback` | `"deny"` \| `"allow"` \| `undefined` | No | Experimental. What happens to a call that needs approval when the MCP client cannot ask the user |
 | `sessionConfigId` | `string` \| `undefined` | No | Apply the latest active saved Session config (`sc_…`) from this project to this session. Replaces the session's toolkit, tool and tag access and cannot be combined with toolkits, tools or tags |
 

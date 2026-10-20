@@ -1337,7 +1337,7 @@ description: ${formatYamlFrontmatterString('Complete API reference for the Compo
 | Class | Description |
 |-------|-------------|
 ${classesTable}
-| [Session options and config](session-options) | Create input, PATCH input, and returned configuration fields. |
+| [Session options and config](/reference/sdk-reference/typescript/session-options) | Create input, PATCH input, and returned configuration fields. |
 
 ## Quick Start
 
@@ -1380,7 +1380,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   console.log('\nGeneration complete!');
   console.log(`  Output: ${OUTPUT_DIR}`);
   console.log(`  Classes: ${documented.map(d => d.name).join(', ')}`);
-  console.log(`  Files generated: ${documented.length + 2}`); // +2 for index.mdx and meta.json
+  console.log(`  Files generated: ${documented.length + 6}`); // Index, navigation, and four contract pages.
 }
 
 function isDirectRun(): boolean {

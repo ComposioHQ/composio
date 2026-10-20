@@ -18,7 +18,7 @@ const result = await composio.sessions.list();
 
 Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
-should be exposed directly; see [`ToolRouterCreateSessionConfig`](session-create-options#create-input).
+should be exposed directly; see [`ToolRouterCreateSessionConfig`](/reference/sdk-reference/typescript/session-create-options#create-input).
 
 The session's MCP config carries the session credential only when the
 MCP URL shares the origin of the configured API base URL. When it does
@@ -32,7 +32,7 @@ origins is logged, so native tools keep working.
 ```typescript
 async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
-Configuration types: [`ToolRouterCreateSessionConfig`](session-create-options#create-input)
+Configuration types: [`ToolRouterCreateSessionConfig`](/reference/sdk-reference/typescript/session-create-options#create-input)
 
 
 **Parameters**
@@ -40,7 +40,7 @@ Configuration types: [`ToolRouterCreateSessionConfig`](session-create-options#cr
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config` | [`ToolRouterCreateSessionConfig & \{ mcp: true \}`](session-create-options#create-input) | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config` | [`ToolRouterCreateSessionConfig & \{ mcp: true \}`](/reference/sdk-reference/typescript/session-create-options#create-input) | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -52,7 +52,7 @@ Configuration types: [`ToolRouterCreateSessionConfig`](session-create-options#cr
 ```typescript
 async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
-Configuration types: [`ToolRouterCreateSessionConfig`](session-create-options#create-input)
+Configuration types: [`ToolRouterCreateSessionConfig`](/reference/sdk-reference/typescript/session-create-options#create-input)
 
 
 **Parameters**
@@ -60,7 +60,7 @@ Configuration types: [`ToolRouterCreateSessionConfig`](session-create-options#cr
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config?` | [`ToolRouterCreateSessionConfig`](session-create-options#create-input) | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config?` | [`ToolRouterCreateSessionConfig`](/reference/sdk-reference/typescript/session-create-options#create-input) | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -132,7 +132,7 @@ origins is logged, so native tools keep working.
 ```typescript
 async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
-Configuration types: [`CustomTool`](session-create-options#custom-tool), [`CustomToolkit`](session-create-options#custom-toolkit)
+Configuration types: [`CustomTool`](/reference/sdk-reference/typescript/session-create-options#custom-tool), [`CustomToolkit`](/reference/sdk-reference/typescript/session-create-options#custom-toolkit)
 
 
 **Parameters**
@@ -152,7 +152,7 @@ Configuration types: [`CustomTool`](session-create-options#custom-tool), [`Custo
 ```typescript
 async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
-Configuration types: [`CustomTool`](session-create-options#custom-tool), [`CustomToolkit`](session-create-options#custom-toolkit)
+Configuration types: [`CustomTool`](/reference/sdk-reference/typescript/session-create-options#custom-tool), [`CustomToolkit`](/reference/sdk-reference/typescript/session-create-options#custom-toolkit)
 
 
 **Parameters**

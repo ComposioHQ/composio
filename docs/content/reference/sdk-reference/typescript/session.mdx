@@ -7,7 +7,7 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `config` | `Config` ([`ToolRouterSessionConfig`](session-config#returned-config)) | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
+| `config` | `Config` ([`ToolRouterSessionConfig`](/reference/sdk-reference/typescript/session-config#returned-config)) | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
 | `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
 | `experimental` | `SessionExperimental` |  |
 | `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
@@ -376,18 +376,18 @@ successful response, and the updated `config` is returned.
 ```typescript
 async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionConfig>
 ```
-Configuration types: [`ToolRouterUpdateSessionConfig`](session-update-options#update-input), [`ToolRouterSessionConfig`](session-config#returned-config)
+Configuration types: [`ToolRouterUpdateSessionConfig`](/reference/sdk-reference/typescript/session-update-options#update-input), [`ToolRouterSessionConfig`](/reference/sdk-reference/typescript/session-config#returned-config)
 
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `config` | [`ToolRouterUpdateSessionConfig`](session-update-options#update-input) |
+| `config` | [`ToolRouterUpdateSessionConfig`](/reference/sdk-reference/typescript/session-update-options#update-input) |
 | `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
-[`Promise<ToolRouterSessionConfig>`](session-config#returned-config)
+[`Promise<ToolRouterSessionConfig>`](/reference/sdk-reference/typescript/session-config#returned-config)
 
 ---

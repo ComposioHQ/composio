@@ -3,7 +3,9 @@ title: "Session returned config"
 description: "Server-returned Session configuration and its nested field shapes."
 ---
 
-[All Session contracts](session-options)
+Generated from `@composio/core@0.25.0`.
+
+[All Session contracts](/reference/sdk-reference/typescript/session-options)
 
 ## Returned config
 
@@ -18,19 +20,19 @@ import type { ToolRouterSessionConfig } from '@composio/core';
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `user_id` | `string` | Yes | User identifier for this session |
-| `toolkits` | `undefined` \| [`toolkits.variant.2`](session-config#returned-config-toolkits-variant-2) \| [`toolkits.variant.3`](session-config#returned-config-toolkits-variant-3) \| [`toolkits.variant.4`](session-config#returned-config-toolkits-variant-4) | No | Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval |
+| `toolkits` | `undefined` \| [`toolkits.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-toolkits-variant-2) \| [`toolkits.variant.3`](/reference/sdk-reference/typescript/session-config#returned-config-toolkits-variant-3) \| [`toolkits.variant.4`](/reference/sdk-reference/typescript/session-config#returned-config-toolkits-variant-4) | No | Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval |
 | `auth_configs` | `undefined` \| Record&lt;`string`, `string`&gt; | No | Auth config overrides per toolkit |
-| `instant` | `false` \| [`instant.variant.2`](session-config#returned-config-instant-variant-2) | Yes | Instant usage settings. False disables instant usage; an object permits it subject to project permission and session toolkit and tool restrictions. |
-| `manage_connections` | `undefined` \| [`manage.connections.variant.2`](session-config#returned-config-manage-connections-variant-2) | No | Manage connections configuration |
-| `tools` | `undefined` \| Record&lt;`string`, [`tools.variant.2.value.variant.1`](session-config#returned-config-tools-variant-2-value-variant-1) \| [`tools.variant.2.value.variant.2`](session-config#returned-config-tools-variant-2-value-variant-2) \| [`tools.variant.2.value.variant.3`](session-config#returned-config-tools-variant-2-value-variant-3) \| [`tools.variant.2.value.variant.4`](session-config#returned-config-tools-variant-2-value-variant-4)&gt; | No | Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval |
-| `tags` | `undefined` \| [`tags.variant.2`](session-config#returned-config-tags-variant-2) | No | MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied. |
-| `workbench` | `undefined` \| [`workbench.variant.2`](session-config#returned-config-workbench-variant-2) | No | Workbench configuration |
-| `multi_account` | `undefined` \| [`multi.account.variant.2`](session-config#returned-config-multi-account-variant-2) | No | Multi-account configuration for this session. |
-| `proxy_execute` | `undefined` \| [`proxy.execute.variant.2`](session-config#returned-config-proxy-execute-variant-2) | No | Proxy execute configuration for this session. Omitted when not set. |
-| `preload` | [`preload`](session-config#returned-config-preload) | Yes | Preload configuration. Explicit slugs are returned as an array; dynamic preload is returned as "all". |
+| `instant` | `false` \| [`instant.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-instant-variant-2) | Yes | Instant usage settings. False disables instant usage; an object permits it subject to project permission and session toolkit and tool restrictions. |
+| `manage_connections` | `undefined` \| [`manage.connections.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-manage-connections-variant-2) | No | Manage connections configuration |
+| `tools` | `undefined` \| Record&lt;`string`, [`tools.variant.2.value.variant.1`](/reference/sdk-reference/typescript/session-config#returned-config-tools-variant-2-value-variant-1) \| [`tools.variant.2.value.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-tools-variant-2-value-variant-2) \| [`tools.variant.2.value.variant.3`](/reference/sdk-reference/typescript/session-config#returned-config-tools-variant-2-value-variant-3) \| [`tools.variant.2.value.variant.4`](/reference/sdk-reference/typescript/session-config#returned-config-tools-variant-2-value-variant-4)&gt; | No | Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval |
+| `tags` | `undefined` \| [`tags.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-tags-variant-2) | No | MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied. |
+| `workbench` | `undefined` \| [`workbench.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-workbench-variant-2) | No | Workbench configuration |
+| `multi_account` | `undefined` \| [`multi.account.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-multi-account-variant-2) | No | Multi-account configuration for this session. |
+| `proxy_execute` | `undefined` \| [`proxy.execute.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-proxy-execute-variant-2) | No | Proxy execute configuration for this session. Omitted when not set. |
+| `preload` | [`preload`](/reference/sdk-reference/typescript/session-config#returned-config-preload) | Yes | Preload configuration. Explicit slugs are returned as an array; dynamic preload is returned as "all". |
 | `connected_accounts` | `undefined` \| Record&lt;`string`, Array&lt;`string`&gt;&gt; | No | Per-toolkit connected account overrides (array of nano-IDs). Multi-account sessions can pin more than one account per toolkit; otherwise length is 1. |
-| `search` | [`search`](session-config#returned-config-search) | Yes | Search helper configuration |
-| `execute` | [`execute`](session-config#returned-config-execute) | Yes | Execute helper configuration |
+| `search` | [`search`](/reference/sdk-reference/typescript/session-config#returned-config-search) | Yes | Search helper configuration |
+| `execute` | [`execute`](/reference/sdk-reference/typescript/session-config#returned-config-execute) | Yes | Execute helper configuration |
 
 <a id="returned-config-toolkits-variant-2" />
 
@@ -64,8 +66,8 @@ import type { ToolRouterSessionConfig } from '@composio/core';
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `toolkits` | `undefined` \| [`instant.variant.2.toolkits.variant.2`](session-config#returned-config-instant-variant-2-toolkits-variant-2) \| [`instant.variant.2.toolkits.variant.3`](session-config#returned-config-instant-variant-2-toolkits-variant-3) | No | Toolkits eligible for instant usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies. |
-| `tools` | `undefined` \| Record&lt;`string`, [`instant.variant.2.tools.variant.2.value.variant.1`](session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-1) \| [`instant.variant.2.tools.variant.2.value.variant.2`](session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-2)&gt; | No | Per-toolkit enabled or disabled lists that restrict instant usage. Toolkits absent from this map have no additional tool restriction. |
+| `toolkits` | `undefined` \| [`instant.variant.2.toolkits.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-instant-variant-2-toolkits-variant-2) \| [`instant.variant.2.toolkits.variant.3`](/reference/sdk-reference/typescript/session-config#returned-config-instant-variant-2-toolkits-variant-3) | No | Toolkits eligible for instant usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies. |
+| `tools` | `undefined` \| Record&lt;`string`, [`instant.variant.2.tools.variant.2.value.variant.1`](/reference/sdk-reference/typescript/session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-1) \| [`instant.variant.2.tools.variant.2.value.variant.2`](/reference/sdk-reference/typescript/session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-2)&gt; | No | Per-toolkit enabled or disabled lists that restrict instant usage. Toolkits absent from this map have no additional tool restriction. |
 | `return_instant_charge` | `false` \| `true` | Yes | Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only. |
 | `return_prices_in_search` | `false` \| `true` | Yes | Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false. |
 
@@ -136,7 +138,7 @@ import type { ToolRouterSessionConfig } from '@composio/core';
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tags` | [`tools.variant.2.value.variant.3.tags`](session-config#returned-config-tools-variant-2-value-variant-3-tags) | Yes |  |
+| `tags` | [`tools.variant.2.value.variant.3.tags`](/reference/sdk-reference/typescript/session-config#returned-config-tools-variant-2-value-variant-3-tags) | Yes |  |
 | `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
 
 <a id="returned-config-tools-variant-2-value-variant-3-tags" />
