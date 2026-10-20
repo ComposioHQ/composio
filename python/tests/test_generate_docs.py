@@ -191,3 +191,57 @@ def test_generated_examples_do_not_keep_nested_markdown_fences():
         'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
         "print(result)"
     ]
+
+
+def test_session_signature_preserves_keyword_only_arguments_and_defaults():
+    from composio.core.models.tool_router_session import ToolRouterSession
+
+    generate_docs = load_generate_docs_module()
+    signature = generate_docs.session_method_signature(ToolRouterSession.execute)
+    node = ast.parse(signature).body[0]
+    assert isinstance(node, ast.FunctionDef)
+    assert [arg.arg for arg in node.args.args] == ["tool_slug"]
+    assert [arg.arg for arg in node.args.kwonlyargs] == [
+        "arguments",
+        "account",
+        "input_responses",
+        "request_state",
+    ]
+    assert all(isinstance(default, ast.Constant) for default in node.args.kw_defaults)
+
+
+def test_session_schema_tables_preserve_optional_nullable_and_model_references():
+    generate_docs = load_generate_docs_module()
+    table = generate_docs.render_schema_tables(
+        {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+                "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}},
+                "error": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+            },
+            "$defs": {
+                "Item": {
+                    "type": "object",
+                    "required": ["value"],
+                    "properties": {"value": {"enum": ["completed", "failed"]}},
+                }
+            },
+        }
+    )
+    rows = [line for line in table.splitlines() if line.startswith("| `")]
+    assert rows == [
+        "| `items` | `list[Item]` | yes |",
+        "| `error` | `string \\| null` | no |",
+        '| `value` | `"completed" \\| "failed"` | yes |',
+    ]
+
+
+def test_session_result_schema_uses_python_attributes_not_wire_aliases():
+    generate_docs = load_generate_docs_module()
+    schema = generate_docs.session_result_schemas()["ToolRouterSessionSearchResponse"]
+    properties = schema["$defs"]["ToolSchemas"]["properties"]
+    assert "has_full_schema" in properties
+    assert "schema_ref" in properties
+    assert "hasFullSchema" not in properties
+    assert "schemaRef" not in properties

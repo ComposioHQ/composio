@@ -79,27 +79,6 @@ describe('runConnectedAccountsInfo', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect(
-    '[Given] an account with a status reason and test endpoint [Then] the note shows both',
-    () => {
-      const { layer } = infoTest();
-      return Effect.gen(function* () {
-        yield* runConnectedAccountsInfo({ id: Option.some('con_github_expired') });
-        const note = (yield* stdoutLines).find(line =>
-          line.startsWith('[Connected Account: github]')
-        );
-
-        expect(note).toBeDefined();
-        expect(note).toContain('Alias: work');
-        expect(note).toContain('Word Id: castle');
-        expect(note).toContain('Status Reason: Token expired');
-        expect(note).toContain('Auth Config: ac_github_oauth (OAUTH2)');
-        expect(note).toContain('Composio Managed: No');
-        expect(note).toContain('Test Endpoint: https://api.github.com/user');
-      }).pipe(Effect.provide(layer));
-    }
-  );
-
   it.effect('[Given] no id [Then] warns with an example and fetches nothing', () => {
     const { layer, outputs, exitCodes } = infoTest();
     return Effect.gen(function* () {

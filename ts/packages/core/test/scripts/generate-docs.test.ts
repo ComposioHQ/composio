@@ -12,6 +12,7 @@ import {
   isParameterRequired,
   parseSourceSignatureTypesAtLine,
   runTypeDocCommand,
+  renderSessionSchemaTable,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
@@ -280,5 +281,38 @@ writeFileSync(outputJson, args.join('\\n'));
     expect(args[args.indexOf('--displayBasePath') + 1]).toBe(modelsDir);
     expect(args.some(arg => arg.includes('npx'))).toBe(false);
     expect(args.slice(-2)).toEqual(['src/composio.ts', 'src/models/a b.ts']);
+  });
+});
+
+describe('Session result contracts', () => {
+  it('keeps nullable, optional, array, and dictionary fields in generated tables', () => {
+    const table = renderSessionSchemaTable({
+      type: 'object',
+      required: ['items'],
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['value'],
+            properties: { value: { type: ['string', 'null'] } },
+          },
+        },
+        byKey: {
+          type: 'object',
+          additionalProperties: {
+            type: 'object',
+            properties: { enabled: { const: false } },
+          },
+        },
+      },
+    });
+    const rows = table.split('\n').slice(2);
+    expect(rows).toEqual([
+      '| `items` | `Array<object>` | yes |',
+      '| `items[].value` | `string \\| null` | yes |',
+      '| `byKey` | `Record<string, object>` | no |',
+      '| `byKey[key].enabled` | `false` | no |',
+    ]);
   });
 });

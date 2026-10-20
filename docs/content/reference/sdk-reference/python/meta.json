@@ -8,6 +8,7 @@
     "connected-accounts",
     "auth-configs",
     "mcp",
-    "session"
+    "session",
+    "session-results"
   ]
 }

@@ -20,6 +20,7 @@
     "usage",
     "webhook-endpoints",
     "webhooks",
-    "webhook-subscriptions"
+    "webhook-subscriptions",
+    "session-results"
   ]
 }
