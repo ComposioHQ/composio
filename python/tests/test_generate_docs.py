@@ -236,21 +236,28 @@ def test_nested_type_annotations_keep_their_meaning():
     assert eval(rendered, vars(typing)) == typing.Unpack[typing.Tuple[str, int]]
 
 
-@pytest.mark.parametrize("method", [ToolRouter.create, ToolRouter.use])
-def test_session_method_examples_are_valid_and_call_supported_signatures(method):
+@pytest.mark.parametrize("method_name", ["create", "use"])
+def test_session_method_examples_are_valid_and_call_supported_signatures(method_name):
     generate_docs = load_generate_docs_module()
-    parsed = generate_docs.parse_docstring(method.__doc__)
-    assert parsed["examples"]
-    example = ast.parse(parsed["examples"][0])
+    module = generate_docs.load_griffe().load(
+        "composio.core.models.tool_router",
+        search_paths=[str(generate_docs.PACKAGE_DIR)],
+    )
+    info = generate_docs.extract_class_info(
+        module.members["ToolRouter"], "ToolRouter", {"access": "composio.sessions"}
+    )
+    method = next(item for item in info["methods"] if item["name"] == method_name)
+    assert method["examples"]
     calls = [
         node
-        for node in ast.walk(example)
+        for example in method["examples"]
+        for node in ast.walk(ast.parse(example))
         if isinstance(node, ast.Call)
-        and ast.unparse(node.func) == f"composio.sessions.{method.__name__}"
+        and ast.unparse(node.func) == f"composio.sessions.{method_name}"
     ]
     assert calls
     for call in calls:
-        inspect.signature(method).bind(
+        inspect.signature(getattr(ToolRouter, method_name)).bind(
             None,
             *[None for _ in call.args],
             **{keyword.arg: None for keyword in call.keywords},

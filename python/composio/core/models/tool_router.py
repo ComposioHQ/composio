@@ -592,10 +592,10 @@ class ToolRouterSessionExperimental:
 
 class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
     """
-    ToolRouter class for managing tool routing sessions.
+    Create and resume sessions through ``composio.sessions``.
 
-    Provides functionality to create isolated tool router sessions with provider-wrapped tools,
-    authorization helpers, and connection management.
+    Sessions provide provider-wrapped tools, authorization helpers, and
+    connection management.
 
     Example:
         ```python
@@ -604,7 +604,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         composio = Composio()
 
         # Create a session for a user
-        session = composio.tool_router.create(
+        session = composio.sessions.create(
             user_id='user_123',
             manage_connections=True
         )
@@ -994,24 +994,28 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         Example:
             ```python
+            from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+
+            composio = Composio()
+
             # Create a basic session
-            session = tool_router.create(user_id='user_123')
+            session = composio.sessions.create(user_id='user_123')
 
             # Create a session with specific toolkits
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 toolkits=['github', 'slack']
             )
 
             # Create a direct-tools session when all needed tools are known upfront
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 session_preset=SESSION_PRESET_DIRECT_TOOLS,
                 toolkits=['github']
             )
 
             # Create a session with per-toolkit tool configuration
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 tools={
                     'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],  # List shorthand
@@ -1021,13 +1025,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Create a session with global tag filtering
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 tags=['readOnlyHint', 'createHint']
             )
 
             # Create a session with toolkit-specific tag filtering (array format)
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': ['readOnlyHint']},
@@ -1036,7 +1040,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Create a session with toolkit-specific tag filtering (object format)
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': {'enable': ['readOnlyHint']}},
@@ -1045,7 +1049,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Create a session with connection management
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 manage_connections={
                     'enable': True,
@@ -1055,7 +1059,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Create a session with sandbox disabled
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 sandbox={
                     'enable': False
@@ -1063,7 +1067,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
             # Create a session with sandbox config
-            session = tool_router.create(
+            session = composio.sessions.create(
                 user_id='user_123',
                 sandbox={
                     'enable_proxy_execution': False,
@@ -1414,10 +1418,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             composio = Composio()
 
             # Use an existing session
-            session = composio.use('session_123')
+            session = composio.sessions.use('session_123')
 
             # Use an existing session with custom tools
-            session = composio.use(
+            session = composio.sessions.use(
                 'session_123',
                 custom_tools=[my_tool],
                 custom_toolkits=[my_toolkit],
