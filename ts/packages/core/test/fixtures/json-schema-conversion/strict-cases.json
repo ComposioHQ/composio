@@ -1116,6 +1116,117 @@
       ]
     },
     {
+      "id": "recursive-nullable-union-gets-null-branch",
+      "description": "A `nullable: true` union that refers back to itself gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          },
+          "b": {
+            "$ref": "#/$defs/B"
+          }
+        },
+        "required": ["a", "b"],
+        "$defs": {
+          "A": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/A"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "B": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Nullable"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "Nullable": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/A"
+            },
+            "b": {
+              "$ref": "#/$defs/B"
+            }
+          },
+          "required": ["a", "b"],
+          "$defs": {
+            "A": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/A"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "B": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Nullable"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "Nullable": {
+              "type": ["string", "null"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "$defs.A",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "$defs.B",
+          "reason": "nullable-converted"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "a": null,
+            "b": null
+          },
+          "output": {
+            "a": null,
+            "b": null
+          }
+        }
+      ]
+    },
+    {
       "id": "enum-values-are-data-not-keywords",
       "description": "Keys inside enum/const values are data and must not be treated as keywords.",
       "schema": {

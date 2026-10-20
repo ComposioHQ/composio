@@ -394,6 +394,10 @@ class _Walker:
         self.total_changes = 0
         self.unsupported: list[StrictSchemaIncompatibility] = []
         self.null_check = _NullCheck(root, strict_output=True)
+        # A ``$ref`` from a ``nullable: true`` node can lead back to that node,
+        # whose source still reads as accepting null, so the fold treats every
+        # ``$ref`` as rejecting null. This costs at most a redundant null branch.
+        self.null_check_without_refs = _NullCheck({}, strict_output=True)
         # Resolved references, re-checked against the rewritten schema.
         self.references: list[tuple[str, str]] = []
 
@@ -490,7 +494,7 @@ class _Walker:
         if "nullable" not in value:
             return normalized
         widened = (
-            _widen_to_nullable(normalized, self.null_check)
+            _widen_to_nullable(normalized, self.null_check_without_refs)
             if value["nullable"] is True
             else normalized
         )

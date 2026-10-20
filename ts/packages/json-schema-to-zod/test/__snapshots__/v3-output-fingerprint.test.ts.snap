@@ -5185,6 +5185,42 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
         "catchall": {
           "typeName": "ZodNever",
         },
+        "guarded": true,
+        "shape": {
+          "a": {
+            "guarded": true,
+            "typeName": "ZodAny",
+          },
+          "b": {
+            "guarded": true,
+            "typeName": "ZodAny",
+          },
+        },
+        "typeName": "ZodObject",
+        "unknownKeys": "strict",
+      },
+      "jsonSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "properties": {
+          "a": {},
+          "b": {},
+        },
+        "required": [
+          "a",
+          "b",
+        ],
+        "type": "object",
+      },
+    },
+    "id": "recursive-nullable-union-gets-null-branch",
+  },
+  {
+    "fingerprint": {
+      "def": {
+        "catchall": {
+          "typeName": "ZodNever",
+        },
         "shape": {
           "opts": {
             "left": {

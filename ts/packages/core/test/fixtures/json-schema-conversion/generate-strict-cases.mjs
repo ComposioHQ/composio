@@ -178,6 +178,17 @@ const cases = [
     ),
   ],
   [
+    'recursive-nullable-union-gets-null-branch',
+    'A `nullable: true` union that refers back to itself gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.',
+    obj({ a: { $ref: '#/$defs/A' }, b: { $ref: '#/$defs/B' } }, ['a', 'b'], {
+      $defs: {
+        A: { anyOf: [{ $ref: '#/$defs/A' }, { type: 'string' }], nullable: true },
+        B: { anyOf: [{ $ref: '#/$defs/Nullable' }, { type: 'string' }], nullable: true },
+        Nullable: { type: ['string', 'null'] },
+      },
+    }),
+  ],
+  [
     'enum-values-are-data-not-keywords',
     'Keys inside enum/const values are data and must not be treated as keywords.',
     obj({ opts: { enum: [{ default: 1, properties: {} }, null] } }, ['opts']),
@@ -563,6 +574,9 @@ const cases = [
   ],
 ];
 const argumentCases = {
+  'recursive-nullable-union-gets-null-branch': [
+    { input: { a: null, b: null }, output: { a: null, b: null } },
+  ],
   'openapi-nullable-folded': [
     {
       input: {

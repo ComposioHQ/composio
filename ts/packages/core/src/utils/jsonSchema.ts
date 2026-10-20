@@ -873,6 +873,8 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
 
   const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
   const acceptsNullInOutput = createNullCheck(root, true);
+  // Folding `nullable` counts a `$ref` as rejecting null: it may lead back to the node.
+  const acceptsNullWithoutRefs = createNullCheck({}, true);
 
   function walkChildren(
     node: Record<string, unknown>,
@@ -981,7 +983,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
     const normalized = normalizeNode(node, mode, depth, path);
     if (!('nullable' in value)) return normalized;
     const widened =
-      value.nullable === true ? widenToNullable(normalized, acceptsNullInOutput) : normalized;
+      value.nullable === true ? widenToNullable(normalized, acceptsNullWithoutRefs) : normalized;
     recordChange(
       widened === normalized
         ? { path, reason: 'unsupported-keyword-stripped', detail: 'keyword "nullable" removed' }
