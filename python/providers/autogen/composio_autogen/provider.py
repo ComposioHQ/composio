@@ -130,7 +130,7 @@ class AutogenProvider(
         :param tools: List of tools to register.
         """
         for tool in tools:
-            # The declaration comes from the function signature, as before.
+            # The model-facing declaration is derived from the function signature.
             caller.register_for_llm(name=tool.name, description=tool.description)(
                 tool._func
             )

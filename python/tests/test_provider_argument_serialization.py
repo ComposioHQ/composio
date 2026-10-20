@@ -791,27 +791,10 @@ def test_matrix_rejects_invalid_dynamic_arguments(row: str, case: str):
 # ---------------------------------------------------------------------------
 
 
-def _run_adk(input_parameters: t.Dict[str, t.Any], arguments: t.Dict[str, t.Any]):
-    from unittest.mock import MagicMock
-
-    provider = _matrix_provider("google_adk")
-    received: t.List[t.Dict[str, t.Any]] = []
-
-    def execute_tool(slug: str, arguments: t.Dict[str, t.Any]):
-        received.append(arguments)
-        return {"successful": True, "data": {}, "error": None}
-
-    wrapped = provider.wrap_tool(_make_tool(input_parameters), execute_tool)
-    context = MagicMock()
-    context.tool_confirmation = None
-    result = asyncio.run(wrapped.run_async(args=arguments, tool_context=context))
-    return received, result
-
-
 def test_google_adk_returns_validation_errors_without_executing():
     input_parameters, arguments = REJECTION_CASES["pattern_property_type"]
 
-    received, result = _run_adk(input_parameters, arguments)
+    received, result = _matrix_call("google_adk", input_parameters, arguments)
 
     assert received == []
     assert result["successful"] is False
@@ -820,7 +803,8 @@ def test_google_adk_returns_validation_errors_without_executing():
 
 
 def test_google_adk_keeps_tool_context_out_of_arguments():
-    received, _ = _run_adk(
+    received, _ = _matrix_call(
+        "google_adk",
         {"type": "object", "title": "RootFreeForm", "properties": {}},
         {"custom": {"nested": True}},
     )
