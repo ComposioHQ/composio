@@ -28,6 +28,10 @@ class _ComposioFunctionTool(FunctionTool):
     the tool schema admits through `additionalProperties` or
     `patternProperties` never reach the function. The function body validates
     the full mapping against the tool schema instead.
+
+    ADK reserves its context parameter and `input_stream` for objects it
+    injects. Those names are never forwarded: neither a value the model sent
+    under them nor ADK's own objects reach the tool backend.
     """
 
     def _prepare_invocation_args(
@@ -36,7 +40,12 @@ class _ComposioFunctionTool(FunctionTool):
         tool_context: "ToolContext",
     ) -> t.Dict[str, t.Any]:
         prepared = super()._prepare_invocation_args(args, tool_context)
-        return {**args, **prepared}
+        reserved = getattr(self, "_ignore_params", ("tool_context", "input_stream"))
+        return {
+            key: value
+            for key, value in {**args, **prepared}.items()
+            if key not in reserved
+        }
 
 
 class GoogleAdkProvider(

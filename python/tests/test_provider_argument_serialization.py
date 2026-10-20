@@ -869,6 +869,40 @@ def test_google_adk_keeps_tool_context_out_of_arguments():
     assert received == [{"custom": {"nested": True}}]
 
 
+def test_google_adk_does_not_forward_reserved_argument_names():
+    # ADK reserves `tool_context` and `input_stream`; a model-supplied value
+    # for either must not reach the tool backend on a free-form root.
+    received, _ = _matrix_call(
+        "google_adk",
+        {"type": "object", "title": "RootFreeForm", "properties": {}},
+        {"tool_context": {"forged": True}, "input_stream": "x", "data": 1},
+    )
+
+    assert received == [{"data": 1}]
+
+
+def test_google_adk_never_sends_its_context_object_to_the_backend():
+    # A schema property named like ADK's context parameter makes ADK inject
+    # its own ToolContext under that name; it must never be executed with.
+    received, result = _matrix_call(
+        "google_adk",
+        {
+            "type": "object",
+            "title": "ReservedProperty",
+            "properties": {
+                "query": {"type": "string"},
+                # Untyped, so validation alone would accept any object.
+                "tool_context": {"description": "A tool argument"},
+            },
+            "required": ["query", "tool_context"],
+        },
+        {"query": "q", "tool_context": "model value"},
+    )
+
+    assert received == []
+    assert "tool_context" in result["error"]
+
+
 # ---------------------------------------------------------------------------
 # AutoGen: both runtime paths share one validated execution (SUP-1643).
 # ---------------------------------------------------------------------------
