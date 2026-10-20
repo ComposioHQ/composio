@@ -27,6 +27,16 @@
   `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
   ID is stored, the header is not sent. It is never sent to the backend API.
 
+- These commands now exit 1 instead of 0 when their input is missing or
+  invalid, printing the same message and example on stderr and nothing on
+  stdout. No request is sent.
+  - `composio dev auth-configs info` without an `<id>`
+  - `composio dev auth-configs create` with `--custom-credentials` that is not
+    a JSON object
+  - `composio tools info` without a `<slug>`
+  - `composio dev triggers create` without a `<trigger-name>`, or with
+    `--trigger-config` that is not a JSON object
+  - `composio dev triggers enable` without an `<id>`
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,
