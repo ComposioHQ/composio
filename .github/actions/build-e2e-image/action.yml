@@ -6,8 +6,11 @@ inputs:
     description: 'Path to the Dockerfile, relative to the repository root'
     required: true
   tag:
-    description: 'Tag for the image loaded into the local Docker daemon'
-    required: true
+    description: >-
+      Tag for the image loaded into the local Docker daemon. Unused (nothing is
+      loaded) when cache-only is 'true'.
+    required: false
+    default: ''
   cache-scope:
     description: 'GitHub Actions cache scope. Use one scope per image variant so matrix jobs do not overwrite each other'
     required: true
@@ -19,6 +22,15 @@ inputs:
       to save every layer.
     required: false
     default: ''
+  cache-only:
+    description: >-
+      'true' skips the final image build and only refreshes the cache-target
+      stage in the GitHub Actions cache. For prewarm callers whose checkout
+      cannot provide the workspace artifacts the later stages COPY (host-built
+      dist under ts/packages), so the final build would fail anyway. Only
+      meaningful together with cache-target.
+    required: false
+    default: 'false'
   build-args:
     description: 'Newline-separated KEY=VALUE build arguments'
     required: false
@@ -29,9 +41,12 @@ inputs:
     default: ''
   build-retries:
     description: >-
-      Number of attempts for each Buildx build. Base-image resolution from ECR
-      Public can fail with HTTP 429 anonymous rate limits, so failed builds are
-      retried with linear backoff.
+      Number of build attempts per build: '1', '2' or '3' (one
+      build-push-action step per attempt). Base-image resolution from ECR
+      Public can fail with HTTP 429 anonymous rate limits on shared runner
+      IPs; failed builds are retried after a delay, and a final retry also
+      overrides BASE_REGISTRY to mirror.gcr.io, whose Docker Official Image
+      digests are byte-identical to the pins in ts/e2e-tests/_utils/Dockerfile.*.
     required: false
     default: '3'
 
@@ -42,119 +57,158 @@ runs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-    - name: Build and cache the ${{ inputs.cache-target }} stage (with retries)
+    - name: Validate build-retries
+      if: inputs.build-retries != '1' && inputs.build-retries != '2' && inputs.build-retries != '3'
+      shell: bash
+      run: |
+        echo "::error::build-retries must be '1', '2' or '3', got '${{ inputs.build-retries }}'"
+        exit 1
+
+    # The builds must stay inside `uses:` steps: docker/build-push-action
+    # receives the GitHub cache credentials (ACTIONS_RUNTIME_TOKEN and the
+    # cache URL) that buildx's `type=gha` backend needs and that plain `run:`
+    # steps do not get, so raw `docker buildx build` here silently skips cache
+    # import and export. Retries are chained on the previous attempt's
+    # `outcome`; `continue-on-error` is expression-driven so a final attempt
+    # still fails the action. The last retry also overrides BASE_REGISTRY to
+    # mirror.gcr.io (build args are last-wins): its digest-pinned manifests are
+    # byte-identical to the ECR Public pins, so persistent ECR 429s can be
+    # cleared from a different IP pool.
+
+    - name: Build and cache the ${{ inputs.cache-target }} stage (attempt 1)
+      id: cache-stage-attempt-1
       if: inputs.cache-target != ''
-      shell: bash
+      continue-on-error: ${{ inputs.build-retries != '1' }}
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
       env:
-        DOCKERFILE: ${{ inputs.dockerfile }}
-        CACHE_TARGET: ${{ inputs.cache-target }}
-        CACHE_SCOPE: ${{ inputs.cache-scope }}
-        BUILD_ARGS: ${{ inputs.build-args }}
-        BUILD_RETRIES: ${{ inputs.build-retries }}
-      run: |
-        set -euo pipefail
-
-        if ! [[ "$BUILD_RETRIES" =~ ^[1-9][0-9]*$ ]]; then
-          echo "::error::build-retries must be a positive integer, got '${BUILD_RETRIES}'"
-          exit 1
-        fi
-
-        args=(--file "$DOCKERFILE" --target "$CACHE_TARGET" --output type=cacheonly)
-        args+=(--cache-from "type=gha,scope=${CACHE_SCOPE}")
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        target: ${{ inputs.cache-target }}
+        build-args: ${{ inputs.build-args }}
+        provenance: false
+        outputs: type=cacheonly
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
         # `ignore-error` keeps a cache-service outage from failing the build.
-        args+=(--cache-to "type=gha,scope=${CACHE_SCOPE},mode=max,ignore-error=true")
-        args+=(--provenance=false)
-        while IFS= read -r line; do
-          [ -n "$line" ] || continue
-          case "$line" in \#*) continue ;; esac
-          args+=(--build-arg "$line")
-        done <<<"$BUILD_ARGS"
+        cache-to: type=gha,scope=${{ inputs.cache-scope }},mode=max,ignore-error=true
 
-        # ECR Public anonymous pull limits (HTTP 429, shared per runner IP) are
-        # why the build is retried with linear backoff.
-        attempt=1
-        while [ "$attempt" -le "$BUILD_RETRIES" ]; do
-          attempt_args=("${args[@]}")
-          if [ "$attempt" -eq "$BUILD_RETRIES" ]; then
-            # mirror.gcr.io serves byte-identical digest-pinned manifests from a
-            # different IP pool, so a final attempt there can clear persistent ECR 429s.
-            attempt_args+=(--build-arg "BASE_REGISTRY=mirror.gcr.io/library")
-          fi
-          set +e
-          docker buildx build "${attempt_args[@]}" .
-          status=$?
-          set -e
-          if [ "$status" -eq 0 ]; then
-            exit 0
-          fi
-          if [ "$attempt" -lt "$BUILD_RETRIES" ]; then
-            backoff=$((10 * attempt))
-            echo "::warning::docker buildx build attempt ${attempt}/${BUILD_RETRIES} failed with exit code ${status}; retrying in ${backoff}s"
-            sleep "$backoff"
-          fi
-          attempt=$((attempt + 1))
-        done
-        echo "::error::docker buildx build failed after ${BUILD_RETRIES} attempts; base-image resolution may still be rate-limited by ECR Public"
-        exit "$status"
-
-    - name: Build ${{ inputs.tag }} (with retries)
+    - name: Wait before retrying the ${{ inputs.cache-target }} stage
+      if: inputs.cache-target != '' && steps.cache-stage-attempt-1.outcome == 'failure' && inputs.build-retries != '1'
       shell: bash
+      run: sleep 10
+
+    - name: Build and cache the ${{ inputs.cache-target }} stage (attempt 2)
+      id: cache-stage-attempt-2
+      if: inputs.cache-target != '' && steps.cache-stage-attempt-1.outcome == 'failure' && inputs.build-retries != '1'
+      continue-on-error: ${{ inputs.build-retries == '3' }}
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
       env:
-        DOCKERFILE: ${{ inputs.dockerfile }}
-        TAG: ${{ inputs.tag }}
-        CACHE_TARGET: ${{ inputs.cache-target }}
-        CACHE_SCOPE: ${{ inputs.cache-scope }}
-        BUILD_ARGS: ${{ inputs.build-args }}
-        LABELS: ${{ inputs.labels }}
-        BUILD_RETRIES: ${{ inputs.build-retries }}
-      run: |
-        set -euo pipefail
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        target: ${{ inputs.cache-target }}
+        build-args: ${{ inputs.build-args }}
+        provenance: false
+        outputs: type=cacheonly
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        # `ignore-error` keeps a cache-service outage from failing the build.
+        cache-to: type=gha,scope=${{ inputs.cache-scope }},mode=max,ignore-error=true
 
-        if ! [[ "$BUILD_RETRIES" =~ ^[1-9][0-9]*$ ]]; then
-          echo "::error::build-retries must be a positive integer, got '${BUILD_RETRIES}'"
-          exit 1
-        fi
+    - name: Wait before the final ${{ inputs.cache-target }} stage attempt
+      if: inputs.cache-target != '' && steps.cache-stage-attempt-2.outcome == 'failure' && inputs.build-retries == '3'
+      shell: bash
+      run: sleep 20
 
-        args=(--file "$DOCKERFILE" --tag "$TAG" --load --provenance=false)
-        args+=(--cache-from "type=gha,scope=${CACHE_SCOPE}")
-        if [ -z "$CACHE_TARGET" ]; then
-          # `ignore-error` keeps a cache-service outage from failing the build.
-          args+=(--cache-to "type=gha,scope=${CACHE_SCOPE},mode=max,ignore-error=true")
-        fi
-        while IFS= read -r line; do
-          [ -n "$line" ] || continue
-          case "$line" in \#*) continue ;; esac
-          args+=(--label "$line")
-        done <<<"$LABELS"
-        while IFS= read -r line; do
-          [ -n "$line" ] || continue
-          case "$line" in \#*) continue ;; esac
-          args+=(--build-arg "$line")
-        done <<<"$BUILD_ARGS"
+    - name: Build and cache the ${{ inputs.cache-target }} stage (final attempt, mirror.gcr.io fallback)
+      if: inputs.cache-target != '' && steps.cache-stage-attempt-2.outcome == 'failure' && inputs.build-retries == '3'
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      env:
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        target: ${{ inputs.cache-target }}
+        build-args: |
+          ${{ inputs.build-args }}
+          BASE_REGISTRY=mirror.gcr.io/library
+        provenance: false
+        outputs: type=cacheonly
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        # `ignore-error` keeps a cache-service outage from failing the build.
+        cache-to: type=gha,scope=${{ inputs.cache-scope }},mode=max,ignore-error=true
 
-        # ECR Public anonymous pull limits (HTTP 429, shared per runner IP) are
-        # why the build is retried with linear backoff.
-        attempt=1
-        while [ "$attempt" -le "$BUILD_RETRIES" ]; do
-          attempt_args=("${args[@]}")
-          if [ "$attempt" -eq "$BUILD_RETRIES" ]; then
-            # mirror.gcr.io serves byte-identical digest-pinned manifests from a
-            # different IP pool, so a final attempt there can clear persistent ECR 429s.
-            attempt_args+=(--build-arg "BASE_REGISTRY=mirror.gcr.io/library")
-          fi
-          set +e
-          docker buildx build "${attempt_args[@]}" .
-          status=$?
-          set -e
-          if [ "$status" -eq 0 ]; then
-            exit 0
-          fi
-          if [ "$attempt" -lt "$BUILD_RETRIES" ]; then
-            backoff=$((10 * attempt))
-            echo "::warning::docker buildx build attempt ${attempt}/${BUILD_RETRIES} failed with exit code ${status}; retrying in ${backoff}s"
-            sleep "$backoff"
-          fi
-          attempt=$((attempt + 1))
-        done
-        echo "::error::docker buildx build failed after ${BUILD_RETRIES} attempts; base-image resolution may still be rate-limited by ECR Public"
-        exit "$status"
+    # The final image build is skipped in cache-only mode: its later stages
+    # COPY workspace files (including host-built dist) that a cache-refreshing
+    # caller may not have, and its layers rebuild from the cached stage anyway.
+
+    - name: Build ${{ inputs.tag }} (attempt 1)
+      id: image-attempt-1
+      if: inputs.cache-target == '' || inputs.cache-only != 'true'
+      continue-on-error: ${{ inputs.build-retries != '1' }}
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      env:
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        build-args: ${{ inputs.build-args }}
+        labels: ${{ inputs.labels }}
+        tags: ${{ inputs.tag }}
+        provenance: false
+        load: true
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        cache-to: ${{ inputs.cache-target == '' && format('type=gha,scope={0},mode=max,ignore-error=true', inputs.cache-scope) || '' }}
+
+    - name: Wait before retrying the ${{ inputs.tag }} build
+      if: (inputs.cache-target == '' || inputs.cache-only != 'true') && steps.image-attempt-1.outcome == 'failure' && inputs.build-retries != '1'
+      shell: bash
+      run: sleep 10
+
+    - name: Build ${{ inputs.tag }} (attempt 2)
+      id: image-attempt-2
+      if: (inputs.cache-target == '' || inputs.cache-only != 'true') && steps.image-attempt-1.outcome == 'failure' && inputs.build-retries != '1'
+      continue-on-error: ${{ inputs.build-retries == '3' }}
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      env:
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        build-args: ${{ inputs.build-args }}
+        labels: ${{ inputs.labels }}
+        tags: ${{ inputs.tag }}
+        provenance: false
+        load: true
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        cache-to: ${{ inputs.cache-target == '' && format('type=gha,scope={0},mode=max,ignore-error=true', inputs.cache-scope) || '' }}
+
+    - name: Wait before the final ${{ inputs.tag }} build attempt
+      if: (inputs.cache-target == '' || inputs.cache-only != 'true') && steps.image-attempt-2.outcome == 'failure' && inputs.build-retries == '3'
+      shell: bash
+      run: sleep 20
+
+    - name: Build ${{ inputs.tag }} (final attempt, mirror.gcr.io fallback)
+      if: (inputs.cache-target == '' || inputs.cache-only != 'true') && steps.image-attempt-2.outcome == 'failure' && inputs.build-retries == '3'
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      env:
+        DOCKER_BUILD_SUMMARY: 'false'
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        build-args: |
+          ${{ inputs.build-args }}
+          BASE_REGISTRY=mirror.gcr.io/library
+        labels: ${{ inputs.labels }}
+        tags: ${{ inputs.tag }}
+        provenance: false
+        load: true
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        cache-to: ${{ inputs.cache-target == '' && format('type=gha,scope={0},mode=max,ignore-error=true', inputs.cache-scope) || '' }}

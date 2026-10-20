@@ -58,7 +58,9 @@ jobs:
             exit 1
           fi
 
-          # Install image variants, mirroring the CLI Install E2E matrix.
+          # Install image variants, mirroring the CLI Install E2E matrix. Its
+          # Dockerfile is self-contained, so these entries run the full build
+          # (cache-only would skip the only build that saves their scope).
           install_matrix=$(jq -cn '
             ["bash", "zsh", "fish"] | map({
               "name": "install image (\(.))",
@@ -66,10 +68,15 @@ jobs:
               "tag": "composio-e2e-install:\(.)",
               "cache-scope": "e2e-install-\(.)",
               "cache-target": "",
+              "cache-only": "false",
               "build-args": "INSTALL_SHELL=\(.)"
             })')
 
           # Node toolchain images, one per version in toolchain-versions.json.
+          # cache-only matters here and for the cli entry below: the later
+          # stages COPY host-built dist under ts/packages, which a bare checkout
+          # cannot provide, so these entries only refresh the toolchain-stage
+          # cache that the CI jobs' final builds consume.
           node_matrix=$(jq -c '
             . as $root
             | [$root.node[] as $version | {
@@ -78,6 +85,7 @@ jobs:
                 "tag": "composio-e2e-node:\($version)",
                 "cache-scope": "e2e-node-\($version)",
                 "cache-target": "toolchain",
+                "cache-only": "true",
                 "build-args": "NODE_VERSION=\($version)\nNODE_VERSION_DIGEST=\($root.nodeDigests[$version])"
               }]' "$toolchain_file")
 
@@ -101,6 +109,7 @@ jobs:
               "tag": "composio-e2e-cli:prewarm",
               "cache-scope": "e2e-cli",
               "cache-target": "toolchain",
+              "cache-only": "true",
               "build-args": "CLI_VERSION=\($cli_version)\nNODE_VERSION=\($cli_node_version)\nNODE_VERSION_DIGEST=\($cli_digest)"
             }]')
 
@@ -126,9 +135,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The composite action restores the scope from the GitHub Actions cache,
-      # rebuilds what is missing, and saves it back; toolchain targets save
-      # cache-only layers instead of loading an image.
+      # cache-only refreshes the toolchain-stage cache without the final image
+      # build, whose stages COPY host-built workspace artifacts a bare checkout
+      # does not have. The install entries keep the full build: their
+      # Dockerfile is self-contained, and that build is what saves their scope.
       - name: Prewarm the ${{ matrix.cache-scope }} cache
         uses: ./.github/actions/build-e2e-image
         with:
@@ -136,4 +146,5 @@ jobs:
           tag: ${{ matrix.tag }}
           cache-scope: ${{ matrix.cache-scope }}
           cache-target: ${{ matrix.cache-target }}
+          cache-only: ${{ matrix.cache-only }}
           build-args: ${{ matrix.build-args }}
