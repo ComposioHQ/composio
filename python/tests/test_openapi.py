@@ -11,6 +11,7 @@ import typing as t
 import pytest
 
 from composio.exceptions import InvalidSchemaError
+from composio.utils import openapi
 from composio.utils.openapi import function_signature_from_jsonschema
 
 
@@ -289,3 +290,35 @@ class TestArrayItemSchemas:
             annotation = t.get_args(annotation)[0]
         assert 0 < depth < 400
         assert annotation is t.Any
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize(
+        "wrap",
+        [
+            lambda inner: {"type": ["array"] * 8, "items": inner},
+            lambda inner: {"type": "array", "items": {"anyOf": [inner] * 8}},
+        ],
+        ids=["type-list", "item-combiner"],
+    )
+    def test_branching_item_schemas_are_bounded_in_work(
+        self,
+        wrap: t.Callable[[t.Dict[str, t.Any]], t.Dict[str, t.Any]],
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        # Eight branches per level make the work grow 8x per level, far below
+        # the depth bound; without a work budget this never finishes.
+        prop: t.Dict[str, t.Any] = {"type": "string"}
+        for _ in range(30):
+            prop = wrap(prop)
+        calls = 0
+        convert = openapi._type_to_parameter
+
+        def counting(*args: t.Any, **kwargs: t.Any) -> t.Any:
+            nonlocal calls
+            calls += 1
+            return convert(*args, **kwargs)
+
+        monkeypatch.setattr(openapi, "_type_to_parameter", counting)
+        _annotation(prop)
+        assert calls < 100_000

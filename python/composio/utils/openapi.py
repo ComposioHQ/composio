@@ -15,6 +15,16 @@ OPENAPI_TO_PYTHON = {
 
 # Tool schemas come from the backend and may be arbitrarily deeply nested.
 _MAX_SCHEMA_DEPTH = 64
+# Bounds the schemas converted for one parameter: a schema that branches at
+# every level costs exponential work well within the depth bound.
+_MAX_SCHEMA_NODES = 2_000
+
+
+class _Budget:
+    """Schema conversions left for one parameter; past it, a schema is `Any`."""
+
+    def __init__(self) -> None:
+        self.nodes = _MAX_SCHEMA_NODES
 
 
 # pylint: disable=unused-argument
@@ -23,9 +33,13 @@ def _handle_object_type(schema: t.Dict) -> t.Type:
     return t.Dict[str, t.Any]
 
 
-def _handle_array_type(schema: t.Dict, *, _depth: int = 0) -> t.Any:
+def _handle_array_type(
+    schema: t.Dict, *, _depth: int = 0, _budget: t.Optional[_Budget] = None
+) -> t.Any:
     # This discards the nested objects
-    SubT = _type_to_parameter(schema=schema.get("items", {}), _depth=_depth + 1)
+    SubT = _type_to_parameter(
+        schema=schema.get("items", {}), _depth=_depth + 1, _budget=_budget
+    )
     return t.List[SubT]  # type: ignore
 
 
@@ -33,9 +47,17 @@ def _handle_enum_type(schema: t.Dict) -> t.Any:
     return t.Literal[tuple(schema["enum"])]
 
 
-def _type_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
-    if _depth >= _MAX_SCHEMA_DEPTH:
+def _type_to_parameter(
+    schema: t.Dict[str, t.Any],
+    *,
+    _depth: int = 0,
+    _budget: t.Optional[_Budget] = None,
+) -> t.Any:
+    if _budget is None:
+        _budget = _Budget()
+    if _depth >= _MAX_SCHEMA_DEPTH or _budget.nodes <= 0:
         return t.Any
+    _budget.nodes -= 1
     if "enum" in schema:
         return _handle_enum_type(schema=schema)
 
@@ -43,11 +65,11 @@ def _type_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
     # Preserve the existing enum/type precedence for already-typed schemas.
     if p_type is None:
         if "oneOf" in schema:
-            return _one_of_to_parameter(schema=schema, _depth=_depth)
+            return _one_of_to_parameter(schema=schema, _depth=_depth, _budget=_budget)
         if "anyOf" in schema:
-            return _any_of_to_parameter(schema=schema, _depth=_depth)
+            return _any_of_to_parameter(schema=schema, _depth=_depth, _budget=_budget)
         if "allOf" in schema:
-            return _all_of_to_parameter(schema=schema, _depth=_depth)
+            return _all_of_to_parameter(schema=schema, _depth=_depth, _budget=_budget)
     if isinstance(p_type, list):
         # JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a
         # list of types, e.g. {"type": ["string", "null"]}, rather than an anyOf.
@@ -55,7 +77,11 @@ def _type_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
             return t.Any
         return t.Union[
             tuple(
-                _type_to_parameter(schema={**schema, "type": member}, _depth=_depth + 1)
+                _type_to_parameter(
+                    schema={**schema, "type": member},
+                    _depth=_depth + 1,
+                    _budget=_budget,
+                )
                 for member in p_type
             )
         ]
@@ -67,7 +93,7 @@ def _type_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
         return _handle_object_type(schema=schema)
 
     if p_type == "array":
-        return _handle_array_type(schema=schema, _depth=_depth)
+        return _handle_array_type(schema=schema, _depth=_depth, _budget=_budget)
 
     if p_type is None:
         # No type specified (e.g. a combiner option that is description-only or
@@ -77,30 +103,57 @@ def _type_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
     raise InvalidSchemaError(f"Invalid property type {p_type}: {schema!r}")
 
 
-def _handle_composite_type(schemas: t.List[t.Dict], *, _depth: int = 0) -> t.Any:
+def _handle_composite_type(
+    schemas: t.List[t.Dict],
+    *,
+    _depth: int = 0,
+    _budget: t.Optional[_Budget] = None,
+) -> t.Any:
     if not schemas:
         # An empty oneOf/anyOf has no options to union; fall back to Any.
         return t.Any
+    if _budget is None:
+        _budget = _Budget()
     return t.Union[
         tuple(
-            _type_to_parameter(schema=schema, _depth=_depth + 1) for schema in schemas
+            _type_to_parameter(schema=schema, _depth=_depth + 1, _budget=_budget)
+            for schema in schemas
         )
     ]
 
 
-def _one_of_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
-    return _handle_composite_type(schemas=schema["oneOf"], _depth=_depth)
+def _one_of_to_parameter(
+    schema: t.Dict[str, t.Any],
+    *,
+    _depth: int = 0,
+    _budget: t.Optional[_Budget] = None,
+) -> t.Any:
+    return _handle_composite_type(
+        schemas=schema["oneOf"], _depth=_depth, _budget=_budget
+    )
 
 
-def _any_of_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Any:
-    return _handle_composite_type(schemas=schema["anyOf"], _depth=_depth)
+def _any_of_to_parameter(
+    schema: t.Dict[str, t.Any],
+    *,
+    _depth: int = 0,
+    _budget: t.Optional[_Budget] = None,
+) -> t.Any:
+    return _handle_composite_type(
+        schemas=schema["anyOf"], _depth=_depth, _budget=_budget
+    )
 
 
-def _all_of_to_parameter(schema: t.Dict[str, t.Any], *, _depth: int = 0) -> t.Type:
+def _all_of_to_parameter(
+    schema: t.Dict[str, t.Any],
+    *,
+    _depth: int = 0,
+    _budget: t.Optional[_Budget] = None,
+) -> t.Type:
     composite = {}
     for subschema in schema["allOf"]:
         composite.update(subschema)
-    return _type_to_parameter(schema=composite, _depth=_depth + 1)
+    return _type_to_parameter(schema=composite, _depth=_depth + 1, _budget=_budget)
 
 
 def function_signature_from_jsonschema(
