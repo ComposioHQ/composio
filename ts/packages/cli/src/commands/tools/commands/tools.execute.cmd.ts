@@ -142,7 +142,11 @@ export class ToolExecutionError extends Data.TaggedError(
   'ToolExecutionError'
 )<ToolExecutionErrorFields> {}
 
-class ReportedToolExecutionError extends Data.TaggedError(
+/**
+ * A failed execution whose result is already on stdout as `{ "successful": false, ... }`.
+ * `cli-main.ts` prints nothing more for it and exits 1.
+ */
+export class ReportedToolExecutionError extends Data.TaggedError(
   'ReportedToolExecutionError'
 )<ToolExecutionErrorFields> {}
 
