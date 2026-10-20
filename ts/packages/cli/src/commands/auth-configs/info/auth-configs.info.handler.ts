@@ -1,4 +1,5 @@
 import { Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -9,9 +10,11 @@ export type AuthConfigsInfoParams = {
   readonly id: Option.Option<string>;
 };
 
+const invalidInput = commandInputError('dev auth-configs info');
+
 /**
- * Show one auth config: the details on stderr, the JSON on stdout. A missing `<id>` warns and
- * exits 0; an API failure is reported with a hint and exits 1.
+ * Show one auth config: the details on stderr, the JSON on stdout. A missing `<id>` fails with a
+ * `CommandInputError` before any request; an API failure is reported with a hint and exits 1.
  */
 export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
   Effect.gen(function* () {
@@ -19,11 +22,10 @@ export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(id)) {
-      yield* ui.log.warn('Missing required argument: <id>');
-      yield* ui.log.step(
-        'Try specifying an auth config ID, e.g.:\n> composio dev auth-configs info "ac_1232323"\n\nTo find auth config IDs:\n> composio dev auth-configs list'
+      return yield* invalidInput(
+        'Missing required argument: <id>\nTry specifying an auth config ID, e.g.:\n> composio dev auth-configs info "ac_1232323"\n\nTo find auth config IDs:\n> composio dev auth-configs list',
+        '<id>'
       );
-      return;
     }
 
     const idValue = id.value;
