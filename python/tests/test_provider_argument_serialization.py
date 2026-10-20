@@ -1,5 +1,6 @@
 """Provider-boundary tests for validated tool argument serialization."""
 
+import ast
 import asyncio
 import importlib
 import json
@@ -603,24 +604,6 @@ VALIDATING_PROVIDERS = frozenset(
     }
 )
 
-# (row, case) pairs that still lose or accept arguments they should not.
-# Each fix removes its provider's entries; strict xfail fails the run as
-# soon as a listed pair starts passing.
-KNOWN_FAILURES: t.FrozenSet[t.Tuple[str, str]] = frozenset(
-    {
-        *(
-            (row, case)
-            for row in ("autogen", "autogen_ag2")
-            for case in (
-                "root_free_form",
-                "root_additional_properties",
-                "nested_map_value_type",
-                "pattern_property_type",
-            )
-        ),
-    }
-)
-
 
 def _matrix_provider(row: str):
     package, class_name = MATRIX_PROVIDERS[row]
@@ -773,18 +756,7 @@ REJECTION_CASES: t.Dict[str, t.Tuple[t.Dict[str, t.Any], t.Dict[str, t.Any]]] = 
 
 def _matrix_params(rows, cases):
     return [
-        pytest.param(
-            row,
-            case,
-            id=f"{row}-{case}",
-            marks=(
-                [pytest.mark.xfail(strict=True, reason="known drop, SUP-1643")]
-                if (row, case) in KNOWN_FAILURES
-                else []
-            ),
-        )
-        for row in rows
-        for case in cases
+        pytest.param(row, case, id=f"{row}-{case}") for row in rows for case in cases
     ]
 
 
@@ -854,3 +826,123 @@ def test_google_adk_keeps_tool_context_out_of_arguments():
     )
 
     assert received == [{"custom": {"nested": True}}]
+
+
+# ---------------------------------------------------------------------------
+# AutoGen: both runtime paths share one validated execution (SUP-1643).
+# ---------------------------------------------------------------------------
+
+AUTOGEN_ROWS = ("autogen", "autogen_ag2")
+
+
+def _autogen_result(row: str, result: t.Any) -> t.Any:
+    """The tool's return value, unwrapped from AG2's function message."""
+    if row == "autogen_ag2":
+        # AG2 serializes a dict result with ``str()``.
+        return ast.literal_eval(result["content"])
+    return result
+
+
+@pytest.mark.parametrize("row", AUTOGEN_ROWS)
+def test_autogen_returns_structured_validation_error(row: str):
+    input_parameters, arguments = REJECTION_CASES["pattern_property_type"]
+
+    received, result = _matrix_call(row, input_parameters, arguments)
+
+    result = _autogen_result(row, result)
+    assert received == []
+    assert result["successful"] is False
+    assert result["data"] is None
+    assert "count_x" in result["error"]
+
+
+@pytest.mark.parametrize("row", AUTOGEN_ROWS)
+def test_autogen_omits_optional_arguments_the_model_left_out(row: str):
+    received, _ = _matrix_call(
+        row,
+        {
+            "type": "object",
+            "title": "OptionalArguments",
+            "properties": {
+                "query": {"type": "string"},
+                "note": {"type": "string"},
+            },
+            "required": ["query"],
+        },
+        {"query": "agents"},
+    )
+
+    assert received == [{"query": "agents"}]
+
+
+@pytest.mark.parametrize("row", AUTOGEN_ROWS)
+def test_autogen_restores_reserved_keyword_arguments(row: str):
+    received, _ = _matrix_call(
+        row,
+        {
+            "type": "object",
+            "title": "ReservedArguments",
+            "properties": {"from": {"type": "string"}},
+            "required": ["from"],
+        },
+        {"from_rs": "alice"},
+    )
+
+    assert received == [{"from": "alice"}]
+
+
+def test_autogen_run_json_normalizes_string_payload():
+    received, _ = _matrix_call(
+        "autogen",
+        PRESERVATION_CASES["nested_free_form"][0] | {"required": ["body"]},
+        '{"body": {"a": 1}}',
+    )
+
+    assert received == [{"body": {"a": 1}}]
+
+
+def test_autogen_run_json_logs_the_tool_call(caplog: pytest.LogCaptureFixture):
+    input_parameters, arguments = PRESERVATION_CASES["root_free_form"]
+
+    with caplog.at_level("INFO"):
+        received, _ = _matrix_call("autogen", input_parameters, arguments)
+
+    from autogen_core import EVENT_LOGGER_NAME
+    from autogen_core.logging import ToolCallEvent
+
+    events = [
+        record.msg
+        for record in caplog.records
+        if record.name == EVENT_LOGGER_NAME and isinstance(record.msg, ToolCallEvent)
+    ]
+    assert received == [arguments]
+    assert [json.loads(str(event))["arguments"] for event in events] == [arguments]
+
+
+@pytest.mark.parametrize(
+    ("input_parameters", "expected"),
+    [
+        (
+            PRESERVATION_CASES["root_free_form"][0],
+            {"additionalProperties": True},
+        ),
+        (
+            REJECTION_CASES["pattern_property_type"][0],
+            {
+                "additionalProperties": False,
+                "patternProperties": {"^count_": {"type": "integer", "minimum": 1}},
+            },
+        ),
+    ],
+    ids=["root_free_form", "pattern_only"],
+)
+def test_autogen_schema_mirrors_root_openness(
+    input_parameters: t.Dict[str, t.Any], expected: t.Dict[str, t.Any]
+):
+    wrapped = _matrix_provider("autogen").wrap_tool(
+        _make_tool(input_parameters), lambda slug, arguments: {}
+    )
+
+    parameters = wrapped.schema["parameters"]
+
+    assert {key: parameters.get(key) for key in expected} == expected
