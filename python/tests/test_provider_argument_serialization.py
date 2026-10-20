@@ -7,6 +7,7 @@ import json
 import os
 import typing as t
 
+import pydantic
 import pytest
 
 from composio.client.types import Tool, tool_list_response
@@ -630,7 +631,8 @@ def _matrix_call(row: str, input_parameters: t.Dict[str, t.Any], arguments):
     wrapped = provider.wrap_tool(tool, execute_tool)
     try:
         result = _matrix_invoke(row, provider, wrapped, arguments)
-    except Exception as error:  # a raised validation error is a rejection too
+    except pydantic.ValidationError as error:
+        # Gemini's callable raises; google-genai reports it back to the model.
         result = error
     return received, result
 
@@ -802,9 +804,43 @@ def test_matrix_preserves_free_form_arguments(row: str, case: str):
 def test_matrix_rejects_invalid_dynamic_arguments(row: str, case: str):
     input_parameters, arguments = REJECTION_CASES[case]
 
-    received, _ = _matrix_call(row, input_parameters, arguments)
+    received, result = _matrix_call(row, input_parameters, arguments)
 
     assert received == []
+    error = _rejection_error(row, result)
+    if error is not None:
+        assert REJECTION_FIELDS[case] in error
+
+
+# The argument each rejection case's error must name.
+REJECTION_FIELDS = {
+    "nested_map_value_type": "body.a",
+    "pattern_property_type": "count_x",
+    "closed_root_unknown_key": "extra",
+    "string_for_integer": "limit",
+}
+
+
+def _rejection_error(row: str, result: t.Any) -> t.Optional[str]:
+    """The validation error a rejected call reported, in its framework's shape.
+
+    Fails on any other result, so a crash cannot pass as a rejection. Returns
+    ``None`` where the framework hides the detail.
+    """
+    if row in ("langchain", "langchain_async", "langgraph"):
+        # `handle_validation_error=True` replaces the detail with this string.
+        assert result == "Tool input validation error"
+        return None
+    if row == "gemini":
+        assert isinstance(result, pydantic.ValidationError)
+        return str(result)
+    if row == "autogen_ag2":
+        # AG2 returns the tool result serialized into the function message.
+        result = ast.literal_eval(result["content"])
+    assert isinstance(result, dict), result
+    assert result["successful"] is False
+    assert result["data"] is None
+    return result["error"]
 
 
 # ---------------------------------------------------------------------------
