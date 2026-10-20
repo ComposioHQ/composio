@@ -152,3 +152,82 @@ class TestListValuedType:
     @pytest.mark.schema
     def test_empty_list_resolves_to_any(self):
         assert _annotation({"type": []}) is t.Any
+
+
+class TestArrayItemSchemas:
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf"])
+    def test_nullable_combiner_items(self, combiner: str):
+        assert (
+            _annotation(
+                {
+                    "type": "array",
+                    "items": {combiner: [{"type": "string"}, {"type": "null"}]},
+                }
+            )
+            == t.List[t.Optional[str]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_nested_array_combiner_items(self):
+        assert (
+            _annotation(
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                    },
+                }
+            )
+            == t.List[t.List[t.Optional[str]]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_combiner_nested_in_an_item_option(self):
+        assert (
+            _annotation(
+                {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+                            {"type": "null"},
+                        ]
+                    },
+                }
+            )
+            == t.List[t.Union[str, int, None]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_all_of_items(self):
+        assert (
+            _annotation({"type": "array", "items": {"allOf": [{"type": "string"}]}})
+            == t.List[str]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_enum_items_without_explicit_type(self):
+        assert (
+            _annotation({"type": "array", "items": {"enum": ["open", "closed"]}})
+            == t.List[t.Literal["open", "closed"]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize(
+        "prop",
+        [
+            {"type": "array"},
+            {"type": "array", "items": {}},
+            {"type": "array", "items": {"anyOf": []}},
+        ],
+    )
+    def test_unconstrained_items_still_resolve_to_any(self, prop: t.Dict[str, t.Any]):
+        assert _annotation(prop) == t.List[t.Any]

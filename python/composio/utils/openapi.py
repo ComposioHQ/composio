@@ -22,10 +22,6 @@ def _handle_object_type(schema: t.Dict) -> t.Type:
 
 def _handle_array_type(schema: t.Dict) -> t.Any:
     # This discards the nested objects
-    items_type = schema.get("items", {}).get("type")
-    if items_type is None:
-        return t.List[t.Any]
-
     SubT = _type_to_parameter(schema=schema.get("items", {}))
     return t.List[SubT]  # type: ignore
 
@@ -35,6 +31,12 @@ def _handle_enum_type(schema: t.Dict) -> t.Any:
 
 
 def _type_to_parameter(schema: t.Dict[str, t.Any]) -> t.Any:
+    if "oneOf" in schema:
+        return _one_of_to_parameter(schema=schema)
+    if "anyOf" in schema:
+        return _any_of_to_parameter(schema=schema)
+    if "allOf" in schema:
+        return _all_of_to_parameter(schema=schema)
     if "enum" in schema:
         return _handle_enum_type(schema=schema)
 
