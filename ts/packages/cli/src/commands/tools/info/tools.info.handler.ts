@@ -1,5 +1,6 @@
 import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
 import { Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { commandHintStep } from 'src/services/command-hints';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -25,12 +26,10 @@ export type ToolsInfoParams = {
   readonly slug: Option.Option<string>;
 };
 
-/** A missing slug is reported as a warning with an example; the command still exits 0. */
-const warnMissingSlug = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
-  yield* ui.log.warn(MISSING_SLUG_MESSAGE);
-  yield* ui.log.step(MISSING_SLUG_HINT);
-});
+const invalidInput = commandInputError('tools info');
+
+/** A missing slug fails with a usage error that carries an example, before any request. */
+const missingSlug = () => invalidInput(`${MISSING_SLUG_MESSAGE}\n${MISSING_SLUG_HINT}`, '<slug>');
 
 /**
  * Fetches the tool, or reports the API failure with "did you mean" suggestions, sets exit
@@ -84,7 +83,7 @@ const showTool = (slug: string, tool: ToolRetrieveResponse) =>
 export const runToolsInfo = ({ slug }: ToolsInfoParams) =>
   Effect.gen(function* () {
     return yield* Option.match(slug, {
-      onNone: () => warnMissingSlug,
+      onNone: () => Effect.fail(missingSlug()),
       onSome: slugValue =>
         fetchTool(slugValue).pipe(
           Effect.flatMap(
