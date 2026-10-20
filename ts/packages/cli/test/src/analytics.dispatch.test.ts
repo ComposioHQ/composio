@@ -607,6 +607,41 @@ describe('CLI analytics dispatch', () => {
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
+  it.effect('adopts the persisted install_id when the bounded lock wait expires', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    // A live lock that is never released drives this process through the full
+    // bounded wait; the identity another run already persisted must still win
+    // over minting a fresh install_id, and the fallback must not rewrite state
+    // without holding the lock.
+    writeFileSync(lockPath, 'other-process');
+    writeFileSync(
+      path.join(composioDir, 'analytics.json'),
+      JSON.stringify({ install_id: 'install_persisted' })
+    );
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ installId: string }>(args[2]!);
+      expect(payload.installId).toBe('install_persisted');
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string };
+      expect(persisted.install_id).toBe('install_persisted');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;

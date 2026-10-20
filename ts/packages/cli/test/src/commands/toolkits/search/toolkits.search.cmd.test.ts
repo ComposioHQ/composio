@@ -1,8 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, DateTime, Effect } from 'effect';
+import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { notFoundError } from 'test/__utils__/layers/not-found';
+import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testToolkits: Toolkits = [
   {
@@ -110,6 +114,54 @@ describe('CLI: composio dev toolkits search', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('Found 1 of 2 toolkits');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] query "email" and --limit 0 [Then] the limit is clamped to 1',
+    it => {
+      it.effect('requests one toolkit and writes the rows as JSON to stdout', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'search', 'email', '--limit', '0']);
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+          const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+          expect(stderr.join('\n')).toContain('Found 1 of 2 toolkits');
+          expect(stderr.join('\n')).toContain(
+            'To view details:\n> composio dev toolkits info "gmail"'
+          );
+          expect(stdout).toHaveLength(1);
+          expect(JSON.parse(String(stdout[0]))).toEqual([
+            expect.objectContaining({ slug: 'gmail', latest_version: '20250909', connected: null }),
+          ]);
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] the search request fails',
+    it => {
+      it.effect('[Then] prints the error, writes `[]` to stdout and exits 1', () =>
+        Effect.gen(function* () {
+          const proc = recordingNodeProcess();
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({
+              searchToolkits: () => Effect.fail(notFoundError('Search unavailable')),
+            })
+          );
+          yield* cli(['dev', 'toolkits', 'search', 'email']).pipe(
+            Effect.provide(Layer.merge(repository, proc.layer))
+          );
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+          const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+          expect(stderr).toContain('Search unavailable');
+          expect(stdout).toEqual(['[]']);
+          expect(proc.exitCode()).toBe(1);
         })
       );
     }

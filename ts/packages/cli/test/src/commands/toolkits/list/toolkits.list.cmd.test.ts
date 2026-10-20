@@ -1,9 +1,13 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, DateTime, Effect } from 'effect';
+import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { notFoundError } from 'test/__utils__/layers/not-found';
+import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
+import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testToolkits: Toolkits = [
   {
@@ -66,6 +70,45 @@ const toolkitsData = {
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+const SESSION_TOOLKITS_PATH = '/api/v3.1/tool_router/session/trs_stub_session/toolkits';
+
+/** A tool router whose session toolkits call answers with `respondToolkits`. */
+const stubSessionToolkits = (respondToolkits: () => Response) =>
+  stubClientResources(
+    ['toolRouter'],
+    routeRequests([{ method: 'GET', path: SESSION_TOOLKITS_PATH, respond: respondToolkits }], () =>
+      Response.json({
+        session_id: 'trs_stub_session',
+        config: { user_id: 'global-default' },
+        mcp: { type: 'http', url: 'https://mcp.stub.invalid' },
+        tool_router_tools: [],
+      })
+    )
+  );
+
+const sessionToolkit = (slug: string, name: string, status: string | null) => ({
+  slug,
+  name,
+  meta: { description: '', logo: '' },
+  is_no_auth: false,
+  enabled: true,
+  composio_managed_auth_schemes: ['OAUTH2'],
+  connected_account:
+    status === null
+      ? null
+      : {
+          id: `ca_${slug}`,
+          status,
+          auth_config: { id: `ac_${slug}`, auth_scheme: 'OAUTH2', is_composio_managed: true },
+        },
+});
+
+const forbidden = () =>
+  Response.json(
+    { error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 } },
+    { status: 403 }
+  );
 
 describe('CLI: composio dev toolkits list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
@@ -215,6 +258,123 @@ describe('CLI: composio dev toolkits list', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] --connected and a session with one active connection', it => {
+    it.effect('[Then] only the connected toolkit is listed', () =>
+      Effect.gen(function* () {
+        const stub = stubSessionToolkits(() =>
+          Response.json({
+            items: [
+              sessionToolkit('gmail', 'Gmail', 'ACTIVE'),
+              sessionToolkit('slack', 'Slack', 'EXPIRED'),
+              sessionToolkit('github', 'GitHub', null),
+            ],
+            next_cursor: null,
+            total_pages: 1,
+            current_page: 1,
+            total_items: 3,
+          })
+        );
+        yield* cli(['dev', 'toolkits', 'list', '--connected']).pipe(Effect.provide(stub.layer));
+        const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+        const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+        expect(stderr.join('\n')).toContain('Listing 1 of 3 toolkits');
+        expect(stdout).toHaveLength(1);
+        expect(JSON.parse(String(stdout[0]))).toEqual([
+          expect.objectContaining({
+            slug: 'gmail',
+            connected: {
+              status: 'ACTIVE',
+              id: 'ca_gmail',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+            },
+          }),
+        ]);
+        expect(stub.requests.at(-1)?.path).toBe(
+          `${SESSION_TOOLKITS_PATH}?limit=30&is_connected=true`
+        );
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] --connected and the API rejects the session toolkits', it => {
+    it.effect('[Then] the filter is reported as skipped and every toolkit is listed', () =>
+      Effect.gen(function* () {
+        const stub = stubSessionToolkits(forbidden);
+        yield* cli(['dev', 'toolkits', 'list', '--connected']).pipe(Effect.provide(stub.layer));
+        const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+        const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+        expect(stderr).toContain(
+          '`--connected` filter could not be applied — session data unavailable.'
+        );
+        expect(
+          (JSON.parse(String(stdout.at(-1))) as Array<{ slug: string }>).map(row => row.slug)
+        ).toEqual(['gmail', 'slack', 'github']);
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] --connected and no user id anywhere',
+    it => {
+      it.effect('[Then] warns that the filter needs a user id and lists the catalog', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'list', '--connected']);
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+          const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+          expect(stderr[0]).toBe(
+            '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
+          );
+          expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');
+          expect(
+            (JSON.parse(String(stdout.at(-1))) as Array<{ slug: string }>).map(row => row.slug)
+          ).toEqual(['gmail', 'slack', 'github']);
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] the catalog request fails',
+    it => {
+      it.effect('[Then] prints the error, writes `[]` to stdout and exits 1', () =>
+        Effect.gen(function* () {
+          const proc = recordingNodeProcess();
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({
+              searchToolkits: () => Effect.fail(notFoundError('Catalog unavailable')),
+            })
+          );
+          yield* cli(['dev', 'toolkits', 'list']).pipe(
+            Effect.provide(Layer.merge(repository, proc.layer))
+          );
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+          const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+
+          expect(stderr).toContain('Catalog unavailable');
+          expect(stdout).toEqual(['[]']);
+          expect(proc.exitCode()).toBe(1);
+        })
+      );
+    }
+  );
 
   layer(TestLive())('[Given] no API key', it => {
     it.effect('warns user to login', () =>
