@@ -8,9 +8,8 @@ import * as MockConsole from '../services/mock-console';
 import { recordingNodeProcess } from '../services/node-process-test';
 import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
 import {
-  connectedAccountRepositoryMethods,
+  authConfigRepositoryMethods,
   resolveAuthConfigsTestData,
-  resolveConnectedAccountsTestData,
   type AuthConfigsTestData,
 } from './connected-accounts';
 import { terminalUITestImpl } from '../services/terminal-ui-test';
@@ -48,10 +47,9 @@ export const AuthConfigsHandlerTest = (fixture: AuthConfigsHandlerFixture = {}) 
     Layer.succeed(
       ComposioToolkitsRepository,
       makeToolkitsRepositoryStub({
-        ...connectedAccountRepositoryMethods(
-          resolveAuthConfigsTestData(fixture.authConfigsData),
-          resolveConnectedAccountsTestData()
-        ),
+        // Only the auth-config methods: a stray connected-account request dies instead of
+        // answering a catchable API error, so a test fails loudly at the change site.
+        ...authConfigRepositoryMethods(resolveAuthConfigsTestData(fixture.authConfigsData)),
         ...fixture.repository,
       })
     )
