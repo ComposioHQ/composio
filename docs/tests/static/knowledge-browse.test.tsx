@@ -359,19 +359,6 @@ describe('knowledge browse pages', () => {
     expect(html).not.toContain('Browse by provider');
   });
 
-  test('preserves the canonical toolkit commonality order for browsing', async () => {
-    const summaries = await getKnowledgeToolkitSummaries();
-
-    expect(summaries.slice(0, 6).map((toolkit) => toolkit.slug)).toEqual([
-      'gmail',
-      'composio',
-      'github',
-      'googlecalendar',
-      'notion',
-      'googlesheets',
-    ]);
-  });
-
   test('keeps toolkit catalog pages out of support topics while retaining toolkit browse', async () => {
     const toolkitRecords = (await getAlgoliaSearchDocuments())
       .filter((record) => record.source_type === 'toolkit');

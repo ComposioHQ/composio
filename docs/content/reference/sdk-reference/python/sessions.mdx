@@ -1,0 +1,216 @@
+---
+title: "Sessions"
+description: "Create and resume sessions through `composio.sessions`.  Sessions provide provider-wrapped tools, authorization helpers, and connection management."
+---
+
+## Usage
+
+Create a session through `composio.sessions`. Resume one with `composio.sessions.use(session_id)`.
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+session = composio.sessions.create(user_id="user-123")
+tools = session.tools()
+```
+
+See [Session](/reference/sdk-reference/python/session) for the returned object and [session configuration](/docs/configuring-sessions) for settings.
+
+## Methods
+
+### create()
+
+Create a new tool router session for a user.
+
+```python
+def create(user_id: str, toolkits: Optional[Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig]] = ..., tools: Optional[Dict[str, ToolRouterToolsConfig]] = ..., tags: Optional[ToolRouterConfigTags] = ..., manage_connections: Optional[Union[bool, ToolRouterManageConnectionsConfig]] = ..., auth_configs: Optional[Dict[str, str]] = ..., connected_accounts: Optional[Dict[str, Union[str, List[str]]]] = ..., sandbox: Optional[ToolRouterSandboxConfig] = ..., workbench: Optional[ToolRouterWorkbenchConfig] = ..., multi_account: Optional[ToolRouterMultiAccountConfig] = ..., proxy_execute: Optional[Union[bool, ToolRouterProxyExecuteConfig]] = ..., preload: Optional[ToolRouterPreloadConfig] = ..., session_preset: Optional[SessionPreset] = ..., experimental: Optional[ToolRouterExperimentalConfig] = ..., instant: Optional[Union[Literal[False], ToolRouterInstantConfig]] = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `toolkits?` | `Optional[Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig]]` |
+| `tools?` | `Optional[Dict[str, ToolRouterToolsConfig]]` |
+| `tags?` | `Optional[ToolRouterConfigTags]` |
+| `manage_connections?` | `Optional[Union[bool, ToolRouterManageConnectionsConfig]]` |
+| `auth_configs?` | `Optional[Dict[str, str]]` |
+| `connected_accounts?` | `Optional[Dict[str, Union[str, List[str]]]]` |
+| `sandbox?` | `Optional[ToolRouterSandboxConfig]` |
+| `workbench?` | `Optional[ToolRouterWorkbenchConfig]` |
+| `multi_account?` | `Optional[ToolRouterMultiAccountConfig]` |
+| `proxy_execute?` | `Optional[Union[bool, ToolRouterProxyExecuteConfig]]` |
+| `preload?` | `Optional[ToolRouterPreloadConfig]` |
+| `session_preset?` | `Optional[SessionPreset]` |
+| `experimental?` | `Optional[ToolRouterExperimentalConfig]` |
+| `instant?` | `Optional[Union[Literal[False], ToolRouterInstantConfig]]` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`ToolRouterSession[TTool, TToolCollection]` — Tool router session object
+
+**Raises**
+
+- `MCPDestinationError` — When `mcp=True` and the MCP URL is not on the API origin.
+
+**Example**
+
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+
+composio = Composio()
+
+# Create a basic session
+session = composio.sessions.create(user_id='user_123')
+
+# Create a session with specific toolkits
+session = composio.sessions.create(
+    user_id='user_123',
+    toolkits=['github', 'slack']
+)
+
+# Create a direct-tools session when all needed tools are known upfront
+session = composio.sessions.create(
+    user_id='user_123',
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    toolkits=['github']
+)
+
+# Create a session with per-toolkit tool configuration
+session = composio.sessions.create(
+    user_id='user_123',
+    tools={
+        'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],  # List shorthand
+        'github': {'enable': ['GITHUB_CREATE_ISSUE']},  # Explicit enable
+        'slack': {'disable': ['SLACK_DELETE_MESSAGE']},  # Explicit disable
+    }
+)
+
+# Create a session with global tag filtering
+session = composio.sessions.create(
+    user_id='user_123',
+    tags=['readOnlyHint', 'createHint']
+)
+
+# Create a session with toolkit-specific tag filtering (array format)
+session = composio.sessions.create(
+    user_id='user_123',
+    tools={
+        'gmail': {'tags': ['readOnlyHint']},
+        'github': {'tags': ['readOnlyHint', 'createHint']}
+    }
+)
+
+# Create a session with toolkit-specific tag filtering (object format)
+session = composio.sessions.create(
+    user_id='user_123',
+    tools={
+        'gmail': {'tags': {'enable': ['readOnlyHint']}},
+        'github': {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
+    }
+)
+
+# Create a session with connection management
+session = composio.sessions.create(
+    user_id='user_123',
+    manage_connections={
+        'enable': True,
+        'callback_url': 'https://example.com/callback',
+        'wait_for_connections': True,
+    }
+)
+
+# Create a session with sandbox disabled
+session = composio.sessions.create(
+    user_id='user_123',
+    sandbox={
+        'enable': False
+    }
+)
+
+# Create a session with sandbox config
+session = composio.sessions.create(
+    user_id='user_123',
+    sandbox={
+        'enable_proxy_execution': False,
+        'auto_offload_threshold': 300
+    }
+)
+
+# Use the session
+tools = session.tools()
+connection = session.authorize('github')
+toolkit_states = session.toolkits()
+```
+
+---
+
+### use()
+
+Use an existing tool router session.  Provide `custom_tools` or `custom_toolkits` to bind SDK-local tools to the session for search and execution.  If the existing session has `preload.tools = "all"`, every bound custom tool is also exposed via `session.tools()` and re-injected with `preload=True` on subsequent search/execute calls. A custom tool with explicit `preload=False` still opts out.
+
+```python
+def use(session_id: str, custom_tools: Optional[List[CustomTool]] = ..., custom_toolkits: Optional[List[ExperimentalToolkit]] = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+| `custom_tools?` | `Optional[List[CustomTool]]` |
+| `custom_toolkits?` | `Optional[List[ExperimentalToolkit]]` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`ToolRouterSession[TTool, TToolCollection]` — Tool router session object
+
+**Raises**
+
+- `MCPDestinationError` — When `mcp=True` and the MCP URL is not on the API origin.
+
+**Example**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Use an existing session
+session = composio.sessions.use('session_123')
+
+# Use an existing session with custom tools
+session = composio.sessions.use(
+    'session_123',
+    custom_tools=[my_tool],
+    custom_toolkits=[my_toolkit],
+)
+```
+
+---
+
+### delete()
+
+Delete a tool router session by ID.  Deleted sessions immediately stop being retrievable or executable. A missing or already-deleted session surfaces the backend 404.
+
+```python
+def delete(session_id: str) -> ToolRouterSessionDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+
+**Returns**
+
+`ToolRouterSessionDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L593)
