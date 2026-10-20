@@ -1,9 +1,9 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
 import { rejectsSharedFlags } from 'src/commands/surface';
-import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cmd';
-import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
-import { connectedAccountsCmd$Whoami } from './commands/connected-accounts.whoami.cmd';
+import { connectedAccountsCmd$List } from './list/connected-accounts.list.cmd';
+import { connectedAccountsCmd$Info } from './info/connected-accounts.info.cmd';
+import { connectedAccountsCmd$Whoami } from './whoami/connected-accounts.whoami.cmd';
 import { connectedAccountsCmd$Link } from './link/connected-accounts.link.cmd';
 
 /**

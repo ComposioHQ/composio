@@ -155,6 +155,21 @@ const readAnalyticsState = Effect.gen(function* () {
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
 
+/**
+ * The stored analytics install ID, for first-party requests that should join
+ * the CLI's own events. `None` when telemetry is disabled or no ID is stored or
+ * readable. Read-only: it never creates an ID, takes no lock, and cannot fail.
+ */
+export const readInstallIdWhenTelemetryEnabled = Effect.gen(function* () {
+  if (!(yield* postHogEnabled)) {
+    return Option.none<string>();
+  }
+  const state = yield* readAnalyticsState;
+  return typeof state?.install_id === 'string' && state.install_id.length > 0
+    ? Option.some(state.install_id)
+    : Option.none<string>();
+}).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())));
+
 const recoverStaleAnalyticsStateLock = (
   fs: FileSystem.FileSystem,
   lockPath: string
@@ -263,8 +278,21 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
   return installId;
 });
 
+// A process whose bounded lock wait expired (a live lock held elsewhere) must
+// still adopt an install_id another process already persisted, so concurrent
+// first-run events converge on one identity instead of each racer minting its
+// own. The fallback only reads: persistence stays exclusive to the lock-holding
+// path, and an unlocked write here could clobber a concurrent state merge.
+const adoptOrMintInstallId = Effect.gen(function* () {
+  const state = yield* readAnalyticsState;
+  if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
+    return state.install_id;
+  }
+  return yield* makeInstallId;
+});
+
 const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
-  Effect.catch(() => makeInstallId)
+  Effect.catch(() => adoptOrMintInstallId)
 );
 
 const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
