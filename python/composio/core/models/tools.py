@@ -211,7 +211,12 @@ def parse_blocked_response(
         return None
     try:
         return BlockedResponse.model_validate(
-            {key: _plain(value) for key, value in dict(response).items()}
+            {
+                # ``instant_charge`` stays the client's model: the provider
+                # execute path reads it as one.
+                key: value if key == "instant_charge" else _plain(value)
+                for key, value in dict(response).items()
+            }
         )
     except PydanticValidationError as exc:
         raise ValidationError(

@@ -2922,6 +2922,31 @@ class TestSessionHooks:
         assert result["data"] == {}
         assert result["error"] == "Blocked by session policy: No external email"
 
+    def test_blocked_response_keeps_its_charge_for_the_agent(self):
+        """The tool ran before an ``after_execute`` hook blocked its result, so
+        the provider result still reports the charge."""
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {"type": "response_blocked", "hook_id": "no_outside_data"},
+                "log_id": "log_456",
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert result["successful"] is False
+        assert result["instant_charge"] == {
+            "amount": "0.01",
+            "currency": "USD",
+            "charged_by": "composio",
+        }
+
     def test_unavailable_hook_does_not_block(self):
         """A hook that could not be evaluated is reported, and the call still
         returns its normal result."""
