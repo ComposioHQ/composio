@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Preserve the project's test user when environment variables or `.composio/.env`
+  select the same organization and project as the nearest `.composio/project.json`.
+  Profiles from a different organization or project do not supply a test user.
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,

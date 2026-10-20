@@ -50,6 +50,7 @@ const parseEnvFile = (content: string): Map<string, string> => {
  * 1. System env vars (COMPOSIO_ORG_ID, COMPOSIO_PROJECT_ID)
  * 2. Per-directory .composio/.env (only allowed keys)
  * 3. Per-directory .composio/project.json (walk up from CWD, stop at homedir)
+ * The nearest JSON profile supplies its test user only when its org+project match.
  */
 const makeProjectContext = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -66,9 +67,10 @@ const makeProjectContext = Effect.gen(function* () {
       // 1. Check env vars (highest priority)
       const envOrgId = yield* APP_CONFIG.ORG_ID;
       const envProjectId = yield* APP_CONFIG.PROJECT_ID;
+      let envContext = Option.none<ProjectKeys>();
       if (envOrgId !== undefined && envProjectId !== undefined) {
         yield* Effect.logDebug('ProjectContext: resolved from env vars');
-        return Option.some<ProjectKeys>({
+        envContext = Option.some<ProjectKeys>({
           orgId: envOrgId,
           projectId: envProjectId,
           projectName: Option.none(),
@@ -86,9 +88,9 @@ const makeProjectContext = Effect.gen(function* () {
 
         // 2a. Check .composio/.env
         const envFilePath = path.join(composioDir, constants.PROJECT_ENV_FILE_NAME);
-        const envExists = yield* fs
-          .exists(envFilePath)
-          .pipe(Effect.catch(() => Effect.succeed(false)));
+        const envExists = Option.isNone(envContext)
+          ? yield* fs.exists(envFilePath).pipe(Effect.catch(() => Effect.succeed(false)))
+          : false;
         if (envExists) {
           const envContent = yield* fs
             .readFileString(envFilePath)
@@ -98,7 +100,7 @@ const makeProjectContext = Effect.gen(function* () {
           const envFileProjectId = envMap.get('COMPOSIO_PROJECT_ID');
           if (envFileOrgId && envFileProjectId) {
             yield* Effect.logDebug(`ProjectContext: resolved from ${envFilePath}`);
-            return Option.some<ProjectKeys>({
+            envContext = Option.some<ProjectKeys>({
               orgId: envFileOrgId,
               projectId: envFileProjectId,
               projectName: Option.none(),
@@ -132,6 +134,17 @@ const makeProjectContext = Effect.gen(function* () {
               )
             );
             if (Option.isSome(keysOpt)) {
+              if (Option.isSome(envContext)) {
+                const keys = keysOpt.value;
+                return Option.some<ProjectKeys>({
+                  ...envContext.value,
+                  testUserId:
+                    keys.orgId === envContext.value.orgId &&
+                    keys.projectId === envContext.value.projectId
+                      ? keys.testUserId
+                      : Option.none(),
+                });
+              }
               yield* Effect.logDebug(`ProjectContext: resolved from ${projectJsonPath}`);
               return keysOpt;
             }
@@ -141,6 +154,8 @@ const makeProjectContext = Effect.gen(function* () {
         // Stop at homedir to avoid reading from system directories
         if (dir === stopAt) break;
       }
+
+      if (Option.isSome(envContext)) return envContext;
 
       // 3. Nothing found
       yield* Effect.logDebug('ProjectContext: no context found');
