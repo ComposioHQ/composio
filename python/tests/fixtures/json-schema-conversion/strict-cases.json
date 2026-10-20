@@ -953,6 +953,300 @@
       }
     },
     {
+      "id": "openapi-nullable-folded",
+      "description": "OpenAPI `nullable`, which Anthropic rejects on an object, is removed; `true` widens the node to accept null the way the Zod conversion reads it, including on a typed enum, and `false` is dropped.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": ["a"]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "nullable": true
+          },
+          "untyped": {
+            "nullable": true,
+            "description": "anything"
+          },
+          "count": {
+            "type": "integer",
+            "nullable": false
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "nullable": true,
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": ["cfg", "mode", "count", "rows"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "type": ["object", "null"],
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            },
+            "note": {
+              "type": ["string", "null"]
+            },
+            "mode": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "untyped": {
+              "description": "anything"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": ["object", "null"],
+                "properties": {
+                  "id": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["cfg", "note", "mode", "untyped", "count", "rows"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.mode",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.count",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.rows.items.properties.id",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.rows.items",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "count": null,
+            "rows": [
+              null,
+              {
+                "id": null
+              }
+            ]
+          },
+          "output": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "rows": [null, {}]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recursive-nullable-union-gets-null-branch",
+      "description": "A `nullable: true` union that refers back to itself, or a nullable reference to the root, gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          },
+          "b": {
+            "$ref": "#/$defs/B"
+          },
+          "self": {
+            "$ref": "#",
+            "nullable": true
+          }
+        },
+        "required": ["a", "b", "self"],
+        "$defs": {
+          "A": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/A"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "B": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Nullable"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "Nullable": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/A"
+            },
+            "b": {
+              "$ref": "#/$defs/B"
+            },
+            "self": {
+              "anyOf": [
+                {
+                  "$ref": "#"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["a", "b", "self"],
+          "$defs": {
+            "A": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/A"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "B": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Nullable"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "Nullable": {
+              "type": ["string", "null"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.self",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "$defs.A",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "$defs.B",
+          "reason": "nullable-converted"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "a": null,
+            "b": null,
+            "self": null
+          },
+          "output": {
+            "a": null,
+            "b": null,
+            "self": null
+          }
+        }
+      ]
+    },
+    {
       "id": "enum-values-are-data-not-keywords",
       "description": "Keys inside enum/const values are data and must not be treated as keywords.",
       "schema": {

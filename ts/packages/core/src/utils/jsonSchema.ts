@@ -518,9 +518,14 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
  *   (`default`, `examples`, or a string `format` outside the accepted list)
  *   was removed.
  * - `one-of-converted` — `oneOf` (unsupported) became `anyOf`.
+ * - `nullable-converted` — OpenAPI `nullable: true`, which Anthropic rejects
+ *   on an object, became a `null` member of `type` or a null branch.
  */
 export type StrictSchemaChangeReason =
-  'optional-property-nullable' | 'unsupported-keyword-stripped' | 'one-of-converted';
+  | 'optional-property-nullable'
+  | 'unsupported-keyword-stripped'
+  | 'one-of-converted'
+  | 'nullable-converted';
 
 /** A single lossless rewrite applied by {@link toStrictJsonSchema}. */
 export interface StrictSchemaChange {
@@ -698,6 +703,11 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
  * the one it was given: the rewrite types every node that declares
  * `properties` as an object, so such a node stops accepting null.
  *
+ * `followRefs: false` makes every `$ref` reject null without resolving it.
+ * Folding `nullable` needs that, because a `$ref` can lead back to the node
+ * being folded, whose source still accepts null. It costs at most a
+ * redundant null branch.
+ *
  * One check serves a whole document, and an answer is computed once per node.
  * A reference cycle never yields a null by itself, so a node met again while
  * it is being evaluated counts as rejecting. An answer that leans on that is
@@ -712,7 +722,8 @@ function resolveLocalRefs(node: unknown, root: Record<string, unknown>): unknown
  */
 function createNullCheck(
   root: Record<string, unknown>,
-  strictOutput = false
+  strictOutput = false,
+  followRefs = true
 ): (schema: unknown) => boolean {
   // Markers for what an answer leans on, besides the depth of a node on the path.
   const NOTHING = MAX_NULL_CHECK_DEPTH + 1;
@@ -791,12 +802,16 @@ function createNullCheck(
   };
 
   const keywordsAccept = (node: Record<string, unknown>): boolean => {
+    // OpenAPI `nullable: true` admits null whatever the other keywords say,
+    // as the Zod conversion reads it.
+    if (node.nullable === true) return true;
     if (typeof node.type === 'string' && node.type !== 'null') return false;
     if (Array.isArray(node.type) && !node.type.includes('null')) return false;
     if (strictOutput && !('type' in node) && isPlainObject(node.properties)) return false;
     if (Array.isArray(node.enum) && !node.enum.includes(null)) return false;
     if ('const' in node && node.const !== null) return false;
     if ('$ref' in node) {
+      if (!followRefs) return false;
       const resolution =
         typeof node.$ref === 'string' ? tryResolvePointer(root, node.$ref) : undefined;
       if (resolution === undefined || resolution.kind === 'unresolved') return false;
@@ -834,7 +849,8 @@ function createNullCheck(
  *    before executing the tool (see {@link omitNullToolArguments});
  *  - `type` arrays are kept as-is (the API accepts them); `oneOf` becomes
  *    `anyOf`; `default`, `examples`, and a string `format` the API does
- *    not accept are stripped;
+ *    not accept are stripped; OpenAPI `nullable` is stripped too, and a
+ *    node that set it to `true` is widened to accept `null`;
  *  - local `$ref`s into `$defs`/`definitions` are kept (the API supports
  *    them, including recursion) and the definitions themselves are
  *    normalized; an optional `$ref` property is widened with an `anyOf`
@@ -864,6 +880,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
 
   const root: Record<string, unknown> = isPlainObject(schema) ? schema : {};
   const acceptsNullInOutput = createNullCheck(root, true);
+  const acceptsNullWithoutRefs = createNullCheck(root, true, false);
 
   function walkChildren(
     node: Record<string, unknown>,
@@ -915,6 +932,7 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
 
     const node: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(value)) {
+      if (key === 'nullable') continue;
       if (STRICT_STRIP_KEYWORDS.has(key)) {
         recordChange({
           path,
@@ -968,6 +986,24 @@ export function toStrictJsonSchema(schema: unknown): StrictJsonSchemaResult {
       unsupported.push({ path, keyword: 'properties', detail: 'properties is not an object' });
     }
 
+    const normalized = normalizeNode(node, mode, depth, path);
+    if (!('nullable' in value)) return normalized;
+    const widened =
+      value.nullable === true ? widenToNullable(normalized, acceptsNullWithoutRefs) : normalized;
+    recordChange(
+      widened === normalized
+        ? { path, reason: 'unsupported-keyword-stripped', detail: 'keyword "nullable" removed' }
+        : { path, reason: 'nullable-converted', detail: 'nullable became a null type' }
+    );
+    return widened;
+  }
+
+  function normalizeNode(
+    node: Record<string, unknown>,
+    mode: StrictWalkMode,
+    depth: number,
+    path: string
+  ): Record<string, unknown> {
     const out = walkChildren(node, mode, depth, path);
 
     if (typeof node.$ref === 'string') {
