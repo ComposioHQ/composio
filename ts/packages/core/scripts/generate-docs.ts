@@ -12,6 +12,11 @@ import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import {
+  generateSessionOptionPages,
+  sessionOptionTypeLinks,
+  linkSessionOptionOccurrences,
+} from './session-options';
 
 // Paths (relative to ts/packages/core)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -896,6 +901,10 @@ function generateMethodMdx(method: MethodDoc): string {
     lines.push('```typescript');
     lines.push(`${asyncPrefix}${method.name}(${params}): ${returnType}`);
     lines.push('```');
+    const optionTypes = sessionOptionTypeLinks(
+      [...sig.parameters.map(param => param.type), sig.returnType].join(' ')
+    );
+    if (optionTypes) lines.push(`Configuration types: ${optionTypes}`, '');
     lines.push('');
 
     // Parameters table
@@ -1041,14 +1050,28 @@ export function generateClassMdx(classDoc: ClassDoc): string {
       for (const prop of publicProps) {
         const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
         const safeDesc = escapeTableTextForMdx(prop.description || '');
-        lines.push(`| \`${prop.name}\` | \`${typeCell}\` | ${safeDesc} |`);
+        const optionTypes =
+          sessionOptionTypeLinks(prop.type) ??
+          (classDoc.name === 'ToolRouterSession' && prop.name === 'config'
+            ? sessionOptionTypeLinks('ToolRouterSessionConfig')
+            : undefined);
+        lines.push(
+          `| \`${prop.name}\` | \`${typeCell}\`${optionTypes ? ` (${optionTypes})` : ''} | ${safeDesc} |`
+        );
       }
     } else {
       lines.push('| Name | Type |');
       lines.push('|------|------|');
       for (const prop of publicProps) {
         const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
-        lines.push(`| \`${prop.name}\` | \`${typeCell}\` |`);
+        const optionTypes =
+          sessionOptionTypeLinks(prop.type) ??
+          (classDoc.name === 'ToolRouterSession' && prop.name === 'config'
+            ? sessionOptionTypeLinks('ToolRouterSessionConfig')
+            : undefined);
+        lines.push(
+          `| \`${prop.name}\` | \`${typeCell}\`${optionTypes ? ` (${optionTypes})` : ''} |`
+        );
       }
     }
     lines.push('');
@@ -1063,7 +1086,7 @@ export function generateClassMdx(classDoc: ClassDoc): string {
     }
   }
 
-  return lines.join('\n');
+  return linkSessionOptionOccurrences(lines.join('\n'));
 }
 
 function toKebabCase(str: string): string {
@@ -1262,6 +1285,11 @@ async function main() {
     `  Found ${classesToDocument.length} classes to document: ${classesToDocument.join(', ')}`
   );
 
+  const sessionOptionPages = generateSessionOptionPages(PACKAGE_DIR);
+  for (const [slug, content] of Object.entries(sessionOptionPages)) {
+    await writeFile(join(OUTPUT_DIR, `${slug}.mdx`), content);
+  }
+
   // Find and document each class
   const documented: { name: string; description: string }[] = [];
 
@@ -1309,6 +1337,7 @@ description: ${formatYamlFrontmatterString('Complete API reference for the Compo
 | Class | Description |
 |-------|-------------|
 ${classesTable}
+| [Session options and config](session-options) | Create input, PATCH input, and returned configuration fields. |
 
 ## Quick Start
 
@@ -1337,7 +1366,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   // Generate meta.json for sidebar
   const meta = {
     title: 'TypeScript SDK',
-    pages: documented.map(({ name }) => slugFor(name)),
+    pages: [...documented.map(({ name }) => slugFor(name)), ...Object.keys(sessionOptionPages)],
   };
   await writeFile(join(OUTPUT_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
 

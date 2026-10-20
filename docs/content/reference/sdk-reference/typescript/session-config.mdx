@@ -1,0 +1,222 @@
+---
+title: "Session returned config"
+description: "Server-returned Session configuration and its nested field shapes."
+---
+
+[All Session contracts](session-options)
+
+## Returned config
+
+```typescript
+import type { ToolRouterSessionConfig } from '@composio/core';
+```
+
+`ToolRouterSessionConfig` resolves the installed client definition `SessionCreateResponse.Config`. It is not the create or PATCH input. The API uses snake_case names here, stores normalized account arrays, and returns sandbox settings under `workbench`.
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `user_id` | `string` | Yes | User identifier for this session |
+| `toolkits` | `undefined` \| [`toolkits.variant.2`](session-config#returned-config-toolkits-variant-2) \| [`toolkits.variant.3`](session-config#returned-config-toolkits-variant-3) \| [`toolkits.variant.4`](session-config#returned-config-toolkits-variant-4) | No | Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval |
+| `auth_configs` | `undefined` \| Record&lt;`string`, `string`&gt; | No | Auth config overrides per toolkit |
+| `instant` | `false` \| [`instant.variant.2`](session-config#returned-config-instant-variant-2) | Yes | Instant usage settings. False disables instant usage; an object permits it subject to project permission and session toolkit and tool restrictions. |
+| `manage_connections` | `undefined` \| [`manage.connections.variant.2`](session-config#returned-config-manage-connections-variant-2) | No | Manage connections configuration |
+| `tools` | `undefined` \| Record&lt;`string`, [`tools.variant.2.value.variant.1`](session-config#returned-config-tools-variant-2-value-variant-1) \| [`tools.variant.2.value.variant.2`](session-config#returned-config-tools-variant-2-value-variant-2) \| [`tools.variant.2.value.variant.3`](session-config#returned-config-tools-variant-2-value-variant-3) \| [`tools.variant.2.value.variant.4`](session-config#returned-config-tools-variant-2-value-variant-4)&gt; | No | Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval |
+| `tags` | `undefined` \| [`tags.variant.2`](session-config#returned-config-tags-variant-2) | No | MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied. |
+| `workbench` | `undefined` \| [`workbench.variant.2`](session-config#returned-config-workbench-variant-2) | No | Workbench configuration |
+| `multi_account` | `undefined` \| [`multi.account.variant.2`](session-config#returned-config-multi-account-variant-2) | No | Multi-account configuration for this session. |
+| `proxy_execute` | `undefined` \| [`proxy.execute.variant.2`](session-config#returned-config-proxy-execute-variant-2) | No | Proxy execute configuration for this session. Omitted when not set. |
+| `preload` | [`preload`](session-config#returned-config-preload) | Yes | Preload configuration. Explicit slugs are returned as an array; dynamic preload is returned as "all". |
+| `connected_accounts` | `undefined` \| Record&lt;`string`, Array&lt;`string`&gt;&gt; | No | Per-toolkit connected account overrides (array of nano-IDs). Multi-account sessions can pin more than one account per toolkit; otherwise length is 1. |
+| `search` | [`search`](session-config#returned-config-search) | Yes | Search helper configuration |
+| `execute` | [`execute`](session-config#returned-config-execute) | Yes | Execute helper configuration |
+
+<a id="returned-config-toolkits-variant-2" />
+
+### toolkits.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | Array&lt;`string`&gt; | Yes |  |
+| `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-toolkits-variant-3" />
+
+### toolkits.variant.3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disabled` | Array&lt;`string`&gt; | Yes |  |
+| `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-toolkits-variant-4" />
+
+### toolkits.variant.4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `require_approval` | Array&lt;`string`&gt; | Yes | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-instant-variant-2" />
+
+### instant.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolkits` | `undefined` \| [`instant.variant.2.toolkits.variant.2`](session-config#returned-config-instant-variant-2-toolkits-variant-2) \| [`instant.variant.2.toolkits.variant.3`](session-config#returned-config-instant-variant-2-toolkits-variant-3) | No | Toolkits eligible for instant usage, as an enabled or disabled list. If absent, no additional toolkit restriction applies. |
+| `tools` | `undefined` \| Record&lt;`string`, [`instant.variant.2.tools.variant.2.value.variant.1`](session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-1) \| [`instant.variant.2.tools.variant.2.value.variant.2`](session-config#returned-config-instant-variant-2-tools-variant-2-value-variant-2)&gt; | No | Per-toolkit enabled or disabled lists that restrict instant usage. Toolkits absent from this map have no additional tool restriction. |
+| `return_instant_charge` | `false` \| `true` | Yes | Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only. |
+| `return_prices_in_search` | `false` \| `true` | Yes | Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false. |
+
+<a id="returned-config-instant-variant-2-toolkits-variant-2" />
+
+### instant.variant.2.toolkits.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="returned-config-instant-variant-2-toolkits-variant-3" />
+
+### instant.variant.2.toolkits.variant.3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disabled` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="returned-config-instant-variant-2-tools-variant-2-value-variant-1" />
+
+### instant.variant.2.tools.variant.2.value.variant.1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="returned-config-instant-variant-2-tools-variant-2-value-variant-2" />
+
+### instant.variant.2.tools.variant.2.value.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disabled` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="returned-config-manage-connections-variant-2" />
+
+### manage.connections.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `undefined` \| `false` \| `true` | No | Whether to enable the connection manager for automatic connection handling |
+| `callback_url` | `undefined` \| `string` | No | Custom callback URL for connected account auth flows |
+| `enable_wait_for_connections` | `undefined` \| `false` \| `true` | No | Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status. Default false. May not work reliably with GPT models. |
+| `enable_connection_removal` | `undefined` \| `false` \| `true` | No | Enable the "remove" action in COMPOSIO_MANAGE_CONNECTIONS. Default true. |
+
+<a id="returned-config-tools-variant-2-value-variant-1" />
+
+### tools.variant.2.value.variant.1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | Array&lt;`string`&gt; | Yes |  |
+| `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-tools-variant-2-value-variant-2" />
+
+### tools.variant.2.value.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disabled` | Array&lt;`string`&gt; | Yes |  |
+| `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-tools-variant-2-value-variant-3" />
+
+### tools.variant.2.value.variant.3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tags` | [`tools.variant.2.value.variant.3.tags`](session-config#returned-config-tools-variant-2-value-variant-3-tags) | Yes |  |
+| `require_approval` | `undefined` \| Array&lt;`string`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-tools-variant-2-value-variant-3-tags" />
+
+### tools.variant.2.value.variant.3.tags
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tags that the tool must have at least one of |
+| `disabled` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tags that the tool must NOT have any of |
+| `require_approval` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-tools-variant-2-value-variant-4" />
+
+### tools.variant.2.value.variant.4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `require_approval` | Array&lt;`string`&gt; | Yes | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-tags-variant-2" />
+
+### tags.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tags that the tool must have at least one of |
+| `disabled` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tags that the tool must NOT have any of |
+| `require_approval` | `undefined` \| Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; | No | Tool calls matched here pause until the user approves them. |
+
+<a id="returned-config-workbench-variant-2" />
+
+### workbench.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `undefined` \| `false` \| `true` | No | Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed. |
+| `tool_execution_enabled` | `undefined` \| `false` \| `true` | No | Whether tool execution is enabled in the workbench |
+| `proxy_execution_enabled` | `undefined` \| `false` \| `true` | No | Whether proxy execution is enabled in the workbench |
+| `auto_offload_threshold` | `undefined` \| `number` | No | Character threshold after which tool execution response are saved to a file in workbench. Default is 20k. |
+| `sandbox_size` | `undefined` \| `"standard"` \| `"medium"` \| `"large"` \| `"xlarge"` | No | Sandbox compute tier: standard (1 vCPU / 1 GB), medium (2 vCPU / 2 GB), large (4 vCPU / 4 GB), xlarge (8 vCPU / 8 GB). Defaults to standard. |
+
+<a id="returned-config-multi-account-variant-2" />
+
+### multi.account.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `undefined` \| `false` \| `true` | No | When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration. |
+| `max_accounts_per_toolkit` | `undefined` \| `number` | No | Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled. |
+| `require_explicit_selection` | `undefined` \| `false` \| `true` | No | When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account. |
+
+<a id="returned-config-proxy-execute-variant-2" />
+
+### proxy.execute.variant.2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `false` \| `true` | Yes | When true, enables proxy execute outside the workbench. When false, also disables proxy execution inside the workbench. |
+
+<a id="returned-config-preload" />
+
+### preload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tools` | Array&lt;`string`&gt; \| `"all"` | Yes | Explicit preloaded tool slugs, or "all" when the session dynamically exposes all app tools allowed by its filters. |
+
+<a id="returned-config-search" />
+
+### search
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `undefined` \| `false` \| `true` | No |  |
+
+<a id="returned-config-execute" />
+
+### execute
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable_multi_execute` | `undefined` \| `false` \| `true` | No |  |

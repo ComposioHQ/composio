@@ -191,3 +191,150 @@ def test_generated_examples_do_not_keep_nested_markdown_fences():
         'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
         "print(result)"
     ]
+
+
+def test_session_shapes_follow_nested_aliases_and_union_branches():
+    generate_docs = load_generate_docs_module()
+    reference = generate_docs.load_session_options_module()
+    shapes = reference.Shapes(
+        {
+            "sdk": """
+from client import Policy
+class Input:
+    tools: dict[str, Policy] | None
+""",
+            "client": """
+from typing import TypeAlias
+from typing_extensions import TypedDict, Required, NotRequired
+class Enabled(TypedDict, total=False):
+    enable: Required[list[str]]
+    price: NotRequired[bool | None]
+class Disabled(TypedDict):
+    disable: list[str]
+Policy: TypeAlias = Enabled | Disabled
+""",
+        }
+    )
+    field = shapes.fields("sdk", shapes.definitions["sdk", "Input"])[0]
+    rendered = shapes.type("sdk", field[1])
+    assert "[`Policy`](#client-policy)" in rendered
+    union = shapes.type("client", shapes.definitions["client", "Policy"])
+    assert "[`Enabled`](#client-enabled)" in union
+    assert "[`Disabled`](#client-disabled)" in union
+    fields = shapes.fields("client", shapes.definitions["client", "Enabled"])
+    assert [(field[0], field[2]) for field in fields] == [
+        ("enable", True),
+        ("price", False),
+    ]
+    assert ast.unparse(fields[1][1]) == "bool | None"
+
+
+def test_session_options_nested_links_resolve_to_generated_sections():
+    generate_docs = load_generate_docs_module()
+    reference = generate_docs.load_session_options_module()
+    pages, contract_links = reference.generate_session_options(
+        generate_docs.PACKAGE_DIR,
+        generate_docs.parse_docstring,
+        generate_docs.normalize_inline_rst,
+    )
+    for slug, links in contract_links.items():
+        mdx = pages[slug]
+        anchors = set(re.findall(r'<a id="([^"]+)"></a>', mdx))
+        targets = set(re.findall(r"\]\(#([^)]+)\)", mdx))
+        assert targets <= anchors
+        assert anchors
+        assert {url.split("#", 1)[1] for url in links.values()} <= anchors
+        assert all(f"/{slug}#" in url for url in links.values())
+    create = contract_links["session-create-options"]
+    update = contract_links["session-update-options"]
+    returned = contract_links["session-config"]
+    assert "ToolRouterInstantConfig" in create and "ToolRouterInstantConfig" in update
+    assert "ToolRouterSessionConfig" not in create
+    assert "ToolRouterSessionConfig" not in update
+    assert "ToolRouterSessionConfig" in returned
+    assert "session_patch_params.Toolkits" in update
+    assert "session_create_response.ConfigToolsTagsTags" in returned
+    assert "session_create_response.ConfigToolkitsEnabled" in returned
+    assert "session_create_response.ConfigToolkitsDisabled" in returned
+    assert "session_create_response.ConfigToolkitsRequireApproval" in returned
+    assert '<a id="' not in pages["session-options"]
+
+
+def test_session_config_annotations_link_without_truncating_unions():
+    generate_docs = load_generate_docs_module()
+    link = "/reference/sdk-reference/python/session-update-options#example"
+    rendered = generate_docs.linked_type(
+        "Union[Optional[session_patch_params.Toolkits], ToolRouterInstantConfig, 'Omit']",
+        {"session_patch_params.Toolkits": link, "ToolRouterInstantConfig": link},
+    )
+    assert rendered.count(f"]({link})") == 2
+    assert "'Omit'" in rendered
+    assert "..." not in rendered
+
+
+def test_sessions_examples_are_python_and_do_not_swallow_method_headings():
+    generate_docs = load_generate_docs_module()
+    source = generate_docs.PACKAGE_DIR / "composio/core/models/tool_router.py"
+    tree = ast.parse(source.read_text())
+    router = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "ToolRouter"
+    )
+    methods = {}
+    for node in router.body:
+        if isinstance(node, ast.FunctionDef) and node.name in {"create", "use"}:
+            examples = generate_docs.session_method_examples(ast.get_docstring(node))
+            if not examples:
+                continue  # Type-only overloads have no docstring.
+            for example in examples:
+                assert "```" not in example
+                ast.parse(example)
+            methods[node.name] = {
+                "name": node.name,
+                "description": "",
+                "parameters": [],
+                "return_type": "Any",
+                "return_description": "",
+                "raises": [],
+                "examples": examples,
+            }
+    assert set(methods) == {"create", "use"}
+    mdx = generate_docs.generate_class_mdx(
+        {
+            "name": "ToolRouter",
+            "description": "",
+            "properties": [],
+            "methods": list(methods.values()),
+        }
+    )
+    in_fence = False
+    for line in mdx.splitlines():
+        if line.startswith("```"):
+            in_fence = not in_fence
+        if line == "### use()":
+            assert not in_fence
+    assert not in_fence
+
+
+@pytest.mark.parametrize(
+    ("annotation", "expected"),
+    [
+        (
+            "t.Optional[t.Union[t.List[str], ToolRouterToolkitsEnableConfig]]",
+            "Optional[Union[List[str], ToolRouterToolkitsEnableConfig]]",
+        ),
+        (
+            "t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]]",
+            "Optional[Union[Literal[False], ToolRouterInstantConfig]]",
+        ),
+        ("t.Optional[t.Dict[str, str]]", "Optional[Dict[str, str]]"),
+        ("te.Unpack[SDKConfig]", "Unpack[SDKConfig]"),
+    ],
+)
+def test_sessions_annotations_preserve_wrapper_nesting(annotation, expected):
+    generate_docs = load_generate_docs_module()
+    rendered = generate_docs.format_session_type(annotation)
+    assert ast.dump(ast.parse(rendered, mode="eval")) == ast.dump(
+        ast.parse(expected, mode="eval")
+    )

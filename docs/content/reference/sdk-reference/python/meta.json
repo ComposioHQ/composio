@@ -8,6 +8,11 @@
     "connected-accounts",
     "auth-configs",
     "mcp",
-    "session"
+    "sessions",
+    "session",
+    "session-options",
+    "session-create-options",
+    "session-update-options",
+    "session-config"
   ]
 }

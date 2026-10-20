@@ -1,0 +1,200 @@
+---
+title: "Sessions"
+description: "ToolRouter class for managing tool routing sessions.  Provides functionality to create isolated tool router sessions with provider-wrapped tools, a..."
+---
+
+## Methods
+
+### create()
+
+[Complete options and nested types](/reference/sdk-reference/python/session-create-options#create-input).
+
+Create a new tool router session for a user.
+
+```python
+def create(user_id: str, toolkits: Optional[Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig]] = ..., tools: Optional[Dict[str, ToolRouterToolsConfig]] = ..., tags: Optional[ToolRouterConfigTags] = ..., manage_connections: Optional[Union[bool, ToolRouterManageConnectionsConfig]] = ..., auth_configs: Optional[Dict[str, str]] = ..., connected_accounts: Optional[Dict[str, Union[str, List[str]]]] = ..., sandbox: Optional[ToolRouterSandboxConfig] = ..., workbench: Optional[ToolRouterWorkbenchConfig] = ..., multi_account: Optional[ToolRouterMultiAccountConfig] = ..., proxy_execute: Optional[Union[bool, ToolRouterProxyExecuteConfig]] = ..., preload: Optional[ToolRouterPreloadConfig] = ..., session_preset: Optional[SessionPreset] = ..., experimental: Optional[ToolRouterExperimentalConfig] = ..., instant: Optional[Union[Literal[False], ToolRouterInstantConfig]] = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `toolkits?` | `Optional[Union[List[str], `[`ToolRouterToolkitsEnableConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsenableconfig)`, `[`ToolRouterToolkitsDisableConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsdisableconfig)`, `[`ToolRouterToolkitsRequireApprovalConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolkitsrequireapprovalconfig)`]]` |
+| `tools?` | `Optional[Dict[str, `[`ToolRouterToolsConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutertoolsconfig)`]]` |
+| `tags?` | `Optional[`[`ToolRouterConfigTags`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterconfigtags)`]` |
+| `manage_connections?` | `Optional[Union[bool, `[`ToolRouterManageConnectionsConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutermanageconnectionsconfig)`]]` |
+| `auth_configs?` | `Optional[Dict[str, str]]` |
+| `connected_accounts?` | `Optional[Dict[str, Union[str, List[str]]]]` |
+| `sandbox?` | `Optional[`[`ToolRouterSandboxConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutersandboxconfig)`]` |
+| `workbench?` | `Optional[`[`ToolRouterWorkbenchConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterworkbenchconfig)`]` |
+| `multi_account?` | `Optional[`[`ToolRouterMultiAccountConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolroutermultiaccountconfig)`]` |
+| `proxy_execute?` | `Optional[Union[bool, `[`ToolRouterProxyExecuteConfig`](/reference/sdk-reference/python/session-create-options#tool-router-session-toolrouterproxyexecuteconfig)`]]` |
+| `preload?` | `Optional[`[`ToolRouterPreloadConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterpreloadconfig)`]` |
+| `session_preset?` | `Optional[`[`SessionPreset`](/reference/sdk-reference/python/session-create-options#tool-router-sessionpreset)`]` |
+| `experimental?` | `Optional[`[`ToolRouterExperimentalConfig`](/reference/sdk-reference/python/session-create-options#tool-router-toolrouterexperimentalconfig)`]` |
+| `instant?` | `Optional[Union[Literal[False], `[`ToolRouterInstantConfig`](/reference/sdk-reference/python/session-create-options#tool-router-session-toolrouterinstantconfig)`]]` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`ToolRouterSession[TTool, TToolCollection]` — Tool router session object
+
+**Raises**
+
+- `MCPDestinationError` — When `mcp=True` and the MCP URL is not on the API origin.
+
+**Example**
+
+```python
+# Create a basic session
+session = tool_router.create(user_id='user_123')
+
+# Create a session with specific toolkits
+session = tool_router.create(
+    user_id='user_123',
+    toolkits=['github', 'slack']
+)
+
+# Create a direct-tools session when all needed tools are known upfront
+session = tool_router.create(
+    user_id='user_123',
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    toolkits=['github']
+)
+
+# Create a session with per-toolkit tool configuration
+session = tool_router.create(
+    user_id='user_123',
+    tools={
+        'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],  # List shorthand
+        'github': {'enable': ['GITHUB_CREATE_ISSUE']},  # Explicit enable
+        'slack': {'disable': ['SLACK_DELETE_MESSAGE']},  # Explicit disable
+    }
+)
+
+# Create a session with global tag filtering
+session = tool_router.create(
+    user_id='user_123',
+    tags=['readOnlyHint', 'createHint']
+)
+
+# Create a session with toolkit-specific tag filtering (array format)
+session = tool_router.create(
+    user_id='user_123',
+    tools={
+        'gmail': {'tags': ['readOnlyHint']},
+        'github': {'tags': ['readOnlyHint', 'createHint']}
+    }
+)
+
+# Create a session with toolkit-specific tag filtering (object format)
+session = tool_router.create(
+    user_id='user_123',
+    tools={
+        'gmail': {'tags': {'enable': ['readOnlyHint']}},
+        'github': {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
+    }
+)
+
+# Create a session with connection management
+session = tool_router.create(
+    user_id='user_123',
+    manage_connections={
+        'enable': True,
+        'callback_url': 'https://example.com/callback',
+        'wait_for_connections': True,
+    }
+)
+
+# Create a session with sandbox disabled
+session = tool_router.create(
+    user_id='user_123',
+    sandbox={
+        'enable': False
+    }
+)
+
+# Create a session with sandbox config
+session = tool_router.create(
+    user_id='user_123',
+    sandbox={
+        'enable_proxy_execution': False,
+        'auto_offload_threshold': 300
+    }
+)
+
+# Use the session
+tools = session.tools()
+connection = session.authorize('github')
+toolkit_states = session.toolkits()
+```
+
+---
+
+### use()
+
+Use an existing tool router session.  Provide `custom_tools` or `custom_toolkits` to bind SDK-local tools to the session for search and execution.  If the existing session has `preload.tools = "all"`, every bound custom tool is also exposed via `session.tools()` and re-injected with `preload=True` on subsequent search/execute calls. A custom tool with explicit `preload=False` still opts out.
+
+```python
+def use(session_id: str, custom_tools: Optional[List[CustomTool]] = ..., custom_toolkits: Optional[List[ExperimentalToolkit]] = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+| `custom_tools?` | `Optional[List[`[`CustomTool`](/reference/sdk-reference/python/session-create-options#custom-tool-types-customtool)`]]` |
+| `custom_toolkits?` | `Optional[List[`[`ExperimentalToolkit`](/reference/sdk-reference/python/session-create-options#custom-tool-experimentaltoolkit)`]]` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`ToolRouterSession[TTool, TToolCollection]` — Tool router session object
+
+**Raises**
+
+- `MCPDestinationError` — When `mcp=True` and the MCP URL is not on the API origin.
+
+**Example**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Use an existing session
+session = composio.use('session_123')
+
+# Use an existing session with custom tools
+session = composio.use(
+    'session_123',
+    custom_tools=[my_tool],
+    custom_toolkits=[my_toolkit],
+)
+```
+
+---
+
+### delete()
+
+Delete a tool router session by ID.  Deleted sessions immediately stop being retrievable or executable. A missing or already-deleted session surfaces the backend 404.
+
+```python
+def delete(session_id: str) -> ToolRouterSessionDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+
+**Returns**
+
+`ToolRouterSessionDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L593)

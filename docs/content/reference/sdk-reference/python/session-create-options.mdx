@@ -1,0 +1,507 @@
+---
+title: "Session create options"
+description: "Python session create options and source-derived nested types."
+---
+
+[Compare Session contracts](/reference/sdk-reference/python/session-options).
+
+Pass these keyword arguments to `composio.create()` or `composio.sessions.create()`. Python has no saved-config `config` create parameter. `None` is the create default for optional policy blocks, not the PATCH reset operation.
+
+## Create input
+
+| Parameter | Type | SDK default | Description |
+| --- | --- | --- | --- |
+| `user_id` | `str` | Required | The user ID to create the session for. |
+| `toolkits` | `Optional[Union[List[str], `[`ToolRouterToolkitsEnableConfig`](#tool-router-toolroutertoolkitsenableconfig)`, `[`ToolRouterToolkitsDisableConfig`](#tool-router-toolroutertoolkitsdisableconfig)`, `[`ToolRouterToolkitsRequireApprovalConfig`](#tool-router-toolroutertoolkitsrequireapprovalconfig)`]]` | `None` | Optional toolkit configuration. Can be: - List[str]: List of toolkit slugs to enable. |
+| `tools` | `Optional[Dict[str, `[`ToolRouterToolsConfig`](#tool-router-toolroutertoolsconfig)`]]` | `None` | Optional per-toolkit tool configuration. Key is toolkit slug, value is ToolRouterToolsConfig which can be: - List[str]: List of tool slugs (shorthand for enable). |
+| `tags` | `Optional[`[`ToolRouterConfigTags`](#tool-router-toolrouterconfigtags)`]` | `None` | Optional global MCP tags to filter tools by. Can be: - List[str]: List of tag literals (shorthand for enable). |
+| `manage_connections` | `Optional[Union[bool, `[`ToolRouterManageConnectionsConfig`](#tool-router-toolroutermanageconnectionsconfig)`]]` | `None` | Optional connection management configuration. Can be: - bool: Simple boolean to enable/disable. |
+| `auth_configs` | `Optional[Dict[str, str]]` | `None` | Optional mapping of toolkit slug to auth config ID. |
+| `connected_accounts` | `Optional[Dict[str, Union[str, List[str]]]]` | `None` | Optional mapping of toolkit slug to connected account ID(s). Accepts a single string or a list of strings per toolkit. Only one account per toolkit is allowed when multi-account mode is disabled. |
+| `sandbox` | `Optional[`[`ToolRouterSandboxConfig`](#tool-router-toolroutersandboxconfig)`]` | `None` | Optional sandbox configuration. Dict with: - 'enable' (bool): Whether to enable the sandbox entirely. Defaults to True. When set to False, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session. - 'enable_proxy_execution' (bool): Whether to allow proxy execute calls in the sandbox. If False, prevents arbitrary HTTP requests. - 'auto_offload_threshold' (int): Maximum execution payload size to offload to the sandbox. - 'sandbox_size' (SandboxSize): Sandbox compute tier. One of 'standard' (1 vCPU / 1 GB, default), 'medium' (2 vCPU / 2 GB), 'large' (4 vCPU / 4 GB), or 'xlarge' (8 vCPU / 8 GB). |
+| `workbench` | `Optional[`[`ToolRouterWorkbenchConfig`](#tool-router-toolrouterworkbenchconfig)`]` | `None` | Deprecated alias for sandbox. Accepted for backwards compatibility. |
+| `multi_account` | `Optional[`[`ToolRouterMultiAccountConfig`](#tool-router-toolroutermultiaccountconfig)`]` | `None` | Optional multi-account configuration (ToolRouterMultiAccountConfig). Dict with: - 'enable' (bool): When True, enables multi-account mode. Falls back to org/project-level config when not set. - 'max_accounts_per_toolkit' (int): Max connected accounts per toolkit (2-10). Defaults to 5. - 'require_explicit_selection' (bool): When True, require explicit account selection when multiple accounts are connected. |
+| `proxy_execute` | `Optional[Union[bool, `[`ToolRouterProxyExecuteConfig`](#tool-router-session-toolrouterproxyexecuteconfig)`]]` | `None` | Optional proxy execute configuration: a bool or `ToolRouterProxyExecuteConfig`; `True` is shorthand for `{"enable": True}`. `True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool. `False` also turns off the sandbox `proxy_execute()` helper, and the API rejects it together with `sandbox={"enable_proxy_execution": True}`. Leaving it out keeps the meta tool off. |
+| `preload` | `Optional[`[`ToolRouterPreloadConfig`](#tool-router-toolrouterpreloadconfig)`]` | `None` | Optional preload configuration. Dict with: - 'tools' (List[str] \| 'all'): Tool slugs to expose directly in session.tools() and MCP tool lists. 'all' exposes every app tool allowed by positive session filters such as toolkits, tools, or tags; the backend validates and caps the final set. |
+| `session_preset` | `Optional[`[`SessionPreset`](#tool-router-sessionpreset)`]` | `None` | Optional session preset. Use SESSION_PRESET_DIRECT_TOOLS when all needed tools are known upfront and should be exposed directly from session.tools() and the MCP tool list. It disables meta/helper tools by default; explicit overrides still win. Loading many tools can increase model context usage. |
+| `experimental` | `Optional[`[`ToolRouterExperimentalConfig`](#tool-router-toolrouterexperimentalconfig)`]` | `None` | Optional experimental configuration (ToolRouterExperimentalConfig). Note: These features are experimental and may change. Dict with: - 'assistive_prompt' (dict): Configuration for assistive prompt generation. - 'user_timezone' (str): IANA timezone identifier (e.g., "America/New_York", "Europe/London"). - 'custom_tools' / 'custom_toolkits': SDK custom tools. - 'no_elicitation_support_fallback' ('deny' or 'allow'): what happens to a call that needs approval when the session's MCP client can't ask the user. Set preload=True on a custom tool or toolkit to expose it directly from session.tools(); otherwise custom tools remain search-only. |
+| `instant` | `Optional[Union[Literal[False], `[`ToolRouterInstantConfig`](#tool-router-session-toolrouterinstantconfig)`]]` | `None` | Experimental Instant usage policy. The project must allow Instant usage. `False` disables it for this Session; a policy can restrict eligible toolkits and tools. `return_instant_charge` returns the charge with each call, and `return_prices_in_search` shows each Instant tool's price in `session.search()` results. |
+| `mcp` | `bool` | `False` | When True, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type (returns ToolRouterSessionWithMcp). The endpoint exists on every session at runtime regardless of this flag; native tools (`session.tools()`) are unaffected. The session credential is exported in `session.mcp.headers` only when the MCP URL shares the origin of the configured API base URL. When it does not, `mcp=True` raises `MCPDestinationError` (naming both origins, never a key); otherwise the session is returned with empty `session.mcp.headers` and a warning naming both origins is logged. See https://docs.composio.dev/docs/sessions-via-mcp |
+
+## Nested definitions
+
+Required keys, nullable values, and model defaults are shown independently. A response model's `None` default is not a server policy default. Source docstrings describe server defaults where specified.
+
+<a id="tool-router-toolroutertoolkitsenableconfig"></a>
+
+### ToolRouterToolkitsEnableConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolkitsEnableConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L139)
+
+Configuration for enabling specific toolkits in tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `List[str]` | Optional key | List of toolkit slugs to enable in the tool router session. |
+| `require_approval` | `List[str]` | Optional key | Experimental. Toolkits whose tools need the user's approval before they<br />    run. A call that needs approval doesn't run: `session.execute()` raises<br />    `ToolInputRequiredError` with the question to show the user. |
+
+<a id="tool-router-toolroutertoolkitsdisableconfig"></a>
+
+### ToolRouterToolkitsDisableConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolkitsDisableConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L153)
+
+Configuration for disabling specific toolkits in tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `List[str]` | Optional key | List of toolkit slugs to disable in the tool router session. |
+| `require_approval` | `List[str]` | Optional key | Experimental. Toolkits whose tools need the user's approval before they<br />    run. A call that needs approval doesn't run: `session.execute()` raises<br />    `ToolInputRequiredError` with the question to show the user. |
+
+<a id="tool-router-toolroutertoolkitsrequireapprovalconfig"></a>
+
+### ToolRouterToolkitsRequireApprovalConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolkitsRequireApprovalConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L167)
+
+Toolkit policy that only sets which toolkits need the user's approval.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `List[str]` | Required | Experimental. Toolkits whose tools need the user's approval before they<br />    run. A call that needs approval doesn't run: `session.execute()` raises<br />    `ToolInputRequiredError` with the question to show the user. |
+
+<a id="tool-router-toolroutertoolsconfig"></a>
+
+### ToolRouterToolsConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolsConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L233)
+
+`Union[List[str], `[`ToolRouterToolsEnableConfig`](#tool-router-toolroutertoolsenableconfig)`, `[`ToolRouterToolsDisableConfig`](#tool-router-toolroutertoolsdisableconfig)`, `[`ToolRouterToolsTagsConfig`](#tool-router-toolroutertoolstagsconfig)`, `[`ToolRouterToolsRequireApprovalConfig`](#tool-router-toolroutertoolsrequireapprovalconfig)`]`
+
+<a id="tool-router-toolrouterconfigtags"></a>
+
+### ToolRouterConfigTags
+
+```python
+from composio.core.models.tool_router import ToolRouterConfigTags
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L261)
+
+`Union[List[`[`ToolRouterTag`](#tool-router-toolroutertag)`], `[`ToolRouterTagsEnableDisableConfig`](#tool-router-toolroutertagsenabledisableconfig)`]`
+
+<a id="tool-router-toolroutermanageconnectionsconfig"></a>
+
+### ToolRouterManageConnectionsConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterManageConnectionsConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L308)
+
+Configuration for connection management in tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key | Whether to use tools to manage connections. Defaults to True. If False, you need to manage connections manually. |
+| `callback_url` | `str` | Optional key | Optional callback URL to use for OAuth redirects. |
+| `wait_for_connections` | `bool` | Optional key | Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to False. If set to True, a wait for connections tool call will happen and finish when the connections are ready. |
+
+<a id="tool-router-toolroutersandboxconfig"></a>
+
+### ToolRouterSandboxConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterSandboxConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L274)
+
+Configuration for session sandbox settings.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key | Whether to enable the sandbox entirely. Defaults to True. When set to False, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session, sandbox-related prompt lines are stripped, and direct sandbox calls are rejected. |
+| `enable_proxy_execution` | `bool` | Optional key | Whether to allow proxy execute calls in the sandbox. If False, prevents arbitrary HTTP requests. |
+| `auto_offload_threshold` | `int` | Optional key | Maximum execution payload size to offload to the sandbox. |
+| `sandbox_size` | [`SandboxSize`](#tool-router-sandboxsize) | Optional key | Sandbox compute tier. One of `"standard"` (1 vCPU / 1 GB), `"medium"` (2 vCPU / 2 GB), `"large"` (4 vCPU / 4 GB), or `"xlarge"` (8 vCPU / 8 GB). Defaults to `"standard"` server-side when omitted. Changing this on an existing session recreates the sandbox on next access; the in-memory FS state is lost, but the `/mnt/files/` mount persists. |
+
+<a id="tool-router-toolrouterworkbenchconfig"></a>
+
+### ToolRouterWorkbenchConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterWorkbenchConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L300)
+
+Deprecated alias for `ToolRouterSandboxConfig`.
+
+`workbench` is still accepted for backwards compatibility; prefer
+`sandbox` in new code.
+
+Inherits [`ToolRouterSandboxConfig`](#tool-router-toolroutersandboxconfig).
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key |  |
+| `enable_proxy_execution` | `bool` | Optional key |  |
+| `auto_offload_threshold` | `int` | Optional key |  |
+| `sandbox_size` | [`SandboxSize`](#tool-router-sandboxsize) | Optional key |  |
+
+<a id="tool-router-toolroutermultiaccountconfig"></a>
+
+### ToolRouterMultiAccountConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterMultiAccountConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L326)
+
+Configuration for multi-account mode in tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Optional key | When True, enables multi-account mode. When not set, falls back to org/project-level configuration. |
+| `max_accounts_per_toolkit` | `int` | Optional key | Maximum connected accounts allowed per toolkit (2-10). Defaults to 5 when multi-account is enabled. |
+| `require_explicit_selection` | `bool` | Optional key | When True, require explicit account selection when multiple accounts are connected. Defaults to False. |
+
+<a id="tool-router-session-toolrouterproxyexecuteconfig"></a>
+
+### ToolRouterProxyExecuteConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterProxyExecuteConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L165)
+
+Proxy execute settings for a Session.
+
+`enable=True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool and
+`enable=False` also turns off the sandbox `proxy_execute()` helper.
+Leaving the block out keeps the meta tool off while
+`sandbox.enable_proxy_execution` controls the helper.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Required |  |
+
+<a id="tool-router-toolrouterpreloadconfig"></a>
+
+### ToolRouterPreloadConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterPreloadConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L343)
+
+Configuration for tools preloaded into a tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tools` | `Union[List[str], Literal['all']]` | Optional key | Tool slugs to expose directly in `session.tools()` and MCP tool lists without first calling search. |
+
+<a id="tool-router-sessionpreset"></a>
+
+### SessionPreset
+
+```python
+from composio.core.models.tool_router import SessionPreset
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L136)
+
+`Literal['direct_tools']`
+
+<a id="tool-router-toolrouterexperimentalconfig"></a>
+
+### ToolRouterExperimentalConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterExperimentalConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L459)
+
+Experimental configuration for tool router session.
+
+Note: These features are experimental and may be modified or removed in future versions.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `assistive_prompt` | [`ToolRouterAssistivePromptConfig`](#tool-router-toolrouterassistivepromptconfig) | Optional key | Configuration for assistive prompt generation. |
+| `custom_tools` | `List[`[`CustomTool`](#custom-tool-types-customtool)`]` | Optional key | Custom tools to include in the session. |
+| `custom_toolkits` | `List[`[`ExperimentalToolkit`](#custom-tool-experimentaltoolkit)`]` | Optional key | Custom toolkits with grouped tools. |
+| `no_elicitation_support_fallback` | `Literal['deny', 'allow']` | Optional key | What happens to a call that needs the user's approval when the<br />    session's MCP client can't ask the user: `"deny"` (the default) or<br />    `"allow"`. |
+
+<a id="tool-router-session-toolrouterinstantconfig"></a>
+
+### ToolRouterInstantConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L154)
+
+Experimental Instant usage policy for a Session.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `toolkits` | `Union[`[`ToolRouterInstantEnable`](#tool-router-session-toolrouterinstantenable)`, `[`ToolRouterInstantDisable`](#tool-router-session-toolrouterinstantdisable)`]` | Optional key | Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive. |
+| `tools` | `Dict[str, Union[`[`ToolRouterInstantEnable`](#tool-router-session-toolrouterinstantenable)`, `[`ToolRouterInstantDisable`](#tool-router-session-toolrouterinstantdisable)`]]` | Optional key | Per-toolkit enable or disable lists that restrict instant usage. Toolkits absent from the map have no additional tool restriction. On PATCH, a supplied map replaces all existing tool filters; an empty map clears them, and omission preserves them. |
+| `return_instant_charge` | `bool` | Optional key | Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage. |
+| `return_prices_in_search` | `bool` | Optional key | Experimental. Show each Instant tool's price in Session search results,<br />    under `instant_account.prices`. Controls visibility only. |
+
+<a id="tool-router-toolroutertoolsenableconfig"></a>
+
+### ToolRouterToolsEnableConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolsEnableConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L176)
+
+Configuration for enabling specific tools for a toolkit.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `List[str]` | Optional key | List of tool slugs to enable for this toolkit. |
+| `require_approval` | `List[str]` | Optional key | Experimental. Tools of this toolkit that need the user's approval<br />    before they run. |
+
+<a id="tool-router-toolroutertoolsdisableconfig"></a>
+
+### ToolRouterToolsDisableConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolsDisableConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L189)
+
+Configuration for disabling specific tools for a toolkit.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `List[str]` | Optional key | List of tool slugs to disable for this toolkit. |
+| `require_approval` | `List[str]` | Optional key | Experimental. Tools of this toolkit that need the user's approval<br />    before they run. |
+
+<a id="tool-router-toolroutertoolstagsconfig"></a>
+
+### ToolRouterToolsTagsConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolsTagsConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L202)
+
+Configuration for filtering tools by MCP tags.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tags` | [`ToolRouterConfigTags`](#tool-router-toolrouterconfigtags) | Optional key | Tags configuration - can be a list of tags (shorthand for enable) or an object with enable/disable keys. Only tools matching these tags will be available. |
+| `require_approval` | `List[str]` | Optional key | Experimental. Tools of this toolkit that need the user's approval<br />    before they run. |
+
+<a id="tool-router-toolroutertoolsrequireapprovalconfig"></a>
+
+### ToolRouterToolsRequireApprovalConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterToolsRequireApprovalConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L217)
+
+Per-toolkit tool policy that only sets which tools need the user's approval.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `List[str]` | Required | Experimental. Tools of this toolkit that need the user's approval<br />    before they run. |
+
+<a id="tool-router-toolroutertag"></a>
+
+### ToolRouterTag
+
+```python
+from composio.core.models.tool_router import ToolRouterTag
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L116)
+
+`Literal['readOnlyHint', 'createHint', 'updateHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']`
+
+<a id="tool-router-toolroutertagsenabledisableconfig"></a>
+
+### ToolRouterTagsEnableDisableConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterTagsEnableDisableConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L242)
+
+Configuration for tags in tool router session.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `Optional[List[`[`ToolRouterTag`](#tool-router-toolroutertag)`]]` | Optional key | List of tags to enable in the tool router session. |
+| `disable` | `Optional[List[`[`ToolRouterTag`](#tool-router-toolroutertag)`]]` | Optional key | List of tags to disable in the tool router session. |
+| `require_approval` | `Optional[List[`[`ToolRouterTag`](#tool-router-toolroutertag)`]]` | Optional key | Experimental. Tools with any of these tags need the user's approval<br />    before they run. |
+
+<a id="tool-router-sandboxsize"></a>
+
+### SandboxSize
+
+```python
+from composio.core.models.tool_router import SandboxSize
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L135)
+
+`Literal['standard', 'medium', 'large', 'xlarge']`
+
+<a id="tool-router-toolrouterassistivepromptconfig"></a>
+
+### ToolRouterAssistivePromptConfig
+
+```python
+from composio.core.models.tool_router import ToolRouterAssistivePromptConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router.py#L448)
+
+Configuration for assistive prompt generation.
+
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `user_timezone` | `str` | Optional key | IANA timezone identifier (e.g., "America/New_York", "Europe/London") for timezone-aware assistive prompts. |
+
+<a id="custom-tool-types-customtool"></a>
+
+### CustomTool
+
+```python
+from composio.core.models.custom_tool_types import CustomTool
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/custom_tool_types.py#L132)
+
+Custom tool definition returned from `@composio.experimental.tool()`.
+
+Pass to `composio.create(user_id, experimental={"custom_tools": [...]})`
+to bind to a session.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `slug` | `str` | Required |  |
+| `name` | `str` | Required |  |
+| `description` | `str` | Required |  |
+| `input_schema` | `Dict[str, Any]` | Required |  |
+| `input_params` | `Type[BaseModel]` | Required |  |
+| `execute` | [`CustomToolExecuteFn`](#custom-tool-types-customtoolexecutefn) | Required |  |
+| `extends_toolkit` | `Optional[str]` | Default: `None` |  |
+| `output_schema` | `Optional[Dict[str, Any]]` | Default: `None` |  |
+| `preload` | `Optional[bool]` | Default: `None` |  |
+
+<a id="custom-tool-experimentaltoolkit"></a>
+
+### ExperimentalToolkit
+
+```python
+from composio.core.models.custom_tool import ExperimentalToolkit
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/custom_tool.py#L410)
+
+Custom toolkit that groups related tools under one namespace.
+
+Use `@toolkit.tool()` to add tools. Pass the toolkit to
+`composio.create(experimental={"custom_toolkits": [toolkit]})`.
+
+Tools added to a toolkit must NOT use `extends_toolkit` .  they
+inherit the toolkit identity instead.
+
+
+Constructor keyword arguments:
+
+| Parameter | Type | SDK default | Description |
+| --- | --- | --- | --- |
+| `slug` | `str` | Required |  |
+| `name` | `str` | Required |  |
+| `description` | `str` | Required |  |
+| `preload` | `Optional[bool]` | `None` |  |
+
+<a id="tool-router-session-toolrouterinstantenable"></a>
+
+### ToolRouterInstantEnable
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantEnable
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L146)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `List[str]` | Required |  |
+
+<a id="tool-router-session-toolrouterinstantdisable"></a>
+
+### ToolRouterInstantDisable
+
+```python
+from composio.core.models.tool_router_session import ToolRouterInstantDisable
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L150)
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disable` | `List[str]` | Required |  |
+
+<a id="custom-tool-types-customtoolexecutefn"></a>
+
+### CustomToolExecuteFn
+
+```python
+from composio.core.models.custom_tool_types import CustomToolExecuteFn
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/custom_tool_types.py#L72)
+
+`Callable[[Any, 'SessionContext'], Dict[str, Any]]`

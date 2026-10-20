@@ -10,6 +10,8 @@ Run: cd python && uv run --with griffe python scripts/generate-docs.py
 
 from __future__ import annotations
 
+import argparse
+import importlib.util
 import json
 import re
 import shutil
@@ -67,6 +69,7 @@ EXPECTED_CLASSES = {
     "ConnectedAccounts": "connected_accounts",
     "AuthConfigs": "auth_configs",
     "MCP": "mcp",
+    "ToolRouter": "sessions",
 }
 
 # Additional public-facing classes worth documenting even though they are not
@@ -88,6 +91,7 @@ CLASS_MODULES = [
     "core.models.connected_accounts",
     "core.models.auth_configs",
     "core.models.mcp",
+    "core.models.tool_router",
 ]
 
 # Pure-docs presentation overrides. The public class name ``ToolRouterSession``
@@ -95,10 +99,12 @@ CLASS_MODULES = [
 # presents the session object under the canonical "Session" naming.
 DISPLAY_NAME_OVERRIDES = {
     "ToolRouterSession": "Session",
+    "ToolRouter": "Sessions",
 }
 
 SLUG_OVERRIDES = {
     "ToolRouterSession": "session",
+    "ToolRouter": "sessions",
 }
 
 
@@ -116,6 +122,40 @@ def display_name_for(class_name: str) -> str:
 def slug_for(class_name: str) -> str:
     """Resolve the URL slug / filename stem (falls back to kebab-case)."""
     return SLUG_OVERRIDES.get(class_name, to_kebab_case(class_name))
+
+
+def load_session_options_module() -> Any:
+    spec = importlib.util.spec_from_file_location(
+        "_session_options_reference", SCRIPT_DIR / "session_options_reference.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def linked_type(type_name: str, links: dict[str, str]) -> str:
+    """Keep complete annotations while linking each documented config symbol."""
+    if not links:
+        safe_type = type_name.replace("|", "\\|")
+        return f"`{safe_type}`"
+    pattern = (
+        r"\b(?:"
+        + "|".join(re.escape(name) for name in sorted(links, key=len, reverse=True))
+        + r")\b"
+    )
+    parts = []
+    cursor = 0
+    for match in re.finditer(pattern, type_name):
+        prefix = type_name[cursor : match.start()].replace("|", "\\|")
+        if prefix:
+            parts.append(f"`{prefix}`")
+        parts.append(f"[`{match.group()}`]({links[match.group()]})")
+        cursor = match.end()
+    suffix = type_name[cursor:].replace("|", "\\|")
+    if suffix:
+        parts.append(f"`{suffix}`")
+    return "".join(parts)
 
 
 def escape_yaml_string(s: str) -> str:
@@ -167,6 +207,13 @@ def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     if max_length is not None and len(type_str) > max_length:
         return type_str[: max_length - 3] + "..."
     return type_str
+
+
+def format_session_type(annotation: Any) -> str:
+    """Keep Sessions annotations intact, removing only typing namespace aliases."""
+    if annotation is None:
+        return "Any"
+    return re.sub(r"\b(?:t|te|typing|typing_extensions)\.", "", str(annotation))
 
 
 def _render_rst_role(match: re.Match[str]) -> str:
@@ -315,6 +362,16 @@ def normalize_example(example: str) -> str:
     return normalized
 
 
+def session_method_examples(docstring: str | None) -> list[str]:
+    """Extract the standalone Sessions example, not inline parameter examples."""
+    if not docstring:
+        return []
+    heading = re.search(r"(?m)^[ \t]*Example:[ \t]*$", docstring)
+    if heading is None:
+        return []
+    return [normalize_example(docstring[heading.end() :])]
+
+
 def extract_class_info(
     cls: griffe_t.Class, class_name: str, config: dict
 ) -> dict[str, Any]:
@@ -341,7 +398,11 @@ def extract_class_info(
             info["properties"].append(
                 {
                     "name": name,
-                    "type": format_type(member.annotation),
+                    "type": (
+                        format_session_type(member.annotation)
+                        if class_name == "ToolRouter"
+                        else format_type(member.annotation)
+                    ),
                     "description": (
                         normalize_inline_rst(attr_doc.strip()) if attr_doc else ""
                     ),
@@ -356,6 +417,10 @@ def extract_class_info(
             method_doc = parse_docstring(
                 member.docstring.value if member.docstring else None
             )
+            if class_name == "ToolRouter":
+                method_doc["examples"] = session_method_examples(
+                    member.docstring.value if member.docstring else None
+                )
 
             params = []
             for p in member.parameters:
@@ -364,7 +429,11 @@ def extract_class_info(
                 params.append(
                     {
                         "name": p.name,
-                        "type": format_type(p.annotation, max_length=None),
+                        "type": (
+                            format_session_type(p.annotation)
+                            if class_name == "ToolRouter"
+                            else format_type(p.annotation, max_length=None)
+                        ),
                         "optional": p.default is not None,
                         "description": method_doc["params"].get(p.name, ""),
                     }
@@ -376,7 +445,11 @@ def extract_class_info(
                     "source_link": get_source_link(member),
                     "description": method_doc["description"],
                     "parameters": params,
-                    "return_type": format_type(member.returns),
+                    "return_type": (
+                        format_session_type(member.returns)
+                        if class_name == "ToolRouter"
+                        else format_type(member.returns)
+                    ),
                     "return_description": method_doc["returns"],
                     "raises": method_doc["raises"],
                     "examples": method_doc["examples"],
@@ -387,10 +460,15 @@ def extract_class_info(
 
 
 def generate_class_mdx(
-    info: dict[str, Any], prop_to_class: dict[str, str] | None = None
+    info: dict[str, Any],
+    prop_to_class: dict[str, str] | None = None,
+    config_links: dict[str, str] | None = None,
+    contract_links: dict[str, dict[str, str]] | None = None,
 ) -> str:
     """Generate MDX for a class."""
     lines = []
+    config_links = config_links or {}
+    contract_links = contract_links or {}
 
     # Frontmatter
     desc = (
@@ -416,6 +494,15 @@ def generate_class_mdx(
         lines.append("")
 
     source_link = info.get("source_link", "")
+    if info["name"] == "Composio":
+        lines.extend(
+            [
+                "Use `composio.create()` or `composio.sessions.create()` with the "
+                "[create input](/reference/sdk-reference/python/session-create-options#create-input). "
+                "See [Sessions](/reference/sdk-reference/python/sessions) for namespace methods.",
+                "",
+            ]
+        )
 
     # Properties
     property_rows = []
@@ -425,9 +512,7 @@ def generate_class_mdx(
                 prop_name = prop["name"]
                 if prop_name in prop_to_class:
                     class_name = prop_to_class[prop_name]
-                    link = (
-                        f"/reference/sdk-reference/python/{to_kebab_case(class_name)}"
-                    )
+                    link = f"/reference/sdk-reference/python/{slug_for(class_name)}"
                     property_rows.append(
                         {
                             "name": f"[`{prop_name}`]({link})",
@@ -440,7 +525,7 @@ def generate_class_mdx(
                 property_rows.append(
                     {
                         "name": f"`{prop['name']}`",
-                        "type": f"`{prop['type']}`",
+                        "type": linked_type(prop["type"], config_links),
                         "description": prop["description"],
                     }
                 )
@@ -471,6 +556,21 @@ def generate_class_mdx(
         for method in info["methods"]:
             lines.append(f"### {method['name']}()")
             lines.append("")
+            options_page = None
+            options_section = None
+            if info["name"] == "ToolRouter" and method["name"] == "create":
+                options_page, options_section = "session-create-options", "create-input"
+            elif info["name"] == "ToolRouterSession" and method["name"] == "update":
+                options_page, options_section = "session-update-options", "update-input"
+            method_links = {**config_links, **contract_links.get(options_page, {})}
+            if options_page:
+                lines.extend(
+                    [
+                        f"[Complete options and nested types](/reference/sdk-reference/python/"
+                        f"{options_page}#{options_section}).",
+                        "",
+                    ]
+                )
 
             if method["description"]:
                 lines.append(method["description"])
@@ -499,8 +599,8 @@ def generate_class_mdx(
                 lines.append("|------|------|")
                 for p in method["parameters"]:
                     opt = "?" if p["optional"] else ""
-                    safe_type = p["type"].replace("|", "\\|")
-                    lines.append(f"| `{p['name']}{opt}` | `{safe_type}` |")
+                    type_cell = linked_type(p["type"], method_links)
+                    lines.append(f"| `{p['name']}{opt}` | {type_cell} |")
                 lines.append("")
 
             # Returns
@@ -509,9 +609,11 @@ def generate_class_mdx(
                 lines.append("**Returns**")
                 lines.append("")
                 if ret_desc:
-                    lines.append(f"`{method['return_type']}` — {ret_desc}")
+                    lines.append(
+                        f"{linked_type(method['return_type'], method_links)} — {ret_desc}"
+                    )
                 else:
-                    lines.append(f"`{method['return_type']}`")
+                    lines.append(linked_type(method["return_type"], method_links))
                 lines.append("")
 
             # Raises
@@ -607,6 +709,13 @@ Complete API reference for the `composio` Python package.
 |-------|-------------|
 {chr(10).join(class_rows)}
 
+## Session configuration
+
+Compare contracts in [Session options](/reference/sdk-reference/python/session-options):
+[create inputs](/reference/sdk-reference/python/session-create-options),
+[PATCH inputs](/reference/sdk-reference/python/session-update-options), and
+[returned config](/reference/sdk-reference/python/session-config).
+
 ## Quick Start
 
 ```python
@@ -630,15 +739,22 @@ result = composio.tools.execute(
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--session-options-only",
+        action="store_true",
+        help="Regenerate Session options, linked Session/Composio pages, index, and sidebar only",
+    )
+    args = parser.parse_args()
     griffe_module = load_griffe()
 
     print("Starting Python SDK documentation generation...\n")
     print(f"Output: {OUTPUT_DIR}\n")
 
     # Clean output
-    if OUTPUT_DIR.exists():
+    if OUTPUT_DIR.exists() and not args.session_options_only:
         shutil.rmtree(OUTPUT_DIR)
-    OUTPUT_DIR.mkdir(parents=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load package
     print("Loading composio package...")
@@ -647,6 +763,17 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         raise SystemExit(1)
+
+    options_module = load_session_options_module()
+    options_pages, contract_links = options_module.generate_session_options(
+        PACKAGE_DIR, parse_docstring, normalize_inline_rst
+    )
+    for slug, content in options_pages.items():
+        (OUTPUT_DIR / f"{slug}.mdx").write_text(content)
+    config_links = {}
+    for links in contract_links.values():
+        for symbol, url in links.items():
+            config_links.setdefault(symbol, url)
 
     # Find Composio class
     composio_cls = package.members["sdk"].members["Composio"]
@@ -710,12 +837,17 @@ def main():
 
         # Only Composio gets prop_to_class for linking
         if class_name == "Composio":
-            mdx = generate_class_mdx(info, prop_to_class)
+            mdx = generate_class_mdx(info, prop_to_class, config_links, contract_links)
         else:
-            mdx = generate_class_mdx(info, None)
+            mdx = generate_class_mdx(info, None, config_links, contract_links)
 
         file_path = OUTPUT_DIR / f"{slug_for(class_name)}.mdx"
-        file_path.write_text(mdx)
+        if not args.session_options_only or class_name in {
+            "Composio",
+            "ToolRouter",
+            "ToolRouterSession",
+        }:
+            file_path.write_text(mdx)
 
         documented_classes.append(
             {
@@ -769,7 +901,13 @@ def main():
     # Generate meta.json
     meta = {
         "title": "Python SDK",
-        "pages": [slug_for(c["name"]) for c in documented_classes],
+        "pages": [slug_for(c["name"]) for c in documented_classes]
+        + [
+            "session-options",
+            "session-create-options",
+            "session-update-options",
+            "session-config",
+        ],
     }
     (OUTPUT_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
 

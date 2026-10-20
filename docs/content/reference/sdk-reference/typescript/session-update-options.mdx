@@ -1,0 +1,260 @@
+---
+title: "Session update options"
+description: "PATCH Session options and their nested field shapes."
+---
+
+[All Session contracts](session-options)
+
+## Update input
+
+```typescript
+import type { ToolRouterUpdateSessionConfig } from '@composio/core';
+```
+
+`ToolRouterUpdateSessionConfig` is the argument to `session.update(options)`. Omit a key to keep its stored value. `null` removes an override only where the type below permits it; removal can increase access. An empty allowlist denies every app toolkit, unlike `toolkits: null`, which restores the unrestricted default.
+
+The field types follow the exported TypeScript contract. In particular, update-time `connectedAccounts` values are arrays in `ToolRouterUpdateSessionConfig`, even though its runtime parser also accepts and normalizes single account strings.
+
+`tools`, `authConfigs`, and `connectedAccounts` replace their whole stored maps. Inside `manageConnections`, `callbackUrl: null` removes only the callback URL. `instant` does not accept `null`: `false` disables it, and any policy object re-enables it, even one containing only a visibility setting.
+
+`experimental.sessionConfigId` cannot be combined with `toolkits`, `tools`, or `tags`, including `null`. Pass either `sandbox` or `workbench`, not both. A successful update refreshes `session.config` and returns the [server config](session-config#returned-config).
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `instant` | `false` \| [`object`](session-update-options#update-input-instant-variant-2) \| `undefined` | No | Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values. |
+| `toolkits` | Array&lt;`string`&gt; \| [`object`](session-update-options#update-input-toolkits-variant-2) \| [`object`](session-update-options#update-input-toolkits-variant-3) \| [`object`](session-update-options#update-input-toolkits-variant-4) \| `null` \| `undefined` | No | Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default |
+| `tools` | Record&lt;`string`, Array&lt;`string`&gt; \| Array&lt;`string`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-2) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-3) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4) \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-5)&gt; \| `null` \| `undefined` | No | Replaces the entire stored tools map; `null` removes the override |
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) \| `null` \| `undefined` | No | Replaces the global tag policy; `null` removes the override |
+| `authConfigs` | Record&lt;`string`, `string`&gt; \| `null` \| `undefined` | No | Replaces the entire stored auth config map; `null` removes the override |
+| `connectedAccounts` | `Record&lt;string, string[]&gt;` \| `null` \| `undefined` | No | Replaces the entire stored connected accounts map; `null` removes the override |
+| `manageConnections` | `boolean` \| [`ToolRouterUpdateManageConnectionsConfig`](session-update-options#update-input-manage-connections-variant-2) \| `null` \| `undefined` | No |  |
+| `sandbox` | [`object`](session-update-options#update-input-sandbox) \| `null` \| `undefined` | No |  |
+| `workbench` | [`object`](session-update-options#update-input-workbench) \| `null` \| `undefined` | No |  |
+| `multiAccount` | [`object`](session-update-options#update-input-multi-account) \| `null` \| `undefined` | No | `null` removes the session override; the mode then resolves to disabled |
+| `proxyExecute` | `boolean` \| [`ToolRouterProxyExecuteConfig`](session-update-options#update-input-proxy-execute-variant-2) \| `null` \| `undefined` | No | Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it |
+| `preload` | [`object`](session-update-options#update-input-preload) \| `null` \| `undefined` | No | Replaces the stored preload; `null` removes it |
+| `search` | [`object`](session-update-options#update-input-search) \| `null` \| `undefined` | No | Replaces the search block; `null` removes it and restores the defaults |
+| `execute` | [`object`](session-update-options#update-input-execute) \| `null` \| `undefined` | No | Replaces the execute block; `null` removes it and restores the defaults |
+| `experimental` | [`ToolRouterUpdateExperimentalConfig`](session-update-options#update-input-experimental) \| `null` \| `undefined` | No | Experimental settings; `null` removes the stored block |
+| `expectedConfigVersion` | `number` (int, min: 0) \| `false` \| `undefined` | No | Precondition sent as `expected_config_version`. A positive integer (for example `session.configVersion`) makes the update conditional, so a concurrent change surfaces as ComposioSessionConfigConflictError instead of being overwritten; the API must support the field. Omitted or `false`: no precondition (last writer wins) |
+
+<a id="update-input-instant-variant-2" />
+
+### instant-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolkits` | [`object`](session-update-options#update-input-instant-variant-2-toolkits-variant-1) \| [`object`](session-update-options#update-input-instant-variant-2-toolkits-variant-2) \| `undefined` | No |  |
+| `tools` | Record&lt;`string`, [`object`](session-update-options#update-input-instant-variant-2-tools-value-variant-1) \| [`object`](session-update-options#update-input-instant-variant-2-tools-value-variant-2)&gt; \| `undefined` | No |  |
+| `returnInstantCharge` | `boolean` \| `undefined` | No |  |
+| `returnPricesInSearch` | `boolean` \| `undefined` | No |  |
+
+<a id="update-input-instant-variant-2-toolkits-variant-1" />
+
+### instant-variant-2-toolkits-variant-1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | List of toolkits to enable in the tool router session |
+
+<a id="update-input-instant-variant-2-toolkits-variant-2" />
+
+### instant-variant-2-toolkits-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | List of toolkits to disable in the tool router session |
+
+<a id="update-input-instant-variant-2-tools-value-variant-1" />
+
+### instant-variant-2-tools-value-variant-1
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="update-input-instant-variant-2-tools-value-variant-2" />
+
+### instant-variant-2-tools-value-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes |  |
+
+<a id="update-input-toolkits-variant-2" />
+
+### toolkits-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | List of toolkits to disable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="update-input-toolkits-variant-3" />
+
+### toolkits-variant-3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | List of toolkits to enable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="update-input-toolkits-variant-4" />
+
+### toolkits-variant-4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requireApproval` | Array&lt;`string`&gt; | Yes | Experimental. Toolkits whose tools need the user approval before they run |
+
+<a id="update-input-tools-value-variant-2-variant-2" />
+
+### tools-value-variant-2-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`string`&gt; | Yes | The tools to enable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="update-input-tools-value-variant-2-variant-3" />
+
+### tools-value-variant-2-variant-3
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `disable` | Array&lt;`string`&gt; | Yes | The tools to disable in the tool router session |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="update-input-tools-value-variant-2-variant-4" />
+
+### tools-value-variant-2-variant-4
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tags` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| [`object`](session-update-options#update-input-tools-value-variant-2-variant-4-tags-variant-2) | Yes | The tags to filter the tools by, this will override the global tags |
+| `requireApproval` | Array&lt;`string`&gt; \| `undefined` | No | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="update-input-tools-value-variant-2-variant-4-tags-variant-2" />
+
+### tools-value-variant-2-variant-4-tags-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | The tags to enable in the tool router session |
+| `disable` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | The tags to disable in the tool router session |
+| `requireApproval` | Array&lt;`"readOnlyHint"` \| `"createHint"` \| `"updateHint"` \| `"destructiveHint"` \| `"idempotentHint"` \| `"openWorldHint"`&gt; \| `undefined` | No | Experimental. Tools with any of these tags need the user approval before they run |
+
+<a id="update-input-tools-value-variant-2-variant-5" />
+
+### tools-value-variant-2-variant-5
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requireApproval` | Array&lt;`string`&gt; | Yes | Experimental. Tools of this toolkit that need the user approval before they run |
+
+<a id="update-input-manage-connections-variant-2" />
+
+### manage-connections-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No | Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually |
+| `callbackUrl` | `string` \| `null` \| `undefined` | No | The callback url to use in the tool router session. `null` removes the stored callback url; sibling settings are untouched |
+| `waitForConnections` | `boolean` \| `undefined` | No | Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready |
+| `enableConnectionRemoval` | `boolean` \| `null` \| `undefined` | No | Whether the session exposes the connection removal tool. `null` removes the stored override |
+
+<a id="update-input-sandbox" />
+
+### sandbox
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No | Whether to enable the sandbox entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session. |
+| `enableProxyExecution` | `boolean` \| `undefined` | No | Whether to enable proxy execution in the session sandbox |
+| `autoOffloadThreshold` | `number` \| `undefined` | No | The auto offload threshold in characters for tool execution to move into the sandbox |
+| `sandboxSize` | `"standard"` \| `"medium"` \| `"large"` \| `"xlarge"` \| `undefined` | No | Sandbox compute tier. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists. |
+
+<a id="update-input-workbench" />
+
+### workbench
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No | Whether to enable the sandbox entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session. |
+| `enableProxyExecution` | `boolean` \| `undefined` | No | Whether to enable proxy execution in the session sandbox |
+| `autoOffloadThreshold` | `number` \| `undefined` | No | The auto offload threshold in characters for tool execution to move into the sandbox |
+| `sandboxSize` | `"standard"` \| `"medium"` \| `"large"` \| `"xlarge"` \| `undefined` | No | Sandbox compute tier. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists. |
+
+<a id="update-input-multi-account" />
+
+### multi-account
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No |  |
+| `maxAccountsPerToolkit` | `number` (int, min: 2, max: 10) \| `null` \| `undefined` | No | `null` removes the stored maximum so the default applies again |
+| `requireExplicitSelection` | `boolean` \| `undefined` | No |  |
+
+<a id="update-input-proxy-execute-variant-2" />
+
+### proxy-execute-variant-2
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` | Yes | true exposes the COMPOSIO_PROXY_EXECUTE meta tool. false also turns off the sandbox proxy_execute() helper. |
+
+<a id="update-input-preload" />
+
+### preload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tools` | Array&lt;`string`&gt; \| `"all"` \| `undefined` | No |  |
+
+<a id="update-input-search" />
+
+### search
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` \| `undefined` | No |  |
+
+<a id="update-input-execute" />
+
+### execute
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enableMultiExecute` | `boolean` \| `undefined` | No |  |
+
+<a id="update-input-experimental" />
+
+### experimental
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `permissions` | [`object`](session-update-options#update-input-experimental-permissions) \| `null` \| `undefined` | No | Per-tool elicitation permission config. `null` removes the stored block |
+| `linkUrlOverwrite` | `string` \| `null` \| `undefined` | No | Base URL override for connection link redirects. `null` removes the stored override |
+| `fastMode` | `boolean` \| `null` \| `undefined` | No | Fast search mode. `null` removes the stored override |
+| `submitFeedback` | [`object`](session-update-options#update-input-experimental-submit-feedback) \| `null` \| `undefined` | No | Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block |
+| `noElicitationSupportFallback` | `"deny"` \| `"allow"` \| `undefined` | No | Experimental. What happens to a call that needs approval when the MCP client cannot ask the user |
+| `sessionConfigId` | `string` \| `undefined` | No | Apply the latest active saved Session config (`sc_…`) from this project to this session. Replaces the session's toolkit, tool and tag access and cannot be combined with toolkits, tools or tags |
+
+<a id="update-input-experimental-permissions" />
+
+### experimental-permissions
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `default` | `"allow_all"` \| `"ask_every_call"` \| `"ask_once_per_session"` | Yes |  |
+| `overrides` | Record&lt;`string`, `"always_allow"` \| `"always_deny"` \| `"ask_once"` \| `"ask_always"`&gt; \| `undefined` | No |  |
+
+<a id="update-input-experimental-submit-feedback" />
+
+### experimental-submit-feedback
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enable` | `boolean` | Yes |  |

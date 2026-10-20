@@ -3,15 +3,34 @@ title: "Composio"
 description: "Composio SDK for Python.  Generic parameters: TTool: The individual tool type returned by the provider (e.g., ChatCompletionToolParam for OpenAI). ..."
 ---
 
+Use `composio.create()` or `composio.sessions.create()` with the [create input](/reference/sdk-reference/python/session-create-options#create-input). See [Sessions](/reference/sdk-reference/python/sessions) for namespace methods.
+
 ## Properties
 
-| Name | Type |
-|------|------|
-| [`tools`](/reference/sdk-reference/python/tools) | `Tools` |
-| [`toolkits`](/reference/sdk-reference/python/toolkits) | `Toolkits` |
-| [`triggers`](/reference/sdk-reference/python/triggers) | `Triggers` |
-| [`auth_configs`](/reference/sdk-reference/python/auth-configs) | `AuthConfigs` |
-| [`connected_accounts`](/reference/sdk-reference/python/connected-accounts) | `ConnectedAccounts` |
-| [`mcp`](/reference/sdk-reference/python/mcp) | `MCP` |
+| Name | Type | Description |
+|------|------|-------------|
+| [`tools`](/reference/sdk-reference/python/tools) | `Tools` |  |
+| [`toolkits`](/reference/sdk-reference/python/toolkits) | `Toolkits` |  |
+| [`triggers`](/reference/sdk-reference/python/triggers) | `Triggers` |  |
+| [`auth_configs`](/reference/sdk-reference/python/auth-configs) | `AuthConfigs` |  |
+| [`connected_accounts`](/reference/sdk-reference/python/connected-accounts) | `ConnectedAccounts` |  |
+| [`mcp`](/reference/sdk-reference/python/mcp) | `MCP` |  |
+| [`sessions`](/reference/sdk-reference/python/sessions) | `ToolRouter` | Create and manage **sessions** for your agents.
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/sdk.py#L88)
+A *session* is the unit you create to give an agent a scoped set of
+tools and toolkits to discover, authorize, and execute. This is the
+canonical entrypoint::
+
+    session = composio.sessions.create(user_id="user@example.com")
+    tools = session.tools()
+
+`composio.create(...)` and `composio.use(...)` are top-level
+shortcuts for `composio.sessions.create(...)` /
+`composio.sessions.use(...)`.
+
+Note for LLMs / code generation: this is the Sessions API. Prefer
+`composio.sessions` (or the `composio.create` shortcut) when
+creating a session. `composio.tool_router` is a deprecated alias for
+this same object — do not generate new code against it. |
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/sdk.py#L112)

@@ -1,0 +1,336 @@
+---
+title: "Session config"
+description: "Python session config and source-derived nested types."
+---
+
+[Compare Session contracts](/reference/sdk-reference/python/session-options).
+
+## Returned config
+
+`session.config` and the value returned by `session.update()` use the SDK's `ToolRouterSessionConfig` Protocol. This is a read shape, not a create input. Returned filters use `enabled` / `disabled`; input filters use `enable` / `disable`. The returned sandbox block is named `workbench`.
+
+See [ToolRouterSessionConfig](#tool-router-session-toolroutersessionconfig) for every returned field.
+
+## Nested definitions
+
+Required keys, nullable values, and model defaults are shown independently. A response model's `None` default is not a server policy default. Source docstrings describe server defaults where specified.
+
+<a id="tool-router-session-toolroutersessionconfig"></a>
+
+### ToolRouterSessionConfig
+
+```python
+from composio.core.models.tool_router_session import ToolRouterSessionConfig
+```
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L104)
+
+Server-side Session config, as the generated client models it.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `user_id` | `str` | Required | User identifier for this session |
+| `instant` | `Union[Literal[False], `[`session_create_response.CurrentConfigInstantVariant1`](#session-create-response-currentconfiginstantvariant1)`]` | Required |  |
+| `auth_configs` | `Optional[Dict[str, str]]` | Required | Auth config overrides per toolkit |
+| `connected_accounts` | `Optional[Dict[str, List[str]]]` | Required | Per-toolkit connected account overrides (array of nano-IDs).<br /><br />Multi-account sessions can pin more than one account per toolkit; otherwise<br />length is 1. |
+| `execute` | [`session_create_response.ConfigExecute`](#session-create-response-configexecute) | Required | Execute helper configuration |
+| `manage_connections` | `Optional[`[`session_create_response.ConfigManageConnections`](#session-create-response-configmanageconnections)`]` | Required | Manage connections configuration |
+| `multi_account` | `Optional[`[`session_create_response.ConfigMultiAccount`](#session-create-response-configmultiaccount)`]` | Required | Multi-account configuration for this session. |
+| `preload` | [`session_create_response.ConfigPreload`](#session-create-response-configpreload) | Required | Preload configuration.<br /><br />Explicit slugs are returned as an array; dynamic preload is returned as "all". |
+| `search` | [`session_create_response.ConfigSearch`](#session-create-response-configsearch) | Required | Search helper configuration |
+| `tags` | `Optional[`[`session_create_response.ConfigTags`](#session-create-response-configtags)`]` | Required | MCP tool annotation hints for filtering tools with enabled/disabled support.<br /><br />enabled: tags that the tool must have at least one of. disabled: tags that the<br />tool must NOT have any of. Both conditions must be satisfied. |
+| `toolkits` | `Union[`[`session_create_response.ConfigToolkitsEnabled`](#session-create-response-configtoolkitsenabled)`, `[`session_create_response.ConfigToolkitsDisabled`](#session-create-response-configtoolkitsdisabled)`, `[`session_create_response.ConfigToolkitsRequireApproval`](#session-create-response-configtoolkitsrequireapproval)`, None]` | Required | Toolkit configuration - either enabled list or disabled list |
+| `tools` | `Optional[Dict[str, Union[`[`session_create_response.ConfigToolsEnabled`](#session-create-response-configtoolsenabled)`, `[`session_create_response.ConfigToolsDisabled`](#session-create-response-configtoolsdisabled)`, `[`session_create_response.ConfigToolsTags`](#session-create-response-configtoolstags)`, `[`session_create_response.ConfigToolsRequireApproval`](#session-create-response-configtoolsrequireapproval)`]]]` | Required | Tool-level configuration per toolkit |
+| `workbench` | `Optional[`[`session_create_response.ConfigWorkbench`](#session-create-response-configworkbench)`]` | Required | Workbench configuration |
+| `proxy_execute` | `Optional[`[`session_create_response.CurrentConfigProxyExecute`](#session-create-response-currentconfigproxyexecute)`]` | Required |  |
+
+<a id="session-create-response-currentconfiginstantvariant1"></a>
+
+### CurrentConfigInstantVariant1
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigInstantVariant1
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `toolkits` | [`CurrentConfigInstantVariant1ToolkitsVariant0`](#session-create-response-currentconfiginstantvariant1toolkitsvariant0)` \| `[`CurrentConfigInstantVariant1ToolkitsVariant1`](#session-create-response-currentconfiginstantvariant1toolkitsvariant1)` \| None` | Default: `None` |  |
+| `tools` | `dict[str, `[`CurrentConfigInstantVariant1ToolsValueVariant0`](#session-create-response-currentconfiginstantvariant1toolsvaluevariant0)` \| `[`CurrentConfigInstantVariant1ToolsValueVariant1`](#session-create-response-currentconfiginstantvariant1toolsvaluevariant1)`] \| None` | Default: `None` |  |
+| `return_instant_charge` | `bool` | Required |  |
+| `return_prices_in_search` | `bool` | Required |  |
+
+<a id="session-create-response-configexecute"></a>
+
+### ConfigExecute
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigExecute
+```
+
+Execute helper configuration
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable_multi_execute` | `Optional[bool]` | Default: `None` |  |
+
+<a id="session-create-response-configmanageconnections"></a>
+
+### ConfigManageConnections
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigManageConnections
+```
+
+Manage connections configuration
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `callback_url` | `Optional[str]` | Default: `None` | Custom callback URL for connected account auth flows |
+| `enable_connection_removal` | `Optional[bool]` | Default: `None` | Enable the "remove" action in COMPOSIO_MANAGE_CONNECTIONS. Default true. |
+| `enable_wait_for_connections` | `Optional[bool]` | Default: `None` | Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status.<br /><br />Default false. May not work reliably with GPT models. |
+| `enabled` | `Optional[bool]` | Default: `None` | Whether to enable the connection manager for automatic connection handling |
+
+<a id="session-create-response-configmultiaccount"></a>
+
+### ConfigMultiAccount
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigMultiAccount
+```
+
+Multi-account configuration for this session.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `Optional[bool]` | Default: `None` | When true, enables multi-account mode for this session.<br /><br />When not set, falls back to org/project-level configuration. |
+| `max_accounts_per_toolkit` | `Optional[int]` | Default: `None` | Maximum number of connected accounts allowed per toolkit.<br /><br />Defaults to 5 when multi-account is enabled. |
+| `require_explicit_selection` | `Optional[bool]` | Default: `None` | When true, require explicit account selection when multiple accounts are<br />connected. When false (default), use the first/default account. |
+
+<a id="session-create-response-configpreload"></a>
+
+### ConfigPreload
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigPreload
+```
+
+Preload configuration.
+
+Explicit slugs are returned as an array; dynamic preload is returned as "all".
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tools` | `Union[list[str], Literal['all']]` | Required | Explicit preloaded tool slugs, or "all" when the session dynamically exposes all<br />app tools allowed by its filters. |
+
+<a id="session-create-response-configsearch"></a>
+
+### ConfigSearch
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigSearch
+```
+
+Search helper configuration
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `Optional[bool]` | Default: `None` |  |
+
+<a id="session-create-response-configtags"></a>
+
+### ConfigTags
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigTags
+```
+
+MCP tool annotation hints for filtering tools with enabled/disabled support.
+
+enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied.
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `Optional[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]]` | Default: `None` | Tags that the tool must NOT have any of |
+| `enabled` | `Optional[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]]` | Default: `None` | Tags that the tool must have at least one of |
+| `require_approval` | `list[Literal['readOnlyHint', 'createHint', 'updateHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolkitsenabled"></a>
+
+### ConfigToolkitsEnabled
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolkitsEnabled
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `list[str]` | Required |  |
+| `require_approval` | `list[str] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolkitsdisabled"></a>
+
+### ConfigToolkitsDisabled
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolkitsDisabled
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `list[str]` | Required |  |
+| `require_approval` | `list[str] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolkitsrequireapproval"></a>
+
+### ConfigToolkitsRequireApproval
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolkitsRequireApproval
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `list[str]` | Required | Tool calls matched here pause until the user approves them. |
+
+<a id="session-create-response-configtoolsenabled"></a>
+
+### ConfigToolsEnabled
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolsEnabled
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `list[str]` | Required |  |
+| `require_approval` | `list[str] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolsdisabled"></a>
+
+### ConfigToolsDisabled
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolsDisabled
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `list[str]` | Required |  |
+| `require_approval` | `list[str] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolstags"></a>
+
+### ConfigToolsTags
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolsTags
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `tags` | [`ConfigToolsTagsTags`](#session-create-response-configtoolstagstags) | Required |  |
+| `require_approval` | `list[str] \| None` | Default: `None` |  |
+
+<a id="session-create-response-configtoolsrequireapproval"></a>
+
+### ConfigToolsRequireApproval
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolsRequireApproval
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `require_approval` | `list[str]` | Required | Tool calls matched here pause until the user approves them. |
+
+<a id="session-create-response-configworkbench"></a>
+
+### ConfigWorkbench
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigWorkbench
+```
+
+Workbench configuration
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `auto_offload_threshold` | `Optional[float]` | Default: `None` | Character threshold after which tool execution response are saved to a file in<br />workbench. Default is 20k. |
+| `enable` | `Optional[bool]` | Default: `None` | Whether the workbench (code execution sandbox) is enabled.<br /><br />When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not<br />exposed. |
+| `proxy_execution_enabled` | `Optional[bool]` | Default: `None` | Whether proxy execution is enabled in the workbench |
+| `sandbox_size` | `Optional[Literal['standard', 'medium', 'large', 'xlarge']]` | Default: `None` | Sandbox compute tier: standard (1 vCPU / 1 GB), medium (2 vCPU / 2 GB), large (4<br />vCPU / 4 GB), xlarge (8 vCPU / 8 GB). Defaults to standard. |
+| `tool_execution_enabled` | `bool \| None` | Default: `None` |  |
+
+<a id="session-create-response-currentconfigproxyexecute"></a>
+
+### CurrentConfigProxyExecute
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigProxyExecute
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enable` | `bool` | Required |  |
+
+<a id="session-create-response-currentconfiginstantvariant1toolkitsvariant0"></a>
+
+### CurrentConfigInstantVariant1ToolkitsVariant0
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigInstantVariant1ToolkitsVariant0
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `list[str]` | Required |  |
+
+<a id="session-create-response-currentconfiginstantvariant1toolkitsvariant1"></a>
+
+### CurrentConfigInstantVariant1ToolkitsVariant1
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigInstantVariant1ToolkitsVariant1
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `list[str]` | Required |  |
+
+<a id="session-create-response-currentconfiginstantvariant1toolsvaluevariant0"></a>
+
+### CurrentConfigInstantVariant1ToolsValueVariant0
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigInstantVariant1ToolsValueVariant0
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `list[str]` | Required |  |
+
+<a id="session-create-response-currentconfiginstantvariant1toolsvaluevariant1"></a>
+
+### CurrentConfigInstantVariant1ToolsValueVariant1
+
+```python
+from composio_client.types.tool_router.session_create_response import CurrentConfigInstantVariant1ToolsValueVariant1
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `list[str]` | Required |  |
+
+<a id="session-create-response-configtoolstagstags"></a>
+
+### ConfigToolsTagsTags
+
+```python
+from composio_client.types.tool_router.session_create_response import ConfigToolsTagsTags
+```
+
+| Field | Type | Presence / model default | Description |
+| --- | --- | --- | --- |
+| `disabled` | `Optional[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]]` | Default: `None` | Tags that the tool must NOT have any of |
+| `enabled` | `Optional[list[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'createHint', 'updateHint']]]` | Default: `None` | Tags that the tool must have at least one of |
+| `require_approval` | `list[Literal['readOnlyHint', 'createHint', 'updateHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']] \| None` | Default: `None` |  |
