@@ -26,7 +26,10 @@ for trigger in active.items:
 
 # Paginate with cursor
 if active.next_cursor:
-    next_page = composio.triggers.list_active(cursor=active.next_cursor)
+    next_page = composio.triggers.list_active(
+        connected_account_ids=["ca_def456"],
+        cursor=active.next_cursor,
+    )
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -45,7 +48,10 @@ for (const trigger of active.items) {
 
 // Paginate with cursor
 if (active.nextCursor) {
-  const nextPage = await composio.triggers.listActive({ cursor: active.nextCursor });
+  const nextPage = await composio.triggers.listActive({
+    connectedAccountIds: ['ca_def456'],
+    cursor: active.nextCursor,
+  });
 }
 ```
   </Tab>
@@ -58,6 +64,8 @@ if (active.nextCursor) {
 | `trigger_names` / `triggerNames` | Array of trigger type slugs |
 | `auth_config_ids` / `authConfigIds` | Array of auth config IDs |
 | `show_disabled` / `showDisabled` | Include disabled triggers (default: `false`) |
+
+Keep the same filters on every page. To find paused instances after reconnecting an account, include `show_disabled=True` in Python or `showDisabled: true` in TypeScript.
 
 ## Enable / Disable triggers
 
@@ -110,3 +118,5 @@ await composio.triggers.delete('ti_abcd123');
 <Callout type="warn">
 Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
 </Callout>
+
+If an enabled trigger isn't delivering events, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
