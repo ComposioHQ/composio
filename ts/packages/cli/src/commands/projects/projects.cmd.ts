@@ -1,5 +1,5 @@
 import { Command } from 'effect/cli';
-import { projectsCmd$List } from './commands/projects.list.cmd';
+import { projectsCmd$List } from './list/projects.list.cmd';
 import { projectsCmd$Switch } from './commands/projects.switch.cmd';
 
 /**
