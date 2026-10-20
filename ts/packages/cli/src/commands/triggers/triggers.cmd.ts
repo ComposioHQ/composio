@@ -4,9 +4,9 @@ import { rejectsSharedFlags } from 'src/commands/surface';
 import { triggersCmd$Info } from './info/triggers.info.cmd';
 import { triggersCmd$List } from './list/triggers.list.cmd';
 import { triggersCmd$Status } from './commands/triggers.status.cmd';
-import { triggersCmd$Create } from './commands/triggers.create.cmd';
-import { triggersCmd$Enable } from './commands/triggers.enable.cmd';
-import { triggersCmd$Disable } from './commands/triggers.disable.cmd';
+import { triggersCmd$Create } from './create/triggers.create.cmd';
+import { triggersCmd$Enable } from './enable/triggers.enable.cmd';
+import { triggersCmd$Disable } from './disable/triggers.disable.cmd';
 import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
 
 /**
