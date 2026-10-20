@@ -824,7 +824,11 @@ export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSe
 
 // --- Session hook results (camelCase) ---
 
-/** What one session hook decided about a call. */
+/**
+ * What one session hook decided about a call. `unavailable` means the hook
+ * could not be evaluated (for example it timed out); it does not block the
+ * call.
+ */
 export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
     id: z.string().describe('The hook id'),
@@ -834,7 +838,6 @@ export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
     id: z.string().describe('The hook id'),
     status: z.literal('unavailable'),
-    reason: z.enum(['timeout', 'error']).describe('Why the hook could not be evaluated'),
   }),
 ]);
 export type ToolRouterHookResult = z.infer<typeof ToolRouterHookResultSchema>;

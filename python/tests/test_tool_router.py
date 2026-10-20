@@ -2922,6 +2922,24 @@ class TestSessionHooks:
         assert result["data"] == {}
         assert result["error"] == "Blocked by session policy: No external email"
 
+    def test_unavailable_hook_does_not_block(self):
+        """A hook that could not be evaluated is reported, and the call still
+        returns its normal result."""
+        client, _ = _answering_client(
+            {
+                **_COMPLETED_JSON,
+                "hook_results": [{"id": "block_injection", "status": "unavailable"}],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "completed"
+        assert result.data == {"id": "msg_1"}
+        assert result.hook_results == [
+            {"id": "block_injection", "status": "unavailable"}
+        ]
+
     def test_malformed_blocked_response_is_raised(self):
         malformed = {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "reason"}
         client, _ = _answering_client(malformed)

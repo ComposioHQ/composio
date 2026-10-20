@@ -31,7 +31,7 @@ const blockedResponse = {
   message: 'Blocked by session policy',
   log_id: 'log_456',
   instant_charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
-  hook_results: [{ id: 'no_outside_data', status: 'unavailable', reason: 'timeout' }],
+  hook_results: [{ id: 'no_outside_data', status: 'evaluated', outcome: 'block' }],
 };
 
 const { log_id: _logId, ...blockedProxy } = blockedCall;
@@ -101,7 +101,7 @@ describe('session execute when a hook blocks the call', () => {
       logId: 'log_456',
       resultType: 'blocked',
       blockReason: { type: 'response_blocked', hookId: 'no_outside_data' },
-      hookResults: [{ id: 'no_outside_data', status: 'unavailable', reason: 'timeout' }],
+      hookResults: [{ id: 'no_outside_data', status: 'evaluated', outcome: 'block' }],
       instantCharge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
     });
   });
@@ -130,15 +130,22 @@ describe('session execute when a hook blocks the call', () => {
       data: { id: 'msg_1' },
       error: null,
       log_id: 'log_1',
-      hook_results: [{ id: 'no_external_email', status: 'evaluated', outcome: 'continue' }],
+      hook_results: [
+        { id: 'no_external_email', status: 'evaluated', outcome: 'continue' },
+        { id: 'block_injection', status: 'unavailable' },
+      ],
     });
 
+    // A hook that could not be evaluated does not block: the call still ran.
     await expect(createSession(client).execute('GMAIL_SEND_EMAIL', {})).resolves.toEqual({
       data: { id: 'msg_1' },
       error: null,
       logId: 'log_1',
       resultType: 'completed',
-      hookResults: [{ id: 'no_external_email', status: 'evaluated', outcome: 'continue' }],
+      hookResults: [
+        { id: 'no_external_email', status: 'evaluated', outcome: 'continue' },
+        { id: 'block_injection', status: 'unavailable' },
+      ],
     });
   });
 

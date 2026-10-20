@@ -43,11 +43,11 @@ class ToolRouterHookEvaluatedResult(te.TypedDict):
 
 
 class ToolRouterHookUnavailableResult(te.TypedDict):
-    """A session hook that could not be evaluated. The call is blocked."""
+    """A session hook that could not be evaluated, for example because it
+    timed out. It does not block the call."""
 
     id: str
     status: t.Literal["unavailable"]
-    reason: t.Literal["timeout", "error"]
 
 
 ToolRouterHookResult = t.Union[
