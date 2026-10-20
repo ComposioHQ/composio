@@ -1,5 +1,9 @@
 """Provider-boundary tests for validated tool argument serialization."""
 
+import asyncio
+import importlib
+import json
+import os
 import typing as t
 
 import pytest
@@ -553,4 +557,258 @@ def test_crewai_returns_structured_validation_errors(
     assert result["successful"] is False
     assert result["data"] is None
     assert parameter in result["error"]
+    assert received == []
+
+
+# ---------------------------------------------------------------------------
+# Cross-provider matrix for free-form object arguments (SUP-1643).
+#
+# Each row drives a provider through the entry point its framework really
+# calls, because the frameworks drop keys before our wrapper code runs.
+# ---------------------------------------------------------------------------
+
+# Providers this environment must have. CI and nox set it so a missing
+# install fails instead of skipping; locally it is usually empty.
+EXPECTED_PROVIDERS = frozenset(
+    os.environ.get("COMPOSIO_EXPECTED_PROVIDERS", "").replace(",", " ").split()
+)
+
+# Row name -> (provider package, provider class).
+MATRIX_PROVIDERS: t.Dict[str, t.Tuple[str, str]] = {
+    "crewai": ("crewai", "CrewAIProvider"),
+    "langchain": ("langchain", "LangchainProvider"),
+    "langchain_async": ("langchain", "LangchainProvider"),
+    "langgraph": ("langgraph", "LanggraphProvider"),
+    "gemini": ("gemini", "GeminiProvider"),
+    "autogen": ("autogen", "AutogenProvider"),
+    "autogen_ag2": ("autogen", "AutogenProvider"),
+    "google_adk": ("google_adk", "GoogleAdkProvider"),
+    "llamaindex": ("llamaindex", "LlamaIndexProvider"),
+    "openai_agents": ("openai_agents", "OpenAIAgentsProvider"),
+}
+
+# Providers that validate arguments on the client. LlamaIndex and OpenAI
+# Agents pass the model's arguments through, so they only get preservation
+# rows.
+VALIDATING_PROVIDERS = frozenset(
+    {
+        "crewai",
+        "langchain",
+        "langchain_async",
+        "langgraph",
+        "gemini",
+        "autogen",
+        "autogen_ag2",
+        "google_adk",
+    }
+)
+
+# (row, case) pairs that still lose or accept arguments they should not.
+# Each fix removes its provider's entries; strict xfail fails the run as
+# soon as a listed pair starts passing.
+KNOWN_FAILURES: t.FrozenSet[t.Tuple[str, str]] = frozenset(
+    {
+        *(
+            (row, case)
+            for row in ("autogen", "autogen_ag2", "google_adk")
+            for case in (
+                "root_free_form",
+                "root_additional_properties",
+                "nested_map_value_type",
+                "pattern_property_type",
+            )
+        ),
+    }
+)
+
+
+def _matrix_provider(row: str):
+    package, class_name = MATRIX_PROVIDERS[row]
+    try:
+        module = importlib.import_module(f"composio_{package}")
+    except ImportError as error:
+        if package in EXPECTED_PROVIDERS:
+            pytest.fail(f"composio_{package} is expected here but missing: {error}")
+        pytest.skip(f"composio_{package} is not installed")
+    return getattr(module, class_name)()
+
+
+def _matrix_call(row: str, input_parameters: t.Dict[str, t.Any], arguments):
+    """Wrap a tool, call it through the framework, and record what executes."""
+    received: t.List[t.Dict[str, t.Any]] = []
+
+    def execute_tool(slug: str, arguments: t.Dict[str, t.Any]):
+        assert slug == "TEST_TOOL"
+        received.append(arguments)
+        return {"successful": True, "data": {}, "error": None}
+
+    provider = _matrix_provider(row)
+    tool = _make_tool(input_parameters)
+    wrapped = provider.wrap_tool(tool, execute_tool)
+    try:
+        result = _matrix_invoke(row, provider, wrapped, arguments)
+    except Exception as error:  # a raised validation error is a rejection too
+        result = error
+    return received, result
+
+
+def _matrix_invoke(row: str, provider, wrapped, arguments):
+    if row == "crewai":
+        result = wrapped.run(**arguments)
+    elif row in ("langchain", "langgraph"):
+        result = wrapped.invoke(arguments)
+    elif row == "langchain_async":
+        result = asyncio.run(wrapped.ainvoke(arguments))
+    elif row == "gemini":
+        # Gemini's automatic function calling invokes the callable directly.
+        result = wrapped(**arguments)
+    elif row == "autogen":
+        from autogen_core import CancellationToken
+
+        result = asyncio.run(wrapped.run_json(arguments, CancellationToken()))
+    elif row == "autogen_ag2":
+        from autogen import ConversableAgent
+
+        caller = ConversableAgent(
+            "caller",
+            llm_config={"config_list": [{"model": "gpt-4o-mini", "api_key": "x"}]},
+            human_input_mode="NEVER",
+        )
+        executor = ConversableAgent(
+            "executor", llm_config=False, human_input_mode="NEVER"
+        )
+        provider.register_tools(caller=caller, executor=executor, tools=[wrapped])
+        _, result = executor.execute_function(
+            {"name": wrapped.name, "arguments": json.dumps(arguments)}
+        )
+    elif row == "google_adk":
+        from unittest.mock import MagicMock
+
+        context = MagicMock()
+        context.tool_confirmation = None
+        result = asyncio.run(wrapped.run_async(args=arguments, tool_context=context))
+    elif row == "llamaindex":
+        result = wrapped.call(**arguments)
+    elif row == "openai_agents":
+        result = asyncio.run(wrapped.on_invoke_tool(None, json.dumps(arguments)))
+    else:  # pragma: no cover - guarded by MATRIX_PROVIDERS
+        raise AssertionError(row)
+    return result
+
+
+# Cases whose arguments every provider must deliver unchanged.
+PRESERVATION_CASES: t.Dict[str, t.Tuple[t.Dict[str, t.Any], t.Dict[str, t.Any]]] = {
+    # The customer-reported shape: a free-form object under a declared property.
+    "nested_free_form": (
+        {
+            "type": "object",
+            "title": "NestedFreeForm",
+            "properties": {
+                "title": {"type": "string"},
+                "body": {"type": "object"},
+            },
+            "required": ["title", "body"],
+        },
+        {"title": "t", "body": {"unit": {"id": 7}, "tags": ["a"]}},
+    ),
+    "nested_additional_properties_schema": (
+        {
+            "type": "object",
+            "title": "NestedMap",
+            "properties": {
+                "body": {
+                    "type": "object",
+                    "additionalProperties": {"type": "string"},
+                },
+            },
+            "required": ["body"],
+        },
+        {"body": {"a": "x", "b": "y"}},
+    ),
+    "array_of_free_form_objects": (
+        {
+            "type": "object",
+            "title": "FreeFormItems",
+            "properties": {
+                "items": {"type": "array", "items": {"type": "object"}},
+            },
+            "required": ["items"],
+        },
+        {"items": [{"a": 1}, {"b": {"c": 2}}]},
+    ),
+    "root_free_form": (
+        {"type": "object", "title": "RootFreeForm", "properties": {}},
+        {"custom": {"nested": True}},
+    ),
+    "root_additional_properties": (
+        {
+            "type": "object",
+            "title": "RootOpen",
+            "properties": {"title": {"type": "string"}},
+            "required": ["title"],
+            "additionalProperties": True,
+        },
+        {"title": "t", "extra": {"k": 1}},
+    ),
+}
+
+# Cases every validating provider must reject without executing the tool.
+REJECTION_CASES: t.Dict[str, t.Tuple[t.Dict[str, t.Any], t.Dict[str, t.Any]]] = {
+    "nested_map_value_type": (
+        PRESERVATION_CASES["nested_additional_properties_schema"][0],
+        {"body": {"a": 1}},
+    ),
+    "pattern_property_type": (
+        {
+            "type": "object",
+            "title": "PatternArguments",
+            "properties": {},
+            "patternProperties": {"^count_": {"type": "integer", "minimum": 1}},
+            "additionalProperties": False,
+        },
+        {"count_x": "nope"},
+    ),
+}
+
+
+def _matrix_params(rows, cases):
+    return [
+        pytest.param(
+            row,
+            case,
+            id=f"{row}-{case}",
+            marks=(
+                [pytest.mark.xfail(strict=True, reason="known drop, SUP-1643")]
+                if (row, case) in KNOWN_FAILURES
+                else []
+            ),
+        )
+        for row in rows
+        for case in cases
+    ]
+
+
+@pytest.mark.parametrize(
+    ("row", "case"), _matrix_params(MATRIX_PROVIDERS, PRESERVATION_CASES)
+)
+def test_matrix_preserves_free_form_arguments(row: str, case: str):
+    input_parameters, arguments = PRESERVATION_CASES[case]
+
+    received, _ = _matrix_call(row, input_parameters, arguments)
+
+    assert received == [arguments]
+
+
+@pytest.mark.parametrize(
+    ("row", "case"),
+    _matrix_params(
+        [row for row in MATRIX_PROVIDERS if row in VALIDATING_PROVIDERS],
+        REJECTION_CASES,
+    ),
+)
+def test_matrix_rejects_invalid_dynamic_arguments(row: str, case: str):
+    input_parameters, arguments = REJECTION_CASES[case]
+
+    received, _ = _matrix_call(row, input_parameters, arguments)
+
     assert received == []
