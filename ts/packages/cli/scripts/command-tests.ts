@@ -19,7 +19,6 @@ const TEST_SUFFIX = '.cmd.test.ts';
 // test/src/commands/. Both use forward slashes.
 export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
   { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
-  { command: 'debug.cmd.ts', reason: 'no test yet' },
   { command: 'signup.cmd.ts', reason: 'no test yet' },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
   { command: 'upgrade.cmd.ts', reason: 'no test yet' },
