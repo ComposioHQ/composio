@@ -4,7 +4,17 @@
  * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
-import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  Layer,
+  Logger,
+  Option,
+  Predicate,
+  Runtime,
+} from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
@@ -26,7 +36,11 @@ import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
-import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
+import {
+  ComposioUserContext,
+  ComposioUserContextLive as _ComposioUserContextLive,
+} from 'src/services/user-context';
+import { formatBackendMismatch } from 'src/config/backend';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -258,8 +272,29 @@ export type CliBootstrapOptions = {
   readonly argv: ReadonlyArray<string>;
 };
 
+/** Writes `message` to stderr: as a decorated warning on a terminal, as plain text otherwise. */
+const warn = (message: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.warn(message);
+    } else {
+      yield* ui.error(`Warning: ${message}`);
+    }
+  });
+
+/** Warns, before any request, when an env var sends the stored key to another backend. */
+const warnOnBackendMismatch = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  yield* Option.match(ctx.backendMismatch, {
+    onNone: () => Effect.void,
+    onSome: mismatch => warn(formatBackendMismatch(mismatch)),
+  });
+});
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  showUpdateNotice.pipe(
+  warnOnBackendMismatch.pipe(
+    Effect.andThen(showUpdateNotice),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(

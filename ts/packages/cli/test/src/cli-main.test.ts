@@ -191,3 +191,60 @@ describe('CLI process error handling', () => {
     expect(`${result.stdout}\n${result.stderr}`).toContain('posthog_delivery_skipped');
   });
 });
+
+describe('CLI backend of a stored login', () => {
+  const STAGING_BASE_URL = 'https://staging-backend.composio.dev';
+
+  /** A cache dir holding a stored login issued by `baseURL`. */
+  const storedLogin = (baseURL: string) => {
+    const configDirectory = tempy.temporaryDirectory();
+    fs.writeFileSync(
+      path.join(configDirectory, 'user_data.json'),
+      JSON.stringify({ api_key: 'uak_stored', base_url: baseURL, web_url: null, org_id: 'org_1' })
+    );
+    return configDirectory;
+  };
+
+  /** The environment of a spawned CLI: no backend variables from the host, telemetry off. */
+  const cliEnv = (configDirectory: string, extra: Record<string, string> = {}) => {
+    const {
+      COMPOSIO_BASE_URL: _baseURL,
+      COMPOSIO_WEB_URL: _webURL,
+      COMPOSIO_ENVIRONMENT: _environment,
+      COMPOSIO_USER_API_KEY: _apiKey,
+      ...host
+    } = process.env;
+    return {
+      ...host,
+      CI: '1',
+      NO_COLOR: '1',
+      HOME: configDirectory,
+      COMPOSIO_CACHE_DIR: configDirectory,
+      COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+      ...extra,
+    };
+  };
+
+  it('warns on stderr only when an env var sends the stored key to another backend', () => {
+    const configDirectory = storedLogin(STAGING_BASE_URL);
+
+    const result = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: cliEnv(configDirectory, { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' }),
+    });
+
+    expect(result.status).toBe(0);
+    const warning =
+      'COMPOSIO_BASE_URL sends your stored API key to http://127.0.0.1:9, but it was issued by https://staging-backend.composio.dev.';
+    expect(result.stderr.split(warning)).toHaveLength(2);
+    expect(result.stdout).not.toContain('COMPOSIO_BASE_URL');
+
+    const unset = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: cliEnv(configDirectory),
+    });
+    expect(unset.stderr).not.toContain('sends your stored API key');
+  });
+});
