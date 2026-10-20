@@ -22,6 +22,7 @@ Complete API reference for the `composio` Python package.
 | [`ConnectedAccounts`](/reference/sdk-reference/python/connected-accounts) | Manage connected accounts.  This class is used to manage connected accounts in t... |
 | [`AuthConfigs`](/reference/sdk-reference/python/auth-configs) | Manage authentication configurations. |
 | [`MCP`](/reference/sdk-reference/python/mcp) | MCP (Model Control Protocol) class. Provides enhanced MCP server operations  Thi... |
+| [`Sessions`](/reference/sdk-reference/python/sessions) | Create and resume sessions through `composio.sessions`.  Sessions provide provid... |
 | [`Session`](/reference/sdk-reference/python/session) | A Composio session — the object returned by `composio.create(...)` / `composio.u... |
 
 ## Quick Start
@@ -31,16 +32,11 @@ from composio import Composio
 
 composio = Composio(api_key="your-api-key")
 
-# Get tools for a user
-tools = composio.tools.get("user-123", toolkits=["github"])
-
-# Execute a tool
-result = composio.tools.execute(
-    "GITHUB_GET_REPOS",
-    arguments={"owner": "composio"},
-    user_id="user-123"
-)
+session = composio.sessions.create(user_id="user-123", toolkits=["github"])
+tools = session.tools()
 ```
+
+See [Sessions](/reference/sdk-reference/python/sessions) to create or resume a session, and [Session](/reference/sdk-reference/python/session) for its tools and configuration.
 
 ## Decorators
 
@@ -49,7 +45,7 @@ result = composio.tools.execute(
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L278)
 
 ```python
-@before_execute(modifier: BeforeExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@before_execute(modifier: Optional[BeforeExecute] = ..., tools: Optional[List[str]] = ..., toolkits: Optional[List[str]] = ...)
 def my_modifier(...):
     ...
 ```
@@ -59,7 +55,7 @@ def my_modifier(...):
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L239)
 
 ```python
-@after_execute(modifier: AfterExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@after_execute(modifier: Optional[AfterExecute] = ..., tools: Optional[List[str]] = ..., toolkits: Optional[List[str]] = ...)
 def my_modifier(...):
     ...
 ```
@@ -71,7 +67,7 @@ Build a `Modifier` for the file-upload hook (same scoping pattern as `before_exe
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L317)
 
 ```python
-@before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@before_file_upload(modifier: Optional[BeforeFileUploadLike] = ..., tools: Optional[List[str]] = ..., toolkits: Optional[List[str]] = ...)
 def my_modifier(...):
     ...
 ```
@@ -81,7 +77,7 @@ def my_modifier(...):
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L375)
 
 ```python
-@schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@schema_modifier(modifier: Optional[SchemaModifier] = ..., tools: Optional[List[str]] = ..., toolkits: Optional[List[str]] = ...)
 def my_modifier(...):
     ...
 ```

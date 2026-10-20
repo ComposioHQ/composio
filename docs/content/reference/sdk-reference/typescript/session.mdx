@@ -7,14 +7,16 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `config` | `Config` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
+| `config` | `ToolRouterSessionConfig` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
 | `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
 | `experimental` | `SessionExperimental` |  |
-| `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
-| `preload` | `\{ tools: string[] \| 'all' \}` |  |
-| `sandbox` | `\{ auto_offload_threshold?: number; enable?: boolean; proxy_execution_enabled?: boolean; sandbox_size?: 'standard' \| 'medium' \| 'large' \| 'xlarge'; tool_execution_enabled?: boolean \}` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
+| `mcp` | `ToolRouterMCPServerConfig` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
+| `preload` | `ToolRouterSessionPreloadConfig` |  |
+| `sandbox` | `ToolRouterSessionWorkbenchConfig` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
 | `sessionId` | `string` |  |
-| `warnings` | `\{ code: 'PRELOAD_TOOLS_HIGH_CONTEXT_USAGE'; message: string \}[]` |  |
+| `warnings` | `ToolRouterSessionWarning[]` |  |
+
+See [session configuration](/docs/configuring-sessions) for the settings returned in `config`.
 
 ## Methods
 
@@ -190,7 +192,7 @@ is sent to the Composio backend as is: custom tools named in a
 `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
 ```typescript
-async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteMetaOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
 ```
 
 **Parameters**
@@ -199,6 +201,7 @@ async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<strin
 |------|------|-------------|
 | `slug` | `ToolRouterSessionMetaToolSlug` | The meta tool slug to execute |
 | `arguments_?` | `Record<string, unknown>` | Optional meta tool arguments |
+| `options?` | `ToolRouterSessionExecuteMetaOptions` | Experimental. The user's answers to an earlier `ComposioToolInputRequiredError` (`inputResponses`) and its `requestState`, as in `session.execute()` |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

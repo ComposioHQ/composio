@@ -8,12 +8,7 @@ import {
 } from 'fumadocs-mdx:collections/server';
 import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
 import type { Folder, Node } from 'fumadocs-core/page-tree';
-import {
-  type ContentStorage,
-  type InferPageType,
-  loader,
-  multiple,
-} from 'fumadocs-core/source';
+import { type ContentStorage, type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -288,17 +283,22 @@ function packageInstallToMarkdown(attributes: string): string {
   const comment = quoted('comment') ?? attributes.match(/\bcomment=\{(\[[\s\S]*?\])\}/)?.[1];
   const comments = comment?.trim().startsWith('[')
     ? Array.from(comment.matchAll(/(['"])((?:\\.|(?!\1)[^\\])*)\1/g), match =>
-        match[2].replace(/\\(['"\\])/g, '$1'),
+        match[2].replace(/\\(['"\\])/g, '$1')
       )
-    : comment ? [comment] : [];
+    : comment
+      ? [comment]
+      : [];
   const props = packageInstallSchema.parse({
     packages: quoted('packages'),
     ecosystem: quoted('ecosystem'),
     comment: comments,
   });
-  return PACKAGE_MANAGERS[props.ecosystem].map(manager =>
-    `\n**${manager.id}:**\n\n\`\`\`bash\n${manager.install} ${props.packages}${props.comment.map(line => `\n# ${line}`).join('')}\n\`\`\`\n`,
-  ).join('\n');
+  return PACKAGE_MANAGERS[props.ecosystem]
+    .map(
+      manager =>
+        `\n**${manager.id}:**\n\n\`\`\`bash\n${manager.install} ${props.packages}${props.comment.map(line => `\n# ${line}`).join('')}\n\`\`\`\n`
+    )
+    .join('\n');
 }
 
 /**
@@ -342,6 +342,48 @@ function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: st
 }
 
 /**
+ * Hide literal Markdown code before running MDX replacements. Match fence
+ * lengths and inline backtick runs so nested fences and backticks stay literal.
+ */
+function protectMarkdownCode(
+  content: string,
+  store: (code: string, fenced: boolean) => string
+): string {
+  const openings = /^[ \t]*(`{3,}(?![^\n]*`)|~{3,})[^\n]*(?:\n|$)|`+/gm;
+  let result = '';
+  let offset = 0;
+  let opening: RegExpExecArray | null;
+  while ((opening = openings.exec(content)) !== null) {
+    const start = opening.index;
+    const marker = opening[1];
+    let end: number;
+    if (marker) {
+      const closing = new RegExp(`^[ \\t]*${marker[0]}{${marker.length},}[ \\t]*\\r?$`, 'gm');
+      closing.lastIndex = openings.lastIndex;
+      const match = closing.exec(content);
+      end = match ? match.index + match[0].length : content.length;
+    } else {
+      // A backslash escapes a delimiter only outside a code span.
+      let slashes = 0;
+      for (let i = start - 1; content[i] === '\\'; i--) slashes++;
+      if (slashes % 2) continue;
+      const runs = /`+/g;
+      runs.lastIndex = openings.lastIndex;
+      let closing: RegExpExecArray | null;
+      do {
+        closing = runs.exec(content);
+      } while (closing && closing[0].length !== opening[0].length);
+      if (!closing) continue;
+      end = closing.index + closing[0].length;
+    }
+    result += content.slice(offset, start) + store(content.slice(start, end), Boolean(marker));
+    offset = end;
+    openings.lastIndex = end;
+  }
+  return result + content.slice(offset);
+}
+
+/**
  * Converts MDX content to clean markdown for AI agents.
  * Strips JSX components and converts them to plain text equivalents.
  *
@@ -353,7 +395,21 @@ function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: st
  * there since the changelog tree is not versioned.
  */
 export function mdxToCleanMarkdown(content: string, url?: string): string {
-  let result = content;
+  // Keep placeholders collision-free even when the input documents this helper.
+  let codeMarker = '\u0000CODE';
+  while (content.includes(codeMarker)) codeMarker += '\u0000';
+  const code: string[] = [];
+  const storeCode = (value: string, fenced: boolean) => {
+    const token = `${codeMarker}${code.length}\u0000`;
+    code.push(fenced ? stripTwoslashFromCodeBlocks(value) : value);
+    return token;
+  };
+  const restoreCode = (value: string) =>
+    value.replace(
+      new RegExp(`${codeMarker}(\\d+)\\u0000`, 'g'),
+      (_, index: string) => code[Number(index)]
+    );
+  let result = protectMarkdownCode(content, storeCode);
   const version = url ? detectApiVersion(url) : '3.1';
 
   // Remove frontmatter
@@ -369,7 +425,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
     API_ENDPOINTS_TABLE_REGEX,
     (_, bracedPayload?: string, quotedPayload?: string) =>
       endpointsTableToMarkdown(
-        bracedPayload ?? decodeHtmlEntities(quotedPayload ?? ''),
+        restoreCode(bracedPayload ?? decodeHtmlEntities(quotedPayload ?? '')),
         version,
         url
       )
@@ -379,21 +435,35 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
 
   // Keep installation commands in both raw search input and processed page Markdown.
   result = result.replace(/<PackageInstall\b([\s\S]*?)\/>/g, (_, attributes: string) =>
-    packageInstallToMarkdown(attributes),
+    packageInstallToMarkdown(attributes)
   );
-  result = result.replace(/<AgentSetupActions\b[^>]*\/>/g,
-    `\n[Agent setup](/docs/agent-setup)\n\n${SETUP_PROMPT}\n`,
+  result = result.replace(
+    /<AgentSetupActions\b[^>]*\/>/g,
+    `\n[Agent setup](/docs/agent-setup)\n\n${SETUP_PROMPT}\n`
   );
-  result = result.replace(/<AgentSetupGrid\s*\/>/g,
-    AGENTS.map(agent => `- [${agent.name}](${agent.href}): ${agent.description}`).join('\n'),
+  result = result.replace(
+    /<AgentSetupGrid\s*\/>/g,
+    AGENTS.map(agent => `- [${agent.name}](${agent.href}): ${agent.description}`).join('\n')
   );
   result = result.replace(/<AgentFirstPrompt\s+agent="([^"]+)"\s*\/>/g, (_, agent: string) => {
-    const parsed = z.enum(['claude-code', 'cline', 'codex', 'cursor', 'gemini-cli',
-      'github-copilot', 'grok', 'openclaw', 'opencode']).parse(agent);
+    const parsed = z
+      .enum([
+        'claude-code',
+        'cline',
+        'codex',
+        'cursor',
+        'gemini-cli',
+        'github-copilot',
+        'grok',
+        'openclaw',
+        'opencode',
+      ])
+      .parse(agent);
     return `\n\`\`\`text\n${promptFor(parsed)}\n\`\`\`\n`;
   });
-  result = result.replace(/<Video\b[^>]*src="([^"]+)"[^>]*caption="([^"]+)"[^>]*\/>/g,
-    '[Video: $2]($1)',
+  result = result.replace(
+    /<Video\b[^>]*src="([^"]+)"[^>]*caption="([^"]+)"[^>]*\/>/g,
+    '[Video: $2]($1)'
   );
 
   // Convert YouTube to link
@@ -560,6 +630,10 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
 
   result = replaceRepoBrowserMarkdown(result);
 
+  // Components such as FileBuildup also emit code. Protect their output before
+  // the generic JSX removal and whitespace normalization below.
+  result = protectMarkdownCode(result, storeCode);
+
   result = result.replace(
     /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
     ''
@@ -570,60 +644,27 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
 
   const lines = result.split('\n');
   const normalizedLines: string[] = [];
-  let inCodeBlock = false;
-  let codeBlockLines: string[] = [];
-
-  const flushCodeBlock = () => {
-    if (codeBlockLines.length > 0) {
-      const nonEmptyLines = codeBlockLines.filter(l => l.trim().length > 0);
-      const minIndent =
-        nonEmptyLines.length > 0
-          ? Math.min(...nonEmptyLines.map(l => l.match(/^(\s*)/)?.[1]?.length || 0))
-          : 0;
-      for (const codeLine of codeBlockLines) {
-        normalizedLines.push(codeLine.slice(minIndent));
-      }
-      codeBlockLines = [];
-    }
-  };
 
   for (const line of lines) {
-    if (line.trim().startsWith('```')) {
-      if (inCodeBlock) {
-        flushCodeBlock();
-        inCodeBlock = false;
-        normalizedLines.push(line.trim());
-      } else {
-        inCodeBlock = true;
-        normalizedLines.push(line.trim());
-      }
-    } else if (inCodeBlock) {
-      codeBlockLines.push(line);
-    } else {
-      const trimmedLine = line.trimStart();
-      if (/^\s*[{}]\s*$/.test(line)) {
-        continue;
-      }
-      if (trimmedLine.match(/^[-*+]\s/) || trimmedLine.match(/^\d+\.\s/)) {
-        const leadingSpaces = line.length - trimmedLine.length;
-        const indentLevel = Math.floor(leadingSpaces / 2);
-        const normalizedIndent = '  '.repeat(Math.min(indentLevel, 4));
-        normalizedLines.push(normalizedIndent + trimmedLine);
-      } else {
-        normalizedLines.push(trimmedLine);
-      }
+    const trimmedLine = line.trimStart();
+    if (/^\s*[{}]\s*$/.test(line)) {
+      continue;
     }
-  }
-
-  if (inCodeBlock) {
-    flushCodeBlock();
+    if (trimmedLine.match(/^[-*+]\s/) || trimmedLine.match(/^\d+\.\s/)) {
+      const leadingSpaces = line.length - trimmedLine.length;
+      const indentLevel = Math.floor(leadingSpaces / 2);
+      const normalizedIndent = '  '.repeat(Math.min(indentLevel, 4));
+      normalizedLines.push(normalizedIndent + trimmedLine);
+    } else {
+      normalizedLines.push(trimmedLine);
+    }
   }
 
   result = normalizedLines.join('\n');
-  result = result.replace(/\n{3,}/g, '\n\n');
-  result = stripTwoslashFromCodeBlocks(result);
+  result = result.replace(/\n{3,}/g, '\n\n').trim();
+  result = restoreCode(result);
 
-  return result.trim();
+  return result;
 }
 
 function stripTwoslashFromCodeBlocks(content: string): string {

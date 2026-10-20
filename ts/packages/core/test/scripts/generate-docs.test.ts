@@ -7,10 +7,13 @@ import {
   escapeTableTextForMdx,
   escapeTextForMdx,
   escapeTypeForMdx,
+  extractClass,
   generateClassMdx,
+  generateIndexMdx,
   getSourceFileText,
   isParameterRequired,
   parseSourceSignatureTypesAtLine,
+  parseSourcePropertyTypeAtLine,
   runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
@@ -34,6 +37,43 @@ describe('generate-docs usage examples', () => {
     );
     expect(mdx).not.toContain('composio.toolkits.list()');
   });
+
+  it.each(['Sessions', 'index'])(
+    'executes the %s entry example through sessions.create',
+    async name => {
+      const mdx =
+        name === 'index'
+          ? generateIndexMdx([])
+          : generateClassMdx({
+              name,
+              description: 'Sessions API',
+              constructor: undefined,
+              methods: [],
+              properties: [],
+            });
+      const snippet = mdx.match(/```typescript\n([\s\S]*?)```/)?.[1];
+      expect(snippet).toBeDefined();
+      const tools = vi.fn(async () => []);
+      const create = vi.fn(async (userId: string, _config?: unknown) => {
+        expect(userId).toBe('user-123');
+        return { tools };
+      });
+      class Composio {
+        sessions = { create };
+      }
+      // Execute the generated example, not a hand-written copy. Unsupported
+      // sessions.list() and legacy tools.get() calls fail against this surface.
+      const run = new Function(
+        'Composio',
+        `return (async () => {
+      ${snippet!.replace(/^import .*?;\n/gm, '')}
+    })();`
+      );
+      await run(Composio);
+      expect(create).toHaveBeenCalledOnce();
+      if (name === 'index') expect(tools).toHaveBeenCalledOnce();
+    }
+  );
 });
 
 describe('generate-docs type rendering', () => {
@@ -81,6 +121,24 @@ describe('generate-docs type rendering', () => {
     expect(isParameterRequired({ flags: { isOptional: true } })).toBe(false);
     expect(isParameterRequired({ defaultValue: '{}' })).toBe(false);
     expect(isParameterRequired({})).toBe(true);
+  });
+
+  it('recovers property types without including initializers or following members', () => {
+    expect(
+      parseSourcePropertyTypeAtLine(
+        'public config: ToolRouterSessionConfig = metadata.config;\n',
+        1
+      )
+    ).toBe('ToolRouterSessionConfig');
+    expect(
+      parseSourcePropertyTypeAtLine('public value: {\n  enabled: boolean;\n} | undefined;\n', 1)
+    ).toBe('{\n  enabled: boolean;\n} | undefined');
+    expect(
+      parseSourcePropertyTypeAtLine(
+        'public config = { user_id: "user" };\npublic next: string;\n',
+        1
+      )
+    ).toBeUndefined();
   });
 
   it('reads named parameter and return types from source signatures', () => {
@@ -222,6 +280,29 @@ describe('generate-docs source lookup', () => {
     expect(() => getSourceFileText('ts/packages/core/src/models/Example.ts', packageDir)).toThrow(
       /ENOENT/
     );
+  });
+
+  it('uses the authored property alias rather than TypeDoc client internals', async () => {
+    const file = join(packageDir, 'Session.ts');
+    await writeFile(file, 'public config: ToolRouterSessionConfig;\n');
+    const doc = extractClass({
+      id: 1,
+      name: 'ToolRouterSession',
+      kind: 128,
+      children: [
+        {
+          id: 2,
+          name: 'config',
+          kind: 1024,
+          type: { type: 'reference', name: 'Config' },
+          sources: [{ fileName: file, line: 1 }],
+        },
+      ],
+    });
+    expect(doc.properties[0].type).toBe('ToolRouterSessionConfig');
+    const mdx = generateClassMdx(doc);
+    expect(mdx).toContain('| `config` | `ToolRouterSessionConfig` |');
+    expect(mdx).toContain('](/docs/configuring-sessions)');
   });
 });
 

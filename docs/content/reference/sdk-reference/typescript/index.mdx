@@ -41,14 +41,10 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY
 });
 
-// Get tools for a user
-const tools = await composio.tools.get('user-123', {
+const session = await composio.sessions.create('user-123', {
   toolkits: ['github']
 });
-
-// Execute a tool
-const result = await composio.tools.execute('GITHUB_GET_REPOS', {
-  userId: 'user-123',
-  arguments: { owner: 'composio' }
-});
+const tools = await session.tools();
 ```
+
+See [Sessions](/reference/sdk-reference/typescript/sessions) to create or resume a session, and [Session](/reference/sdk-reference/typescript/session) for its tools and configuration.

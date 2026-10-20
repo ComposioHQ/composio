@@ -1,0 +1,10 @@
+---
+title: "Session reference examples retain their types"
+date: "2026-10-20"
+---
+
+### Bug fixes
+
+Markdown exports now preserve TypeScript generics and JSX-looking literals inside fenced and inline code. Session signatures such as `Promise<Session<TProvider>>` no longer lose their type arguments when you read a reference page as Markdown.
+
+The generated SDK reference now starts with `composio.sessions.create(...)` examples in TypeScript and Python. The Python reference includes a [Sessions page](/reference/sdk-reference/python/sessions) for `create()` and `use()`, and the TypeScript [Session reference](/reference/sdk-reference/typescript/session) retains the public `ToolRouterSessionConfig` property type.

@@ -670,6 +670,22 @@ export function parseSourceSignatureTypesAtLine(
   return { parameters, returnType };
 }
 
+export function parseSourcePropertyTypeAtLine(text: string, line: number): string | undefined {
+  const declaration = text.slice(getLineOffset(text, line));
+  const end = findTopLevelChar(declaration, ';');
+  const property = end === -1 ? declaration.split('\n')[0] : declaration.slice(0, end);
+  const colon = findTopLevelChar(property, ':');
+  const initializer = findTopLevelChar(property, '=');
+  if (colon === -1 || (initializer !== -1 && initializer < colon)) return undefined;
+  return property.slice(colon + 1, initializer === -1 ? undefined : initializer).trim();
+}
+
+function getSourcePropertyType(property: TypeDocReflection): string | undefined {
+  const source = property.sources?.[0];
+  if (!source) return undefined;
+  return parseSourcePropertyTypeAtLine(getSourceFileText(source.fileName), source.line);
+}
+
 function getSourceSignatureTypes(signature: TypeDocSignature): SourceSignatureTypes | undefined {
   const source = signature.sources?.[0];
   if (!source) return undefined;
@@ -800,7 +816,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
   };
 }
 
-function extractClass(reflection: TypeDocReflection): ClassDoc {
+export function extractClass(reflection: TypeDocReflection): ClassDoc {
   const classDoc: ClassDoc = {
     name: reflection.name,
     description: extractDescription(reflection.comment),
@@ -840,7 +856,7 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
     if (child.kind === TYPEDOC_KIND.Property && !child.flags?.isPrivate) {
       classDoc.properties.push({
         name: child.name,
-        type: formatType(child.type),
+        type: getSourcePropertyType(child) ?? formatType(child.type),
         description: extractDescription(child.comment),
         default: child.defaultValue,
       });
@@ -1019,8 +1035,17 @@ export function generateClassMdx(classDoc: ClassDoc): string {
     lines.push(`Access this class through the \`composio.${accessorName}\` property:`);
     lines.push('');
     lines.push('```typescript');
+    if (classDoc.name === 'Sessions') {
+      lines.push("import { Composio } from '@composio/core';");
+      lines.push('');
+    }
     lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
-    const usageCall = classDoc.name === 'Toolkits' ? 'get({})' : 'list()';
+    const usageCall =
+      classDoc.name === 'Sessions'
+        ? "create('user-123')"
+        : classDoc.name === 'Toolkits'
+          ? 'get({})'
+          : 'list()';
     lines.push(`const result = await composio.${accessorName}.${usageCall};`);
     lines.push('```');
     lines.push('');
@@ -1051,6 +1076,12 @@ export function generateClassMdx(classDoc: ClassDoc): string {
         lines.push(`| \`${prop.name}\` | \`${typeCell}\` |`);
       }
     }
+    lines.push('');
+  }
+  if (publicProps.some(prop => prop.type === 'ToolRouterSessionConfig')) {
+    lines.push(
+      'See [session configuration](/docs/configuring-sessions) for the settings returned in `config`.'
+    );
     lines.push('');
   }
 
@@ -1236,6 +1267,48 @@ async function runTypeDoc(): Promise<TypeDocProject> {
   return JSON.parse(jsonContent) as TypeDocProject;
 }
 
+export function generateIndexMdx(documented: { name: string; description: string }[]): string {
+  const classesTable = documented
+    .map(
+      ({ name, description }) =>
+        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTableTextForMdx(description)} |`
+    )
+    .join('\n');
+
+  return `---
+title: ${formatYamlFrontmatterString('TypeScript SDK Reference')}
+description: ${formatYamlFrontmatterString('Complete API reference for the Composio TypeScript SDK (@composio/core).')}
+---
+
+## Installation
+
+<PackageInstall packages="@composio/core" />
+
+## Classes
+
+| Class | Description |
+|-------|-------------|
+${classesTable}
+
+## Quick Start
+
+\`\`\`typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+const session = await composio.sessions.create('user-123', {
+  toolkits: ['github']
+});
+const tools = await session.tools();
+\`\`\`
+
+See [Sessions](/reference/sdk-reference/typescript/sessions) to create or resume a session, and [Session](/reference/sdk-reference/typescript/session) for its tools and configuration.
+`;
+}
+
 async function main() {
   console.log('Starting TypeScript SDK documentation generation...\n');
   console.log(`Package dir: ${PACKAGE_DIR}`);
@@ -1287,51 +1360,7 @@ async function main() {
     });
   }
 
-  // Generate index page
-  const classesTable = documented
-    .map(
-      ({ name, description }) =>
-        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTableTextForMdx(description)} |`
-    )
-    .join('\n');
-
-  const indexContent = `---
-title: ${formatYamlFrontmatterString('TypeScript SDK Reference')}
-description: ${formatYamlFrontmatterString('Complete API reference for the Composio TypeScript SDK (@composio/core).')}
----
-
-## Installation
-
-<PackageInstall packages="@composio/core" />
-
-## Classes
-
-| Class | Description |
-|-------|-------------|
-${classesTable}
-
-## Quick Start
-
-\`\`\`typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
-
-// Get tools for a user
-const tools = await composio.tools.get('user-123', {
-  toolkits: ['github']
-});
-
-// Execute a tool
-const result = await composio.tools.execute('GITHUB_GET_REPOS', {
-  userId: 'user-123',
-  arguments: { owner: 'composio' }
-});
-\`\`\`
-`;
-
+  const indexContent = generateIndexMdx(documented);
   await writeFile(join(OUTPUT_DIR, 'index.mdx'), indexContent);
 
   // Generate meta.json for sidebar

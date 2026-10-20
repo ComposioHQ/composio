@@ -8,8 +8,10 @@ description: "First-class API for creating and reusing Composio sessions.  `comp
 Access this class through the `composio.sessions` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.sessions.list();
+const result = await composio.sessions.create('user-123');
 ```
 
 ## Methods

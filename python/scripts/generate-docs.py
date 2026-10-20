@@ -67,6 +67,7 @@ EXPECTED_CLASSES = {
     "ConnectedAccounts": "connected_accounts",
     "AuthConfigs": "auth_configs",
     "MCP": "mcp",
+    "ToolRouter": "sessions",
 }
 
 # Additional public-facing classes worth documenting even though they are not
@@ -88,16 +89,19 @@ CLASS_MODULES = [
     "core.models.connected_accounts",
     "core.models.auth_configs",
     "core.models.mcp",
+    "core.models.tool_router",
 ]
 
 # Pure-docs presentation overrides. The public class name ``ToolRouterSession``
 # is kept in source (renaming is a breaking change), but the SDK reference
 # presents the session object under the canonical "Session" naming.
 DISPLAY_NAME_OVERRIDES = {
+    "ToolRouter": "Sessions",
     "ToolRouterSession": "Session",
 }
 
 SLUG_OVERRIDES = {
+    "ToolRouter": "sessions",
     "ToolRouterSession": "session",
 }
 
@@ -159,9 +163,8 @@ def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     type_str = type_str.replace("composio.client.types.", "")
     type_str = re.sub(r"\bt\.", "", type_str)
     type_str = re.sub(r"\bte\.", "", type_str)  # typing_extensions alias
-    type_str = re.sub(r"Optional\[([^\]]+)\]", r"\1 | None", type_str)
-    # Clean up Unpack to just show the type
-    type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
+    # Keep generic wrappers intact. Regex rewriting Optional/Unpack loses
+    # bracket nesting and can turn Optional[List[T]] into List[T | None].
 
     # Truncate very long types
     if max_length is not None and len(type_str) > max_length:
@@ -258,8 +261,9 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             raises.append(current_raise)
             continue
 
-        # Check for Example section
-        if stripped.lower().startswith("example"):
+        # Section headings may carry labels, but parameter examples with
+        # content after the colon are still parameter prose.
+        if re.fullmatch(r"examples?(?:\s+[^:]+)?:", stripped, re.IGNORECASE):
             section = "examples"
             continue
 
@@ -343,7 +347,11 @@ def extract_class_info(
                     "name": name,
                     "type": format_type(member.annotation),
                     "description": (
-                        normalize_inline_rst(attr_doc.strip()) if attr_doc else ""
+                        normalize_inline_rst(" ".join(attr_doc.split())).replace(
+                            "|", "\\|"
+                        )
+                        if attr_doc
+                        else ""
                     ),
                 }
             )
@@ -417,6 +425,26 @@ def generate_class_mdx(
 
     source_link = info.get("source_link", "")
 
+    if info["name"] == "ToolRouter":
+        lines.extend(
+            [
+                "## Usage",
+                "",
+                "Create a session through `composio.sessions`. Resume one with `composio.sessions.use(session_id)`.",
+                "",
+                "```python",
+                "from composio import Composio",
+                "",
+                'composio = Composio(api_key="your-api-key")',
+                'session = composio.sessions.create(user_id="user-123")',
+                "tools = session.tools()",
+                "```",
+                "",
+                "See [Session](/reference/sdk-reference/python/session) for the returned object and [session configuration](/docs/configuring-sessions) for settings.",
+                "",
+            ]
+        )
+
     # Properties
     property_rows = []
     if info["properties"]:
@@ -425,13 +453,11 @@ def generate_class_mdx(
                 prop_name = prop["name"]
                 if prop_name in prop_to_class:
                     class_name = prop_to_class[prop_name]
-                    link = (
-                        f"/reference/sdk-reference/python/{to_kebab_case(class_name)}"
-                    )
+                    link = f"/reference/sdk-reference/python/{slug_for(class_name)}"
                     property_rows.append(
                         {
                             "name": f"[`{prop_name}`]({link})",
-                            "type": f"`{class_name}`",
+                            "type": f"`{display_name_for(class_name)}`",
                             "description": prop["description"],
                         }
                     )
@@ -614,16 +640,11 @@ from composio import Composio
 
 composio = Composio(api_key="your-api-key")
 
-# Get tools for a user
-tools = composio.tools.get("user-123", toolkits=["github"])
-
-# Execute a tool
-result = composio.tools.execute(
-    "GITHUB_GET_REPOS",
-    arguments={{"owner": "composio"}},
-    user_id="user-123"
-)
+session = composio.sessions.create(user_id="user-123", toolkits=["github"])
+tools = session.tools()
 ```
+
+See [Sessions](/reference/sdk-reference/python/sessions) to create or resume a session, and [Session](/reference/sdk-reference/python/session) for its tools and configuration.
 
 {dec_section}
 """

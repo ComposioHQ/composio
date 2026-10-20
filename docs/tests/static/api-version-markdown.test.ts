@@ -27,12 +27,7 @@ import {
   isToolVersionPath,
 } from '../../lib/api-version-guidance';
 import { detectReferenceApiVersion, toCurrentVersionUrl } from '../../lib/api-version';
-import {
-  getLLMText,
-  getReferenceSource,
-  mdxToCleanMarkdown,
-  type LLMPage,
-} from '../../lib/source';
+import { getLLMText, getReferenceSource, mdxToCleanMarkdown, type LLMPage } from '../../lib/source';
 import { DIRECT_EXECUTION_GUARDRAILS, SESSION_GUARDRAILS } from '../../lib/llm-guardrails';
 
 const V31_BASE = 'https://backend.composio.dev/api/v3.1';
@@ -159,6 +154,17 @@ describe('mdxToCleanMarkdown — ApiEndpointsTable', () => {
     expect(markdown).toContain(String.raw`[Path \\\| pipe]`);
   });
 
+  test.each([endpointsTable, processedEndpointsTable])(
+    'preserves inline code in endpoint JSON summaries',
+    render => {
+      const summary = 'Get `tool_slug` and `Promise<Session<T>>`';
+      const markdown = mdxToCleanMarkdown(render([{ ...TOOLS_ENDPOINT, summary }]), CURRENT_URL);
+      expect(markdown).toContain(`[${summary}](${TOOLS_ENDPOINT.href})`);
+      expect(markdown).toContain('| Method | Path | Endpoint |');
+      expect(markdown).not.toContain('\u0000');
+    }
+  );
+
   test('emits no table and does not throw on a truncated payload', () => {
     const content = 'Surrounding prose.\n\n<ApiEndpointsTable endpoints={[{"method":"GET"} />\n';
     const markdown = mdxToCleanMarkdown(content, CURRENT_URL);
@@ -204,9 +210,7 @@ describe('getLLMText — version pointer', () => {
   });
 
   test('an SDK reference page gets no REST version pointer', async () => {
-    const text = await getLLMText(
-      llmPage('/reference/sdk-reference/typescript/tools', '# Tools')
-    );
+    const text = await getLLMText(llmPage('/reference/sdk-reference/typescript/tools', '# Tools'));
     expect(text).not.toContain('**API version:**');
   });
 
@@ -216,19 +220,16 @@ describe('getLLMText — version pointer', () => {
   });
 
   test('the legacy authentication page links to its renamed current counterpart', async () => {
-    const text = await getLLMText(
-      llmPage('/reference/v3/authentication', '# Authentication'),
-      { includeGuardrails: false }
-    );
+    const text = await getLLMText(llmPage('/reference/v3/authentication', '# Authentication'), {
+      includeGuardrails: false,
+    });
     expect(text).toContain('/reference/authenticating-to-composio.md');
   });
 
   test('every published legacy page links to an existing current-version page', async () => {
     const reference = await getReferenceSource();
     const routes = new Set(reference.getPages().map(page => page.url));
-    const legacyRoutes = [...routes].filter(
-      url => detectReferenceApiVersion(url) === '3.0'
-    );
+    const legacyRoutes = [...routes].filter(url => detectReferenceApiVersion(url) === '3.0');
     const invalidPointers = legacyRoutes.flatMap(source => {
       const target = toCurrentVersionUrl(source);
       const pointer = apiVersionPointer(source);
@@ -240,9 +241,9 @@ describe('getLLMText — version pointer', () => {
     });
 
     expect(legacyRoutes.some(url => /^\/reference\/v3\/[^/]+$/.test(url))).toBe(true);
-    expect(
-      legacyRoutes.some(url => /^\/reference\/v3\/api-reference\/[^/]+$/.test(url))
-    ).toBe(true);
+    expect(legacyRoutes.some(url => /^\/reference\/v3\/api-reference\/[^/]+$/.test(url))).toBe(
+      true
+    );
     expect(
       legacyRoutes.some(url => /^\/reference\/v3\/api-reference\/[^/]+\/[^/]+$/.test(url))
     ).toBe(true);

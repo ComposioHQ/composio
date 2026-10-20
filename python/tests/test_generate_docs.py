@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import inspect
 import re
+import typing
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
+from composio.core.models.connected_accounts import ConnectedAccounts
+from composio.core.models.tool_router import ToolRouter
 from composio.core.models.triggers import Triggers
 
 
@@ -191,3 +197,122 @@ def test_generated_examples_do_not_keep_nested_markdown_fences():
         'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
         "print(result)"
     ]
+
+
+def test_index_example_calls_the_public_session_api():
+    generate_docs = load_generate_docs_module()
+    mdx = generate_docs.generate_index_mdx([], [])
+    snippet = re.search(r"```python\n(.*?)```", mdx, re.DOTALL)
+    assert snippet is not None
+    tools = Mock(return_value=[])
+
+    def create(**kwargs):
+        # Validate the generated call against the real SDK signature, without
+        # making a network request.
+        inspect.signature(ToolRouter.create).bind(None, **kwargs)
+        assert kwargs["user_id"] == "user-123"
+        return SimpleNamespace(tools=tools)
+
+    composio = SimpleNamespace(
+        sessions=SimpleNamespace(create=Mock(side_effect=create))
+    )
+    namespace = {"Composio": Mock(return_value=composio)}
+    example = snippet.group(1).replace("from composio import Composio\n", "")
+    exec(compile(example, "<generated quickstart>", "exec"), namespace)
+    composio.sessions.create.assert_called_once()
+    tools.assert_called_once()
+
+
+def test_nested_type_annotations_keep_their_meaning():
+    generate_docs = load_generate_docs_module()
+    rendered = generate_docs.format_type(
+        "t.Optional[t.Union[t.List[str], int]]", max_length=None
+    )
+    assert (
+        eval(rendered, vars(typing))
+        == typing.Optional[typing.Union[typing.List[str], int]]
+    )
+    rendered = generate_docs.format_type("t.Unpack[t.Tuple[str, int]]", max_length=None)
+    assert eval(rendered, vars(typing)) == typing.Unpack[typing.Tuple[str, int]]
+
+
+@pytest.mark.parametrize("method", [ToolRouter.create, ToolRouter.use])
+def test_session_method_examples_are_valid_and_call_supported_signatures(method):
+    generate_docs = load_generate_docs_module()
+    parsed = generate_docs.parse_docstring(method.__doc__)
+    assert parsed["examples"]
+    example = ast.parse(parsed["examples"][0])
+    calls = [
+        node
+        for node in ast.walk(example)
+        if isinstance(node, ast.Call)
+        and ast.unparse(node.func) == f"composio.sessions.{method.__name__}"
+    ]
+    assert calls
+    for call in calls:
+        inspect.signature(method).bind(
+            None,
+            *[None for _ in call.args],
+            **{keyword.arg: None for keyword in call.keywords},
+        )
+
+
+def test_labeled_connection_examples_remain_valid_python():
+    generate_docs = load_generate_docs_module()
+    parsed = generate_docs.parse_docstring(ConnectedAccounts.link.__doc__)
+    assert parsed["examples"]
+    calls = []
+    for example in parsed["examples"]:
+        tree = ast.parse(example)
+        calls.extend(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and ast.unparse(node.func) == "composio.connected_accounts.link"
+        )
+    assert len(calls) == 3
+    assert {"callback_url", "experimental"} <= {
+        keyword.arg for call in calls for keyword in call.keywords
+    }
+    for call in calls:
+        inspect.signature(ConnectedAccounts.link).bind(
+            None,
+            *[None for _ in call.args],
+            **{keyword.arg: None for keyword in call.keywords},
+        )
+
+
+def test_sessions_reference_and_mount_are_generated_from_source():
+    generate_docs = load_generate_docs_module()
+    griffe = generate_docs.load_griffe()
+    package = griffe.load("composio", search_paths=[str(generate_docs.PACKAGE_DIR)])
+    router = (
+        package.members["core"]
+        .members["models"]
+        .members["tool_router"]
+        .members["ToolRouter"]
+    )
+    info = generate_docs.extract_class_info(
+        router, "ToolRouter", {"access": "composio.sessions"}
+    )
+    mdx = generate_docs.generate_class_mdx(info)
+    assert generate_docs.slug_for("ToolRouter") == "sessions"
+    assert 'title: "Sessions"' in mdx
+    assert "### create()" in mdx
+    assert "### use()" in mdx
+    assert "| `user_id` | `str` |" in mdx
+    assert "| `session_id` | `str` |" in mdx
+    assert "composio.tool_router" not in mdx
+
+    composio = package.members["sdk"].members["Composio"]
+    info = generate_docs.extract_class_info(composio, "Composio", {"access": None})
+    mounts = {prop: cls for cls, prop in generate_docs.EXPECTED_CLASSES.items()}
+    mdx = generate_docs.generate_class_mdx(info, mounts)
+    assert (
+        "| [`sessions`](/reference/sdk-reference/python/sessions) | `Sessions` |" in mdx
+    )
+    session_row = next(
+        line for line in mdx.splitlines() if line.startswith("| [`sessions`]")
+    )
+    assert session_row.endswith("|")
+    assert "[`tool_router`]" not in mdx
