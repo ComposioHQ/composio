@@ -1,6 +1,6 @@
 import { Command } from 'effect/cli';
 import { requireLogin } from 'src/effects/require-auth';
-import { logsCmd$Tools } from './commands/logs.tools.cmd';
+import { logsCmd$Tools } from './tools/logs.tools.cmd';
 import { logsCmd$Triggers } from './triggers/logs.triggers.cmd';
 
 /**

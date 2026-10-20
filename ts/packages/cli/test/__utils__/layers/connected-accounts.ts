@@ -79,6 +79,16 @@ const findById = <A extends { readonly id: string }>(
   );
 
 /**
+ * The repository's auth-config methods.
+ */
+export type AuthConfigRepositoryMethod = 'listAuthConfigs' | 'getAuthConfig' | 'createAuthConfig';
+
+export type AuthConfigRepositoryMethods = Pick<
+  ComposioToolkitsRepositoryShape,
+  AuthConfigRepositoryMethod
+>;
+
+/**
  * The repository methods this family serves.
  */
 export type ConnectedAccountRepositoryMethod =
@@ -90,13 +100,12 @@ export type ConnectedAccountRepositoryMethods = Pick<
 >;
 
 /**
- * The repository's auth-config and connected-account methods, answering from
- * the test data the way the API would.
+ * The repository's auth-config methods, answering from the test data the way
+ * the API would.
  */
-export const connectedAccountRepositoryMethods = (
-  authConfigsData: ResolvedAuthConfigsTestData,
-  connectedAccountsData: ResolvedConnectedAccountsTestData
-): ConnectedAccountRepositoryMethods => ({
+export const authConfigRepositoryMethods = (
+  authConfigsData: ResolvedAuthConfigsTestData
+): AuthConfigRepositoryMethods => ({
   listAuthConfigs: (params: {
     search?: string;
     toolkit_slug?: string;
@@ -143,6 +152,17 @@ export const connectedAccountRepositoryMethods = (
       }
     );
   },
+});
+
+/**
+ * The repository's auth-config and connected-account methods, answering from
+ * the test data the way the API would.
+ */
+export const connectedAccountRepositoryMethods = (
+  authConfigsData: ResolvedAuthConfigsTestData,
+  connectedAccountsData: ResolvedConnectedAccountsTestData
+): ConnectedAccountRepositoryMethods => ({
+  ...authConfigRepositoryMethods(authConfigsData),
   getConnectedAccount: (nanoid: string) =>
     findById(connectedAccountsData.items, nanoid, () =>
       notFoundError(`Connected account "${nanoid}" not found`, {
