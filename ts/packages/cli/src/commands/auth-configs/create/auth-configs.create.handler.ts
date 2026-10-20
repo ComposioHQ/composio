@@ -1,5 +1,6 @@
 import type { AuthConfigCreateParams as AuthConfigCreateRequest } from '@composio/client/resources/auth-configs';
 import { Effect, Option, Result } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -73,10 +74,12 @@ export const buildAuthConfigCreateRequest = (input: {
     }),
   });
 
+const invalidInput = commandInputError('dev auth-configs create');
+
 /**
  * Create an auth config: the summary on stderr, the API response as JSON on stdout. Invalid
- * `--custom-credentials` JSON is reported before any request and exits 0; an API failure is
- * reported with a hint and exits 1.
+ * `--custom-credentials` JSON fails with a `CommandInputError` before any request; an API
+ * failure is reported with a hint and exits 1.
  */
 export const runAuthConfigsCreate = ({
   name,
@@ -91,11 +94,10 @@ export const runAuthConfigsCreate = ({
 
     const parsedCustomCredentials = parseCustomCredentials(customCredentials);
     if (Result.isFailure(parsedCustomCredentials)) {
-      yield* ui.log.error('Invalid JSON in --custom-credentials. Please provide valid JSON.');
-      yield* ui.log.step(
-        'Example:\n> composio dev auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\''
+      return yield* invalidInput(
+        'Invalid JSON in --custom-credentials. Please provide valid JSON.\nExample:\n> composio dev auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\'',
+        '--custom-credentials'
       );
-      return;
     }
 
     const request = buildAuthConfigCreateRequest({
