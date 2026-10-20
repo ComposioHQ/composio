@@ -12,6 +12,7 @@ import {
   ExecuteToolFn,
   McpServerGetResponse,
   McpUrlResponse,
+  deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
   jsonSchemaToZodSchema,
   normalizeToolArguments,
@@ -41,10 +42,11 @@ export class LlamaindexProvider extends BaseAgenticProvider<
     // cannot carry (`format`, `contentEncoding`, `contentMediaType`, `default`,
     // ...) reach it; LlamaIndex validates the arguments with the Zod schema
     // built from the same JSON Schema. The Zod converter does not follow $ref,
-    // so inline the definitions first.
-    const parameters = dereferenceJsonSchema(tool.inputParameters ?? {}, {
-      onUnresolved: 'sentinel',
-    });
+    // so inline the definitions first, then canonicalize the required arrays
+    // the inlined definitions brought along.
+    const parameters = deduplicateJsonSchemaRequiredArrays(
+      dereferenceJsonSchema(tool.inputParameters ?? {}, { onUnresolved: 'sentinel' })
+    );
     const execute = async (input: Record<string, unknown>) => {
       // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
       const result = await executeTool(tool.slug, normalizeToolArguments(input, tool.slug));

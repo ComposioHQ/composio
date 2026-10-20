@@ -63,6 +63,26 @@ describe('LlamaindexProvider schema sent to the model', () => {
 
     expect(wrap(buildTool(inputParameters)).metadata.parameters).toEqual(inputParameters);
   });
+
+  it('removes duplicate required entries, including in inlined definitions', () => {
+    const parameters = wrap(
+      buildTool({
+        type: 'object',
+        properties: { query: { type: 'string' }, filter: { $ref: '#/$defs/Filter' } },
+        required: ['query', 'query'],
+        $defs: {
+          Filter: {
+            type: 'object',
+            properties: { field: { type: 'string' } },
+            required: ['field', 'field'],
+          },
+        },
+      })
+    ).metadata.parameters as Json;
+
+    expect(parameters.required).toEqual(['query']);
+    expect((parameters.properties as Record<string, Json>).filter.required).toEqual(['field']);
+  });
 });
 
 describe('LlamaindexProvider tool-call validation', () => {
