@@ -293,7 +293,7 @@ def _resolve_function_annotations(
     fn: t.Callable[..., t.Any],
     *,
     localns: t.Optional[t.Mapping[str, t.Any]] = None,
-) -> t.Dict[str, t.Any]:
+) -> t.Tuple[t.Dict[str, t.Any], t.Optional[Exception]]:
     """Resolve annotations, including postponed string annotations when possible."""
     try:
         return t.get_type_hints(
@@ -301,9 +301,9 @@ def _resolve_function_annotations(
             globalns=getattr(fn, "__globals__", {}),
             localns=dict(localns) if localns is not None else None,
             include_extras=True,
-        )
-    except Exception:
-        return {}
+        ), None
+    except Exception as error:
+        return {}, error
 
 
 def _infer_tool_from_function(
@@ -350,7 +350,7 @@ def _infer_tool_from_function(
 
     sig = inspect.signature(fn)
     params = list(sig.parameters.values())
-    resolved_annotations = _resolve_function_annotations(
+    resolved_annotations, resolution_error = _resolve_function_annotations(
         fn,
         localns=annotation_locals,
     )
@@ -372,6 +372,14 @@ def _infer_tool_from_function(
     # First param must be the input model
     first = params[0]
     first_annotation = resolved_annotations.get(first.name, first.annotation)
+    if isinstance(first_annotation, str) and resolution_error is not None:
+        raise ValidationError(
+            f"experimental.tool: could not resolve the annotation {first_annotation!r} "
+            f'on the first parameter of "{fn.__name__}" '
+            f"({type(resolution_error).__name__}: {resolution_error}). "
+            f"Define {first_annotation} before the tool, or import it at runtime "
+            f"instead of only under TYPE_CHECKING."
+        ) from resolution_error
     if first_annotation is inspect.Parameter.empty or not (
         isinstance(first_annotation, type) and issubclass(first_annotation, BaseModel)
     ):

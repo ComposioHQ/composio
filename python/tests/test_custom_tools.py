@@ -272,6 +272,44 @@ class TestDecoratorTool:
                 """Swapped order — ctx first, input second."""
                 return {}
 
+    def test_unresolved_future_annotation_reports_real_cause(self):
+        with pytest.raises(ValidationError, match="could not resolve") as exc_info:
+            exec(
+                """
+from __future__ import annotations
+from pydantic import BaseModel
+
+@exp.tool()
+def late_tool(input: LateInput, ctx):
+    '''Input model is defined after the tool.'''
+    return {}
+
+class LateInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+        assert "LateInput" in str(exc_info.value)
+
+    def test_type_checking_only_import_reports_real_cause(self):
+        with pytest.raises(ValidationError, match="could not resolve") as exc_info:
+            exec(
+                """
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel as HiddenInput
+
+@exp.tool()
+def hidden_tool(input: HiddenInput, ctx):
+    '''Input model is only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+        assert "TYPE_CHECKING" in str(exc_info.value)
+
     def test_future_annotations_are_resolved(self):
         namespace = {"exp": exp}
         exec(
