@@ -14,26 +14,21 @@ const NODES: {
   },
   {
     label: 'yourdomain.com',
-    sub: 'your proxy endpoint',
+    sub: 'receives code and state',
     edge: 'redirects user',
     accent: true,
   },
   {
     label: 'backend.composio.dev',
-    sub: 'captures the token',
-    edge: 'forwards redirect',
+    sub: 'exchanges code for tokens',
+    edge: 'browser follows 302',
   },
 ];
 
 /**
- * WhiteLabelFlow — branded replacement for the OAuth redirect-proxy mermaid
- * diagram on the white-labeling pages.
- *
- * Shows the browser redirect hop through your own domain: the user connects,
- * the toolkit redirects to your proxy, your proxy forwards to Composio, and
- * Composio sends the user back to your app. Your domain is brand-accented
- * because it's the white-label point. The proxy never touches the token, only
- * the browser redirect. Server component, light/dark via fd-* tokens.
+ * Browser hops for a GET-query OAuth2 callback forwarded through your domain.
+ * Your endpoint receives the authorization code and state, then redirects the
+ * browser to Composio for token exchange. It must not log the callback query.
  */
 export function WhiteLabelFlow() {
   return (
@@ -99,9 +94,9 @@ export function WhiteLabelFlow() {
           aria-hidden="true"
           className="size-3 text-[var(--composio-brand)]"
         />
-        Composio redirects the user back to{' '}
-        <code className="text-fd-foreground/70">your app</code>. Your proxy
-        never sees the token
+        The browser still visits Composio before returning to{' '}
+        <code className="text-fd-foreground/70">your app</code>. Your endpoint
+        receives code and state; do not log them.
       </div>
     </div>
   );
