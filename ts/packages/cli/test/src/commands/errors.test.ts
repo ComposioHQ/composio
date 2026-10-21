@@ -75,6 +75,10 @@ const expected = [
     error: new PendingLoginError({ message: 'No pending login found.', reason: 'missing' }),
   },
   {
+    name: 'login --poll with an expired pending login',
+    error: new PendingLoginError({ message: 'Pending login expired.', reason: 'expired' }),
+  },
+  {
     name: 'generate without @composio/core installed',
     error: new ComposioCorePkgNotFound({
       message: '@composio/core not found',
@@ -119,6 +123,18 @@ const defects = [
       message: 'API client not initialized',
       reason: 'client-unavailable',
     }),
+  },
+  {
+    name: 'a pending login cache that cannot be read',
+    error: new PendingLoginError({
+      message: 'Failed to read pending login cache',
+      reason: 'io',
+      cause: new Error('EACCES'),
+    }),
+  },
+  {
+    name: 'a pending login cache that does not decode',
+    error: new PendingLoginError({ message: 'Pending login cache is invalid', reason: 'invalid' }),
   },
   {
     name: 'an execute failure already printed',

@@ -31,8 +31,9 @@ export class PendingLoginError extends Data.TaggedError('commands/PendingLoginEr
   readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
   readonly cause?: unknown;
 }> {
+  /** No login was started, or it expired; a cache that cannot be read or decoded is a defect. */
   get [ExpectedFailure]() {
-    return true;
+    return this.reason === 'missing' || this.reason === 'expired';
   }
 }
 
