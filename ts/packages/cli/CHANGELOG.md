@@ -27,7 +27,14 @@
     `--trigger-config` that is not a JSON object
   - `composio dev triggers enable` without an `<id>`
 
+- `composio orgs switch` now exits 1 and asks you to run `composio login`
+  when the stored `api_key` is empty. It used to warn and exit 0. Nothing is
+  written in either case.
+
 ### Patch Changes
+
+- `composio dev connected-accounts list` now reports a response whose `items`
+  is not a list as a request error and exits 1. It used to crash.
 
 - `composio execute` and `composio proxy` now report an `--account` that
   matches no connected account (`No connected account matched "…"`) as one

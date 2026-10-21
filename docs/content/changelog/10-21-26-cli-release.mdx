@@ -21,6 +21,7 @@ CLI 0.5.0 is a minor release because of one breaking change: commands that faile
   - `composio tools info` without a `<slug>`
   - `composio dev triggers create` without a `<trigger-name>`, or with `--trigger-config` that isn't a JSON object
   - `composio dev triggers enable` without an `<id>`
+- **`composio orgs switch` without a usable key exits 1.** When the stored API key is empty, `composio orgs switch` now exits 1 and asks you to run `composio login`, instead of warning and exiting 0. It changes nothing either way.
 
 If a script or agent checks the exit code, it now sees these failures. If it relied on exit 0 after a failed execution, handle exit 1 instead.
 
