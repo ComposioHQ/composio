@@ -9,6 +9,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { ConnectedAccountsListRequestError } from './connected-accounts.list.errors';
 import {
+  CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
   FETCHING_CONNECTED_ACCOUNTS_MESSAGE,
   LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE,
   formatConnectedAccountsJson,
@@ -61,17 +62,28 @@ export const runConnectedAccountsList = ({
         .pipe(failedWith(ConnectedAccountsListRequestError, LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE))
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
+    // The decode fallback returns the raw payload when the response shape drifts; `items`
+    // may then not be a list at all. Fail loudly instead of reporting an empty page,
+    // which would tell a piped consumer there are no connected accounts.
+    const items = Array.isArray(result.items)
+      ? result.items
+      : yield* Effect.fail(
+          new ConnectedAccountsListRequestError({
+            message: CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
+            cause: `response.items was ${typeof result.items}, expected an array`,
+          })
+        );
 
-    yield* Arr.match(result.items, {
+    yield* Arr.match(items, {
       onEmpty: () => ui.log.warn(noConnectedAccountsMessage({ toolkits, userId, status })),
-      onNonEmpty: items =>
+      onNonEmpty: nonEmptyItems =>
         Effect.gen(function* () {
-          yield* ui.log.info(listingMessage(items, result.total_items));
-          const firstId = Arr.headNonEmpty(items).id;
+          yield* ui.log.info(listingMessage(nonEmptyItems, result.total_items));
+          const firstId = Arr.headNonEmpty(nonEmptyItems).id;
           if (firstId) {
             yield* ui.log.step(viewDetailsHint(firstId));
           }
-          yield* ui.output(formatConnectedAccountsJson(items));
+          yield* ui.output(formatConnectedAccountsJson(nonEmptyItems));
         }),
     });
   });

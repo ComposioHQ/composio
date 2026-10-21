@@ -8,14 +8,15 @@ Verifies that `@composio/vercel` installs, typechecks, and executes wrapped tool
 
 ## What It Tests
 
-| Marker                                          | Description                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------- |
-| `vercel ai sdk compatibility typecheck passed`  | The packed provider typechecks against `ai@7` (`fixtures/index.ts`) |
-| `WRAPPED_TOOL_INPUT_SCHEMA_OK`                  | `wrapTool` returns an AI SDK tool with `inputSchema` + `execute`    |
-| `OBJECT_INPUT_EXECUTION_OK`                     | Object inputs are forwarded to `executeTool`                        |
-| `STRING_INPUT_EXECUTION_OK`                     | JSON-string inputs are normalized before `executeTool`              |
-| `V7_EXECUTION_OPTIONS_OK`                       | A wrapped tool accepts AI SDK v7 `ToolExecutionOptions`            |
-| `TOOL_SET_OK`                                   | `wrapTools` produces a `ToolSet`-compatible collection             |
+| Marker                                         | Description                                                           |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| `vercel ai sdk compatibility typecheck passed` | The packed provider typechecks against `ai@7` (`fixtures/index.ts`)   |
+| `WRAPPED_TOOL_INPUT_SCHEMA_OK`                 | `wrapTool` returns an AI SDK tool with `inputSchema` + `execute`      |
+| `OBJECT_INPUT_EXECUTION_OK`                    | Object inputs are forwarded to `executeTool`                          |
+| `STRING_INPUT_EXECUTION_OK`                    | JSON-string inputs are normalized before `executeTool`                |
+| `V7_EXECUTION_OPTIONS_OK`                      | A wrapped tool accepts AI SDK v7 `ToolExecutionOptions`               |
+| `SOURCE_SCHEMA_OK`                             | The source JSON Schema reaches `inputSchema`; Zod validates arguments |
+| `TOOL_SET_OK`                                  | `wrapTools` produces a `ToolSet`-compatible collection                |
 
 ## Fixture
 
