@@ -43,7 +43,8 @@ const invalidTriggerConfig = (error: JsonParsingError) =>
   );
 
 /**
- * Create a trigger instance. A missing `<trigger-name>` or an invalid `--trigger-config` fails
+ * Create a trigger instance as the `dev` group's `--user-id`, else the directory project's test
+ * user, else the global test user; without any, the request omits `user_id`. A missing `<trigger-name>` or an invalid `--trigger-config` fails
  * with a `CommandInputError` before any request; an API failure is reported with a hint and
  * exits 1.
  *
@@ -77,10 +78,19 @@ export const runTriggersCreate = ({
     }
 
     const project = yield* projectContext.resolve;
+    const projectTestUserId = Option.flatMap(project, keys => keys.testUserId);
+    const globalTestUserId = userContext.data.testUserId;
     const resolvedUserId = userId.pipe(
-      Option.orElse(() => Option.flatMap(project, keys => keys.testUserId)),
-      Option.orElse(() => userContext.data.testUserId)
+      Option.orElse(() => projectTestUserId),
+      Option.orElse(() => globalTestUserId)
     );
+
+    // A defaulted user id must own the connected account on a 2FA project, so name it.
+    if (Option.isNone(userId) && Option.isSome(projectTestUserId)) {
+      yield* ui.log.warn(`Using test user id "${projectTestUserId.value}"`);
+    } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+      yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+    }
 
     const createdOpt = yield* ui
       .withSpinner(

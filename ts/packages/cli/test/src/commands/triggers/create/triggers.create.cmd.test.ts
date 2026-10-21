@@ -37,6 +37,7 @@ const userCases = [
     projectUserId: 'project-user',
     globalUserId: 'global-user',
     expectedUserId: 'alice',
+    expectedLog: undefined,
   },
   {
     name: '--user-id after the subcommand overrides both defaults',
@@ -44,6 +45,7 @@ const userCases = [
     projectUserId: 'project-user',
     globalUserId: 'global-user',
     expectedUserId: 'alice',
+    expectedLog: undefined,
   },
   {
     name: 'the project test user takes precedence over the global one',
@@ -51,6 +53,7 @@ const userCases = [
     projectUserId: 'project-user',
     globalUserId: 'global-user',
     expectedUserId: 'project-user',
+    expectedLog: 'Using test user id "project-user"',
   },
   {
     name: 'the global test user is used without a project test user',
@@ -58,6 +61,7 @@ const userCases = [
     projectUserId: undefined,
     globalUserId: 'global-user',
     expectedUserId: 'global-user',
+    expectedLog: 'Using global test user id "global-user"',
   },
   {
     name: 'a connection can still be used without a configured test user',
@@ -65,6 +69,7 @@ const userCases = [
     projectUserId: undefined,
     globalUserId: undefined,
     expectedUserId: undefined,
+    expectedLog: undefined,
   },
 ];
 
@@ -72,46 +77,55 @@ describe('CLI: composio dev triggers create', () => {
   layer(TestLive(dangerousDevConfig))(
     '[Given] a user id source [Then] sends the selected user id',
     it => {
-      it.effect.each(userCases)('$name', ({ args, projectUserId, globalUserId, expectedUserId }) =>
-        Effect.gen(function* () {
-          const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test', globalUserId);
-          const project = yield* projectKeysFromJSON(
-            JSON.stringify({
-              org_id: 'org_test',
-              project_id: 'proj_test',
-              test_user_id: projectUserId,
-            })
-          );
-          const calls: Array<{ slug: string; params?: TriggerInstanceUpsertParams }> = [];
-          const repository = Layer.succeed(
-            ComposioToolkitsRepository,
-            makeToolkitsRepositoryStub({
-              createTrigger: (slug, params) =>
-                Effect.sync(() => {
-                  calls.push({ slug, params });
-                  return { trigger_id: 'trg_new' };
-                }),
-            })
-          );
-          const projectContext = Layer.succeed(
-            ProjectContext,
-            ProjectContext.of({ resolve: Effect.succeed(Option.some(project)) })
-          );
+      it.effect.each(userCases)(
+        '$name',
+        ({ args, projectUserId, globalUserId, expectedUserId, expectedLog }) =>
+          Effect.gen(function* () {
+            const previousLines = (yield* MockConsole.getLines()).length;
+            const userContext = yield* ComposioUserContext;
+            yield* userContext.login('test_api_key', 'org_test', globalUserId);
+            const project = yield* projectKeysFromJSON(
+              JSON.stringify({
+                org_id: 'org_test',
+                project_id: 'proj_test',
+                test_user_id: projectUserId,
+              })
+            );
+            const calls: Array<{ slug: string; params?: TriggerInstanceUpsertParams }> = [];
+            const repository = Layer.succeed(
+              ComposioToolkitsRepository,
+              makeToolkitsRepositoryStub({
+                createTrigger: (slug, params) =>
+                  Effect.sync(() => {
+                    calls.push({ slug, params });
+                    return { trigger_id: 'trg_new' };
+                  }),
+              })
+            );
+            const projectContext = Layer.succeed(
+              ProjectContext,
+              ProjectContext.of({ resolve: Effect.succeed(Option.some(project)) })
+            );
 
-          yield* cli(args).pipe(Effect.provide(Layer.merge(repository, projectContext)));
+            yield* cli(args).pipe(Effect.provide(Layer.merge(repository, projectContext)));
 
-          expect(calls).toEqual([
-            {
-              slug: 'GMAIL_NEW_GMAIL_MESSAGE',
-              params: {
-                connected_account_id: 'con_123',
-                trigger_config: { label: 'inbox' },
-                user_id: expectedUserId,
+            expect(calls).toEqual([
+              {
+                slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+                params: {
+                  connected_account_id: 'con_123',
+                  trigger_config: { label: 'inbox' },
+                  user_id: expectedUserId,
+                },
               },
-            },
-          ]);
-        })
+            ]);
+            const logs = (yield* MockConsole.getLines({ stripAnsi: true }))
+              .slice(previousLines)
+              .filter(line => line.includes('test user id'));
+            expect(logs).toEqual(
+              expectedLog === undefined ? [] : [expect.stringContaining(expectedLog)]
+            );
+          })
       );
     }
   );
