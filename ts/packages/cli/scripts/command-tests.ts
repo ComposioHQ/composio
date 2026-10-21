@@ -18,7 +18,6 @@ const TEST_SUFFIX = '.cmd.test.ts';
 // Command paths are relative to src/commands/; tests are relative to
 // test/src/commands/. Both use forward slashes.
 export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
-  { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
   { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
 ];
 

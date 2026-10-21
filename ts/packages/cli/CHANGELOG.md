@@ -38,6 +38,13 @@
   `composio dev triggers listen` when the realtime subscription fails, and
   the `composio agent` commands, `composio signup` and `composio login` when
   the stored agent identity can't be used.
+- `composio connections remove` gains `--yes` (`-y`) to remove without the
+  confirmation prompt, and `composio logout` accepts `--yes` (`-y`) next to
+  `--force` (`-f`). When not running interactively, both used to answer their
+  own prompt with "no", remove nothing and exit 0; without `--yes` they now
+  exit 1 with "needs --yes when not running interactively" on stderr, before
+  any request (for `logout`, only when logged in as an agent, the case that
+  asks). Declining the prompt on a terminal still removes nothing and exits 0.
 
 ## 0.5.0
 

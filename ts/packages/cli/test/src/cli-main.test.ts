@@ -140,7 +140,8 @@ describe('CLI process error handling', () => {
   });
 
   // Each of these used to print its message only to a terminal and exit 0, so a script, CI or
-  // an agent saw nothing and a successful exit.
+  // an agent saw nothing and a successful exit; `connections remove` used to answer its own
+  // confirmation prompt with "no".
   it.each([
     {
       command: 'whoami',
@@ -159,6 +160,12 @@ describe('CLI process error handling', () => {
       args: ['triggers', 'info'],
       loggedIn: true,
       message: 'Missing required argument: <slug>',
+    },
+    {
+      command: 'connections remove gmail',
+      args: ['connections', 'remove', 'gmail'],
+      loggedIn: true,
+      message: '`composio connections remove` needs --yes when not running interactively.',
     },
     {
       command: 'dev projects list',

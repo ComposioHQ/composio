@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import { Argument, Command } from 'effect/cli';
+import { Argument, Command, Flag } from 'effect/cli';
 import { commandInputError } from 'src/commands/errors';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { failedWith, requestError } from 'src/effects/request-error';
@@ -28,6 +28,16 @@ const account = Argument.String('account').pipe(
     'Connection selector: toolkit slug, alias, word_id, or connected account ID'
   )
 );
+
+const yes = Flag.Boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Remove without asking for confirmation')
+);
+
+/** Without a terminal to confirm on, removing needs `--yes`. */
+const NEEDS_YES_MESSAGE =
+  '`composio connections remove` needs --yes when not running interactively.';
 
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();
 
@@ -92,9 +102,18 @@ const resolveAccount = (params: {
   };
 };
 
-export const connectionsCmd$Remove = Command.make('remove', { account }, ({ account }) =>
+/**
+ * Removes one connection after a confirmation. Without a terminal to confirm on, it needs `--yes`
+ * and otherwise fails with a `CommandInputError` before any request; declining the prompt removes
+ * nothing and exits 0.
+ */
+export const connectionsCmd$Remove = Command.make('remove', { account, yes }, ({ account, yes }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const { canPrompt } = yield* ui.capabilities;
+    if (!yes && !canPrompt) {
+      return yield* invalidInput(NEEDS_YES_MESSAGE, '--yes');
+    }
     const clientSingleton = yield* ComposioClientSingleton;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
@@ -129,9 +148,11 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
       'Remove Connection'
     );
 
-    const confirmed = yield* ui.confirm(`Remove ${resolved.toolkit.slug} connection?`, {
-      defaultValue: false,
-    });
+    const confirmed =
+      yes ||
+      (yield* ui.confirm(`Remove ${resolved.toolkit.slug} connection?`, {
+        defaultValue: false,
+      }));
     if (!confirmed) {
       yield* ui.log.warn('No connection removed.');
       return;
@@ -166,6 +187,9 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     },
     {
       command: 'composio connections remove castle',
+    },
+    {
+      command: 'composio connections remove gmail --yes',
     },
   ])
 );

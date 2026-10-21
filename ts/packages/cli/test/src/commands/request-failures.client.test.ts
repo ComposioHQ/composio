@@ -79,7 +79,8 @@ const rejectedRequests: ReadonlyArray<{
   },
   {
     command: 'connections remove',
-    args: ['connections', 'remove', 'gmail'],
+    // Without a terminal, removing needs --yes before any request is sent.
+    args: ['connections', 'remove', 'gmail', '--yes'],
     resources: ['connectedAccounts'],
     tag: 'commands/ConnectionsRemovalRequestError',
     message: 'Failed to list connections.',
