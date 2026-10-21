@@ -360,6 +360,9 @@ const fakeComposio = (req: IncomingMessage, res: ServerResponse) => {
   });
 };
 
+/** Shorter than the tests' 30s timeout. */
+const CLI_DEADLINE_MS = 20_000;
+
 const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
   const configDirectory = tempy.temporaryDirectory();
   fs.writeFileSync(
@@ -372,13 +375,19 @@ const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
       test_user_id: null,
     })
   );
+  // A host key would replace the stored one.
+  const {
+    COMPOSIO_USER_API_KEY: _apiKey,
+    COMPOSIO_ENVIRONMENT: _environment,
+    ...host
+  } = process.env;
   // Asynchronous: the fake server answers from this process's event loop.
   return new Promise<{ status: number | null; stdout: string; stderr: string }>(
     (resolve, reject) => {
       const child = spawn('bun', ['run', 'src/bin.ts', ...args], {
         cwd: process.cwd(),
         env: {
-          ...process.env,
+          ...host,
           CI: '1',
           NO_COLOR: '1',
           COMPOSIO_CACHE_DIR: configDirectory,
@@ -391,8 +400,19 @@ const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
       let stderr = '';
       child.stdout.setEncoding('utf8').on('data', (chunk: string) => (stdout += chunk));
       child.stderr.setEncoding('utf8').on('data', (chunk: string) => (stderr += chunk));
-      child.once('error', reject);
-      child.once('close', status => resolve({ status, stdout, stderr }));
+      // Stop a hung CLI before the test times out, so the fake server can close.
+      const deadline = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error(`CLI did not exit within ${CLI_DEADLINE_MS}ms\nstderr:\n${stderr}`));
+      }, CLI_DEADLINE_MS);
+      child.once('error', error => {
+        clearTimeout(deadline);
+        reject(error);
+      });
+      child.once('close', status => {
+        clearTimeout(deadline);
+        resolve({ status, stdout, stderr });
+      });
     }
   );
 };
