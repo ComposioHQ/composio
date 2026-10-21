@@ -1,5 +1,17 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio link` and `composio dev connected-accounts link` now exit 1 with
+  the usage message on stderr when their flags can't run: a toolkit together
+  with `--auth-config`, neither a toolkit nor `--auth-config`, `--auth-config`
+  without a developer project, and `--list` without a toolkit or with
+  `--auth-config`. They used to exit 0, and printed the message only when
+  stderr was a terminal, so scripts, CI and agents saw no output and a
+  successful exit. The messages are unchanged.
+
 ## 0.5.0
 
 ### Minor Changes
