@@ -53,6 +53,10 @@ const composio = new Composio({ provider: new VercelProvider({ strict: true }) }
 
 The option only changes the schema the model sees. It does not set the AI SDK's per-tool `strict` flag, so the model provider does not enforce the schema. If you set that flag yourself, use it only with OpenAI models and only on tools that did not log the warning above, since OpenAI rejects a tool that kept its original schema. Don't set it for Anthropic models: Anthropic strict mode allows at most 16 parameters with union types and 24 optional parameters across all strict tools in a request, and the rewrite turns every optional parameter into a union, so a request with about ten Composio tools is rejected. Anthropic strict mode also rejects recursive definitions and keywords such as `minimum` and `maximum` that some Composio tools use.
 
+## Tool schemas
+
+The provider passes each tool's JSON Schema to the AI SDK with `jsonSchema()`, so the model sees it as is, including keywords such as `format`, `contentEncoding`, and `contentMediaType`. Internal `$ref`s are inlined first. Tool-call arguments are validated with a Zod schema built from the same JSON Schema. In strict mode the model sees the strict rewrite instead, which drops string formats strict structured outputs reject.
+
 ## Links
 
 - [Vercel AI SDK provider docs](https://docs.composio.dev/docs/providers/vercel)

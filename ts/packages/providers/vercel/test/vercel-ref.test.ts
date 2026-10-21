@@ -16,8 +16,12 @@ interface MockedVercelTool {
   _isMockedVercelTool: boolean;
 }
 
+/** The AI SDK schema the provider builds; `validate` runs the tool's Zod schema. */
+type ValidatingSchema = { validate: (value: unknown) => Promise<{ success: boolean }> };
+
 // Mock the ai module (per-file scoping keeps this independent of vercel.test.ts).
-vi.mock('ai', () => {
+vi.mock('ai', async importOriginal => {
+  const actual = await importOriginal<typeof import('ai')>();
   return {
     tool: vi.fn().mockImplementation(toolConfig => {
       return {
@@ -25,7 +29,7 @@ vi.mock('ai', () => {
         _isMockedVercelTool: true,
       } as MockedVercelTool;
     }),
-    jsonSchema: vi.fn().mockImplementation(schema => schema),
+    jsonSchema: actual.jsonSchema,
   };
 });
 
@@ -101,21 +105,21 @@ describe('VercelProvider regression: $ref in JSON Schema', () => {
     vi.clearAllMocks();
   });
 
-  it('produces a Zod schema that validates the $defs-described shape (default path)', () => {
+  it('validates the $defs-described shape (default path)', async () => {
     const wrapped = provider.wrapTool(refTool, executeToolFn) as unknown as MockedVercelTool;
-    const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+    const schema = wrapped.inputSchema as ValidatingSchema;
 
-    expect(schema.safeParse({ message: { subject: 's', body: 'b' } }).success).toBe(true);
-    expect(schema.safeParse({ message: 42 }).success).toBe(false);
+    expect((await schema.validate({ message: { subject: 's', body: 'b' } })).success).toBe(true);
+    expect((await schema.validate({ message: 42 })).success).toBe(false);
   });
 
-  it('produces a Zod schema that validates the $defs-described shape (strict path)', () => {
+  it('validates the $defs-described shape (strict path)', async () => {
     const strictProvider = new VercelProvider({ strict: true });
     const wrapped = strictProvider.wrapTool(refTool, executeToolFn) as unknown as MockedVercelTool;
-    const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+    const schema = wrapped.inputSchema as ValidatingSchema;
 
-    expect(schema.safeParse({ message: { subject: 's', body: 'b' } }).success).toBe(true);
-    expect(schema.safeParse({ message: 42 }).success).toBe(false);
+    expect((await schema.validate({ message: { subject: 's', body: 'b' } })).success).toBe(true);
+    expect((await schema.validate({ message: 42 })).success).toBe(false);
   });
 
   it('does not throw when $ref points into an undeclared $defs block', () => {
