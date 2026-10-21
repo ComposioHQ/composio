@@ -73,3 +73,93 @@ export function getExtensionFromMimeType(mimeType: string): string {
 
   return 'bin';
 }
+
+// A local file has no Content-Type of its own, so its MIME type is inferred from
+// its name's extension, as the Python SDK does (`composio.utils.mimetypes.guess`).
+// Tools validate the `mimetype` of an uploaded file (Canva's design import rejects
+// `application/octet-stream`, issue #4984), so the generic type is a last resort.
+export const DEFAULT_MIME_TYPE = 'application/octet-stream';
+
+// Extension (lowercase, no leading dot) -> MIME type.
+const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
+  // Documents
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  odt: 'application/vnd.oasis.opendocument.text',
+  ods: 'application/vnd.oasis.opendocument.spreadsheet',
+  odp: 'application/vnd.oasis.opendocument.presentation',
+  odg: 'application/vnd.oasis.opendocument.graphics',
+  key: 'application/vnd.apple.keynote',
+  numbers: 'application/vnd.apple.numbers',
+  pages: 'application/vnd.apple.pages',
+  rtf: 'application/rtf',
+  epub: 'application/epub+zip',
+  ai: 'application/postscript',
+  eps: 'application/postscript',
+  psd: 'image/vnd.adobe.photoshop',
+  // Text and data
+  txt: 'text/plain',
+  md: 'text/markdown',
+  csv: 'text/csv',
+  tsv: 'text/tab-separated-values',
+  html: 'text/html',
+  htm: 'text/html',
+  css: 'text/css',
+  js: 'text/javascript',
+  mjs: 'text/javascript',
+  json: 'application/json',
+  xml: 'application/xml',
+  yaml: 'application/yaml',
+  yml: 'application/yaml',
+  ics: 'text/calendar',
+  eml: 'message/rfc822',
+  // Images
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  tiff: 'image/tiff',
+  tif: 'image/tiff',
+  ico: 'image/vnd.microsoft.icon',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  avif: 'image/avif',
+  // Audio and video
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  m4a: 'audio/mp4',
+  ogg: 'audio/ogg',
+  flac: 'audio/flac',
+  mp4: 'video/mp4',
+  mpeg: 'video/mpeg',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+  webm: 'video/webm',
+  // Archives
+  zip: 'application/zip',
+  gz: 'application/gzip',
+  tar: 'application/x-tar',
+  '7z': 'application/x-7z-compressed',
+};
+
+/**
+ * The MIME type of a file, from its name's extension; `application/octet-stream`
+ * when the extension is missing or unknown. Accepts a bare name or a path.
+ *
+ * @example getMimeTypeFromFileName('/tmp/deck.pptx') // 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+ */
+export const getMimeTypeFromFileName = (fileName: string): string => {
+  const baseName = fileName.split(/[\\/]/).pop() ?? '';
+  const dot = baseName.lastIndexOf('.');
+  // A leading dot is a hidden file's name (`.env`), not an extension.
+  if (dot <= 0) return DEFAULT_MIME_TYPE;
+  return MIME_TYPES_BY_EXTENSION[baseName.slice(dot + 1).toLowerCase()] ?? DEFAULT_MIME_TYPE;
+};

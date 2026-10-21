@@ -11,6 +11,7 @@ import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 import { ssrfSafeFetch } from './ssrfGuard.node';
 import { readResponseBodyWithLimit } from './readResponseBody';
+import { getMimeTypeFromFileName } from './mime';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -160,7 +161,7 @@ const readFileContent = async (
         content instanceof Uint8Array
           ? uint8ArrayToBase64(content)
           : uint8ArrayToBase64(new TextEncoder().encode(content)),
-      mimeType: 'application/octet-stream',
+      mimeType: getMimeTypeFromFileName(filePath),
     };
   } catch (error) {
     throw new Error(`Error reading file at ${filePath}: ${error}`);
