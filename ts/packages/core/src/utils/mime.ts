@@ -42,7 +42,8 @@ export function getExtensionFromMimeType(mimeType: string): string {
 
   const cleanMimeType = mimeType.split(';')[0].toLowerCase().trim();
 
-  if (mimeToExt[cleanMimeType]) {
+  // An own property only: `constructor` or `__proto__` must not reach Object.prototype.
+  if (Object.hasOwn(mimeToExt, cleanMimeType)) {
     return mimeToExt[cleanMimeType];
   }
 
@@ -161,5 +162,9 @@ export const getMimeTypeFromFileName = (fileName: string): string => {
   const dot = baseName.lastIndexOf('.');
   // A leading dot is a hidden file's name (`.env`), not an extension.
   if (dot <= 0) return DEFAULT_MIME_TYPE;
-  return MIME_TYPES_BY_EXTENSION[baseName.slice(dot + 1).toLowerCase()] ?? DEFAULT_MIME_TYPE;
+  const extension = baseName.slice(dot + 1).toLowerCase();
+  // An own property only: `report.constructor` must not reach Object.prototype.
+  return Object.hasOwn(MIME_TYPES_BY_EXTENSION, extension)
+    ? MIME_TYPES_BY_EXTENSION[extension]
+    : DEFAULT_MIME_TYPE;
 };

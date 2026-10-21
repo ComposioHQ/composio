@@ -23,12 +23,20 @@ describe('getMimeTypeFromFileName', () => {
     expect(getMimeTypeFromFileName(fileName)).toBe(mimeType);
   });
 
-  it.each(['README', '.env', 'dir.d/file', 'blob.unknownext', ''])(
-    'falls back to octet-stream for %j',
-    fileName => {
-      expect(getMimeTypeFromFileName(fileName)).toBe(DEFAULT_MIME_TYPE);
-    }
-  );
+  it.each([
+    'README',
+    '.env',
+    'dir.d/file',
+    'blob.unknownext',
+    '',
+    // Object.prototype members are not extensions.
+    'report.constructor',
+    'report.__proto__',
+    'report.toString',
+    'report.hasOwnProperty',
+  ])('falls back to octet-stream for %j', fileName => {
+    expect(getMimeTypeFromFileName(fileName)).toBe(DEFAULT_MIME_TYPE);
+  });
 });
 
 describe('getFileDataAfterUploadingToS3 — local path MIME type (issue #4984)', () => {

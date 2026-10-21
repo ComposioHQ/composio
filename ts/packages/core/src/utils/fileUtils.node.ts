@@ -103,7 +103,8 @@ const getExtensionFromMimeType = (mimeType: string): string => {
   const cleanMimeType = mimeType.split(';')[0].toLowerCase().trim();
 
   // Try exact match first
-  if (mimeToExt[cleanMimeType]) {
+  // An own property only: `constructor` or `__proto__` must not reach Object.prototype.
+  if (Object.hasOwn(mimeToExt, cleanMimeType)) {
     return mimeToExt[cleanMimeType];
   }
 
