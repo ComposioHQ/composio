@@ -129,6 +129,26 @@ const defaultConfig = (stateFile: string) =>
     } satisfies UpdateCheckConfig;
   });
 
+const attemptFileFor = (stateFile: string) => `${stateFile}.attempt`;
+
+const writeJsonFile = (file: string, value: unknown) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+    yield* fs.writeFileString(file, JSON.stringify(value, null, 2));
+  });
+
+/** Persist a successful check and clear any failed-attempt marker it supersedes. */
+const writeState = (stateFile: string, state: UpdateCheckState) =>
+  writeJsonFile(stateFile, state).pipe(
+    Effect.andThen(
+      Effect.flatMap(FileSystem.FileSystem, fs =>
+        fs.remove(attemptFileFor(stateFile), { force: true })
+      )
+    )
+  );
+
 // ── Pure helpers ────────────────────────────────────────────────────────
 
 /** Extract the highest stable semver from GitHub releases that include the required binary. */
@@ -167,7 +187,7 @@ export function parseLatestVersionFromReleases(
 // ── Factory ─────────────────────────────────────────────────────────────
 
 export function createUpdateChecker(config: UpdateCheckConfig) {
-  const attemptFile = `${config.stateFile}.attempt`;
+  const attemptFile = attemptFileFor(config.stateFile);
 
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -221,8 +241,6 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    * propagate back into the fire-and-forget caller.
    */
   const checkForUpdate = Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const checkStartedAt = new Date();
     const checkStartedAtMs = checkStartedAt.getTime();
     const parseTimestamp = (value: string): number | undefined => {
@@ -263,11 +281,6 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       headers.Authorization = `Bearer ${config.accessToken}`;
     }
 
-    const writeJsonFile = (file: string, value: unknown) =>
-      fs
-        .makeDirectory(path.dirname(file), { recursive: true })
-        .pipe(Effect.andThen(fs.writeFileString(file, JSON.stringify(value, null, 2))));
-
     const fetchLatestVersion = Effect.gen(function* () {
       const response = yield* Effect.tryPromise(() =>
         config.fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
@@ -293,10 +306,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       lastChecked: new Date().toISOString(),
       latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
     };
-    yield* writeJsonFile(config.stateFile, state).pipe(
-      Effect.andThen(fs.remove(attemptFile, { force: true })),
-      Effect.ignore
-    );
+    yield* writeState(config.stateFile, state).pipe(Effect.ignore);
     return { state: Option.some(state), refreshFailed: false } as const;
   });
 
@@ -347,6 +357,23 @@ export const showUpdateNotice = (argv: ReadonlyArray<string>) =>
     const args = argv.slice(2);
     yield* createUpdateChecker(config).showUpdateNotice(terminal, args[rootCommandIndex(args)]);
   }).pipe(Effect.provide(DefaultConfigLayers));
+
+/**
+ * Record a live-resolved latest stable release (e.g. `@composio/cli@0.5.0`) as the cached update
+ * check, so later hints agree with what `composio upgrade` just saw. Tags that are not a stable
+ * CLI release are ignored, and a failed write is swallowed: the cache is advisory.
+ */
+export const recordLatestStableRelease = (releaseTag: string) =>
+  Option.fromNullishOr(CLI_RELEASE_TAG_RE.exec(releaseTag)?.[1]).pipe(
+    Option.match({
+      onNone: () => Effect.void,
+      onSome: latestVersion =>
+        Effect.gen(function* () {
+          const stateFile = yield* defaultStateFile;
+          yield* writeState(stateFile, { lastChecked: new Date().toISOString(), latestVersion });
+        }).pipe(Effect.ignore),
+    })
+  );
 
 /**
  * Refresh the release cache if stale and return a machine-readable status.

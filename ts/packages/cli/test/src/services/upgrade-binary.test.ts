@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { afterAll, afterEach, describe, expect, it, vi } from '@effect/vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ConfigProvider, Effect, Exit, Layer, Option } from 'effect';
 import { FetchHttpClient } from 'effect/http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -55,10 +58,17 @@ const TerminalUINoop = Layer.succeed(
   })
 );
 
+// A private home directory: stable-channel lookups record the update-check cache under it.
+const testHomedir = mkdtempSync(join(tmpdir(), 'composio-upgrade-home-'));
+const updateCheckDir = join(testHomedir, '.composio');
+const updateCheckFile = join(updateCheckDir, 'update-check.json');
+afterEach(() => rmSync(updateCheckDir, { recursive: true, force: true }));
+afterAll(() => rmSync(testHomedir, { recursive: true, force: true }));
+
 const NodeOsTest = Layer.succeed(
   NodeOs,
   NodeOs.of({
-    homedir: '/tmp',
+    homedir: testHomedir,
     tmpdir: '/tmp',
     platform: 'darwin',
     arch: 'arm64',
@@ -684,6 +694,120 @@ describe('UpgradeBinary', () => {
       expect(error).toBeInstanceOf(UpgradeBinaryError);
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+});
+
+describe('UpgradeBinary update-check cache', () => {
+  // The cache that misled the user: written before 0.5.0 was released.
+  const staleState = { lastChecked: '2026-10-21T14:31:56.646Z', latestVersion: '0.4.5' };
+
+  const writeStaleState = () => {
+    mkdirSync(updateCheckDir, { recursive: true });
+    writeFileSync(updateCheckFile, JSON.stringify(staleState));
+  };
+
+  const readCachedState = (): unknown => JSON.parse(readFileSync(updateCheckFile, 'utf8'));
+
+  const release = (version: string) => ({
+    tag_name: `@composio/cli@${version}`,
+    draft: false,
+    prerelease: version.includes('-'),
+    assets: [
+      {
+        name: 'composio-darwin-aarch64.zip',
+        browser_download_url: `http://127.0.0.1/${version}.zip`,
+      },
+    ],
+  });
+
+  /** Serves the release list, plus any single release by tag, and installs `currentTag`. */
+  const setUpReleases = (currentTag: string) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-upgrade-cache-' });
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), `${currentTag}\n`);
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(path.join(installDir, 'composio'));
+
+      const apiBaseUrl = yield* scopedHttpServer((req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        const taggedPrefix = '/repos/test-owner/test-repo/releases/tags/';
+        res.end(
+          JSON.stringify(
+            req.url?.startsWith(taggedPrefix)
+              ? release(decodeURIComponent(req.url.slice(taggedPrefix.length)).split('@').at(-1)!)
+              : [release('0.5.1-beta.1'), release('0.5.0'), release('0.4.5'), release('0.4.2')]
+          )
+        );
+      });
+
+      return [
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+      ] as Array<[string, string]>;
+    });
+
+  it.effect('records the live-resolved latest stable release', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    // Only Date is faked: the upgrade awaits a real local HTTP server.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-21T16:20:00.000Z'));
+
+    return Effect.gen(function* () {
+      writeStaleState();
+      const config = yield* setUpReleases('@composio/cli@0.5.0');
+
+      const result = yield* runUpgradeSuccess(config);
+
+      expect(result).toBeUndefined();
+      expect(readCachedState()).toEqual({
+        lastChecked: '2026-10-21T16:20:00.000Z',
+        latestVersion: '0.5.0',
+      });
+    }).pipe(
+      Effect.provide(TestPlatform),
+      Effect.ensuring(Effect.sync(() => vi.useRealTimers())),
+      Effect.ensuring(restoreStubsAndMocks)
+    );
+  });
+
+  it.effect.each([
+    { target: 'a version argument', options: { tag: '@composio/cli@0.4.2' }, env: [] },
+    {
+      target: 'COMPOSIO_GITHUB_TAG',
+      options: {},
+      env: [['COMPOSIO_GITHUB_TAG', '@composio/cli@0.4.2']] as Array<[string, string]>,
+    },
+    { target: '--beta', options: { prerelease: true }, env: [] },
+  ])('leaves the cache alone when $target picks the target', ({ options, env }) => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      writeStaleState();
+      const config = yield* setUpReleases('@composio/cli@0.4.0');
+
+      // The download is unreachable, so only the release lookup could have touched the cache.
+      const exit = yield* Effect.exit(makeUpgradeEffect([...config, ...env], options));
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      expect(readCachedState()).toEqual(staleState);
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('still upgrades when the cache cannot be written', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      // A file where the cache directory should be makes every cache write fail.
+      writeFileSync(updateCheckDir, 'not a directory');
+      const config = yield* setUpReleases('@composio/cli@0.5.0');
+
+      const result = yield* runUpgradeSuccess(config);
+
+      expect(result).toBeUndefined();
+      expect(readFileSync(updateCheckDir, 'utf8')).toBe('not a directory');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 });
