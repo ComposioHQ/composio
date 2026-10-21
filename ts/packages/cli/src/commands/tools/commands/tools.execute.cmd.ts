@@ -1,9 +1,10 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
+import { ReportedToolExecutionError, ToolExecutionError } from './tools.execute.errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
-import { Data, Effect, Context, Option, Result } from 'effect';
+import { Effect, Context, Option, Result } from 'effect';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -123,32 +124,6 @@ const resolveInput = (input: Option.Option<string>) =>
 
 // Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` below).
 const invalidArguments = commandInputError('execute');
-
-type ToolExecutionErrorFields = {
-  readonly reason:
-    | 'invalid_arguments'
-    | 'file_input'
-    | 'connected_account'
-    | 'missing_user_id'
-    | 'connection_check'
-    | 'execution_failed'
-    | 'parallel_failed';
-  readonly message: string;
-  readonly toolSlug?: string;
-  readonly cause?: unknown;
-};
-
-export class ToolExecutionError extends Data.TaggedError(
-  'ToolExecutionError'
-)<ToolExecutionErrorFields> {}
-
-/**
- * A failed execution whose result is already on stdout as `{ "successful": false, ... }`.
- * `cli-main.ts` prints nothing more for it and exits 1.
- */
-export class ReportedToolExecutionError extends Data.TaggedError(
-  'ReportedToolExecutionError'
-)<ToolExecutionErrorFields> {}
 
 const parseArguments = (raw: string) =>
   Effect.fromResult(

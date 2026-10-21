@@ -6,12 +6,8 @@ import type {
   SessionCreateParams,
   SessionProxyExecuteParams,
 } from '@composio/client/resources/tool-router';
-import {
-  normalizeProxyMethod,
-  parseProxyBody,
-  parseProxyHeader,
-  ProxyCommandError,
-} from 'src/commands/proxy.cmd';
+import { normalizeProxyMethod, parseProxyBody, parseProxyHeader } from 'src/commands/proxy.cmd';
+import { ProxyCommandError } from 'src/commands/proxy.errors';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 

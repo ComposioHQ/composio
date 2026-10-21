@@ -1,6 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Result, Option } from 'effect';
+import { Effect, Result, Option } from 'effect';
+import { ProxyCommandError } from './proxy.errors';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -76,13 +77,6 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'DELETE',
   'PATCH',
 ];
-
-export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
-  readonly reason: 'missing_consumer_user' | 'toolkit_not_connected';
-  readonly message: string;
-  readonly toolkit?: string;
-  readonly endpoint?: string;
-}> {}
 
 class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 

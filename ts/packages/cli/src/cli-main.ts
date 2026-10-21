@@ -72,7 +72,7 @@ import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install/install.errors';
-import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
+import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.errors';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
