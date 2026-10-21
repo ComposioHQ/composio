@@ -154,7 +154,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           path: '/api/v3.1/files/upload/request',
           body: {
             filename: 'document.pdf',
-            mimetype: 'application/octet-stream',
+            mimetype: 'application/pdf',
             md5: '5d41402abc4b2a76b9719d911017c592',
             tool_slug: 'GMAIL_SEND_EMAIL',
             toolkit_slug: 'gmail',
@@ -172,6 +172,75 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });
+});
+
+describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const canvaSchema = {
+    type: 'object',
+    properties: {
+      file: { file_uploadable: true, type: 'object' },
+      title: { type: 'string' },
+      mime_type: { type: 'string' },
+    },
+  };
+
+  it.effect.each([
+    { fileName: 'deck.pptx', declared: undefined, mimetype: PPTX },
+    { fileName: 'Deck.PPTX', declared: undefined, mimetype: PPTX },
+    { fileName: 'no-extension', declared: undefined, mimetype: 'application/octet-stream' },
+    // A type its caller declared (a `composio run` File's own) wins over the extension.
+    { fileName: 'deck', declared: PPTX, mimetype: PPTX },
+    { fileName: 'deck.pdf', declared: PPTX, mimetype: PPTX },
+  ])(
+    '[Given] $fileName declared as $declared [Then] the presign request, the PUT and the tool input carry $mimetype',
+    ({ fileName, declared, mimetype }) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+      const file = path.join(root, fileName);
+      writeFileSync(file, 'PK fake pptx');
+
+      const { client, requests } = makeClient();
+      const uploadFetch = vi.fn(async (_url: string, _init: RequestInit) => ({
+        ok: true,
+        statusText: 'OK',
+      }));
+      vi.stubGlobal('fetch', uploadFetch);
+
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const result = yield* uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          arguments_: { file, title: 'Deck', mime_type: PPTX },
+          inputSchema: canvaSchema,
+          client,
+          fileMimeTypes: new Map(declared === undefined ? [] : [[file, declared]]),
+        });
+
+        expect(requests).toMatchObject([
+          { body: { filename: fileName, mimetype, toolkit_slug: 'canva' } },
+        ]);
+        expect(uploadFetch.mock.calls[0]?.[1]?.headers).toMatchObject({
+          'Content-Type': mimetype,
+        });
+        expect(result).toEqual({
+          file: { name: fileName, mimetype, s3key: 's3key-123' },
+          title: 'Deck',
+          mime_type: PPTX,
+        });
+      }).pipe(
+        Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
 });
 
 describe('uploadToolInputFiles — presigned-URL request', () => {

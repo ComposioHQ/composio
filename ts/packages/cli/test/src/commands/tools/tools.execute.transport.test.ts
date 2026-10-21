@@ -503,7 +503,7 @@ describe('CLI: composio execute transport', () => {
         recipient_email: 'a@b.com',
         attachment: {
           name: path.basename(tempFile),
-          mimetype: 'application/octet-stream',
+          mimetype: 'text/plain',
           s3key: `uploads/${path.basename(tempFile)}`,
         },
       });
