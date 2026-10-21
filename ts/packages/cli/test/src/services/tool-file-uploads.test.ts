@@ -191,17 +191,42 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
   };
 
   it.effect.each([
-    { fileName: 'deck.pptx', declared: undefined, mimetype: PPTX },
-    { fileName: 'Deck.PPTX', declared: undefined, mimetype: PPTX },
-    { fileName: 'no-extension', declared: undefined, mimetype: 'application/octet-stream' },
-    // A type its caller declared (a `composio run` File's own) wins over the extension.
-    { fileName: 'deck', declared: PPTX, mimetype: PPTX },
-    { fileName: 'deck.pdf', declared: PPTX, mimetype: PPTX },
+    { onDisk: 'deck.pptx', staged: undefined, name: 'deck.pptx', mimetype: PPTX },
+    { onDisk: 'Deck.PPTX', staged: undefined, name: 'Deck.PPTX', mimetype: PPTX },
+    {
+      onDisk: 'no-extension',
+      staged: undefined,
+      name: 'no-extension',
+      mimetype: 'application/octet-stream',
+    },
+    // What its caller staged it under (a `composio run` File's own name and type)
+    // wins over the path's.
+    { onDisk: 'file-a1', staged: { name: 'deck', mimetype: PPTX }, name: 'deck', mimetype: PPTX },
+    {
+      onDisk: 'file-a1.pdf',
+      staged: { name: 'deck.pdf', mimetype: PPTX },
+      name: 'deck.pdf',
+      mimetype: PPTX,
+    },
+    { onDisk: 'file-a1.pptx', staged: { name: 'deck.pptx' }, name: 'deck.pptx', mimetype: PPTX },
+    // Names the denylist refuses on a path are only labels here.
+    {
+      onDisk: 'file-a1.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      name: '.env.example',
+      mimetype: 'text/plain',
+    },
+    {
+      onDisk: 'file-a1',
+      staged: { name: 'id_rsa' },
+      name: 'id_rsa',
+      mimetype: 'application/octet-stream',
+    },
   ])(
-    '[Given] $fileName declared as $declared [Then] the presign request, the PUT and the tool input carry $mimetype',
-    ({ fileName, declared, mimetype }) => {
+    '[Given] $onDisk staged as $staged [Then] the presign request, the PUT and the tool input carry $name and $mimetype',
+    ({ onDisk, staged, name, mimetype }) => {
       const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
-      const file = path.join(root, fileName);
+      const file = path.join(root, onDisk);
       writeFileSync(file, 'PK fake pptx');
 
       const { client, requests } = makeClient();
@@ -221,17 +246,17 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
           arguments_: { file, title: 'Deck', mime_type: PPTX },
           inputSchema: canvaSchema,
           client,
-          fileMimeTypes: new Map(declared === undefined ? [] : [[file, declared]]),
+          stagedFiles: new Map(staged === undefined ? [] : [[file, staged]]),
         });
 
         expect(requests).toMatchObject([
-          { body: { filename: fileName, mimetype, toolkit_slug: 'canva' } },
+          { body: { filename: name, mimetype, toolkit_slug: 'canva' } },
         ]);
         expect(uploadFetch.mock.calls[0]?.[1]?.headers).toMatchObject({
           'Content-Type': mimetype,
         });
         expect(result).toEqual({
-          file: { name: fileName, mimetype, s3key: 's3key-123' },
+          file: { name, mimetype, s3key: 's3key-123' },
           title: 'Deck',
           mime_type: PPTX,
         });
@@ -240,6 +265,33 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
         Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
       );
     }
+  );
+
+  it.effect(
+    '[Given] a sensitive path staged under a harmless name [Then] it is still refused',
+    () =>
+      Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const { client, requests } = makeClient();
+        const envFile = path.join(os.homedir(), '.env');
+
+        // The staged-file labels rename an upload; they never exempt a path from the denylist.
+        const failure = yield* Effect.flip(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+            arguments_: { file: envFile, title: 'Deck' },
+            inputSchema: canvaSchema,
+            client,
+            stagedFiles: new Map([[envFile, { name: 'deck.pptx', mimetype: PPTX }]]),
+          })
+        );
+
+        expect(failure.cause).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
+        expect(requests).toEqual([]);
+      }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 });
 

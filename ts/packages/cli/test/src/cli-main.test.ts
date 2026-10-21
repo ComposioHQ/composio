@@ -569,47 +569,83 @@ describe('local file uploads', () => {
       fakeComposio(req, res);
     };
 
+  const uploadWith = async (
+    baseUrl: string,
+    file: string,
+    stagedFiles?: Record<string, { name: string; mimetype?: string }>
+  ) =>
+    runCliAgainst(
+      baseUrl,
+      [
+        'execute',
+        'CANVA_CREATE_DESIGN_IMPORT_JOB',
+        '--skip-connection-check',
+        '--file',
+        file,
+        '-d',
+        '{"title":"Deck"}',
+      ],
+      stagedFiles ? { COMPOSIO_RUN_STAGED_FILES: JSON.stringify(stagedFiles) } : {}
+    );
+
   it.each([
-    { name: 'a .pptx path', fileName: 'deck.pptx', env: {}, mimetype: PPTX },
     {
-      name: 'an extensionless path `composio run` declared a type for',
-      fileName: 'deck',
-      env: (file: string) => ({ COMPOSIO_RUN_FILE_MIME_TYPES: JSON.stringify({ [file]: PPTX }) }),
+      name: 'a .pptx path',
+      onDisk: 'deck.pptx',
+      staged: undefined,
+      filename: 'deck.pptx',
       mimetype: PPTX,
     },
     {
-      name: 'an extensionless path with no declared type',
-      fileName: 'deck',
-      env: {},
+      name: 'an extensionless path with no staged name or type',
+      onDisk: 'deck',
+      staged: undefined,
+      filename: 'deck',
       mimetype: 'application/octet-stream',
     },
+    {
+      name: 'a path `composio run` staged an extensionless PPTX File at',
+      onDisk: 'file-a1b2c3d4',
+      staged: { name: 'deck', mimetype: PPTX },
+      filename: 'deck',
+      mimetype: PPTX,
+    },
+    {
+      name: 'a path `composio run` staged a `.env.example` File at',
+      onDisk: 'file-a1b2c3d4.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      filename: '.env.example',
+      mimetype: 'text/plain',
+    },
   ])(
-    '[Given] $name [Then] `composio execute --file` requests the upload as $mimetype',
-    ({ fileName, env, mimetype }) => {
-      const directory = tempy.temporaryDirectory();
-      const file = path.join(directory, fileName);
+    '[Given] $name [Then] `composio execute --file` requests the upload as $filename, $mimetype',
+    ({ onDisk, staged, filename, mimetype }) => {
+      const file = path.join(tempy.temporaryDirectory(), onDisk);
       fs.writeFileSync(file, 'PK fake pptx');
       const presignRequests: Array<unknown> = [];
       return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
-        await runCliAgainst(
-          baseUrl,
-          [
-            'execute',
-            'CANVA_CREATE_DESIGN_IMPORT_JOB',
-            '--skip-connection-check',
-            '--file',
-            file,
-            '-d',
-            '{"title":"Deck"}',
-          ],
-          typeof env === 'function' ? env(file) : env
-        );
+        await uploadWith(baseUrl, file, staged && { [file]: staged });
 
         expect(presignRequests).toEqual([
-          expect.objectContaining({ filename: fileName, mimetype, toolkit_slug: 'canva' }),
+          expect.objectContaining({ filename, mimetype, toolkit_slug: 'canva' }),
         ]);
       });
     },
     30_000
   );
+
+  it('[Given] a `.env` path staged under a harmless name [Then] the denylist still refuses it', () => {
+    const file = path.join(tempy.temporaryDirectory(), '.env');
+    fs.writeFileSync(file, 'SECRET=value');
+    const presignRequests: Array<unknown> = [];
+    return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+      const result = await uploadWith(baseUrl, file, {
+        [file]: { name: 'deck.pptx', mimetype: PPTX },
+      });
+
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain('looks like a credential');
+      expect(presignRequests).toEqual([]);
+    });
+  }, 30_000);
 });

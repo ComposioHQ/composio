@@ -11,7 +11,12 @@ import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { idempotent } from 'src/services/composio-request';
 
 type JsonSchema = Record<string, unknown>;
-type FileMimeTypes = ReadonlyMap<string, string>;
+/**
+ * Local path -> the name and MIME type to upload it under, for files their caller
+ * staged (`composio run` writes each script File to a generated path). Labels
+ * only: the path is still read, and checked against the denylist, as given.
+ */
+type StagedFiles = ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }>;
 
 // The core helpers below are only reached once an execute actually carries
 // a file input, so they are imported on that path rather than at module scope:
@@ -214,7 +219,7 @@ const readFileFromDisk = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
   filePath: string,
-  fileMimeTypes: FileMimeTypes
+  stagedFiles: StagedFiles
 ) =>
   Effect.gen(function* () {
     // Enforce the sensitive-path denylist at the lowest-level local read, so any
@@ -241,15 +246,19 @@ const readFileFromDisk = (
       catch: asSourceReadError,
     });
     const bytes = yield* fs.readFile(filePath).pipe(Effect.mapError(asSourceReadError));
+    // A staged file is uploaded under the name and type its caller declared. A
+    // local file carries no Content-Type, so otherwise the type is inferred from
+    // the name's extension, as the core SDK does. Tools validate it (Canva's
+    // import rejects a .pptx labelled `application/octet-stream`, #4984).
+    const staged = stagedFiles.get(filePath);
+    const stagedName = path.basename(staged?.name ?? '');
+    const fileName = stagedName.length > 0 ? stagedName : path.basename(filePath);
     return {
       // Copy into a fresh ArrayBuffer-backed view: `fetch` bodies reject the
       // wider ArrayBufferLike-backed Uint8Array that FileSystem returns.
       bytes: new Uint8Array(bytes),
-      fileName: path.basename(filePath),
-      // A local file carries no Content-Type: a type its caller declared wins, else
-      // it is inferred from the extension, as the core SDK does. Tools validate it
-      // (Canva's import rejects a .pptx labelled `application/octet-stream`, #4984).
-      mimeType: fileMimeTypes.get(filePath) ?? getMimeTypeFromFileName(filePath),
+      fileName,
+      mimeType: staged?.mimetype ?? getMimeTypeFromFileName(fileName),
     };
   });
 
@@ -257,7 +266,7 @@ const readUploadSource = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
   file: string | File,
-  fileMimeTypes: FileMimeTypes
+  stagedFiles: StagedFiles
 ) => {
   if (isFileLike(file)) {
     return Effect.tryPromise({ try: () => file.arrayBuffer(), catch: asSourceReadError }).pipe(
@@ -274,7 +283,7 @@ const readUploadSource = (
   }
 
   if (typeof file === 'string') {
-    return readFileFromDisk(fs, path, file, fileMimeTypes);
+    return readFileFromDisk(fs, path, file, stagedFiles);
   }
 
   return Effect.fail(
@@ -292,14 +301,14 @@ const uploadFile = (params: {
   readonly toolSlug: string;
   readonly toolkitSlug: string;
   readonly client: ComposioClientShape;
-  readonly fileMimeTypes: FileMimeTypes;
+  readonly stagedFiles: StagedFiles;
 }) =>
   Effect.gen(function* () {
     const fileData = yield* readUploadSource(
       params.fs,
       params.path,
       params.file,
-      params.fileMimeTypes
+      params.stagedFiles
     );
     // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
     const { createHash } = yield* Effect.promise(() => import('node:crypto'));
@@ -356,7 +365,7 @@ const hydrateFileUploads = (
     readonly toolSlug: string;
     readonly toolkitSlug: string;
     readonly client: ComposioClientShape;
-    readonly fileMimeTypes: FileMimeTypes;
+    readonly stagedFiles: StagedFiles;
   }
 ): Effect.Effect<unknown, ToolInputUploadError> =>
   Effect.gen(function* () {
@@ -372,7 +381,7 @@ const hydrateFileUploads = (
         toolSlug: ctx.toolSlug,
         toolkitSlug: ctx.toolkitSlug,
         client: ctx.client,
-        fileMimeTypes: ctx.fileMimeTypes,
+        stagedFiles: ctx.stagedFiles,
       });
     }
 
@@ -420,8 +429,8 @@ export const uploadToolInputFiles = (params: {
   readonly inputSchema: JsonSchema;
   readonly client: ComposioClientShape;
   readonly toolkitSlug?: string;
-  /** Local path -> MIME type its caller declared, preferred to the extension's. */
-  readonly fileMimeTypes?: FileMimeTypes;
+  /** Local path -> name and MIME type its caller staged it under. */
+  readonly stagedFiles?: StagedFiles;
 }): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
   Effect.gen(function* () {
     if (!schemaHasFileUploadable(params.inputSchema)) {
@@ -434,7 +443,7 @@ export const uploadToolInputFiles = (params: {
       toolSlug: params.toolSlug,
       toolkitSlug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug) ?? 'unknown',
       client: params.client,
-      fileMimeTypes: params.fileMimeTypes ?? new Map(),
+      stagedFiles: params.stagedFiles ?? new Map(),
     });
 
     return Predicate.isObject(hydrated) ? hydrated : params.arguments_;

@@ -229,8 +229,8 @@ const attachPromptMethod = <T>(value: T): T => {
 
 const isPlainObjectForExecute = Predicate.isObject;
 
-// The extension of the name a nameless Blob is staged under. Cosmetic: the Blob's
-// type reaches the upload through `COMPOSIO_RUN_FILE_MIME_TYPES`, not through this
+// The extension of the name a nameless Blob is uploaded under. Cosmetic: the Blob's
+// type reaches the upload through `COMPOSIO_RUN_STAGED_FILES`, not through this
 // extension. A subtype that is not a plain token (`vnd.openxmlformats-…`) is `bin`.
 const runFileExtensionFromMimeType = (mimeType: string): string => {
   const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
@@ -238,7 +238,7 @@ const runFileExtensionFromMimeType = (mimeType: string): string => {
     'text/plain': 'txt',
     'image/jpeg': 'jpg',
   };
-  if (explicit[normalized]) return explicit[normalized];
+  if (Object.hasOwn(explicit, normalized)) return explicit[normalized];
   const subtype = normalized.split('/')[1]?.split('+').pop() ?? '';
   return /^[a-z0-9]{1,10}$/.test(subtype) ? subtype : 'bin';
 };
@@ -389,14 +389,21 @@ const createRunHelperLoggers = (params: {
  * An `execute()` payload with every File and Blob written to disk: the spawned
  * `composio execute` takes `--data` JSON, so each one becomes its staged path.
  */
+/** What the upload reports for a staged file, in place of its staged path's. */
+type StagedFileLabel = { readonly name: string; readonly mimetype?: string };
+
+/**
+ * An `execute()` payload with every File and Blob written to disk: the spawned
+ * `composio execute` takes `--data` JSON, so each one becomes its staged path.
+ */
 type MaterializedExecutePayload = {
   readonly payload: unknown;
   /**
-   * Staged path -> the File or Blob's own `type`, for the ones that have one.
-   * A path carries no type, so the child receives these through
-   * `COMPOSIO_RUN_FILE_MIME_TYPES` and prefers them to the extension's.
+   * Staged path -> the File or Blob's own name and `type`. A path carries
+   * neither, so the child receives these through `COMPOSIO_RUN_STAGED_FILES`
+   * and uploads the file under them.
    */
-  readonly fileMimeTypes: Readonly<Record<string, string>>;
+  readonly stagedFiles: ReadonlyArray<readonly [string, StagedFileLabel]>;
 };
 
 const createExecutePayloadMaterializer = (params: {
@@ -406,9 +413,8 @@ const createExecutePayloadMaterializer = (params: {
 }): ((value: unknown) => Promise<MaterializedExecutePayload>) => {
   const { path, tmpdir, sharedRunOutputDir } = params;
 
-  // A File keeps its own name (the upload sends it as the file's name), in a
-  // directory of its own so two Files with one name do not collide.
-  const stagedFileName = (blob: Blob): string => {
+  // The name the upload sends: a File's own, without any directory part.
+  const uploadName = (blob: Blob): string => {
     const baseName = blob instanceof File ? path.basename(blob.name).trim() : '';
     return baseName.length > 0 && baseName !== '.' && baseName !== '..'
       ? baseName
@@ -417,32 +423,41 @@ const createExecutePayloadMaterializer = (params: {
 
   const writeTempExecuteFile = async (
     blob: Blob,
-    fileMimeTypes: Record<string, string>
+    stagedFiles: Array<readonly [string, StagedFileLabel]>
   ): Promise<string> => {
     const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
-    const fileDir = path.join(outputDir, executeId());
-    fs.mkdirSync(fileDir, { recursive: true });
-    const filePath = path.join(fileDir, stagedFileName(blob));
+    fs.mkdirSync(outputDir, { recursive: true });
+    const name = uploadName(blob);
+    // Staged under a generated name, never the File's own: the child still runs
+    // the sensitive-path denylist on this path, and a script-created
+    // `.env.example` or `id_rsa` is not a file of the user's to protect. The
+    // extension is kept only as a fallback for the type.
+    const extension = path.extname(name);
+    const filePath = path.join(
+      outputDir,
+      `file-${executeId()}${/^\.[A-Za-z0-9]{1,10}$/.test(extension) ? extension : ''}`
+    );
     fs.writeFileSync(filePath, new Uint8Array(await blob.arrayBuffer()));
-    if (blob.type.trim().length > 0) fileMimeTypes[filePath] = blob.type;
+    const mimetype = blob.type.trim();
+    stagedFiles.push([filePath, mimetype.length > 0 ? { name, mimetype } : { name }]);
     return filePath;
   };
 
   const materialize = async (
     value: unknown,
-    fileMimeTypes: Record<string, string>
+    stagedFiles: Array<readonly [string, StagedFileLabel]>
   ): Promise<unknown> => {
     if (typeof Blob !== 'undefined' && value instanceof Blob) {
-      return writeTempExecuteFile(value, fileMimeTypes);
+      return writeTempExecuteFile(value, stagedFiles);
     }
     if (Array.isArray(value)) {
-      return Promise.all(value.map(item => materialize(item, fileMimeTypes)));
+      return Promise.all(value.map(item => materialize(item, stagedFiles)));
     }
     if (isPlainObjectForExecute(value)) {
       const entries = await Promise.all(
         Object.entries(value).map(async ([key, entryValue]) => [
           key,
-          await materialize(entryValue, fileMimeTypes),
+          await materialize(entryValue, stagedFiles),
         ])
       );
       return Object.fromEntries(entries);
@@ -451,9 +466,9 @@ const createExecutePayloadMaterializer = (params: {
   };
 
   return async value => {
-    const fileMimeTypes: Record<string, string> = {};
-    const payload = await materialize(value, fileMimeTypes);
-    return { payload, fileMimeTypes };
+    const stagedFiles: Array<readonly [string, StagedFileLabel]> = [];
+    const payload = await materialize(value, stagedFiles);
+    return { payload, stagedFiles };
   };
 };
 
@@ -672,11 +687,11 @@ const createSearchAndExecuteHelpers = (params: {
       args.push('--account', options.account.trim());
     }
     // Always set, so a value this process inherited never reaches the child.
-    let fileMimeTypes: Readonly<Record<string, string>> = {};
+    let stagedFiles: MaterializedExecutePayload['stagedFiles'] = [];
     if (data !== undefined) {
       const materialized = await materializeExecutePayload(data);
       const preparedData = materialized.payload;
-      fileMimeTypes = materialized.fileMimeTypes;
+      stagedFiles = materialized.stagedFiles;
       const serialized =
         typeof preparedData === 'string' ? preparedData : JSON.stringify(preparedData);
       if (sharedRunOutputDir) {
@@ -688,7 +703,7 @@ const createSearchAndExecuteHelpers = (params: {
       }
     }
     const result = await runCliJson(args, {
-      COMPOSIO_RUN_FILE_MIME_TYPES: JSON.stringify(fileMimeTypes),
+      COMPOSIO_RUN_STAGED_FILES: JSON.stringify(Object.fromEntries(stagedFiles)),
     });
     if (Predicate.isObject(result) && result.successful === false) {
       const message =

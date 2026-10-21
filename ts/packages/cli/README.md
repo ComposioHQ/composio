@@ -83,12 +83,12 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 
 The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
 
-| Environment Variable           | Description                                                                          | Default |
-| ------------------------------ | ------------------------------------------------------------------------------------ | ------- |
-| COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it           | cli     |
-| COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                                | None    |
-| COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands                  | None    |
-| COMPOSIO_RUN_FILE_MIME_TYPES   | Passes the type of each `File` a `composio run` script uploads to `composio execute` | None    |
+| Environment Variable           | Description                                                                                   | Default |
+| ------------------------------ | --------------------------------------------------------------------------------------------- | ------- |
+| COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it                    | cli     |
+| COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                                         | None    |
+| COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands                           | None    |
+| COMPOSIO_RUN_STAGED_FILES      | Passes the name and type of each `File` a `composio run` script uploads to `composio execute` | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
 

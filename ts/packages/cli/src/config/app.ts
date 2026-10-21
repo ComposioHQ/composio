@@ -5,18 +5,25 @@ import { flag, optionalLogLevel, optionalString } from './env';
 
 const ENVIRONMENT = optionalString('COMPOSIO_ENVIRONMENT');
 
-const decodeFileMimeTypesJson = Schema.decodeUnknownOption(
-  Schema.fromJsonString(Schema.Record(Schema.String, Schema.String))
+const decodeStagedFilesJson = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({ name: Schema.String, mimetype: Schema.optional(Schema.String) })
+    )
+  )
 );
 
 // Set by `composio run` for the `composio execute` it spawns, never by users, so a
 // malformed value is ignored rather than failing the command. A Map, so a path
 // such as `constructor` cannot reach an object's prototype.
-const decodeRunFileMimeTypes = (raw: string | undefined): ReadonlyMap<string, string> =>
+const decodeRunStagedFiles = (
+  raw: string | undefined
+): ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }> =>
   new Map(
     raw === undefined
       ? []
-      : Object.entries(Option.getOrElse(decodeFileMimeTypesJson(raw), () => ({})))
+      : Object.entries(Option.getOrElse(decodeStagedFilesJson(raw), () => ({})))
   );
 
 /** The explicit `name` value, else the `COMPOSIO_ENVIRONMENT`-derived default. */
@@ -104,9 +111,9 @@ export const APP_CONFIG = {
   CLI_INVOCATION_ORIGIN: optionalString('COMPOSIO_CLI_INVOCATION_ORIGIN'),
   CLI_PARENT_RUN_ID: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
   RUN_OUTPUT_DIR: optionalString('COMPOSIO_RUN_OUTPUT_DIR'),
-  // Staged file path -> MIME type, for the Files a `composio run` script passed to `execute()`
-  RUN_FILE_MIME_TYPES: optionalString('COMPOSIO_RUN_FILE_MIME_TYPES').pipe(
-    Config.map(decodeRunFileMimeTypes)
+  // Staged file path -> name and MIME type, for the Files a `composio run` script passed to `execute()`
+  RUN_STAGED_FILES: optionalString('COMPOSIO_RUN_STAGED_FILES').pipe(
+    Config.map(decodeRunStagedFiles)
   ),
 
   // Disable connected account cache (defaults to true — cache is off by default)

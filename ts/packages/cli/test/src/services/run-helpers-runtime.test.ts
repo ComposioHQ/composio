@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import { inspect } from 'node:util';
 import { Predicate } from 'effect';
+import { isBlockedSensitiveFileUploadPath } from '@composio/core';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
 import { ToolInputRequiredError } from 'src/utils/tool-input-required';
@@ -362,18 +363,18 @@ describe('run-helpers-runtime', () => {
     });
   });
 
-  it('[Given] File and Blob arguments [Then] the spawned `composio execute` gets paths that keep their names, and their types beside them', async () => {
-    // Echoes the `--data` JSON and the declared types it was spawned with, and
+  it("[Given] File and Blob arguments [Then] the spawned `composio execute` gets generated paths, and each one's own name and type beside them", async () => {
+    // Echoes the `--data` JSON and the staged files it was spawned with, and
     // whether each staged file exists.
     const childScript = [
       'const fs = require("node:fs");',
       'const data = JSON.parse(process.argv[process.argv.indexOf("--data") + 1]);',
-      'const mimeTypes = JSON.parse(process.env.COMPOSIO_RUN_FILE_MIME_TYPES);',
+      'const stagedFiles = JSON.parse(process.env.COMPOSIO_RUN_STAGED_FILES);',
       'const exists = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, fs.existsSync(v)]));',
-      'console.log(JSON.stringify({ successful: true, data: { data, mimeTypes, exists } }));',
+      'console.log(JSON.stringify({ successful: true, data: { data, stagedFiles, exists } }));',
     ].join('\n');
     // A value the run process inherited must not reach the child.
-    vi.stubEnv('COMPOSIO_RUN_FILE_MIME_TYPES', '{"/stale":"text/plain"}');
+    vi.stubEnv('COMPOSIO_RUN_STAGED_FILES', '{"/stale":{"name":"stale.txt"}}');
     await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
     const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
@@ -383,6 +384,8 @@ describe('run-helpers-runtime', () => {
       extensionless: new File(['PK'], 'deck', { type: PPTX }),
       traversal: new File(['PK'], '../escape.pptx', { type: PPTX }),
       untyped: new File(['hi'], 'notes.txt'),
+      envExample: new File(['EXAMPLE=value'], '.env.example', { type: 'text/plain' }),
+      privateKeyName: new File(['not a key'], 'keys/id_rsa'),
       blob: new Blob(['PK'], { type: PPTX }),
     });
 
@@ -390,29 +393,42 @@ describe('run-helpers-runtime', () => {
       Predicate.hasProperty(result, 'data') &&
         Predicate.hasProperty(result.data, 'data') &&
         Predicate.isObject(result.data.data) &&
-        Predicate.hasProperty(result.data, 'mimeTypes')
+        Predicate.hasProperty(result.data, 'stagedFiles')
     );
     const staged = result.data.data;
-    expect(Object.values(staged).map(value => path.basename(String(value)))).toEqual([
-      'deck.pptx',
-      'deck.pptx',
-      'deck',
-      'escape.pptx',
-      'notes.txt',
+    const stagedPaths = Object.values(staged).map(String);
+    // Every File is staged under a generated name, with its extension when it has one…
+    expect(stagedPaths.map(stagedPath => path.basename(stagedPath))).toEqual([
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.txt$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.example$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
       expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
     ]);
-    // Two Files with one name do not overwrite each other.
-    expect(staged.named).not.toBe(staged.sameName);
+    // …that the child's denylist does not refuse, and that two Files with one name do not share.
+    expect(stagedPaths.filter(stagedPath => isBlockedSensitiveFileUploadPath(stagedPath))).toEqual(
+      []
+    );
+    expect(new Set(stagedPaths).size).toBe(stagedPaths.length);
     expect(result.data).toMatchObject({
       exists: Object.fromEntries(Object.keys(staged).map(key => [key, true])),
     });
-    // Every typed File or Blob declares its own type, whatever its name says.
-    expect(result.data.mimeTypes).toEqual({
-      [String(staged.named)]: PPTX,
-      [String(staged.sameName)]: PPTX,
-      [String(staged.extensionless)]: PPTX,
-      [String(staged.traversal)]: PPTX,
-      [String(staged.blob)]: PPTX,
+    // The child uploads each one under its own name and type.
+    expect(result.data.stagedFiles).toEqual({
+      [String(staged.named)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.sameName)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.extensionless)]: { name: 'deck', mimetype: PPTX },
+      [String(staged.traversal)]: { name: 'escape.pptx', mimetype: PPTX },
+      [String(staged.untyped)]: { name: 'notes.txt' },
+      [String(staged.envExample)]: { name: '.env.example', mimetype: 'text/plain' },
+      [String(staged.privateKeyName)]: { name: 'id_rsa' },
+      [String(staged.blob)]: {
+        name: expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+        mimetype: PPTX,
+      },
     });
   });
 
