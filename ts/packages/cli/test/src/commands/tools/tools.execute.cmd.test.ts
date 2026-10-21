@@ -2267,6 +2267,30 @@ describe('CLI: composio execute', () => {
           expect(lines.join('\n')).not.toContain('"successful": true');
         })
       );
+
+      it.effect('reports the same problem under --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-connection-check',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
     }
   );
 

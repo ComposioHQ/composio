@@ -4,6 +4,8 @@ import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -49,7 +51,11 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
-import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
+import {
+  findFileUploadablePaths,
+  normalizeFileUploadSchema,
+  rejectLocalFilesWithoutUpload,
+} from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -703,6 +709,24 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
+// What a dry run checks against the schema: the arguments, then any local file
+// the tool cannot upload, which the real call refuses before sending.
+const validateDryRunArguments = (
+  slug: string,
+  args: Record<string, unknown>,
+  definition: { readonly schemaPath: string; readonly schema: Record<string, unknown> }
+) =>
+  Effect.gen(function* () {
+    yield* validateToolInputArgumentsWithDefinition(slug, args, definition);
+    yield* rejectLocalFilesWithoutUpload({
+      fs: yield* FileSystem.FileSystem,
+      path: yield* Path.Path,
+      toolSlug: slug,
+      arguments_: args,
+      inputSchema: definition.schema,
+    });
+  });
+
 // Gates the tool call: the request is only sent once the arguments pass. A
 // schema that cannot be loaded does not block the call, the server validates too.
 const validateToolInputBeforeExecute = (params: {
@@ -1137,11 +1161,7 @@ const runExecuteWithSpinner = (params: {
                 )
               );
           if (definition) {
-            yield* validateToolInputArgumentsWithDefinition(
-              params.slug,
-              params.args,
-              definition
-            ).pipe(
+            yield* validateDryRunArguments(params.slug, params.args, definition).pipe(
               Effect.tapError(error =>
                 emitExecuteFailureTelemetry({
                   toolSlug: params.slug,
@@ -1760,7 +1780,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
                   projectId: context.resolvedProject.projectId,
                 });
             if (definition) {
-              yield* validateToolInputArgumentsWithDefinition(toolSlug, context.args, definition);
+              yield* validateDryRunArguments(toolSlug, context.args, definition);
             }
             return {
               successful: true,

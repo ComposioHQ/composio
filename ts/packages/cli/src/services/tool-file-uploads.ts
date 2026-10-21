@@ -256,7 +256,7 @@ export const findLocalPathArguments = (
  * (issue #4965). A path that does not exist here is left alone, since it may
  * name a file on the remote side.
  */
-const rejectLocalFilesWithoutUpload = (params: {
+export const rejectLocalFilesWithoutUpload = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly toolSlug: string;
