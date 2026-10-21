@@ -1,8 +1,11 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, Layer } from 'effect';
 import { ListenCommandError } from 'src/commands/listen.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
@@ -18,7 +21,40 @@ const enableListen = Effect.gen(function* () {
   });
 });
 
+const failingRealtime = Layer.succeed(
+  TriggersRealtime,
+  TriggersRealtime.of({
+    listen: () => Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
+    listenInProject: () =>
+      Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
+  })
+);
+
 describe('CLI: composio listen', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] the realtime subscription fails',
+    it => {
+      it.effect('[Then] reports it on a redirected stderr and exits 1', () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const terminal = redirectedTerminalUI();
+          yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
+            Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+          );
+
+          expect(terminal.stderr()).toContain(
+            'Could not subscribe to realtime trigger events: socket closed. Check your network connection or run `composio login`.\n'
+          );
+          expect(process.exitCode).toBe(1);
+        })
+      );
+    }
+  );
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,

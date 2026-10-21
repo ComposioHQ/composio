@@ -1,4 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
+import { reportFailure } from 'src/effects/report-failure';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -334,12 +335,10 @@ export const triggersCmd$Listen = Command.make(
         yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
       }).pipe(
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
-          Effect.gen(function* () {
-            yield* ui.log.error(
-              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
-            );
-            process.exitCode = 1;
-          })
+          reportFailure(
+            ui,
+            `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          )
         )
       );
     })

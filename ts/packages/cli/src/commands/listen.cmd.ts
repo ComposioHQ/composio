@@ -1,4 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
+import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
@@ -702,12 +703,10 @@ export const listenCmd = Command.make(
             : disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id })
       ).pipe(
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
-          Effect.gen(function* () {
-            yield* ui.log.error(
-              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
-            );
-            process.exitCode = 1;
-          })
+          reportFailure(
+            ui,
+            `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          )
         )
       );
     })
