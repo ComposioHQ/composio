@@ -425,8 +425,8 @@ result = session.execute(
     },
 )
 
-if result.error:
-    raise RuntimeError(result.error)
+if result.result_type == "failed":
+    raise RuntimeError(result.error or f"Tool execution failed (log ID: {result.log_id})")
 
 print(result.data)
 print(result.log_id)  # look this up in the dashboard
@@ -445,8 +445,8 @@ const result = await session.execute('GITHUB_CREATE_AN_ISSUE', {
   body: 'Filed by the harness.',
 });
 
-if (result.error) {
-  throw new Error(result.error);
+if (result.resultType === 'failed') {
+  throw new Error(result.error || `Tool execution failed (log ID: ${result.logId})`);
 }
 
 console.log(result.data);
@@ -455,7 +455,9 @@ console.log(result.logId); // look this up in the dashboard
 </Tab>
 </Tabs>
 
-Arguments go through untouched: neither SDK validates them locally, so a wrong field reaches the upstream API and comes back as a populated `error` your planner can read and correct on the next turn, not as an exception. Exceptions are for transport failures and cancellation. `logId` ties the call to its entry in the dashboard, which is the fastest way to see what Composio actually sent upstream when a response surprises you.
+Check `resultType` (`result_type` in Python), not `error`, to tell whether execution succeeded. A failed execution can have null or empty error text. The tool-specific `data` payload has no guaranteed `successful` field. See [Reading execution results](/docs/how-composio-works#reading-execution-results) for the result envelope.
+
+Transport failures, cancellation, and [requests for user input](/docs/how-composio-works#handling-requests-for-user-input) can raise exceptions instead of returning a result. `logId` (`log_id` in Python) ties the call to its entry in the dashboard so you can inspect what Composio sent upstream.
 
 When the thing you need isn't wrapped as a tool, [`session.proxyExecute()`](/docs/extending-sessions/proxy-execute) calls the raw API endpoint under the same connected account.
 
