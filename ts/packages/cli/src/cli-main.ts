@@ -318,9 +318,9 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A usage mistake, a missing login, or an unresolved project is not a broken invariant:
-    // print the one-line fix and exit non-zero instead of routing it through the defect
-    // reporter below.
+    // A usage mistake, a missing login, an unresolved project, or an `--account` that selects
+    // no connected account is not a broken invariant: print the one-line fix and exit non-zero
+    // instead of routing it through the defect reporter below.
     Effect.catchIf(
       (error): error is UsageFailure => isUsageFailure(error),
       error =>
