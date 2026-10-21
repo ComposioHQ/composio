@@ -1,5 +1,6 @@
 import { Data, Effect } from 'effect';
 import { Argument, Command } from 'effect/cli';
+import { commandInputError } from 'src/commands/errors';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -19,6 +20,8 @@ class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
 class ConnectionsRemovalRequestError extends requestError(
   'commands/ConnectionsRemovalRequestError'
 ) {}
+
+const invalidInput = commandInputError('connections remove');
 
 const account = Argument.String('account').pipe(
   Argument.withDescription(
@@ -118,8 +121,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     const resolved = resolveAccount({ accounts: result.items, selector: account });
 
     if ('error' in resolved) {
-      yield* ui.log.warn(resolved.error);
-      return;
+      return yield* invalidInput(resolved.error, '<account>');
     }
 
     yield* ui.note(

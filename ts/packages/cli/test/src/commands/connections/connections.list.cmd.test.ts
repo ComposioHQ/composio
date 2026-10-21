@@ -347,13 +347,35 @@ describe('CLI: composio connections remove', () => {
 
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
-          yield* cli(['connections', 'remove', 'github']);
+          const failure = yield* cli(['connections', 'remove', 'github']).pipe(Effect.flip);
 
           expect(ambiguousDeleteCalls).toEqual([]);
-
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          expect(lines.join('\n')).toContain('Multiple connections matched "github"');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'connections remove',
+            option: '<account>',
+            message: expect.stringContaining('Multiple connections matched "github"'),
+          });
         })
+    );
+
+    it.effect('[Given] a selector matches no account [Then] fails with a usage error', () =>
+      Effect.gen(function* () {
+        ambiguousDeleteCalls.length = 0;
+
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const failure = yield* cli(['connections', 'remove', 'nothing-matches']).pipe(Effect.flip);
+
+        expect(ambiguousDeleteCalls).toEqual([]);
+        expect(failure).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'connections remove',
+          option: '<account>',
+          message:
+            'No connection matched "nothing-matches". Run `composio connections list` to inspect available connections.',
+        });
+      })
     );
   });
 });

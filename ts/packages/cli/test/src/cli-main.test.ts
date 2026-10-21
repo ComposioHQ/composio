@@ -139,6 +139,68 @@ describe('CLI process error handling', () => {
     expect(result.stderr).not.toContain('Sources');
   });
 
+  // Each of these used to print its message only to a terminal and exit 0, so a script, CI or
+  // an agent saw nothing and a successful exit.
+  it.each([
+    {
+      command: 'whoami',
+      args: ['whoami'],
+      loggedIn: false,
+      message: 'You are not logged in yet. Please run `composio login`.',
+    },
+    {
+      command: 'dev connected-accounts info',
+      args: ['dev', 'connected-accounts', 'info'],
+      loggedIn: true,
+      message: 'Missing required argument: <id>',
+    },
+    {
+      command: 'triggers info',
+      args: ['triggers', 'info'],
+      loggedIn: true,
+      message: 'Missing required argument: <slug>',
+    },
+    {
+      command: 'dev projects list',
+      args: ['dev', 'projects', 'list'],
+      loggedIn: true,
+      message: 'No current org is configured.',
+    },
+  ])(
+    'reports `composio $command` on a redirected stderr and exits 1',
+    ({ args, loggedIn, message }) => {
+      const configDirectory = tempy.temporaryDirectory();
+      if (loggedIn) {
+        fs.writeFileSync(
+          path.join(configDirectory, 'user_data.json'),
+          JSON.stringify({
+            api_key: 'test-api-key',
+            base_url: 'https://backend.composio.dev',
+            web_url: 'https://platform.composio.dev',
+            org_id: null,
+            test_user_id: null,
+          })
+        );
+      }
+
+      const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CI: '1',
+          NO_COLOR: '1',
+          COMPOSIO_CACHE_DIR: configDirectory,
+        },
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(message);
+      expect(result.stderr).not.toContain('CommandInputError');
+    }
+  );
+
   it('reports a bare `composio run` as a usage error without a defect dump', () => {
     const configDirectory = tempy.temporaryDirectory();
 
