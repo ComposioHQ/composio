@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import types
 import typing as t
 
 from pydantic import BaseModel
@@ -306,6 +307,23 @@ def _resolve_function_annotations(
         return {}, error
 
 
+def _resolve_single_annotation(
+    fn: t.Callable[..., t.Any],
+    name: str,
+    annotation: str,
+    *,
+    localns: t.Optional[t.Mapping[str, t.Any]] = None,
+) -> t.Any:
+    """Resolve one postponed annotation against the function's namespaces."""
+    holder = types.SimpleNamespace(__annotations__={name: annotation})
+    return t.get_type_hints(
+        holder,
+        globalns=getattr(fn, "__globals__", {}),
+        localns=dict(localns) if localns is not None else None,
+        include_extras=True,
+    )[name]
+
+
 def _infer_tool_from_function(
     fn: t.Callable[..., t.Any],
     *,
@@ -373,13 +391,24 @@ def _infer_tool_from_function(
     first = params[0]
     first_annotation = resolved_annotations.get(first.name, first.annotation)
     if isinstance(first_annotation, str) and resolution_error is not None:
-        raise ValidationError(
-            f"experimental.tool: could not resolve the annotation {first_annotation!r} "
-            f'on the first parameter of "{fn.__name__}" '
-            f"({type(resolution_error).__name__}: {resolution_error}). "
-            f"Define {first_annotation} before the tool, or import it at runtime "
-            f"instead of only under TYPE_CHECKING."
-        ) from resolution_error
+        # get_type_hints resolves every annotation at once, so the failure may
+        # come from another parameter or the return type. Resolve the input
+        # annotation on its own before blaming it.
+        try:
+            first_annotation = _resolve_single_annotation(
+                fn,
+                first.name,
+                first_annotation,
+                localns=annotation_locals,
+            )
+        except Exception as first_error:
+            raise ValidationError(
+                f"experimental.tool: could not resolve the annotation {first_annotation!r} "
+                f'on the first parameter of "{fn.__name__}" '
+                f"({type(first_error).__name__}: {first_error}). "
+                f"Define {first_annotation} before the tool, or import it at runtime "
+                f"instead of only under TYPE_CHECKING."
+            ) from first_error
     if first_annotation is inspect.Parameter.empty or not (
         isinstance(first_annotation, type) and issubclass(first_annotation, BaseModel)
     ):

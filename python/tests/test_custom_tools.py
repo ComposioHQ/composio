@@ -310,6 +310,33 @@ def hidden_tool(input: HiddenInput, ctx):
             )
         assert "TYPE_CHECKING" in str(exc_info.value)
 
+    def test_unresolved_return_annotation_does_not_block_input(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel as HiddenResult
+
+
+class VisibleInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def visible_tool(input: VisibleInput, ctx) -> HiddenResult:
+    '''Only the return annotation is unresolved.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["visible_tool"].input_params is namespace["VisibleInput"]
+
     def test_future_annotations_are_resolved(self):
         namespace = {"exp": exp}
         exec(
