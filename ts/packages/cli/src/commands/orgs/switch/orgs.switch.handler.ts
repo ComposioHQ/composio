@@ -45,7 +45,8 @@ export const runOrgsSwitch = ({ orgId, limit }: OrgsSwitchParams) =>
       onNone: () => ui.outro(NO_ORG_SELECTED_OUTRO),
       onSome: org =>
         Effect.gen(function* () {
-          yield* ctx.login(apiKey, org.id, Option.getOrUndefined(ctx.data.testUserId));
+          // Same key, new org: the login's recorded backend stays as it is.
+          yield* ctx.update({ orgId: Option.some(org.id) });
           yield* linkAnalyticsIdentityForOrg({ apiKey, orgId: org.id });
 
           yield* ui.log.success(updatedOrgMessage(org.name));

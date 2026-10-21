@@ -38,6 +38,15 @@ If it is unclear whether the goal is to integrate Composio into the application 
 - [Troubleshooting](https://docs.composio.dev/kb.md): Diagnose authentication, connection, and execution failures.
 - [Production rate limits](https://docs.composio.dev/reference/rate-limits.md): Plan for request limits before deployment.
 
+## Session SDK reference
+
+- [TypeScript session creation and reuse](https://docs.composio.dev/reference/sdk-reference/typescript/sessions.md): Look up the exact \`sessions.create()\` and \`sessions.use()\` signatures.
+- [TypeScript Session methods and results](https://docs.composio.dev/reference/sdk-reference/typescript/session.md): Look up \`tools()\`, \`search()\`, \`execute()\`, \`update()\`, and returned properties.
+- [Python Session methods and results](https://docs.composio.dev/reference/sdk-reference/python/session.md): Look up Python argument names, return types, and examples.
+- [Session configuration examples](https://docs.composio.dev/docs/configuring-sessions.md): Find language-specific create options and update behavior.
+
+Fetch these Markdown pages directly for exact call shapes; search-result summaries may omit code. Use the installed package's version-matched reference when it differs from the current website.
+
 ## API Reference (v3.1, current)
 
 - [Current REST API](https://docs.composio.dev/reference.md): Use the current base URL and browse endpoint groups.

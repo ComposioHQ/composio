@@ -5,6 +5,7 @@ import { MISSING_ID_MESSAGE, missingIdHint } from 'src/commands/connected-accoun
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { redact } from 'src/ui/redact';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
@@ -93,7 +94,10 @@ describe('runConnectedAccountsInfo', () => {
         expect(note).toContain('Alias: work');
         expect(note).toContain('Word Id: castle');
         expect(note).toContain('Status Reason: Token expired');
-        expect(note).toContain('Auth Config: ac_github_oauth (OAUTH2)');
+        // CI redacts ids (`CI=true`), so expect the id the way the formatter prints it.
+        expect(note).toContain(
+          `Auth Config: ${redact({ value: 'ac_github_oauth', prefix: 'ac_' })} (OAUTH2)`
+        );
         expect(note).toContain('Composio Managed: No');
         expect(note).toContain('Test Endpoint: https://api.github.com/user');
       }).pipe(Effect.provide(layer));

@@ -238,6 +238,7 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
           projectId: Option.none(),
           testUserId: fixture.globalTestUserId ?? Option.none(),
         },
+        backendMismatch: Option.none(),
         isLoggedIn: () => true,
         logout: Effect.void,
         login: () => Effect.void,

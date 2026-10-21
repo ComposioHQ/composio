@@ -165,6 +165,26 @@ describe('CLI analytics dispatch', () => {
     }
   );
 
+  it.effect('sends failures to the backend the stored login was issued by', () => {
+    const home = tempy.temporaryDirectory();
+    const cacheDir = tempy.temporaryDirectory();
+    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+    // Blank reads as unset, whatever the host environment holds.
+    vi.stubEnv('COMPOSIO_BASE_URL', '');
+    vi.stubEnv('COMPOSIO_ENVIRONMENT', '');
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    writeFileSync(
+      path.join(cacheDir, USER_CONFIG_FILE_NAME),
+      JSON.stringify({ api_key: 'uak_staging', base_url: 'https://staging-backend.composio.dev/' })
+    );
+
+    return Effect.gen(function* () {
+      expect(yield* readApiBaseUrl).toBe('https://staging-backend.composio.dev');
+      vi.stubEnv('COMPOSIO_ENVIRONMENT', 'production');
+      expect(yield* readApiBaseUrl).toBe('https://backend.composio.dev');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
 

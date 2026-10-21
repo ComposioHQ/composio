@@ -99,9 +99,20 @@ tools = session.tools()
 
 Both SDKs also expose `composio.sessions.create(...)`; do not teach an artificial TypeScript/Python asymmetry. The SDK reads `COMPOSIO_API_KEY` from the environment, so do not pass it inline.
 
-For a multi-turn conversation, persist the returned session ID and resume it instead of creating a fresh session on every message. Confirm current method names against `configuring-sessions.md` before writing production code.
+For a multi-turn conversation, persist the returned session ID and resume it instead of creating a fresh session on every message. Use the [Session API lookup](#look-up-the-session-api) below for exact method names and configuration shapes.
 
 Pass the session tools to the repository's existing model or agent using its native tool integration. Preserve the current prompt, model, streaming, and request lifecycle unless tools require a targeted change.
+
+### Look up the Session API
+
+Fetch the relevant Markdown page directly when you need an exact signature, option shape, or return type. Search-result summaries can omit code:
+
+- [TypeScript creation and reuse](https://docs.composio.dev/reference/sdk-reference/typescript/sessions.md)
+- [TypeScript Session methods and results](https://docs.composio.dev/reference/sdk-reference/typescript/session.md)
+- [Python Session methods and results](https://docs.composio.dev/reference/sdk-reference/python/session.md)
+- [Create options and configuration updates in both languages](https://docs.composio.dev/docs/configuring-sessions.md)
+
+Check the installed SDK version first. Prefer its bundled reference for that version when it differs from the current website. API discovery does not require constructing a client, providing an API key, or calling the backend. Public Session types can retain the former `ToolRouter` name; follow their definitions rather than guessing a renamed import.
 
 ## Choose tools and authentication behavior
 

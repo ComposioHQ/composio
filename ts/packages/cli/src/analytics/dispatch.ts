@@ -1,11 +1,22 @@
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
 import type { PlatformError } from 'effect/PlatformError';
-import { Cause, Clock, DateTime, Effect, FileSystem, Option, Path, Predicate } from 'effect';
+import {
+  Cause,
+  Clock,
+  DateTime,
+  Effect,
+  FileSystem,
+  Option,
+  Path,
+  Predicate,
+  Schema,
+} from 'effect';
 import { Base64Url } from 'effect/encoding';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
 import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
+import { resolveBackend, withoutTrailingSlashes } from 'src/config/backend';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
@@ -469,11 +480,26 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
   },
 });
 
-// The same URL the CLI itself talks to: `COMPOSIO_BASE_URL`, else the `COMPOSIO_ENVIRONMENT`
-// default. The persisted login URL is not consulted, matching `ComposioUserContext`.
-export const readApiBaseUrl = Effect.orDie(APP_CONFIG.BASE_URL).pipe(
-  Effect.map(url => url.replace(/\/+$/u, ''))
+// A stored login in user_data.json: its key and the backend that issued it. The keychain
+// modes keep the key out of the file, and then this reports no key to send either.
+const decodeStoredLogin = Schema.decodeUnknownOption(
+  Schema.Struct({ api_key: Schema.NonEmptyString, base_url: Schema.NonEmptyString })
 );
+
+// The same URL the CLI itself talks to, resolved like `ComposioUserContext` does: an env var
+// that selects a backend, else the stored login's backend, else production.
+export const readApiBaseUrl = Effect.gen(function* () {
+  const env = yield* Effect.orDie(APP_CONFIG.BACKEND);
+  const envApiKey = yield* Effect.orDie(APP_CONFIG.USER_API_KEY);
+  const stored =
+    envApiKey === undefined
+      ? Option.map(decodeStoredLogin(yield* readUserConfig), login => ({
+          baseURL: login.base_url,
+          webURL: Option.none<string>(),
+        }))
+      : Option.none();
+  return withoutTrailingSlashes(resolveBackend(env, stored).baseURL);
+});
 
 const getCliCodactFailuresEndpoint = Effect.map(
   readApiBaseUrl,

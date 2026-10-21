@@ -76,6 +76,10 @@ All TypeScript code blocks in MDX files are **type-checked at build time** using
 
 See the [Twoslash guide](agent-guidance/context/twoslash.md) for complete example patterns and troubleshooting.
 
+## Redirects
+
+Define permanent redirects in `next.config.mjs` and cover legacy entry points in `tests/integration/redirects.test.ts`. `/docs/getting-started` redirects to `/docs/quickstart` so stale links found by agents still reach the current guide.
+
 ## Search
 
 Docs search uses Algolia when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is set; otherwise it falls back to the local Fumadocs `/api/search` endpoint for development and tests. The sync script builds a first-party index from MDX/OpenAPI/toolkit data (no crawler required), splits long pages into section-sized records, configures searchable attributes/custom ranking/distinct, requests `clickAnalytics`, and sends search result view/click events with `search-insights`.

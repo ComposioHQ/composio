@@ -4,7 +4,17 @@
  * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
-import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  Layer,
+  Logger,
+  Option,
+  Predicate,
+  Runtime,
+} from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
@@ -26,7 +36,13 @@ import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
-import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
+import {
+  ComposioUserContext,
+  ComposioUserContextLive as _ComposioUserContextLive,
+} from 'src/services/user-context';
+import { formatBackendMismatch } from 'src/config/backend';
+import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
+import { extractMessage } from 'src/utils/api-error-extraction';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -56,6 +72,7 @@ import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install/install.errors';
+import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
@@ -258,8 +275,29 @@ export type CliBootstrapOptions = {
   readonly argv: ReadonlyArray<string>;
 };
 
+/** Writes `message` to stderr: as a decorated warning on a terminal, as plain text otherwise. */
+const warn = (message: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.warn(message);
+    } else {
+      yield* ui.error(`Warning: ${message}`);
+    }
+  });
+
+/** Warns, before any request, when an env var sends the stored key to another backend. */
+const warnOnBackendMismatch = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  yield* Option.match(ctx.backendMismatch, {
+    onNone: () => Effect.void,
+    onSome: mismatch => warn(formatBackendMismatch(mismatch)),
+  });
+});
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  showUpdateNotice.pipe(
+  warnOnBackendMismatch.pipe(
+    Effect.andThen(showUpdateNotice),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(
@@ -280,15 +318,34 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A usage mistake, a missing login, or an unresolved project is not a broken invariant:
-    // print the one-line fix and exit non-zero instead of routing it through the defect
-    // reporter below.
+    // A usage mistake, a missing login, an unresolved project, or an `--account` that selects
+    // no connected account is not a broken invariant: print the one-line fix and exit non-zero
+    // instead of routing it through the defect reporter below.
     Effect.catchIf(
       (error): error is UsageFailure => isUsageFailure(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
           yield* ui.error(error.message);
+          process.exitCode = 1;
+        })
+    ),
+    // A rejected user API key gets the backend's message and the way to log in again, from
+    // whichever command it escaped.
+    Effect.catchIf(isRejectedUserApiKey, error =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error(extractMessage(error) ?? 'The user API key was rejected.');
+        yield* ui.error(yield* rejectedUserApiKeyHint);
+        process.exitCode = 1;
+      })
+    ),
+    // `composio execute` already printed the failed result as JSON on stdout; the typed
+    // failure only exists so scripts and agents see a non-zero exit code.
+    Effect.catchIf(
+      (error): error is ReportedToolExecutionError => error instanceof ReportedToolExecutionError,
+      () =>
+        Effect.sync(() => {
           process.exitCode = 1;
         })
     ),

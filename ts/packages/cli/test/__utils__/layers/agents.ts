@@ -83,6 +83,7 @@ export const AgentHandlerTest = (fixture: AgentHandlerFixture = {}) => {
           projectId: Option.none(),
           testUserId: Option.none(),
         },
+        backendMismatch: Option.none(),
         isLoggedIn: () => Option.isSome(apiKey),
         logout: Effect.void,
         login: (loginApiKey, orgId) =>

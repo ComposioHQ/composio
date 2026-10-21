@@ -4,6 +4,20 @@
 
 ### Patch Changes
 
+- `composio execute` now exits 1 when a tool execution fails: the tool
+  reported a failure, the Composio Dashboard or backend could not run it, or,
+  with `--parallel`, any one of the calls failed. It used to exit 0. Meta tools
+  behave the same. The `{"successful": false, ...}` JSON on stdout and the
+  messages on stderr are unchanged. In `composio run`, `execute()` still
+  rejects with the tool's error message and the failed result.
+
+- `composio execute` and `composio proxy` now report an `--account` that
+  matches no connected account (`No connected account matched "…"`) as one
+  line on stderr and exit 1, like other usage errors. They used to print it
+  under a `💥` banner with the error tag and a stack location, as if the CLI had
+  crashed. A failure to load the toolkit's connected accounts is reported the
+  same way. Nothing is printed on stdout.
+
 - `composio execute` now sends the execution itself (single, `--parallel`, and
   meta tools) through the Composio Dashboard instead of calling the backend
   directly. Output, exit codes, error details, connection tips, and `--json`
@@ -27,6 +41,31 @@
   `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
   ID is stored, the header is not sent. It is never sent to the backend API.
 
+- These commands now exit 1 instead of 0 when their input is missing or
+  invalid, printing the same message and example on stderr and nothing on
+  stdout. No request is sent.
+  - `composio dev auth-configs info` without an `<id>`
+  - `composio dev auth-configs create` with `--custom-credentials` that is not
+    a JSON object
+  - `composio tools info` without a `<slug>`
+  - `composio dev triggers create` without a `<trigger-name>`, or with
+    `--trigger-config` that is not a JSON object
+  - `composio dev triggers enable` without an `<id>`
+- The CLI now calls the backend you logged in to. `composio login` already
+  recorded it as `base_url` in `user_data.json`, but every command replaced it
+  with the production default unless `COMPOSIO_BASE_URL` or
+  `COMPOSIO_ENVIRONMENT` was set, so a staging login sent its key to production
+  and failed with `Invalid or revoked user API key`. Those variables still win
+  when set, and the CLI warns on stderr when one sends the stored key to a
+  different backend than the one that issued it. A key from
+  `COMPOSIO_USER_API_KEY` keeps using the backend the environment selects.
+  `composio execute` follows the same rule for the Dashboard it calls, using
+  the recorded `web_url`. `composio orgs switch` no longer rewrites the
+  recorded backend, and a key from `COMPOSIO_USER_API_KEY` is no longer written
+  to `user_data.json`. `composio login --agent` records the backend the
+  environment selects, since agents.composio.dev issued its key. A rejected
+  user API key now prints how to log in again, naming the backend and
+  Dashboard when they are not production's.
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,
