@@ -42,7 +42,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import types
 import typing as t
 
 from pydantic import BaseModel
@@ -314,8 +313,15 @@ def _resolve_single_annotation(
     *,
     localns: t.Optional[t.Mapping[str, t.Any]] = None,
 ) -> t.Any:
-    """Resolve one postponed annotation against the function's namespaces."""
-    holder = types.SimpleNamespace(__annotations__={name: annotation})
+    """Resolve one postponed annotation against the function's namespaces.
+
+    A plain function is used as the holder because ``typing.get_type_hints``
+    is documented for functions, not for arbitrary objects.
+    """
+
+    def holder() -> None: ...
+
+    holder.__annotations__ = {name: annotation}
     return t.get_type_hints(
         holder,
         globalns=getattr(fn, "__globals__", {}),
