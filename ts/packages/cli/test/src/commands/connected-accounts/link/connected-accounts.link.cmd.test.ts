@@ -300,6 +300,29 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
+
+    // Logged as decoration, this mistake vanished whenever stderr was not a TTY and the
+    // command exited 0; as a `CommandInputError` it reaches stderr and exits 1.
+    it.effect('reports a toolkit passed together with --auth-config', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'dev',
+          'connected-accounts',
+          'link',
+          'gmail',
+          '--auth-config',
+          'ac_test',
+          '--no-wait',
+        ]).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'link',
+          option: '--auth-config',
+        });
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
   });
 
   layer(

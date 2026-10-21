@@ -369,6 +369,27 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       option: '--auth-config',
       message: ROOT_AUTH_CONFIG_MESSAGE,
     },
+    {
+      name: 'a toolkit and --auth-config under dev',
+      surface: devSurface(),
+      input: { toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
+      option: '--auth-config',
+      message: TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
+    },
+    {
+      name: 'neither a toolkit nor --auth-config on the root tree',
+      surface: CommandSurface.root,
+      input: {},
+      option: '<toolkit>',
+      message: missingArgumentMessage('root'),
+    },
+    {
+      name: 'neither a toolkit nor --auth-config under dev',
+      surface: devSurface(),
+      input: {},
+      option: '<toolkit>',
+      message: missingArgumentMessage('dev'),
+    },
   ])('[Given] $name [Then] fails with a CommandInputError and sends nothing', c =>
     Effect.gen(function* () {
       const { layer, requests } = linkHandlerTest({ surface: c.surface });
@@ -383,38 +404,6 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
         option: c.option,
         message: c.message,
       });
-      expect(requests).toEqual([]);
-    })
-  );
-
-  it.effect.each([
-    {
-      name: 'a toolkit and --auth-config under dev',
-      surface: devSurface(),
-      input: { toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
-      message: TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
-    },
-    {
-      name: 'neither a toolkit nor --auth-config on the root tree',
-      surface: CommandSurface.root,
-      input: {},
-      message: missingArgumentMessage('root'),
-    },
-    {
-      name: 'neither a toolkit nor --auth-config under dev',
-      surface: devSurface(),
-      input: {},
-      message: missingArgumentMessage('dev'),
-    },
-  ])('[Given] $name [Then] prints the usage message and exits 0', c =>
-    Effect.gen(function* () {
-      const { layer, requests } = linkHandlerTest({ surface: c.surface });
-      const output = yield* runConnectedAccountsLink(params(c.input)).pipe(
-        Effect.andThen(lines),
-        Effect.provide(layer)
-      );
-
-      expect(output).toEqual([c.message]);
       expect(requests).toEqual([]);
     })
   );
@@ -463,15 +452,21 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
       input: { list: true, toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
       message: LIST_WITH_AUTH_CONFIG_MESSAGE,
     },
-  ])('[Given] $name [Then] prints why --list cannot run', c =>
+  ])('[Given] $name [Then] fails with a CommandInputError saying why --list cannot run', c =>
     Effect.gen(function* () {
-      const { layer } = linkHandlerTest();
-      const output = yield* handleListConnectedAccounts(params(c.input)).pipe(
-        Effect.andThen(lines),
+      const { layer, requests } = linkHandlerTest();
+      const error = yield* handleListConnectedAccounts(params(c.input)).pipe(
+        Effect.flip,
         Effect.provide(layer)
       );
 
-      expect(output).toEqual([c.message]);
+      expect(error).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        command: 'link',
+        option: '--list',
+        message: c.message,
+      });
+      expect(requests).toEqual([]);
     })
   );
 
@@ -622,16 +617,23 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
     })
   );
 
-  it.effect('[Given] no developer project [Then] explains the scope and sends nothing', () =>
-    Effect.gen(function* () {
-      const { layer, requests } = linkHandlerTest({ surface: devSurface({ userId: 'user_1' }) });
-      const output = yield* handleLegacyAuthConfigLink(
-        params({ authConfig: Option.some('ac_gmail') })
-      ).pipe(Effect.andThen(lines), Effect.provide(layer));
+  it.effect(
+    '[Given] no developer project [Then] fails with a CommandInputError explaining the scope and sends nothing',
+    () =>
+      Effect.gen(function* () {
+        const { layer, requests } = linkHandlerTest({ surface: devSurface({ userId: 'user_1' }) });
+        const error = yield* handleLegacyAuthConfigLink(
+          params({ authConfig: Option.some('ac_gmail') })
+        ).pipe(Effect.flip, Effect.provide(layer));
 
-      expect(output).toEqual([AUTH_CONFIG_SCOPE_MESSAGE]);
-      expect(requests).toEqual([]);
-    })
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'link',
+          option: '--auth-config',
+          message: AUTH_CONFIG_SCOPE_MESSAGE,
+        });
+        expect(requests).toEqual([]);
+      })
   );
 
   it.effect(
