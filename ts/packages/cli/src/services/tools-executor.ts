@@ -31,6 +31,7 @@ import type { CliDebugFlags } from 'src/services/runtime-flags';
 import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
+import { APP_CONFIG } from 'src/config';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import { toolInputRequiredError, type ToolInputRequiredError } from 'src/utils/tool-input-required';
 import type { NodeOs } from 'src/services/node-os';
@@ -288,6 +289,7 @@ const prepareToolExecution = (
     });
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const stagedFiles = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES);
     const preparedArguments = isMetaToolSlug(slug)
       ? params.arguments
       : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
@@ -308,6 +310,7 @@ const prepareToolExecution = (
               arguments_: params.arguments,
               inputSchema: definition.schema,
               client,
+              stagedFiles,
             }).pipe(
               Effect.catchIf(
                 isComposioError,

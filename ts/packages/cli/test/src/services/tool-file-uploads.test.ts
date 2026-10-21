@@ -154,7 +154,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           path: '/api/v3.1/files/upload/request',
           body: {
             filename: 'document.pdf',
-            mimetype: 'application/octet-stream',
+            mimetype: 'application/pdf',
             md5: '5d41402abc4b2a76b9719d911017c592',
             tool_slug: 'GMAIL_SEND_EMAIL',
             toolkit_slug: 'gmail',
@@ -172,6 +172,127 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });
+});
+
+describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const canvaSchema = {
+    type: 'object',
+    properties: {
+      file: { file_uploadable: true, type: 'object' },
+      title: { type: 'string' },
+      mime_type: { type: 'string' },
+    },
+  };
+
+  it.effect.each([
+    { onDisk: 'deck.pptx', staged: undefined, name: 'deck.pptx', mimetype: PPTX },
+    { onDisk: 'Deck.PPTX', staged: undefined, name: 'Deck.PPTX', mimetype: PPTX },
+    {
+      onDisk: 'no-extension',
+      staged: undefined,
+      name: 'no-extension',
+      mimetype: 'application/octet-stream',
+    },
+    // What its caller staged it under (a `composio run` File's own name and type)
+    // wins over the path's.
+    { onDisk: 'file-a1', staged: { name: 'deck', mimetype: PPTX }, name: 'deck', mimetype: PPTX },
+    {
+      onDisk: 'file-a1.pdf',
+      staged: { name: 'deck.pdf', mimetype: PPTX },
+      name: 'deck.pdf',
+      mimetype: PPTX,
+    },
+    { onDisk: 'file-a1.pptx', staged: { name: 'deck.pptx' }, name: 'deck.pptx', mimetype: PPTX },
+    // Names the denylist refuses on a path are only labels here.
+    {
+      onDisk: 'file-a1.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      name: '.env.example',
+      mimetype: 'text/plain',
+    },
+    {
+      onDisk: 'file-a1',
+      staged: { name: 'id_rsa' },
+      name: 'id_rsa',
+      mimetype: 'application/octet-stream',
+    },
+  ])(
+    '[Given] $onDisk staged as $staged [Then] the presign request, the PUT and the tool input carry $name and $mimetype',
+    ({ onDisk, staged, name, mimetype }) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+      const file = path.join(root, onDisk);
+      writeFileSync(file, 'PK fake pptx');
+
+      const { client, requests } = makeClient();
+      const uploadFetch = vi.fn(async (_url: string, _init: RequestInit) => ({
+        ok: true,
+        statusText: 'OK',
+      }));
+      vi.stubGlobal('fetch', uploadFetch);
+
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const result = yield* uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          arguments_: { file, title: 'Deck', mime_type: PPTX },
+          inputSchema: canvaSchema,
+          client,
+          stagedFiles: new Map(staged === undefined ? [] : [[file, staged]]),
+        });
+
+        expect(requests).toMatchObject([
+          { body: { filename: name, mimetype, toolkit_slug: 'canva' } },
+        ]);
+        expect(uploadFetch.mock.calls[0]?.[1]?.headers).toMatchObject({
+          'Content-Type': mimetype,
+        });
+        expect(result).toEqual({
+          file: { name, mimetype, s3key: 's3key-123' },
+          title: 'Deck',
+          mime_type: PPTX,
+        });
+      }).pipe(
+        Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
+
+  it.effect(
+    '[Given] a sensitive path staged under a harmless name [Then] it is still refused',
+    () =>
+      Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const { client, requests } = makeClient();
+        const envFile = path.join(os.homedir(), '.env');
+
+        // The staged-file labels rename an upload; they never exempt a path from the denylist.
+        const failure = yield* Effect.flip(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+            arguments_: { file: envFile, title: 'Deck' },
+            inputSchema: canvaSchema,
+            client,
+            stagedFiles: new Map([[envFile, { name: 'deck.pptx', mimetype: PPTX }]]),
+          })
+        );
+
+        expect(failure.cause).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
+        expect(requests).toEqual([]);
+      }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
 });
 
 describe('uploadToolInputFiles — presigned-URL request', () => {

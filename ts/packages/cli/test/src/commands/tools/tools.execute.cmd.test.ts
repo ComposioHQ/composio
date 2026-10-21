@@ -1934,7 +1934,7 @@ describe('CLI: composio execute', () => {
             recipient_email: 'a@b.com',
             attachment: {
               name: path.basename(tempFile),
-              mimetype: 'application/octet-stream',
+              mimetype: 'text/plain',
               s3key: `uploads/${path.basename(tempFile)}`,
             },
           });
@@ -1943,7 +1943,7 @@ describe('CLI: composio execute', () => {
             expect.objectContaining({
               method: 'PUT',
               headers: expect.objectContaining({
-                'Content-Type': 'application/octet-stream',
+                'Content-Type': 'text/plain',
               }),
             })
           );
@@ -2024,7 +2024,7 @@ describe('CLI: composio execute', () => {
             channels: 'C123',
             file: {
               name: path.basename(tempFile),
-              mimetype: 'application/octet-stream',
+              mimetype: 'image/png',
               s3key: `uploads/${path.basename(tempFile)}`,
             },
           });
@@ -2110,7 +2110,7 @@ describe('CLI: composio execute', () => {
             payload: {
               file: {
                 name: path.basename(tempFile),
-                mimetype: 'application/octet-stream',
+                mimetype: 'image/png',
                 s3key: `uploads/${path.basename(tempFile)}`,
               },
             },

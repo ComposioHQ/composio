@@ -6,4 +6,11 @@ describe('getExtensionFromMimeType', () => {
     expect(getExtensionFromMimeType('image/png')).toBe('png');
     expect(getExtensionFromMimeType('application/pdf')).toBe('pdf');
   });
+
+  it.each(['constructor', '__proto__', 'toString', 'hasOwnProperty'])(
+    'does not return an Object.prototype member for %j',
+    mimeType => {
+      expect(getExtensionFromMimeType(mimeType)).toBe('bin');
+    }
+  );
 });

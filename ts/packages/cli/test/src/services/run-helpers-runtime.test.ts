@@ -1,5 +1,7 @@
+import * as path from 'node:path';
 import { inspect } from 'node:util';
 import { Predicate } from 'effect';
+import { isBlockedSensitiveFileUploadPath } from '@composio/core';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
 import { ToolInputRequiredError } from 'src/utils/tool-input-required';
@@ -358,6 +360,75 @@ describe('run-helpers-runtime', () => {
       message: 'User not found',
       slug: 'HACKERNEWS_GET_USER',
       result: { successful: false, error: 'User not found' },
+    });
+  });
+
+  it("[Given] File and Blob arguments [Then] the spawned `composio execute` gets generated paths, and each one's own name and type beside them", async () => {
+    // Echoes the `--data` JSON and the staged files it was spawned with, and
+    // whether each staged file exists.
+    const childScript = [
+      'const fs = require("node:fs");',
+      'const data = JSON.parse(process.argv[process.argv.indexOf("--data") + 1]);',
+      'const stagedFiles = JSON.parse(process.env.COMPOSIO_RUN_STAGED_FILES);',
+      'const exists = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, fs.existsSync(v)]));',
+      'console.log(JSON.stringify({ successful: true, data: { data, stagedFiles, exists } }));',
+    ].join('\n');
+    // A value the run process inherited must not reach the child.
+    vi.stubEnv('COMPOSIO_RUN_STAGED_FILES', '{"/stale":{"name":"stale.txt"}}');
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+    const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    const result = await readInstalledFunction('execute')('CANVA_CREATE_DESIGN_IMPORT_JOB', {
+      named: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      sameName: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      extensionless: new File(['PK'], 'deck', { type: PPTX }),
+      traversal: new File(['PK'], '../escape.pptx', { type: PPTX }),
+      untyped: new File(['hi'], 'notes.txt'),
+      envExample: new File(['EXAMPLE=value'], '.env.example', { type: 'text/plain' }),
+      privateKeyName: new File(['not a key'], 'keys/id_rsa'),
+      blob: new Blob(['PK'], { type: PPTX }),
+    });
+
+    assert(
+      Predicate.hasProperty(result, 'data') &&
+        Predicate.hasProperty(result.data, 'data') &&
+        Predicate.isObject(result.data.data) &&
+        Predicate.hasProperty(result.data, 'stagedFiles')
+    );
+    const staged = result.data.data;
+    const stagedPaths = Object.values(staged).map(String);
+    // Every File is staged under a generated name, with its extension when it has one…
+    expect(stagedPaths.map(stagedPath => path.basename(stagedPath))).toEqual([
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.txt$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.example$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+    ]);
+    // …that the child's denylist does not refuse, and that two Files with one name do not share.
+    expect(stagedPaths.filter(stagedPath => isBlockedSensitiveFileUploadPath(stagedPath))).toEqual(
+      []
+    );
+    expect(new Set(stagedPaths).size).toBe(stagedPaths.length);
+    expect(result.data).toMatchObject({
+      exists: Object.fromEntries(Object.keys(staged).map(key => [key, true])),
+    });
+    // The child uploads each one under its own name and type.
+    expect(result.data.stagedFiles).toEqual({
+      [String(staged.named)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.sameName)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.extensionless)]: { name: 'deck', mimetype: PPTX },
+      [String(staged.traversal)]: { name: 'escape.pptx', mimetype: PPTX },
+      [String(staged.untyped)]: { name: 'notes.txt' },
+      [String(staged.envExample)]: { name: '.env.example', mimetype: 'text/plain' },
+      [String(staged.privateKeyName)]: { name: 'id_rsa' },
+      [String(staged.blob)]: {
+        name: expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+        mimetype: PPTX,
+      },
     });
   });
 
