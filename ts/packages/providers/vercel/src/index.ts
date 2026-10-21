@@ -75,9 +75,10 @@ export class VercelProvider extends BaseAgenticProvider<
    * ```
    *
    * @param options.strict - Rewrites each tool's input schema into the form
-   * OpenAI strict mode accepts. It does not set the AI SDK's per-tool `strict`
-   * flag, so the model provider does not enforce the schema. Anthropic strict
-   * mode rejects requests with typical sets of rewritten tools; see the README.
+   * OpenAI strict mode accepts, and validates tool-call arguments against it.
+   * It does not set the AI SDK's per-tool `strict` flag, so the model provider
+   * does not enforce the schema. Anthropic strict mode rejects requests with
+   * typical sets of rewritten tools; see the README.
    */
   constructor({ strict = false }: { strict?: boolean } = {}) {
     super();
