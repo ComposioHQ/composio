@@ -15,6 +15,7 @@ import {
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import {
+  findLocalPathArguments,
   schemaHasFileUploadable,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -371,5 +372,185 @@ describe('uploadToolInputFiles — URL download size cap', () => {
       expect(failure.message).toMatch(/exceeds maximum allowed size/);
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+  });
+});
+
+// TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD as the API serves it (issue #4965):
+// `file` is described as a local file but is not `file_uploadable`.
+const trelloAttachmentSchema = {
+  type: 'object',
+  required: ['idCard'],
+  properties: {
+    idCard: { type: 'string', description: 'ID or shortLink of the Trello card.' },
+    url: {
+      type: 'string',
+      description:
+        "URL of an external resource to attach if not uploading a `file`. Must start with 'http://' or 'https://'.",
+    },
+    file: {
+      type: 'string',
+      title: 'File',
+      description: 'Path to the local file to attach if not linking a `url`.',
+    },
+  },
+};
+
+describe('uploadToolInputFiles — local file for an input that is not file_uploadable (issue #4965)', () => {
+  const withTempFile = <A, E, R>(
+    use: (paths: { readonly root: string; readonly file: string }) => Effect.Effect<A, E, R>
+  ) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'photo.jpg');
+    writeFileSync(file, 'jpeg bytes');
+    return use({ root, file }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  };
+
+  const run = (arguments_: Record<string, unknown>, schema: Record<string, unknown>) =>
+    Effect.gen(function* () {
+      const { client, requests } = makeClient();
+      const result = yield* uploadToolInputFiles({
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        toolSlug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+        arguments_,
+        inputSchema: schema,
+        client,
+      }).pipe(Effect.result);
+      return { result, requests };
+    });
+
+  it.effect('fails before anything is sent when the argument names a local file', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result, requests } = yield* run({ idCard: 'card', file }, trelloAttachmentSchema);
+
+        const failure = yield* Effect.flip(Effect.fromResult(result));
+        expect(failure).toBeInstanceOf(ToolFileUploadError);
+        expect(failure).toMatchObject({ reason: 'not-uploadable' });
+        expect(failure.message).toContain(`"file" (${file})`);
+        expect(failure.message).toContain('Nothing was executed');
+        expect(requests).toEqual([]);
+      })
+    )
+  );
+
+  it.effect('names every offending argument, including ones nested in arrays', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result } = yield* run(
+          { files: [{ file_path: file }, { content: 'inline' }] },
+          {
+            type: 'object',
+            properties: {
+              files: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    file_path: {
+                      type: 'string',
+                      description: 'Local filesystem path to the file.',
+                    },
+                    content: { type: 'string' },
+                  },
+                },
+              },
+            },
+          }
+        );
+
+        const failure = yield* Effect.flip(Effect.fromResult(result));
+        expect(failure.message).toContain(`"files.0.file_path" (${file})`);
+      })
+    )
+  );
+
+  it.effect('passes a path that does not exist here through, as it may be remote', () =>
+    withTempFile(({ root }) =>
+      Effect.gen(function* () {
+        const remote = path.join(root, 'missing', 'report.pdf');
+        const { result, requests } = yield* run(
+          { idCard: 'card', file: remote },
+          trelloAttachmentSchema
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({ idCard: 'card', file: remote });
+        expect(requests).toEqual([]);
+      })
+    )
+  );
+
+  it.effect.each([
+    { name: 'a directory', value: (root: string) => root },
+    { name: 'a URL', value: () => 'https://example.com/photo.jpg' },
+    { name: 'a bare word', value: () => 'photo' },
+  ])('passes $name through', ({ value }) =>
+    withTempFile(({ root }) =>
+      Effect.gen(function* () {
+        const file = value(root);
+        const { result } = yield* run({ idCard: 'card', file }, trelloAttachmentSchema);
+        expect(yield* Effect.fromResult(result)).toEqual({ idCard: 'card', file });
+      })
+    )
+  );
+
+  it.effect('leaves an existing file alone when the input is a repository path', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result } = yield* run(
+          { path: file },
+          {
+            type: 'object',
+            properties: {
+              path: {
+                type: 'string',
+                description: 'The full path to the file in the repository, including the filename.',
+              },
+            },
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({ path: file });
+      })
+    )
+  );
+
+  it('reads the description of an optional input from its non-null variant', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: {
+              anyOf: [
+                { type: 'string', description: 'Local file path of the video to upload.' },
+                { type: 'null' },
+              ],
+            },
+          },
+        }
+      )
+    ).toEqual([{ argumentPath: ['file'], value: '/tmp/photo.jpg' }]);
+  });
+
+  it('skips an input that also accepts an upload', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: {
+              description: 'Path to the local file to upload.',
+              anyOf: [{ file_uploadable: true }, { type: 'string' }],
+            },
+          },
+        }
+      )
+    ).toEqual([]);
   });
 });

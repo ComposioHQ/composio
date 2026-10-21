@@ -22,7 +22,8 @@ const loadSsrfSafeFetch = Effect.promise(() => import('@composio/core/utils/ssrf
 export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUploadError')<{
   readonly cause?: unknown;
   readonly message: string;
-  readonly reason: 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
+  readonly reason:
+    'not-uploadable' | 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
   readonly status?: number;
 }> {}
 
@@ -173,6 +174,119 @@ export const findFileUploadablePaths = (
     return true;
   });
 };
+
+// Wording of inputs that take a file on the caller's machine, as the tool
+// catalog writes it: "Path to the local file to attach", "Local filesystem path
+// to the file to upload", "Path to the file to upload".
+const LOCAL_FILE_DESCRIPTION =
+  /\blocal(?:ly)?[\s-]+(?:file|path|filesystem|file\s*system|disk)\b|\bpath\b[^.]{0,40}\bfile\b[^.]{0,40}\bupload/i;
+
+const describesLocalFile = (schema: JsonSchema): boolean =>
+  [schema.title, schema.description].some(
+    text => Predicate.isString(text) && LOCAL_FILE_DESCRIPTION.test(text)
+  );
+
+// A path-shaped value: a separator or an extension, and no URL scheme. Keeps a
+// bare word such as "claude_code" from matching a file of that name.
+const looksLikeFilePath = (path: Path.Path, value: string): boolean =>
+  !/^[a-z][a-z0-9+.-]*:\/\//i.test(value) &&
+  (value.includes('/') || value.includes('\\') || path.extname(value) !== '');
+
+type LocalPathArgument = {
+  readonly argumentPath: ReadonlyArray<string>;
+  readonly value: string;
+};
+
+/**
+ * The string arguments a schema describes as a local file without marking
+ * them `file_uploadable`. Composio runs the tool remotely and only uploads
+ * `file_uploadable` inputs, so such an argument reaches the tool as the text of
+ * the path, never as the file.
+ */
+export const findLocalPathArguments = (
+  value: unknown,
+  schema: JsonSchema | undefined,
+  argumentPath: ReadonlyArray<string> = []
+): ReadonlyArray<LocalPathArgument> => {
+  if (!schema || schema.file_uploadable === true) return [];
+
+  if (Predicate.isString(value)) {
+    // An input with an uploadable variant is uploaded by `hydrateFileUploads`.
+    if (schemaHasFileUploadable(schema)) return [];
+    return describesLocalFile(schema) || getSchemaVariants(schema).some(describesLocalFile)
+      ? [{ argumentPath, value }]
+      : [];
+  }
+
+  const variantArguments = getSchemaVariants(schema).flatMap(variant =>
+    findLocalPathArguments(value, variant, argumentPath)
+  );
+
+  if (Array.isArray(value)) {
+    const itemSchema = getItemSchemas(schema.items).at(0);
+    return [
+      ...variantArguments,
+      ...value.flatMap((item, index) =>
+        findLocalPathArguments(item, itemSchema, [...argumentPath, String(index)])
+      ),
+    ];
+  }
+
+  const properties = schema.properties;
+  if (isSchemaRecord(properties) && Predicate.isObject(value)) {
+    return [
+      ...variantArguments,
+      ...Object.entries(value).flatMap(([key, entry]) =>
+        findLocalPathArguments(
+          entry,
+          isSchemaRecord(properties[key]) ? properties[key] : undefined,
+          [...argumentPath, key]
+        )
+      ),
+    ];
+  }
+
+  return variantArguments;
+};
+
+/**
+ * Fails when an argument the schema describes as a local file names a file
+ * that exists on this machine but the input is not `file_uploadable`: the tool
+ * would get the path text instead of the file and still report success
+ * (issue #4965). A path that does not exist here is left alone, since it may
+ * name a file on the remote side.
+ */
+const rejectLocalFilesWithoutUpload = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+  readonly toolSlug: string;
+  readonly arguments_: Record<string, unknown>;
+  readonly inputSchema: JsonSchema;
+}) =>
+  Effect.gen(function* () {
+    const candidates = findLocalPathArguments(params.arguments_, params.inputSchema).filter(
+      candidate => looksLikeFilePath(params.path, candidate.value)
+    );
+    const localFiles = yield* Effect.filter(candidates, candidate =>
+      params.fs.stat(candidate.value).pipe(
+        Effect.map(info => info.type === 'File'),
+        Effect.orElseSucceed(() => false)
+      )
+    );
+    if (localFiles.length === 0) return;
+
+    const named = localFiles
+      .map(({ argumentPath, value }) => `"${argumentPath.join('.')}" (${value})`)
+      .join(', ');
+    return yield* new ToolFileUploadError({
+      reason: 'not-uploadable',
+      message:
+        `${params.toolSlug} cannot upload local files: ${named} names a file on this machine, ` +
+        'but the tool does not mark that input as a file upload, so Composio would receive the ' +
+        'path text instead of the file content. Nothing was executed. Use a URL input if the ' +
+        'tool has one, or report the tool schema to Composio.',
+    });
+  });
 
 const readFileFromUrl = (path: Path.Path, url: string) =>
   Effect.gen(function* () {
@@ -400,6 +514,8 @@ export const uploadToolInputFiles = (params: {
   readonly toolkitSlug?: string;
 }): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
   Effect.gen(function* () {
+    yield* rejectLocalFilesWithoutUpload(params);
+
     if (!schemaHasFileUploadable(params.inputSchema)) {
       return params.arguments_;
     }
