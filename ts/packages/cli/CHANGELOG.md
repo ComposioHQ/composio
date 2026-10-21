@@ -11,6 +11,33 @@
   `--auth-config`. They used to exit 0, and printed the message only when
   stderr was a terminal, so scripts, CI and agents saw no output and a
   successful exit. The messages are unchanged.
+- These commands now exit 1 and print their message on stderr. They used to
+  exit 0, and printed the message only when stderr was a terminal, so scripts,
+  CI and agents saw no output and a successful exit. The messages are
+  unchanged.
+  - Missing input, before any request: `composio whoami` without a login,
+    `composio dev init` without a stored API key or org,
+    `composio dev projects list` without `--org-id` or a current org,
+    `composio triggers info` and `composio dev triggers info` without a
+    `<slug>`, `composio dev toolkits info` without a `<slug>`,
+    `composio dev triggers disable` without an `<id>`,
+    `composio dev connected-accounts info` and
+    `composio dev connected-accounts whoami` without an `<id>`, and
+    `composio connections remove` with a selector that matches no connection
+    or more than one.
+  - Failures after a request: `composio dev toolkits info` for a toolkit it
+    cannot fetch or find, `composio dev toolkits version` for a toolkit it
+    cannot fetch, `composio dev init` in an org without projects, and
+    `composio link` and `composio dev connected-accounts link` when the link
+    request fails, the link response is incomplete, the `--alias` is already
+    taken, or an account already exists and no `--alias` was passed.
+- These commands already exited 1 but printed their message only when stderr
+  was a terminal; they now print it on stderr either way:
+  `composio dev toolkits list` and `composio dev toolkits search` when the
+  request fails, `composio listen`, `composio dev listen` and
+  `composio dev triggers listen` when the realtime subscription fails, and
+  the `composio agent` commands, `composio signup` and `composio login` when
+  the stored agent identity can't be used.
 
 ## 0.5.0
 
