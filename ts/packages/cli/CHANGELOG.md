@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- `composio execute` now exits 1 when a tool execution fails: the tool
+  reported a failure, the Composio Dashboard or backend could not run it, or,
+  with `--parallel`, any one of the calls failed. It used to exit 0. Meta tools
+  behave the same. The `{"successful": false, ...}` JSON on stdout and the
+  messages on stderr are unchanged. In `composio run`, `execute()` still
+  rejects with the tool's error message and the failed result.
+
 - `composio execute` now sends the execution itself (single, `--parallel`, and
   meta tools) through the Composio Dashboard instead of calling the backend
   directly. Output, exit codes, error details, connection tips, and `--json`

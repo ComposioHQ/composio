@@ -72,6 +72,7 @@ import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install/install.errors';
+import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
@@ -338,6 +339,15 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
         yield* ui.error(yield* rejectedUserApiKeyHint);
         process.exitCode = 1;
       })
+    ),
+    // `composio execute` already printed the failed result as JSON on stdout; the typed
+    // failure only exists so scripts and agents see a non-zero exit code.
+    Effect.catchIf(
+      (error): error is ReportedToolExecutionError => error instanceof ReportedToolExecutionError,
+      () =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
     ),
     Effect.catchIf(
       (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,
