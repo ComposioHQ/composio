@@ -38,6 +38,9 @@ setup(
         # `NameResolutionError` and different connection internals.
         # 2.7.0 fixes GHSA-mf9v-mfxr-j63j and GHSA-qccp-gfcp-xxvc.
         "urllib3>=2.7.0",
+        # `requests` verifies TLS against certifi's bundle. 2026.10.19 drops
+        # the emSign ECC Root CA - G3 root (compromised eMudhra intermediates).
+        "certifi>=2026.10.19",
     ],
     include_package_data=True,
 )
