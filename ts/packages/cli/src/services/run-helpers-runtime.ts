@@ -229,21 +229,18 @@ const attachPromptMethod = <T>(value: T): T => {
 
 const isPlainObjectForExecute = Predicate.isObject;
 
-const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
-  if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
+// The extension of the name a nameless Blob is staged under. Cosmetic: the Blob's
+// type reaches the upload through `COMPOSIO_RUN_FILE_MIME_TYPES`, not through this
+// extension. A subtype that is not a plain token (`vnd.openxmlformats-…`) is `bin`.
+const runFileExtensionFromMimeType = (mimeType: string): string => {
   const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
   const explicit: Record<string, string> = {
     'text/plain': 'txt',
-    'application/json': 'json',
-    'application/pdf': 'pdf',
     'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
   };
   if (explicit[normalized]) return explicit[normalized];
-  const subtype = normalized.split('/')[1] || 'bin';
-  return subtype.includes('+') ? (subtype.split('+').pop() ?? 'bin') : subtype;
+  const subtype = normalized.split('/')[1]?.split('+').pop() ?? '';
+  return /^[a-z0-9]{1,10}$/.test(subtype) ? subtype : 'bin';
 };
 
 const describeDebugValue = (value: unknown) => {
@@ -388,47 +385,64 @@ const createRunHelperLoggers = (params: {
   return { perfDebugLog, helperDebugLog };
 };
 
+/**
+ * An `execute()` payload with every File and Blob written to disk: the spawned
+ * `composio execute` takes `--data` JSON, so each one becomes its staged path.
+ */
+type MaterializedExecutePayload = {
+  readonly payload: unknown;
+  /**
+   * Staged path -> the File or Blob's own `type`, for the ones that have one.
+   * A path carries no type, so the child receives these through
+   * `COMPOSIO_RUN_FILE_MIME_TYPES` and prefers them to the extension's.
+   */
+  readonly fileMimeTypes: Readonly<Record<string, string>>;
+};
+
 const createExecutePayloadMaterializer = (params: {
   readonly path: Path.Path;
   readonly tmpdir: string;
   readonly sharedRunOutputDir: string | null;
-}): ((value: unknown) => Promise<unknown>) => {
+}): ((value: unknown) => Promise<MaterializedExecutePayload>) => {
   const { path, tmpdir, sharedRunOutputDir } = params;
 
-  const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
-    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
-    fs.mkdirSync(outputDir, { recursive: true });
-    if (typeof File !== 'undefined' && value instanceof File) {
-      const safeName =
-        typeof value.name === 'string' && value.name.trim().length > 0
-          ? value.name
-          : `file-${executeId()}.${runFileExtensionFromMimeType(value.type)}`;
-      const filePath = path.join(outputDir, `${executeId()}-${safeName}`);
-      fs.writeFileSync(filePath, new Uint8Array(await value.arrayBuffer()));
-      return filePath;
-    }
-    if (typeof Blob !== 'undefined' && value instanceof Blob) {
-      const filePath = path.join(
-        outputDir,
-        `${executeId()}.${runFileExtensionFromMimeType(value.type)}`
-      );
-      fs.writeFileSync(filePath, new Uint8Array(await value.arrayBuffer()));
-      return filePath;
-    }
-    return value;
+  // A File keeps its own name (the upload sends it as the file's name), in a
+  // directory of its own so two Files with one name do not collide.
+  const stagedFileName = (blob: Blob): string => {
+    const baseName = blob instanceof File ? path.basename(blob.name).trim() : '';
+    return baseName.length > 0 && baseName !== '.' && baseName !== '..'
+      ? baseName
+      : `file-${executeId()}.${runFileExtensionFromMimeType(blob.type)}`;
   };
 
-  const materializeExecutePayload = async (value: unknown): Promise<unknown> => {
-    if (typeof File !== 'undefined' && value instanceof File) return writeTempExecuteFile(value);
-    if (typeof Blob !== 'undefined' && value instanceof Blob) return writeTempExecuteFile(value);
+  const writeTempExecuteFile = async (
+    blob: Blob,
+    fileMimeTypes: Record<string, string>
+  ): Promise<string> => {
+    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
+    const fileDir = path.join(outputDir, executeId());
+    fs.mkdirSync(fileDir, { recursive: true });
+    const filePath = path.join(fileDir, stagedFileName(blob));
+    fs.writeFileSync(filePath, new Uint8Array(await blob.arrayBuffer()));
+    if (blob.type.trim().length > 0) fileMimeTypes[filePath] = blob.type;
+    return filePath;
+  };
+
+  const materialize = async (
+    value: unknown,
+    fileMimeTypes: Record<string, string>
+  ): Promise<unknown> => {
+    if (typeof Blob !== 'undefined' && value instanceof Blob) {
+      return writeTempExecuteFile(value, fileMimeTypes);
+    }
     if (Array.isArray(value)) {
-      return Promise.all(value.map(item => materializeExecutePayload(item)));
+      return Promise.all(value.map(item => materialize(item, fileMimeTypes)));
     }
     if (isPlainObjectForExecute(value)) {
       const entries = await Promise.all(
         Object.entries(value).map(async ([key, entryValue]) => [
           key,
-          await materializeExecutePayload(entryValue),
+          await materialize(entryValue, fileMimeTypes),
         ])
       );
       return Object.fromEntries(entries);
@@ -436,11 +450,20 @@ const createExecutePayloadMaterializer = (params: {
     return value;
   };
 
-  return materializeExecutePayload;
+  return async value => {
+    const fileMimeTypes: Record<string, string> = {};
+    const payload = await materialize(value, fileMimeTypes);
+    return { payload, fileMimeTypes };
+  };
 };
 
 const isReportedFailure = (result: RunCliResult): boolean =>
   Predicate.isObject(result) && result.successful === false;
+
+type RunCliJson = (
+  args: ReadonlyArray<string>,
+  extraEnv?: Readonly<Record<string, string>>
+) => Promise<RunCliResult>;
 
 const createCliRunner = (params: {
   readonly cliPrefix: ReadonlyArray<string>;
@@ -449,7 +472,7 @@ const createCliRunner = (params: {
   readonly perfDebugEnabled: boolean;
   readonly toolDebugEnabled: boolean;
   readonly loggers: RunHelperLoggers;
-}): ((args: ReadonlyArray<string>) => Promise<RunCliResult>) => {
+}): RunCliJson => {
   const { cliPrefix, helperContext, sharedRunOutputDir, perfDebugEnabled, toolDebugEnabled } =
     params;
   const { perfDebugLog, helperDebugLog } = params.loggers;
@@ -520,7 +543,10 @@ const createCliRunner = (params: {
     }),
   };
 
-  const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
+  const runCliJson = async (
+    args: ReadonlyArray<string>,
+    extraEnv: Readonly<Record<string, string>> = {}
+  ): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
     perfDebugLog('start', requestId, { cmd: args });
@@ -530,7 +556,7 @@ const createCliRunner = (params: {
       Effect.scoped(
         Effect.gen(function* () {
           const child = yield* Command.make(executable, commandArgs, {
-            env,
+            env: { ...env, ...extraEnv },
             extendEnv: true,
             stdin: 'inherit',
             stderr: inheritStderr ? 'inherit' : 'pipe',
@@ -598,8 +624,8 @@ const createCliRunner = (params: {
 const createSearchAndExecuteHelpers = (params: {
   readonly helperContext: RunHelperContext;
   readonly sharedRunOutputDir: string | null;
-  readonly runCliJson: (args: ReadonlyArray<string>) => Promise<RunCliResult>;
-  readonly materializeExecutePayload: (value: unknown) => Promise<unknown>;
+  readonly runCliJson: RunCliJson;
+  readonly materializeExecutePayload: (value: unknown) => Promise<MaterializedExecutePayload>;
   readonly helperDebugLog: HelperDebugLog;
 }) => {
   const {
@@ -645,8 +671,12 @@ const createSearchAndExecuteHelpers = (params: {
     if (typeof options.account === 'string' && options.account.trim().length > 0) {
       args.push('--account', options.account.trim());
     }
+    // Always set, so a value this process inherited never reaches the child.
+    let fileMimeTypes: Readonly<Record<string, string>> = {};
     if (data !== undefined) {
-      const preparedData = await materializeExecutePayload(data);
+      const materialized = await materializeExecutePayload(data);
+      const preparedData = materialized.payload;
+      fileMimeTypes = materialized.fileMimeTypes;
       const serialized =
         typeof preparedData === 'string' ? preparedData : JSON.stringify(preparedData);
       if (sharedRunOutputDir) {
@@ -657,7 +687,9 @@ const createSearchAndExecuteHelpers = (params: {
         args.push('--data', serialized);
       }
     }
-    const result = await runCliJson(args);
+    const result = await runCliJson(args, {
+      COMPOSIO_RUN_FILE_MIME_TYPES: JSON.stringify(fileMimeTypes),
+    });
     if (Predicate.isObject(result) && result.successful === false) {
       const message =
         typeof result.error === 'string' && result.error.trim().length > 0

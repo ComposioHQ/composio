@@ -363,7 +363,11 @@ const fakeComposio = (req: IncomingMessage, res: ServerResponse) => {
 /** Shorter than the tests' 30s timeout. */
 const CLI_DEADLINE_MS = 20_000;
 
-const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
+const runCliAgainst = (
+  baseUrl: string,
+  args: ReadonlyArray<string>,
+  extraEnv: Readonly<Record<string, string>> = {}
+) => {
   const configDirectory = tempy.temporaryDirectory();
   fs.writeFileSync(
     path.join(configDirectory, 'user_data.json'),
@@ -394,6 +398,7 @@ const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
           COMPOSIO_BASE_URL: baseUrl,
           COMPOSIO_WEB_URL: baseUrl,
           COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+          ...extraEnv,
         },
       });
       let stdout = '';
@@ -523,6 +528,88 @@ describe('account selection errors', () => {
         expect(result.stderr).not.toContain('ConnectedAccountResolutionError');
         expect(result.stderr).not.toContain('composio-cli');
       }),
+    30_000
+  );
+});
+
+describe('local file uploads', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+  // Records the presigned-URL request, then refuses it so no upload is attempted.
+  const fakeUploadBackend =
+    (presignRequests: Array<unknown>) => (req: IncomingMessage, res: ServerResponse) => {
+      const { pathname } = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (/^\/api\/v3(\.1)?\/tools\/CANVA_CREATE_DESIGN_IMPORT_JOB$/u.test(pathname)) {
+        return sendJson(res, 200, {
+          slug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          name: 'Create Design Import Job',
+          description: '',
+          version: '20260101_00',
+          available_versions: ['20260101_00'],
+          input_parameters: {
+            type: 'object',
+            properties: {
+              file: { type: 'object', file_uploadable: true },
+              title: { type: 'string' },
+            },
+          },
+          output_parameters: {},
+          tags: [],
+        });
+      }
+      if (pathname.endsWith('/files/upload/request')) {
+        const chunks: Array<Buffer> = [];
+        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        req.on('end', () => {
+          presignRequests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          sendJson(res, 400, { error: { message: 'stop here', status: 400 } });
+        });
+        return;
+      }
+      fakeComposio(req, res);
+    };
+
+  it.each([
+    { name: 'a .pptx path', fileName: 'deck.pptx', env: {}, mimetype: PPTX },
+    {
+      name: 'an extensionless path `composio run` declared a type for',
+      fileName: 'deck',
+      env: (file: string) => ({ COMPOSIO_RUN_FILE_MIME_TYPES: JSON.stringify({ [file]: PPTX }) }),
+      mimetype: PPTX,
+    },
+    {
+      name: 'an extensionless path with no declared type',
+      fileName: 'deck',
+      env: {},
+      mimetype: 'application/octet-stream',
+    },
+  ])(
+    '[Given] $name [Then] `composio execute --file` requests the upload as $mimetype',
+    ({ fileName, env, mimetype }) => {
+      const directory = tempy.temporaryDirectory();
+      const file = path.join(directory, fileName);
+      fs.writeFileSync(file, 'PK fake pptx');
+      const presignRequests: Array<unknown> = [];
+      return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+        await runCliAgainst(
+          baseUrl,
+          [
+            'execute',
+            'CANVA_CREATE_DESIGN_IMPORT_JOB',
+            '--skip-connection-check',
+            '--file',
+            file,
+            '-d',
+            '{"title":"Deck"}',
+          ],
+          typeof env === 'function' ? env(file) : env
+        );
+
+        expect(presignRequests).toEqual([
+          expect.objectContaining({ filename: fileName, mimetype, toolkit_slug: 'canva' }),
+        ]);
+      });
+    },
     30_000
   );
 });

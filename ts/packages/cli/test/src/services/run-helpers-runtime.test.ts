@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import { inspect } from 'node:util';
 import { Predicate } from 'effect';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
@@ -358,6 +359,60 @@ describe('run-helpers-runtime', () => {
       message: 'User not found',
       slug: 'HACKERNEWS_GET_USER',
       result: { successful: false, error: 'User not found' },
+    });
+  });
+
+  it('[Given] File and Blob arguments [Then] the spawned `composio execute` gets paths that keep their names, and their types beside them', async () => {
+    // Echoes the `--data` JSON and the declared types it was spawned with, and
+    // whether each staged file exists.
+    const childScript = [
+      'const fs = require("node:fs");',
+      'const data = JSON.parse(process.argv[process.argv.indexOf("--data") + 1]);',
+      'const mimeTypes = JSON.parse(process.env.COMPOSIO_RUN_FILE_MIME_TYPES);',
+      'const exists = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, fs.existsSync(v)]));',
+      'console.log(JSON.stringify({ successful: true, data: { data, mimeTypes, exists } }));',
+    ].join('\n');
+    // A value the run process inherited must not reach the child.
+    vi.stubEnv('COMPOSIO_RUN_FILE_MIME_TYPES', '{"/stale":"text/plain"}');
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+    const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    const result = await readInstalledFunction('execute')('CANVA_CREATE_DESIGN_IMPORT_JOB', {
+      named: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      sameName: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      extensionless: new File(['PK'], 'deck', { type: PPTX }),
+      traversal: new File(['PK'], '../escape.pptx', { type: PPTX }),
+      untyped: new File(['hi'], 'notes.txt'),
+      blob: new Blob(['PK'], { type: PPTX }),
+    });
+
+    assert(
+      Predicate.hasProperty(result, 'data') &&
+        Predicate.hasProperty(result.data, 'data') &&
+        Predicate.isObject(result.data.data) &&
+        Predicate.hasProperty(result.data, 'mimeTypes')
+    );
+    const staged = result.data.data;
+    expect(Object.values(staged).map(value => path.basename(String(value)))).toEqual([
+      'deck.pptx',
+      'deck.pptx',
+      'deck',
+      'escape.pptx',
+      'notes.txt',
+      expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+    ]);
+    // Two Files with one name do not overwrite each other.
+    expect(staged.named).not.toBe(staged.sameName);
+    expect(result.data).toMatchObject({
+      exists: Object.fromEntries(Object.keys(staged).map(key => [key, true])),
+    });
+    // Every typed File or Blob declares its own type, whatever its name says.
+    expect(result.data.mimeTypes).toEqual({
+      [String(staged.named)]: PPTX,
+      [String(staged.sameName)]: PPTX,
+      [String(staged.extensionless)]: PPTX,
+      [String(staged.traversal)]: PPTX,
+      [String(staged.blob)]: PPTX,
     });
   });
 

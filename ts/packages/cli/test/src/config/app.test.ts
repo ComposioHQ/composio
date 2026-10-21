@@ -34,6 +34,7 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: undefined,
         CLI_PARENT_RUN_ID: undefined,
         RUN_OUTPUT_DIR: undefined,
+        RUN_FILE_MIME_TYPES: new Map(),
         DISABLE_CONNECTED_ACCOUNT_CACHE: true,
         TOOLKIT_VERSIONS: Option.none(),
       });
@@ -67,6 +68,7 @@ describe('APP_CONFIG', () => {
         COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
         COMPOSIO_CLI_PARENT_RUN_ID: 'run_parent',
         COMPOSIO_RUN_OUTPUT_DIR: '\t/tmp/composio-output\n',
+        COMPOSIO_RUN_FILE_MIME_TYPES: '{"/tmp/composio-output/a1/deck":"application/pdf"}',
         COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'OFF',
         COMPOSIO_TOOLKIT_VERSION_GMAIL: '20250901_00',
       });
@@ -92,10 +94,22 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: 'run',
         CLI_PARENT_RUN_ID: 'run_parent',
         RUN_OUTPUT_DIR: '/tmp/composio-output',
+        RUN_FILE_MIME_TYPES: new Map([['/tmp/composio-output/a1/deck', 'application/pdf']]),
         DISABLE_CONNECTED_ACCOUNT_CACHE: false,
         TOOLKIT_VERSIONS: Option.some({ GMAIL: '20250901_00' }),
       });
     })
+  );
+
+  it.effect.each(['not json', '["a"]', '{"/a":1}'])(
+    '[Given] COMPOSIO_RUN_FILE_MIME_TYPES=%s [Then] it reads as no types',
+    value =>
+      Effect.gen(function* () {
+        deepStrictEqual(
+          yield* read(APP_CONFIG.RUN_FILE_MIME_TYPES, { COMPOSIO_RUN_FILE_MIME_TYPES: value }),
+          new Map()
+        );
+      })
   );
 
   it.effect('[Given] COMPOSIO_ENVIRONMENT [Then] it picks the URL defaults', () =>

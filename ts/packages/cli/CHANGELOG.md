@@ -1,5 +1,22 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio execute --file` and file paths in `-d` now upload a local file with
+  the MIME type of its extension, so a `.pptx` uploads as
+  `application/vnd.openxmlformats-officedocument.presentationml.presentation`.
+  Every local file used to upload as `application/octet-stream`, which tools
+  that check the type, such as `CANVA_CREATE_DESIGN_IMPORT_JOB`, rejected.
+  Files with no or an unknown extension still upload as
+  `application/octet-stream`.
+
+- In `composio run`, a `File` or `Blob` passed to `execute()` now uploads with
+  its own `type`, even when its name has no extension, and a `File` keeps its
+  name. It used to upload as `application/octet-stream` under a name with a
+  random prefix, such as `1bfa14f5-deck.pptx`.
+
 ## 0.5.0
 
 ### Minor Changes
