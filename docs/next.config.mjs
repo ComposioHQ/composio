@@ -835,6 +835,11 @@ const config = {
       },
       // Docs pages that moved or don't exist
       {
+        source: '/docs/getting-started',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
+      {
         source: '/docs/resources/:path*',
         destination: '/docs',
         permanent: true,
