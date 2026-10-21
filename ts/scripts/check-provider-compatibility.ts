@@ -48,7 +48,7 @@ const PROVIDER_CONTRACTS: Record<
   '@composio/llamaindex': {
     agentic: true,
     exportName: 'LlamaindexProvider',
-    verifiedMinimumCore: '0.11.0',
+    verifiedMinimumCore: '0.14.0',
   },
   '@composio/mastra': {
     agentic: true,
