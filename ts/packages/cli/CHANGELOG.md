@@ -1,5 +1,16 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- `composio upgrade` no longer starts with a stale "Update available" line.
+  The line came from the cached daily update check, so right after a release
+  it could name an older version than the one `composio upgrade` then
+  installed. Upgrading also refreshes that cache with the latest stable release
+  it found, so later commands stop suggesting an older version. Installing a
+  specific version, a beta, or a pinned release tag leaves the cache unchanged.
+
 ## 0.5.0
 
 ### Minor Changes
