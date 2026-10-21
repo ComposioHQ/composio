@@ -1,5 +1,35 @@
 # @composio/core
 
+## 0.26.0
+
+### Minor Changes
+
+- e08c84f: Requires `@composio/client` `2.0.0-rc.18`. The SDK now hands the API client its credential as the client's `auth` option and its organization and project as `scope`, instead of placing them in default headers. The `apiKey`, `userApiKey`, `orgApiKey`, `orgId` and `projectId` options, their environment fallbacks and the credentials sent on each request are unchanged, with one exception: with `apiKey: null` and only an organization API key (the `orgApiKey` option, `COMPOSIO_ORG_API_KEY`, or an `x-org-api-key` default header), every request now carries `x-org-api-key`, and so do trigger channel authorization and `session.mcp.headers`. Before, only the organization-owner operations did, and every other request went out without a credential.
+
+  Credential and scope headers in `defaultHeaders` or `createSession({ headers })` keep working, but the SDK folds them into its own options instead of forwarding them: an `x-user-api-key` or `x-org-api-key` entry becomes the credential every request carries, an `x-api-key` entry becomes the project key, and `x-org-id` / `x-project-id` entries become `orgId` / `projectId`. `getConfig()` reports the folded values (for example `apiKey: null` and `userApiKey` for an `x-user-api-key` entry) and no longer lists those entries under `defaultHeaders`. Setting more than one of `x-api-key`, `x-user-api-key` and `x-org-api-key` now throws a `ComposioError`; the API rejected every such request.
+
+  On the client returned by `getClient()`, `apiKey`, `userApiKey` and `orgApiKey` are read-only and deprecated (read the keys from `getConfig()`, or `authMode` and `scope` from the client), and a per-call `headers` option can no longer name a credential or scope header. The API client no longer reads the environment itself: the SDK still honours `COMPOSIO_ALLOW_INSECURE_HTTP=1`, and no longer applies `COMPOSIO_CUSTOM_HEADERS`; pass `defaultHeaders` instead.
+
+  The deprecated `customConnectionData` now requires `val.access_token` for `S2S_OAUTH2`, as the API does.
+
+- 57de614: Requires `@composio/client` `2.0.0-rc.19`. The SDK forwards the API client's log lines through a `Console`-shaped object instead of the client's removed `Logger` interface; what is logged, and at which SDK level, is unchanged. With rc.19, the client returned by `getClient()` no longer has `apiKey`, `userApiKey`, `orgApiKey` or `logger`, and its `baseURL`, `maxRetries`, `timeout` and `logLevel` are read-only: read the keys from `getConfig()`, and derive a client with `withOptions()` to change the others.
+
+### Patch Changes
+
+- 9d26fb8: Fold OpenAPI `nullable` into the type in strict tool schemas
+
+  `toStrictJsonSchema` no longer passes OpenAPI `nullable` through. Anthropic strict tool use rejects it on an object schema with a 400 for the whole request. A node with `nullable: true` now accepts `null` through its `type` (`["object", "null"]`) or a null branch, matching how the tool's arguments are validated, and the rewrite is reported as a `nullable-converted` change. `nullable: false` is removed as an `unsupported-keyword-stripped` change. `omitNullToolArguments` now keeps a `null` for a property marked `nullable: true`, as it already does for one whose `type` includes `null`.
+
+- 3dd9a2c: Strip string `format` values that OpenAI structured outputs rejects from strict tool schemas
+
+  `toStrictJsonSchema` now removes a `format` on a string schema unless it is one of `date-time`, `time`, `date`, `duration`, `email`, `hostname`, `ipv4`, `ipv6`, or `uuid`. OpenAI rejects any other string format in strict mode with a 400 for the whole request, so a single tool with `format: "uri"`, a custom format such as `repo.nwo`, or the `format: "path"` that file uploads add made every strict request fail. The removal is reported as an `unsupported-keyword-stripped` change. Formats on number and integer schemas are kept, since the API does not check them.
+
+- 04fdb41: Check a string tool parameter as base64 only when its `contentEncoding` is `base64`. `format: "binary"` (raw octets in OpenAPI) and other encodings such as `base16` were validated as base64, so the Vercel, LangChain, LlamaIndex, and Claude Agent SDK providers rejected tool calls with plain text or hex in those fields, and the schema sent to the model described them as `contentEncoding: "base64"`. Those fields are now plain strings. `contentEncoding: "base64"` keeps its check, and `format: "byte"` stays unchecked.
+- be12ce1: Warn once per toolkit version when the API reports it as deprecated through the `Composio-Deprecated-Toolkits` response header. The warning names the version, the sunset date and how to pin a newer version. Silence it with `logLevel: 'error'` or `COMPOSIO_LOG_LEVEL=error`.
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
 ## 0.25.0
 
 ### Minor Changes
