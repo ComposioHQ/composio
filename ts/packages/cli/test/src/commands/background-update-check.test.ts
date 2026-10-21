@@ -3,13 +3,15 @@ import { Effect } from 'effect';
 import { Command } from 'effect/cli';
 import { $defaultCmd } from 'src/commands/$default.cmd';
 import { withBackgroundUpdateCheck } from 'src/commands/background-update-check';
+import { upgradeCmd } from 'src/commands/upgrade/upgrade.cmd';
 import { versionCmd } from 'src/commands/version.cmd';
 import { TestLive } from 'test/__utils__';
 
 const makeRunner = (start: () => void) => {
   const version = versionCmd.pipe(Command.withHandler(() => Effect.void));
+  const upgrade = upgradeCmd.pipe(Command.withHandler(() => Effect.void));
   const other = Command.make('other').pipe(Command.withHandler(() => Effect.void));
-  const root = withBackgroundUpdateCheck($defaultCmd, [version, other], start);
+  const root = withBackgroundUpdateCheck($defaultCmd, [version, upgrade, other], start);
 
   return Command.runWith(root, { version: '0.0.0-test' });
 };
@@ -36,6 +38,20 @@ describe('withBackgroundUpdateCheck', () => {
 
         expect(start).not.toHaveBeenCalled();
       })
+    );
+
+    it.effect(
+      'skips the background request for composio upgrade, which resolves releases live',
+      () =>
+        Effect.gen(function* () {
+          const start = vi.fn();
+          const run = makeRunner(start);
+
+          yield* run(['upgrade']);
+          yield* run(['--log-level', 'Debug', 'upgrade', '--beta']);
+
+          expect(start).not.toHaveBeenCalled();
+        })
     );
 
     it.effect('starts the background request for other parsed commands', () =>

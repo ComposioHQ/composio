@@ -5,6 +5,7 @@ import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { GITHUB_CONFIG } from 'src/config';
+import { rootCommandIndex } from 'src/utils/cli-args';
 import { APP_VERSION } from '../constants';
 import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
@@ -26,6 +27,12 @@ import { TerminalUI } from './terminal-ui';
  */
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * `composio upgrade` resolves the latest release live, so a cached hint printed before it runs
+ * could only repeat that answer or contradict it with an older version.
+ */
+const UPGRADE_COMMAND_NAME = 'upgrade';
 
 /** Matches `@composio/cli@<semver>` — excludes prereleases. */
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
@@ -176,10 +183,15 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
   /**
    * If a cached newer version is known, print a one-line hint to stderr.
-   * Reads a tiny JSON file and does a semver compare.
+   * Reads a tiny JSON file and does a semver compare. Skipped for `composio upgrade`.
    */
-  function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
+  function showUpdateNotice(
+    terminal: Pick<TerminalUI, 'capabilities' | 'error'>,
+    commandName?: string
+  ) {
     return Effect.gen(function* () {
+      if (commandName === UPGRADE_COMMAND_NAME) return;
+
       // `terminal.error` writes even when stderr is redirected, so gate this
       // advisory notice explicitly while leaving stdout out of the decision.
       const { canDecorate } = yield* terminal.capabilities;
@@ -326,13 +338,15 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
 
-/** Print upgrade hint to stderr if a newer version is cached. */
-export const showUpdateNotice = Effect.gen(function* () {
-  const terminal = yield* TerminalUI;
-  const stateFile = yield* defaultStateFile;
-  const config = yield* defaultConfig(stateFile);
-  yield* createUpdateChecker(config).showUpdateNotice(terminal);
-}).pipe(Effect.provide(DefaultConfigLayers));
+/** Print upgrade hint to stderr if a newer version is cached, unless argv runs `composio upgrade`. */
+export const showUpdateNotice = (argv: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const terminal = yield* TerminalUI;
+    const stateFile = yield* defaultStateFile;
+    const config = yield* defaultConfig(stateFile);
+    const args = argv.slice(2);
+    yield* createUpdateChecker(config).showUpdateNotice(terminal, args[rootCommandIndex(args)]);
+  }).pipe(Effect.provide(DefaultConfigLayers));
 
 /**
  * Refresh the release cache if stale and return a machine-readable status.
