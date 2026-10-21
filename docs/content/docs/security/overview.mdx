@@ -4,7 +4,7 @@ description: How Composio secures your data, credentials, and tool execution, an
 keywords: [security, compliance, SOC 2, trust center, encryption, isolation]
 ---
 
-Composio is built with security at its core. We use least-privilege defaults, isolate every organization and project, encrypt credentials, and give you controls over what we store.
+Composio separates project resources, encrypts credentials, and gives you controls over execution and retained data. Your application binds authenticated users to the accounts and operations they may use.
 
 ## Compliance and the Trust Center
 
@@ -13,9 +13,11 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 ## Isolation and access control
 
 - Organizations and projects isolate your resources. Data from one project is not visible to another.
-- API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
-- Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
+- Scoped API keys limit access by permission area. API keys also support per-key IP allowlisting.
+- Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, and session-linked MCP access). Session proxy execution requires the separate **Proxy execute** permission. See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
 - Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
+
+See [Delegated authorization architecture](/docs/security/delegated-authorization) for backend identity binding, provider scopes, per-tool session restrictions, approvals, alternate execution paths, and audit correlation.
 
 ## Credential protection
 
@@ -27,7 +29,7 @@ See [Token custody architecture](/docs/security/token-custody) for credential bo
 
 ## Your responsibilities
 
-Composio executes the tools and connections you configure. You control which toolkits are enabled, which accounts are connected, and what your agents are allowed to do. Review the access you grant, and treat connected-account scopes as you would any production credential.
+Composio executes the tools and connections you configure. Your backend must authorize each application caller and bind them to the intended `user_id`, session, and connected accounts. Review [authorization boundaries](/docs/security/delegated-authorization#check-every-execution-path) across session, direct, proxy, and MCP execution rather than treating tool exposure as a universal access policy.
 
 ## Reporting a vulnerability
 
