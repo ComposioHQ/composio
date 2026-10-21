@@ -1,7 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Effect, Result, Option } from 'effect';
-import { ProxyCommandError } from './proxy.errors';
+import { ProxyCommandError, ReportedProxyCommandError } from './proxy.errors';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -240,7 +240,7 @@ const runProxyConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ProxyCommandError({
+      return yield* new ReportedProxyCommandError({
         reason: 'toolkit_not_connected',
         message,
         toolkit: params.toolkit,

@@ -14,7 +14,11 @@ type ToolExecutionErrorFields = {
   readonly cause?: unknown;
 };
 
-/** `composio execute` cannot run the tool as invoked. */
+/**
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
+ * id to run it for, or a toolkit the user has not connected. `cli-main.ts` prints the message as
+ * one line and exits 1.
+ */
 export class ToolExecutionError extends Data.TaggedError(
   'ToolExecutionError'
 )<ToolExecutionErrorFields> {}

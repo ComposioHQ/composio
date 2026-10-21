@@ -1056,7 +1056,7 @@ const runConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ToolExecutionError({
+      return yield* new ReportedToolExecutionError({
         reason: 'connection_check',
         toolSlug: params.slug,
         message,

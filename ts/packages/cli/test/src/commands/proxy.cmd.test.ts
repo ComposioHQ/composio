@@ -7,7 +7,7 @@ import type {
   SessionProxyExecuteParams,
 } from '@composio/client/resources/tool-router';
 import { normalizeProxyMethod, parseProxyBody, parseProxyHeader } from 'src/commands/proxy.cmd';
-import { ProxyCommandError } from 'src/commands/proxy.errors';
+import { ReportedProxyCommandError } from 'src/commands/proxy.errors';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -246,7 +246,7 @@ describe('CLI: composio proxy', () => {
           }).pipe(Effect.provide(live));
 
           expect(createCalled).toBe(false);
-          expect(failure).toBeInstanceOf(ProxyCommandError);
+          expect(failure).toBeInstanceOf(ReportedProxyCommandError);
           expect(failure).toMatchObject({ reason: 'toolkit_not_connected', toolkit: 'gmail' });
 
           expect(output).toContain('Toolkit "gmail" is not connected for this user');

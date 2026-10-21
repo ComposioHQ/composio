@@ -1,5 +1,31 @@
 # @composio/cli
 
+## Unreleased
+
+### Patch Changes
+
+- More expected errors now print as a plain message on stderr and exit 1, like
+  other usage errors. They used to print under a `💥` banner with the error tag
+  and a stack location, as if the CLI had crashed. The message itself is
+  unchanged, and nothing is printed on stdout. This covers:
+  - `composio execute` without a user id, or with a `--file` the tool has no
+    file input for (or whose field `-d` already sets)
+  - `composio proxy` when the project has no consumer user
+  - `composio link` without a user id, or when the authorization is not
+    finished before the CLI stops waiting
+  - `composio login` with an `--org` that does not exist, a session key that
+    expired or is not linked yet, a login that is not finished in time, or
+    `--poll` without a pending (or with an expired) login
+  - `composio generate` outside a recognizable JavaScript or Python project, or
+    without `@composio/core` or `composio-core` installed
+  - a `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>` override naming a toolkit or version
+    that does not exist
+
+- `composio execute` and `composio proxy` no longer print a `💥` banner after
+  reporting that the toolkit is not connected (when the connected-account cache
+  is on). The message, tips, and `{"successful": false, ...}` JSON on stdout
+  are unchanged, and the exit code is still 1.
+
 ## 0.5.0
 
 ### Minor Changes
