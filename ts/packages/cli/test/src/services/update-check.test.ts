@@ -221,6 +221,21 @@ describe('showUpdateNotice', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
+  it.effect('skips the cached hint for composio upgrade but keeps it for other commands', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.4.2' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.4.5' });
+      const { showUpdateNotice } = createUpdateChecker(config);
+
+      yield* showUpdateNotice(makeTerminal(output), 'upgrade');
+      expect(output).toEqual([]);
+
+      yield* showUpdateNotice(makeTerminal(output), 'tools');
+      expect(output).toHaveLength(1);
+      expect(output[0]).toContain('0.4.5');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
   it.effect('does not print upgrade hint when stderr is captured', () =>
     Effect.gen(function* () {
       const config = makeConfig({ currentVersion: '0.2.0' });
