@@ -207,29 +207,61 @@ const schemasForValue = (schema: JsonSchema): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariants(schema).flatMap(schemasForValue),
 ];
 
-type LocalPathCandidate = LocalPathArgument & {
-  // The value's location with array indices left out, as `findFileUploadablePaths` writes it.
-  readonly schemaPath: ReadonlyArray<string>;
+/**
+ * Where `hydrateFileUploads` uploads a value: the same walk, without the
+ * upload. The guard exempts exactly these locations.
+ */
+const uploadedArgumentPaths = (
+  value: unknown,
+  schema: JsonSchema | undefined,
+  argumentPath: ReadonlyArray<string>
+): ReadonlyArray<ReadonlyArray<string>> => {
+  if (schema?.file_uploadable === true) {
+    return Predicate.isString(value) || isFileLike(value) ? [argumentPath] : [];
+  }
+
+  const uploadableVariants = getSchemaVariants(schema).filter(schemaHasFileUploadable);
+  if (uploadableVariants.length > 0) {
+    return uploadableVariants.flatMap(variant =>
+      uploadedArgumentPaths(value, variant, argumentPath)
+    );
+  }
+
+  const properties = schema?.properties;
+  if (isSchemaRecord(properties) && Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      uploadedArgumentPaths(entry, isSchemaRecord(properties[key]) ? properties[key] : undefined, [
+        ...argumentPath,
+        key,
+      ])
+    );
+  }
+
+  if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
+    const itemSchema = getItemSchemas(schema.items).at(0);
+    return value.flatMap((item, index) =>
+      uploadedArgumentPaths(item, itemSchema, [...argumentPath, String(index)])
+    );
+  }
+
+  return [];
 };
 
 const collectLocalPathCandidates = (
   value: unknown,
   schemas: ReadonlyArray<JsonSchema>,
-  argumentPath: ReadonlyArray<string>,
-  schemaPath: ReadonlyArray<string>
-): ReadonlyArray<LocalPathCandidate> => {
+  argumentPath: ReadonlyArray<string>
+): ReadonlyArray<LocalPathArgument> => {
   const nodes = schemas.flatMap(schemasForValue);
-  // Any branch that marks the value uploadable means it is uploaded, not sent as text.
-  if (nodes.some(node => node.file_uploadable === true)) return [];
 
   if (Predicate.isString(value)) {
-    return nodes.some(describesLocalFile) ? [{ argumentPath, schemaPath, value }] : [];
+    return nodes.some(describesLocalFile) ? [{ argumentPath, value }] : [];
   }
 
   if (Array.isArray(value)) {
     const itemSchemas = nodes.flatMap(node => getItemSchemas(node.items));
     return value.flatMap((item, index) =>
-      collectLocalPathCandidates(item, itemSchemas, [...argumentPath, String(index)], schemaPath)
+      collectLocalPathCandidates(item, itemSchemas, [...argumentPath, String(index)])
     );
   }
 
@@ -241,8 +273,7 @@ const collectLocalPathCandidates = (
           const property = isSchemaRecord(node.properties) ? node.properties[key] : undefined;
           return isSchemaRecord(property) ? [property] : [];
         }),
-        [...argumentPath, key],
-        [...schemaPath, key]
+        [...argumentPath, key]
       )
     );
   }
@@ -255,18 +286,20 @@ const collectLocalPathCandidates = (
  * them `file_uploadable`. Composio runs the tool remotely and only uploads
  * `file_uploadable` inputs, so such an argument reaches the tool as the text of
  * the path, never as the file. Every branch that applies to a value is read
- * together, and a location `findFileUploadablePaths` reports is never returned,
- * so nothing `hydrateFileUploads` would upload is flagged.
+ * for the description, and a value `hydrateFileUploads` uploads is never
+ * returned.
  */
 export const findLocalPathArguments = (
   value: unknown,
   schema: JsonSchema | undefined
 ): ReadonlyArray<LocalPathArgument> => {
   if (!schema) return [];
-  const uploadable = new Set(findFileUploadablePaths(schema).map(parts => JSON.stringify(parts)));
-  return collectLocalPathCandidates(value, [schema], [], [])
-    .filter(candidate => !uploadable.has(JSON.stringify(candidate.schemaPath)))
-    .map(({ argumentPath, value }) => ({ argumentPath, value }));
+  const uploaded = new Set(
+    uploadedArgumentPaths(value, schema, []).map(parts => JSON.stringify(parts))
+  );
+  return collectLocalPathCandidates(value, [schema], []).filter(
+    candidate => !uploaded.has(JSON.stringify(candidate.argumentPath))
+  );
 };
 
 /**

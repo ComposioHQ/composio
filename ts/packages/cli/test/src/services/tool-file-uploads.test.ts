@@ -613,6 +613,27 @@ describe('uploadToolInputFiles — local file for an input that is not file_uplo
     )
   );
 
+  it('flags a tuple element the upload code does not upload', () => {
+    // `hydrateFileUploads` reads only the first schema of a tuple `items`.
+    expect(
+      findLocalPathArguments(
+        { files: ['/tmp/photo.jpg', '/tmp/other.jpg'] },
+        {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: [localPathDescription, { file_uploadable: true }],
+            },
+          },
+        }
+      )
+    ).toEqual([
+      { argumentPath: ['files', '0'], value: '/tmp/photo.jpg' },
+      { argumentPath: ['files', '1'], value: '/tmp/other.jpg' },
+    ]);
+  });
+
   it('reads descriptions in nested composition branches', () => {
     expect(
       findLocalPathArguments(
