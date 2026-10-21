@@ -384,10 +384,10 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     if (Option.isNone(params.toolkit)) {
-      return yield* ui.log.error(LIST_REQUIRES_TOOLKIT_MESSAGE);
+      return yield* Effect.fail(invalidOptionValue(LIST_REQUIRES_TOOLKIT_MESSAGE, '--list'));
     }
     if (Option.isSome(params.authConfig)) {
-      return yield* ui.log.error(LIST_WITH_AUTH_CONFIG_MESSAGE);
+      return yield* Effect.fail(invalidOptionValue(LIST_WITH_AUTH_CONFIG_MESSAGE, '--list'));
     }
     const toolkitSlug = params.toolkit.value;
 
@@ -513,7 +513,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
       )
     );
     if (Option.isNone(projectName) && Option.isNone(resolvedProjectContext)) {
-      return yield* ui.log.error(AUTH_CONFIG_SCOPE_MESSAGE);
+      return yield* Effect.fail(invalidOptionValue(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config'));
     }
     // Without --user-id, say which test user stands in.
     yield* Option.isSome(userId)
@@ -724,17 +724,13 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
 // --- dispatch -----------------------------------------------------------------------------------
 
 /**
- * Which flow the flags select, or none after reporting a usage mistake the parser cannot see.
- * A blank `--alias` and a root `--auth-config` (the root tree is consumer-only) are usage errors
- * that exit 1. The other mistakes print a message and exit 0.
+ * Which flow the flags select. A usage mistake the parser cannot see fails with a
+ * `CommandInputError`, so it reaches stderr and exits 1 even when stderr is not a TTY.
  */
 const selectLinkFlow = (params: ConnectedAccountsLinkParams, tree: CommandTree) =>
   Effect.gen(function* () {
     yield* resolveNormalizedAliasOption(params.alias);
-    const ui = yield* TerminalUI;
-    const reject = (message: string) =>
-      ui.log.error(message).pipe(Effect.as(Option.none<LinkFlow>()));
-    const select = (flow: LinkFlow) => Effect.succeedSome(flow);
+    const select = (flow: LinkFlow) => Effect.succeed(flow);
     return yield* Match.value({
       tree,
       toolkit: Option.isSome(params.toolkit),
@@ -745,9 +741,11 @@ const selectLinkFlow = (params: ConnectedAccountsLinkParams, tree: CommandTree) 
         Effect.fail(invalidOptionValue(ROOT_AUTH_CONFIG_MESSAGE, '--auth-config'))
       ),
       Match.when({ toolkit: true, authConfig: true }, () =>
-        reject(TOOLKIT_AND_AUTH_CONFIG_MESSAGE)
+        Effect.fail(invalidOptionValue(TOOLKIT_AND_AUTH_CONFIG_MESSAGE, '--auth-config'))
       ),
-      Match.when({ toolkit: false, authConfig: false }, () => reject(missingArgumentMessage(tree))),
+      Match.when({ toolkit: false, authConfig: false }, () =>
+        Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '<toolkit>'))
+      ),
       Match.when({ list: true }, () => select('list')),
       Match.when({ authConfig: true }, () => select('legacy')),
       Match.orElse(() => select('tool-router'))
@@ -759,14 +757,10 @@ export const runConnectedAccountsLink = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const { tree } = yield* CommandSurface;
     const flow = yield* selectLinkFlow(params, tree);
-    yield* Option.match(flow, {
-      onNone: () => Effect.void,
-      onSome: selected =>
-        Match.value(selected).pipe(
-          Match.when('list', () => handleListConnectedAccounts(params)),
-          Match.when('legacy', () => handleLegacyAuthConfigLink(params)),
-          Match.when('tool-router', () => handleToolRouterLink(params)),
-          Match.exhaustive
-        ),
-    });
+    yield* Match.value(flow).pipe(
+      Match.when('list', () => handleListConnectedAccounts(params)),
+      Match.when('legacy', () => handleLegacyAuthConfigLink(params)),
+      Match.when('tool-router', () => handleToolRouterLink(params)),
+      Match.exhaustive
+    );
   });
