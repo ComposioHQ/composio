@@ -7,6 +7,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { Config, PlatformError } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Clock, Context, Data, DateTime, Effect, Layer, Schema } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
@@ -29,7 +30,11 @@ export class PendingLoginError extends Data.TaggedError('commands/PendingLoginEr
   readonly message: string;
   readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
   readonly cause?: unknown;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 export type PendingLoginSessionShape = {
   /** Caches a started login, stamped with the current time, in a file only the user can read. */

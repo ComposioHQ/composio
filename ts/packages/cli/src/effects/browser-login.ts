@@ -4,6 +4,7 @@
  * to be linked, then store the user API key it carries.
  */
 import { Data, DateTime, Effect, Option, Schedule, pipe } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
 import type { RetrievedSession } from 'src/models/session';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
@@ -26,7 +27,11 @@ export class LoginSessionError extends Data.TaggedError('commands/LoginSessionEr
   readonly operation: 'load' | 'poll';
   readonly status?: string;
   readonly cause?: unknown;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenError')<{
   readonly message: string;

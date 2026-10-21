@@ -1,11 +1,11 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
-import { Effect, Result, Option } from 'effect';
-import { ProxyCommandError, ReportedProxyCommandError } from './proxy.errors';
+import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -77,6 +77,31 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'DELETE',
   'PATCH',
 ];
+
+/**
+ * `composio proxy` has no consumer user to send the request as. An expected failure:
+ * `cli-main.ts` prints the message and exits 1.
+ */
+export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
+  readonly message: string;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+/**
+ * A proxy call refused before sending it because the toolkit is not connected, already reported
+ * on stderr and as `{ "successful": false, ... }` on stdout. `cli-main.ts` prints nothing more
+ * and exits 1.
+ */
+export class ReportedProxyCommandError extends Data.TaggedError(
+  'commands/ReportedProxyCommandError'
+)<{
+  readonly message: string;
+  readonly toolkit: string;
+  readonly endpoint: string;
+}> {}
 
 class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 
@@ -241,7 +266,6 @@ const runProxyConnectedToolkitFailFast = (params: {
         )
       );
       return yield* new ReportedProxyCommandError({
-        reason: 'toolkit_not_connected',
         message,
         toolkit: params.toolkit,
         endpoint: params.endpoint,
@@ -283,7 +307,6 @@ export const proxyCmd = Command.make('proxy', {
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
         return yield* new ProxyCommandError({
-          reason: 'missing_consumer_user',
           message: 'No consumer project user is available for proxy execution in this context.',
         });
       }
