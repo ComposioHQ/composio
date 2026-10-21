@@ -553,4 +553,77 @@ describe('uploadToolInputFiles — local file for an input that is not file_uplo
       )
     ).toEqual([]);
   });
+
+  const localPathDescription = { type: 'string', description: 'Path to the local file to attach.' };
+
+  it.each([
+    {
+      name: 'allOf splits the description and the upload marker across branches',
+      schema: {
+        type: 'object',
+        allOf: [
+          { properties: { file: localPathDescription } },
+          { properties: { file: { file_uploadable: true } } },
+        ],
+      },
+    },
+    {
+      name: 'anyOf offers an uploadable branch beside the path branch',
+      schema: {
+        type: 'object',
+        properties: { file: { anyOf: [localPathDescription, { file_uploadable: true }] } },
+      },
+    },
+    {
+      name: 'oneOf nests the uploadable branch one level down',
+      schema: {
+        type: 'object',
+        properties: {
+          file: { oneOf: [localPathDescription, { allOf: [{ file_uploadable: true }] }] },
+        },
+      },
+    },
+  ])('never flags an input the upload code uploads: $name', ({ schema }) => {
+    expect(findLocalPathArguments({ file: '/tmp/photo.jpg' }, schema)).toEqual([]);
+  });
+
+  it.effect('uploads, not refuses, a local file for an allOf-split uploadable input', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+        );
+        const { result, requests } = yield* run(
+          { file },
+          {
+            type: 'object',
+            allOf: [
+              { properties: { file: localPathDescription } },
+              { properties: { file: { file_uploadable: true } } },
+            ],
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toMatchObject({
+          file: { name: 'photo.jpg', s3key: 's3key-123' },
+        });
+        expect(requests).toHaveLength(1);
+      }).pipe(Effect.ensuring(Effect.sync(() => vi.unstubAllGlobals())))
+    )
+  );
+
+  it('reads descriptions in nested composition branches', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: { anyOf: [{ type: 'null' }, { allOf: [localPathDescription] }] },
+          },
+        }
+      )
+    ).toEqual([{ argumentPath: ['file'], value: '/tmp/photo.jpg' }]);
+  });
 });

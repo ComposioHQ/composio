@@ -198,55 +198,75 @@ type LocalPathArgument = {
 };
 
 /**
+ * The schema and every `anyOf`/`oneOf`/`allOf` branch under it, at any depth:
+ * all the schemas that can describe one value. Schemas are parsed JSON, so the
+ * walk ends, as `findFileUploadablePaths` does on the same schema.
+ */
+const schemasForValue = (schema: JsonSchema): ReadonlyArray<JsonSchema> => [
+  schema,
+  ...getSchemaVariants(schema).flatMap(schemasForValue),
+];
+
+type LocalPathCandidate = LocalPathArgument & {
+  // The value's location with array indices left out, as `findFileUploadablePaths` writes it.
+  readonly schemaPath: ReadonlyArray<string>;
+};
+
+const collectLocalPathCandidates = (
+  value: unknown,
+  schemas: ReadonlyArray<JsonSchema>,
+  argumentPath: ReadonlyArray<string>,
+  schemaPath: ReadonlyArray<string>
+): ReadonlyArray<LocalPathCandidate> => {
+  const nodes = schemas.flatMap(schemasForValue);
+  // Any branch that marks the value uploadable means it is uploaded, not sent as text.
+  if (nodes.some(node => node.file_uploadable === true)) return [];
+
+  if (Predicate.isString(value)) {
+    return nodes.some(describesLocalFile) ? [{ argumentPath, schemaPath, value }] : [];
+  }
+
+  if (Array.isArray(value)) {
+    const itemSchemas = nodes.flatMap(node => getItemSchemas(node.items));
+    return value.flatMap((item, index) =>
+      collectLocalPathCandidates(item, itemSchemas, [...argumentPath, String(index)], schemaPath)
+    );
+  }
+
+  if (Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      collectLocalPathCandidates(
+        entry,
+        nodes.flatMap(node => {
+          const property = isSchemaRecord(node.properties) ? node.properties[key] : undefined;
+          return isSchemaRecord(property) ? [property] : [];
+        }),
+        [...argumentPath, key],
+        [...schemaPath, key]
+      )
+    );
+  }
+
+  return [];
+};
+
+/**
  * The string arguments a schema describes as a local file without marking
  * them `file_uploadable`. Composio runs the tool remotely and only uploads
  * `file_uploadable` inputs, so such an argument reaches the tool as the text of
- * the path, never as the file.
+ * the path, never as the file. Every branch that applies to a value is read
+ * together, and a location `findFileUploadablePaths` reports is never returned,
+ * so nothing `hydrateFileUploads` would upload is flagged.
  */
 export const findLocalPathArguments = (
   value: unknown,
-  schema: JsonSchema | undefined,
-  argumentPath: ReadonlyArray<string> = []
+  schema: JsonSchema | undefined
 ): ReadonlyArray<LocalPathArgument> => {
-  if (!schema || schema.file_uploadable === true) return [];
-
-  if (Predicate.isString(value)) {
-    // An input with an uploadable variant is uploaded by `hydrateFileUploads`.
-    if (schemaHasFileUploadable(schema)) return [];
-    return describesLocalFile(schema) || getSchemaVariants(schema).some(describesLocalFile)
-      ? [{ argumentPath, value }]
-      : [];
-  }
-
-  const variantArguments = getSchemaVariants(schema).flatMap(variant =>
-    findLocalPathArguments(value, variant, argumentPath)
-  );
-
-  if (Array.isArray(value)) {
-    const itemSchema = getItemSchemas(schema.items).at(0);
-    return [
-      ...variantArguments,
-      ...value.flatMap((item, index) =>
-        findLocalPathArguments(item, itemSchema, [...argumentPath, String(index)])
-      ),
-    ];
-  }
-
-  const properties = schema.properties;
-  if (isSchemaRecord(properties) && Predicate.isObject(value)) {
-    return [
-      ...variantArguments,
-      ...Object.entries(value).flatMap(([key, entry]) =>
-        findLocalPathArguments(
-          entry,
-          isSchemaRecord(properties[key]) ? properties[key] : undefined,
-          [...argumentPath, key]
-        )
-      ),
-    ];
-  }
-
-  return variantArguments;
+  if (!schema) return [];
+  const uploadable = new Set(findFileUploadablePaths(schema).map(parts => JSON.stringify(parts)));
+  return collectLocalPathCandidates(value, [schema], [], [])
+    .filter(candidate => !uploadable.has(JSON.stringify(candidate.schemaPath)))
+    .map(({ argumentPath, value }) => ({ argumentPath, value }));
 };
 
 /**
