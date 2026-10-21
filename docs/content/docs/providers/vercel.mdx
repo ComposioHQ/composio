@@ -73,6 +73,10 @@ The option does not set the AI SDK's per-tool `strict` flag, so the model provid
 The provider sends each Composio tool's JSON Schema to the model as is, so keywords such as `format`, `contentEncoding`, and `contentMediaType` reach it, and validates tool-call arguments with a Zod schema built from the same JSON Schema. It also normalizes tool arguments, so it still works when a model emits tool input as a JSON string rather than an object.
 </Callout>
 
+<Callout type="warn">
+`tool.inputSchema` is an AI SDK `Schema`. If you validate arguments yourself, import `asSchema` from `ai` and call `await asSchema(tool.inputSchema).validate(value)` instead of `tool.inputSchema.safeParse(value)`.
+</Callout>
+
 ## Next
 
 <Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
