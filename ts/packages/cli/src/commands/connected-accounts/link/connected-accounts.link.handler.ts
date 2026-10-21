@@ -11,6 +11,7 @@ import {
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
+import { reportFailure } from 'src/effects/report-failure';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractApiErrorDetails, extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
@@ -205,7 +206,7 @@ const ensureAliasForAdditionalAccount = (params: {
 const nonEmpty = (value: string | null | undefined) =>
   Option.filter(Option.fromNullishOr(value), text => text.length > 0);
 
-/** The link the API answered with, or none after reporting an incomplete response. */
+/** The link the API answered with, or none after reporting an incomplete response (exit 1). */
 const validateLinkResponse = (
   ui: TerminalUI,
   linkResponse: {
@@ -223,8 +224,8 @@ const validateLinkResponse = (
       onSome: target => Effect.succeedSome(target),
       onNone: () =>
         Effect.gen(function* () {
-          yield* ui.log.error(INCOMPLETE_LINK_RESPONSE_MESSAGE);
           yield* Effect.logDebug('Link response:', linkResponse);
+          yield* reportFailure(ui, INCOMPLETE_LINK_RESPONSE_MESSAGE);
           return Option.none<LinkTarget>();
         }),
     }
@@ -481,7 +482,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
     const { tree, userId, projectName } = yield* CommandSurface;
     // The dispatcher never gets here without --auth-config. This narrows it for direct callers.
     if (Option.isNone(params.authConfig)) {
-      return yield* ui.log.error(missingArgumentMessage(tree));
+      return yield* Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '--auth-config'));
     }
     const authConfigId = params.authConfig.value;
 
@@ -561,10 +562,11 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
         Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
-            yield* ui.log.error(
-              extractMessage(error) || `Failed to create link for auth config "${authConfigId}".`
+            yield* reportFailure(
+              ui,
+              extractMessage(error) || `Failed to create link for auth config "${authConfigId}".`,
+              BROWSE_AUTH_CONFIGS_HINT
             );
-            yield* ui.log.step(BROWSE_AUTH_CONFIGS_HINT);
             return Option.none();
           })
         )
@@ -604,7 +606,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
     const { tree, userId, projectName } = yield* CommandSurface;
     // The dispatcher never gets here without a toolkit. This narrows it for direct callers.
     if (Option.isNone(params.toolkit)) {
-      return yield* ui.log.error(missingArgumentMessage(tree));
+      return yield* Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '<toolkit>'));
     }
     const toolkitSlug = params.toolkit.value;
 
@@ -675,11 +677,12 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
               yield* handleNoManagedAuth(ui, toolkitSlug, params.noBrowser);
               return Option.none();
             }
-            yield* ui.log.error(
-              extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`
-            );
             yield* Effect.logDebug('Link error:', error);
-            yield* ui.log.step(BROWSE_TOOLKITS_HINT);
+            yield* reportFailure(
+              ui,
+              extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`,
+              BROWSE_TOOLKITS_HINT
+            );
             return Option.none();
           })
         ),

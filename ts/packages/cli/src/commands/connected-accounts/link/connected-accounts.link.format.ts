@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import type { CommandTree } from 'src/commands/surface';
+import { reportFailure } from 'src/effects/report-failure';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { CliProjectType } from 'src/services/command-project';
 import type { TerminalUI } from 'src/services/terminal-ui';
@@ -87,22 +88,25 @@ const formatExistingAccountLabels = (items: ReadonlyArray<ExistingAccountLabel>)
     )
     .join(', ');
 
-/** Why a second account needs `--alias`, and which accounts already exist for the scope. */
+/**
+ * Why a second account needs `--alias` (exit 1), and which accounts already exist for the scope.
+ */
 export const showExistingAccounts = (
   ui: TerminalUI,
   scopeDescription: string,
   items: ReadonlyArray<ExistingAccountLabel>
 ) =>
   Effect.gen(function* () {
-    yield* ui.log.error(
+    yield* reportFailure(
+      ui,
       `A connected account already exists for ${scopeDescription}. Pass --alias to create another one.`
     );
     yield* ui.note(formatExistingAccountLabels(items), 'Existing accounts');
   });
 
 /**
- * The alias is taken: which account holds it, and how to use that account or list them all.
- * The hint commands differ per tree, so the caller passes them.
+ * The alias is taken (exit 1): which account holds it, and how to use that account or list them
+ * all. The hint commands differ per tree, so the caller passes them.
  */
 export const showAliasConflict = (
   ui: TerminalUI,
@@ -114,7 +118,8 @@ export const showAliasConflict = (
   }
 ) =>
   Effect.gen(function* () {
-    yield* ui.log.error(
+    yield* reportFailure(
+      ui,
       `Alias "${params.alias}" is already in use by connected account "${params.existingId}".`
     );
     yield* ui.note(
