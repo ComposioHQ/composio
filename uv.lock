@@ -768,6 +768,7 @@ name = "composio"
 version = "0.29.0"
 source = { editable = "python" }
 dependencies = [
+    { name = "certifi" },
     { name = "composio-client" },
     { name = "json-schema-to-pydantic" },
     { name = "jsonschema" },
@@ -799,6 +800,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "certifi", specifier = ">=2026.10.19" },
     { name = "composio-client", specifier = "==2.0.0rc19" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
     { name = "jsonschema", specifier = ">=4.23.0" },
