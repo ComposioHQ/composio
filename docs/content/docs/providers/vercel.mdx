@@ -68,7 +68,7 @@ const composio = new Composio({ provider: new VercelProvider({ strict: true }) }
 ```
 
 <Callout type="info">
-The provider converts each Composio tool's JSON Schema to a Zod schema for the AI SDK and normalizes tool arguments, so it still works when a model emits tool input as a JSON string rather than an object.
+The provider sends each Composio tool's JSON Schema to the model as is, so keywords such as `format`, `contentEncoding`, and `contentMediaType` reach it, and validates tool-call arguments with a Zod schema built from the same JSON Schema. It also normalizes tool arguments, so it still works when a model emits tool input as a JSON string rather than an object.
 </Callout>
 
 ## Next

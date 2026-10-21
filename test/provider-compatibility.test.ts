@@ -38,7 +38,7 @@ describe('provider compatibility plan', () => {
       '@composio/cloudflare': '0.14.0',
       '@composio/google': '0.16.0',
       '@composio/langchain': '0.11.0',
-      '@composio/llamaindex': '0.11.0',
+      '@composio/llamaindex': '0.14.0',
       '@composio/mastra': '0.18.0',
       '@composio/openai': '0.18.0',
       '@composio/openai-agents': '0.18.0',

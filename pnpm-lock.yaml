@@ -1547,6 +1547,9 @@ importers:
 
   ts/packages/providers/claude-agent-sdk:
     dependencies:
+      '@composio/json-schema-to-zod':
+        specifier: workspace:*
+        version: link:../../json-schema-to-zod
       zod:
         specifier: ^4.5.4
         version: 4.5.4

@@ -51,6 +51,10 @@ Some models reject tool schemas that contain optional parameters. Pass `strict: 
 const composio = new Composio({ provider: new VercelProvider({ strict: true }) });
 ```
 
+## Tool schemas
+
+The provider passes each tool's JSON Schema to the AI SDK with `jsonSchema()`, so the model sees it as is, including keywords such as `format`, `contentEncoding`, and `contentMediaType`. Internal `$ref`s are inlined first. Tool-call arguments are validated with a Zod schema built from the same JSON Schema. In strict mode the model sees the strict rewrite instead, which drops string formats strict structured outputs reject.
+
 ## Links
 
 - [Vercel AI SDK provider docs](https://docs.composio.dev/docs/providers/vercel)
