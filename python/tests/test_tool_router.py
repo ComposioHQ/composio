@@ -2832,16 +2832,16 @@ class TestSessionHooks:
             "name": "No external email",
             "applies_to": {"toolkits": ["gmail"]},
             "handler": {
-                "type": "prompt",
-                "prompt": "Sending email to anyone outside example.org",
-                "on_match": "block",
+                "type": "condition_check",
+                "condition": "Sending email to anyone outside example.org",
+                "action": "block",
             },
         },
         {
             "type": "after_execute",
             "id": "block_injection",
             "applies_to": "all",
-            "handler": {"type": "prompt_injection", "on_match": "block"},
+            "handler": {"type": "prompt_injection_check", "action": "block"},
         },
     ]
 

@@ -248,7 +248,7 @@ describe('ToolRouter', () => {
             type: 'after_execute',
             id: 'block_injection',
             appliesTo: 'all',
-            handler: { type: 'prompt_injection', onMatch: 'block' },
+            handler: { type: 'prompt_injection_check', action: 'block' },
           },
         ],
       });
@@ -261,7 +261,7 @@ describe('ToolRouter', () => {
             type: 'after_execute',
             id: 'block_injection',
             applies_to: 'all',
-            handler: { type: 'prompt_injection', on_match: 'block' },
+            handler: { type: 'prompt_injection_check', action: 'block' },
           },
         ],
       });
@@ -279,7 +279,7 @@ describe('ToolRouter', () => {
                 type: 'after_execute',
                 id: 'block_injection',
                 appliesTo: 'all',
-                handler: { type: 'prompt_injection', onMatch: 'block' },
+                handler: { type: 'prompt_injection_check', action: 'block' },
               },
             ],
             experimental: { sessionConfigId: 'sc_1' },

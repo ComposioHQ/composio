@@ -16,9 +16,9 @@ const session = await composio.create('user_123', {
       name: 'No external email',
       appliesTo: { toolkits: ['gmail'] },
       handler: {
-        type: 'prompt',
-        prompt: 'Sending email to anyone outside example.org',
-        onMatch: 'block',
+        type: 'condition_check',
+        condition: 'Sending email to anyone outside example.org',
+        action: 'block',
       },
     },
   ],

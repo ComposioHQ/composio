@@ -336,29 +336,31 @@ export const ToolRouterHookAppliesToSchema = z.union([
 ]);
 export type ToolRouterHookAppliesTo = z.infer<typeof ToolRouterHookAppliesToSchema>;
 
-/** Blocks a call or result when it matches `prompt`, a plain sentence describing what to block. */
-export const ToolRouterHookPromptHandlerSchema = z
+/** Blocks a call or result when it matches `condition`, a plain sentence describing what to block. */
+export const ToolRouterHookConditionCheckHandlerSchema = z
   .object({
-    type: z.literal('prompt'),
-    prompt: z
+    type: z.literal('condition_check'),
+    condition: z
       .string()
       .describe(
         'What to block, written as a plain sentence. For example: "Sending email to anyone outside example.org".'
       ),
-    onMatch: z.literal('block'),
+    action: z.literal('block'),
   })
   .strict();
-export type ToolRouterHookPromptHandler = z.infer<typeof ToolRouterHookPromptHandlerSchema>;
+export type ToolRouterHookConditionCheckHandler = z.infer<
+  typeof ToolRouterHookConditionCheckHandlerSchema
+>;
 
-/** A pre-defined handler that blocks results with text that tries to give the agent instructions. */
-export const ToolRouterHookPromptInjectionHandlerSchema = z
+/** A pre-defined check that blocks results with text that tries to give the agent instructions. */
+export const ToolRouterHookPromptInjectionCheckHandlerSchema = z
   .object({
-    type: z.literal('prompt_injection'),
-    onMatch: z.literal('block'),
+    type: z.literal('prompt_injection_check'),
+    action: z.literal('block'),
   })
   .strict();
-export type ToolRouterHookPromptInjectionHandler = z.infer<
-  typeof ToolRouterHookPromptInjectionHandlerSchema
+export type ToolRouterHookPromptInjectionCheckHandler = z.infer<
+  typeof ToolRouterHookPromptInjectionCheckHandlerSchema
 >;
 
 const toolRouterHookIdentityFields = {
@@ -380,7 +382,7 @@ export const ToolRouterHookSchema = z.discriminatedUnion('type', [
     .object({
       type: z.literal('before_execute'),
       ...toolRouterHookIdentityFields,
-      handler: ToolRouterHookPromptHandlerSchema,
+      handler: ToolRouterHookConditionCheckHandlerSchema,
     })
     .strict(),
   z
@@ -388,8 +390,8 @@ export const ToolRouterHookSchema = z.discriminatedUnion('type', [
       type: z.literal('after_execute'),
       ...toolRouterHookIdentityFields,
       handler: z.discriminatedUnion('type', [
-        ToolRouterHookPromptHandlerSchema,
-        ToolRouterHookPromptInjectionHandlerSchema,
+        ToolRouterHookConditionCheckHandlerSchema,
+        ToolRouterHookPromptInjectionCheckHandlerSchema,
       ]),
     })
     .strict(),

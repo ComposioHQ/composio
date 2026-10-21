@@ -197,23 +197,16 @@ export type SessionHookBody = {
   name?: string;
   applies_to: 'all' | { toolkits: string[] };
   handler:
-    | { type: 'prompt'; prompt: string; on_match: 'block' }
-    | { type: 'prompt_injection'; on_match: 'block' };
+    | { type: 'condition_check'; condition: string; action: 'block' }
+    | { type: 'prompt_injection_check'; action: 'block' };
 };
 
 /** Request body of `sessions.create()`: the generated `SessionCreateParams` plus `hooks`. */
 export type SessionCreateBody = SessionCreateParams & { hooks?: SessionHookBody[] };
 
-/** `hooks` as sent on create and update: `appliesTo` and `onMatch` become `applies_to` and `on_match`. */
+/** `hooks` as sent on create and update: `appliesTo` becomes `applies_to`. */
 export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHookBody[] =>
-  hooks.map(({ appliesTo, handler, ...hook }) => ({
-    ...hook,
-    applies_to: appliesTo,
-    handler:
-      handler.type === 'prompt'
-        ? { type: 'prompt', prompt: handler.prompt, on_match: handler.onMatch }
-        : { type: 'prompt_injection', on_match: handler.onMatch },
-  }));
+  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
 
 /**
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`

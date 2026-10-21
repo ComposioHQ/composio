@@ -184,24 +184,24 @@ ToolRouterHookAppliesTo = t.Union[t.Literal["all"], ToolRouterHookToolkitsScope]
 """Which tool calls a hook runs on: ``"all"``, or only the listed toolkits."""
 
 
-class ToolRouterHookPromptHandler(te.TypedDict):
-    """Blocks a call or result when it matches ``prompt``.
+class ToolRouterHookConditionCheckHandler(te.TypedDict):
+    """Blocks a call or result when it matches ``condition``.
 
-    ``prompt`` is a plain sentence describing what to block, for example
+    ``condition`` is a plain sentence describing what to block, for example
     ``"Sending email to anyone outside example.org"``.
     """
 
-    type: t.Literal["prompt"]
-    prompt: str
-    on_match: t.Literal["block"]
+    type: t.Literal["condition_check"]
+    condition: str
+    action: t.Literal["block"]
 
 
-class ToolRouterHookPromptInjectionHandler(te.TypedDict):
-    """A pre-defined handler that blocks results with text that tries to give
+class ToolRouterHookPromptInjectionCheckHandler(te.TypedDict):
+    """A pre-defined check that blocks results with text that tries to give
     the agent instructions."""
 
-    type: t.Literal["prompt_injection"]
-    on_match: t.Literal["block"]
+    type: t.Literal["prompt_injection_check"]
+    action: t.Literal["block"]
 
 
 class ToolRouterBeforeExecuteHook(te.TypedDict):
@@ -215,7 +215,7 @@ class ToolRouterBeforeExecuteHook(te.TypedDict):
     id: str
     name: te.NotRequired[str]
     applies_to: ToolRouterHookAppliesTo
-    handler: ToolRouterHookPromptHandler
+    handler: ToolRouterHookConditionCheckHandler
 
 
 class ToolRouterAfterExecuteHook(te.TypedDict):
@@ -229,7 +229,9 @@ class ToolRouterAfterExecuteHook(te.TypedDict):
     id: str
     name: te.NotRequired[str]
     applies_to: ToolRouterHookAppliesTo
-    handler: t.Union[ToolRouterHookPromptHandler, ToolRouterHookPromptInjectionHandler]
+    handler: t.Union[
+        ToolRouterHookConditionCheckHandler, ToolRouterHookPromptInjectionCheckHandler
+    ]
 
 
 ToolRouterHook = t.Union[ToolRouterBeforeExecuteHook, ToolRouterAfterExecuteHook]
