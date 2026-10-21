@@ -38,6 +38,11 @@ setup(
         # `NameResolutionError` and different connection internals.
         # 2.7.0 fixes GHSA-mf9v-mfxr-j63j and GHSA-qccp-gfcp-xxvc.
         "urllib3>=2.7.0",
+        # eMudhra intermediate CA (emSign ECC Root CA - G3) compromise on
+        # 2026-10-20. certifi 2026.10.19 removes that compromised root, so
+        # `requests` (which verifies TLS against certifi's bundle on every SDK
+        # fetch) no longer trusts the poisoned chain. See #5011.
+        "certifi>=2026.10.19",
     ],
     include_package_data=True,
 )
