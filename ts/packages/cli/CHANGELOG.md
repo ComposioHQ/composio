@@ -15,6 +15,9 @@
   response does not match the shape this CLI expects, naming the mismatched
   fields. They used to warn and continue with the unchecked response.
 
+- The CLI now uses `@composio/client@2.0.0-rc.21` (up from `2.0.0-rc.20`). No
+  command changes.
+
 - `composio dev triggers create` now accepts `--user-id` and sends it with the
   request, so it works on projects with 2FA enabled, which require the user who
   owns the connected account. It used to reject `--user-id` and send no user,
