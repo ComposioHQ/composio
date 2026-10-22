@@ -16,15 +16,17 @@
   CI and agents saw no output and a successful exit. The messages are
   unchanged.
   - Missing input, before any request: `composio whoami` without a login,
-    `composio dev init` without a stored API key or org,
     `composio dev projects list` without `--org-id` or a current org,
     `composio triggers info` and `composio dev triggers info` without a
     `<slug>`, `composio dev toolkits info` without a `<slug>`,
-    `composio dev triggers disable` without an `<id>`,
+    `composio dev triggers disable` without an `<id>`, and
     `composio dev connected-accounts info` and
-    `composio dev connected-accounts whoami` without an `<id>`, and
+    `composio dev connected-accounts whoami` without an `<id>`.
+  - Missing input that needs one lookup first: `composio dev init` without a
+    stored API key or org (it checks your saved login), and
     `composio connections remove` with a selector that matches no connection
-    or more than one.
+    or more than one (it fetches your connections). Both fail before they
+    change anything.
   - Failures after a request: `composio dev toolkits info` for a toolkit it
     cannot fetch or find, `composio dev toolkits version` for a toolkit it
     cannot fetch, `composio dev init` in an org without projects, and
