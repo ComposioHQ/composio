@@ -23,7 +23,7 @@ export type ToolkitsListParams = {
   readonly connected: Option.Option<boolean>;
 };
 
-type SessionToolkitItem = SessionToolkitsResponse.Item;
+type SessionToolkitItem = SessionToolkitsResponse['items'][number];
 
 /** The user whose connection status the list shows, and the notice printed when it is a fallback. */
 export type ToolkitsListUser = {

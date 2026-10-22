@@ -1,7 +1,7 @@
 import {
   SessionCreateParams,
   SessionPatchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import {
   ToolRouterConfigTags,
   ToolRouterConfigTools,
@@ -85,7 +85,9 @@ export const transformToolRouterToolsParams = (
 
 export const transformToolRouterTagsParams = (
   params?: ToolRouterConfigTags
-): SessionCreateParams.Tags['tags'] | undefined => {
+):
+  | Extract<NonNullable<SessionCreateParams['tools']>[string], { tags: unknown }>['tags']
+  | undefined => {
   if (!params) {
     return undefined;
   }
@@ -102,7 +104,7 @@ export const transformToolRouterTagsParams = (
 
 export const transformToolRouterManageConnectionsParams = (
   params?: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionCreateParams.ManageConnections => {
+): NonNullable<SessionCreateParams['manage_connections']> => {
   if (params === undefined) {
     // Default case when params is undefined
     return {
@@ -145,7 +147,7 @@ export const resolveToolRouterSandboxConfig = (
 
 export const transformToolRouterSandboxParams = (
   params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
-): SessionCreateParams.Workbench | undefined => {
+): NonNullable<SessionCreateParams['workbench']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -174,19 +176,19 @@ type WithNull<T, K extends keyof T> = Omit<T, K> & { [P in K]?: NonNullable<T[P]
  * the generated client types as string-only.
  */
 export type SessionPatchManageConnectionsBody = WithNull<
-  SessionPatchParams.ManageConnections,
+  NonNullable<SessionPatchParams['manage_connections']>,
   'callback_url'
 >;
 
 /** `multi_account` as sent by `session.update()`; `null` removes the stored maximum. */
 export type SessionPatchMultiAccountBody = WithNull<
-  SessionPatchParams.MultiAccount,
+  NonNullable<SessionPatchParams['multi_account']>,
   'max_accounts_per_toolkit'
 >;
 
 /** `experimental` as sent by `session.update()`; `null` removes a stored leaf. */
 export type SessionPatchExperimentalBody = WithNull<
-  SessionPatchParams.Experimental,
+  NonNullable<SessionPatchParams['experimental']>,
   'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
 >;
 
@@ -312,7 +314,7 @@ const transformToolRouterUpdateExperimentalParams = (
  */
 export const transformToolRouterUpdateSandboxParams = (
   params: Partial<ToolRouterSandboxConfig>
-): SessionPatchParams.Workbench => {
+): NonNullable<SessionPatchParams['workbench']> => {
   const result: Record<string, unknown> = {};
   if (params.enable !== undefined) {
     result.enable = params.enable;
@@ -326,7 +328,7 @@ export const transformToolRouterUpdateSandboxParams = (
   if (params.sandboxSize !== undefined) {
     result.sandbox_size = params.sandboxSize;
   }
-  return result as SessionPatchParams.Workbench;
+  return result as NonNullable<SessionPatchParams['workbench']>;
 };
 
 /** @deprecated Renamed — use `transformToolRouterUpdateSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
@@ -334,7 +336,7 @@ export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdat
 
 export const transformToolRouterMultiAccountParams = (
   params?: ParsedCreateSessionConfig['multiAccount']
-): SessionCreateParams.MultiAccount | undefined => {
+): NonNullable<SessionCreateParams['multi_account']> | undefined => {
   if (!params) {
     return undefined;
   }

@@ -85,7 +85,16 @@ jobs:
             # Remove this exception once CrewAI permits a patched MCP, or
             # reassess it before adding a stateful MCP HTTP server here.
             # https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv
-            ignored-vulns: 'CVE-2026-59951'
+            #
+            # PYSEC-2026-4321 / GHSA-hq85-5cpj-mr62: uv's vendored CA bundle
+            # trusts a root whose intermediates are compromised, so uv's own
+            # network requests can be intercepted. `uv` is in this lock only
+            # as a dependency of crewai-cli (through crewai); Composio never
+            # runs it. crewai-cli pins uv~=0.11.6, excluding the 0.13.4 fix
+            # (the latest published crewai-cli 1.15.28 has the same
+            # constraint). Remove this exception once crewai-cli permits it.
+            # https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+            ignored-vulns: 'CVE-2026-59951 PYSEC-2026-4321'
           # Provider projects with their own lockfiles, which pin the published
           # `composio` from PyPI rather than the workspace checkout. uv resolves
           # them on their own even though python/providers/openai is listed as

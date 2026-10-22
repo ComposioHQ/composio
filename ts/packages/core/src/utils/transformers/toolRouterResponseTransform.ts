@@ -4,7 +4,7 @@
 import type {
   SessionExecuteResponse,
   SessionProxyExecuteResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
 import { ValidationError } from '../../errors/ValidationErrors';

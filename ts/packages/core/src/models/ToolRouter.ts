@@ -37,7 +37,7 @@ import {
   SessionCreateParams,
   SessionCreateResponse,
   SessionRetrieveResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,

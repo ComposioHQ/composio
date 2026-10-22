@@ -806,7 +806,7 @@ release = [
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "composio-client", specifier = "==2.0.0rc19" },
+    { name = "composio-client", specifier = "==2.0.0rc20" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
     { name = "jsonschema", specifier = ">=4.23.0,<5" },
     { name = "openai", specifier = ">=2.48.0,<4" },
@@ -857,16 +857,16 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0rc19"
+version = "2.0.0rc20"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/b0/892c075f29639ae235aed971654ace1295363700f6e722795909bd3a9b43/composio_client-2.0.0rc19.tar.gz", hash = "sha256:565f76236c0fcaece194935fd3e88c73a9fb0250e2d93630fda2abddc0ac807c", size = 632179, upload-time = "2026-10-16T00:41:29.118Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/99/fb4ebe2c763d2796db8cdf90c60e4b7b649e05d717ec228511f0077fd9cc/composio_client-2.0.0rc20.tar.gz", hash = "sha256:43462291c1e5a7e119bbeaebf8bcaec8ee01d51d7e3d3af146de4812ed28cb07", size = 566870, upload-time = "2026-10-22T12:49:08.046Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/7c/85936107e4353b069a150c830b124df7f092a9af4e5da718ea659ca61581/composio_client-2.0.0rc19-py3-none-any.whl", hash = "sha256:5e93220fd5188b46d05f0e2685d16b59a951ed281754fa3e3338661f22ac3113", size = 452798, upload-time = "2026-10-16T00:41:27.202Z" },
+    { url = "https://files.pythonhosted.org/packages/43/8d/6c60f79e9ca26bdfd91b456651a9a2aa36c17b0729187763ccff1f5ba743/composio_client-2.0.0rc20-py3-none-any.whl", hash = "sha256:cb6f73425b3c74bf1fe71fc7a92597297ab4da51a33b073972e37923b4443783", size = 452216, upload-time = "2026-10-22T12:49:06.312Z" },
 ]
 
 [[package]]
@@ -1803,8 +1803,8 @@ name = "httpcore2"
 version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11", marker = "python_full_version != '3.12.*' or sys_platform != 'emscripten'" },
-    { name = "truststore", marker = "python_full_version != '3.12.*' or sys_platform != 'emscripten'" },
+    { name = "h11" },
+    { name = "truststore" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/15/8c/e925b1c92018abb3a1863ce1549d76d2381e334d21d65d4ac8f65dabd78a/httpcore2-2.13.0.tar.gz", hash = "sha256:2adc8be4fb285fbcd6d894298db3b52c177e74b6674eda3a76bd36be3292a3db", size = 67740, upload-time = "2026-09-14T14:18:04.717Z" }
 wheels = [
@@ -2043,7 +2043,7 @@ name = "importlib-metadata"
 version = "9.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6f/7e/1e7e8dc30634b93ebb3d58a3dea569ad146e656218d3960ab04f62047b29/importlib_metadata-9.0.1.tar.gz", hash = "sha256:ab830580bc0ef3db61ce8fae716389e5462b67e033018bab6d8f80ef17172f99", size = 59124, upload-time = "2026-08-28T15:30:34.646Z" }
 wheels = [
@@ -4924,8 +4924,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography", marker = "python_full_version != '3.12.*' or sys_platform != 'emscripten'" },
-    { name = "jeepney", marker = "python_full_version != '3.12.*' or sys_platform != 'emscripten'" },
+    { name = "cryptography" },
+    { name = "jeepney" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [
