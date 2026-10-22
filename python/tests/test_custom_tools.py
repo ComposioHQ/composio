@@ -313,6 +313,88 @@ def future_tool(input: FutureInput, ctx):
         local_tool, local_input = build_tool()
         assert local_tool.input_params is local_input
 
+    def test_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # https://github.com/ComposioHQ/composio/issues/5022
+        with pytest.raises(
+            ValidationError,
+            match=(
+                r"could not resolve the annotation 'LaterInput' .*"
+                r"NameError: name 'LaterInput' is not defined.*"
+                r"Define LaterInput before the tool"
+            ),
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+@exp.tool()
+def later_tool(input: LaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LaterInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+
+    def test_input_model_imported_under_type_checking_names_unresolved_annotation(
+        self,
+    ):
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'GrepInput' .*TYPE_CHECKING",
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tests.test_custom_tools import GrepInput
+
+
+@exp.tool()
+def type_checking_tool(input: GrepInput, ctx):
+    '''Input model only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+
+    def test_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class TypedInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
 
