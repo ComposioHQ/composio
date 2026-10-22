@@ -17,7 +17,7 @@ bun = "http:bun"
 "npm:pnpm" = "11.8.0"
 node = "24.22.1"
 python = "3.12"
-uv = "0.8.19"
+uv = "0.13.4"
 
 # These immutable npm platform packages contain Bun's stable release binaries;
 # mise extracts the matching one directly, with no npm lifecycle involved.
