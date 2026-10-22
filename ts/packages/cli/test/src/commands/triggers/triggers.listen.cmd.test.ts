@@ -1,9 +1,11 @@
+import type { ServerResponse } from 'node:http';
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, TestLive } from 'test/__utils__';
+import { withHttpServerEffect } from 'test/__utils__/http-server';
 import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
@@ -164,6 +166,70 @@ describe('CLI: composio dev listen', () => {
         );
         // Recovered per-event failures, not a failed command.
         expect(process.exitCode).toBeUndefined();
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          {
+            id: 'evt_conn_expired_1',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_1',
+            },
+          },
+          {
+            id: 'evt_conn_expired_2',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_2',
+            },
+          },
+        ],
+      },
+    })
+  )('[Given] --max-events is reached while another event is still forwarding', it => {
+    // The target answers the second request at once and fails the first one shortly after, so
+    // the listener reaches --max-events 2 while the first event is still in flight.
+    it.effect('[Then] waits for that event and counts its failure', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        const held: Array<ServerResponse> = [];
+        yield* withHttpServerEffect(
+          (_req, res) => {
+            const first = held.shift();
+            if (first === undefined) {
+              held.push(res);
+              return;
+            }
+            res.end();
+            setTimeout(() => first.writeHead(500).end(), 100);
+          },
+          url =>
+            cli(['dev', 'listen', '--forward', url, '--max-events', '2']).pipe(
+              Effect.provide(terminal.layer)
+            )
+        );
+
+        expect(terminal.stderr()).toMatch(
+          /1 event failed to forward to http:\/\/127\.0\.0\.1:\d+ while listening\./
+        );
       })
     );
   });

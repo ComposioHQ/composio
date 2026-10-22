@@ -1,6 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { reportFailure } from 'src/effects/report-failure';
-import { eventCount, makeSinkFailures } from './triggers/sink-failures';
+import { eventCount, finishAcceptedEvents, makeSinkFailures } from './triggers/sink-failures';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
@@ -598,8 +598,10 @@ export const listenCmd = Command.make(
             ),
         createdTrigger =>
           Effect.gen(function* () {
-            // Scoped below, so in-flight event callbacks are interrupted before the release hook.
-            const runEvent = yield* FiberSet.makeRuntime();
+            // Scoped below: a stop other than --max-events or --timeout interrupts the event
+            // callbacks still running before the release hook sums up.
+            const events = yield* FiberSet.make();
+            const runEvent = yield* FiberSet.runtime(events)();
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
             if (debug) {
               const debugMsg =
@@ -710,6 +712,9 @@ export const listenCmd = Command.make(
             // Without --max-events, --timeout or --fail-fast nothing resolves stopWhenDone, so
             // this waits on the listener until it is interrupted.
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+            if (stopReason === 'max-events' || stopReason === 'timeout') {
+              yield* finishAcceptedEvents(events);
+            }
             if (stopReason === 'max-events') {
               yield* ui.outro(
                 formatStopMessage({

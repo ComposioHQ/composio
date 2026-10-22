@@ -1,6 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { reportFailure } from 'src/effects/report-failure';
-import { eventCount, makeSinkFailures } from '../sink-failures';
+import { eventCount, finishAcceptedEvents, makeSinkFailures } from '../sink-failures';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -354,8 +354,10 @@ export const triggersCmd$Listen = Command.make(
         );
 
       yield* Effect.gen(function* () {
-        // Scoped below, so in-flight event callbacks are interrupted before the summaries print.
-        const runEvent = yield* FiberSet.makeRuntime();
+        // Scoped below: a stop other than --max-events interrupts the event callbacks still
+        // running before the summaries print.
+        const events = yield* FiberSet.make();
+        const runEvent = yield* FiberSet.runtime(events)();
         // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
         // the listener until it is interrupted.
         const stopReason = yield* Effect.raceFirst(
@@ -363,6 +365,7 @@ export const triggersCmd$Listen = Command.make(
           Deferred.await(stopWhenDone)
         );
         if (stopReason === 'max-events') {
+          yield* finishAcceptedEvents(events);
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(

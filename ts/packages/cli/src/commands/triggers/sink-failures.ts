@@ -1,6 +1,14 @@
-import { Effect } from 'effect';
+import { Effect, FiberSet } from 'effect';
 import { reportFailure } from 'src/effects/report-failure';
 import type { TerminalUI } from 'src/services/terminal-ui';
+
+/**
+ * On a normal stop (`--max-events`, `--timeout`), lets the events the listener already accepted
+ * finish saving or forwarding, for up to 10 seconds, so the summary counts how they ended. The
+ * listener's scope then interrupts whatever is still running.
+ */
+export const finishAcceptedEvents = (events: FiberSet.FiberSet) =>
+  FiberSet.awaitEmpty(events).pipe(Effect.timeoutOption('10 seconds'), Effect.asVoid);
 
 /** `1 event`, `2 events`. */
 export const eventCount = (count: number) => `${count} event${count === 1 ? '' : 's'}`;
