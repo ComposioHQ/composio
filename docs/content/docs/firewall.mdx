@@ -130,7 +130,7 @@ session = composio.create(
         {
             "id": "no_secrets_in_results",
             "type": "after_execute",
-            "name": "Hide emails that contain passwords or API keys",
+            "name": "No secrets in emails",
             "applies_to": {"toolkits": ["gmail"]},
             "handler": {
                 "type": "condition_check",
@@ -153,7 +153,7 @@ const session = await composio.create('user_123', {
     {
       id: 'no_secrets_in_results',
       type: 'after_execute',
-      name: 'Hide emails that contain passwords or API keys',
+      name: 'No secrets in emails',
       appliesTo: { toolkits: ['gmail'] },
       handler: {
         type: 'condition_check',
