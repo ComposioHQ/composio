@@ -342,7 +342,7 @@ wheels = [
 
 [[package]]
 name = "composio-claude-agent-sdk"
-version = "0.29.0"
+version = "0.29.1"
 source = { virtual = "." }
 dependencies = [
     { name = "claude-agent-sdk" },
