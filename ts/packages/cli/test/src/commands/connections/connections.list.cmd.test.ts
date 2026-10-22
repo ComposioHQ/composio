@@ -88,10 +88,22 @@ describe('CLI: composio connections list', () => {
         const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE', permission_group: null }],
+          gmail: [{ id: 'con_gmail_active', status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -115,10 +127,22 @@ describe('CLI: composio connections list', () => {
         const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE', permission_group: null }],
+          gmail: [{ id: 'con_gmail_active', status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -137,8 +161,20 @@ describe('CLI: composio connections list', () => {
 
         expect(parsed).toEqual({
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -184,6 +220,111 @@ describe('CLI: composio connections list', () => {
         const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).not.toHaveProperty('slack');
+      })
+    );
+  });
+});
+
+describe('CLI: composio connections list account identity', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: [
+          {
+            ...testConnections[0]!,
+            id: 'con_notion_team',
+            alias: 'team',
+            word_id: 'harbor',
+            toolkit: { slug: 'notion' },
+          },
+        ],
+      },
+    })
+  )(it => {
+    it.effect('[Given] the only account of a toolkit has an alias [Then] prints id and alias', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'list']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const parsed = JSON.parse(String(lines.at(-1)));
+
+        expect(parsed).toEqual({
+          notion: [
+            {
+              id: 'con_notion_team',
+              status: 'ACTIVE',
+              alias: 'team',
+              word_id: 'harbor',
+              permission_group: null,
+            },
+          ],
+        });
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
+    it.effect('[Given] state.val.displayName [Then] prints display_name and no credentials', () =>
+      Effect.gen(function* () {
+        const rawItem = {
+          ...testConnections[0]!,
+          id: 'con_gmail_named',
+          alias: 'work',
+          state: {
+            authScheme: 'OAUTH2',
+            val: {
+              displayName: '  ada@example.com  ',
+              access_token: 'must-not-leak',
+              refresh_token: 'must-not-leak',
+            },
+          },
+          data: { access_token: 'must-not-leak' },
+          params: { refresh_token: 'must-not-leak' },
+        };
+        const stub = stubClientResources(
+          ['connectedAccounts'],
+          routeRequests(
+            [
+              {
+                method: 'GET',
+                path: '/api/v3.1/connected_accounts',
+                respond: () =>
+                  Response.json({
+                    items: [rawItem],
+                    total_items: 1,
+                    total_pages: 1,
+                    current_page: 1,
+                    next_cursor: null,
+                  }),
+              },
+            ],
+            () => Response.json({ items: testConnections, next_cursor: null })
+          )
+        );
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'list']).pipe(Effect.provide(stub.layer));
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        const parsed = JSON.parse(String(lines.at(-1)));
+
+        expect(parsed).toEqual({
+          gmail: [
+            {
+              id: 'con_gmail_named',
+              status: 'ACTIVE',
+              alias: 'work',
+              display_name: 'ada@example.com',
+              permission_group: null,
+            },
+          ],
+        });
+        expect(output).not.toContain('must-not-leak');
+        expect(output).not.toContain('access_token');
       })
     );
   });
