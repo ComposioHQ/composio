@@ -318,7 +318,7 @@ async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters?: TriggerSu
 
 | Name | Type | Description |
 |------|------|-------------|
-| `fn` | `(_data: IncomingTriggerPayload) => void` | The function to call when a trigger is received |
+| `fn` | `(_data: IncomingTriggerPayload) => void` | The function to call when a trigger is received. It may be `async`. Errors thrown from — or promises rejected by — the function are contained and logged. |
 | `filters?` | `TriggerSubscribeParams` | The filters to apply to the triggers |
 | `onSubscriptionError?` | `(data: Record<string, unknown>) => void` | Optional callback invoked with the raw Pusher payload when the underlying subscription fails (for example on auth or permission rejection). The subscribe promise still resolves; this is the only programmatic signal of the failure. Errors thrown from — or promises rejected by — the callback are contained and logged. |
 
@@ -339,6 +339,10 @@ triggers.subscribe((data) => {
 ### unsubscribe()
 
 Unsubscribe from all the triggers
+
+Ends every subscription made with subscribe on this instance, including one that is
+still connecting, and closes the realtime connection so that a script can exit. A later
+`subscribe()` opens a new connection.
 
 ```typescript
 async unsubscribe(): Promise<void>
