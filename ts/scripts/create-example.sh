@@ -41,7 +41,7 @@ cat > "$EXAMPLE_PATH/package.json" << EOL
     "dotenv": "^16.4.1"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "^1.4.3",
     "typescript": "catalog:"
   }
 }
