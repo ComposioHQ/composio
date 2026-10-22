@@ -409,8 +409,20 @@ def _infer_tool_from_function(
         )
     input_params: t.Type[BaseModel] = first_annotation
 
-    # Wrap function to match CustomToolExecuteFn: (input, ctx) -> dict
-    if len(params) == 1:
+    # Wrap function to match CustomToolExecuteFn: (input, ctx) -> dict,
+    # while preserving keyword-only parameters in the user's signature.
+    if first.kind is inspect.Parameter.KEYWORD_ONLY:
+
+        def execute(input: t.Any, ctx: t.Any) -> t.Dict[str, t.Any]:
+            kwargs = {first.name: input}
+            if len(params) == 2:
+                kwargs[params[1].name] = ctx
+            return fn(**kwargs)
+    elif len(params) == 2 and params[1].kind is inspect.Parameter.KEYWORD_ONLY:
+
+        def execute(input: t.Any, ctx: t.Any) -> t.Dict[str, t.Any]:
+            return fn(input, **{params[1].name: ctx})
+    elif len(params) == 1:
 
         def execute(input: t.Any, ctx: t.Any) -> t.Dict[str, t.Any]:
             return fn(input)
