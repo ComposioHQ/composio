@@ -122,7 +122,11 @@ export const AgentHandlerTest = (fixture: AgentHandlerFixture = {}) => {
         execPath: `${homedir}/composio`,
         platform: 'darwin',
         arch: 'arm64',
-        setExitCode: () => Effect.void,
+        // Agent handler tests read the exit code off the real process.
+        setExitCode: code =>
+          Effect.sync(() => {
+            process.exitCode = code;
+          }),
       })
     ),
     ConfigProvider.layer(hostOnlyEnvConfigProvider)

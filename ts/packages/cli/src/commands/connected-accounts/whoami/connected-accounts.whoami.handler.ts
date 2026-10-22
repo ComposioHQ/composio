@@ -1,4 +1,5 @@
 import { Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -20,6 +21,8 @@ import {
 export type ConnectedAccountsWhoamiParams = {
   readonly id: Option.Option<string>;
 };
+
+const invalidInput = commandInputError('dev connected-accounts whoami');
 
 const showConnectedAccountProfile = (id: string) =>
   Effect.gen(function* () {
@@ -58,15 +61,13 @@ const showConnectedAccountProfile = (id: string) =>
 
 /**
  * Shows who a connected account is connected as (toolkit, user, status), warning when the
- * connection is not ACTIVE; a missing id warns and exits 0, as it always has.
+ * connection is not ACTIVE. A missing `<id>` fails with a `CommandInputError` before any request;
+ * an API failure is reported with a hint and exits 1.
  */
 export const runConnectedAccountsWhoami = ({ id }: ConnectedAccountsWhoamiParams) =>
-  Option.match(id, {
-    onNone: () =>
-      Effect.gen(function* () {
-        const ui = yield* TerminalUI;
-        yield* ui.log.warn(MISSING_ID_MESSAGE);
-        yield* ui.log.step(missingIdHint('whoami'));
-      }),
-    onSome: showConnectedAccountProfile,
+  Effect.gen(function* () {
+    if (Option.isNone(id)) {
+      return yield* invalidInput(`${MISSING_ID_MESSAGE}\n${missingIdHint('whoami')}`, '<id>');
+    }
+    yield* showConnectedAccountProfile(id.value);
   });

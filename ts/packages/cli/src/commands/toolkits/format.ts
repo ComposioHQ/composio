@@ -5,6 +5,9 @@ import { truncate } from 'src/ui/truncate';
 
 type SessionToolkitItem = SessionToolkitsResponse['items'][number];
 
+/** The next-step hint the toolkit commands print when a toolkit cannot be found or fetched. */
+export const BROWSE_TOOLKITS_HINT = 'Browse available toolkits:\n> composio dev toolkits list';
+
 const formatAuthConfigField = (field: {
   name: string;
   displayName: string;

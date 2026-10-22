@@ -1,4 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
+import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
@@ -347,6 +348,30 @@ const formatStreamValue = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
+/**
+ * Saves one matched event: its payload file, its line in the stream file, then the `event:` line
+ * and, when streaming (`streamPath` set), the `stream:` line.
+ */
+const saveListenEvent = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly ui: TerminalUI;
+  readonly eventData: Record<string, unknown>;
+  readonly eventFilePath: string;
+  readonly streamFilePath: string;
+  readonly streamEntry: string;
+  readonly streamPath: ReadonlyArray<string | number> | undefined;
+}) =>
+  Effect.gen(function* () {
+    const { fs, ui, eventFilePath, streamPath } = params;
+    yield* fs.writeFileString(eventFilePath, `${JSON.stringify(params.eventData, null, 2)}\n`);
+    yield* fs.writeFileString(params.streamFilePath, `${params.streamEntry}\n`, { flag: 'a' });
+    yield* emitStreamLine(`event: ${eventFilePath}`, ui);
+    if (streamPath !== undefined) {
+      const streamValue = applyStreamPath(params.eventData, streamPath);
+      yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
+    }
+  });
+
 const formatStopMessage = (params: {
   matchingEvents: number;
   timedOut: boolean;
@@ -536,6 +561,22 @@ export const listenCmd = Command.make(
 
       const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
       let matchingEvents = 0;
+      // Per-event write failures are recovered so one bad event never stops the listener; they
+      // are counted here and summed up on plain stderr on every stop — including Ctrl+C and
+      // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
+      // none of the `ui.log.warn` decoration. The release hook below runs on all of them.
+      let eventWriteFailures = 0;
+      const recordWriteFailure = (error: unknown) =>
+        Effect.gen(function* () {
+          eventWriteFailures += 1;
+          yield* ui.log.warn(errorMessage(error));
+        });
+      const reportWriteFailures = () =>
+        eventWriteFailures > 0
+          ? ui.error(
+              `${eventWriteFailures} event${eventWriteFailures === 1 ? '' : 's'} failed to write while listening.`
+            )
+          : Effect.void;
       const seenEventIds = new Set<string>();
 
       yield* Effect.acquireUseRelease(
@@ -622,7 +663,6 @@ export const listenCmd = Command.make(
 
                   matchingEvents += 1;
                   const eventFilePath = path.join(triggerDir, `${eventFileId}-payload.json`);
-                  const eventJson = JSON.stringify(eventData, null, 2);
                   const streamEntry = JSON.stringify({
                     event_id: eventFileId,
                     event_type: eventTypeOf(eventData),
@@ -632,22 +672,21 @@ export const listenCmd = Command.make(
                     received_at: new Date().toISOString(),
                   });
 
-                  yield* fs.writeFileString(eventFilePath, `${eventJson}\n`);
-                  yield* fs.writeFileString(streamFilePath, `${streamEntry}\n`, { flag: 'a' });
-                  yield* emitStreamLine(`event: ${eventFilePath}`, ui);
-
-                  if (shouldStream) {
-                    const streamValue = applyStreamPath(eventData, streamPath ?? []);
-                    yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
-                  }
+                  // A matched event counts toward --max-events even when saving it fails.
+                  yield* saveListenEvent({
+                    fs,
+                    ui,
+                    eventData,
+                    eventFilePath,
+                    streamFilePath,
+                    streamEntry,
+                    streamPath: shouldStream ? (streamPath ?? []) : undefined,
+                  }).pipe(Effect.catch(recordWriteFailure));
 
                   if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
                     yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
                   }
-                }).pipe(
-                  Effect.tapError(error => ui.log.warn(errorMessage(error))),
-                  Effect.ignore
-                )
+                }).pipe(Effect.catch(recordWriteFailure))
               );
             };
 
@@ -697,17 +736,20 @@ export const listenCmd = Command.make(
             }
           }),
         created =>
-          created === null
-            ? Effect.void
-            : disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id })
+          Effect.gen(function* () {
+            if (created !== null) {
+              yield* disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id });
+            }
+            // Runs on every stop of the use phase — max-events, timeout, and the interruption
+            // of an unlimited wait — so a piped caller always gets the failure count.
+            yield* reportWriteFailures();
+          })
       ).pipe(
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
-          Effect.gen(function* () {
-            yield* ui.log.error(
-              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
-            );
-            process.exitCode = 1;
-          })
+          reportFailure(
+            ui,
+            `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          )
         )
       );
     })

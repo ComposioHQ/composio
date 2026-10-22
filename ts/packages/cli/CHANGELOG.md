@@ -26,6 +26,57 @@
   is on). The message, tips, and `{"successful": false, ...}` JSON on stdout
   are unchanged, and the exit code is still 1.
 
+- `composio link` and `composio dev connected-accounts link` now exit 1 with
+  the usage message on stderr when their flags can't run: a toolkit together
+  with `--auth-config`, neither a toolkit nor `--auth-config`, `--auth-config`
+  without a developer project, and `--list` without a toolkit or with
+  `--auth-config`. They used to exit 0, and printed the message only when
+  stderr was a terminal, so scripts, CI and agents saw no output and a
+  successful exit. The messages are unchanged.
+- These commands now exit 1 and print their message on stderr. They used to
+  exit 0, and printed the message only when stderr was a terminal, so scripts,
+  CI and agents saw no output and a successful exit. The messages are
+  unchanged.
+  - Missing input, before any request: `composio whoami` without a login,
+    `composio dev projects list` without `--org-id` or a current org,
+    `composio triggers info` and `composio dev triggers info` without a
+    `<slug>`, `composio dev toolkits info` without a `<slug>`,
+    `composio dev triggers disable` without an `<id>`, and
+    `composio dev connected-accounts info` and
+    `composio dev connected-accounts whoami` without an `<id>`.
+  - Missing input that needs one lookup first: `composio dev init` without a
+    stored API key or org (it checks your saved login), and
+    `composio connections remove` with a selector that matches no connection
+    or more than one (it fetches your connections). Both fail before they
+    change anything.
+  - Failures after a request: `composio dev toolkits info` for a toolkit it
+    cannot fetch or find, `composio dev toolkits version` for a toolkit it
+    cannot fetch, `composio dev init` in an org without projects, and
+    `composio link` and `composio dev connected-accounts link` when the link
+    request fails, the link response is incomplete, the `--alias` is already
+    taken, or an account already exists and no `--alias` was passed.
+- These commands already exited 1 but printed their message only when stderr
+  was a terminal; they now print it on stderr either way:
+  `composio dev toolkits list` and `composio dev toolkits search` when the
+  request fails, `composio listen`, `composio dev listen` and
+  `composio dev triggers listen` when the realtime subscription fails, and
+  the `composio agent` commands, `composio signup` and `composio login` when
+  the stored agent identity can't be used.
+- `composio connections remove` gains `--yes` (`-y`) to remove without the
+  confirmation prompt, and `composio logout` accepts `--yes` (`-y`) next to
+  `--force` (`-f`). When not running interactively, both used to answer their
+  own prompt with "no", remove nothing and exit 0; without `--yes` they now
+  exit 1 with "needs --yes when not running interactively" on stderr, before
+  any request (for `logout`, only when logged in as an agent, the case that
+  asks). Declining the prompt on a terminal still removes nothing and exits 0.
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  now print how many events they failed to save, forward, or append to `--out`
+  on stderr when they stop, including on Ctrl+C. The per-event warnings were
+  shown only when stderr was a terminal. One failed event still does not stop
+  the listener, and the exit code is unchanged.
+- `composio listen --max-events N` now stops after N matching events even when
+  saving one of them fails. It used to keep listening until interrupted.
+
 ## 0.5.0
 
 ### Minor Changes
