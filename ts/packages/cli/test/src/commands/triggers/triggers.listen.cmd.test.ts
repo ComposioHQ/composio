@@ -4,6 +4,7 @@ import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, TestLive } from 'test/__utils__';
+import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 const testConfigProvider = ConfigProvider.fromEnv({
@@ -91,6 +92,28 @@ describe('CLI: composio dev listen', () => {
 
         expect(terminal.stderr()).toContain(
           '1 event failed to forward to http://127.0.0.1:9/composio while listening.'
+        );
+        // Recovered per-event failures, not a failed command.
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
+    it.effect('[Then] sums the output-file failures up on stderr when the listener stops', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const outFile = '/tmp/composio-dev-listen-test-out.jsonl';
+        const terminal = redirectedTerminalUI();
+        yield* cli(['dev', 'listen', '--out', outFile, '--max-events', '1']).pipe(
+          Effect.provide(
+            Layer.merge(
+              failingFileWrites(path => path === outFile),
+              terminal.layer
+            )
+          )
+        );
+
+        expect(terminal.stderr()).toContain(
+          `1 event failed to append to ${outFile} while listening.`
         );
         // Recovered per-event failures, not a failed command.
         expect(process.exitCode).toBeUndefined();

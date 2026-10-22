@@ -1,10 +1,12 @@
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
+import { TestClock } from 'effect/testing';
 import { ListenCommandError } from 'src/commands/listen.cmd';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 const testConfigProvider = ConfigProvider.fromEnv({
@@ -130,6 +132,78 @@ describe('CLI: composio listen', () => {
 
         expect(output).toContain('stream: ');
         expect(output).toContain('Stopped after receiving 1 event.');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          {
+            id: 'evt_conn_expired_1',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_1',
+            },
+          },
+        ],
+      },
+    })
+  )('[Given] event payloads that cannot be written', it => {
+    const payloadWritesFail = failingFileWrites(path => path.endsWith('-payload.json'));
+
+    // The write failure logs its warn only after it was counted, so the latch is an ordered
+    // count-is-set signal — no polling, no sleeps.
+    const listenUntilWriteFails = (args: ReadonlyArray<string>) =>
+      Effect.gen(function* () {
+        const writeFailed = Latch.makeUnsafe(false);
+        const terminal = redirectedTerminalUI({
+          onWarn: message => {
+            if (message.includes('-payload.json')) writeFailed.openUnsafe();
+          },
+        });
+        const fiber = yield* Effect.forkChild(
+          cli(['listen', 'composio.connected_account.expired', ...args]).pipe(
+            Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+          )
+        );
+        yield* writeFailed.await;
+        return { fiber, terminal };
+      });
+
+    it.effect('[Then] sums the write failures up on stderr when the timeout stops it', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const { fiber, terminal } = yield* listenUntilWriteFails(['--timeout', '1s']);
+
+        yield* TestClock.adjust('1 second');
+        yield* Fiber.join(fiber);
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        // Recovered per-event failures, not a failed command.
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
+    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the release hook must run the
+    // summary anyway.
+    it.effect('[Then] sums the write failures up even when the listener is interrupted', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const { fiber, terminal } = yield* listenUntilWriteFails([]);
+
+        yield* Fiber.interrupt(fiber);
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        expect(process.exitCode).toBeUndefined();
       })
     );
   });
