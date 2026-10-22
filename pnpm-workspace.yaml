@@ -33,10 +33,7 @@ catalog:
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
   '@cloudflare/workers-types': ^5.20261012.1
-  # The rc.20 candidate: composio-client main @ 449076c (the merged #99),
-  # published as an exact preview artifact until npm has 2.0.0-rc.20. Swap
-  # this line for '2.0.0-rc.20' when the release lands.
-  '@composio/client': 'https://pkg.pr.new/ComposioHQ/composio-client/@composio/client@449076c9fb4613469b831f99a0e3d36fb44ab4a8'
+  '@composio/client': 2.0.0-rc.20
   '@effect/language-service': ^0.87.4
   '@effect/platform-bun': 4.0.3
   '@effect/vitest': 4.0.3
