@@ -12,6 +12,7 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import sys
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -312,6 +313,150 @@ def future_tool(input: FutureInput, ctx):
 
         local_tool, local_input = build_tool()
         assert local_tool.input_params is local_input
+
+    def test_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # https://github.com/ComposioHQ/composio/issues/5022
+        with pytest.raises(
+            ValidationError,
+            match=(
+                r"could not resolve the annotation 'LaterInput' .*"
+                r"NameError: name 'LaterInput' is not defined.*"
+                r"Define LaterInput before the tool"
+            ),
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+@exp.tool()
+def later_tool(input: LaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LaterInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+
+    def test_input_model_imported_under_type_checking_names_unresolved_annotation(
+        self,
+    ):
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'GrepInput' .*TYPE_CHECKING",
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tests.test_custom_tools import GrepInput
+
+
+@exp.tool()
+def type_checking_tool(input: GrepInput, ctx):
+    '''Input model only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+
+    def test_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class TypedInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # dont_inherit keeps this module's compiler flags out, so the
+        # annotations stay lazy instead of becoming strings.
+        code = compile(
+            """
+from pydantic import BaseModel
+
+
+@exp.tool()
+def lazy_later_tool(input: LazyLaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LazyLaterInput(BaseModel):
+    query: str
+""",
+            "<lazy_later_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'LazyLaterInput' .*NameError",
+        ):
+            exec(code, {"exp": exp})
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        code = compile(
+            """
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class LazyInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def lazy_ctx_tool(input: LazyInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            "<lazy_ctx_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        namespace = {"exp": exp}
+        exec(code, namespace)
+
+        assert namespace["lazy_ctx_tool"].input_params is namespace["LazyInput"]
 
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
@@ -842,7 +987,12 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
         assert "binary_data" not in result
 
     def test_proxy_execute_narrows_status_to_int(self):
@@ -861,8 +1011,14 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
-        assert result == {"status": 200, "data": None, "headers": None}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": None,
+            "headers": None,
+        }
 
     def test_proxy_execute_projects_binary_data(self):
         mock_client = mock_http_client(MagicMock)
@@ -884,6 +1040,7 @@ class TestSessionContextImpl:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -1079,7 +1236,13 @@ class TestToolRouterSessionCustomTools:
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
         assert "binary_data" not in result
 
@@ -1102,6 +1265,7 @@ class TestToolRouterSessionCustomTools:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},

@@ -19,6 +19,7 @@ import {
   ToolRouterSandboxConfig,
   ToolRouterInstant,
   ToolRouterProxyExecute,
+  ToolRouterHook,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -191,11 +192,29 @@ export type SessionPatchExperimentalBody = WithNull<
   'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
 >;
 
+/** A hook as the API takes it, in snake_case. The generated client does not type `hooks` yet. */
+export type SessionHookBody = {
+  type: 'before_execute' | 'after_execute';
+  id: string;
+  name?: string;
+  applies_to: 'all' | { toolkits: string[] };
+  handler:
+    | { type: 'condition_check'; condition: string; action: 'block' }
+    | { type: 'prompt_injection_check'; action: 'block' };
+};
+
+/** Request body of `sessions.create()`: the generated `SessionCreateParams` plus `hooks`. */
+export type SessionCreateBody = SessionCreateParams & { hooks?: SessionHookBody[] };
+
+/** `hooks` as sent on create and update: `appliesTo` becomes `applies_to`. */
+export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHookBody[] =>
+  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
+
 /**
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`
- * with the nullable policy blocks (`null` removes the stored override) and the
- * `expected_config_version` root precondition, none of which the generated
- * client types yet.
+ * with the nullable policy blocks (`null` removes the stored override), `hooks`
+ * and the `expected_config_version` root precondition, none of which the
+ * generated client types yet.
  */
 export type SessionPatchBody = Omit<
   WithNull<
@@ -207,6 +226,7 @@ export type SessionPatchBody = Omit<
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
+  hooks?: SessionHookBody[] | null;
   expected_config_version?: number;
 };
 
@@ -420,6 +440,9 @@ export const transformToolRouterUpdateParams = (
       config.proxyExecute === null
         ? null
         : transformToolRouterProxyExecuteParams(config.proxyExecute);
+  }
+  if (config.hooks !== undefined) {
+    params.hooks = config.hooks === null ? null : transformToolRouterHooksParams(config.hooks);
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;

@@ -476,7 +476,8 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
       });
     }
 
-    yield* ctx.login(userApiKey, orgId);
+    // agents.composio.dev issued this key, not whichever backend an earlier login recorded.
+    yield* ctx.login(userApiKey, orgId, undefined, { issuer: 'environment' });
     // Best-effort analytics stitch after the credential persists; must never break login.
     yield* getSessionInfoByUserApiKey({ userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),

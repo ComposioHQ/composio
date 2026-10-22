@@ -5,6 +5,7 @@ import {
   type ApiErrorDetails,
 } from 'src/utils/api-error-extraction';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { DashboardToolExecutionError } from 'src/services/dashboard-tool-execution';
 
 const NO_CONNECTION_SLUGS: ReadonlySet<string> = new Set([
   'ActionExecute_ConnectedAccountNotFound',
@@ -130,7 +131,12 @@ export const mapComposioError = (params: {
     normalized,
     apiDetails,
     slugValue,
-    message: extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error',
+    message:
+      // Its own message names the Dashboard and what to do next; the cause it
+      // wraps (a transport or decode failure) does not.
+      normalized instanceof DashboardToolExecutionError
+        ? normalized.message
+        : (extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error'),
     override: null,
   };
 };

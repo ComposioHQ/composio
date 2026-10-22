@@ -190,7 +190,7 @@ is sent to the Composio backend as is: custom tools named in a
 `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
 ```typescript
-async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteMetaOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
 ```
 
 **Parameters**
@@ -199,6 +199,7 @@ async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<strin
 |------|------|-------------|
 | `slug` | `ToolRouterSessionMetaToolSlug` | The meta tool slug to execute |
 | `arguments_?` | `Record<string, unknown>` | Optional meta tool arguments |
+| `options?` | `ToolRouterSessionExecuteMetaOptions` | Experimental. The user's answers to an earlier `ComposioToolInputRequiredError` (`inputResponses`) and its `requestState`, as in `session.execute()` |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

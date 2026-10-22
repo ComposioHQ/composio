@@ -13,6 +13,7 @@ from composio.core.provider.base import BaseProviderConfig
 from composio.types import Tool
 from composio.utils.logging import get as get_logger
 from composio.utils.pydantic import parse_pydantic_error
+from composio.utils.schema_converter import object_is_open
 from composio.utils.shared import normalize_tool_arguments
 from composio.utils.strict_schema import omit_null_tool_arguments, to_strict_json_schema
 
@@ -180,14 +181,18 @@ class OpenAIAgentsProvider(
                 reasons,
             )
 
-        # Ensure the schema has additionalProperties set to false
-        # this is required by OpenAI's function validation.
+        # Advertise the root as open or closed exactly as the source schema
+        # does: an explicit ``additionalProperties`` (true, a schema, or false)
+        # is kept as-is, and an omitted one follows the shared object policy
+        # (open only when no properties are declared). Open is written out as
+        # ``true``, matching the TypeScript provider.
         # Deep-copy so the in-place edits below (additionalProperties + the
         # examples/pattern/default removal) never mutate the caller's
         # Tool.input_parameters, matching the deepcopy contract in
         # composio.utils.shared.
         modified_schema = copy.deepcopy(tool.input_parameters)
-        modified_schema["additionalProperties"] = False
+        if "additionalProperties" not in modified_schema:
+            modified_schema["additionalProperties"] = object_is_open(modified_schema)
 
         # Apply the example removal function. This is done to optimize the
         # schema as much as possible for Responses API

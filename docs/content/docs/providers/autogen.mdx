@@ -84,6 +84,16 @@ Each tool comes back as an AutoGen `FunctionTool` with a generated `name`. AutoG
 `register_tools` is unique to the AutoGen provider. Other providers pass tools straight into the agent constructor, so don't expect this method elsewhere.
 </Callout>
 
+## Argument validation
+
+The Python AutoGen provider validates tool arguments against the tool's JSON schema on both the `autogen_core` and AG2 `register_tools` paths. It preserves every key the schema allows, including keys allowed by `additionalProperties` or `patternProperties`. If the model omits an optional argument, the schema's declared default applies; arguments without defaults stay absent. Invalid `patternProperties` or schema-valued `additionalProperties` raise an error when the tool is wrapped.
+
+<Callout type="warn">
+Invalid arguments return an error result to the agent: `{"successful": false, "error": "...", "data": null}`. Values must match their declared types: `"5"` is rejected for an integer argument. For schemas with named properties, unknown top-level keys are rejected unless the schema allows them.
+</Callout>
+
+The `autogen_core` tool declaration advertises an open top-level object when the source schema does. AG2's `register_tools` builds declarations from named parameters, so a wholly free-form argument object isn't advertised as open and the model may omit its keys. Free-form objects nested under a declared argument work on both paths.
+
 ## Next
 
 <Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

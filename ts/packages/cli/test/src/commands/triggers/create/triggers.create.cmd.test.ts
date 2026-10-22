@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import type { TriggerInstanceUpsertParams } from '@composio/client/resources/trigger-instances';
+import { isUsageFailure } from 'src/commands/errors';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
@@ -82,75 +83,54 @@ describe('CLI: composio dev triggers create', () => {
   );
 
   layer(TestLive(dangerousDevConfig))(
-    '[Given] create with invalid JSON config [Then] shows JSON validation error',
+    '[Given] invalid input [Then] fails with a usage error before any request',
     it => {
-      it.effect('rejects invalid trigger config JSON', () =>
+      it.effect.each([
+        {
+          name: 'no trigger name',
+          args: [],
+          option: '<trigger-name>',
+          message: /^Missing required argument: <trigger-name>\nTry specifying a trigger slug/,
+        },
+        {
+          name: 'invalid JSON in --trigger-config',
+          args: ['GMAIL_NEW_GMAIL_MESSAGE', '--trigger-config', '{'],
+          option: '--trigger-config',
+          message: /^Invalid JSON in --trigger-config\. Please provide valid JSON\.\nExample:\n/,
+        },
+        {
+          name: 'a JSON array in --trigger-config',
+          args: ['GMAIL_NEW_GMAIL_MESSAGE', '--trigger-config', '[1,2,3]'],
+          option: '--trigger-config',
+          message: /^--trigger-config must be a JSON object/,
+        },
+        {
+          name: 'a JSON number in --trigger-config',
+          args: ['GMAIL_NEW_GMAIL_MESSAGE', '--trigger-config', '42'],
+          option: '--trigger-config',
+          message: /^--trigger-config must be a JSON object/,
+        },
+      ])('[Given] $name [Then] raises a CommandInputError', ({ args, option, message }) =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'triggers',
-            'create',
-            'GMAIL_NEW_GMAIL_MESSAGE',
-            '--trigger-config',
-            '{',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          // Every repository method dies, so reaching the API fails the test.
+          const repository = Layer.succeed(
+            ComposioToolkitsRepository,
+            makeToolkitsRepositoryStub({})
+          );
+          const failure = yield* cli(['dev', 'triggers', 'create', ...args]).pipe(
+            Effect.provide(repository),
+            Effect.flip
+          );
 
-          expect(output).toContain('Invalid JSON in --trigger-config');
-        })
-      );
-    }
-  );
-
-  layer(TestLive(dangerousDevConfig))(
-    '[Given] create with non-object JSON config [Then] shows type validation error',
-    it => {
-      it.effect('rejects array JSON in --trigger-config', () =>
-        Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'triggers',
-            'create',
-            'GMAIL_NEW_GMAIL_MESSAGE',
-            '--trigger-config',
-            '[1,2,3]',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-
-          expect(output).toContain('--trigger-config must be a JSON object');
-        })
-      );
-
-      it.effect('rejects number JSON in --trigger-config', () =>
-        Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'triggers',
-            'create',
-            'GMAIL_NEW_GMAIL_MESSAGE',
-            '--trigger-config',
-            '42',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-
-          expect(output).toContain('--trigger-config must be a JSON object');
-        })
-      );
-    }
-  );
-
-  layer(TestLive(dangerousDevConfig))(
-    '[Given] create without a trigger name [Then] warns about missing argument',
-    it => {
-      it.effect('shows missing trigger-name warning', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'create']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument: <trigger-name>');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev triggers create',
+            option,
+            message: expect.stringMatching(message),
+          });
+          // `cli-main.ts` prints a usage failure on stderr and exits 1.
+          expect(isUsageFailure(failure)).toBe(true);
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

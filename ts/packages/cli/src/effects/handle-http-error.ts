@@ -4,6 +4,7 @@ import type { ClientApiError } from 'src/services/composio-errors';
 import { NodeProcess } from 'src/services/node-process';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
+import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
 
 export interface Suggestion {
   readonly label: string;
@@ -26,12 +27,14 @@ interface ErrorReport {
   readonly hint?: string;
 }
 
-const reportOf = (e: ClientApiError): ErrorReport => {
-  if (isClientDecodeError(e)) return describeDecodeError(e);
+const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
+  if (isClientDecodeError(e)) return Effect.succeed(describeDecodeError(e));
   if (isAPIError(e)) {
-    return { message: e.details?.message, suggestedFix: e.details?.suggested_fix };
+    return isRejectedUserApiKey(e)
+      ? Effect.map(rejectedUserApiKeyHint, hint => ({ message: e.details?.message, hint }))
+      : Effect.succeed({ message: e.details?.message, suggestedFix: e.details?.suggested_fix });
   }
-  return {};
+  return Effect.succeed({});
 };
 
 /**
@@ -77,7 +80,7 @@ export const handleClientApiError =
       const proc = yield* NodeProcess;
       yield* proc.setExitCode(1);
 
-      const report = reportOf(e);
+      const report = yield* reportOf(e);
       const message = report.message ?? opts.fallbackMessage;
       const hint = report.hint ?? opts.hint;
 

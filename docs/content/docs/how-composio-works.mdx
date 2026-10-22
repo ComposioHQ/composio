@@ -113,6 +113,11 @@ When your model asks to call a session tool, execute it with `session.execute()`
 <Tab value="Python">
 ```python
 result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
+
+if result.result_type == "failed":
+    raise RuntimeError(result.error or f"Tool execution failed (log ID: {result.log_id})")
+
+print(result.data)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -122,13 +127,36 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
 const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_case: "send an email" }] });
+
+if (result.resultType === 'failed') {
+  throw new Error(result.error || `Tool execution failed (log ID: ${result.logId})`);
+}
+
+console.log(result.data);
 ```
 </Tab>
 </Tabs>
 
 Do not execute session tools with `tools.execute()`, or by passing a user ID to a provider's `handle_tool_calls` helper — both take the direct execution path, which does not carry your session, and meta-tools fail there with `"can only be called inside a tool-router session"`. The [OpenAI](/docs/providers/openai) and [Anthropic](/docs/providers/anthropic) helpers also accept the session itself (`handle_tool_calls(response=response, session=session)` in Python, `handleToolCalls(session, response)` in TypeScript), which routes through the session while keeping provider argument normalization.
 
-Read `result.result_type` in Python or `result.resultType` in TypeScript to distinguish `completed` from `failed`. A failed execution can have an empty `error`, so checking `error` alone doesn't tell you whether the tool succeeded. If you pass a custom TypeScript `ToolCallSession` to a provider, its `execute()` method must return `resultType`; providers use it to determine `successful`.
+#### Reading execution results
+
+`session.execute()` returns a result envelope, not the tool payload directly:
+
+| TypeScript | Python | Meaning |
+| --- | --- | --- |
+| `data` | `data` | The tool-specific output. |
+| `error` | `error` | Error text, or `null` (`None` in Python). A failed execution can have no error text. |
+| `logId` | `log_id` | The execution log ID. Local custom tools return an empty string. |
+| `resultType` | `result_type` | `completed` if execution succeeded, or `failed` if it failed. |
+
+The result can also include `instantCharge` (`instant_charge` in Python) when you enable [Instant usage charge reporting](/docs/instant-tools#report-charges-and-use-instant-tools).
+
+Use `resultType` (`result_type` in Python) to check success, as shown above. Checking `error` alone can mistake a failed execution with an empty error for a success.
+
+Unlike direct `composio.tools.execute()` results, session results have no top-level `successful` field. A `successful` field inside `data` belongs to the tool-specific payload and is not guaranteed. Don't use `result.data.successful` as a general session success check.
+
+If you pass a custom TypeScript `ToolCallSession` to a provider, its `execute()` method must return `resultType`; providers use it to determine `successful`.
 
 #### Handling requests for user input
 
