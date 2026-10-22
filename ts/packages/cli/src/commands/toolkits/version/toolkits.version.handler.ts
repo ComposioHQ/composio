@@ -9,6 +9,7 @@ import {
   formatToolkitVersionsJson,
   type ToolkitVersions,
 } from './toolkits.version.format';
+import { BROWSE_TOOLKITS_HINT } from '../format';
 
 export type ToolkitsVersionParams = {
   readonly slug: string;
@@ -61,7 +62,7 @@ export const runToolkitsVersion = ({ slug }: ToolkitsVersionParams) =>
             yield* reportFailure(
               ui,
               extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`,
-              'Browse available toolkits:\n> composio dev toolkits list'
+              BROWSE_TOOLKITS_HINT
             );
             return Option.none<ToolkitVersions>();
           })

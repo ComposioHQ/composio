@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import type { CommandTree } from 'src/commands/surface';
+import { BROWSE_TOOLKITS_HINT } from 'src/commands/toolkits/format';
 import { reportFailure } from 'src/effects/report-failure';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { CliProjectType } from 'src/services/command-project';
@@ -47,7 +48,9 @@ export const AUTH_CONFIG_SCOPE_MESSAGE =
 export const INCOMPLETE_LINK_RESPONSE_MESSAGE =
   'The link response from the API is missing `connected_account_id` or `redirect_url`.';
 
-export const BROWSE_TOOLKITS_HINT = 'Browse available toolkits:\n> composio dev toolkits list';
+// The canonical constant lives with the other toolkit formatters; re-exported here for the
+// link flow's callers.
+export { BROWSE_TOOLKITS_HINT };
 
 export const BROWSE_AUTH_CONFIGS_HINT =
   'Browse available auth configs:\n> composio dev auth-configs list';

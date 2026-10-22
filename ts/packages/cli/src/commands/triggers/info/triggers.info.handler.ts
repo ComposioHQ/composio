@@ -16,13 +16,11 @@ const triggersInfoHints = Effect.map(CommandSurface, ({ tree }) =>
   tree === 'dev'
     ? {
         command: 'dev triggers info',
-        exampleCommand: 'composio dev triggers info',
         listCommand: 'composio dev triggers list',
         listCommandPlaceholder: 'composio dev triggers list "<toolkit>"',
       }
     : {
         command: 'triggers info',
-        exampleCommand: 'composio triggers info',
         listCommand: 'composio triggers list',
         listCommandPlaceholder: 'composio triggers list "<toolkit>"',
       }
@@ -41,13 +39,12 @@ const triggersInfoHints = Effect.map(CommandSurface, ({ tree }) =>
 export const runTriggersInfo = ({ slug }: TriggersInfoParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { command, exampleCommand, listCommand, listCommandPlaceholder } =
-      yield* triggersInfoHints;
+    const { command, listCommand, listCommandPlaceholder } = yield* triggersInfoHints;
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(slug)) {
       return yield* commandInputError(command)(
-        `Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> ${exampleCommand} "GMAIL_NEW_GMAIL_MESSAGE"`,
+        `Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> composio ${command} "GMAIL_NEW_GMAIL_MESSAGE"`,
         '<slug>'
       );
     }

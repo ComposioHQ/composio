@@ -10,15 +10,13 @@ import { commandInputError } from 'src/commands/errors';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
-import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
+import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
 export type ToolkitsInfoParams = {
   readonly slug: Option.Option<string>;
   readonly allDetails: boolean;
 };
-
-const BROWSE_TOOLKITS_HINT = 'Browse available toolkits:\n> composio dev toolkits list';
 
 const invalidInput = commandInputError('dev toolkits info');
 

@@ -7,30 +7,12 @@ import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
-import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-
-// The confirm prompt is only reached from an interactive terminal.
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    ...terminalUITestImpl,
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    confirm: () => Effect.succeed(confirmed),
-  });
-
-/** An interactive terminal whose confirmation prompt must never be shown. */
-const terminalUIWithoutPrompt = TerminalUI.of({
-  ...terminalUIWithConfirm(false),
-  confirm: () => Effect.die('the confirmation prompt must not be shown'),
-});
+import {
+  terminalUIWithConfirm,
+  terminalUIWithoutPrompt,
+} from 'test/__utils__/services/terminal-ui-test';
 
 /** Whether `~/.composio/agent.json` still holds the agent identity. */
 const agentConfigExists = Effect.gen(function* () {
