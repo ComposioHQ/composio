@@ -28,14 +28,23 @@ describe('CLI: composio dev triggers disable', () => {
   });
 
   layer(TestLive(dangerousDevConfig))(
-    '[Given] missing ID for disable [Then] warns about missing argument',
+    '[Given] missing ID for disable [Then] fails with a usage error',
     it => {
-      it.effect('shows missing id warning', () =>
+      it.effect('raises a CommandInputError naming <id>', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'disable', '--dangerously-allow']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-          expect(output).toContain('Missing required argument');
+          const failure = yield* cli(['dev', 'triggers', 'disable', '--dangerously-allow']).pipe(
+            Effect.flip
+          );
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev triggers disable',
+            option: '<id>',
+            message: expect.stringMatching(
+              /^Missing required argument: <id>\nTry specifying a trigger ID, e\.g\.:\n> composio dev triggers disable "trg_123"/
+            ),
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

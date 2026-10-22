@@ -1,8 +1,6 @@
 import ComposioClient, { APIError } from '@composio/client';
-import {
-  TriggersTypeRetrieveEnumResponse,
-  type TriggerInstanceUpsertParams as ClientTriggerInstanceUpsertParams,
-} from '@composio/client/resources/index';
+import type { TriggerInstanceUpsertParams as ClientTriggerInstanceUpsertParams } from '@composio/client/resources/trigger-instances';
+import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/triggers-types';
 import {
   TriggerInstanceUpsertResponse,
   TriggerInstanceUpsertParamsSchema,

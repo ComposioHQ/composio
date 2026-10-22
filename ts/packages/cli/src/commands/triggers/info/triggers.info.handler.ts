@@ -1,4 +1,5 @@
 import { Effect, Option } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { CommandSurface } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -14,19 +15,21 @@ export type TriggersInfoParams = {
 const triggersInfoHints = Effect.map(CommandSurface, ({ tree }) =>
   tree === 'dev'
     ? {
-        exampleCommand: 'composio dev triggers info',
+        command: 'dev triggers info',
         listCommand: 'composio dev triggers list',
         listCommandPlaceholder: 'composio dev triggers list "<toolkit>"',
       }
     : {
-        exampleCommand: 'composio triggers info',
+        command: 'triggers info',
         listCommand: 'composio triggers list',
         listCommandPlaceholder: 'composio triggers list "<toolkit>"',
       }
 );
 
 /**
- * View details of a specific trigger type including config and payload schemas.
+ * View details of a specific trigger type including config and payload schemas. A missing
+ * `<slug>` fails with a `CommandInputError` before any request; an API failure is reported with
+ * a hint and exits 1.
  *
  * @example
  * ```bash
@@ -36,15 +39,14 @@ const triggersInfoHints = Effect.map(CommandSurface, ({ tree }) =>
 export const runTriggersInfo = ({ slug }: TriggersInfoParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { exampleCommand, listCommand, listCommandPlaceholder } = yield* triggersInfoHints;
+    const { command, listCommand, listCommandPlaceholder } = yield* triggersInfoHints;
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(slug)) {
-      yield* ui.log.warn('Missing required argument: <slug>');
-      yield* ui.log.step(
-        `Try specifying a trigger slug, e.g.:\n> ${exampleCommand} "GMAIL_NEW_GMAIL_MESSAGE"`
+      return yield* commandInputError(command)(
+        `Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> composio ${command} "GMAIL_NEW_GMAIL_MESSAGE"`,
+        '<slug>'
       );
-      return;
     }
 
     const slugValue = slug.value;

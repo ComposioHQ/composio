@@ -19,6 +19,8 @@ from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteInputRequiredResponse,
 )
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticValidationError
 
 from composio.client import HttpClient
 from composio.client.types import (
@@ -30,7 +32,10 @@ from composio.client.types import (
 )
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
-from composio.core.models.custom_tool_types import InlineCustomToolsWirePayload
+from composio.core.models.custom_tool_types import (
+    InlineCustomToolsWirePayload,
+    ToolRouterHookResult,
+)
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
@@ -169,26 +174,140 @@ def require_executed(
     )
 
 
+class _BlockReasonWire(PydanticBaseModel):
+    type: t.Literal["request_blocked", "response_blocked"]
+    hook_id: str
+
+
+class BlockedResponse(PydanticBaseModel):
+    """A call a session hook blocked, as the API returns it.
+
+    The generated client does not type it yet, so it is validated here.
+    ``log_id`` and ``instant_charge`` come only from session execute; session
+    proxy execute leaves them out.
+    """
+
+    result_type: t.Literal["blocked"]
+    reason: _BlockReasonWire
+    message: str
+    log_id: t.Optional[str] = None
+    instant_charge: t.Optional[t.Any] = None
+    hook_results: t.Optional[t.List[ToolRouterHookResult]] = None
+
+
+_HOOK_RESULTS_ADAPTER: TypeAdapter[t.List[ToolRouterHookResult]] = TypeAdapter(
+    t.List[ToolRouterHookResult]
+)
+
+
+def parse_blocked_response(
+    response: t.Any, subject: str
+) -> t.Optional[BlockedResponse]:
+    """Read a ``blocked`` response, or return ``None`` for any other ``result_type``.
+
+    :raises ValidationError: If a ``blocked`` response does not match its shape.
+    """
+    if getattr(response, "result_type", None) != "blocked":
+        return None
+    try:
+        return BlockedResponse.model_validate(
+            {
+                # ``instant_charge`` stays the client's model: the provider
+                # execute path reads it as one.
+                key: value if key == "instant_charge" else _plain(value)
+                for key, value in dict(response).items()
+            }
+        )
+    except PydanticValidationError as exc:
+        raise ValidationError(
+            f"{subject} returned a malformed blocked response"
+        ) from exc
+
+
+def _plain(value: t.Any) -> t.Any:
+    """Nested client models as plain data.
+
+    The generated client may return ``reason`` and ``hook_results`` as its own
+    nested models; the SDK validates plain data against its own types.
+    """
+    if isinstance(value, PydanticBaseModel):
+        return value.model_dump()
+    if isinstance(value, list):
+        return [_plain(item) for item in value]
+    return value
+
+
+def _response_field(response: t.Any, name: str) -> t.Any:
+    """A field of a generated client response model, declared or not.
+
+    The generated client keeps fields it does not type yet (``hook_results``)
+    as extras; once it types them they become declared fields.
+    """
+    if not isinstance(response, PydanticBaseModel):
+        return None
+    if name in type(response).model_fields:
+        return getattr(response, name, None)
+    return (response.model_extra or {}).get(name)
+
+
+def parse_hook_results(
+    response: t.Any, subject: str
+) -> t.Optional[t.List[ToolRouterHookResult]]:
+    """The ``hook_results`` of a call that ran, or ``None`` when no hook applied.
+
+    :raises ValidationError: If ``hook_results`` does not match its shape.
+    """
+    raw = _plain(_response_field(response, "hook_results"))
+    if raw is None:
+        return None
+    try:
+        return _HOOK_RESULTS_ADAPTER.validate_python(raw)
+    except PydanticValidationError as exc:
+        raise ValidationError(f"{subject} returned malformed hook results") from exc
+
+
 def require_execute_result(
     response: t.Union[SessionExecuteResponse, SessionExecuteInputRequiredResponse],
     slug: str,
 ) -> SessionExecuteResponse:
     """Narrow a session execute response to a tool that ran.
 
-    Every session execute response carries a ``result_type``. One without it,
-    or with a value this SDK does not know, is neither a success nor a failure,
-    so it is raised instead of being read as one. The TypeScript SDK applies
-    the same rule.
+    Every session execute response carries a ``result_type``. A ``blocked``
+    call (a session hook blocked it) is returned as a result with empty
+    ``data``, the hook's message in ``error``, and ``block_reason``. One
+    without a ``result_type``, or with a value this SDK does not know, is
+    neither a success nor a failure, so it is raised instead of being read as
+    one. The TypeScript SDK applies the same rule.
 
     :raises ToolInputRequiredError: If the tool asked for user input instead of
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
     executed = require_executed(response, f"Tool {slug}")
+    blocked = parse_blocked_response(executed, f"Tool {slug}")
+    if blocked is not None:
+        # The agent reads ``error``, so a blocked call reaches it as a failed
+        # call with the hook's message.
+        fields: t.Dict[str, t.Any] = {
+            "data": {},
+            "error": blocked.message,
+            "log_id": blocked.log_id or "",
+            "result_type": "blocked",
+            "block_reason": {
+                "type": blocked.reason.type,
+                "hook_id": blocked.reason.hook_id,
+            },
+        }
+        if blocked.hook_results is not None:
+            fields["hook_results"] = blocked.hook_results
+        if blocked.instant_charge is not None:
+            fields["instant_charge"] = blocked.instant_charge
+        return SessionExecuteResponse.model_construct(_fields_set=set(fields), **fields)
     if getattr(executed, "result_type", None) not in ("completed", "failed"):
         raise ValidationError(
             f"Tool {slug} returned an execute response without a known result_type"
         )
+    parse_hook_results(executed, f"Tool {slug}")
     return executed
 
 

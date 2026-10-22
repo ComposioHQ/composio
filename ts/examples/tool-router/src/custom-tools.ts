@@ -60,6 +60,8 @@ const createDraft = experimental_createTool("CREATE_DRAFT", {
       body: { message: { raw } },
     });
 
+    // A session hook can block the request; it then has no HTTP response.
+    if (res.resultType === "blocked") throw new Error(res.message);
     if (res.status !== 200) throw new Error(`Gmail API error ${res.status}`);
     const data = res.data as { id: string; message: { id: string } };
     return { draft_id: data.id, message_id: data.message.id, to: input.to, subject: input.subject };

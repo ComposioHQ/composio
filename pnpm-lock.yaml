@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20261012.1
       version: 5.20261012.1
     '@composio/client':
-      specifier: 2.0.0-rc.19
-      version: 2.0.0-rc.19
+      specifier: 2.0.0-rc.20
+      version: 2.0.0-rc.20
     '@effect/language-service':
       specifier: ^0.87.4
       version: 0.87.4
@@ -117,10 +117,10 @@ overrides:
   ip-address@>=10.0.0 <10.7.1: '>=10.7.1 <11'
   proxy-addr@>=1.1.0 <2.0.8: '>=2.0.8 <3'
   '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': '>=1.31.0 <2'
-  '@modelcontextprotocol/client@>=2.0.0 <2.2.0': 2.2.0
-  '@modelcontextprotocol/core@>=2.0.0 <2.2.0': 2.2.0
-  '@modelcontextprotocol/server@>=2.0.0 <2.2.0': 2.2.0
-  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.2.0': 2.2.0
+  '@modelcontextprotocol/client@>=2.0.0 <2.3.1': 2.3.1
+  '@modelcontextprotocol/core@>=2.0.0 <2.3.1': 2.3.1
+  '@modelcontextprotocol/server@>=2.0.0 <2.3.1': 2.3.1
+  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.3.1': 2.3.1
   undici@>=7.0.0 <7.29.0: '>=7.29.0 <8'
   brace-expansion@<=5.0.10: '>=5.0.11 <6'
   sharp@<0.35.4: '>=0.35.4 <0.36'
@@ -990,7 +990,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: 2.0.0-rc.20(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1238,7 +1238,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: 2.0.0-rc.20(effect@4.0.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1344,7 +1344,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: 2.0.0-rc.20(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1526,15 +1526,6 @@ importers:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
-      '@mastra/core':
-        specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4)
-      '@mastra/mcp':
-        specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4))(express@5.3.0)(hono@4.13.13)(zod@4.5.4)
-      ai:
-        specifier: ^6.0.302
-        version: 6.0.303(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.1(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))
@@ -1547,6 +1538,9 @@ importers:
 
   ts/packages/providers/claude-agent-sdk:
     dependencies:
+      '@composio/json-schema-to-zod':
+        specifier: workspace:*
+        version: link:../../json-schema-to-zod
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -1764,7 +1758,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.19(effect@4.0.3)
+        version: 2.0.0-rc.20(effect@4.0.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2328,8 +2322,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.19':
-    resolution: {integrity: sha512-EdBq7KXefbLXwK4F4wUtlG/e37pSxBQCAjJLRAgb0tHhiifDVqsmB/9AzLzpDsDfDKL/3UMUtYUiVUYaD87BVA==}
+  '@composio/client@2.0.0-rc.20':
+    resolution: {integrity: sha512-+S7+74ngxe0keH1ivCQMlYaxL2kcUTx6RAqoROxFVyvEuOrlx9XEAKky4h8qtiVw+Pyf60etr0TNAQ1rqcmVJA==}
     engines: {node: '>=22'}
     peerDependencies:
       effect: '*'
@@ -3282,12 +3276,12 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  '@modelcontextprotocol/client@2.2.0':
-    resolution: {integrity: sha512-LxCou/CSYQ6dwEnjhLZY0KnEuc8V4UJ3IEQCl/uR2yHobSQIEdJKUlKLRYRF5i5FqRGHy1eK7une3aAWDHLtig==}
+  '@modelcontextprotocol/client@2.3.1':
+    resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/core@2.2.0':
-    resolution: {integrity: sha512-iLhmprRmWI8EcosOA3wVvww22z02NkgqhV4fBH6f/odQBsi7xnJc0HGmi21yWO+/iKw2yzqVE127Zhna5/+JXw==}
+  '@modelcontextprotocol/core@2.3.1':
+    resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/ext-apps@1.7.5':
@@ -3308,7 +3302,7 @@ packages:
     resolution: {integrity: sha512-Y4hAC2XdGDUdDOCbLDOCA4+aL3NUldjsOWlDL/YwpAxrPhRm1xHd7lZ+mLacvZ9t3PaH28wgNoaLQGrIk1P2pg==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@modelcontextprotocol/server': 2.2.0
+      '@modelcontextprotocol/server': 2.3.1
       hono: ^4.11.4
     peerDependenciesMeta:
       hono:
@@ -3334,8 +3328,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@modelcontextprotocol/server-legacy@2.2.0':
-    resolution: {integrity: sha512-hmU22Em1n9dm24xC7pt8okXKJpmpjCxm3GGQo+l99x6T+SPOX3v+7+WUEpp/ZZVLLIzCELVJtyRM8U3FxvMZpA==}
+  '@modelcontextprotocol/server-legacy@2.3.1':
+    resolution: {integrity: sha512-+cuB+hl7s8DiFXIt13le3cD2wZPOeDYwlycAkRMPljqqNbOLekGRiyslx8WXfqaXSCveS1eDD8/B8rmxz9BZFQ==}
     engines: {node: '>=20'}
     deprecated: This package is a frozen copy of v1's SSE transport and OAuth Authorization Server helpers for migration purposes only. Use StreamableHTTP from @modelcontextprotocol/server and a dedicated OAuth server in production. Will not receive new features.
     peerDependencies:
@@ -3344,8 +3338,8 @@ packages:
       express:
         optional: true
 
-  '@modelcontextprotocol/server@2.2.0':
-    resolution: {integrity: sha512-qFnltjus6Gk8Lx6J1w2RXmr3YPN22MNT6qD6zjAkaiWIlFIFxWClz0rXHNuJF/KSUyn5YGhkSvXkWDbQHVLFEQ==}
+  '@modelcontextprotocol/server@2.3.1':
+    resolution: {integrity: sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw==}
     engines: {node: '>=20'}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
@@ -7590,7 +7584,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.19(effect@4.0.3)':
+  '@composio/client@2.0.0-rc.20(effect@4.0.3)':
     optionalDependencies:
       effect: 4.0.3
 
@@ -8227,8 +8221,8 @@ snapshots:
     dependencies:
       '@langchain/core': 1.2.17(@opentelemetry/api@1.9.1)(openai@7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4))(ws@8.22.0)
       '@langchain/langgraph': 1.4.21(@langchain/core@1.2.17(@opentelemetry/api@1.9.1)(openai@7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4))(ws@8.22.0))(zod@4.5.4)
-      '@modelcontextprotocol/client': 2.2.0
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/client': 2.3.1
+      '@modelcontextprotocol/core': 2.3.1
       zod: 4.5.4
 
   '@langchain/openai@1.6.2(@aws-sdk/credential-provider-node@3.972.84)(@langchain/core@1.2.17(@opentelemetry/api@1.9.1)(openai@7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4))(ws@8.22.0))(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)':
@@ -8468,13 +8462,13 @@ snapshots:
   '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76))(express@5.3.0)(hono@4.13.13)(zod@3.25.76)':
     dependencies:
       '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@3.25.76))(express@5.3.0)(zod@3.25.76)
-      '@modelcontextprotocol/client': 2.2.0
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/client': 2.3.1
+      '@modelcontextprotocol/core': 2.3.1
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(zod@3.25.76)
-      '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.2.0)(hono@4.13.13)
+      '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.3.1)(hono@4.13.13)
       '@modelcontextprotocol/sdk': 1.32.1(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      '@modelcontextprotocol/server': 2.2.0
-      '@modelcontextprotocol/server-legacy': 2.2.0(express@5.3.0)
+      '@modelcontextprotocol/server': 2.3.1
+      '@modelcontextprotocol/server-legacy': 2.3.1(express@5.3.0)
       exit-hook: 5.1.0
       fast-deep-equal: 3.1.3
     transitivePeerDependencies:
@@ -8489,13 +8483,13 @@ snapshots:
   '@mastra/mcp@1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4))(express@5.3.0)(hono@4.13.13)(zod@4.5.4)':
     dependencies:
       '@mastra/core': 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4)
-      '@modelcontextprotocol/client': 2.2.0
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/client': 2.3.1
+      '@modelcontextprotocol/core': 2.3.1
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(zod@4.5.4))(zod@4.5.4)
-      '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.2.0)(hono@4.13.13)
+      '@modelcontextprotocol/node': 2.0.0(@modelcontextprotocol/server@2.3.1)(hono@4.13.13)
       '@modelcontextprotocol/sdk': 1.32.1(@cfworker/json-schema@4.1.1)(zod@4.5.4)
-      '@modelcontextprotocol/server': 2.2.0
-      '@modelcontextprotocol/server-legacy': 2.2.0(express@5.3.0)
+      '@modelcontextprotocol/server': 2.3.1
+      '@modelcontextprotocol/server-legacy': 2.3.1(express@5.3.0)
       exit-hook: 5.1.0
       fast-deep-equal: 3.1.3
     transitivePeerDependencies:
@@ -8529,9 +8523,9 @@ snapshots:
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
       zod-to-json-schema: 3.25.2(zod@4.5.4)
 
-  '@modelcontextprotocol/client@2.2.0':
+  '@modelcontextprotocol/client@2.3.1':
     dependencies:
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/core': 2.3.1
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
@@ -8539,7 +8533,7 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.5.4
 
-  '@modelcontextprotocol/core@2.2.0':
+  '@modelcontextprotocol/core@2.3.1':
     dependencies:
       zod: 4.5.4
 
@@ -8555,10 +8549,10 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       zod: 4.5.4
 
-  '@modelcontextprotocol/node@2.0.0(@modelcontextprotocol/server@2.2.0)(hono@4.13.13)':
+  '@modelcontextprotocol/node@2.0.0(@modelcontextprotocol/server@2.3.1)(hono@4.13.13)':
     dependencies:
       '@hono/node-server': 2.1.4(hono@4.13.13)
-      '@modelcontextprotocol/server': 2.2.0
+      '@modelcontextprotocol/server': 2.3.1
     optionalDependencies:
       hono: 4.13.13
 
@@ -8683,9 +8677,9 @@ snapshots:
       - supports-color
     optional: true
 
-  '@modelcontextprotocol/server-legacy@2.2.0(express@5.3.0)':
+  '@modelcontextprotocol/server-legacy@2.3.1(express@5.3.0)':
     dependencies:
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/core': 2.3.1
       content-type: 1.0.5
       cors: 2.8.6
       express-rate-limit: 8.7.1(express@5.3.0)
@@ -8697,9 +8691,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/server@2.2.0':
+  '@modelcontextprotocol/server@2.3.1':
     dependencies:
-      '@modelcontextprotocol/core': 2.2.0
+      '@modelcontextprotocol/core': 2.3.1
       zod: 4.5.4
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
@@ -8718,7 +8712,7 @@ snapshots:
       debug: 4.4.3(supports-color@10.2.2)
       openai: 7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.5.4)
     optionalDependencies:
-      '@modelcontextprotocol/client': 2.2.0
+      '@modelcontextprotocol/client': 2.3.1
       zod: 4.5.4
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -8734,7 +8728,7 @@ snapshots:
       debug: 4.4.3(supports-color@10.2.2)
       openai: 7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.21.3)(zod@4.5.4)
     optionalDependencies:
-      '@modelcontextprotocol/client': 2.2.0
+      '@modelcontextprotocol/client': 2.3.1
       zod: 4.5.4
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
