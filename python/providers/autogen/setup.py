@@ -25,7 +25,7 @@ setup(
         # ag2 1.x removed the top-level `autogen` namespace this provider imports.
         "ag2>=0.14,<1.0",
         "flaml==2.7.0",
-        "autogen_core>=0.7.5",
+        "autogen_core>=0.7.5,<1",
         "composio",
     ],
     include_package_data=True,

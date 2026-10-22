@@ -778,6 +778,7 @@ dependencies = [
     { name = "requests" },
     { name = "typing-extensions" },
     { name = "urllib3" },
+    { name = "websocket-client" },
 ]
 
 [package.dev-dependencies]
@@ -797,19 +798,24 @@ dev = [
     { name = "tomli" },
     { name = "twine" },
 ]
+release = [
+    { name = "build" },
+    { name = "setuptools" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
     { name = "composio-client", specifier = "==2.0.0rc19" },
-    { name = "json-schema-to-pydantic", specifier = ">=0.4.11" },
-    { name = "jsonschema", specifier = ">=4.23.0" },
-    { name = "openai", specifier = ">=2.48.0" },
-    { name = "pydantic", specifier = ">=2.11.9" },
-    { name = "pysher", specifier = ">=1.0.8" },
-    { name = "requests", specifier = ">=2.32.4" },
-    { name = "typing-extensions", specifier = ">=4.16.0" },
-    { name = "urllib3", specifier = ">=2.7.0" },
+    { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
+    { name = "jsonschema", specifier = ">=4.23.0,<5" },
+    { name = "openai", specifier = ">=2.48.0,<4" },
+    { name = "pydantic", specifier = ">=2.11.9,<3" },
+    { name = "pysher", specifier = "==1.0.8" },
+    { name = "requests", specifier = ">=2.32.4,<3" },
+    { name = "typing-extensions", specifier = ">=4.16.0,<5" },
+    { name = "urllib3", specifier = ">=2.7.0,<3" },
+    { name = "websocket-client", specifier = "<2" },
 ]
 
 [package.metadata.requires-dev]
@@ -829,6 +835,10 @@ dev = [
     { name = "tomli", specifier = ">=2.0.2,<2.1" },
     { name = "twine", specifier = ">=6.2.0" },
 ]
+release = [
+    { name = "build", specifier = "==1.6.1" },
+    { name = "setuptools", specifier = "==84.0.0" },
+]
 
 [[package]]
 name = "composio-anthropic"
@@ -841,7 +851,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.120.0" },
+    { name = "anthropic", specifier = ">=0.120.0,<3" },
     { name = "composio" },
 ]
 
@@ -886,7 +896,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "google-genai", specifier = ">=2.14.0" },
+    { name = "google-genai", specifier = ">=2.14.0,<3" },
 ]
 
 [[package]]
@@ -901,7 +911,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "google-cloud-aiplatform", specifier = ">=1.162.0" },
+    { name = "google-cloud-aiplatform", specifier = ">=1.162.0,<3" },
 ]
 
 [[package]]
@@ -916,7 +926,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "google-adk", specifier = ">=2.5.0" },
+    { name = "google-adk", specifier = ">=2.5.0,<3" },
 ]
 
 [[package]]
@@ -946,7 +956,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "openai", specifier = ">=2.48.0" },
+    { name = "openai", specifier = ">=2.48.0,<4" },
 ]
 
 [[package]]
@@ -961,7 +971,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "openai-agents", specifier = ">=0.18.3" },
+    { name = "openai-agents", specifier = ">=0.18.3,<1" },
 ]
 
 [[package]]
@@ -4929,6 +4939,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/92/f5/e1dfe8e1d91c54ce212fd93916eb01fd1c590f413be0a0978c39a97aa1bb/semver-3.1.0.tar.gz", hash = "sha256:14bc073439513d7773662a338f4db9829cf16c12b74b9568e2d2689975fbd7fc", size = 304162, upload-time = "2026-09-12T18:38:14.045Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/02/bce7a1d70e9d0f6ea8623c16386138c251b5855af6cd3a11433d3fba4e66/semver-3.1.0-py3-none-any.whl", hash = "sha256:6e4998f8b4762acdfea85f9bfd5b4032e0bb50038dc04bf82011b42d5d1145c5", size = 18783, upload-time = "2026-09-12T18:38:12.457Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "84.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73", size = 1168449, upload-time = "2026-08-08T18:27:58.365Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670", size = 818216, upload-time = "2026-08-08T18:27:56.719Z" },
 ]
 
 [[package]]
