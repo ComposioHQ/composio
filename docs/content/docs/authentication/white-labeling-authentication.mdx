@@ -234,10 +234,11 @@ const composio = new Composio();
 const session = await composio.create('user_123', {
   authConfigs: { github: 'ac_your_github_config' },
   connectedAccounts: { github: 'ca_verified_github_account' },
+  manageConnections: false,
 });
 ```
 
-Replace `ca_verified_github_account` with the ID your backend verified, not a browser-selected account. If you want to keep connection UI app-owned, initiate missing connections from your app rather than calling `session.authorize()`, which starts the hosted flow.
+Replace `ca_verified_github_account` with the ID your backend verified, not a browser-selected account. `manageConnections: false` disables the agent's connection manager, which can otherwise return hosted Connect Links for missing connections. Initiate missing connections from your own app, and don't call `session.authorize()`, which starts the hosted flow.
 
 ## Routing the callback through your domain
 
