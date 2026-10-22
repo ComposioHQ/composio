@@ -1,12 +1,9 @@
-import { Effect, Match, Option, Predicate, Schema, type SchemaIssue } from 'effect';
+import type { ConnectedAccountListResponse as ApiConnectedAccountListResponse } from '@composio/client/resources/connected-accounts';
+import { Data, Effect, Match, Schema, type SchemaIssue } from 'effect';
 import {
   ConnectedAccountItems,
-  displayNameFromState,
-  isKnownConnectedAccountStatus,
-} from 'src/models/connected-accounts';
-import {
   ConnectedAccountListResponse,
-  type ConnectedAccountListResponse as ConnectedAccountListResponseType,
+  isKnownConnectedAccountStatus,
 } from 'src/models/connected-accounts';
 import { TerminalUI } from 'src/services/terminal-ui';
 
@@ -54,76 +51,52 @@ const warnOnUnknownStatuses = (
     );
   });
 
-/**
- * Re-derives `display_name` for each item of a raw fallback payload from its
- * `state`, exactly as `ConnectedAccountItem` would, and removes any top-level
- * `display_name` so an unchecked server value cannot reach the output.
- */
-const withSanitizedDisplayNames = (rawResult: unknown): unknown => {
-  if (!Predicate.isObject(rawResult) || !Array.isArray(rawResult.items)) return rawResult;
-  return {
-    ...rawResult,
-    items: rawResult.items.map((item: unknown) => {
-      if (!Predicate.isObject(item)) return item;
-      const { display_name: _dropped, ...rest } = item;
-      return Option.match(displayNameFromState(item.state), {
-        onNone: () => rest,
-        onSome: display_name => ({ ...rest, display_name }),
-      });
-    }),
-  };
-};
+/** A command's failure when a connected-accounts response does not decode. */
+export const CONNECTED_ACCOUNTS_SHAPE_MESSAGE =
+  'Connected accounts response was not the shape this CLI understands; run `composio upgrade`.';
 
 /**
- * Decodes a raw `client.connectedAccounts.list(...)` response against
- * `ConnectedAccountListResponse`, falling back to the raw payload on
- * `SchemaError`.
+ * A list response that does not match `ConnectedAccountListResponse`. The
+ * message names only the mismatched paths and issue kinds, never the values,
+ * so it is safe to print as the cause of a command's failure.
+ */
+export class ConnectedAccountListShapeError extends Data.TaggedError(
+  'effects/ConnectedAccountListShapeError'
+)<{
+  readonly message: string;
+}> {}
+
+/**
+ * Decodes a `client.connectedAccounts.list(...)` response into the CLI's
+ * `ConnectedAccountListResponse`: the field allowlist that keeps
+ * credential-bearing fields (`state`, `data`, ...) out, plus `display_name`
+ * derived from `state`.
  *
  * `status` is an open enum (`ConnectedAccountStatus`), so a status newer than
- * this CLI build decodes fine and only triggers the "composio upgrade"
- * warning. The raw fallback remains for other shape skew (pagination fields,
- * renames, ...) — safe because the three current call sites only render
- * non-credential fields (`id`, `alias`, `word_id`, `toolkit.slug`,
- * `status`, ...).
+ * this CLI build decodes and only triggers the "composio upgrade" warning.
+ * Any other mismatch fails with {@link ConnectedAccountListShapeError}.
  */
-export const decodeConnectedAccountListWithFallback = (
-  rawResult: unknown
-): Effect.Effect<ConnectedAccountListResponseType, never, TerminalUI> =>
-  Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    return yield* Schema.decodeUnknownEffect(ConnectedAccountListResponse)(rawResult).pipe(
-      Effect.tap(result => warnOnUnknownStatuses(result.items)),
-      Effect.catchTag('SchemaError', error =>
-        Effect.gen(function* () {
-          yield* ui.log.warn(
-            `Server response did not match the shape this CLI expects. Run ` +
-              `"composio upgrade" to pick up the latest CLI. Continuing with ` +
-              `raw response.\n\n` +
-              `Mismatched fields: ${formatParseErrorRedacted(error)}`
-          );
-          // Safe: callers only read non-credential fields.
-          return withSanitizedDisplayNames(rawResult) as ConnectedAccountListResponseType;
+export const decodeConnectedAccountList = (
+  response: ApiConnectedAccountListResponse
+): Effect.Effect<ConnectedAccountListResponse, ConnectedAccountListShapeError, TerminalUI> =>
+  Schema.decodeEffect(ConnectedAccountListResponse)(response).pipe(
+    Effect.mapError(
+      error =>
+        new ConnectedAccountListShapeError({
+          message: `Mismatched fields: ${formatParseErrorRedacted(error)}`,
         })
-      )
-    );
-  });
+    ),
+    Effect.tap(result => warnOnUnknownStatuses(result.items))
+  );
 
 /**
- * Item-level variant of {@link decodeConnectedAccountListWithFallback} for
- * call sites that decode `response.items` rather than the whole list
- * response.
- *
- * `status` is an open enum, so a status newer than this CLI build decodes
- * instead of failing — we just warn, pointing at `composio upgrade`. Unlike
- * the list-response helper above, this one must NOT fall back to the raw
- * payload: `link --list` JSON-dumps the decoded items to stdout, so the
- * schema's field allowlist is what keeps credential-bearing fields (`state`,
- * `data`, ...) out of pipeable output. Truly malformed data fails with
- * `SchemaError`.
+ * Item-level variant of {@link decodeConnectedAccountList} for call sites
+ * that decode `response.items` rather than the whole list response. It fails
+ * with the raw `SchemaError`, which callers wrap in their own error.
  */
 export const decodeConnectedAccountItems = (
-  rawItems: unknown
+  items: ApiConnectedAccountListResponse['items']
 ): Effect.Effect<ConnectedAccountItems, Schema.SchemaError, TerminalUI> =>
-  Schema.decodeUnknownEffect(ConnectedAccountItems)(rawItems).pipe(
-    Effect.tap(items => warnOnUnknownStatuses(items))
+  Schema.decodeEffect(ConnectedAccountItems)(items).pipe(
+    Effect.tap(decoded => warnOnUnknownStatuses(decoded))
   );

@@ -1,6 +1,9 @@
 import { Data, Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
-import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import {
+  CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+  decodeConnectedAccountList,
+} from 'src/effects/decode-connected-account-list';
 import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -100,7 +103,9 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
         idempotent
       )
       .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
-    const result = yield* decodeConnectedAccountListWithFallback(rawResult);
+    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+      failedWith(ConnectionsListRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
+    );
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,

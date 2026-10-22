@@ -47,10 +47,9 @@ const ProviderIdentityFromState = Schema.Struct({
 
 /**
  * The trimmed display name held in a raw `state` value, or `None` when it is
- * absent, blank, not a string, or longer than the limit. Shared by the schema
- * below and by raw-payload fallbacks so both apply the same rule.
+ * absent, blank, not a string, or longer than the limit.
  */
-export const displayNameFromState = (state: unknown): Option.Option<string> =>
+const displayNameFromState = (state: unknown): Option.Option<string> =>
   Schema.decodeUnknownOption(ProviderIdentityFromState)(state).pipe(
     Option.map(identity => identity.val.displayName)
   );

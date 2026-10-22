@@ -10,6 +10,11 @@
   trimmed and capped at 200 characters — when Composio has filled one in.
   Nothing else is read from `state`.
 
+- `composio connections list`, `composio connections remove`, and
+  `composio dev connected-accounts list` exit 1 when the connected-accounts
+  response does not match the shape this CLI expects, naming the mismatched
+  fields. They used to warn and continue with the unchecked response.
+
 - `composio dev triggers create` now accepts `--user-id` and sends it with the
   request, so it works on projects with 2FA enabled, which require the user who
   owns the connected account. It used to reject `--user-id` and send no user,
