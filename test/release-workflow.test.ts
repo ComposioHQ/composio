@@ -532,15 +532,15 @@ for (const input of ['run: uv sync --locked --only-group release', 'BUILD_ARGS: 
 }
 {
   // Only the publish job may request an OIDC token; build steps must never see it.
-  const jobsSection = pythonReleaseWorkflow.split(/^jobs:$/m)[1] ?? '';
-  const jobs = [...jobsSection.matchAll(/^ {2}([\w-]+):$\n((?:(?! {2}[\w-]+:$).*\n?)*)/gm)];
-  const tokenJobs = jobs.filter(([, , body]) => body.includes('id-token')).map(([, name]) => name);
-  const publishJob = jobs.find(([, name]) => name === 'publish')?.[2] ?? '';
-  if (
-    pythonReleaseWorkflow.split(/^jobs:$/m)[0].includes('id-token') ||
-    tokenJobs.join() !== 'publish' ||
-    !publishJob.includes('id-token: write')
-  ) {
+  const workflow = Bun.YAML.parse(pythonReleaseWorkflow);
+  const grantsToken = permissions =>
+    typeof permissions === 'string'
+      ? permissions === 'write-all'
+      : permissions?.['id-token'] === 'write';
+  const tokenJobs = Object.entries(workflow.jobs)
+    .filter(([, job]) => grantsToken(job.permissions))
+    .map(([name]) => name);
+  if (grantsToken(workflow.permissions) || tokenJobs.join() !== 'publish') {
     throw new Error('py.release.yml must grant id-token: write to the publish job only');
   }
 }
