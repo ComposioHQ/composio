@@ -206,7 +206,12 @@ export const triggersCmd$Listen = Command.make(
       const maxEventsLimit = Option.getOrUndefined(maxEvents);
       const stopWhenDone = yield* Deferred.make<'max-events' | 'failed'>();
       let matchingEvents = 0;
-      const stopOnFailure = Deferred.succeed(stopWhenDone, 'failed').pipe(Effect.asVoid);
+      // Its own signal, so a --fail-fast failure also ends finishAcceptedEvents' wait.
+      const failed = yield* Deferred.make<void>();
+      const stopOnFailure = Effect.andThen(
+        Deferred.succeed(failed, undefined),
+        Deferred.succeed(stopWhenDone, 'failed')
+      ).pipe(Effect.asVoid);
       const forwardFailures = makeSinkFailures({
         ui,
         failFast,
@@ -365,7 +370,7 @@ export const triggersCmd$Listen = Command.make(
           Deferred.await(stopWhenDone)
         );
         if (stopReason === 'max-events') {
-          yield* finishAcceptedEvents(events);
+          yield* finishAcceptedEvents(events, failed);
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(

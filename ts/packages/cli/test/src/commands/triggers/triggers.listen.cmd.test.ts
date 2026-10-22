@@ -233,4 +233,80 @@ describe('CLI: composio dev listen', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          {
+            id: 'evt_conn_expired_1',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_1',
+            },
+          },
+          {
+            id: 'evt_conn_expired_2',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_2',
+            },
+          },
+          {
+            id: 'evt_conn_expired_3',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_3',
+            },
+          },
+        ],
+      },
+    })
+  )('[Given] --fail-fast and an event fails while --max-events waits for the others', it => {
+    // The target answers the first request, holds the second open, and fails the third shortly
+    // after, so the failure lands while the listener waits for the held event.
+    it.effect('[Then] the failure ends the wait and exits 1', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        const held: Array<ServerResponse> = [];
+        let requests = 0;
+        yield* withHttpServerEffect(
+          (_req, res) => {
+            requests += 1;
+            if (requests === 1) res.end();
+            else if (requests === 2) held.push(res);
+            else setTimeout(() => res.writeHead(500).end(), 100);
+          },
+          url =>
+            cli(['dev', 'listen', '--forward', url, '--max-events', '3', '--fail-fast']).pipe(
+              Effect.provide(terminal.layer),
+              Effect.ensuring(Effect.sync(() => held.forEach(res => res.end())))
+            )
+        );
+
+        expect(terminal.stderr()).toMatch(
+          /1 event failed to forward to http:\/\/127\.0\.0\.1:\d+ while listening\./
+        );
+        expect(process.exitCode).toBe(1);
+      })
+    );
+  });
 });

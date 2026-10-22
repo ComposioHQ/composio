@@ -565,11 +565,16 @@ export const listenCmd = Command.make(
       yield* fs.writeFileString(streamFilePath, '', { flag: 'a' });
 
       const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout' | 'failed'>();
+      // Its own signal, so a --fail-fast failure also ends finishAcceptedEvents' wait.
+      const failed = yield* Deferred.make<void>();
       let matchingEvents = 0;
       const writeFailures = makeSinkFailures({
         ui,
         failFast,
-        stop: Deferred.succeed(stopWhenDone, 'failed').pipe(Effect.asVoid),
+        stop: Effect.andThen(
+          Deferred.succeed(failed, undefined),
+          Deferred.succeed(stopWhenDone, 'failed')
+        ).pipe(Effect.asVoid),
         summary: count => `${eventCount(count)} failed to write while listening.`,
       });
       const recordWriteFailure = (error: unknown) => writeFailures.record(errorMessage(error));
@@ -713,7 +718,7 @@ export const listenCmd = Command.make(
             // this waits on the listener until it is interrupted.
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
             if (stopReason === 'max-events' || stopReason === 'timeout') {
-              yield* finishAcceptedEvents(events);
+              yield* finishAcceptedEvents(events, failed);
             }
             if (stopReason === 'max-events') {
               yield* ui.outro(
