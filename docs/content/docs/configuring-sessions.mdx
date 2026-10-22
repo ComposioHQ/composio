@@ -53,6 +53,69 @@ In Python, `session.config.instant` is a model when it contains a policy. Read i
 If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
 </Callout>
 
+## Session hooks
+
+Use `hooks` to block a tool call before it runs or block its result before your agent sees it.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+session = composio.create(
+    "user_123",
+    hooks=[{
+        "type": "before_execute",
+        "id": "no_external_email",
+        "name": "No external email",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+            "type": "condition_check",
+            "condition": "Sending email to anyone outside example.org",
+            "action": "block",
+        },
+    }],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  hooks: [{
+    type: "before_execute",
+    id: "no_external_email",
+    name: "No external email",
+    appliesTo: { toolkits: ["gmail"] },
+    handler: {
+      type: "condition_check",
+      condition: "Sending email to anyone outside example.org",
+      action: "block",
+    },
+  }],
+});
+```
+</Tab>
+</Tabs>
+
+Each hook has an `id` unique within the session and an optional `name` included in the blocking message. Set `appliesTo` (`applies_to` in Python) to `"all"` or `{ toolkits: [...] }` to select toolkits.
+
+- `before_execute` uses a `condition_check` handler to block calls that match a plain-language `condition`.
+- `after_execute` blocks results using either `condition_check` or `{ type: "prompt_injection_check", action: "block" }`. The latter checks for text that tries to give your agent instructions.
+
+Pass `hooks` to `session.update()` to replace the entire list. Omit it to preserve existing hooks. Use `session.update({ hooks: null })` in TypeScript or `session.update(hooks=None)` in Python to remove every hook.
+
+<Callout type="warn">
+You can't combine `hooks` with `experimental.sessionConfigId` in TypeScript or `experimental.session_config_id` in Python in the same create or update call.
+</Callout>
+
+When a hook blocks [session execution](/docs/how-composio-works#executing-session-tools), the result has `resultType: "blocked"` (`result_type="blocked"` in Python), empty `data`, and the hook's message in `error`. `blockReason` (`block_reason`) identifies the hook with `hookId` (`hook_id`) and a `type`: `request_blocked` means the tool didn't run; `response_blocked` means it ran but its result was withheld. Blocking a result doesn't undo the tool's side effects.
+
+Inspect `hookResults` (`hook_results`) for each applied hook's `id` and `status`. An `evaluated` hook has an `outcome` of `continue` or `block`. An `unavailable` hook couldn't be evaluated and doesn't block the call. The list is absent when no hook applied. Provider integrations return blocked execution as a failed tool call with the hook's message. [Proxy execution](/docs/extending-sessions/proxy-execute#response-shape) returns a blocked result without HTTP response fields.
+
 ## Enabling toolkits
 
 To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
@@ -901,7 +964,7 @@ await session.update({
 
 Both blocks are on by default. `search` controls the session's search helper, so disabling it leaves the agent with the tools you preloaded. `execute.enableMultiExecute` controls whether the agent can run several tool calls in one request. `manageConnections.enableConnectionRemoval` is update-only as well, and controls whether the session exposes the connection-removal tool.
 
-The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](/docs/session-configs#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, or `tags`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
+The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](/docs/session-configs#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, `tags`, or `hooks`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
 
 ### Multi-account mode after an update
 

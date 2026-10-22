@@ -48,7 +48,7 @@ A saved policy uses `enable` and `disable`, the same shape you send on create. `
 
 ## What you can combine with a config
 
-The config owns the session's toolkit, tool, and tag access. On `create()`, you can't pass `sessionConfigId` together with `toolkits`, `tools`, `tags`, `experimental.customTools`, or `experimental.customToolkits`. TypeScript reports the mix at compile time, and the SDK throws `ValidationError` before it sends a request. An empty list such as `toolkits: []` counts as set.
+The config owns the session's toolkit, tool, and tag access. On `create()`, you can't pass `sessionConfigId` together with `toolkits`, `tools`, `tags`, `hooks`, `experimental.customTools`, or `experimental.customToolkits`. TypeScript reports the mix at compile time, and the SDK throws `ValidationError` before it sends a request. An empty list such as `toolkits: []` counts as set.
 
 Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
 
@@ -70,7 +70,7 @@ const session = await composio.sessions.use("session_id");
 await session.update({ experimental: { sessionConfigId: "sc_123" } });
 ```
 
-The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, or `tags`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
+The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, `tags`, or `hooks`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
 
 A `409` while applying a config means the session or the config changed during the update. The SDK raises `ComposioSessionConfigConflictError`, and nothing was written: re-fetch the session with `sessions.use()` and retry.
 
