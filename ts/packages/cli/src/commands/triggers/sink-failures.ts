@@ -8,7 +8,7 @@ export const eventCount = (count: number) => `${count} event${count === 1 ? '' :
 /**
  * Counts the events a listener sink (saved payloads, an output file, a forwarding URL) failed to
  * take. One failure never fails the listener on its own: `record` logs a warn, and with
- * `--fail-fast` it also runs `stop`. `report` sums the count up on stderr when the listener
+ * `--fail-fast` it also runs `stop` and ends the event, so no later sink takes it. `report` sums the count up on stderr when the listener
  * stops, as a plain line because piped callers see none of the `ui.log.*` decoration; with
  * `--fail-fast` it goes through `reportFailure` and the CLI exits 1.
  */
@@ -27,6 +27,7 @@ export const makeSinkFailures = (params: {
         yield* params.ui.log.warn(message);
         if (params.failFast) {
           yield* params.stop;
+          return yield* Effect.interrupt;
         }
       }),
     report: Effect.suspend(() => {

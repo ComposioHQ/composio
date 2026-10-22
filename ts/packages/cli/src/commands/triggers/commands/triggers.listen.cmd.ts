@@ -4,7 +4,7 @@ import { eventCount, makeSinkFailures } from '../sink-failures';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Deferred, Effect, Option } from 'effect';
+import { Deferred, Effect, FiberSet, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -74,6 +74,9 @@ const failFast = Flag.Boolean('fail-fast').pipe(
   ),
   Flag.withDefault(false)
 );
+
+/** Runs one event's callback on a fiber the listener interrupts when it stops. */
+type RunEvent = (effect: Effect.Effect<void>) => unknown;
 
 const randomUUID = () => crypto.randomUUID();
 
@@ -178,7 +181,6 @@ export const triggersCmd$Listen = Command.make(
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
-      const services = yield* Effect.context<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
       const configuredWebhookSecret = yield* APP_CONFIG.WEBHOOK_SECRET;
@@ -247,8 +249,8 @@ export const triggersCmd$Listen = Command.make(
         yield* ui.log.info(`Auto-stop after ${maxEventsLimit} matching events.`);
       }
 
-      const onEvent = (eventData: Record<string, unknown>) => {
-        Effect.runForkWith(services)(
+      const onEvent = (runEvent: RunEvent) => (eventData: Record<string, unknown>) => {
+        runEvent(
           Effect.gen(function* () {
             const parsed = parseTriggerListenEvent(eventData);
             if (!matchesTriggerListenFilters(filters, parsed)) {
@@ -340,25 +342,31 @@ export const triggersCmd$Listen = Command.make(
       };
 
       // The default credentials serve the configured project; a named one needs its own.
-      const listenEffect = (
-        Option.isSome(surface.projectName)
+      const listenEffect = (runEvent: RunEvent) =>
+        (Option.isSome(surface.projectName)
           ? realtime.listenInProject(
               { orgId: project.orgId, projectId: project.projectId },
-              onEvent
+              onEvent(runEvent)
             )
-          : realtime.listen(onEvent)
-      ).pipe(
-        Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
-      );
+          : realtime.listen(onEvent(runEvent))
+        ).pipe(
+          Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
+        );
 
       yield* Effect.gen(function* () {
+        // Scoped below, so in-flight event callbacks are interrupted before the summaries print.
+        const runEvent = yield* FiberSet.makeRuntime();
         // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
         // the listener until it is interrupted.
-        const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+        const stopReason = yield* Effect.raceFirst(
+          listenEffect(runEvent),
+          Deferred.await(stopWhenDone)
+        );
         if (stopReason === 'max-events') {
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(
+        Effect.scoped,
         // An onExit finalizer, so the summaries print on every stop — including the
         // interruption by Ctrl+C or SIGTERM, where the code after this block would not run.
         Effect.onExit(() => Effect.andThen(forwardFailures.report, outputWriteFailures.report)),

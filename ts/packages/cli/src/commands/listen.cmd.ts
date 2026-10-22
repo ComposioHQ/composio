@@ -6,7 +6,7 @@ import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { ComposioClientShape } from '@composio/client/effect';
-import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
+import { Data, Deferred, Effect, FiberSet, Result, Option, Predicate } from 'effect';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -519,7 +519,6 @@ export const listenCmd = Command.make(
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const services = yield* Effect.context<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
@@ -599,6 +598,8 @@ export const listenCmd = Command.make(
             ),
         createdTrigger =>
           Effect.gen(function* () {
+            // Scoped below, so in-flight event callbacks are interrupted before the release hook.
+            const runEvent = yield* FiberSet.makeRuntime();
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
             if (debug) {
               const debugMsg =
@@ -615,7 +616,7 @@ export const listenCmd = Command.make(
             }
 
             const onEvent = (eventData: Record<string, unknown>) => {
-              Effect.runForkWith(services)(
+              runEvent(
                 Effect.gen(function* () {
                   if (debug) {
                     yield* emitStreamLine(
@@ -729,7 +730,7 @@ export const listenCmd = Command.make(
                 })
               );
             }
-          }),
+          }).pipe(Effect.scoped),
         created =>
           Effect.gen(function* () {
             if (created !== null) {
