@@ -40,8 +40,11 @@ response = session.proxy_execute(
     ],
 )
 
-print(response["status"])
-print(response["data"])
+if response["result_type"] == "completed":
+    print(response["status"])
+    print(response["data"])
+else:
+    print(response["message"])
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -50,7 +53,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create('user_123', { toolkits: ['github'] });
 // ---cut---
-const { status, data } = await session.proxyExecute({
+const response = await session.proxyExecute({
   toolkit: 'github',
   endpoint: '/repos/composiohq/composio/issues/1',
   method: 'GET',
@@ -59,8 +62,12 @@ const { status, data } = await session.proxyExecute({
   ],
 });
 
-console.log(status);
-console.log(data);
+if (response.resultType === "completed") {
+  console.log(response.status);
+  console.log(response.data);
+} else {
+  console.log(response.message);
+}
 ```
 </Tab>
 </Tabs>
@@ -150,7 +157,11 @@ const session = await composio.create("user_123", {
 
 ## Response shape
 
-The call forwards the upstream response's status, headers, and parsed body.
+Check `resultType` (`result_type` in Python) before reading HTTP response fields. A `completed` result forwards the upstream response's status, headers, and parsed body. A `blocked` result has no HTTP response: it contains `message` and `blockReason` (`block_reason`) instead of `status`, `data`, `headers`, or binary data. This also applies to `ctx.proxyExecute()` and `ctx.proxy_execute()` inside custom tools.
+
+`blockReason.type` (`block_reason["type"]`) is `request_blocked` when the request didn't run, or `response_blocked` when it ran but its result was withheld. The reason also includes `hookId` (`hook_id`). Both result types can include `hookResults` (`hook_results`) for applied hooks. See [Session hooks](/docs/configuring-sessions#session-hooks).
+
+The following HTTP fields are available only on a `completed` result.
 Both SDKs expose the same fields; each spells them the way its language does, so
 TypeScript reads them as properties and Python as dictionary keys.
 
@@ -170,7 +181,7 @@ response is not a file, so check for it before reading:
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-if "binary_data" in response:
+if response["result_type"] == "completed" and "binary_data" in response:
     print(response["binary_data"]["url"])
 ```
 </Tab>
@@ -185,7 +196,7 @@ const response = await session.proxyExecute({
   method: 'GET',
 });
 // ---cut---
-if (response.binaryData) {
+if (response.resultType === "completed" && response.binaryData) {
   console.log(response.binaryData.url);
 }
 ```
@@ -198,7 +209,7 @@ Don't set the `Authorization` header yourself through `parameters`. Composio inj
 
 ## Error handling
 
-`status` and `data` reflect exactly what the toolkit API returned, so check `status` and branch on the common failures.
+For a `completed` result, `status` and `data` reflect what the toolkit API returned. Check the result type first, then check `status` and branch on the common failures. A hook-blocked result has no HTTP status; use its `message` to explain the block.
 
 If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/how-composio-works#handling-requests-for-user-input) for the error fields and continuation state.
 

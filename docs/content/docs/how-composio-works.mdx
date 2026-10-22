@@ -114,7 +114,7 @@ When your model asks to call a session tool, execute it with `session.execute()`
 ```python
 result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
 
-if result.result_type == "failed":
+if result.result_type in ("failed", "blocked"):
     raise RuntimeError(result.error or f"Tool execution failed (log ID: {result.log_id})")
 
 print(result.data)
@@ -128,7 +128,7 @@ const session = await composio.create("user_123");
 // ---cut---
 const result = await session.execute("COMPOSIO_SEARCH_TOOLS", { queries: [{ use_case: "send an email" }] });
 
-if (result.resultType === 'failed') {
+if (result.resultType === 'failed' || result.resultType === 'blocked') {
   throw new Error(result.error || `Tool execution failed (log ID: ${result.logId})`);
 }
 
@@ -148,9 +148,11 @@ Do not execute session tools with `tools.execute()`, or by passing a user ID to 
 | `data` | `data` | The tool-specific output. |
 | `error` | `error` | Error text, or `null` (`None` in Python). A failed execution can have no error text. |
 | `logId` | `log_id` | The execution log ID. Local custom tools return an empty string. |
-| `resultType` | `result_type` | `completed` if execution succeeded, or `failed` if it failed. |
+| `resultType` | `result_type` | `completed` if execution succeeded, `failed` if it failed, or `blocked` if a session hook blocked the call or result. |
 
 The result can also include `instantCharge` (`instant_charge` in Python) when you enable [Instant usage charge reporting](/docs/instant-tools#report-charges-and-use-instant-tools).
+
+A [session hook](/docs/configuring-sessions#session-hooks) can return a blocked result with empty `data`, its message in `error`, and the reason in `blockReason` (`block_reason` in Python). Inspect `hookResults` (`hook_results`) for applied hook outcomes.
 
 Use `resultType` (`result_type` in Python) to check success, as shown above. Checking `error` alone can mistake a failed execution with an empty error for a success.
 
