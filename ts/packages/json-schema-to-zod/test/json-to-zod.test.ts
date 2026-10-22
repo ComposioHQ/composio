@@ -77,6 +77,61 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse('invalid-date')).toThrow();
     });
 
+    it('should validate time format per RFC 3339', () => {
+      const schema: JsonSchema = {
+        type: 'string',
+        format: 'time',
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse('10:30:00Z')).toBe('10:30:00Z');
+      expect(zodSchema.parse('10:30:00+05:30')).toBe('10:30:00+05:30');
+      expect(zodSchema.parse('10:30:00.123-04:00')).toBe('10:30:00.123-04:00');
+      expect(() => zodSchema.parse('10:30:00')).toThrow(); // missing offset
+      expect(() => zodSchema.parse('10:30')).toThrow(); // not a full-time
+      expect(() => zodSchema.parse('25:00:00Z')).toThrow();
+      expect(() => zodSchema.parse('invalid-time')).toThrow();
+    });
+
+    it.each(['10:30:60Z', '23:58:60Z', '23:59:60+01:00', '00:59:60-01:00'])(
+      'should reject an invalid leap-second time %s',
+      value => {
+        const zodSchema = jsonSchemaToZod({ type: 'string', format: 'time' });
+        expect(zodSchema.safeParse(value).success).toBe(false);
+      }
+    );
+
+    it.each([
+      '23:59:60Z',
+      '23:59:60z',
+      '23:59:60.5+00:00',
+      '23:59:60-00:00',
+      '00:59:60+01:00',
+      '18:59:60-05:00',
+      '05:29:60+05:30',
+    ])('should accept a leap-second time at the UTC day boundary %s', value => {
+      const zodSchema = jsonSchemaToZod({ type: 'string', format: 'time' });
+      expect(zodSchema.parse(value)).toBe(value);
+    });
+
+    it('should preserve custom format errors and other string constraints for time', () => {
+      const zodSchema = jsonSchemaToZod({
+        type: 'string',
+        format: 'time',
+        pattern: 'Z$',
+        minLength: 9,
+        errorMessage: { format: 'Use a valid RFC 3339 time' },
+      } as JsonSchema);
+      const invalid = zodSchema.safeParse('10:30:60Z');
+      expect(invalid.success).toBe(false);
+      if (!invalid.success) {
+        expect(
+          invalid.error.issues.some(issue => issue.message === 'Use a valid RFC 3339 time')
+        ).toBe(true);
+      }
+      expect(zodSchema.safeParse('23:59:60+00:00').success).toBe(false);
+      expect(zodSchema.safeParse('23:59:60Z').success).toBe(true);
+    });
+
     it('should validate uuid format', () => {
       const schema: JsonSchema = {
         type: 'string',
