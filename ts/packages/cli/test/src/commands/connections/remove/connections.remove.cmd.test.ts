@@ -1,13 +1,16 @@
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Console, Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
+import {
+  terminalUIWithConfirm,
+  terminalUIWithoutPrompt,
+} from 'test/__utils__/services/terminal-ui-test';
 
 const testConnections: ConnectedAccountItem[] = [
   {
@@ -75,54 +78,6 @@ const connectedAccountsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-});
-
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    output: data => Console.log(data),
-    error: data => Console.error(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
-    confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: (_msg: string) => Effect.void,
-        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
-        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
-      }),
-  });
-
-/** An interactive terminal whose confirmation prompt must never be shown. */
-const terminalUIWithoutPrompt = TerminalUI.of({
-  ...terminalUIWithConfirm(false),
-  confirm: () => Effect.die('the confirmation prompt must not be shown'),
 });
 
 describe('CLI: composio connections remove', () => {

@@ -1,8 +1,7 @@
-import { Data, Effect } from 'effect';
-import { Argument, Command, Flag } from 'effect/cli';
+import { Effect } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { failedWith, requestError } from 'src/effects/request-error';
+import { failedWith } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -10,30 +9,18 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
 import { idempotent } from 'src/services/composio-request';
+import {
+  ConnectionsRemovalRequestError,
+  MissingConnectionRemovalConsumerUserIdError,
+} from './connections.remove.errors';
 
-class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
-  'commands/MissingConnectionRemovalConsumerUserIdError'
-)<{
-  readonly message: string;
-}> {}
-
-class ConnectionsRemovalRequestError extends requestError(
-  'commands/ConnectionsRemovalRequestError'
-) {}
+/** The flags of `composio connections remove`. */
+export type ConnectionsRemoveParams = {
+  readonly account: string;
+  readonly yes: boolean;
+};
 
 const invalidInput = commandInputError('connections remove');
-
-const account = Argument.String('account').pipe(
-  Argument.withDescription(
-    'Connection selector: toolkit slug, alias, word_id, or connected account ID'
-  )
-);
-
-const yes = Flag.Boolean('yes').pipe(
-  Flag.withAlias('y'),
-  Flag.withDefault(false),
-  Flag.withDescription('Remove without asking for confirmation')
-);
 
 /** Without a terminal to confirm on, removing needs `--yes`. */
 const NEEDS_YES_MESSAGE =
@@ -107,7 +94,7 @@ const resolveAccount = (params: {
  * and otherwise fails with a `CommandInputError` before any request; declining the prompt removes
  * nothing and exits 0.
  */
-export const connectionsCmd$Remove = Command.make('remove', { account, yes }, ({ account, yes }) =>
+export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const { canPrompt } = yield* ui.capabilities;
@@ -173,23 +160,4 @@ export const connectionsCmd$Remove = Command.make('remove', { account, yes }, ({
         errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,
       }
     );
-  })
-).pipe(
-  Command.withDescription(
-    'Interactively remove a connection by toolkit slug, alias, word_id, or connected account ID.'
-  ),
-  Command.withExamples([
-    {
-      command: 'composio connections remove gmail',
-    },
-    {
-      command: 'composio connections remove work',
-    },
-    {
-      command: 'composio connections remove castle',
-    },
-    {
-      command: 'composio connections remove gmail --yes',
-    },
-  ])
-);
+  });
