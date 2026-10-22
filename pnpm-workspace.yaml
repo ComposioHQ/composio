@@ -55,7 +55,7 @@ catalog:
   tsx: ^4.23.15
   typescript: ^7.0.2
   '@vitest/ui': ^5.0.4
-  vitest: ^5.0.3
+  vitest: ^5.0.5
   wrangler: ^4.149.0
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
