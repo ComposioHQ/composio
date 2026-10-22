@@ -525,13 +525,16 @@ if (
     'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
   );
 }
-for (const input of [
-  'run: uv sync --locked --only-group release',
-  'BUILD_ARGS: --no-isolation',
-  'id-token: write',
-]) {
+for (const input of ['run: uv sync --locked --only-group release', 'BUILD_ARGS: --no-isolation']) {
   if (!pythonReleaseWorkflow.includes(input)) {
-    throw new Error(`py.release.yml must build from uv.lock and publish through OIDC: ${input}`);
+    throw new Error(`py.release.yml must build from uv.lock: ${input}`);
+  }
+}
+{
+  // Only the publish job may request an OIDC token; build steps must never see it.
+  const [beforePublish, publishJob = ''] = pythonReleaseWorkflow.split(/^ {2}publish:$/m);
+  if (beforePublish.includes('id-token') || !publishJob.includes('id-token: write')) {
+    throw new Error('py.release.yml must grant id-token: write to the publish job only');
   }
 }
 for (const input of ['make env', 'password:', 'PYPI_PASSWORD', 'PYPI_USERNAME']) {
