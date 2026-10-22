@@ -22,7 +22,7 @@ setup(
     ],
     python_requires=">=3.11,<3.16",
     install_requires=[
-        "google-adk>=2.5.0",
+        "google-adk>=2.5.0,<3",
         "composio",
     ],
     include_package_data=True,
