@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- `composio tools execute` and `composio proxy` now fail with an error listing
+- `composio execute` and `composio proxy` now fail with an error listing
   the candidate accounts, instead of silently using the newest one, when a
   toolkit has several connected accounts, none is aliased `default`, and no
   `--account` is passed. Pass `--account <alias or id>` to choose one. Scripts
