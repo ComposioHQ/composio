@@ -94,7 +94,19 @@ jobs:
             # (the latest published crewai-cli 1.15.28 has the same
             # constraint). Remove this exception once crewai-cli permits it.
             # https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
-            ignored-vulns: 'CVE-2026-59951 PYSEC-2026-4321'
+            #
+            # CVE-2026-114603 / GHSA-xcq7-p3pf-p88h: quadratic-time parsing of
+            # an inbound W3C `tracestate` header in opentelemetry-api, reached
+            # when a *server* extracts trace context from incoming requests.
+            # Composio never calls `propagate.extract()` or runs an
+            # instrumented server; opentelemetry-api is here only through
+            # google-adk, crewai, and chromadb. google-adk pins
+            # opentelemetry-api/sdk<=1.42.1, excluding the 1.45.1 fix (the
+            # latest published google-adk 2.12.0 has the same constraint).
+            # The standalone provider locks take the fix. Remove this
+            # exception once google-adk permits a patched release.
+            # https://github.com/open-telemetry/opentelemetry-python/security/advisories/GHSA-xcq7-p3pf-p88h
+            ignored-vulns: 'CVE-2026-59951 PYSEC-2026-4321 CVE-2026-114603'
           # Provider projects with their own lockfiles, which pin the published
           # `composio` from PyPI rather than the workspace checkout. uv resolves
           # them on their own even though python/providers/openai is listed as
