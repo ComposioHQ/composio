@@ -71,7 +71,7 @@ Runs Node.js tests in Docker using `bun test`. The default Node.js version is de
 To run with a specific Node.js version:
 
 ```bash
-COMPOSIO_E2E_NODE_VERSION=22.22.3 pnpm test:e2e:node
+COMPOSIO_E2E_NODE_VERSION=22.23.4 pnpm test:e2e:node
 ```
 
 ### Cloudflare Workers Tests Only
@@ -108,7 +108,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.17.0', '25.9.0'], // Optional: defaults to the current version in mise.toml
+    node: ['22.23.4', '24.22.1', '26.12.1'], // Optional: defaults to the current version in mise.toml
   },
   env: { MY_VAR: process.env.MY_VAR }, // Optional: env vars (validated at startup)
   defineTests: ({ runtime, runFixture }) => {
@@ -144,7 +144,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.17.0', '25.9.0'],
+    node: ['22.23.4', '24.22.1', '26.12.1'],
   },
   usesFixtures: true, // Sets cwd to fixtures/ directory
   env: { MY_API_KEY: process.env.MY_API_KEY },
@@ -225,13 +225,13 @@ Each test suite generates an ephemereal `DEBUG.log` file in its directory with s
 E2E Test: my-test
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/my-test/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
+Runtime versions: Node.js 22.23.4, Node.js 24.22.1, Node.js 26.12.1
 ================================================================================
 
 ################################################################################
-### Node.js 22.22.3
+### Node.js 22.23.4
 ################################################################################
-Image: composio-e2e-node:22.22.3
+Image: composio-e2e-node:22.23.4
 
 --- Phase 1/2: setup ---
 Container: e2e-my-test-22-22-3-1769775520382-setup
@@ -260,9 +260,9 @@ Test passed!
 ================================================================================
 Summary
 ================================================================================
-Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.17.0: PASS (2 phases, 3.09s total)
-Node.js 25.9.0: PASS (2 phases, 3.08s total)
+Node.js 22.23.4: PASS (2 phases, 3.11s total)
+Node.js 24.22.1: PASS (2 phases, 3.09s total)
+Node.js 26.12.1: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

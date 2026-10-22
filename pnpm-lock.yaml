@@ -1526,15 +1526,6 @@ importers:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
-      '@mastra/core':
-        specifier: 'catalog:'
-        version: 1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4)
-      '@mastra/mcp':
-        specifier: 1.17.2
-        version: 1.17.2(@cfworker/json-schema@4.1.1)(@mastra/core@1.53.0(@cfworker/json-schema@4.1.1)(ai@6.0.303(zod@4.5.4))(express@5.3.0)(zod@4.5.4))(express@5.3.0)(hono@4.13.13)(zod@4.5.4)
-      ai:
-        specifier: ^6.0.302
-        version: 6.0.303(zod@4.5.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.1(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))

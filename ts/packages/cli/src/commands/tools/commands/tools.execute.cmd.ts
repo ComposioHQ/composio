@@ -1,6 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
@@ -124,31 +125,33 @@ const resolveInput = (input: Option.Option<string>) =>
 // Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` below).
 const invalidArguments = commandInputError('execute');
 
-type ToolExecutionErrorFields = {
-  readonly reason:
-    | 'invalid_arguments'
-    | 'file_input'
-    | 'connected_account'
-    | 'missing_user_id'
-    | 'connection_check'
-    | 'execution_failed'
-    | 'parallel_failed';
+// The reasons below are the ones this file constructs each error with; TypeScript cannot infer a
+// union from scattered constructor calls, so a new reason is added here next to its first use.
+
+/**
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
+ * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
+ * failure: `cli-main.ts` prints the message and exits 1.
+ */
+export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
+  readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
   readonly message: string;
   readonly toolSlug?: string;
-  readonly cause?: unknown;
-};
-
-export class ToolExecutionError extends Data.TaggedError(
-  'ToolExecutionError'
-)<ToolExecutionErrorFields> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 /**
  * A failed execution whose result is already on stdout as `{ "successful": false, ... }`.
  * `cli-main.ts` prints nothing more for it and exits 1.
  */
-export class ReportedToolExecutionError extends Data.TaggedError(
-  'ReportedToolExecutionError'
-)<ToolExecutionErrorFields> {}
+export class ReportedToolExecutionError extends Data.TaggedError('ReportedToolExecutionError')<{
+  readonly reason: 'connection_check' | 'execution_failed' | 'parallel_failed';
+  readonly message: string;
+  readonly toolSlug?: string;
+}> {}
 
 const parseArguments = (raw: string) =>
   Effect.fromResult(
@@ -1081,7 +1084,7 @@ const runConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ToolExecutionError({
+      return yield* new ReportedToolExecutionError({
         reason: 'connection_check',
         toolSlug: params.slug,
         message,
