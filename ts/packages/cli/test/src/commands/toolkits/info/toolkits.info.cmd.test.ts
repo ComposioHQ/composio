@@ -1,8 +1,9 @@
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, DateTime, Effect } from 'effect';
+import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
+import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 
@@ -276,6 +277,32 @@ describe('CLI: composio dev toolkits info', () => {
       Effect.gen(function* () {
         const error = yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.flip);
         expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] the tool-router fetch fails', it => {
+    it.effect('reports the failure on a redirected stderr and exits 1', () =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['toolRouter'], () =>
+          Response.json({ error: { message: 'Tool Router is down' } }, { status: 500 })
+        );
+        const terminal = redirectedTerminalUI();
+        yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(
+          Effect.provide(Layer.mergeAll(stub.layer, terminal.layer))
+        );
+
+        expect(terminal.stderr()).toBe(
+          'Tool Router is down\nBrowse available toolkits:\n> composio dev toolkits list\n'
+        );
+        expect(terminal.stdout()).toBe('');
+        expect(process.exitCode).toBe(1);
       })
     );
   });
