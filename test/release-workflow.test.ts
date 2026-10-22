@@ -1077,6 +1077,83 @@ esac
   rmSync(fakeBin, { recursive: true, force: true });
 }
 
+// Private workspaces still receive version bumps, but must never get release tags.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-private-release-'));
+  const packages = [
+    { directory: 'sdk', name: '@composio/core', private: false },
+    { directory: 'example', name: 'release-example', private: true },
+    { directory: 'test', name: '@e2e-tests/release', private: true },
+  ];
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify({ name: 'private-release-fixture', private: true, workspaces: ['packages/*'] })
+    );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify({ ...changesetConfig, changelog: false, fixed: [], ignore: [] })
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/release.md'),
+      ['---', ...packages.map(pkg => `"${pkg.name}": patch`), '---', '', 'Release fixture.'].join(
+        '\n'
+      )
+    );
+    for (const pkg of packages) {
+      const directory = join(fixtureDir, 'packages', pkg.directory);
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(
+        join(directory, 'package.json'),
+        JSON.stringify({ name: pkg.name, version: '0.1.0', private: pkg.private })
+      );
+    }
+    const commands = [
+      [changesetBinPath, ['version']],
+      ['git', ['init', '--quiet', '--initial-branch=next']],
+      ['git', ['config', 'user.name', 'Release test']],
+      ['git', ['config', 'user.email', 'release-test@example.invalid']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-qm', 'Prepare fixture']],
+      ['git', ['tag', '@e2e-tests/release@0.1.0']],
+      [changesetBinPath, ['tag']],
+    ] as const;
+    for (const [command, args] of commands) {
+      const result = spawnSync(command, args, { cwd: fixtureDir, encoding: 'utf8' });
+      if (result.status !== 0) {
+        throw new Error(
+          `private release fixture failed: ${command} ${args.join(' ')}\n${result.stderr}`
+        );
+      }
+    }
+    for (const pkg of packages) {
+      const manifest = JSON.parse(
+        readFileSync(join(fixtureDir, 'packages', pkg.directory, 'package.json'), 'utf8')
+      );
+      if (manifest.version !== '0.1.1') {
+        throw new Error(`release must still version ${pkg.name}, got ${manifest.version}`);
+      }
+    }
+    const tags = spawnSync('git', ['tag', '--list'], { cwd: fixtureDir, encoding: 'utf8' });
+    if (
+      tags.status !== 0 ||
+      tags.stdout.trim() !== '@composio/core@0.1.1\n@e2e-tests/release@0.1.0'
+    ) {
+      throw new Error(
+        `release must tag only public SDK updates and preserve existing tags, got:\n${tags.stdout}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+if (!tsReleaseWorkflow.includes('create-github-releases: false')) {
+  throw new Error('SDK publication must not create GitHub Releases; the CLI workflow owns them');
+}
+
 // A core minor release must not force every provider package to 1.0.0 while the
 // provider peer range still accepts the new core version. This protects the
 // @composio/core 0.10.0 → 0.11.0 release train from accidentally promoting
