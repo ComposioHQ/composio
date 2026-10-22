@@ -89,7 +89,7 @@ Use [scoped project API keys](/reference/authenticating-to-composio/project-api-
 
 Sessions resolve connected accounts by `user_id`. To avoid relying on automatic account selection, pass `connected_accounts` keyed by toolkit when creating the session. The REST API accepts an array of account IDs per toolkit, for example `"connected_accounts": {"gmail": ["ca_your_work_account"]}`.
 
-Each pinned account must exist, must not be deleted or disabled, and must belong to the session's `user_id`. Non-multi-account sessions accept at most one pinned account per toolkit. With multi-account mode, use `require_explicit_selection` when the caller must select an account rather than accept a default. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
+Each pinned account must exist and must not be deleted or disabled. A private account must belong to the session's `user_id`; a shared account may belong to another user if its access rules permit the session's user to use it. See [Shared connections](/docs/extending-sessions/shared-connections). Non-multi-account sessions accept at most one pinned account per toolkit. With multi-account mode, use `require_explicit_selection` when the caller must select an account rather than accept a default. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
 
 Account selection and application authorization remain different checks. Your backend must verify that the member may use the pinned account. A human-readable alias helps selection; it is not proof of ownership or permission.
 
