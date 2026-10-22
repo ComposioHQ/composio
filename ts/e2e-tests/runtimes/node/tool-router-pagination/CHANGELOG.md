@@ -1,5 +1,12 @@
 # @e2e-tests/node-tool-router-pagination
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [c2bbfa8]
+  - @composio/core@0.27.0
+
 ## 0.0.10
 
 ### Patch Changes

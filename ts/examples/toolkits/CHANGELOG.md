@@ -1,5 +1,13 @@
 # toolkits-example
 
+## 0.1.20
+
+### Patch Changes
+
+- Updated dependencies [c2bbfa8]
+  - @composio/core@0.27.0
+  - @composio/vercel@0.13.0
+
 ## 0.1.19
 
 ### Patch Changes
