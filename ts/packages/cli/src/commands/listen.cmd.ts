@@ -538,9 +538,16 @@ export const listenCmd = Command.make(
       const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
       let matchingEvents = 0;
       // Per-event write failures are recovered so one bad event never stops the listener; they
-      // are counted here and summed up on plain stderr when the listener stops, since a piped
-      // caller sees none of the `ui.log.warn` decoration.
+      // are counted here and summed up on plain stderr on every stop — including Ctrl+C and
+      // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
+      // none of the `ui.log.warn` decoration. The release hook below runs on all of them.
       let eventWriteFailures = 0;
+      const reportWriteFailures = () =>
+        eventWriteFailures > 0
+          ? ui.error(
+              `${eventWriteFailures} event${eventWriteFailures === 1 ? '' : 's'} failed to write while listening.`
+            )
+          : Effect.void;
       const seenEventIds = new Set<string>();
 
       yield* Effect.acquireUseRelease(
@@ -671,13 +678,6 @@ export const listenCmd = Command.make(
               )
               .pipe(Effect.onInterrupt(() => ui.log.info(`Stopped listening for events ${slug}.`)));
 
-            const reportWriteFailures = () =>
-              eventWriteFailures > 0
-                ? ui.error(
-                    `${eventWriteFailures} event${eventWriteFailures === 1 ? '' : 's'} failed to write while listening.`
-                  )
-                : Effect.void;
-
             if (timeoutMs !== undefined) {
               yield* Effect.forkScoped(
                 Effect.sleep(timeoutMs).pipe(
@@ -700,7 +700,6 @@ export const listenCmd = Command.make(
                   temporaryTriggerDisabled: createdTrigger !== null,
                 })
               );
-              yield* reportWriteFailures();
               return;
             }
 
@@ -712,13 +711,17 @@ export const listenCmd = Command.make(
                   temporaryTriggerDisabled: createdTrigger !== null,
                 })
               );
-              yield* reportWriteFailures();
             }
           }),
         created =>
-          created === null
-            ? Effect.void
-            : disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id })
+          Effect.gen(function* () {
+            if (created !== null) {
+              yield* disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id });
+            }
+            // Runs on every stop of the use phase — max-events, timeout, and the interruption
+            // of an unlimited wait — so a piped caller always gets the failure count.
+            yield* reportWriteFailures();
+          })
       ).pipe(
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
           reportFailure(

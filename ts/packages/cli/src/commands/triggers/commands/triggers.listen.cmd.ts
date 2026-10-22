@@ -195,8 +195,9 @@ export const triggersCmd$Listen = Command.make(
       const stopWhenDone = yield* Deferred.make<void>();
       let matchingEvents = 0;
       // Per-event failures are recovered so one bad event never stops the listener; they are
-      // counted here and summed up on plain stderr when the listener stops, since a piped
-      // caller sees none of the `ui.log.warn` decoration.
+      // counted here and summed up on plain stderr on every stop — including Ctrl+C and
+      // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
+      // none of the `ui.log.warn` decoration.
       let outputWriteFailures = 0;
       let forwardFailures = 0;
       let tableHeaderPrinted = false;
@@ -343,6 +344,22 @@ export const triggersCmd$Listen = Command.make(
         Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
       );
 
+      // The summary runs in an onExit finalizer, so it fires on every stop — including the
+      // interruption of an unlimited wait, where the code after this block would not run.
+      const reportSinkFailures = () =>
+        Effect.gen(function* () {
+          if (forwardFailures > 0) {
+            yield* ui.error(
+              `${forwardFailures} event${forwardFailures === 1 ? '' : 's'} failed to forward to ${forwardUrl} while listening.`
+            );
+          }
+          if (outputWriteFailures > 0) {
+            yield* ui.error(
+              `${outputWriteFailures} event${outputWriteFailures === 1 ? '' : 's'} failed to append to ${outputFilePath} while listening.`
+            );
+          }
+        });
+
       yield* Effect.gen(function* () {
         if (maxEventsLimit === undefined) {
           return yield* listenEffect;
@@ -351,6 +368,7 @@ export const triggersCmd$Listen = Command.make(
         yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
         yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
       }).pipe(
+        Effect.onExit(() => reportSinkFailures()),
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
           reportFailure(
             ui,
@@ -358,17 +376,6 @@ export const triggersCmd$Listen = Command.make(
           )
         )
       );
-
-      if (forwardFailures > 0) {
-        yield* ui.error(
-          `${forwardFailures} event${forwardFailures === 1 ? '' : 's'} failed to forward to ${forwardUrl} while listening.`
-        );
-      }
-      if (outputWriteFailures > 0) {
-        yield* ui.error(
-          `${outputWriteFailures} event${outputWriteFailures === 1 ? '' : 's'} failed to append to ${outputFilePath} while listening.`
-        );
-      }
     })
 ).pipe(
   Command.withDescription(

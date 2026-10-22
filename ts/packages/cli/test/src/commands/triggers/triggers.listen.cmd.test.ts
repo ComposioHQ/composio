@@ -1,6 +1,6 @@
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Fiber, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, TestLive } from 'test/__utils__';
@@ -91,6 +91,35 @@ describe('CLI: composio dev listen', () => {
 
         expect(terminal.stderr()).toContain(
           '1 event failed to forward to http://127.0.0.1:9/composio while listening.'
+        );
+        // Recovered per-event failures, not a failed command.
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
+    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the onExit finalizer must run the
+    // summary anyway. The forward URL is invalid, so the attempt fails synchronously — no
+    // network race — and yieldNow bounds fiber startup without a live clock.
+    it.effect('[Then] sums the failures up even when the listener is interrupted mid-run', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        const fiber = yield* Effect.forkChild(
+          cli(['dev', 'listen', '--forward', 'http://']).pipe(Effect.provide(terminal.layer))
+        );
+
+        let received = false;
+        for (let i = 0; i < 50 && !received; i++) {
+          yield* Effect.yieldNow;
+          received = terminal.stdout().length > 0;
+        }
+        expect(received).toBe(true);
+        yield* Effect.yieldNow;
+
+        yield* Fiber.interrupt(fiber);
+
+        expect(terminal.stderr()).toContain(
+          '1 event failed to forward to http:// while listening.'
         );
         // Recovered per-event failures, not a failed command.
         expect(process.exitCode).toBeUndefined();
