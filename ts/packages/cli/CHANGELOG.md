@@ -13,6 +13,28 @@
   before. Given a user and no `--connected-account-id`, the API picks that
   user's first active connection for the trigger's toolkit.
 
+- More expected errors now print as a plain message on stderr and exit 1, like
+  other usage errors. They used to print under a `💥` banner with the error tag
+  and a stack location, as if the CLI had crashed. The message itself is
+  unchanged, and nothing is printed on stdout. This covers:
+  - `composio execute` without a user id, or with a `--file` the tool has no
+    file input for (or whose field `-d` already sets)
+  - `composio proxy` when the project has no consumer user
+  - `composio link` without a user id, or when the authorization is not
+    finished before the CLI stops waiting
+  - `composio login` with an `--org` that does not exist, a session key that
+    expired or is not linked yet, a login that is not finished in time, or
+    `--poll` without a pending (or with an expired) login
+  - `composio generate` outside a recognizable JavaScript or Python project, or
+    without `@composio/core` or `composio-core` installed
+  - a `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>` override naming a toolkit or version
+    that does not exist
+
+- `composio execute` and `composio proxy` no longer print a `💥` banner after
+  reporting that the toolkit is not connected (when the connected-account cache
+  is on). The message, tips, and `{"successful": false, ...}` JSON on stdout
+  are unchanged, and the exit code is still 1.
+
 ## 0.5.0
 
 ### Minor Changes
@@ -103,8 +125,11 @@
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
 
-- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
-  command changes.
+- The CLI now uses `@composio/client@2.0.0-rc.20` (up from `2.0.0-rc.17`),
+  which drops the Stainless resource structure: resource classes, class
+  statics, namespace-member types and the `.js`/`.mjs` subpath spellings are
+  gone. The CLI's type imports move to the one `@composio/client/resources/*`
+  spelling; no command changes.
 
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and

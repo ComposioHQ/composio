@@ -14,6 +14,12 @@ const OPENAPI_SPEC_FILES = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  experimental: {
+    // Static generation starts one worker per core (29 on Vercel's build
+    // machine), and each toolkit page holds megabytes of tool and trigger data,
+    // so the build ran out of memory. Half as many workers keeps it within the limit.
+    cpus: 15,
+  },
   turbopack: {
     root: __dirname,
     resolveAlias: {

@@ -13,7 +13,7 @@ import {
 import { transform } from '../transform';
 
 export const transformSessionConfigSummary = (
-  response: RawSessionConfigListResponse.Item
+  response: RawSessionConfigListResponse['items'][number]
 ): SessionConfigSummary => {
   return transform(response)
     .with(SessionConfigSummarySchema)
