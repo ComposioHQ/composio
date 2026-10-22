@@ -108,20 +108,14 @@ describe('CLI: composio dev listen', () => {
           cli(['dev', 'listen', '--forward', 'http://']).pipe(Effect.provide(terminal.layer))
         );
 
-        let received = false;
-        // Up to 50 scheduler turns for the listener fiber to start and process the event;
-        // early iterations see an empty stdout and keep yielding.
-        yield* Effect.forEach(
-          Array.from({ length: 50 }),
-          () =>
-            Effect.gen(function* () {
-              if (received) return;
-              yield* Effect.yieldNow;
-              received = terminal.stdout().length > 0;
-            }),
-          { discard: true }
-        );
+        // The per-event fiber is detached, so its output is the only marker that the event
+        // was handled. Poll it once per scheduler turn, bounded so a regression fails fast.
+        const received = yield* Effect.map(
+          Effect.yieldNow,
+          () => terminal.stdout().length > 0
+        ).pipe(Effect.repeat({ until: Boolean, times: 50 }));
         expect(received).toBe(true);
+        // The invalid-URL forward rejects on a microtask, which drains before the next turn.
         yield* Effect.yieldNow;
 
         yield* Fiber.interrupt(fiber);
