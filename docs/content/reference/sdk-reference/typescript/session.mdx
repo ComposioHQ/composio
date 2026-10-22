@@ -176,7 +176,7 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: 
 
 **Returns**
 
-`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result. `resultType: 'blocked'` means a session hook blocked the call; `error` then holds the hook's message
 
 ---
 
@@ -265,7 +265,7 @@ async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioR
 
 **Returns**
 
-`Promise<ToolRouterSessionProxyExecuteResponse>` — The proxied API response with status, data, headers
+`Promise<ToolRouterSessionProxyExecuteResponse>` — The proxied API response with status, data and headers (`resultType: 'completed'`), or `resultType: 'blocked'` with the hook's message when a session hook blocked the request
 
 ---
 
