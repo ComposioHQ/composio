@@ -1,5 +1,13 @@
 # @e2e-tests/node-custom-tools
 
+## 0.0.1-beta.2
+
+### Patch Changes
+
+- Updated dependencies [72b1bfe]
+- Updated dependencies [17a20be]
+  - @composio/core@1.0.0-beta.2
+
 ## 0.0.1-beta.1
 
 ### Patch Changes
