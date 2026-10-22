@@ -14,9 +14,11 @@ and [sensitive-scope verification guide](https://developers.google.com/identity/
 ## A customer-owned OAuth app controls the provider consent-screen brand
 
 Use a customer-owned Google OAuth app when the Google consent screen should
-show the customer's app name and branding. To avoid showing a Composio domain
-in the redirect path as well, route the callback through the customer's domain
-as described in [white-labeling authentication](https://docs.composio.dev/docs/white-labeling-authentication#routing-the-callback-through-your-domain).
+show the customer's app name and branding. A callback forwarder on the
+customer's domain still redirects the browser to Composio; it does not hide
+Composio's domain. The forwarding endpoint receives the authorization code and
+state, so its query string must not be logged. See
+[callback-domain limits](/docs/authentication/white-labeling-authentication#routing-the-callback-through-your-domain).
 
 The OAuth app's authorized redirect URI must still match the callback URI
 shown by Composio. Provider consent-screen branding and the URL to which the
