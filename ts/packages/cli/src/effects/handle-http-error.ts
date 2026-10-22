@@ -1,8 +1,8 @@
 import { isAPIError } from '@composio/client/effect';
 import { Effect } from 'effect';
 import type { ClientApiError } from 'src/services/composio-errors';
-import { NodeProcess } from 'src/services/node-process';
 import type { TerminalUI } from 'src/services/terminal-ui';
+import { reportFailure } from 'src/effects/report-failure';
 import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
 import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
 
@@ -42,9 +42,10 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
  * details (or a fallback message) and a contextual hint, then returns a
  * fallback value.
  *
- * The process exit code is set to 1 so callers such as scripts and agents can
- * detect the failure. Decorated logs only render when stderr is a TTY, so the
- * error message and hint are also written plainly to stderr when it is not.
+ * The final rendering is `reportFailure`'s (`src/effects/report-failure.ts`):
+ * the exit code is set to 1 so callers such as scripts and agents can detect
+ * the failure, and the message and hint reach stderr as plain lines when it is
+ * not a TTY.
  *
  * Used by info/delete/create commands that share the same error-handling shape.
  *
@@ -77,23 +78,13 @@ export const handleClientApiError =
   <A>(ui: TerminalUI, opts: HandleClientApiErrorOptions<A>) =>
   (e: ClientApiError) =>
     Effect.gen(function* () {
-      const proc = yield* NodeProcess;
-      yield* proc.setExitCode(1);
-
       const report = yield* reportOf(e);
       const message = report.message ?? opts.fallbackMessage;
       const hint = report.hint ?? opts.hint;
-
-      const { canDecorate } = yield* ui.capabilities;
-      if (!canDecorate) {
-        yield* ui.error(message);
-        yield* ui.error(hint);
-      }
-
-      yield* ui.log.error(message);
-      if (report.suggestedFix !== undefined) {
-        yield* ui.log.step(report.suggestedFix);
-      }
+      // The API's own suggested fix comes first, then the caller's hint — or the
+      // "Did you mean?" suggestions that replace it.
+      const withHint = (suffix: string) =>
+        report.suggestedFix === undefined ? suffix : `${report.suggestedFix}\n\n${suffix}`;
 
       if (opts.searchForSuggestions && report.hint === undefined) {
         const suggestions = yield* opts
@@ -103,11 +94,15 @@ export const handleClientApiError =
         const [first] = suggestions;
         if (first) {
           const lines = suggestions.map(s => `  ${s.label}`).join('\n');
-          yield* ui.log.step(`Did you mean?\n${lines}\n\n${first.command}`);
+          yield* reportFailure(
+            ui,
+            message,
+            withHint(`Did you mean?\n${lines}\n\n${first.command}`)
+          );
           return opts.fallbackValue;
         }
       }
 
-      yield* ui.log.step(hint);
+      yield* reportFailure(ui, message, withHint(hint));
       return opts.fallbackValue;
     });

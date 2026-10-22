@@ -2,7 +2,7 @@ import {
   TriggersTypeRetrieveResponse as RawTriggersTypeRetrieveResponse,
   TriggersTypeListResponse as RawTriggersTypeListResponse,
 } from '@composio/client/resources/triggers-types';
-import { TriggerInstanceListActiveResponse as RawTriggerInstanceListActiveResponse } from '@composio/client/resources/index';
+import { TriggerInstanceListActiveResponse as RawTriggerInstanceListActiveResponse } from '@composio/client/resources/trigger-instances';
 import {
   IncomingTriggerPayload,
   IncomingTriggerPayloadSchema,

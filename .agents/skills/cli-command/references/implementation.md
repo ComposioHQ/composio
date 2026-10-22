@@ -17,7 +17,7 @@ test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level
 - Top-level commands use the same shape without a group: `src/commands/<name>/<name>.cmd.ts`.
 - Register new commands through `src/commands/index.ts` or the nearest group entry.
 - A usage mistake the parser cannot see (flag combination, business rule, missing input) raises `CommandInputError` via `commandInputError('<command>')` from `src/commands/errors.ts`, with the `option` at fault; `cli-main.ts` prints the message and exits 1. Do not add a per-command message-only error class.
-- A command that needs a login pipes `requireLogin` from `src/effects/require-auth.ts` on itself or on its group entry after `Command.withSubcommands`; the handler never checks `apiKey`. `resolveCommandProject` fails with `ProjectResolutionError`; let it flow, it prints and exits 1 like `CommandInputError`.
+- A command that needs a login pipes `requireLogin` from `src/effects/require-auth.ts` on itself or on its group entry after `Command.withSubcommands`; the handler never checks `apiKey`. `resolveCommandProject` fails with `ProjectResolutionError` and `resolveConnectedAccountForToolkit` with `ConnectedAccountResolutionError`; let them flow, they print and exit 1 like `CommandInputError`.
 - A command still in the legacy single-file shape (`<group>/commands/<group>.<name>.cmd.ts`, or top-level `<name>.cmd.ts`) is migrated in the PR that next changes it substantively, one command per PR.
 - `pnpm run validate:command-tests` (in `pnpm test`) fails on a command without its mirrored `.cmd.test.ts`, on an orphan `.cmd.test.ts`, and on a stale exemption. Add the test with the command; do not add exemptions.
 

@@ -1,3 +1,4 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import * as FileSystem from 'effect/FileSystem';
 import { ConfigProvider, Effect, Option } from 'effect';
@@ -6,24 +7,19 @@ import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
-import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+import {
+  terminalUIWithConfirm,
+  terminalUIWithoutPrompt,
+} from 'test/__utils__/services/terminal-ui-test';
 
-// The confirm prompt is only reached from an interactive terminal.
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    ...terminalUITestImpl,
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    confirm: () => Effect.succeed(confirmed),
-  });
+/** Whether `~/.composio/agent.json` still holds the agent identity. */
+const agentConfigExists = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const cacheDir = yield* setupCacheDir;
+  return yield* fs.exists(path.join(cacheDir, 'agent.json'));
+});
 
 const setupLoggedInAgent = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
@@ -43,6 +39,10 @@ const setupLoggedInAgent = Effect.gen(function* () {
 });
 
 describe('CLI: composio logout', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   describe('[When] logged out', () => {
     layer(TestLive())(it => {
       it.effect('[Then] it is idempotent', () =>
@@ -125,9 +125,51 @@ describe('CLI: composio logout', () => {
           expect(output).toContain('Agent Logout Warning');
           expect(output).toContain('composio_agent_key');
           expect(output).toContain('Agent logout cancelled');
+          // Declining is not a failure.
+          expect(process.exitCode).toBeUndefined();
           expect(ctx.isLoggedIn()).toBeTruthy();
           expect(agentConfigExists).toBe(true);
         })
+      );
+    });
+
+    layer(TestLive())(it => {
+      it.effect('[Then] without a terminal and --yes it fails and removes nothing', () =>
+        Effect.gen(function* () {
+          const ctx = yield* setupLoggedInAgent;
+
+          const failure = yield* cli(['logout']).pipe(Effect.flip);
+
+          // `cli-main.ts` prints the message on stderr and exits 1.
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'logout',
+            option: '--yes',
+            message:
+              '`composio logout` needs --yes when not running interactively: it removes the stored Composio agent key.',
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
+          expect(ctx.isLoggedIn()).toBeTruthy();
+          expect(yield* agentConfigExists).toBe(true);
+        })
+      );
+    });
+
+    layer(TestLive({ terminalUI: terminalUIWithoutPrompt }))(it => {
+      it.effect.each([['--yes'], ['-y'], ['-f']])(
+        '[Then] %s on a terminal logs out without asking',
+        ([flag]) =>
+          Effect.gen(function* () {
+            const ctx = yield* setupLoggedInAgent;
+
+            yield* cli(['logout', flag]);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).not.toContain('Agent Logout Warning');
+            expect(output).toContain('removed stored Composio agent key');
+            expect(ctx.isLoggedIn()).toBeFalsy();
+            expect(yield* agentConfigExists).toBe(false);
+          })
       );
     });
 

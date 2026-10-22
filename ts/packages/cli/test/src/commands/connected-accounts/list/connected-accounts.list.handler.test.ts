@@ -8,6 +8,7 @@ import {
 } from 'src/commands/connected-accounts/list/connected-accounts.list.handler';
 import { viewDetailsHint } from 'src/commands/connected-accounts/list/connected-accounts.list.format';
 import { CommandSurface } from 'src/commands/surface';
+import { CONNECTED_ACCOUNTS_SHAPE_MESSAGE } from 'src/effects/decode-connected-account-list';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { ProjectKeys } from 'src/models/project-keys';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -80,6 +81,8 @@ interface ListFixture {
   readonly accounts?: ReadonlyArray<ConnectedAccountItem>;
   readonly userId?: Option.Option<string>;
   readonly projectName?: Option.Option<string>;
+  /** Served raw by `connectedAccounts.list`, bypassing the well-formed mock. */
+  readonly rawListResponse?: unknown;
 }
 
 /**
@@ -101,9 +104,14 @@ const listTest = (fixture: ListFixture = {}) => {
       connectedAccounts: {
         ...resources.connectedAccounts,
         list: (params: Parameters<typeof resources.connectedAccounts.list>[0]) =>
-          Effect.sync(() => requests.push({ scope, params })).pipe(
-            Effect.andThen(resources.connectedAccounts.list(params))
-          ),
+          fixture.rawListResponse !== undefined
+            ? // Record the scope, then serve the raw payload as-is.
+              Effect.sync(() => requests.push({ scope, params })).pipe(
+                Effect.as(fixture.rawListResponse)
+              )
+            : Effect.sync(() => requests.push({ scope, params })).pipe(
+                Effect.andThen(resources.connectedAccounts.list(params))
+              ),
       },
     }) as unknown as ComposioClientShape;
 
@@ -294,6 +302,28 @@ describe('runConnectedAccountsList', () => {
         yield* runConnectedAccountsList(params(flags));
 
         expect(yield* stderrLines).toEqual([expected]);
+        expect(outputs).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a response whose items are not an array [Then] fails instead of listing zero',
+    () => {
+      const { layer, outputs } = listTest({
+        rawListResponse: { items: { pages: 2 }, total_items: 3 },
+      });
+      return Effect.gen(function* () {
+        const error = yield* runConnectedAccountsList(params()).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/ConnectedAccountsListRequestError',
+          message: CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+          cause: {
+            _tag: 'effects/ConnectedAccountListShapeError',
+            message: expect.stringContaining('items'),
+          },
+        });
         expect(outputs).toEqual([]);
       }).pipe(Effect.provide(layer));
     }
