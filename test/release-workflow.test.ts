@@ -525,6 +525,30 @@ if (
     'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
   );
 }
+for (const input of ['run: uv sync --locked --only-group release', 'BUILD_ARGS: --no-isolation']) {
+  if (!pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must build from uv.lock: ${input}`);
+  }
+}
+{
+  // Only the publish job may request an OIDC token; build steps must never see it.
+  const workflow = Bun.YAML.parse(pythonReleaseWorkflow);
+  const grantsToken = permissions =>
+    typeof permissions === 'string'
+      ? permissions === 'write-all'
+      : permissions?.['id-token'] === 'write';
+  const tokenJobs = Object.entries(workflow.jobs)
+    .filter(([, job]) => grantsToken(job.permissions))
+    .map(([name]) => name);
+  if (grantsToken(workflow.permissions) || tokenJobs.join() !== 'publish') {
+    throw new Error('py.release.yml must grant id-token: write to the publish job only');
+  }
+}
+for (const input of ['make env', 'password:', 'PYPI_PASSWORD', 'PYPI_USERNAME']) {
+  if (pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must not install unlocked deps or use PyPI tokens: ${input}`);
+  }
+}
 
 {
   const pythonVersion = readPyprojectVersion(pythonPyproject, 'python/pyproject.toml version');

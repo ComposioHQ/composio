@@ -224,6 +224,7 @@ describe('execution that requires user input', () => {
     });
 
     await expect(createSession(client).proxyExecute(proxyParams)).resolves.toEqual({
+      resultType: 'completed',
       status: 201,
       data: { id: 1 },
       headers: { 'x-request-id': 'req_1' },

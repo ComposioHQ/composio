@@ -47,6 +47,14 @@ composio setup skill claude
 composio setup skill codex
 ```
 
+### Backend and Dashboard configuration
+
+The CLI uses the backend recorded by `composio login`. `COMPOSIO_BASE_URL` and `COMPOSIO_ENVIRONMENT` override that backend. If an override sends your stored key to a different backend, the CLI warns on stderr. If your key is rejected, follow the printed command to log in again.
+
+`composio execute` sends single executions, `--parallel` executions, and meta tool calls through the Dashboard recorded with your login. For the default deployment, allow outbound requests to both `dashboard.composio.dev` and `backend.composio.dev`. Other commands, including `composio dev playground-execute`, use the backend API.
+
+For a custom deployment, setting `COMPOSIO_BASE_URL` without `COMPOSIO_WEB_URL` keeps executions on that backend. Set both variables to route executions through your deployment's Dashboard. `COMPOSIO_WEB_URL` must use HTTPS and contain no credentials, query string, or fragment. HTTP is accepted only for `localhost`. An invalid URL causes `composio execute` to fail before sending a request.
+
 ### Install with options
 
 Pin a version and skip agent plugin setup:
@@ -261,9 +269,29 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
+### Execution failures and exit codes
+
+`composio execute` exits `1` when a tool reports failure or the Dashboard or backend cannot run it. With `--parallel`, any failed call makes the command exit `1`. Meta tools follow the same rules. Failed tool results include `{"successful": false, ...}` on stdout, with diagnostic messages on stderr. Check the exit code in scripts and agents, even when stdout contains JSON.
+
+Execution requests are sent once, without retries or redirects. After 15 minutes, the CLI stops waiting.
+
+<Callout type="warn">
+A timed-out tool may still have run. Check the result in the connected app before sending the request again.
+</Callout>
+
+Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
+
+If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
+
+### Execution telemetry
+
+When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` to the Dashboard in the `x-cli-install-id` header. This random UUID is never sent to the backend API. Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to prevent the header from being sent.
+
 ### Run scripts
 
 Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
+
+If a tool execution fails, `execute()` rejects with the tool's error message and the failed result.
 
 Run a single scripted workflow:
 
@@ -392,7 +420,7 @@ composio dev logs triggers --limit 20
 composio dev triggers list gmail
 composio dev triggers info GMAIL_NEW_GMAIL_MESSAGE
 composio dev triggers status
-composio dev triggers create
+composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE
 composio dev triggers enable ti_xxx
 composio dev listen --trigger-slug GMAIL_NEW_GMAIL_MESSAGE --json --max-events 5
 ```

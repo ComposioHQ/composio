@@ -134,6 +134,11 @@
     "next@16.3.8": "patches/next@16.3.8.patch"
   },
   "overrides": {
-    "@mastra/mcp": "1.17.2"
+    "@mastra/mcp": "1.17.2",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/core": "2.3.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@modelcontextprotocol/server-legacy": "2.3.1"
   }
 }

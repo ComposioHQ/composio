@@ -1,0 +1,37 @@
+---
+title: 'CLI 0.5.0 exits 1 on failed executions and runs `composio execute` through the Composio Dashboard'
+description: 'Failed tool executions and invalid input now exit 1, the CLI calls the backend you logged in to, and `composio execute` goes through the Composio Dashboard.'
+date: '2026-10-21'
+---
+
+CLI 0.5.0 is a minor release because of one breaking change: commands that failed but exited 0 now exit 1. It also fixes staging and custom-backend logins, and sends `composio execute` through the Composio Dashboard. You don't need to log in again or change any configuration.
+
+### Release versions
+
+| SDK            | Version |
+| -------------- | ------- |
+| CLI `composio` | `0.5.0` |
+
+### Breaking changes
+
+- **Failed executions exit 1.** `composio execute` now exits 1 when a tool execution fails: the tool reported a failure, the Dashboard or backend couldn't run it, or, with `--parallel`, any one of the calls failed. Meta tools behave the same. It used to exit 0. The `{"successful": false, ...}` JSON on stdout and the messages on stderr are unchanged. In `composio run`, `execute()` still rejects with the tool's error message and the failed result.
+- **Invalid input exits 1.** These commands now exit 1 instead of 0 when their input is missing or invalid. They print the same message on stderr, nothing on stdout, and send no request:
+  - `composio dev auth-configs info` without an `<id>`
+  - `composio dev auth-configs create` with `--custom-credentials` that isn't a JSON object
+  - `composio tools info` without a `<slug>`
+  - `composio dev triggers create` without a `<trigger-name>`, or with `--trigger-config` that isn't a JSON object
+  - `composio dev triggers enable` without an `<id>`
+- **`composio orgs switch` without a usable key exits 1.** When the stored API key is empty, `composio orgs switch` now exits 1 and asks you to run `composio login`, instead of warning and exiting 0. It changes nothing either way.
+
+If a script or agent checks the exit code, it now sees these failures. If it relied on exit 0 after a failed execution, handle exit 1 instead.
+
+### Improvements
+
+- **The CLI calls the backend you logged in to.** `composio login` records the backend that issued your key, but commands used to call production unless `COMPOSIO_BASE_URL` or `COMPOSIO_ENVIRONMENT` was set, so a staging login failed with `Invalid or revoked user API key`. Those variables still win when set, and the CLI warns on stderr when one sends your stored key to a different backend. `composio execute` uses the Dashboard recorded with the same login. A rejected key now prints the command to log in again.
+- **Unmatched `--account` is a usage error.** When `--account` matches no connected account, `composio execute` and `composio proxy` print one line on stderr and exit 1, instead of a crash report.
+- **`composio execute` goes through the Dashboard.** Single executions, `--parallel` executions, and meta tools all use the Dashboard at `https://dashboard.composio.dev`. Output, error details, connection tips, and `--json` shapes stay the same. If the backend is unavailable, the CLI shows the Dashboard's error message. If your network restricts outbound hosts, allow `dashboard.composio.dev` as well as `backend.composio.dev`. Every other command, including `composio dev playground-execute`, still calls the backend API.
+- **Executions are sent once.** The CLI sends each execution request once, without retrying or following redirects. After 15 minutes it stops waiting and reports that the tool may still have run.
+- **Custom deployments.** If you set `COMPOSIO_BASE_URL` without `COMPOSIO_WEB_URL`, `composio execute` keeps calling that backend. To use a deployment's Dashboard, set both. `COMPOSIO_WEB_URL` must be an `https://` URL without credentials, a query string, or a fragment (`http://` is accepted only for `localhost`). Otherwise `composio execute` fails before sending anything.
+- **Telemetry install ID.** When telemetry is enabled, `composio execute` sends the CLI's anonymous install ID, the random UUID stored in `~/.composio/analytics.json`, to the Dashboard in an `x-cli-install-id` header. The header is never sent to the backend API. It isn't sent when you set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI`.
+- **Clearer `composio link` messages.** `composio link` and `composio dev connected-accounts link` reword their usage errors and their waiting and timeout lines on stderr. Exit codes and the JSON on stdout are unchanged.
+- **API client.** The CLI uses `@composio/client` `2.0.0-rc.19`. Commands are unchanged.
