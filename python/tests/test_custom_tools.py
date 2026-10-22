@@ -12,6 +12,7 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import sys
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -394,6 +395,68 @@ def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
         )
 
         assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # dont_inherit keeps this module's compiler flags out, so the
+        # annotations stay lazy instead of becoming strings.
+        code = compile(
+            """
+from pydantic import BaseModel
+
+
+@exp.tool()
+def lazy_later_tool(input: LazyLaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LazyLaterInput(BaseModel):
+    query: str
+""",
+            "<lazy_later_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'LazyLaterInput' .*NameError",
+        ):
+            exec(code, {"exp": exp})
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        code = compile(
+            """
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class LazyInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def lazy_ctx_tool(input: LazyInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            "<lazy_ctx_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        namespace = {"exp": exp}
+        exec(code, namespace)
+
+        assert namespace["lazy_ctx_tool"].input_params is namespace["LazyInput"]
 
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
