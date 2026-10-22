@@ -1,6 +1,8 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 
@@ -59,6 +61,10 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio dev toolkits version', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
     it => {
@@ -85,14 +91,19 @@ describe('CLI: composio dev toolkits version', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug [Then] shows error and hint',
     it => {
-      it.effect('prints fetch failure and browse hint', () =>
+      it.effect('prints fetch failure and browse hint on a redirected stderr and exits 1', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.result);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const terminal = redirectedTerminalUI();
+          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(
+            Effect.provide(terminal.layer)
+          );
 
-          expect(output).toContain('Toolkit "unknown" not found');
-          expect(output).toContain('composio dev toolkits list');
+          expect(terminal.stderr()).toContain('Toolkit "unknown" not found');
+          expect(terminal.stderr()).toContain(
+            'Browse available toolkits:\n> composio dev toolkits list\n'
+          );
+          expect(terminal.stdout()).toBe('');
+          expect(process.exitCode).toBe(1);
         })
       );
     }
