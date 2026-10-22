@@ -77,7 +77,9 @@ export type ConnectedAccountsLinkParams = {
 /** The three things `link` does; the flags pick one. */
 type LinkFlow = 'list' | 'legacy' | 'tool-router';
 
-const invalidOptionValue = commandInputError('link');
+/** The command path a usage error carries, per tree: `dev connected-accounts link` under `dev`. */
+const invalidOptionValueFor = (tree: CommandTree) =>
+  commandInputError(tree === 'dev' ? 'dev connected-accounts link' : 'link');
 
 // --- shared steps -----------------------------------------------------------------------------
 
@@ -108,12 +110,12 @@ const directoryProject = Effect.gen(function* () {
 });
 
 /** `--alias` trimmed, or a usage error when it is blank. */
-const resolveNormalizedAliasOption = (alias: Option.Option<string>) =>
+const resolveNormalizedAliasOption = (alias: Option.Option<string>, tree: CommandTree) =>
   Effect.transposeOption(
     Option.map(alias, rawAlias =>
       Effect.fromOption(
         Option.liftPredicate(rawAlias.trim(), trimmed => trimmed.length > 0),
-        () => invalidOptionValue('`--alias` cannot be empty.', '--alias')
+        () => invalidOptionValueFor(tree)('`--alias` cannot be empty.', '--alias')
       )
     )
   );
@@ -384,11 +386,16 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
 export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const { tree } = yield* CommandSurface;
     if (Option.isNone(params.toolkit)) {
-      return yield* Effect.fail(invalidOptionValue(LIST_REQUIRES_TOOLKIT_MESSAGE, '--list'));
+      return yield* Effect.fail(
+        invalidOptionValueFor(tree)(LIST_REQUIRES_TOOLKIT_MESSAGE, '--list')
+      );
     }
     if (Option.isSome(params.authConfig)) {
-      return yield* Effect.fail(invalidOptionValue(LIST_WITH_AUTH_CONFIG_MESSAGE, '--list'));
+      return yield* Effect.fail(
+        invalidOptionValueFor(tree)(LIST_WITH_AUTH_CONFIG_MESSAGE, '--list')
+      );
     }
     const toolkitSlug = params.toolkit.value;
 
@@ -482,7 +489,9 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
     const { tree, userId, projectName } = yield* CommandSurface;
     // The dispatcher never gets here without --auth-config. This narrows it for direct callers.
     if (Option.isNone(params.authConfig)) {
-      return yield* Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '--auth-config'));
+      return yield* Effect.fail(
+        invalidOptionValueFor(tree)(missingArgumentMessage(tree), '--auth-config')
+      );
     }
     const authConfigId = params.authConfig.value;
 
@@ -514,7 +523,9 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
       )
     );
     if (Option.isNone(projectName) && Option.isNone(resolvedProjectContext)) {
-      return yield* Effect.fail(invalidOptionValue(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config'));
+      return yield* Effect.fail(
+        invalidOptionValueFor(tree)(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config')
+      );
     }
     // Without --user-id, say which test user stands in.
     yield* Option.isSome(userId)
@@ -534,7 +545,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
       onNone: () => resolveCommandProject({ mode: 'developer' }),
     });
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
-    const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias);
+    const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const existingAccounts = yield* existingAccountsForHints({
       client,
       userId: resolvedUserId,
@@ -606,11 +617,13 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
     const { tree, userId, projectName } = yield* CommandSurface;
     // The dispatcher never gets here without a toolkit. This narrows it for direct callers.
     if (Option.isNone(params.toolkit)) {
-      return yield* Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '<toolkit>'));
+      return yield* Effect.fail(
+        invalidOptionValueFor(tree)(missingArgumentMessage(tree), '<toolkit>')
+      );
     }
     const toolkitSlug = params.toolkit.value;
 
-    const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias);
+    const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
     const resolvedProject = yield* resolveCommandProject({
@@ -732,7 +745,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
  */
 const selectLinkFlow = (params: ConnectedAccountsLinkParams, tree: CommandTree) =>
   Effect.gen(function* () {
-    yield* resolveNormalizedAliasOption(params.alias);
+    yield* resolveNormalizedAliasOption(params.alias, tree);
     const select = (flow: LinkFlow) => Effect.succeed(flow);
     return yield* Match.value({
       tree,
@@ -741,13 +754,13 @@ const selectLinkFlow = (params: ConnectedAccountsLinkParams, tree: CommandTree) 
       list: params.list,
     }).pipe(
       Match.when({ tree: 'root', authConfig: true }, () =>
-        Effect.fail(invalidOptionValue(ROOT_AUTH_CONFIG_MESSAGE, '--auth-config'))
+        Effect.fail(invalidOptionValueFor(tree)(ROOT_AUTH_CONFIG_MESSAGE, '--auth-config'))
       ),
       Match.when({ toolkit: true, authConfig: true }, () =>
-        Effect.fail(invalidOptionValue(TOOLKIT_AND_AUTH_CONFIG_MESSAGE, '--auth-config'))
+        Effect.fail(invalidOptionValueFor(tree)(TOOLKIT_AND_AUTH_CONFIG_MESSAGE, '--auth-config'))
       ),
       Match.when({ toolkit: false, authConfig: false }, () =>
-        Effect.fail(invalidOptionValue(missingArgumentMessage(tree), '<toolkit>'))
+        Effect.fail(invalidOptionValueFor(tree)(missingArgumentMessage(tree), '<toolkit>'))
       ),
       Match.when({ list: true }, () => select('list')),
       Match.when({ authConfig: true }, () => select('legacy')),

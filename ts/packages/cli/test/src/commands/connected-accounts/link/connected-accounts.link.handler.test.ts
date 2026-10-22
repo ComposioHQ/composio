@@ -359,6 +359,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       input: { alias: Option.some('  '), authConfig: Option.some('ac_1') },
       option: '--alias',
       message: '`--alias` cannot be empty.',
+      command: 'link',
     },
     {
       name: '--auth-config on the root tree, which is consumer-only',
@@ -366,6 +367,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       input: { toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
       option: '--auth-config',
       message: ROOT_AUTH_CONFIG_MESSAGE,
+      command: 'link',
     },
     {
       name: 'a toolkit and --auth-config under dev',
@@ -373,6 +375,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       input: { toolkit: Option.some('gmail'), authConfig: Option.some('ac_1') },
       option: '--auth-config',
       message: TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
+      command: 'dev connected-accounts link',
     },
     {
       name: 'neither a toolkit nor --auth-config on the root tree',
@@ -380,6 +383,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       input: {},
       option: '<toolkit>',
       message: missingArgumentMessage('root'),
+      command: 'link',
     },
     {
       name: 'neither a toolkit nor --auth-config under dev',
@@ -387,6 +391,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
       input: {},
       option: '<toolkit>',
       message: missingArgumentMessage('dev'),
+      command: 'dev connected-accounts link',
     },
   ])('[Given] $name [Then] fails with a CommandInputError and sends nothing', c =>
     Effect.gen(function* () {
@@ -398,7 +403,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
 
       expect(error).toMatchObject({
         _tag: 'commands/CommandInputError',
-        command: 'link',
+        command: c.command,
         option: c.option,
         message: c.message,
       });
@@ -607,7 +612,7 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
 
       expect(error).toMatchObject({
         _tag: 'commands/CommandInputError',
-        command: 'link',
+        command: 'dev connected-accounts link',
         option: '--auth-config',
         message: missingArgumentMessage('dev'),
       });
@@ -644,7 +649,7 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
 
         expect(error).toMatchObject({
           _tag: 'commands/CommandInputError',
-          command: 'link',
+          command: 'dev connected-accounts link',
           option: '--auth-config',
           message: AUTH_CONFIG_SCOPE_MESSAGE,
         });

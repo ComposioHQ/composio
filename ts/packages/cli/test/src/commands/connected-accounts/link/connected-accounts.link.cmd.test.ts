@@ -319,7 +319,7 @@ describe('CLI: composio dev connected-accounts link', () => {
 
         expect(error).toMatchObject({
           _tag: 'commands/CommandInputError',
-          command: 'link',
+          command: 'dev connected-accounts link',
           option: '--auth-config',
         });
         expect(vi.mocked(open)).not.toHaveBeenCalled();
