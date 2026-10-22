@@ -537,6 +537,10 @@ export const listenCmd = Command.make(
 
       const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
       let matchingEvents = 0;
+      // Per-event write failures are recovered so one bad event never stops the listener; they
+      // are counted here and summed up on plain stderr when the listener stops, since a piped
+      // caller sees none of the `ui.log.warn` decoration.
+      let eventWriteFailures = 0;
       const seenEventIds = new Set<string>();
 
       yield* Effect.acquireUseRelease(
@@ -646,7 +650,12 @@ export const listenCmd = Command.make(
                     yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
                   }
                 }).pipe(
-                  Effect.tapError(error => ui.log.warn(errorMessage(error))),
+                  Effect.tapError(error =>
+                    Effect.gen(function* () {
+                      eventWriteFailures += 1;
+                      yield* ui.log.warn(errorMessage(error));
+                    })
+                  ),
                   Effect.ignore
                 )
               );
@@ -661,6 +670,13 @@ export const listenCmd = Command.make(
                 onEvent
               )
               .pipe(Effect.onInterrupt(() => ui.log.info(`Stopped listening for events ${slug}.`)));
+
+            const reportWriteFailures = () =>
+              eventWriteFailures > 0
+                ? ui.error(
+                    `${eventWriteFailures} event${eventWriteFailures === 1 ? '' : 's'} failed to write while listening.`
+                  )
+                : Effect.void;
 
             if (timeoutMs !== undefined) {
               yield* Effect.forkScoped(
@@ -684,6 +700,7 @@ export const listenCmd = Command.make(
                   temporaryTriggerDisabled: createdTrigger !== null,
                 })
               );
+              yield* reportWriteFailures();
               return;
             }
 
@@ -695,6 +712,7 @@ export const listenCmd = Command.make(
                   temporaryTriggerDisabled: createdTrigger !== null,
                 })
               );
+              yield* reportWriteFailures();
             }
           }),
         created =>

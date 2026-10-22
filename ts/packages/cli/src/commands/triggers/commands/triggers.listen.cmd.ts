@@ -194,6 +194,11 @@ export const triggersCmd$Listen = Command.make(
       const maxEventsLimit = Option.getOrUndefined(maxEvents);
       const stopWhenDone = yield* Deferred.make<void>();
       let matchingEvents = 0;
+      // Per-event failures are recovered so one bad event never stops the listener; they are
+      // counted here and summed up on plain stderr when the listener stops, since a piped
+      // caller sees none of the `ui.log.warn` decoration.
+      let outputWriteFailures = 0;
+      let forwardFailures = 0;
       let tableHeaderPrinted = false;
 
       yield* ui.intro('composio dev triggers listen');
@@ -260,9 +265,14 @@ export const triggersCmd$Listen = Command.make(
             const logLine = `${payloadForForwarding}\n`;
 
             if (outputFilePath) {
-              yield* fs
-                .writeFileString(outputFilePath, logLine, { flag: 'a' })
-                .pipe(Effect.catch(error => ui.log.warn(String(error))));
+              yield* fs.writeFileString(outputFilePath, logLine, { flag: 'a' }).pipe(
+                Effect.catch(error =>
+                  Effect.gen(function* () {
+                    outputWriteFailures += 1;
+                    yield* ui.log.warn(String(error));
+                  })
+                )
+              );
             }
 
             if (forwardUrl && webhookSecret) {
@@ -304,7 +314,14 @@ export const triggersCmd$Listen = Command.make(
                   catch: error =>
                     new Error(`Failed forwarding event to ${forwardUrl}: ${String(error)}`),
                 });
-              }).pipe(Effect.catch(error => ui.log.warn(String(error))));
+              }).pipe(
+                Effect.catch(error =>
+                  Effect.gen(function* () {
+                    forwardFailures += 1;
+                    yield* ui.log.warn(String(error));
+                  })
+                )
+              );
             }
 
             if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
@@ -341,6 +358,17 @@ export const triggersCmd$Listen = Command.make(
           )
         )
       );
+
+      if (forwardFailures > 0) {
+        yield* ui.error(
+          `${forwardFailures} event${forwardFailures === 1 ? '' : 's'} failed to forward to ${forwardUrl} while listening.`
+        );
+      }
+      if (outputWriteFailures > 0) {
+        yield* ui.error(
+          `${outputWriteFailures} event${outputWriteFailures === 1 ? '' : 's'} failed to append to ${outputFilePath} while listening.`
+        );
+      }
     })
 ).pipe(
   Command.withDescription(
