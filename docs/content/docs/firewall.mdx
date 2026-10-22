@@ -25,8 +25,6 @@ You can build custom prompt checks with **hooks**. A hook is attached to a sessi
 
 To write a custom prompt check, use the `condition_check` hook. It lets you block a tool call or its result if it matches a condition you write in natural language.
 
-Use a `before_execute` hook to block something your agent is about to do, like emailing internal pricing to a customer. Use an `after_execute` hook to block something a tool returns before your agent reads it, like an email that contains a password or API key. Note that an `after_execute` hook can't undo the tool call, since the tool has already run.
-
 Here's a `before_execute` hook that stops your agent from sharing internal pricing with customers:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -173,6 +171,8 @@ const session = await composio.create('user_123', {
 </Tabs>
 
 When Gmail returns an email with a password in it, your agent doesn't receive the email.
+
+Use a `before_execute` hook to block something your agent is about to do, like emailing internal pricing to a customer. Use an `after_execute` hook to block something a tool returns before your agent reads it, like an email that contains a password or API key. Note that an `after_execute` hook can't undo the tool call, since the tool has already run.
 
 ### Writing a condition
 
