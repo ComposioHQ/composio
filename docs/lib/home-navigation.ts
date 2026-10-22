@@ -170,6 +170,7 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/configuring-sessions' },
               { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
+              { url: '/docs/approvals' },
             ],
           },
           {
@@ -180,7 +181,7 @@ export const DOCS_PRODUCTS = {
           {
             type: 'group',
             label: 'Governance',
-            links: [{ url: '/docs/approvals' }, { url: '/docs/firewall' }],
+            links: [{ url: '/docs/firewall' }],
           },
           {
             type: 'group',
