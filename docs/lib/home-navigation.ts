@@ -131,6 +131,7 @@ export const DOCS_PRODUCTS = {
       '/docs/configuring-sessions',
       '/docs/session-configs',
       '/docs/approvals',
+      '/docs/firewall',
       '/docs/instant-tools',
       '/docs/toolkits',
       '/docs/tool-tags',
@@ -169,13 +170,17 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/configuring-sessions' },
               { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
-              { url: '/docs/approvals' },
             ],
           },
           {
             type: 'group',
             label: 'Toolkits & Tools',
             links: [{ url: '/docs/toolkits' }, { url: '/docs/tool-tags' }, { url: '/docs/instant-tools' }],
+          },
+          {
+            type: 'group',
+            label: 'Governance',
+            links: [{ url: '/docs/approvals' }, { url: '/docs/firewall' }],
           },
           {
             type: 'group',
