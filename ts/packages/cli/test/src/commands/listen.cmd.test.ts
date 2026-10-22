@@ -179,6 +179,20 @@ describe('CLI: composio listen', () => {
         return { fiber, terminal };
       });
 
+    // A failed write still counts toward --max-events, so the bounded run stops on its own.
+    it.effect('[Then] stops at --max-events and sums the write failures up on stderr', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
+          Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+        );
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
     it.effect('[Then] sums the write failures up on stderr when the timeout stops it', () =>
       Effect.gen(function* () {
         yield* enableListen;

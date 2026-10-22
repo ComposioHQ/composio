@@ -69,6 +69,13 @@
   exit 1 with "needs --yes when not running interactively" on stderr, before
   any request (for `logout`, only when logged in as an agent, the case that
   asks). Declining the prompt on a terminal still removes nothing and exits 0.
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  now print how many events they failed to save, forward, or append to `--out`
+  on stderr when they stop, including on Ctrl+C. The per-event warnings were
+  shown only when stderr was a terminal. One failed event still does not stop
+  the listener, and the exit code is unchanged.
+- `composio listen --max-events N` now stops after N matching events even when
+  saving one of them fails. It used to keep listening until interrupted.
 
 ## 0.5.0
 

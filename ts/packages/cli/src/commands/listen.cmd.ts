@@ -348,6 +348,30 @@ const formatStreamValue = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
+/**
+ * Saves one matched event: its payload file, its line in the stream file, then the `event:` line
+ * and, when streaming (`streamPath` set), the `stream:` line.
+ */
+const saveListenEvent = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly ui: TerminalUI;
+  readonly eventData: Record<string, unknown>;
+  readonly eventFilePath: string;
+  readonly streamFilePath: string;
+  readonly streamEntry: string;
+  readonly streamPath: ReadonlyArray<string | number> | undefined;
+}) =>
+  Effect.gen(function* () {
+    const { fs, ui, eventFilePath, streamPath } = params;
+    yield* fs.writeFileString(eventFilePath, `${JSON.stringify(params.eventData, null, 2)}\n`);
+    yield* fs.writeFileString(params.streamFilePath, `${params.streamEntry}\n`, { flag: 'a' });
+    yield* emitStreamLine(`event: ${eventFilePath}`, ui);
+    if (streamPath !== undefined) {
+      const streamValue = applyStreamPath(params.eventData, streamPath);
+      yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
+    }
+  });
+
 const formatStopMessage = (params: {
   matchingEvents: number;
   timedOut: boolean;
@@ -542,6 +566,11 @@ export const listenCmd = Command.make(
       // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
       // none of the `ui.log.warn` decoration. The release hook below runs on all of them.
       let eventWriteFailures = 0;
+      const recordWriteFailure = (error: unknown) =>
+        Effect.gen(function* () {
+          eventWriteFailures += 1;
+          yield* ui.log.warn(errorMessage(error));
+        });
       const reportWriteFailures = () =>
         eventWriteFailures > 0
           ? ui.error(
@@ -634,7 +663,6 @@ export const listenCmd = Command.make(
 
                   matchingEvents += 1;
                   const eventFilePath = path.join(triggerDir, `${eventFileId}-payload.json`);
-                  const eventJson = JSON.stringify(eventData, null, 2);
                   const streamEntry = JSON.stringify({
                     event_id: eventFileId,
                     event_type: eventTypeOf(eventData),
@@ -644,27 +672,21 @@ export const listenCmd = Command.make(
                     received_at: new Date().toISOString(),
                   });
 
-                  yield* fs.writeFileString(eventFilePath, `${eventJson}\n`);
-                  yield* fs.writeFileString(streamFilePath, `${streamEntry}\n`, { flag: 'a' });
-                  yield* emitStreamLine(`event: ${eventFilePath}`, ui);
-
-                  if (shouldStream) {
-                    const streamValue = applyStreamPath(eventData, streamPath ?? []);
-                    yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
-                  }
+                  // A matched event counts toward --max-events even when saving it fails.
+                  yield* saveListenEvent({
+                    fs,
+                    ui,
+                    eventData,
+                    eventFilePath,
+                    streamFilePath,
+                    streamEntry,
+                    streamPath: shouldStream ? (streamPath ?? []) : undefined,
+                  }).pipe(Effect.catch(recordWriteFailure));
 
                   if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
                     yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
                   }
-                }).pipe(
-                  Effect.tapError(error =>
-                    Effect.gen(function* () {
-                      eventWriteFailures += 1;
-                      yield* ui.log.warn(errorMessage(error));
-                    })
-                  ),
-                  Effect.ignore
-                )
+                }).pipe(Effect.catch(recordWriteFailure))
               );
             };
 
